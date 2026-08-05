@@ -259,6 +259,16 @@ actual `klt` behavior, since the resolver (#1) blocks that check today.
    blocking gap is specifically `klt`'s PDK-resolver step (#1), not an
    absence of schematic-capture or LVS-setup support in the upstream PDK
    itself.
+7. **The upstream resolver tracking issue itself shows closed as of this
+   writing.** `klayout-tools#522` ("klt pdk cannot resolve IHP-Open-PDK
+   (SG13G2) — blocks any SG13G2 work") is **closed** as of 2026-08-05, the
+   same day this plan was written. This repo's own tracking issue (#1) was
+   still open and labeled `loom:blocked` at the time of this check. This
+   plan does not itself act on that discrepancy — updating #1's status or
+   `CLAUDE.md`'s "BLOCKED" language is out of scope for issue #2 — but it is
+   recorded here so whoever next works #1 checks `klt pdk find`/`list`/`env`
+   against a real IHP-Open-PDK fetch before assuming the resolver blocker is
+   still live, rather than rediscovering the closure independently.
 
 ## 8. Next steps
 
