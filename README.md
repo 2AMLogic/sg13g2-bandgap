@@ -57,9 +57,16 @@ rather than routing past it.
 | Output reference | ~1.2 V ±1% untrimmed | ±0.5% with trim |
 | Temp coefficient (−40…125 °C) | < 50 ppm/°C | < 20 ppm/°C |
 | PSRR @ DC | > 60 dB | > 70 dB |
-| Supply | 1.8 V / 3.3 V — confirm against SG13G2 flavors | — |
+| Supply | 3.3 V ±10% (HV flavor) | 1.2 V (LV flavor) |
 | Iq | < 50 µA | < 20 µA |
 | Startup | self-starting, < 1 ms | — |
+
+Supply row confirmed against SG13G2's actual device menu (1.2 V LV core /
+3.3 V HV I/O — no 1.8 V-rated flavor exists in this PDK) — see
+[`spec/decision-records/0002-supply-voltage-scope.md`](spec/decision-records/0002-supply-voltage-scope.md).
+The bipolar-versus-parasitic device call for the core itself is recorded in
+[`spec/decision-records/0001-bipolar-device-selection.md`](spec/decision-records/0001-bipolar-device-selection.md);
+full porting analysis in [`spec/porting-plan.md`](spec/porting-plan.md).
 
 Port parity note: the spec deliberately mirrors the gf180 and sky130
 bandgaps — same block, three PDKs. Where SG13G2's devices make a target
