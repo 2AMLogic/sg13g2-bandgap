@@ -1,0 +1,84 @@
+# sg13g2-bandgap
+
+A bandgap voltage reference on
+[IHP SG13G2](https://github.com/IHP-GmbH/IHP-Open-PDK), a 130 nm SiGe BiCMOS
+open PDK — designed by AI agents driving
+[klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
+open-source xschem + ngspice flow.
+
+**Status: just opened, blocked on tooling.** Nothing is designed yet, and
+design cannot start until `klt` can resolve this PDK — see the prerequisite
+below.
+
+**Built agent-native.** Every specification, decision record, testbench, and
+line of documentation here is produced by AI agents working from a ratified
+spec and an append-only evidence trail — not human-authored work that agents
+merely assisted with. Verification is the product: every claim traces to a
+recorded result under PVT corners. Where the agents hit friction with the
+open-source tooling — most often
+[klayout-tools](https://github.com/2AMLogic/klayout-tools) — that friction is
+filed as a public issue against the tool itself, so the fix benefits everyone
+using SG13G2, not just this repo.
+
+## Why this block, on this PDK
+
+The sibling canaries all sit on gf180mcu or sky130. SG13G2 is a third PDK
+with its own rule deck, device models, and tech file, and none of it has met
+these tools.
+
+The block is deliberately the *least* novel thing available: a bandgap
+reference, which is the most mature design in the fleet
+([gf180-bandgap](https://github.com/2AMLogic/gf180-bandgap),
+[sky130-bandgap](https://github.com/2AMLogic/sky130-bandgap)). That is the
+whole experimental design. If the design is the one we understand best, then
+anything that breaks here is the PDK or the tools — not the circuit. A novel
+block on a novel PDK would confound the two.
+
+SG13G2 being a **BiCMOS** process is a genuine bonus: it offers real bipolar
+devices rather than the parasitic PNPs the CMOS ports rely on, which is a
+different device class for extraction and LVS to handle.
+
+## Prerequisite — read before starting
+
+`klt pdk` currently resolves only the open_pdks directory layout. The
+`ihp130` tree bundled in lambdapdk is **not** IHP-Open-PDK's SG13G2, so
+neither path works today. Resolver support is the blocking prerequisite and
+is tracked upstream; until it lands, this repo holds specification and
+porting-plan work only.
+
+Do not work around this by hand-wiring paths. The resolver gap is exactly
+the kind of friction this repo exists to surface — file it and improve it,
+rather than routing past it.
+
+## Target specification (DRAFT — engineering to ratify, see issue #1)
+
+| Parameter | Target | Stretch |
+|---|---|---|
+| Output reference | ~1.2 V ±1% untrimmed | ±0.5% with trim |
+| Temp coefficient (−40…125 °C) | < 50 ppm/°C | < 20 ppm/°C |
+| PSRR @ DC | > 60 dB | > 70 dB |
+| Supply | 1.8 V / 3.3 V — confirm against SG13G2 flavors | — |
+| Iq | < 50 µA | < 20 µA |
+| Startup | self-starting, < 1 ms | — |
+
+Port parity note: the spec deliberately mirrors the gf180 and sky130
+bandgaps — same block, three PDKs. Where SG13G2's devices make a target
+inappropriate rather than merely harder, change it and record why.
+
+Maturity ladder: tooling resolved → spec ratified → schematic simulated
+across PVT → layout DRC/LVS-clean → post-layout re-verification → shuttle
+seat → measured silicon. **Current position: blocked, pre-spec.**
+
+## Repo layout
+
+```
+spec/          ratified spec + decision records
+design/        schematics / netlists (xschem)
+sim/           testbenches + PVT corner results (ngspice)
+layout/        GDS + DRC/LVS reports (klayout-tools driven)
+measurements/  silicon characterization (empty until tape-out)
+```
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).
