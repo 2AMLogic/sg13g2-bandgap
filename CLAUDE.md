@@ -5,14 +5,15 @@ SiGe BiCMOS open PDK, designed and verified by AI agents.
 
 - **PDK**: IHP SG13G2 (open PDK, IHP-GmbH/IHP-Open-PDK). Open-source flow:
   xschem + ngspice for design/sim, klayout-tools (`klt`) for layout work.
-- **BLOCKED: `klt` cannot resolve this PDK yet.** `klt pdk` handles only the
-  open_pdks layout, and lambdapdk's `ihp130` tree is not SG13G2. Resolver
-  support is the blocking prerequisite. Until it lands, work here is limited
-  to specification and porting-plan documents.
-  **Do not hand-wire paths around the resolver.** That gap is precisely the
-  friction this repo exists to surface; file it and fix it upstream rather
-  than routing past it, because routing past it destroys the reason the repo
-  was opened.
+- **The deck is new — starter-grade.** `klt` resolves this PDK (the resolver
+  gap, klayout-tools #522, is closed) and a curated SG13G2 DRC/LVS starter
+  deck ships with klayout-tools (klayout-tools #905/#911) — but that deck is
+  young and has met almost no real blocks. Expect deck gaps as normal
+  friction: a rule it cannot check yet, an LVS device it does not extract, a
+  waiver it lacks. File each one upstream per the friction protocol below
+  rather than routing around it — working around a deck gap silently destroys
+  the reason this repo was opened. **Design work here is no longer gated on
+  the resolver**: the porting plan (#3) proceeds to actual schematics and sim.
 - **The PDK is the variable, not the design.** This block is a port of the
   fleet's most mature design (`gf180-bandgap`, `sky130-bandgap`) *on purpose*.
   Anything that breaks should be assumed to be the PDK, the deck, or the
