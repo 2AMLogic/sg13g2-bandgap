@@ -1,0 +1,119 @@
+* sg13g2-bandgap -- bandgap_core + bandgap_startup co-simulated hand-over
+* testbench (issue #24)
+* Generated from
+* sim/startup-core-handover/testbench/tb_startup_core_handover.spice.tmpl
+* by sim/startup-core-handover/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full rationale is in sim/startup-core-handover/README.md.
+*
+* Generated for: corner=sf temp=-40C vdd=3.63V
+* DUT git sha (design/netlist/bandgap_core.spice and bandgap_startup.spice
+* this was copied from):
+*   core=4832c71 startup=4832c71
+* PDK: ihp-sg13g2 /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* Both DUTs are copied verbatim from design/netlist/bandgap_core.spice and
+* design/netlist/bandgap_startup.spice -- same instance names, same node
+* names, same W/L/Nx -- and wired together at the two nodes the assembled
+* block actually shares: `sns1` (bandgap_core's XQ1 collector/base is
+* bandgap_startup's own sense input) and `fb` (bandgap_core's PMOS mirror
+* gate is bandgap_startup's XMKFB pull-down target). This is a true
+* co-simulation, not the cross-bench comparison sim/startup-trip-point and
+* sim/core-open-loop-bias's records were originally compared by (see
+* sim/startup-trip-point/README.md "Cross-bench observation").
+
+.lib "/Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+.lib "/Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_sf
+.lib "/Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_typ
+
+.options temp=-40 tnom=27
+
+* FIXTURE 1 -- transient supply ramp, the piece neither existing testbench
+* has: both sim/core-open-loop-bias and sim/startup-trip-point drive vdd
+* with a plain dc source and either an .op or a dc sweep of a stand-in
+* stimulus. Here vdd itself ramps 0 -> VDD over 200 us (well above the
+* ~2 us RC set by XRPU's ~1.9-2 Mohm rhigh against MOSFET gate
+* capacitance -- see design/bandgap_startup.sch's header for XRPU's R
+* derivation) and holds, so the assembled block's own cold-start ->
+* running-core transition is what the simulator solves for, not an
+* externally-imposed sweep of an internal node.
+Vvdd vdd 0 PWL(0 0 200u 3.63 2m 3.63)
+Vvss vss 0 dc 0
+* both DUT netlists wire their resistor bulk terminals to the global
+* substrate net `sub!`; tied to vss through a 0 V source, same convention
+* both existing testbenches use.
+Vsub sub! vss dc 0
+
+* FIXTURE 2 -- open-loop mirror bias, identical in kind to
+* sim/core-open-loop-bias's own FIXTURE 1: no error amplifier exists yet
+* (issue #9's scope cut), so nothing in the design drives `fb` to a
+* specific steady-state operating point. A diode-connected replica of the
+* mirror device, carrying a 5 uA reference, stands in for the amplifier's
+* eventual job of holding fb at whatever level gives the design current --
+* the three DUT legs are then real PSP103 mirrors of a real PSP103
+* reference device. This is a testbench fixture, not a DUT substitution:
+* it is the exact same XM0/Ibias pair sim/core-open-loop-bias uses,
+* unchanged.
+*
+* IMPORTANT CAVEAT (read before citing this experiment's numbers as a tight
+* bound): an ideal current source is a very high output impedance load at
+* fb. A real error amplifier is normally a *low* output impedance driver
+* of fb (that is what "amplifier" means here), so any residual current
+* XMKFB pulls out of fb while incompletely released would move fb -- and
+* therefore the mirror current and sns1 -- far less than it does against
+* this fixture's near-infinite source impedance. This testbench therefore
+* measures a real, physically grounded consequence of an incomplete
+* release (this exact fixture is already load-bearing for
+* sim/core-open-loop-bias's own claims), but should be read as a
+* pessimistic/worst-case bound on the hand-over transient's severity, not
+* a tight prediction of what the assembled block with its future amplifier
+* will show. See sim/startup-core-handover/README.md for the full
+* discussion.
+XM0 fb fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Ibias fb vss dc 5u
+
+* DUT -- design/netlist/bandgap_core.spice, verbatim.
+XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR1 vref cb3 sub! rppd w=2u l=694.5u m=1 b=0
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+* DUT -- design/netlist/bandgap_startup.spice, verbatim. `sns1` and `fb`
+* are shared with the core DUT above (the two nodes the assembled block
+* actually connects); no separate stimulus source drives either one here,
+* unlike sim/startup-trip-point's `Vsns1`.
+*
+* FIXTURE 3 -- Vmkfb is a 0 V ammeter in series with XMKFB's drain, so the
+* startup circuit's own contribution to the shared fb node can be measured
+* directly (i_mkfb_v below) rather than inferred from fb's voltage alone.
+* A 0 V source is a DC/transient short and does not move the operating
+* point.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+.control
+pre_osdi /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+tran 2u 2m
+* Early-ramp check (t=20us, vdd ~10% of final value, core still
+* degenerate): the startup circuit should still be actively engaged.
+meas tran v_det_early find v(det) at=20u
+meas tran v_fb_early find v(fb) at=20u
+* Final (fully ramped + settled) hand-over state -- the actual claim under
+* test.
+meas tran v_det_v find v(det) at=2m
+meas tran v_fb_v find v(fb) at=2m
+meas tran v_sns1_v find v(sns1) at=2m
+meas tran v_vref_v find v(vref) at=2m
+meas tran i_mkfb_v find i(Vmkfb) at=2m
+.endc
+.end
