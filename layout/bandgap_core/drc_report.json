@@ -22,12 +22,15 @@
       "5/0",
       "6/0",
       "8/0",
-      "10/0"
+      "10/0",
+      "19/0"
     ],
     "layers_in_stream_without_rules": [
       "5/1",
       "8/1",
+      "8/25",
       "10/1",
+      "10/25",
       "31/0",
       "33/0",
       "63/0",
@@ -35,10 +38,7 @@
       "128/1"
     ],
     "rules_skipped": [
-      "metal1.enclosing.via1.1",
       "metal2.enclosing.via2.1",
-      "via1.space.1",
-      "via1.width.1",
       "via2.space.1",
       "via2.width.1"
     ],
@@ -62,7 +62,7 @@
       "content_hash": "sha256:a64d3a7b716b746cefa22a2672184831dd5d17fabfe09abd398e1862b770ee0f"
     },
     "input": {
-      "content_hash": "sha256:0ab90befe05f788ae2bb6d1314e2a03358e31d6ff6b7747060383c7382ab2c72"
+      "content_hash": "sha256:bdc6496e56a74a736814664fcd3ad2c30dfe0f48d5af1bb58804e8be4a9e6620"
     }
   }
 }

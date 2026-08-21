@@ -19,8 +19,39 @@ Devices instantiated, one-to-one against
 
 No bipolar device is instantiated here (DR-0001's BVCEO/BVEBO constraint
 does not bind on this circuit by construction -- see the schematic's own
-header comment). Floorplan-level, simplified representative layout, not
-DRC-clean/LVS-verified -- see ``layout/README.md``.
+header comment).
+
+**Routing (issue #20).** Reading ``design/netlist/bandgap_startup.spice``
+net-by-net: ``vdd`` (``RPU.end_a`` only), ``sns1`` (``MSENSE.gate`` only),
+and ``fb`` (``MKFB.source`` only) are each single-terminal *within this
+cell* -- a single-terminal net is already a complete, valid net with no
+wiring needed (LVS topology matching does not require it, and these three
+nets' cross-cell counterparts in ``bandgap_core`` are a separate GDS file
+routing cannot physically join anyway). Only two nets are genuinely
+multi-terminal and need real wiring:
+
+    - ``vss`` (2-terminal: ``MSENSE.drain``, ``MKFB.drain``) -- a single
+      horizontal ``Metal1`` bar; both drain pads already sit at the same
+      Y-band.
+    - ``det`` (3-terminal: ``RPU.end_b``, ``MSENSE.source``, ``MKFB.gate``)
+      -- ``MKFB.gate`` is a bare ``GatPoly`` gate with no Metal1 pad of its
+      own (unlike ``bandgap_core``'s ``fb``, this net's *other* members are
+      not gates, so it cannot be routed gate-to-gate on poly alone);
+      ``layout/common.py``'s ``draw_gate_tab`` extends it with a small
+      ``Cont``/``Metal1`` pad first. From there, an all-``Metal1`` L-route
+      (no ``Via1``/``Metal2`` needed -- unlike ``bandgap_core``, nothing in
+      this floorplan blocks a same-layer path) reaches ``MSENSE.source``
+      and, via a long run the length of ``RPU``'s own resistor body,
+      ``RPU.end_b``.
+
+Re-running ``klt drc --deck sg13g2``/``klt lvs`` after this routing is
+tracked in ``layout/README.md`` "DRC/LVS verification". **This routing does
+not, on its own, get `MSENSE`/`MKFB` to `matched`**: this deck's curated
+``sg13g2`` extraction models no well/substrate-tap layer at all, so both
+``nfet`` devices' body terminals extract to a deck-synthesized global
+``vsubs`` net rather than the schematic's real body-tied-to-``vss`` --
+a structural mismatch routing cannot fix (see README for the full,
+diagnosed cause list, same root fact ``bandgap_core`` hits).
 """
 
 from __future__ import annotations
@@ -30,10 +61,20 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-from common import Builder, draw_hv_mos, draw_poly_res  # noqa: E402
+from common import (  # noqa: E402
+    L_METAL1,
+    Builder,
+    draw_gate_tab,
+    draw_hv_mos,
+    draw_poly_res,
+    route_h,
+    route_v,
+)
 
 TOP_CELL = "bandgap_startup"
 OUTPUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bandgap_startup.gds")
+
+TRUNK_W = 0.3
 
 
 def build() -> Builder:
@@ -42,20 +83,65 @@ def build() -> Builder:
     mos_y = 0.0
     res_y = 20.0
 
-    draw_hv_mos(
+    msense = draw_hv_mos(
         b, "MSENSE", "nmos", 2.0, 0.5, 0.0, mos_y,
         gate_net="sns1", source_net="det", drain_net="vss",
     )
-    draw_hv_mos(
+    mkfb = draw_hv_mos(
         b, "MKFB", "nmos", 2.0, 0.5, 20.0, mos_y,
         gate_net="det", source_net="fb", drain_net="vss",
     )
     # RPU (l=1411.3u) is a very long straight bar (see draw_poly_res's own
     # docstring) -- on its own row so it does not overlap the compact
     # MSENSE/MKFB devices above.
-    draw_poly_res(b, "RPU", "rhigh", 1.0, 1411.3, 0.0, res_y, end_a_net="vdd", end_b_net="det")
+    rpu = draw_poly_res(b, "RPU", "rhigh", 1.0, 1411.3, 0.0, res_y, end_a_net="vdd", end_b_net="det")
+
+    _route(b, msense, mkfb, rpu)
 
     return b
+
+
+def _route(b: Builder, msense: dict, mkfb: dict, rpu: dict) -> None:
+    """Wire the two genuinely multi-terminal nets -- see this module's own
+    docstring for why ``vdd``/``sns1``/``fb`` need no routing at all."""
+
+    # -- vss: MSENSE.drain, MKFB.drain -- both already at the same Y-band.
+    # Held below y=-0.4 (not the full drain-pad height up to -0.3) so the
+    # bar keeps >=0.18um clearance from det's MKFB gate-tab riser below
+    # (see `_riser_x`) -- verified against this issue's own `klt drc` run.
+    vss_x_lo = min(msense["drain_pad"][0], mkfb["drain_pad"][0])
+    vss_x_hi = max(msense["drain_pad"][2], mkfb["drain_pad"][2])
+    route_h(b, L_METAL1, -0.5, vss_x_lo, vss_x_hi, width=0.2)
+
+    # -- det: RPU.end_b, MSENSE.source, MKFB.gate --
+    # MKFB's gate has no Metal1 pad of its own (unlike bandgap_core's `fb`,
+    # this net's other members are not gates) -- extend it with a tab.
+    # Attached on the LEFT (away from MKFB's own `fb`-net source pad, which
+    # sits only 0.1um past the bare gate's right edge -- see
+    # draw_gate_tab's own docstring for why a flush attachment there would
+    # violate metal1.space.1).
+    gate_edge_x = mkfb["gate_box"][0]
+    tab_pad = draw_gate_tab(b, gate_edge_x, 0.0, "det", side="left")
+    tab_x = (tab_pad[0] + tab_pad[2]) / 2
+
+    jog_y = (rpu["end_b_pad"][1] + rpu["end_b_pad"][3]) / 2  # RPU's own row centerline
+
+    # MSENSE.source -> a riser column clear of MKFB's own footprint -> the
+    # det trunk at RPU's row.
+    riser_x = (mkfb["drain_pad"][0] - msense["source_pad"][2]) / 2 + msense["source_pad"][2]
+    source_y = (msense["source_pad"][1] + msense["source_pad"][3]) / 2
+    route_h(b, L_METAL1, source_y, msense["source_pad"][0], riser_x, width=TRUNK_W)
+    route_v(b, L_METAL1, riser_x, source_y, jog_y, width=TRUNK_W)
+
+    # MKFB's gate tab -> the same det trunk.
+    route_v(b, L_METAL1, tab_x, tab_pad[1], jog_y, width=TRUNK_W)
+
+    # The det trunk itself, from the MSENSE riser across to RPU.end_b --
+    # deliberately starts at riser_x (clear of x=0), never reaching RPU's
+    # own `vdd`-net end_a pad near x=0 (a different net, would otherwise
+    # short against it).
+    target_x = (rpu["end_b_pad"][0] + rpu["end_b_pad"][2]) / 2
+    route_h(b, L_METAL1, jog_y, riser_x, target_x, width=TRUNK_W)
 
 
 if __name__ == "__main__":
