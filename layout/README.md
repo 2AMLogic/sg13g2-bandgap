@@ -8,13 +8,25 @@ layout/
   README.md                  this file
   common.py                  shared klayout.db drawing primitives (layer
                               table, Builder, draw_npn13g2/draw_hv_mos/
-                              draw_poly_res) both generate.py scripts import
+                              draw_poly_res, plus issue #20's routing
+                              primitives: route_h/route_v/via1_tap/
+                              draw_gate_tab) both generate.py scripts import
+  lvs_reference.py            converts design/netlist/*.spice to the
+                              plain-element form klt lvs requires (issue #12)
   bandgap_core/
-    generate.py               draws bandgap_core.gds
+    generate.py               draws + routes bandgap_core.gds
     bandgap_core.gds          committed, deterministic layout
+    lvs_request.json          klt lvs request (issue #12)
+    lvs_reference.spice       generated reference netlist (issue #12)
+    drc_report.json           committed klt drc report
+    lvs_report.json           committed klt lvs report
   bandgap_startup/
-    generate.py               draws bandgap_startup.gds
+    generate.py               draws + routes bandgap_startup.gds
     bandgap_startup.gds       committed, deterministic layout
+    lvs_request.json          klt lvs request (issue #12)
+    lvs_reference.spice       generated reference netlist (issue #12)
+    drc_report.json           committed klt drc report
+    lvs_report.json           committed klt lvs report
 ```
 
 ## Provenance
@@ -83,24 +95,43 @@ and `pnpMPA`'s pin count/naming).
   viewer to confirm device-for-device correspondence against
   `design/bandgap_core.sch`/`design/bandgap_startup.sch`, per this issue's
   own test plan.
-- **Is DRC-clean** (updated by issue #12 — see "DRC/LVS verification" below).
-  The informational run this issue originally recorded here (`klt drc
-  layout/bandgap_core/bandgap_core.gds --deck sg13g2`) found `status:
-  "violations"`, 26 `cont.width.1` violations: the simplified `Cont` pads
-  this layout drew were 0.15 µm on their narrow axis, 0.01 µm under the
-  curated deck's real 0.16 µm minimum-Cont-width floor. #12 treated this as
-  a genuine (if small) geometry defect rather than an inherent
-  simplification artifact — `layout/common.py`'s `draw_npn13g2`/
-  `draw_hv_mos` now draw that axis at 0.18 µm, comfortably clear of the
-  floor and still fully inside each device's own `Activ`/`Metal1` margins
-  (see `layout/common.py`'s own inline comments at each callsite). Both
-  `bandgap_core.gds` and `bandgap_startup.gds` now report `status: "clean"`,
-  `violation_count: 0` — see the committed reports.
-- **Is not** LVS-clean yet (#12 also ran this fresh — see "DRC/LVS
-  verification" below for the full, itemized finding: a real
-  `status: "mismatch"` on both cells, attributable to the curated deck's
-  documented bipolar/resistor-recognition gap plus this layout's own
-  floorplan-only routing, not a fixable circuit defect).
+- **Is routed** (issue #20). Every schematic net now carries real
+  `Metal1`/`Metal2`/`Via1`/`GatPoly` shapes physically connecting each
+  device's labeled terminals to every other device sharing that net — not
+  just an isolated shape group per device with a matching label, as #11
+  originally built it (see "DRC/LVS verification" below, cause 2 of #12's
+  original two-cause finding, now closed). Each net is also labeled a
+  second time on `Metal1.text`/`Metal2.text` (`(8, 25)`/`(10, 25)`), the
+  layer `klt`'s curated `sg13g2` extraction deck's
+  `EXTRACTION_DECK.metal_labels` actually reads for net naming — the
+  original `Metal1.label`/`Metal2.label` convention (`(8, 1)`/`(10, 1)`)
+  is purely informational to this deck's own extraction pass (confirmed
+  directly: those layers show up in `klt extract`'s own `ignored_layers`).
+  See `layout/common.py`'s `route_h`/`route_v`/`via1_tap`/`draw_gate_tab`
+  and each cell's own `generate.py` `_route()` for the routing itself.
+- **Is DRC-clean** (issue #12, still clean after #20's routing — see
+  "DRC/LVS verification" below). The informational run this issue
+  originally recorded here (`klt drc layout/bandgap_core/bandgap_core.gds
+  --deck sg13g2`) found `status: "violations"`, 26 `cont.width.1`
+  violations: the simplified `Cont` pads this layout drew were 0.15 µm on
+  their narrow axis, 0.01 µm under the curated deck's real 0.16 µm
+  minimum-Cont-width floor. #12 treated this as a genuine (if small)
+  geometry defect rather than an inherent simplification artifact —
+  `layout/common.py`'s `draw_npn13g2`/`draw_hv_mos` now draw that axis at
+  0.18 µm, comfortably clear of the floor and still fully inside each
+  device's own `Activ`/`Metal1` margins (see `layout/common.py`'s own
+  inline comments at each callsite). Both `bandgap_core.gds` and
+  `bandgap_startup.gds` still report `status: "clean"`, `violation_count:
+  0` after #20's routing shapes were added — see the committed reports.
+- **Is not** LVS-clean, still (#20 re-ran this fresh after routing — see
+  "DRC/LVS verification" below for the full, itemized finding: a real
+  `status: "mismatch"` persists on both cells, now attributed to *three*
+  independent, fully-diagnosed causes, none fixable from this repo's own
+  side: the curated deck's documented bipolar/resistor-recognition gap
+  (unchanged from #12), a newly-discovered lack of any well/substrate-tap
+  modelling in the same deck, and (`bandgap_core` only) a genuine
+  structural device-symmetry ambiguity the missing bipolar/resistor
+  devices expose).
 - **Is not** a re-implementation of each device's real PCell. `Q1`/`Q2`/`Q3`
   (`draw_npn13g2` in `layout/common.py`) faithfully replicate the one
   geometric fact this issue's tooling-friction check turned on (the real,
@@ -251,7 +282,7 @@ SG13G2 PDK family. This **is** a generic `klt`/`klayout-tools` tool gap
 (not a PDK-content fact), so it **was** filed:
 [klayout-tools#1266](https://github.com/2AMLogic/klayout-tools/issues/1266).
 
-## DRC/LVS verification (issue #12)
+## DRC/LVS verification (issues #12, #20)
 
 Fresh, committed `klt drc`/`klt lvs` reports for both cells — the first
 time either tool has been run against a real SG13G2 layout in this repo.
@@ -283,12 +314,12 @@ violations of any kind, not just a disappeared `cont.width.1` count).
 Reproduce: `klt drc --check layout/bandgap_core/drc_report.json` (or
 `--rerun` for a full re-check), run from the repo root.
 
-### LVS — mismatch, fully attributed (not yet a fixable circuit defect)
+### LVS — still `mismatch`, three independent, fully-attributed causes (issue #20)
 
 | Cell | Report | Status | Engine |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (32 findings, 30 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
-| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | `mismatch` (18 findings, 16 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (31 findings, 29 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | `mismatch` (16 findings, 14 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
 
 Reproduce: `klt lvs layout/bandgap_core/lvs_request.json` (run from
 `layout/bandgap_core/`, since the request's relative paths resolve against
@@ -318,47 +349,92 @@ deterministic script that reads `design/netlist/*.spice` and emits the
 `python3 layout/lvs_reference.py` after any `design/netlist/*.spice`
 change.
 
-**Two independent, fully-attributed causes for the mismatch itself** (per
-`klt lvs`'s own `mismatches[]` categorisation in each committed report —
-neither is a routing/connectivity bug this issue introduced, and neither is
-fixable within this issue's own scope):
+**#20's routing is real and verified, but does not, on its own, close the
+gap** — `klt extract`'s own device/net breakdown confirms the physical
+connectivity is now correct: every schematic net (`vdd`, `fb`, `sns1`,
+`sns2`, `vref`, `cb2`, `cb3`, `vss`/`det`) extracts to a single, named,
+physically-merged net (`bandgap_core.gds`: 11 layout nets across the 3
+recognised `pfet` devices' terminals, vs. #12's pre-routing 12
+*disconnected* nets for the same 3 devices; `bandgap_startup.gds`: 5 nets
+for 2 `nfet` devices). Re-running after #20's routing landed found the
+original cause 2 from #12 (no top-level routing) genuinely closed, but
+surfaced **two further, independent, out-of-this-repo's-control causes**
+that #12's original two-cause attribution did not anticipate — both
+confirmed by direct experiment, not inferred:
 
 1. **`klt`'s curated `sg13g2` extraction deck does not recognise bipolar or
-   resistor devices at all** (`klayout_tools.decks.sg13g2.EXTRACTION_DECK`
-   only models thin-oxide MOS — see this deck's own module docstring, and
-   this repo's `CLAUDE.md`: "resistor/capacitor/bipolar/diode device
-   recognition... explicitly out of scope"). Every `Q1`–`Q3`/`R1`/`R2`
-   (`bandgap_core`) and `RPU` (`bandgap_startup`) device is therefore
-   necessarily reference-only in the compare — `device.unmatched`, class
-   `NPN13G2`/`RES`, 5 of `bandgap_core`'s 8 `device.unmatched` findings and
-   1 of `bandgap_startup`'s 3. Not a new gap (already documented) and not
+   resistor devices at all** (unchanged from #12;
+   `klayout_tools.decks.sg13g2.EXTRACTION_DECK` only models thin-oxide MOS —
+   see this deck's own module docstring, and this repo's `CLAUDE.md`:
+   "resistor/capacitor/bipolar/diode device recognition... explicitly out
+   of scope"). Every `Q1`–`Q3`/`R1`/`R2` (`bandgap_core`) and `RPU`
+   (`bandgap_startup`) device is therefore necessarily reference-only in
+   the compare — `device.unmatched`, class `NPN13G2`/`RES`. Not
    actionable from this repo's side.
-2. **This layout has no top-level routing between device instances** — a
-   real, new finding, but not a defect: `layout/common.py`'s drawing
-   primitives (`draw_hv_mos`/`draw_npn13g2`/`draw_poly_res`) each draw one
-   isolated shape group per device, with no `Metal1`/`Metal2`/`Via1` wiring
-   *between* instances. `klt extract` confirms this directly:
-   `bandgap_core.gds` extracts to **12 disconnected nets** for its 3 `pfet`
-   devices' worth of terminals (one net per terminal, no merging across
-   instances) against the schematic's 8 named nets, several of which
-   (`vdd`, `fb`, `vss`) are shared across multiple devices in the netlist
-   but never physically joined in the drawn geometry. This is exactly what
-   issue #11 documented building — a labeled floorplan/device-placement
-   layout, not a routed one (see "What this layout is / is not" above,
-   and #11's own acceptance criteria) — so it is a real, pre-existing,
-   already-disclosed limitation of the layout this issue verifies against,
-   not something #12 introduced or should silently paper over. Filed as a
-   design-specific follow-up in *this* repo (not `klayout-tools` — this is
-   about wiring up the layout, not a tool gap):
-   [#20](https://github.com/2AMLogic/sg13g2-bandgap/issues/20).
+2. **New finding: the same curated deck declares no well/substrate-tap
+   layer at all** (`EXTRACTION_DECK.tap = None`, `well_label = None`, and
+   — unlike `klt`'s own `gf180mcu.py` deck, which derives an equivalent tap
+   region from its `tap_nplus`/`tap_pplus` implant layers per issue #1084 —
+   `sg13g2.py` declares **no** `tap_nplus`/`tap_pplus` fallback either).
+   Concretely, per `klt extract`'s own output against the routed
+   `bandgap_core.gds`: every `pfet`'s body terminal extracts to its own
+   **anonymous, per-device** net (`$11`/`$12`/`$13` — three *separate*
+   floating nets, one per instance, flagged by extract's own
+   `unbiased_pmos_body_nets`/`device.body_unverified` warning), never the
+   schematic's real, shared `vdd` well tie
+   (`XM1 sns1 fb vdd vdd sg13_hv_pmos ...` — the 4th terminal is `vdd`,
+   same as the source). In `bandgap_startup`, both `nfet` bodies extract to
+   a *shared* but still wrong net — `klt`'s deck-synthesized global
+   `vsubs` fallback (`connect_global`), not the schematic's real
+   body-tied-to-`vss` (`MSENSE det sns1 vss vss nfet ...` — 4th terminal
+   `vss`, same as source). Either way this is a genuine **structural**
+   difference between the two netlists' MOS device signatures (the body
+   terminal is part of `NetlistComparer`'s 4-terminal MOS match), not an
+   artifact of this issue's routing — no amount of additional `Metal1`/
+   `Via1` wiring changes what `klt extract` assigns as a MOS body net, since
+   the assignment is a property of the extraction deck's own declared
+   fields, not the drawn geometry. **Filed generically against
+   `klayout-tools`**, per `CLAUDE.md`'s friction protocol:
+   [klayout-tools#1273](https://github.com/2AMLogic/klayout-tools/issues/1273).
+3. **New finding, `bandgap_core` only: a genuine device-symmetry ambiguity
+   cause 1 exposes.** `M1`/`M2`/`M3` are drawn with *identical* `w`/`l`
+   (`10u`/`1u`) and identical `source`/`gate` nets (`vdd`/`fb`); the only
+   thing that structurally distinguishes them in the *real* schematic is
+   which downstream bipolar/resistor device each one's drain net connects
+   to (`M1`→`Q1` directly, `M2`→`R2`→`Q2`, `M3`→`R1`→`Q3`) — devices cause
+   1 above makes invisible to the layout-side extraction. With those
+   devices gone, the layout's own extracted netlist has a real graph
+   automorphism: swapping any pair of `{M1, M2, M3}` (and their drain
+   nets) produces an indistinguishable netlist, so no structural,
+   name-independent matcher can uniquely pair, say, layout `$1` to
+   reference `M1` specifically rather than `M2` or `M3`. Verified directly,
+   not just inferred: adding explicit `hints.same_nets` pairings (`klt
+   lvs`'s own mechanism for exactly this situation, `docs/cli/lvs.md`
+   "Hints") for `vdd`/`sns1`/`sns2`/`vref` (and separately, for
+   `bandgap_startup`'s asymmetric `MSENSE`/`MKFB` pair, `det`/`fb`) still
+   produced `hints.rejected` for every declared pairing, each run also
+   reporting `net.merged`/`net.split` findings — the comparer's own
+   evidence that a *different*, conflicting correspondence is equally
+   valid under the layout's own (more symmetric) graph structure. This
+   confirms the ambiguity is real, not a hint-application mistake, and
+   that cause 2 above (the body-net gap) alone is already sufficient to
+   block a clean match even on `bandgap_startup`'s asymmetric device pair,
+   independent of this symmetry issue. Not filed against `klayout-tools` —
+   this is a consequence of cause 1 (already filed, out of scope) combined
+   with this specific circuit's own topology, not a `klt` capability gap.
 
-Net effect: even the 3 MOS devices the deck *does* recognise on both sides
+Net effect: even the MOS devices the deck *does* recognise on both sides
 (`pfet` `M1`/`M2`/`M3` in `bandgap_core`; `nfet` `MSENSE`/`MKFB` in
-`bandgap_startup`) show as `device.unmatched` too — not because the device
-recognition itself is wrong (same class, same L/W on both sides), but
-because `NetlistComparer`'s topology match has no surrounding net structure
-to anchor a pairing on, given cause 2 above. `status: "mismatch"` is
-reported honestly rather than claimed clean or silently downgraded to
-warnings — per `CLAUDE.md`, "Verification is the product": this repo's DRC
-result is a genuine pass; its LVS result is a genuine, fully-explained
-fail, not fabricated evidence either way.
+`bandgap_startup`) still show as `device.unmatched` — not because #20's
+routing is wrong (it is verified correct, per the `klt extract` net counts
+above), but because of causes 2 and 3, both newly diagnosed here and both
+outside this repo's control. `status: "mismatch"` is reported honestly
+rather than claimed clean or silently downgraded to warnings — per
+`CLAUDE.md`, "Verification is the product": this repo's DRC result is a
+genuine pass; its LVS result is a genuine, fully-explained fail, not
+fabricated evidence either way. Reaching a clean MOS-device-level LVS match
+for `bandgap_startup` is blocked purely on `klayout-tools`#1273 (well/
+substrate-tap modelling for `sg13g2`) landing upstream; `bandgap_core` needs
+#1273 *and* whatever further downstream effect cause 3's symmetry ambiguity
+has once #1273 lands (not re-testable until then) — neither is further
+work available in this repo today.

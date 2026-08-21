@@ -6,22 +6,22 @@
   "top": "bandgap_startup",
   "parameter_tolerance": null,
   "status": "mismatch",
-  "mismatch_count": 18,
-  "error_count": 16,
+  "mismatch_count": 16,
+  "error_count": 14,
   "category_counts": {
     "device.body_unverified": 1,
     "device.unmatched": 3,
-    "net.unmatched": 12,
+    "net.unmatched": 10,
     "topology": 2
   },
   "category_error_counts": {
     "device.unmatched": 3,
-    "net.unmatched": 12,
+    "net.unmatched": 10,
     "topology": 1
   },
   "counts": {
     "nets": {
-      "layout": 7,
+      "layout": 5,
       "reference": 5,
       "matched": 0
     },
@@ -31,9 +31,9 @@
       "matched": 0
     },
     "pins": {
-      "layout": 1,
+      "layout": 4,
       "reference": 0,
-      "matched": 1
+      "matched": 4
     }
   },
   "device_classes": [
@@ -43,7 +43,7 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.10",
-    "layout_sha256": "76db3623f994da21048828711499a14d306af091acfe22a4fc064e1a9a9545c0",
+    "layout_sha256": "6e3e9c908d68c45fcdcc99eef12bb2c883d95dc21e187617308cf77406f3fa3e",
     "reference_sha256": "f415ece0c06bb6db24615cb54fe19300928001eb641162633b2c2c5807454796",
     "extracted_netlist": null
   },
@@ -132,54 +132,6 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "\\$1",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "layout net has no reference counterpart",
-      "side": "layout",
-      "net": {
-        "layout": "\\$2",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "layout net has no reference counterpart",
-      "side": "layout",
-      "net": {
-        "layout": "\\$3",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "layout net has no reference counterpart",
-      "side": "layout",
-      "net": {
         "layout": "\\$4",
         "reference": null
       },
@@ -196,7 +148,7 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "\\$5",
+        "layout": "det",
         "reference": null
       },
       "device": null,
@@ -212,7 +164,23 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "\\$6",
+        "layout": "fb",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "error",
+      "description": "layout net has no reference counterpart",
+      "side": "layout",
+      "net": {
+        "layout": "vss",
         "reference": null
       },
       "device": null,

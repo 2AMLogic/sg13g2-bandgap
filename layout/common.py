@@ -54,6 +54,23 @@ L_EMWIND = (33, 0)
 L_POLYRES = (128, 0)
 L_POLYRES_LABEL = (128, 1)
 L_TEXT = (63, 0)
+# Real net-name text layers for `klt lvs`'s `EXTRACTION_DECK.metal_labels`
+# (`klayout_tools.decks.sg13g2.EXTRACTION_DECK`: `metal_labels=((8, 25),
+# (10, 25))`) -- **not** the same as `L_METAL1_LABEL`/`L_METAL2_LABEL`
+# above ((8, 1)/(10, 1), "Metal1.label"/"Metal2.label" in sg13g2.lyp's own
+# layer table), which are a *different*, purely-informational GDS
+# text-layer convention `klt extract` does not read for net naming --
+# confirmed by running `klt extract` against the pre-routing GDS and
+# observing layer 8/1 and 10/1 both reported under `ignored_layers`, while
+# every extracted net came back as an auto-generated `$N` name rather than
+# the schematic net name the drawn `Metal1.label`/`Metal2.label` text
+# already carried (issue #20's own routing gap: no physical wiring *and*
+# labels on a layer the deck's own device/net-naming pass does not consult).
+# `sg13g2.lyp`'s own `<source>` entries confirm the numbering: `Metal1.text`
+# is `8/25`, `Metal2.text` is `10/25` (distinct from `Metal1.label`/
+# `Metal2.label`'s `8/1`/`10/1`).
+L_METAL1_TEXT = (8, 25)
+L_METAL2_TEXT = (10, 25)
 
 LAYER_NAMES: dict[tuple[int, int], str] = {
     L_ACTIV: "Activ.drawing",
@@ -76,6 +93,8 @@ LAYER_NAMES: dict[tuple[int, int], str] = {
     L_POLYRES: "PolyRes.drawing",
     L_POLYRES_LABEL: "PolyRes.label",
     L_TEXT: "TEXT.drawing",
+    L_METAL1_TEXT: "Metal1.text",
+    L_METAL2_TEXT: "Metal2.text",
 }
 
 # npn13G2's own emitter-stripe pitch and unit emitter-window size, read
@@ -145,7 +164,7 @@ def draw_npn13g2(
     collector_net: str,
     base_net: str,
     emitter_net: str,
-) -> float:
+) -> dict:
     """Draw a simplified ``npn13G2`` footprint at ``Nx`` emitter multiplicity.
 
     Faithfully replicates the *one* geometric fact this issue's tooling-
@@ -162,8 +181,24 @@ def draw_npn13g2(
     of the pcell's full ~15-layer stackup (base poly, STI, nSD block
     polygon, thermal pseudo-layer, etc. are omitted) -- see
     ``layout/README.md`` "What this layout is / is not" for the explicit
-    scope of the simplification. Returns the drawn cell's total width (um),
-    for the caller's own floorplanning.
+    scope of the simplification.
+
+    Each metal terminal is labeled twice: once on ``Metal1.label``/
+    ``Metal2.label`` (``(8, 1)``/``(10, 1)``, purely informational -- the
+    original convention this module shipped with, issue #11) and once on
+    ``Metal1.text``/``Metal2.text`` (``(8, 25)``/``(10, 25)``), the layer
+    `klt`'s ``sg13g2`` curated deck's ``EXTRACTION_DECK.metal_labels``
+    actually reads for net naming (issue #20 -- see ``layout/common.py``'s
+    own module-level comment on ``L_METAL1_TEXT``/``L_METAL2_TEXT`` for how
+    this was confirmed).
+
+    Returns a dict of this device's terminal geometry (each a ``(x0, y0,
+    x1, y1)`` box in microns, plus ``"width"`` in microns), for
+    ``issue #20``'s routing pass (each cell's own ``generate.py``) to wire
+    up against the shared nets the schematic declares -- this drawing
+    function itself draws no wiring *between* devices, only the one
+    device's own footprint and terminal pads (see ``layout/README.md``
+    "What this layout is / is not").
     """
     stretch_x = HBT_STEP_X_UM * (nx - 1)
     x_lo = x0 - HBT_MARGIN_X_UM
@@ -196,15 +231,28 @@ def draw_npn13g2(
     # Collector rail (top), base rail (bottom), emitter rail (Metal2, over
     # the emitter windows) -- one each, spanning the full stripe row, per
     # the pcell's own single collector-metal / base-metal / Metal2 rects.
-    b.box(L_METAL1, x_lo, y_hi - 0.9, x_hi, y_hi - 0.5)
+    collector_pad = (x_lo, y_hi - 0.9, x_hi, y_hi - 0.5)
+    b.box(L_METAL1, *collector_pad)
     b.label(L_METAL1_LABEL, f"{collector_net}", x0, y_hi - 0.7)
-    b.box(L_METAL1, x_lo, y_lo + 0.5, x_hi, y_lo + 0.9)
+    b.label(L_METAL1_TEXT, collector_net, x0, y_hi - 0.7)
+
+    base_pad = (x_lo, y_lo + 0.5, x_hi, y_lo + 0.9)
+    b.box(L_METAL1, *base_pad)
     b.label(L_METAL1_LABEL, f"{base_net}", x0, y_lo + 0.7)
-    b.box(L_METAL2, x_lo + 0.3, y0 - EMITTER_LE_UM / 2 - 0.3, x_hi - 0.3, y0 + EMITTER_LE_UM / 2 + 0.3)
+    b.label(L_METAL1_TEXT, base_net, x0, y_lo + 0.7)
+
+    emitter_pad = (x_lo + 0.3, y0 - EMITTER_LE_UM / 2 - 0.3, x_hi - 0.3, y0 + EMITTER_LE_UM / 2 + 0.3)
+    b.box(L_METAL2, *emitter_pad)
     b.label(L_METAL2_LABEL, f"{emitter_net}", x0, y0)
+    b.label(L_METAL2_TEXT, emitter_net, x0, y0)
 
     b.label(L_TEXT, f"{name}(npn13G2,Nx={nx})", x0, y_hi + 0.6)
-    return x_hi - x_lo
+    return {
+        "width": x_hi - x_lo,
+        "collector_pad": collector_pad,
+        "base_pad": base_pad,
+        "emitter_pad": emitter_pad,
+    }
 
 
 def draw_hv_mos(
@@ -218,7 +266,7 @@ def draw_hv_mos(
     gate_net: str,
     source_net: str,
     drain_net: str,
-) -> float:
+) -> dict:
     """Draw a simplified ``sg13_hv_{n,p}mos`` footprint (Activ+GatPoly+Cont).
 
     A generic single-finger MOS footprint (not read from a PDK PyCell source
@@ -229,7 +277,25 @@ def draw_hv_mos(
     the real ``w``/``l`` the schematic instances (``M1``/``M2``/``M3``:
     ``w=10u l=1u``; startup's ``MSENSE``/``MKFB``: ``w=2u l=0.5u``), with an
     ``NWell`` enclosure drawn for ``flavor='pmos'`` (SG13G2 PMOS is an
-    n-well device, same as every PDK in the fleet). Returns drawn width (um).
+    n-well device, same as every PDK in the fleet).
+
+    Source/drain terminals are labeled twice (``Metal1.label`` (8,1) for
+    the original visual convention, ``Metal1.text`` (8,25) for `klt`'s real
+    net-naming layer -- see ``draw_npn13g2``'s docstring for why). The gate
+    terminal has no such second label: this curated deck declares no
+    ``poly_label`` layer at all (``EXTRACTION_DECK.poly_label=None``), so a
+    gate net's *name* can only come from a Metal1 pad it is wired to (see
+    ``bandgap_startup/generate.py``'s ``draw_gate_tab`` use for ``det``) or,
+    when a gate net's only members are other gates (``bandgap_core``'s
+    ``fb``), it is never named at all -- LVS topology matching does not
+    require it.
+
+    Returns a dict of this device's terminal geometry (each a ``(x0, y0,
+    x1, y1)`` box in microns; ``"gate_box"`` is the drawn ``GatPoly``
+    rectangle, ``"gate_y_lo"``/``"gate_y_hi"`` the channel-length band a
+    routing pass can safely widen a connecting poly bar within; plus
+    ``"width"`` in microns), for issue #20's routing pass to use -- see
+    ``draw_npn13g2``'s docstring for the same convention.
     """
     ext = 0.4
     x_lo = x0 - w_um / 2
@@ -238,7 +304,8 @@ def draw_hv_mos(
     y_hi = y0 + (l_um / 2 + ext)
 
     b.box(L_ACTIV, x_lo, y_lo, x_hi, y_hi)
-    b.box(L_GATPOLY, x_lo - 0.1, y0 - l_um / 2, x_hi + 0.1, y0 + l_um / 2)
+    gate_box = (x_lo - 0.1, y0 - l_um / 2, x_hi + 0.1, y0 + l_um / 2)
+    b.box(L_GATPOLY, *gate_box)
     b.label(L_GATPOLY_LABEL, gate_net, x0, y0)
 
     if flavor == "pmos":
@@ -251,15 +318,26 @@ def draw_hv_mos(
     # margin/rationale as draw_npn13g2's own Cont boxes above -- widening
     # only the edge closer to the gate, still fully inside the Metal1 pad).
     b.box(L_CONT, x_lo + 0.15, y_hi - 0.28, x_hi - 0.15, y_hi - 0.1)
-    b.box(L_METAL1, x_lo, y_hi - 0.35, x_hi, y_hi)
+    source_pad = (x_lo, y_hi - 0.35, x_hi, y_hi)
+    b.box(L_METAL1, *source_pad)
     b.label(L_METAL1_LABEL, source_net, x0, y_hi - 0.15)
+    b.label(L_METAL1_TEXT, source_net, x0, y_hi - 0.15)
 
     b.box(L_CONT, x_lo + 0.15, y_lo + 0.1, x_hi - 0.15, y_lo + 0.28)
-    b.box(L_METAL1, x_lo, y_lo, x_hi, y_lo + 0.35)
+    drain_pad = (x_lo, y_lo, x_hi, y_lo + 0.35)
+    b.box(L_METAL1, *drain_pad)
     b.label(L_METAL1_LABEL, drain_net, x0, y_lo + 0.15)
+    b.label(L_METAL1_TEXT, drain_net, x0, y_lo + 0.15)
 
     b.label(L_TEXT, f"{name}({flavor} w={w_um}u l={l_um}u)", x0, y_hi + 0.6)
-    return x_hi - x_lo
+    return {
+        "width": x_hi - x_lo,
+        "source_pad": source_pad,
+        "drain_pad": drain_pad,
+        "gate_box": gate_box,
+        "gate_y_lo": y0 - l_um / 2,
+        "gate_y_hi": y0 + l_um / 2,
+    }
 
 
 def draw_poly_res(
@@ -272,7 +350,7 @@ def draw_poly_res(
     y0: float,
     end_a_net: str,
     end_b_net: str,
-) -> float:
+) -> dict:
     """Draw a straight (unfolded) ``rppd``/``rhigh`` resistor body.
 
     Sized to the schematic's own committed ``w``/``l`` (``rppd`` R1/R2,
@@ -284,19 +362,147 @@ def draw_poly_res(
     ``design/bandgap_core.sch``'s own header) sizing, not a claim that this
     is how the resistor would actually be folded for a compact final
     layout. See ``layout/README.md`` "What this layout is / is not".
-    Returns drawn length (um).
+
+    End-pad terminals are labeled twice, same convention as
+    ``draw_npn13g2``/``draw_hv_mos`` above (``PolyRes.label``/(8,1) plus the
+    real net-naming ``Metal1.text``/(8,25)).
+
+    Returns a dict of this device's terminal geometry (``"end_a_pad"``/
+    ``"end_b_pad"``, each a ``(x0, y0, x1, y1)`` Metal1 box in microns;
+    ``"length"`` in microns), for issue #20's routing pass.
     """
     x_hi = x0 + l_um
     b.box(L_POLYRES, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
     b.label(L_POLYRES_LABEL, f"{name}", (x0 + x_hi) / 2, y0)
 
+    end_a_pad = (x0 - 0.2, y0 - w_um / 2 - 0.1, x0 + min(0.3, l_um / 4), y0 + w_um / 2 + 0.1)
     b.box(L_CONT, x0, y0 - w_um / 2, x0 + min(0.3, l_um / 4), y0 + w_um / 2)
-    b.box(L_METAL1, x0 - 0.2, y0 - w_um / 2 - 0.1, x0 + min(0.3, l_um / 4), y0 + w_um / 2 + 0.1)
+    b.box(L_METAL1, *end_a_pad)
     b.label(L_METAL1_LABEL, end_a_net, x0, y0 + w_um / 2 + 0.4)
+    b.label(L_METAL1_TEXT, end_a_net, x0, y0 + w_um / 2 + 0.4)
 
+    end_b_pad = (x_hi - min(0.3, l_um / 4), y0 - w_um / 2 - 0.1, x_hi + 0.2, y0 + w_um / 2 + 0.1)
     b.box(L_CONT, x_hi - min(0.3, l_um / 4), y0 - w_um / 2, x_hi, y0 + w_um / 2)
-    b.box(L_METAL1, x_hi - min(0.3, l_um / 4), y0 - w_um / 2 - 0.1, x_hi + 0.2, y0 + w_um / 2 + 0.1)
+    b.box(L_METAL1, *end_b_pad)
     b.label(L_METAL1_LABEL, end_b_net, x_hi, y0 + w_um / 2 + 0.4)
+    b.label(L_METAL1_TEXT, end_b_net, x_hi, y0 + w_um / 2 + 0.4)
 
     b.label(L_TEXT, f"{name}({flavor} w={w_um}u l={l_um}u)", (x0 + x_hi) / 2, y0 - w_um / 2 - 0.8)
-    return l_um
+    return {"length": l_um, "end_a_pad": end_a_pad, "end_b_pad": end_b_pad}
+
+
+# --------------------------------------------------------------------------- #
+# Routing primitives (issue #20) -- top-level Metal1/Metal2/Via1 wiring
+# connecting the terminal pads the three ``draw_*`` functions above return,
+# to the shared nets ``design/netlist/bandgap_core.spice``/
+# ``bandgap_startup.spice`` declare. Each cell's own ``generate.py`` calls
+# these directly with its own net map (see each file's module docstring)
+# rather than this module owning a generic net-list-driven autorouter --
+# the two cells' floorplans are different enough (row/column layout vs.
+# devices spread across a >1mm resistor bar) that a bespoke per-net call
+# sequence is clearer than a one-size-fits-all algorithm here.
+# --------------------------------------------------------------------------- #
+
+
+def route_h(b: Builder, layer: tuple[int, int], y_center: float, x0: float, x1: float, width: float = 0.3) -> None:
+    """Draw a horizontal routing bar on ``layer`` at ``y_center``, spanning
+    ``[x0, x1]`` (order-independent), ``width`` microns tall. Used to tie
+    together terminal pads that already share a Y-band (e.g. every ``vdd``
+    MOS source pad in ``bandgap_core``) or as one leg of an L-shaped route.
+    """
+    half = width / 2
+    b.box(layer, min(x0, x1), y_center - half, max(x0, x1), y_center + half)
+
+
+def route_v(b: Builder, layer: tuple[int, int], x_center: float, y0: float, y1: float, width: float = 0.3) -> None:
+    """Draw a vertical routing bar on ``layer`` at ``x_center``, spanning
+    ``[y0, y1]`` (order-independent), ``width`` microns wide -- the
+    vertical-leg counterpart of :func:`route_h`.
+    """
+    half = width / 2
+    b.box(layer, x_center - half, min(y0, y1), x_center + half, max(y0, y1))
+
+
+def via1_tap(b: Builder, x_center: float, y_center: float, size: float = 0.25) -> None:
+    """Drop a square ``Via1`` landing at ``(x_center, y_center)``, bridging
+    an already-overlapping ``Metal1`` shape below to an already-overlapping
+    ``Metal2`` shape above (the caller is responsible for ensuring both
+    metal shapes actually cover this footprint -- this only draws the via
+    cut itself). ``size=0.25`` clears the curated deck's ``via1.width.1``
+    floor (0.19um) with margin, and (with the default ``route_h``/
+    ``route_v`` width of 0.3) leaves >=0.01um `Metal1`/`Metal2` enclosure
+    on every side, clearing ``metal1.enclosing.via1.1`` (0.01um; this deck
+    does not model a Metal2-encloses-Via1 rule at all -- see
+    ``klayout_tools.decks.sg13g2``'s own ``DECK`` list).
+    """
+    half = size / 2
+    b.box(L_VIA1, x_center - half, y_center - half, x_center + half, y_center + half)
+
+
+def draw_gate_tab(
+    b: Builder,
+    edge_x: float,
+    y_center: float,
+    net: str,
+    side: str,
+    reach: float = 0.7,
+    pad_w: float = 0.4,
+    tab_h: float = 0.34,
+    cont_size: float = 0.16,
+) -> tuple[float, float, float, float]:
+    """Extend a ``GatPoly`` gate edge with a poly tab + ``Cont`` + ``Metal1``
+    pad, bringing an otherwise metal-inaccessible gate net out to Metal1 for
+    routing to a *non*-gate terminal elsewhere (contrast ``bandgap_core``'s
+    ``fb`` net, routed gate-to-gate directly on ``GatPoly`` with no tab at
+    all -- see that cell's ``generate.py``). Needed by
+    ``bandgap_startup``'s ``MKFB.gate`` (``det``), which must reach
+    ``RPU.end_b``/``MSENSE.source`` -- both Metal1 pads.
+
+    ``edge_x`` is the existing gate rectangle's own edge (its drawn
+    ``GatPoly`` box's left or right X coordinate, e.g. ``draw_hv_mos``'s
+    returned ``"gate_box"`` entry); ``side='right'`` extends the tab from
+    that edge in +x, ``side='left'`` in -x. The ``Cont``/``Metal1`` pad is
+    placed in the tab's *outer* ``pad_w`` microns (away from ``edge_x``),
+    not flush against it -- so the new Metal1 pad clears
+    ``metal1.space.1``'s 0.18um floor against whatever Metal1 the original
+    device already drew close to that same gate edge (e.g. MKFB's own
+    ``fb``-net source pad sits only 0.1um past the bare gate edge; flush
+    tab placement would put the two different-net Metal1 shapes 0.1um
+    apart, a real violation -- pushing the pad out by ``reach - pad_w``
+    first clears it, verified by this issue's own ``klt drc`` re-run).
+
+    Default sizing clears every DRC rule this issue's routing exercises:
+    ``tab_h=0.34``/``cont_size=0.16`` gives a symmetric 0.09um ``GatPoly``-
+    encloses-``Cont`` margin (``gatpoly.enclosing.cont.1`` floor: 0.07um);
+    ``pad_w=0.4``/``cont_size=0.16`` gives the same 0.12um margin in the
+    other axis. A poly-only ``Cont`` (no ``Activ`` underneath) is exempt
+    from ``activ.enclosing.cont.1`` by construction -- that rule's
+    ``other_region.interacting(region)`` pre-filter only flags ``Cont``
+    shapes that already touch ``Activ`` somewhere (see
+    ``klayout_tools.drc._run_check``'s own docstring), which this tab's
+    ``Cont`` never does.
+
+    Returns the drawn Metal1 pad's ``(x0, y0, x1, y1)`` box for the
+    caller's own routing.
+    """
+    if side == "right":
+        tab_x0, tab_x1 = edge_x, edge_x + reach
+        pad_x0, pad_x1 = edge_x + reach - pad_w, edge_x + reach
+    elif side == "left":
+        tab_x0, tab_x1 = edge_x - reach, edge_x
+        pad_x0, pad_x1 = edge_x - reach, edge_x - reach + pad_w
+    else:
+        raise ValueError(f"side must be 'left' or 'right', got {side!r}")
+
+    y0, y1 = y_center - tab_h / 2, y_center + tab_h / 2
+    b.box(L_GATPOLY, tab_x0, y0, tab_x1, y1)
+
+    cont_margin_x = (pad_w - cont_size) / 2
+    cont_margin_y = (tab_h - cont_size) / 2
+    b.box(L_CONT, pad_x0 + cont_margin_x, y0 + cont_margin_y, pad_x1 - cont_margin_x, y1 - cont_margin_y)
+
+    pad = (pad_x0, y0, pad_x1, y1)
+    b.box(L_METAL1, *pad)
+    b.label(L_METAL1_LABEL, net, (pad_x0 + pad_x1) / 2, y_center)
+    b.label(L_METAL1_TEXT, net, (pad_x0 + pad_x1) / 2, y_center)
+    return pad
