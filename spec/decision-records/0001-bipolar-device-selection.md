@@ -138,6 +138,18 @@ sibling repo's error budget had to plan for.
   §7, tooling-friction item 3). If `pnpMPA` is used instead (as fallback),
   the sky130-style array constraint re-applies, since `pnpMPA`'s fixed
   area/perimeter parameters offer no equivalent multiplier.
+  **Update (issue #11)**: the layout-pcell fact above is now confirmed, not
+  merely suspected — `npn13G2`'s native KLayout PyCell
+  (`sg13g2_pycell_lib/ihp/npn13G2_code.py`) does draw `Nx` real,
+  independently-placed emitter stripes on a fixed pitch (not a SPICE-only
+  scaling trick). Separately, `pnpMPA`'s own layout PyCell
+  (`pnpMPA_code.py`) was read directly and found to expose layout pins
+  named `PLUS`/`MINUS`/`TIE` — a diode-style 2-terminal-plus-tie structure,
+  not named/topologically matching the `collector`/`base`/`emitter`
+  3-terminal schematic symbol (`pnpMPA.sym`) at all. This strengthens (does
+  not change) this record's choice of `pnpMPA` as fallback-only: promoting
+  it to primary would first require resolving that pin-mapping mismatch.
+  Full detail: `layout/README.md` "Tooling-friction findings".
 - **The HBT matching coefficient needed for an untrimmed-accuracy budget
   (`σ(dVBE) = k·A^-0.5`, process-spec condition `A.al`) is not published in
   the process-spec table itself** and must be pulled from
