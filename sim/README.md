@@ -125,6 +125,26 @@ review, the same way `spec/decision-records/`'s append-only rule is.
   (widening `bandgap_startup`'s `XMSENSE`,
   [decision record 0003](../spec/decision-records/0003-startup-sense-nmos-resize.md))
   post-fix, across the same 45-point PVT grid.
+- **[`core-open-loop-bias-pex/`](core-open-loop-bias-pex/README.md)** and
+  **[`startup-trip-point-pex/`](startup-trip-point-pex/README.md)** — issue
+  #14's post-layout (PEX) counterparts to the first two experiments above:
+  same claims, same 45-point PVT grids, but the MOS devices' geometry comes
+  from `klt extract --deck sg13g2 --parasitics` against the routed
+  `layout/bandgap_core/bandgap_core.gds` /
+  `layout/bandgap_startup/bandgap_startup.gds`, not the schematic. Both
+  read the pre-layout (schematic-only) records above unchanged — this is
+  new, additional evidence, not a replacement. Each README states in full
+  what the extraction does and does not model (bipolar/resistor devices
+  are not recognised by the sg13g2 deck and are schematic-sourced;
+  wire parasitics are zero — the deck's own R/C coefficient tables are
+  empty for this layout's metal levels). `startup-trip-point-pex`'s own
+  cross-bench comparison against `core-open-loop-bias-pex` additionally
+  found that `layout/bandgap_startup.gds` still draws `XMSENSE` at the
+  pre-decision-record-0003 `w=2u` (the schematic was widened to `w=10u`,
+  the layout never regenerated to match) — reproducing decision record
+  0003's exact same 4-point, 125 °C margin bug at the layout level; see
+  that experiment's README for the full writeup and the filed follow-up
+  issue.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 
@@ -242,3 +262,18 @@ gap — `klt` resolves PDK *paths*; it does not compile or vendor simulator
 device models. Per `CLAUDE.md`'s friction protocol, that means it belongs
 here (issue #22), not on the `klayout-tools` tracker, which is exactly
 where `design/README.md` already placed it.
+
+### Platform note (linux, x86_64)
+
+Verified working for the first time in issue #14, with a similar but
+distinct fix needed: the pinned `openvaf-r-v24.0.1mob-linux-x86_64` release
+ships `lib/libLLVM.so.21.1` as a **dangling symlink** to
+`../../x86_64-linux-gnu/libLLVM.so.21.1` — unlike the macOS bundle (which
+ships the real `dylib`), the Linux release assumes the *host* provides a
+system-installed LLVM 21, which no current Ubuntu LTS ships as a package
+(24.04/noble tops out at `libllvm20`). `build-osdi.sh` does not yet detect
+or work around this — see [issue #31](https://github.com/2AMLogic/sg13g2-bandgap/issues/31)
+for the tracked fix (a verified-working `LD_LIBRARY_PATH` pointed at the
+real `libLLVM.so.21.1`, extracted without root from apt.llvm.org's
+`libllvm21` package for noble; full details and the exact checksum in
+`sim/pdk.json`'s `osdi_toolchain.platform_actually_exercised`).

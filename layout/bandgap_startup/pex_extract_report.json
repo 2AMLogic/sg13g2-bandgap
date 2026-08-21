@@ -1,0 +1,213 @@
+{
+  "schema_version": 2,
+  "file": "bandgap_startup.gds",
+  "deck": "sg13g2",
+  "top": "bandgap_startup",
+  "dbu_um": 0.001,
+  "netlist_path": "bandgap_startup.pex.spice",
+  "netlist_sha256": "757c06db09e1a908ac6a8a4c40356944434a1c6033d9d2b239d4608284df9fd0",
+  "status": "extracted",
+  "device_count": 2,
+  "net_count": 5,
+  "pin_count": 4,
+  "device_counts": {
+    "nfet": 2
+  },
+  "dummy_devices_dropped": 0,
+  "ignored_layers": [
+    {
+      "layer": 5,
+      "datatype": 1,
+      "shapes": 2
+    },
+    {
+      "layer": 7,
+      "datatype": 0,
+      "shapes": 2
+    },
+    {
+      "layer": 8,
+      "datatype": 1,
+      "shapes": 7
+    },
+    {
+      "layer": 63,
+      "datatype": 0,
+      "shapes": 3
+    },
+    {
+      "layer": 128,
+      "datatype": 0,
+      "shapes": 1
+    },
+    {
+      "layer": 128,
+      "datatype": 1,
+      "shapes": 1
+    }
+  ],
+  "device_recognition_only_layers": [],
+  "device_classes": [
+    "nfet",
+    "pfet"
+  ],
+  "devices": [
+    {
+      "name": "$1",
+      "class": "nfet",
+      "nets": {
+        "s": "vss",
+        "g": "\\$4",
+        "d": "det",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 2.0,
+        "as_um2": 0.8,
+        "ad_um2": 0.8,
+        "ps_um": 4.8,
+        "pd_um": 4.8
+      }
+    },
+    {
+      "name": "$2",
+      "class": "nfet",
+      "nets": {
+        "s": "vss",
+        "g": "det",
+        "d": "fb",
+        "b": "vsubs"
+      },
+      "params": {
+        "l_um": 0.5,
+        "w_um": 2.0,
+        "as_um2": 0.8,
+        "ad_um2": 0.8,
+        "ps_um": 4.8,
+        "pd_um": 4.8
+      }
+    }
+  ],
+  "nets": [
+    {
+      "name": "\\$4",
+      "pin": false,
+      "device_count": 1
+    },
+    {
+      "name": "det",
+      "pin": true,
+      "device_count": 2
+    },
+    {
+      "name": "fb",
+      "pin": true,
+      "device_count": 1
+    },
+    {
+      "name": "vss",
+      "pin": true,
+      "device_count": 2
+    },
+    {
+      "name": "vsubs",
+      "pin": true,
+      "device_count": 2
+    }
+  ],
+  "warnings": [
+    "1 routing-stack cluster (1 shape on 8/0) join no extracted net -- no via lands on this geometry and no same-layer wiring touches it, so it is invisible to the extracted netlist and to every downstream `klt lvs`/`klt sim` view; deliberate dead metal (artwork, fill) is expected here, unexplained dead metal usually means the connection you intended is missing -- see dead_metal[] for the per-cluster layer/bbox/shape count.",
+    "1 net connect to exactly one device terminal -- a MOS gate -- and are not a declared pin: these gates have no DC path from anywhere else in the netlist, so they are almost certainly unconnected inputs rather than legitimate floating nodes; resimulating this netlist directly will hit a singular matrix on these nets -- see single_terminal_nets[] for the full list.",
+    "6 layers (5/1, 7/0, 8/1, 63/0, 128/0, 128/1) carrying 16 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation.",
+    "'sg13g2' deck's PARASITICS.metals has no R/C coefficient for Metal1, Metal2 -- --parasitics reports zero resistance and capacitance for that metal level on every net, understating the true value. See docs/cli/extract.md's 'Parasitic (RC) extraction' section.",
+    "'sg13g2' deck's PARASITICS.metal_overlaps has no vertical-overlap coupling coefficient for Metal1/Metal2 -- --parasitics reports zero net-to-net coupling capacitance for that adjacent metal-level pair, understating the true value (the corresponding area still charges to ground, unlike a pair with a curated coefficient). See docs/cli/extract.md's 'Parasitic (RC) extraction' section."
+  ],
+  "black_box_regions": [],
+  "abstracted_cells": [],
+  "unmodelled_poly": [],
+  "merged_net_labels": [],
+  "voltage_domain_warnings": [],
+  "unbiased_pmos_body_nets": [],
+  "single_terminal_nets": [
+    {
+      "net": "\\$4",
+      "device": "$1",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    }
+  ],
+  "dead_metal": [
+    {
+      "role": "metal0",
+      "layer": 8,
+      "datatype": 0,
+      "bbox_um": {
+        "left": -0.2,
+        "bottom": 19.4,
+        "right": 0.3,
+        "top": 20.6
+      },
+      "shapes": 1,
+      "area_um2": 0.6
+    }
+  ],
+  "matched_device_groups": [],
+  "pdk": null,
+  "provenance": {
+    "klt_version": "0.2.0",
+    "klayout_version": "0.30.10",
+    "pdk": null,
+    "deck": {
+      "name": "sg13g2",
+      "content_hash": "sha256:a64d3a7b716b746cefa22a2672184831dd5d17fabfe09abd398e1862b770ee0f"
+    },
+    "input": {
+      "content_hash": "sha256:6e3e9c908d68c45fcdcc99eef12bb2c883d95dc21e187617308cf77406f3fa3e"
+    }
+  },
+  "parasitics": {
+    "r_count": 0,
+    "c_count": 0,
+    "cc_count": 0,
+    "l_count": 0,
+    "total_resistance_ohm": 0.0,
+    "total_capacitance_ff": 0.0,
+    "total_coupling_capacitance_ff": 0.0,
+    "total_inductance_nh": 0.0,
+    "nets": [],
+    "metals_without_coefficient": [
+      {
+        "metal_index": 0,
+        "layer": 8,
+        "datatype": 0
+      },
+      {
+        "metal_index": 1,
+        "layer": 10,
+        "datatype": 0
+      }
+    ],
+    "overlap_pairs_without_coefficient": [
+      {
+        "lower_metal_index": 0,
+        "upper_metal_index": 1,
+        "lower_layer": 8,
+        "lower_datatype": 0,
+        "upper_layer": 10,
+        "upper_datatype": 0
+      }
+    ],
+    "critical_nets": [],
+    "distributed_rc": false,
+    "model": {
+      "capacitance": "net-to-ground for every net's own (non-coupled) area/perimeter, plus net-to-net for the vertical-overlap coupling `coupling` describes below -- a coupled net pair gets a direct capacitor between their two hub nodes, not just capacitors to the deck's ground/substrate net",
+      "coupling": "vertical overlap (crossover) unconditionally -- where one net's conductor on an adjacent metal level sits directly over another *distinct* net's conductor, that overlap area is charged between the two nets instead of to ground (issue #760) -- plus lateral (same-layer, sidewall) coupling, but only for a net pair naming one of the caller's declared `--critical-net` nets (issue #976): facing-edge length within that layer's own minimum-spacing lookback is charged between the two nets, *additively* (not deducted from either net's substrate fringe term, unlike the vertical case -- a known simplification). Any same-layer pair with neither side named `--critical-net`, and fringe shielding in general, are still not modelled",
+      "resistance": "single lumped series resistance per net, distributed as a star across that net's device terminals (issue #592) -- not a per-segment, distributed RC ladder, *unless* `--distributed-rc` names this net via `--critical-net` (issue #977, Epic #709 Phase 2b): then the net's terminals are ordered along their approximate physical spread and its total R/C is broken into a chain of per-segment resistors (segment length proportional to inter-terminal distance) with a ground capacitor at each terminal node (proportional to its adjacent segment length/2), instead of one star hub -- still an approximation (terminal position is a device-placement proxy, not true per-segment routing geometry), but a strictly finer-grained one than the single-hub star",
+      "frequency": "quasi-static -- one frequency-independent R and C per net; no skin effect, no distributed transmission-line behavior"
+    },
+    "mom_crosscheck": null,
+    "mom_rlc_override": null
+  },
+  "spef_path": null
+}

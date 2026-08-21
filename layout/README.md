@@ -20,6 +20,8 @@ layout/
     lvs_reference.spice       generated reference netlist (issue #12)
     drc_report.json           committed klt drc report
     lvs_report.json           committed klt lvs report
+    bandgap_core.pex.spice    klt extract --parasitics output (issue #14)
+    pex_extract_report.json   committed klt extract --format json report
   bandgap_startup/
     generate.py               draws + routes bandgap_startup.gds
     bandgap_startup.gds       committed, deterministic layout
@@ -27,6 +29,8 @@ layout/
     lvs_reference.spice       generated reference netlist (issue #12)
     drc_report.json           committed klt drc report
     lvs_report.json           committed klt lvs report
+    bandgap_startup.pex.spice klt extract --parasitics output (issue #14)
+    pex_extract_report.json   committed klt extract --format json report
 ```
 
 ## Provenance
@@ -438,3 +442,56 @@ substrate-tap modelling for `sg13g2`) landing upstream; `bandgap_core` needs
 #1273 *and* whatever further downstream effect cause 3's symmetry ambiguity
 has once #1273 lands (not re-testable until then) — neither is further
 work available in this repo today.
+
+## Post-layout parasitic extraction (issue #14)
+
+Per this issue's own dependency text, LVS's `mismatch` status above is the
+allowed "explicitly-caveated" extraction input, not a blocker — but every
+caveat above also applies here, plus two more this pass found.
+
+**Extraction succeeded, cleanly, for both cells**:
+
+```bash
+cd layout/bandgap_core
+klt extract --deck sg13g2 --parasitics bandgap_core.gds \
+  -o bandgap_core.pex.spice --format json > pex_extract_report.json
+# same for layout/bandgap_startup/
+```
+
+`status: "extracted"` for both, no errors. `bandgap_core.pex.spice` /
+`bandgap_startup.pex.spice` and their `pex_extract_report.json` companions
+are committed as read-only extraction artifacts — see
+`sim/core-open-loop-bias-pex/README.md` and
+`sim/startup-trip-point-pex/README.md` for the full account of what this
+extraction does and does not model, and the resulting PVT-sweep evidence
+under `sim/`. Two findings from this pass, beyond what's already documented
+above:
+
+1. **New finding: the `sg13g2` deck's own `PARASITICS.metals`/
+   `metal_overlaps` coefficient tables are empty for Metal1 and Metal2** —
+   both `pex_extract_report.json`s' own `warnings` say so directly:
+   *"'sg13g2' deck's PARASITICS.metals has no R/C coefficient for Metal1,
+   Metal2 -- --parasitics reports zero resistance and capacitance for that
+   metal level on every net"*. `--parasitics` runs without error and
+   reports `status: "extracted"`, but `parasitics.r_count` /
+   `parasitics.c_count` are both `0` in every committed report — real
+   drawn device geometry, zero wire parasitics, regardless of layout
+   content. This is a deck-content gap, not specific to this design, so it
+   was **filed generically against `klayout-tools`**
+   ([klayout-tools#1277](https://github.com/2AMLogic/klayout-tools/issues/1277)), per `CLAUDE.md`'s
+   friction protocol.
+2. **New finding: `layout/bandgap_startup/generate.py` draws `XMSENSE` at
+   `w=2u`, stale relative to `design/netlist/bandgap_startup.spice`'s
+   current `w=10u`.** [Decision record
+   0003](../spec/decision-records/0003-startup-sense-nmos-resize.md)
+   (issue #24/PR #29) widened `XMSENSE` in the schematic/netlist only,
+   *after* this layout was drawn (issue #11/PR #19) — the layout was never
+   regenerated to match. `sim/startup-trip-point-pex/README.md`'s
+   "Cross-bench observation" shows this is not a paper cut: re-simulating
+   the as-drawn (`w=2u`) extracted geometry reproduces decision record
+   0003's exact same 4-point, 125 °C startup-release margin bug the
+   schematic-level fix already resolved. This is actionable within this
+   repo (regenerate the layout, not a `klt` gap), so it is **not** filed
+   against `klayout-tools` —
+   [issue #32](https://github.com/2AMLogic/sg13g2-bandgap/issues/32) tracks
+   it instead.
