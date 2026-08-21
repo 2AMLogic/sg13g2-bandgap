@@ -33,7 +33,20 @@ fi
 
 if [[ -n "${PDK_ROOT:-}" && -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
   export SG13G2_NGSPICE_MODELS="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models"
+  # OSDI-compiled Verilog-A device models (PSP103 MOS, r3_cmc resistors).
+  # This directory is where the PDK's own .spiceinit/install.py expect them
+  # and where sim/tools/build-osdi.sh writes them; it does NOT exist in a
+  # freshly-unpacked IHP-Open-PDK v0.3.0 tree, because that release ships
+  # the Verilog-A sources but no prebuilt .osdi binaries. Every testbench
+  # that instantiates a MOS or a resistor loads from here via `pre_osdi`.
+  export SG13G2_OSDI_DIR="${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi"
   echo "sg13g2: PDK_ROOT=${PDK_ROOT} PDK=${PDK}"
+  if [[ ! -f "${SG13G2_OSDI_DIR}/psp103.osdi" || ! -f "${SG13G2_OSDI_DIR}/r3_cmc.osdi" ]]; then
+    echo "sg13g2: OSDI device models not built yet in ${SG13G2_OSDI_DIR}" >&2
+    echo "sg13g2: MOS (sg13_hv_*) and resistor (rppd/rsil/rhigh) devices will not" >&2
+    echo "sg13g2: simulate until they are. Build them with:  sim/tools/build-osdi.sh" >&2
+    echo "sg13g2: (see sim/README.md 'OSDI device models' for why this step exists)." >&2
+  fi
 else
   echo "sg13g2: no ${PDK} install found under PDK_ROOT or the usual prefixes." >&2
   echo "sg13g2: set PDK_ROOT to an open_pdks-shaped IHP-Open-PDK checkout and re-source," >&2
