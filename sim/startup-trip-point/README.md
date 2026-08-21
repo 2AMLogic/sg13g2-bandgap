@@ -64,6 +64,24 @@ models); it is filed as its own design issue, #24. The comparison is also
 cross-bench, not co-simulated — two separate open-loop DC benches — so
 treat it as a strong indication to investigate rather than a verdict.
 
+**Update (issue #24): investigated, confirmed (and widened), and fixed.**
+`sim/startup-core-handover/` co-simulates `bandgap_core` + `bandgap_startup`
+directly (sharing the real `sns1`/`fb` nodes, transient `vdd` ramp) rather
+than comparing two separate DC benches. Against the original sizing above,
+it confirmed the margin problem and found it substantially larger than this
+cross-bench comparison suggested: 12 of 45 points fail full hand-over at
+125 °C (every process corner at that temperature), not just these four,
+because the residual pull-down current self-reinforces through the core's
+own mirror rather than staying a small, static offset. Widening
+`bandgap_startup`'s `XMSENSE` from `w=2u` to `w=10u` (see
+[decision record 0003](../../spec/decision-records/0003-startup-sense-nmos-resize.md))
+fixed it: the `vtrip_v`/`wcs`/`sf` numbers in the table above are from the
+pre-fix sizing and are kept here as the historical finding that motivated
+#24 — the current design's trip point at those same four points now sits
+64-77 mV *below* the core's `sns1` (see this experiment's latest
+`records/*.csv`), and `sim/startup-core-handover`'s own records show 45/45
+points fully releasing post-fix.
+
 ## Fixtures (not device substitutions)
 
 The three DUT devices are copied verbatim from

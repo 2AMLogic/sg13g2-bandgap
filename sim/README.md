@@ -112,8 +112,19 @@ review, the same way `spec/decision-records/`'s append-only rule is.
   start and release once the core is running, across the same PVT grid
   (45 points). Every device in that netlist is OSDI-gated, so this
   experiment could not exist at all before issue #22 — which makes it the
-  end-to-end proof that the OSDI toolchain below works. Its records also
-  surface a real 125 °C worst-case margin observation; see its README.
+  end-to-end proof that the OSDI toolchain below works. Its records
+  originally surfaced a real 125 °C worst-case margin observation (a
+  cross-bench comparison against `core-open-loop-bias`'s own records); see
+  its README.
+- **[`startup-core-handover/`](startup-core-handover/README.md)** — the
+  direct follow-on to that margin observation (issue #24): co-simulates
+  `bandgap_core` + `bandgap_startup` in one netlist, sharing their real
+  `sns1`/`fb` nodes, under a **transient** `vdd` ramp — settling what the
+  cross-bench comparison above could only suggest. Confirmed (and
+  substantially widened) the margin problem pre-fix, then confirmed the fix
+  (widening `bandgap_startup`'s `XMSENSE`,
+  [decision record 0003](../spec/decision-records/0003-startup-sense-nmos-resize.md))
+  post-fix, across the same 45-point PVT grid.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 
