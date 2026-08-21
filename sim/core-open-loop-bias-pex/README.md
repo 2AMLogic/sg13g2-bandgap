@@ -30,30 +30,62 @@ README restates the parts that matter for simulation; `layout/README.md`'s
   model as the schematic-level testbench (`psp103.osdi`) — this is real
   drawn geometry through the real compact model, not an ideal-primitive
   substitution.
+- **Wire resistance and capacitance for Metal1/Metal2 (issue #37, updated
+  2026-08-21).** [klayout-tools#1277](https://github.com/2AMLogic/klayout-tools/issues/1277)
+  (filed against PR #33's original extraction, whose `r_count`/`c_count`
+  were both `0`) closed via
+  [klayout-tools#1280](https://github.com/2AMLogic/klayout-tools/pull/1280),
+  which populated the `sg13g2` deck's `PARASITICS.metals`/`metal_overlaps`
+  coefficient tables. Re-extracting against the current deck now reports
+  `r_count: 9, c_count: 7, cc_count: 8` (`total_resistance_ohm: 316.67`,
+  `total_capacitance_ff: 104.78`) in `pex_extract_report.json`'s
+  `parasitics` block, and `metals_without_coefficient`/
+  `overlap_pairs_without_coefficient` are both now empty — the deck's own
+  zero-RC warning is gone, and no *other* metal level newly reports zero
+  RC. Every `R`/`C` card the re-extraction wrote is spliced into
+  `testbench/tb_core_open_loop_bias_pex.spice.tmpl` verbatim, wired through
+  the same per-terminal hub node names (`vdd__t0`/`__t1`/`__t2`,
+  `sns1__t0`/`sns2__t0`/`vref__t0`, `cb2__par`/`cb3__par`/`vss__par`) the
+  extraction itself uses — this is genuinely simulated, not just committed
+  as an unused artifact. Effect on the recorded PVT sweep is small but
+  real: max `|Δvref|` across all 45 points vs. the pre-#1280 baseline
+  (`records/20260821-160423-42d8348.csv`) is `0.78 mV` — series-R IR drops
+  at these currents (tens of µA through tens/hundreds of Ω), not a
+  regression; ground/coupling capacitance has zero effect at this `.op`-only
+  analysis point (open circuit at DC), included anyway for completeness. See
+  "Cold-start invocation" below for the exact regeneration command.
 
 **NOT modelled (disclosed, not silently omitted):**
 
-- **Bipolar and resistor devices are not extracted at all.** `klt`'s curated
-  `sg13g2` deck recognises only `nfet`/`pfet` (see
-  `pex_extract_report.json`'s `device_classes`) — `XQ1`/`XQ2`/`XQ3`
-  (`npn13G2`) and `XR1`/`XR2` (`rppd`) are spliced in **verbatim** from
+- **Bipolar and resistor devices are still not extracted here** — but the
+  underlying deck capability picture changed since PR #33's original
+  README text, so re-verify rather than trust the old claim verbatim:
+  `pex_extract_report.json`'s `device_classes` now lists `["nfet", "pfet",
+  "resistor", "dantenna", "dpantenna"]` (grown from `["nfet", "pfet"]`),
+  and `device_counts` still reads `{"pfet": 3}` — zero resistor/diode
+  instances recognised in *this* layout. Two independent, non-conflated
+  reasons: **(1) `npn13G2`/`npn13G2l`/`npn13G2v`** (SiGe HBTs) are not
+  simply unrecognised yet — `klayout_tools.decks.sg13g2`'s own module
+  docstring documents this as a materially harder gap than a missing
+  device-class entry (multi-terminal marker-layer disambiguation this
+  engine's device model doesn't yet express) — unaffected by this pass,
+  still the same deck gap `layout/README.md`'s LVS section documents
+  (cause 1). **(2) `rppd`** (the poly resistor flavour `R1`/`R2` use) *does*
+  now have a recognizer in `EXTRACTION_DECK.resistors` — but this specific
+  layout's `draw_poly_res` (`layout/common.py`) only draws the `PolyRes`
+  body and a `Metal1` end pad, never the `pSD`/`SalBlock`/`EXTBlock` marker
+  layers `rppd` recognition additionally requires — confirmed directly:
+  layer `128/0` (`PolyRes.drawing`) dropped out of both
+  `pex_extract_report.json`'s `ignored_layers` entirely in this
+  re-extraction (it is no longer outside the deck's connectivity graph),
+  yet still contributes zero recognised resistor devices. This is a
+  layout-drawing gap in this repo, not a `klayout-tools` gap — not filed
+  upstream, and not fixed in this pass (out of scope for issue #37; noted
+  for a future layout-regeneration issue). `XQ1`/`XQ2`/`XQ3` (`npn13G2`)
+  and `XR1`/`XR2` (`rppd`) are therefore still spliced in **verbatim** from
   `design/netlist/bandgap_core.spice`, wired to the extraction's own real,
   physically-routed net names (`sns1`, `sns2`, `cb2`, `cb3`, `vref`, `vss` —
-  all real pins in `pex_extract_report.json`, not invented nodes). This is
-  the same deck gap `layout/README.md`'s LVS section documents (cause 1),
-  filed generically against `klayout-tools` ([klayout-tools#1277](https://github.com/2AMLogic/klayout-tools/issues/1277)).
-- **Zero wire resistance and capacitance.** `pex_extract_report.json`'s own
-  `warnings` state it plainly: *"'sg13g2' deck's PARASITICS.metals has no
-  R/C coefficient for Metal1, Metal2 -- --parasitics reports zero resistance
-  and capacitance for that metal level on every net"*. `--parasitics` ran
-  without error (`status: "extracted"`), but the deck's own coefficient
-  table is empty for both metal levels this layout uses, so `r_count` /
-  `c_count` in `pex_extract_report.json`'s `parasitics` block are both `0`.
-  This netlist carries real drawn **device** geometry but no real **wire**
-  parasitics whatsoever — a materially weaker "PEX" than the name usually
-  implies elsewhere in the fleet. **Filed generically against
-  `klayout-tools`** ([klayout-tools#1277](https://github.com/2AMLogic/klayout-tools/issues/1277)),
-  a deck-content gap, not a design-specific one.
+  all real pins in `pex_extract_report.json`, not invented nodes).
 - **PMOS body is a testbench fixture, not an extracted tie.** The
   extraction's own `unbiased_pmos_body_nets` warns all three PMOS bodies
   land on an anonymous, single-terminal net with no DC path (same root
@@ -89,6 +121,24 @@ cd layout/bandgap_core
 klt extract --deck sg13g2 --parasitics bandgap_core.gds \
   -o bandgap_core.pex.spice --format json > pex_extract_report.json
 ```
+
+**Re-verify the deck version before regenerating.** The committed
+`pex_extract_report.json`/`bandgap_core.pex.spice` (issue #37, 2026-08-21)
+were produced from a `klt` build at `klayout-tools` commit `dab6e5b`
+(`provenance.deck.content_hash` in the JSON), not a tagged PyPI release —
+`pip install klayout-tools` (`klayout-tools==0.2.0` as of this writing) is
+[known-stale relative to `main`](https://github.com/2AMLogic/klayout-tools/issues/1249)
+and does not yet carry the Metal1/Metal2 PARASITICS fix
+([klayout-tools#1280](https://github.com/2AMLogic/klayout-tools/pull/1280)).
+If re-running with a `pip`-installed `klt`, confirm `pex_extract_report.json`'s
+`parasitics.r_count`/`c_count` are non-zero before trusting the result — a
+stale install will silently reproduce the old zero-RC behavior with
+`status: "extracted"` and no error. If the testbench template's hand-spliced
+`R`/`C` cards (see `testbench/tb_core_open_loop_bias_pex.spice.tmpl`'s "Wire
+parasitics" block) no longer match a freshly regenerated
+`bandgap_core.pex.spice`, update that block from the new file's own
+non-`M`-card lines — same manual-transcription convention the `w`/`l`/`as`/
+`ad`/`ps`/`pd` device geometry above it already uses.
 
 Then:
 

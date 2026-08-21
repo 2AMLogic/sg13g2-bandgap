@@ -46,6 +46,25 @@ after regenerating the layout).
   `M$1 det \$4 vss vsubs` (extracted) vs. `XMSENSE det sns1 vss vss`
   (schematic) line up terminal-for-terminal once `\$4` is read as the
   extraction's anonymous label for `sns1`.
+- **Wire resistance and capacitance (issue #37, updated 2026-08-21).**
+  [klayout-tools#1277](https://github.com/2AMLogic/klayout-tools/issues/1277)
+  closed via [klayout-tools#1280](https://github.com/2AMLogic/klayout-tools/pull/1280),
+  which populated the `sg13g2` deck's `PARASITICS.metals`/`metal_overlaps`
+  coefficient tables. Re-extracting against the current deck now reports
+  `r_count: 5, c_count: 3, cc_count: 0` (`total_resistance_ohm: 544.07`,
+  `total_capacitance_ff: 132.50`) in `pex_extract_report.json`'s
+  `parasitics` block — `metals_without_coefficient` is now empty. Every
+  `R`/`C` card the re-extraction wrote is spliced into
+  `testbench/tb_startup_trip_point_pex.spice.tmpl` verbatim, through the
+  same per-terminal hub node names (`det__t0`/`__t1`, `fb__t0`,
+  `vss__t0`/`__t1`) the extraction itself uses. Effect on the recorded
+  sweep is small but real: max `|Δvtrip|` across all 45 points vs. the
+  pre-#1280 baseline (`records/20260821-160458-42d8348.csv`) is `17 µV`.
+  `XMSENSE`'s gate net (`\$4`, the schematic's `sns1`) gets no wire model
+  either way — it is a single-terminal, deck-disconnected net in this
+  isolated cell's own extraction, unaffected by the deck fix; the
+  testbench's own `Vsns1` drive is a fixture bridging that separate gap,
+  unchanged by this pass.
 
 **NOT modelled, or modelled differently than the current schematic
 (disclosed, not silently omitted):**
@@ -62,13 +81,19 @@ after regenerating the layout).
   the committed GDS actually is. See "Cross-bench observation" below for
   the before/after margin numbers, and `records/20260821-160458-42d8348.md`
   (preserved) for the original `w=2u` bug-reproducing record.
-- **Resistor devices are not extracted at all.** Same `klt`/`sg13g2` deck
-  gap as `core-open-loop-bias-pex` — `XRPU` (`rhigh`) is spliced in
-  verbatim from `design/netlist/bandgap_startup.spice`, wired to the
-  extraction's own real, physically-routed `vdd`/`det` net names.
-- **Zero wire resistance and capacitance.** Same deck-content gap as
-  `core-open-loop-bias-pex` — `pex_extract_report.json`'s `parasitics`
-  block reports `r_count: 0, c_count: 0` here too.
+- **Resistor devices are not extracted at all here.** Same situation
+  `core-open-loop-bias-pex/README.md` documents for `rppd`: `rhigh` (this
+  experiment's `XRPU`) *does* have a recognizer in
+  `EXTRACTION_DECK.resistors` (`klayout_tools.decks.sg13g2`, issue #1235),
+  but `layout/common.py`'s shared `draw_poly_res` (used by both cells' poly
+  resistors) never draws the `pSD`/`SalBlock`/`EXTBlock` marker layers
+  either flavour's recognition additionally requires beyond the `PolyRes`
+  body — a layout-drawing gap in this repo, not a `klayout-tools` one.
+  `device_classes` here reads `["nfet", "pfet", "resistor", "dantenna",
+  "dpantenna"]` and `device_counts` is `{"nfet": 2}`, zero resistor
+  instances recognised either way. `XRPU` (`rhigh`) is therefore still
+  spliced in verbatim from `design/netlist/bandgap_startup.spice`, wired to
+  the extraction's own real, physically-routed `vdd`/`det` net names.
 - **Body terminal substituted, not extracted as-is.** Both extracted
   devices' body terminals land on the deck's own synthesized global
   fallback net (`vsubs` in `bandgap_startup.pex.spice`), not the
@@ -87,6 +112,16 @@ cd layout/bandgap_startup
 klt extract --deck sg13g2 --parasitics bandgap_startup.gds \
   -o bandgap_startup.pex.spice --format json > pex_extract_report.json
 ```
+
+Same deck-version caveat as `core-open-loop-bias-pex/README.md`'s "Cold-start
+invocation" section: the committed extraction here was produced from a
+`klt` build at `klayout-tools` commit `dab6e5b`, not the (currently stale,
+[klayout-tools#1249](https://github.com/2AMLogic/klayout-tools/issues/1249))
+`pip`-installed `klayout-tools==0.2.0`. Confirm `pex_extract_report.json`'s
+`parasitics.r_count`/`c_count` are non-zero before trusting a re-run, and
+regenerate `testbench/tb_startup_trip_point_pex.spice.tmpl`'s "Wire
+parasitics" block from a freshly regenerated `bandgap_startup.pex.spice` if
+they no longer match.
 
 Then:
 
@@ -121,10 +156,10 @@ at the stale `w=2u`):
 
 | corner | temp | vdd | core `sns1` (V) | `vtrip` (V) | margin (mV) |
 |---|---|---|---|---|---|
-| `sf`  | 125 | 3.63 | 0.5804 | 0.5832 | **-2.75** |
-| `wcs` | 125 | 2.97 | 0.5909 | 0.5951 | **-4.17** |
-| `wcs` | 125 | 3.30 | 0.5910 | 0.5984 | **-7.41** |
-| `wcs` | 125 | 3.63 | 0.5911 | 0.6012 | **-10.16** |
+| `sf`  | 125 | 3.63 | 0.5804 | 0.5832 | **-2.80** |
+| `wcs` | 125 | 2.97 | 0.5909 | 0.5951 | **-4.22** |
+| `wcs` | 125 | 3.30 | 0.5910 | 0.5984 | **-7.45** |
+| `wcs` | 125 | 3.63 | 0.5910 | 0.6013 | **-10.21** |
 
 (margin = core `sns1` - `vtrip`; negative means the core's real operating
 point had not yet reached the trip threshold, i.e. the startup circuit
