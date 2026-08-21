@@ -22,6 +22,17 @@ original bug-reproducing record from before the fix
 below and on disk, per this directory's append-only convention — it is
 historical evidence of the bug this issue fixed, not a live caveat.
 
+**Update (issue #37, `records/20260821-231306-9ea33c1.{md,csv}` — the
+current record):** re-extracted against the *same* corrected `w=10u`
+geometry, but with the `sg13g2` deck's now-populated parasitics tables, so
+this is the first record here to carry real Metal1/Metal2 **wire R/C**
+(see "Wire resistance and capacitance" below). It does **not** change the
+issue #32 conclusion: 45/45 PASS, and the cross-bench margin bug decision
+record 0003 describes stays **resolved** — every one of the 45 points keeps
+a positive margin, minimum `+63.59 mV`. Wire parasitics move `vtrip` by at
+most `17 µV` (median `9 µV`) relative to issue #32's own wire-RC-free
+record.
+
 ## Dependency on layout/README.md
 
 `layout/bandgap_startup/lvs_report.json` reads `status: "mismatch"` as of
