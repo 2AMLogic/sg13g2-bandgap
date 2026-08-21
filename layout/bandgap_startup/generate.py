@@ -14,8 +14,18 @@ Devices instantiated, one-to-one against
 ``design/netlist/bandgap_startup.spice``:
 
     RPU    rhigh w=1u l=1411.3u    -- always-on weak pull-up (vdd -> det)
-    MSENSE sg13_hv_nmos w=2u l=0.5u -- current-sense switch (gate=sns1, det->vss)
+    MSENSE sg13_hv_nmos w=10u l=0.5u -- current-sense switch (gate=sns1, det->vss)
     MKFB   sg13_hv_nmos w=2u l=0.5u -- mirror-kick switch (gate=det, fb->vss)
+
+**MSENSE width (issue #32).** Originally drawn at ``w=2u`` (issue #11/PR
+#19), before [decision record
+0003](../../spec/decision-records/0003-startup-sense-nmos-resize.md)
+(issue #24/PR #29) widened ``XMSENSE`` to ``w=10u`` in
+``design/netlist/bandgap_startup.spice`` to fix a real 125 °C
+startup-release margin bug -- the layout was never regenerated to match
+until now. ``_route()``'s geometry below was re-verified (not merely
+assumed still valid) against this wider footprint -- see its own inline
+comments at the affected callsites.
 
 No bipolar device is instantiated here (DR-0001's BVCEO/BVEBO constraint
 does not bind on this circuit by construction -- see the schematic's own
@@ -84,7 +94,7 @@ def build() -> Builder:
     res_y = 20.0
 
     msense = draw_hv_mos(
-        b, "MSENSE", "nmos", 2.0, 0.5, 0.0, mos_y,
+        b, "MSENSE", "nmos", 10.0, 0.5, 0.0, mos_y,
         gate_net="sns1", source_net="det", drain_net="vss",
     )
     mkfb = draw_hv_mos(
@@ -103,12 +113,29 @@ def build() -> Builder:
 
 def _route(b: Builder, msense: dict, mkfb: dict, rpu: dict) -> None:
     """Wire the two genuinely multi-terminal nets -- see this module's own
-    docstring for why ``vdd``/``sns1``/``fb`` need no routing at all."""
+    docstring for why ``vdd``/``sns1``/``fb`` need no routing at all.
+
+    **Re-verified at MSENSE w=10u (issue #32).** Every geometric value used
+    below is read off ``msense``/``mkfb``/``rpu``'s own returned pad
+    dictionaries -- none of the offsets here are literals baked in for the
+    old ``w=2u`` footprint -- so widening MSENSE only shifts its own
+    ``source_pad``/``drain_pad``/``gate_box`` X-extents (its Y-extents and
+    MKFB's entire footprint are unaffected, since only MSENSE's ``w``
+    changed). MSENSE now spans ``x in [-5, 5]`` (was ``[-1, 1]``); MKFB is
+    unchanged at ``x in [19, 21]`` (``x0=20``, ``w=2u``) -- still >=14um
+    clear of MSENSE's new right edge, so no floorplan collision and no
+    change to MKFB's own placement was needed. Re-run ``klt drc --deck
+    sg13g2`` after this change: still clean (see ``layout/README.md``).
+    """
 
     # -- vss: MSENSE.drain, MKFB.drain -- both already at the same Y-band.
     # Held below y=-0.4 (not the full drain-pad height up to -0.3) so the
     # bar keeps >=0.18um clearance from det's MKFB gate-tab riser below
     # (see `_riser_x`) -- verified against this issue's own `klt drc` run.
+    # (issue #32: this bar is now wider, x in [-5, 21] instead of [-1, 21],
+    # since it spans min/max of the two drain pads' own X-extents -- still
+    # entirely within both drain pads' unchanged Y-band, so the >=0.18um
+    # det-riser clearance below is unaffected by MSENSE's width.)
     vss_x_lo = min(msense["drain_pad"][0], mkfb["drain_pad"][0])
     vss_x_hi = max(msense["drain_pad"][2], mkfb["drain_pad"][2])
     route_h(b, L_METAL1, -0.5, vss_x_lo, vss_x_hi, width=0.2)
@@ -127,7 +154,12 @@ def _route(b: Builder, msense: dict, mkfb: dict, rpu: dict) -> None:
     jog_y = (rpu["end_b_pad"][1] + rpu["end_b_pad"][3]) / 2  # RPU's own row centerline
 
     # MSENSE.source -> a riser column clear of MKFB's own footprint -> the
-    # det trunk at RPU's row.
+    # det trunk at RPU's row. `riser_x` is the midpoint between MSENSE's own
+    # source-pad right edge and MKFB's own drain-pad left edge -- both read
+    # off the returned pad dicts, so widening MSENSE (source_pad right edge
+    # moves from x=1 to x=5) only moves riser_x from x=10 to x=12; it stays
+    # inside the still-14um-wide clear column between the two devices
+    # (issue #32 -- re-verified, not assumed).
     riser_x = (mkfb["drain_pad"][0] - msense["source_pad"][2]) / 2 + msense["source_pad"][2]
     source_y = (msense["source_pad"][1] + msense["source_pad"][3]) / 2
     route_h(b, L_METAL1, source_y, msense["source_pad"][0], riser_x, width=TRUNK_W)

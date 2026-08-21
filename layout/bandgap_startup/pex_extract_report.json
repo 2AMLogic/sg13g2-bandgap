@@ -5,7 +5,7 @@
   "top": "bandgap_startup",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_startup.pex.spice",
-  "netlist_sha256": "757c06db09e1a908ac6a8a4c40356944434a1c6033d9d2b239d4608284df9fd0",
+  "netlist_sha256": "dd5de63a9548644838ee70341409f6d77a7178503fb1081da17fbf0e544b9082",
   "status": "extracted",
   "device_count": 2,
   "net_count": 5,
@@ -63,11 +63,11 @@
       },
       "params": {
         "l_um": 0.5,
-        "w_um": 2.0,
-        "as_um2": 0.8,
-        "ad_um2": 0.8,
-        "ps_um": 4.8,
-        "pd_um": 4.8
+        "w_um": 10.0,
+        "as_um2": 4.0,
+        "ad_um2": 4.0,
+        "ps_um": 20.8,
+        "pd_um": 20.8
       }
     },
     {
@@ -163,7 +163,7 @@
       "content_hash": "sha256:a64d3a7b716b746cefa22a2672184831dd5d17fabfe09abd398e1862b770ee0f"
     },
     "input": {
-      "content_hash": "sha256:6e3e9c908d68c45fcdcc99eef12bb2c883d95dc21e187617308cf77406f3fa3e"
+      "content_hash": "sha256:106a5ebdbfc5dcb63666b4ae036b7d2b0503e0b05c52be268d74ec020e30c745"
     }
   },
   "parasitics": {

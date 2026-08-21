@@ -1,0 +1,117 @@
+* sg13g2-bandgap -- bandgap_startup PEX (post-layout) PVT testbench
+* (issue #14). Generated from
+* sim/startup-trip-point-pex/testbench/tb_startup_trip_point_pex.spice.tmpl
+* by sim/startup-trip-point-pex/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full rationale is in sim/startup-trip-point-pex/README.md.
+*
+* Generated for: corner=wcs temp=-40C vdd=3.63V
+* DUT git sha (design/netlist/bandgap_startup.spice, for the spliced-in
+* resistor device -- see below):
+*   66ac99d
+* Layout git sha (layout/bandgap_startup/bandgap_startup.gds, extraction
+* input):
+*   364d7dc
+* PDK: ihp-sg13g2 /tmp/ihp-pdk-fetch/extract (see sim/pdk.json for the pinned release)
+* OSDI models: /tmp/ihp-pdk-fetch/extract/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* THIS IS A HYBRID PEX NETLIST, NOT A PURE LAYOUT EXTRACTION -- read
+* sim/startup-trip-point-pex/README.md "What this does and does not
+* model" before trusting a result here. Short version:
+*   - XMSENSE/XMKFB (both sg13_hv_nmos) are re-encoded from `klt extract
+*     --deck sg13g2 --parasitics layout/bandgap_startup/
+*     bandgap_startup.gds` (layout/bandgap_startup/bandgap_startup.pex.spice,
+*     pex_extract_report.json): real drawn W/L and junction AS/AD/PS/PD
+*     from the routed layout, re-expressed as X-subckt calls to the real
+*     sg13_hv_nmos compact model. Their D/G/S node roles match the
+*     schematic's own convention exactly (no swap, unlike
+*     core-open-loop-bias-pex) -- only the body terminal differs (see
+*     below).
+*   - **XMSENSE's extracted width is now w=10u, matching the schematic
+*     (issue #32).** The committed layout
+*     (layout/bandgap_startup/generate.py, issue #11/PR #19) originally
+*     drew XMSENSE at w=2u, before decision record 0003 (issue #24/PR #29)
+*     widened it to w=10u in design/netlist/bandgap_startup.spice to fix a
+*     real 125C startup-release margin bug -- the layout was not
+*     regenerated to match until issue #32. This testbench is
+*     as-drawn (w=10u): PEX evidence now reflects the corrected, in-sync
+*     layout. See sim/startup-trip-point-pex/README.md for the full
+*     before/after account.
+*   - This direct sns1-sweep methodology (0 -> vdd) does NOT, by itself,
+*     reveal decision record 0003's original margin bug either way (at
+*     w=2u or w=10u) -- it always reaches full release by the time sns1
+*     hits vdd, same limitation sim/startup-trip-point's own (pre-PEX)
+*     records already note. Whether the margin bug is present only shows
+*     up by comparing this record's `vtrip_v` against
+*     sim/core-open-loop-bias-pex's own real `sns1` operating point at the
+*     same corner -- see sim/startup-trip-point-pex/README.md
+*     "Cross-bench observation" for that comparison, which at the
+*     corrected w=10u width now clears at all 45 points (the 4 points that
+*     failed at the stale w=2u width -- wcs_125c_{2.97,3.30,3.63}v,
+*     sf_125c_3.63v -- now pass).
+*   - XRPU (rhigh) is NOT extracted from the layout at all -- same
+*     bipolar/resistor recognition gap as core-open-loop-bias-pex. Spliced
+*     in verbatim from design/netlist/bandgap_startup.spice, wired to the
+*     same real layout net names (vdd/det) the extraction itself reports
+*     as real, physically-routed pins.
+*   - Both extracted devices' body terminals land on the deck's own
+*     synthesized global fallback net (`vsubs` in
+*     layout/bandgap_startup/bandgap_startup.pex.spice), not the
+*     schematic's real body-tied-to-vss (klayout-tools, filed generically;
+*     see layout/README.md's LVS cause 2). This testbench ties body to
+*     vss directly, mirroring the schematic's real intent, rather than
+*     wiring to a deck-synthesized net this testbench has no independent
+*     way to validate.
+*   - Same zero-wire-parasitics caveat as core-open-loop-bias-pex: the
+*     sg13g2 deck's PARASITICS.metals/metal_overlaps tables are empty for
+*     Metal1/Metal2, so `--parasitics` reports zero wire R/C here too.
+
+.lib "/tmp/ihp-pdk-fetch/extract/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_ss
+.lib "/tmp/ihp-pdk-fetch/extract/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_wcs
+
+.options temp=-40 tnom=27
+
+Vvdd vdd 0 dc 3.63
+Vvss vss 0 dc 0
+* bandgap_startup.spice wires the rhigh bulk terminal to the global
+* substrate net `sub!`; tied to vss through a 0 V source here, as in
+* sim/startup-trip-point.
+Vsub sub! vss dc 0
+
+* FIXTURE 1 -- sns1 stimulus, same convention as sim/startup-trip-point:
+* sns1 is bandgap_core's own sense node in the assembled block; here it is
+* driven directly so the startup circuit's response can be swept from
+* "core is dead" (sns1 = 0) to "core is up" (sns1 = vdd) in one analysis.
+Vsns1 sns1 vss dc 0
+
+* FIXTURE 2 -- fb load, same convention as sim/startup-trip-point: nothing
+* drives fb high in the design yet (no error amplifier -- issue #9's scope
+* cut), so this weak pull-up stands in for whatever eventually holds fb
+* high once XMKFB turns off.
+Rfbpu vdd fb 10meg
+
+* Resistor -- schematic-sourced, see file header above.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+
+* Extracted NMOS switches -- see file header above for the body-net
+* substitution; XMSENSE's w/as/ad/ps/pd below now match the corrected,
+* regenerated layout (issue #32; layout/bandgap_startup/pex_extract_report.json).
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMKFB fb det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
+
+.control
+pre_osdi /tmp/ihp-pdk-fetch/extract/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /tmp/ihp-pdk-fetch/extract/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /tmp/ihp-pdk-fetch/extract/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /tmp/ihp-pdk-fetch/extract/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+* 1) cold-start state: core dead (sns1 = 0), startup must be engaged.
+op
+print v(det) v(fb)
+* 2) disengage behaviour: sweep the core's sense node up and find where the
+*    detect node releases, plus the fully-running-core end state.
+dc Vsns1 0 3.63 0.005
+meas dc vtrip when v(det)=1.8150 cross=1
+meas dc det_off find v(det) at=3.5800
+meas dc fb_off find v(fb) at=3.5800
+.endc
+.end

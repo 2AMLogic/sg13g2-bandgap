@@ -43,8 +43,8 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.10",
-    "layout_sha256": "6e3e9c908d68c45fcdcc99eef12bb2c883d95dc21e187617308cf77406f3fa3e",
-    "reference_sha256": "f415ece0c06bb6db24615cb54fe19300928001eb641162633b2c2c5807454796",
+    "layout_sha256": "106a5ebdbfc5dcb63666b4ae036b7d2b0503e0b05c52be268d74ec020e30c745",
+    "reference_sha256": "3fb8f79578a0873a0ce40552fba0ac00f086cff1275997c61f2cac9155c8c600",
     "extracted_netlist": null
   },
   "provenance": {

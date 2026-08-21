@@ -12,7 +12,7 @@
 * pin vsubs
 .SUBCKT bandgap_startup det fb vss vsubs
 * device instance $1 r0 *1 0,0 nfet
-M$1 det \$4 vss vsubs nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U PD=4.8U
+M$1 det \$4 vss vsubs nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 20,0 nfet
 M$2 fb det vss vsubs nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U PD=4.8U
 .ENDS bandgap_startup

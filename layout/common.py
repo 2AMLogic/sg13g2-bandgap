@@ -275,7 +275,8 @@ def draw_hv_mos(
     the ``npn13G2``/``pnpMPA`` PyCells were, since those two devices are
     what this issue's tooling-friction checks are actually about). Sized to
     the real ``w``/``l`` the schematic instances (``M1``/``M2``/``M3``:
-    ``w=10u l=1u``; startup's ``MSENSE``/``MKFB``: ``w=2u l=0.5u``), with an
+    ``w=10u l=1u``; startup's ``MSENSE``: ``w=10u l=0.5u`` (issue #32);
+    ``MKFB``: ``w=2u l=0.5u``), with an
     ``NWell`` enclosure drawn for ``flavor='pmos'`` (SG13G2 PMOS is an
     n-well device, same as every PDK in the fleet).
 

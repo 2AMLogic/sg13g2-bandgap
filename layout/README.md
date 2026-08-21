@@ -480,18 +480,27 @@ above:
    was **filed generically against `klayout-tools`**
    ([klayout-tools#1277](https://github.com/2AMLogic/klayout-tools/issues/1277)), per `CLAUDE.md`'s
    friction protocol.
-2. **New finding: `layout/bandgap_startup/generate.py` draws `XMSENSE` at
-   `w=2u`, stale relative to `design/netlist/bandgap_startup.spice`'s
-   current `w=10u`.** [Decision record
+2. **Resolved (issue #32): `layout/bandgap_startup/generate.py` drew
+   `XMSENSE` at `w=2u`, stale relative to `design/netlist/bandgap_startup.spice`'s
+   `w=10u`.** [Decision record
    0003](../spec/decision-records/0003-startup-sense-nmos-resize.md)
    (issue #24/PR #29) widened `XMSENSE` in the schematic/netlist only,
-   *after* this layout was drawn (issue #11/PR #19) — the layout was never
-   regenerated to match. `sim/startup-trip-point-pex/README.md`'s
-   "Cross-bench observation" shows this is not a paper cut: re-simulating
-   the as-drawn (`w=2u`) extracted geometry reproduces decision record
+   *after* this layout was drawn (issue #11/PR #19) — the layout was not
+   regenerated to match until issue #32. `sim/startup-trip-point-pex/README.md`'s
+   "Cross-bench observation" showed this was not a paper cut: re-simulating
+   the then-as-drawn (`w=2u`) extracted geometry reproduced decision record
    0003's exact same 4-point, 125 °C startup-release margin bug the
-   schematic-level fix already resolved. This is actionable within this
-   repo (regenerate the layout, not a `klt` gap), so it is **not** filed
-   against `klayout-tools` —
-   [issue #32](https://github.com/2AMLogic/sg13g2-bandgap/issues/32) tracks
-   it instead.
+   schematic-level fix already resolved. Issue #32 regenerated
+   `bandgap_startup.gds` with `XMSENSE` at `w=10u` (`layout/bandgap_startup/generate.py`'s
+   `draw_hv_mos(..., "MSENSE", ...)` call, `_route()`'s wiring re-verified
+   at the wider footprint — see that file's own docstring/inline comments),
+   re-ran `klt drc`/`klt lvs`/`klt extract --parasitics` against the
+   regenerated GDS (DRC stayed clean; LVS's `mismatch` reason is unchanged —
+   same 16 findings/14 error-severity, same categories, still blocked purely
+   on cause 2/`klayout-tools`#1273 above, not a new failure mode), and
+   re-ran `sim/startup-trip-point-pex/run_pvt_sweep.sh`: the cross-bench
+   comparison against `sim/core-open-loop-bias-pex` now clears at all 45
+   PVT points, including the 4 that previously failed
+   (`wcs_125c_{2.97,3.30,3.63}v`, `sf_125c_3.63v`) — see
+   `sim/startup-trip-point-pex/README.md`'s updated "Cross-bench
+   observation" section for the before/after numbers.
