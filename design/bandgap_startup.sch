@@ -62,7 +62,7 @@ v {xschem version=3.4.8RC file_version=1.3
 *            by a few mV -- meaning MKFB would not fully release once the
 *            core is actually running there. #24's co-simulated
 *            core+startup transient testbench
-*            (sim/startup-trip-point/testbench/tb_startup_core_cosim.spice.tmpl)
+*            (sim/startup-core-handover/testbench/tb_startup_core_handover.spice.tmpl)
 *            confirmed this is a real, and substantially amplified, problem:
 *            with the W=2u sense device, the unreleased MKFB current
 *            (~15-17uA at the worst point) drives the mirror current well
