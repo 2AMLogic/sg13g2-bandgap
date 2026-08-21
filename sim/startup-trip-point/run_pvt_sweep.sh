@@ -15,44 +15,11 @@
 # <record-id>/ and records/<record-id>.{md,csv} -- see sim/README.md.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
-EXPERIMENT_DIR="${SCRIPT_DIR}"
+DUT_NETLIST="design/netlist/bandgap_startup.spice"
+# shellcheck source=../lib/pvt_preflight.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_startup_trip_point.spice.tmpl"
-
-# shellcheck source=/dev/null
-source "${SIM_DIR}/env.sh"
-
-if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
-  echo "run_pvt_sweep.sh: no resolvable ${PDK:-ihp-sg13g2} install -- see sim/env.sh output above." >&2
-  exit 3
-fi
-
-if ! command -v ngspice >/dev/null 2>&1; then
-  echo "run_pvt_sweep.sh: ngspice not found on PATH." >&2
-  exit 3
-fi
-
-if ! "${SIM_DIR}/tools/build-osdi.sh" --check >/dev/null 2>&1; then
-  echo "run_pvt_sweep.sh: OSDI device models missing or not loadable." >&2
-  echo "run_pvt_sweep.sh: run  sim/tools/build-osdi.sh  first (see sim/README.md)." >&2
-  "${SIM_DIR}/tools/build-osdi.sh" --check >&2 || true
-  exit 3
-fi
-OSDI_DIR="${SG13G2_OSDI_DIR:-${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi}"
-
-DUT_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- design/netlist/bandgap_startup.spice 2>/dev/null || echo unknown)"
-REPO_GIT_SHA="$(git -C "${REPO_ROOT}" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-RECORD_ID="$(date -u +%Y%m%d-%H%M%S)-${REPO_GIT_SHA}"
-
-CORNERS_OUT="${EXPERIMENT_DIR}/corners/${RECORD_ID}"
-SNAPSHOTS_OUT="${EXPERIMENT_DIR}/netlist-snapshots/${RECORD_ID}"
-RECORDS_DIR="${EXPERIMENT_DIR}/records"
-mkdir -p "${CORNERS_OUT}" "${SNAPSHOTS_OUT}" "${RECORDS_DIR}"
-
-CSV_OUT="${RECORDS_DIR}/${RECORD_ID}.csv"
-MD_OUT="${RECORDS_DIR}/${RECORD_ID}.md"
 
 echo "corner_label,mos_section,res_section,temp_c,vdd_v,status,det_on_v,fb_on_v,vtrip_v,det_off_v,fb_off_v" > "${CSV_OUT}"
 
@@ -65,12 +32,6 @@ declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [
 
 TEMPS=(-40 27 125)
 VDDS=(2.97 3.30 3.63)
-
-NGSPICE_VERSION="$(ngspice -v 2>&1 | sed -n '2p')"
-
-total=0
-passed=0
-failed_points=()
 
 for corner in "${CORNER_LABELS[@]}"; do
   res_section="${RES_SECTION_OF[${corner}]}"
