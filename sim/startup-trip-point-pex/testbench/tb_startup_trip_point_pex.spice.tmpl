@@ -27,26 +27,28 @@
 *     schematic's own convention exactly (no swap, unlike
 *     core-open-loop-bias-pex) -- only the body terminal differs (see
 *     below).
-*   - **XMSENSE's extracted width is w=2u, NOT w=10u.** The committed
-*     layout (layout/bandgap_startup/generate.py, issue #11/PR #19) was
-*     drawn before decision record 0003 (issue #24/PR #29) widened
-*     XMSENSE from w=2u to w=10u in design/netlist/bandgap_startup.spice
-*     to fix a real 125C startup-release margin bug -- the layout was
-*     never regenerated to match. This testbench is deliberately
-*     as-drawn (w=2u): PEX evidence should show what the committed GDS
-*     actually is, not what the current schematic says. See
-*     sim/startup-trip-point-pex/README.md and the filed follow-up issue
-*     for the full account.
+*   - **XMSENSE's extracted width is now w=10u, matching the schematic
+*     (issue #32).** The committed layout
+*     (layout/bandgap_startup/generate.py, issue #11/PR #19) originally
+*     drew XMSENSE at w=2u, before decision record 0003 (issue #24/PR #29)
+*     widened it to w=10u in design/netlist/bandgap_startup.spice to fix a
+*     real 125C startup-release margin bug -- the layout was not
+*     regenerated to match until issue #32. This testbench is
+*     as-drawn (w=10u): PEX evidence now reflects the corrected, in-sync
+*     layout. See sim/startup-trip-point-pex/README.md for the full
+*     before/after account.
 *   - This direct sns1-sweep methodology (0 -> vdd) does NOT, by itself,
-*     reproduce decision record 0003's margin bug at w=2u -- it always
-*     reaches full release by the time sns1 hits vdd, same limitation
-*     sim/startup-trip-point's own (pre-PEX) records already note. The
-*     margin bug only shows up by comparing this record's `vtrip_v`
-*     against sim/core-open-loop-bias-pex's own real `sns1` operating
-*     point at the same corner -- see sim/startup-trip-point-pex/README.md
-*     "Cross-bench observation" for that comparison, which reproduces
-*     decision record 0003's exact same 4 flagged points
-*     (wcs_125c_{2.97,3.30,3.63}v, sf_125c_3.63v) at this as-drawn width.
+*     reveal decision record 0003's original margin bug either way (at
+*     w=2u or w=10u) -- it always reaches full release by the time sns1
+*     hits vdd, same limitation sim/startup-trip-point's own (pre-PEX)
+*     records already note. Whether the margin bug is present only shows
+*     up by comparing this record's `vtrip_v` against
+*     sim/core-open-loop-bias-pex's own real `sns1` operating point at the
+*     same corner -- see sim/startup-trip-point-pex/README.md
+*     "Cross-bench observation" for that comparison, which at the
+*     corrected w=10u width now clears at all 45 points (the 4 points that
+*     failed at the stale w=2u width -- wcs_125c_{2.97,3.30,3.63}v,
+*     sf_125c_3.63v -- now pass).
 *   - XRPU (rhigh) is NOT extracted from the layout at all -- same
 *     bipolar/resistor recognition gap as core-open-loop-bias-pex. Spliced
 *     in verbatim from design/netlist/bandgap_startup.spice, wired to the
@@ -91,9 +93,10 @@ Rfbpu vdd fb 10meg
 * Resistor -- schematic-sourced, see file header above.
 XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
 
-* Extracted NMOS switches -- see file header above for the w=2u-vs-w=10u
-* caveat and the body-net substitution.
-XMSENSE det sns1 vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
+* Extracted NMOS switches -- see file header above for the body-net
+* substitution; XMSENSE's w/as/ad/ps/pd below now match the corrected,
+* regenerated layout (issue #32; layout/bandgap_startup/pex_extract_report.json).
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
 XMKFB fb det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
 
 .control

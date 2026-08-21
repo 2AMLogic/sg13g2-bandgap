@@ -103,17 +103,20 @@ Same 45-point grid, same output layout (`netlist-snapshots/`, `corners/`,
 `records/`) as `sim/core-open-loop-bias/` — see that experiment's README
 and `sim/README.md` for the full conventions.
 
-## Cross-bench observation: reproduces decision record 0003's margin bug
+## Cross-bench observation: decision record 0003's margin bug — before/after issue #32
 
 Comparing this experiment's `sns1` (`vbe_q1_v` column) against
 [`startup-trip-point-pex`](../startup-trip-point-pex/README.md)'s `vtrip_v`
-at matching `(corner, temp, vdd)` points reproduces
+at matching `(corner, temp, vdd)` points originally reproduced
 [decision record 0003](../../spec/decision-records/0003-startup-sense-nmos-resize.md)'s
 exact same 4 flagged points — `wcs_125c_{2.97,3.30,3.63}v` and
 `sf_125c_3.63v` — with closely matching margins (2-10 mV here vs. the
-decision record's own "2-10 mV" figure). See
+decision record's own "2-10 mV" figure), while the **layout** was still
+drawn at `XMSENSE w=2u` (decision record 0003 only widened the schematic to
+`w=10u` — the layout had not yet been regenerated). [Issue
+#32](https://github.com/2AMLogic/sg13g2-bandgap/issues/32) has since
+regenerated `layout/bandgap_startup.gds` with `XMSENSE` at the matching
+`w=10u`; re-running this same cross-bench comparison against the corrected
+layout now clears at all 45 points. See
 `startup-trip-point-pex/README.md`'s own "Cross-bench observation" section
-for the full comparison and what it means: the **layout**, still drawn at
-`XMSENSE w=2u` (decision record 0003 only widened the schematic to `w=10u`
-— the layout was never regenerated), would carry the same margin bug into
-silicon if fabricated as currently committed.
+(updated for issue #32) for the full before/after comparison.

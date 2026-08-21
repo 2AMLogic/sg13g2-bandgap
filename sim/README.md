@@ -138,13 +138,15 @@ review, the same way `spec/decision-records/`'s append-only rule is.
   are not recognised by the sg13g2 deck and are schematic-sourced;
   wire parasitics are zero — the deck's own R/C coefficient tables are
   empty for this layout's metal levels). `startup-trip-point-pex`'s own
-  cross-bench comparison against `core-open-loop-bias-pex` additionally
-  found that `layout/bandgap_startup.gds` still draws `XMSENSE` at the
+  cross-bench comparison against `core-open-loop-bias-pex` originally
+  found that `layout/bandgap_startup.gds` still drew `XMSENSE` at the
   pre-decision-record-0003 `w=2u` (the schematic was widened to `w=10u`,
-  the layout never regenerated to match) — reproducing decision record
-  0003's exact same 4-point, 125 °C margin bug at the layout level; see
-  that experiment's README for the full writeup and the filed follow-up
-  issue.
+  the layout not yet regenerated to match) — reproducing decision record
+  0003's exact same 4-point, 125 °C margin bug at the layout level. Issue
+  #32 regenerated the layout with `XMSENSE` at the matching `w=10u`; the
+  same cross-bench comparison against the corrected layout now clears at
+  all 45 points — see that experiment's README for the full before/after
+  writeup.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 

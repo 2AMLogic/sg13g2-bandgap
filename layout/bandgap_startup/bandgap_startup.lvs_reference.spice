@@ -6,6 +6,6 @@
 * converter cannot handle this circuit's mixed MOS/BJT/resistor
 * device set either).
 RPU vdd det 1919368.0
-MSENSE det sns1 vss vss nfet L=0.5U W=2U
+MSENSE det sns1 vss vss nfet L=0.5U W=10U
 MKFB fb det vss vss nfet L=0.5U W=2U
 .end
