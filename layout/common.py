@@ -185,8 +185,13 @@ def draw_npn13g2(
             xc + EMITTER_WE_UM / 2,
             y0 + EMITTER_LE_UM / 2,
         )
-        b.box(L_CONT, xc - 0.15, y0 - EMITTER_LE_UM / 2 - 0.2, xc + 0.15, y0 - EMITTER_LE_UM / 2 - 0.05)
-        b.box(L_CONT, xc - 0.15, y0 + EMITTER_LE_UM / 2 + 0.05, xc + 0.15, y0 + EMITTER_LE_UM / 2 + 0.2)
+        # Cont y-extent is 0.18um (>= the deck's cont.width.1 0.16um floor,
+        # see layout/README.md "DRC/LVS verification" -- issue #12 found the
+        # original 0.15um extent 10nm under threshold and widened it here;
+        # only the outer edge moves, growing into the Activ region's own
+        # generous margin rather than encroaching on the EmWind gap below).
+        b.box(L_CONT, xc - 0.15, y0 - EMITTER_LE_UM / 2 - 0.23, xc + 0.15, y0 - EMITTER_LE_UM / 2 - 0.05)
+        b.box(L_CONT, xc - 0.15, y0 + EMITTER_LE_UM / 2 + 0.05, xc + 0.15, y0 + EMITTER_LE_UM / 2 + 0.23)
 
     # Collector rail (top), base rail (bottom), emitter rail (Metal2, over
     # the emitter windows) -- one each, spanning the full stripe row, per
@@ -242,11 +247,14 @@ def draw_hv_mos(
         b.box(L_NSD, x_lo - 0.1, y_lo - 0.1, x_hi + 0.1, y_hi + 0.1)
 
     # Source/drain contact + Metal1 pad, one strip each side of the gate.
-    b.box(L_CONT, x_lo + 0.15, y_hi - 0.25, x_hi - 0.15, y_hi - 0.1)
+    # Cont y-extent is 0.18um (>= the deck's cont.width.1 0.16um floor, same
+    # margin/rationale as draw_npn13g2's own Cont boxes above -- widening
+    # only the edge closer to the gate, still fully inside the Metal1 pad).
+    b.box(L_CONT, x_lo + 0.15, y_hi - 0.28, x_hi - 0.15, y_hi - 0.1)
     b.box(L_METAL1, x_lo, y_hi - 0.35, x_hi, y_hi)
     b.label(L_METAL1_LABEL, source_net, x0, y_hi - 0.15)
 
-    b.box(L_CONT, x_lo + 0.15, y_lo + 0.1, x_hi - 0.15, y_lo + 0.25)
+    b.box(L_CONT, x_lo + 0.15, y_lo + 0.1, x_hi - 0.15, y_lo + 0.28)
     b.box(L_METAL1, x_lo, y_lo, x_hi, y_lo + 0.35)
     b.label(L_METAL1_LABEL, drain_net, x0, y_lo + 0.15)
 
