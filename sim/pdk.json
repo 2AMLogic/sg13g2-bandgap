@@ -26,7 +26,14 @@
       "openvaf-r-v24.0.1mob-linux-x86_64.tar.gz": "3297e32f68becf5e0d4709d7f731d7d26f87f88dc136041334677d3ab36279e3"
     },
     "asset_sha256_source": "GitHub release API digest field for the v24.0.1mob release, re-checked 2026-08-21",
-    "platform_actually_exercised": "macos-aarch64 (Darwin 26.6 / arm64) and, as of issue #14, linux-x86_64 (Ubuntu 24.04/noble) -- the windows pin is upstream-attested but not yet executed in this repo. linux-x86_64 needed a workaround `sim/tools/build-osdi.sh` does not yet apply automatically: the pinned openvaf-r-v24.0.1mob-linux-x86_64 release ships lib/libLLVM.so.21.1 as a dangling symlink to ../../x86_64-linux-gnu/libLLVM.so.21.1 -- it assumes the HOST provides a system-installed LLVM 21, which stock Ubuntu 24.04 does not (max system package is libllvm20). Verified working fix: LD_LIBRARY_PATH pointed at the real libLLVM.so.21.1 extracted (dpkg-deb -x, no root needed) from apt.llvm.org's libllvm21 .deb for noble (sha256 f1f058fff19f9d711c32b9efe5cd473dd2f0e7d5338d082fa5a25858322048cd as of 2026-08-21) -- see https://github.com/2AMLogic/sg13g2-bandgap/issues/31 for the tracked fix to build-osdi.sh itself.",
+    "platform_actually_exercised": "macos-aarch64 (Darwin 26.6 / arm64) and, as of issue #14, linux-x86_64 (Ubuntu 24.04/noble) -- the windows pin is upstream-attested but not yet executed in this repo. linux-x86_64 needs a fix-up: the pinned openvaf-r-v24.0.1mob-linux-x86_64 release ships lib/libLLVM.so.21.1 as a dangling symlink to ../../x86_64-linux-gnu/libLLVM.so.21.1 -- it assumes the HOST provides a system-installed LLVM 21, which stock Ubuntu 24.04 does not (max system package is libllvm20). As of issue #31, sim/tools/build-osdi.sh handles this automatically on Linux/x86_64: it fetches + sha256-verifies the real libLLVM.so.21.1 from apt.llvm.org's libllvm21 .deb (extracted unprivileged via dpkg-deb -x) and points LD_LIBRARY_PATH at it for its own openvaf-r invocations -- no manual pre-step needed. See libllvm21_deb below for the pin.",
+    "libllvm21_deb": {
+      "_comment": "Linux/x86_64-only pin (issue #31): the real libLLVM.so.21 shared library sim/tools/build-osdi.sh fetches to work around the dangling symlink in the openvaf-r linux-x86_64 release (see platform_actually_exercised above).",
+      "url": "https://apt.llvm.org/noble/pool/main/l/llvm-toolchain-21/libllvm21_21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70_amd64.deb",
+      "sha256": "f1f058fff19f9d711c32b9efe5cd473dd2f0e7d5338d082fa5a25858322048cd",
+      "distro_release_codename": "noble",
+      "sha256_source": "apt.llvm.org, checked by direct curl + sha256sum against the pin, 2026-08-21"
+    },
     "models_built": ["psp103.osdi", "psp103_nqs.osdi", "r3_cmc.osdi", "mosvar.osdi"],
     "install_dir": "PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi (PDK-install territory, not tracked in this repo)",
     "compile_command": "openvaf-r -D__NGSPICE__ -o <install_dir>/<model>.osdi <model>.va, run from PDK_ROOT/ihp-sg13g2/libs.tech/verilog-a/<model_dir> -- the same flags and model list as the PDK's own libs.tech/verilog-a/openvaf-compile-va.sh",

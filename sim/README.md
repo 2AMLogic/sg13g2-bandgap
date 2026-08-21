@@ -271,9 +271,17 @@ ships `lib/libLLVM.so.21.1` as a **dangling symlink** to
 `../../x86_64-linux-gnu/libLLVM.so.21.1` — unlike the macOS bundle (which
 ships the real `dylib`), the Linux release assumes the *host* provides a
 system-installed LLVM 21, which no current Ubuntu LTS ships as a package
-(24.04/noble tops out at `libllvm20`). `build-osdi.sh` does not yet detect
-or work around this — see [issue #31](https://github.com/2AMLogic/sg13g2-bandgap/issues/31)
-for the tracked fix (a verified-working `LD_LIBRARY_PATH` pointed at the
-real `libLLVM.so.21.1`, extracted without root from apt.llvm.org's
-`libllvm21` package for noble; full details and the exact checksum in
-`sim/pdk.json`'s `osdi_toolchain.platform_actually_exercised`).
+(24.04/noble tops out at `libllvm20`).
+
+As of [issue #31](https://github.com/2AMLogic/sg13g2-bandgap/issues/31),
+`build-osdi.sh` handles this automatically — no manual pre-step required.
+On `Linux/x86_64` it fetches and sha256-verifies the real
+`libLLVM.so.21.1` from the official LLVM apt repository's `libllvm21`
+package for `noble` (the same fetch-and-verify pattern already used for the
+`openvaf-r` compiler tarball), unpacks it unprivileged with `dpkg-deb -x`
+(no root or system install needed), and points `LD_LIBRARY_PATH` at it for
+its own `openvaf-r` invocations only. The pin (package URL, sha256,
+release codename) lives in `sim/pdk.json`'s
+`osdi_toolchain.libllvm21_deb`, alongside the `openvaf-r` asset pins. If
+`dpkg-deb` is not on `PATH`, `build-osdi.sh` falls back to printing the
+exact copy-pasteable manual workaround rather than failing silently.
