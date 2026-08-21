@@ -86,6 +86,16 @@ layout/        GDS + DRC/LVS reports (klayout-tools driven)
 measurements/  silicon characterization (empty until tape-out)
 ```
 
+## Continuous integration
+
+A `hygiene` workflow (`.github/workflows/hygiene.yml`) runs on every push and
+pull request. It checks that decision records in `spec/decision-records/`
+follow `TEMPLATE.md`'s required sections, and that `design/`, `sim/`,
+`layout/`, and `measurements/` follow this repo's `README.md` convention.
+It does not (yet) validate DRC/LVS/PEX/characterization artifact formats —
+those don't exist yet. Full scope and known gaps:
+[`.github/workflows/README.md`](.github/workflows/README.md).
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).

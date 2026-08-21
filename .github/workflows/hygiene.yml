@@ -1,0 +1,25 @@
+name: hygiene
+
+# Repo-hygiene checks — see .github/workflows/README.md for exactly what
+# this workflow does and does not validate.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Decision records follow TEMPLATE.md
+        run: .github/scripts/check-decision-records.sh
+
+      - name: Evidence directories follow README.md convention
+        run: .github/scripts/check-repo-structure.sh
