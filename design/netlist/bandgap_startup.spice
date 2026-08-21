@@ -1,0 +1,11 @@
+** sch_path: /home/ubuntu/GitHub/sg13g2-bandgap/.loom/worktrees/issue-9/design/bandgap_startup.sch
+**.subckt bandgap_startup vdd vss sns1 fb
+*.iopin vdd
+*.iopin vss
+*.iopin sns1
+*.iopin fb
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+XMKFB fb det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+**.ends
+.end
