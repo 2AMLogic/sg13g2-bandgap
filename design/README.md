@@ -1,10 +1,12 @@
 # design — schematics and netlists
 
 Schematic capture is [xschem](http://xschem.sourceforge.net/); simulation is
-[ngspice](https://ngspice.sourceforge.io/) via a future corner runner in
-`../sim/` (issue #10 — no testbench infrastructure exists yet; see
-"What has and has not been verified" below for what this issue's own,
-informal, non-`sim/`-evidence checks did and did not confirm).
+[ngspice](https://ngspice.sourceforge.io/) via the PVT corner runner in
+[`../sim/`](../sim/README.md) (issue #10 — landed as
+`sim/core-open-loop-bias/`; see "What has and has not been verified" below
+for what this issue's own, informal, non-`sim/`-evidence checks did and did
+not confirm, and `sim/core-open-loop-bias/README.md` for the first real
+`sim/`-evidence testbench built on top of it).
 
 ```
 design/
