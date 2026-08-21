@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "file": "layout/bandgap_core/bandgap_core.gds",
+  "deck": "sg13g2",
+  "dbu_um": 0.001,
+  "status": "clean",
+  "violation_count": 0,
+  "rule_counts": {},
+  "violations": [],
+  "coverage": {
+    "deck_layers": [
+      "1/0",
+      "5/0",
+      "6/0",
+      "8/0",
+      "10/0",
+      "19/0",
+      "29/0"
+    ],
+    "layers_checked": [
+      "1/0",
+      "5/0",
+      "6/0",
+      "8/0",
+      "10/0"
+    ],
+    "layers_in_stream_without_rules": [
+      "5/1",
+      "8/1",
+      "10/1",
+      "31/0",
+      "33/0",
+      "63/0",
+      "128/0",
+      "128/1"
+    ],
+    "rules_skipped": [
+      "metal1.enclosing.via1.1",
+      "metal2.enclosing.via2.1",
+      "via1.space.1",
+      "via1.width.1",
+      "via2.space.1",
+      "via2.width.1"
+    ],
+    "voltage_domain_warnings": [],
+    "deck_scope": [
+      "Act",
+      "Cnt",
+      "Gat",
+      "M1",
+      "M2",
+      "V1",
+      "V2"
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.2.0",
+    "klayout_version": "0.30.10",
+    "pdk": null,
+    "deck": {
+      "name": "sg13g2",
+      "content_hash": "sha256:a64d3a7b716b746cefa22a2672184831dd5d17fabfe09abd398e1862b770ee0f"
+    },
+    "input": {
+      "content_hash": "sha256:0ab90befe05f788ae2bb6d1314e2a03358e31d6ff6b7747060383c7382ab2c72"
+    }
+  }
+}

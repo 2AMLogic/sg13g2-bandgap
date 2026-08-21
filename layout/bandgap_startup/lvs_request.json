@@ -1,0 +1,12 @@
+{
+  "schema": "klt.lvs.request/1",
+  "engine": "klayout",
+  "layout": {
+    "file": "bandgap_startup.gds",
+    "deck": "sg13g2",
+    "top": "bandgap_startup"
+  },
+  "reference": {
+    "netlist": "bandgap_startup.lvs_reference.spice"
+  }
+}

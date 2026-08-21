@@ -83,15 +83,24 @@ and `pnpMPA`'s pin count/naming).
   viewer to confirm device-for-device correspondence against
   `design/bandgap_core.sch`/`design/bandgap_startup.sch`, per this issue's
   own test plan.
-- **Is not** DRC-clean or LVS-verified. Ran informationally against the
-  curated deck (`klt drc layout/bandgap_core/bandgap_core.gds --deck
-  sg13g2`): `status: "violations"`, 26 `cont.width.1` violations (the
-  simplified `Cont` pads this layout draws are undersized against the real
-  minimum-contact-width rule — expected, since this issue's device
-  footprints are hand-simplified, not the real PCells' exact stackup). This
-  is explicitly **not** this issue's acceptance bar — DRC/LVS verification
-  is tracked separately in #12, which this issue's own "What to build"
-  section says not to block on.
+- **Is DRC-clean** (updated by issue #12 — see "DRC/LVS verification" below).
+  The informational run this issue originally recorded here (`klt drc
+  layout/bandgap_core/bandgap_core.gds --deck sg13g2`) found `status:
+  "violations"`, 26 `cont.width.1` violations: the simplified `Cont` pads
+  this layout drew were 0.15 µm on their narrow axis, 0.01 µm under the
+  curated deck's real 0.16 µm minimum-Cont-width floor. #12 treated this as
+  a genuine (if small) geometry defect rather than an inherent
+  simplification artifact — `layout/common.py`'s `draw_npn13g2`/
+  `draw_hv_mos` now draw that axis at 0.18 µm, comfortably clear of the
+  floor and still fully inside each device's own `Activ`/`Metal1` margins
+  (see `layout/common.py`'s own inline comments at each callsite). Both
+  `bandgap_core.gds` and `bandgap_startup.gds` now report `status: "clean"`,
+  `violation_count: 0` — see the committed reports.
+- **Is not** LVS-clean yet (#12 also ran this fresh — see "DRC/LVS
+  verification" below for the full, itemized finding: a real
+  `status: "mismatch"` on both cells, attributable to the curated deck's
+  documented bipolar/resistor-recognition gap plus this layout's own
+  floorplan-only routing, not a fixable circuit defect).
 - **Is not** a re-implementation of each device's real PCell. `Q1`/`Q2`/`Q3`
   (`draw_npn13g2` in `layout/common.py`) faithfully replicate the one
   geometric fact this issue's tooling-friction check turned on (the real,
@@ -241,3 +250,115 @@ above) — every `klt gen` analog-primitive generator hard-rejects the
 SG13G2 PDK family. This **is** a generic `klt`/`klayout-tools` tool gap
 (not a PDK-content fact), so it **was** filed:
 [klayout-tools#1266](https://github.com/2AMLogic/klayout-tools/issues/1266).
+
+## DRC/LVS verification (issue #12)
+
+Fresh, committed `klt drc`/`klt lvs` reports for both cells — the first
+time either tool has been run against a real SG13G2 layout in this repo.
+No SG13G2 PDK install (IHP-Open-PDK checkout) was needed for either: `klt
+drc`'s default `--engine curated` and `klt lvs`'s default `"klayout"`
+engine both run against `klt`'s own pip-installed, declarative
+`decks/sg13g2.py` deck (klayout-tools#905/#911) — a real, `git`-pinned
+IHP-Open-PDK v0.3.0 checkout is that deck's own build-time provenance
+source, not a runtime dependency of running it.
+
+### DRC — clean
+
+| Cell | Report | Status | Deck (content hash) |
+| --- | --- | --- | --- |
+| `bandgap_core` | `layout/bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:a64d3a7b...` |
+| `bandgap_startup` | `layout/bandgap_startup/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:a64d3a7b...` |
+
+The 26 `cont.width.1` violations this issue's own informational run
+originally found (see "What this layout is / is not" above) were fixed by
+widening the narrow axis of every simplified `Cont` pad in
+`draw_npn13g2`/`draw_hv_mos` (`layout/common.py`) from 0.15 µm to 0.18 µm —
+0.02 µm clear of the curated deck's real 0.16 µm `Cnt.a` minimum-width
+floor, verified against `ihp-sg13g2/libs.tech/klayout/tech/drc/rule_decks/
+feol/5_14_cont.drc`'s own cited rule. This was judged a genuine (if small)
+layout defect, not an inherent artifact of this layout's simplification —
+the fix only grows each `Cont` box further into its own device's already-
+generous `Activ`/`Metal1` margin (verified: re-running finds 0 new
+violations of any kind, not just a disappeared `cont.width.1` count).
+Reproduce: `klt drc --check layout/bandgap_core/drc_report.json` (or
+`--rerun` for a full re-check), run from the repo root.
+
+### LVS — mismatch, fully attributed (not yet a fixable circuit defect)
+
+| Cell | Report | Status | Engine |
+| --- | --- | --- | --- |
+| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (32 findings, 30 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | `mismatch` (18 findings, 16 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+
+Reproduce: `klt lvs layout/bandgap_core/lvs_request.json` (run from
+`layout/bandgap_core/`, since the request's relative paths resolve against
+its own directory — see `docs/cli/lvs.md` in `klayout-tools`); `klt lvs
+--check layout/bandgap_core/lvs_report.json` (same directory) verifies the
+committed report against the current inputs without re-running the compare.
+
+**Reference-netlist conversion.** `design/netlist/bandgap_core.spice`/
+`bandgap_startup.spice` (landed by #9) are written in the subckt-call form
+xschem/ngspice always emit (`XM1 d g s b sg13_hv_pmos w=10u l=1u ...`), but
+`klt lvs` requires the plain-element form and its own automatic converter
+(`reference.form: "subckt-call"`) turned out to be MOS-only — it hard-fails
+on this circuit's 3-terminal `rppd`/`rhigh` resistor calls (misdetected as
+malformed 4-terminal MOS calls, since they also carry `l`/`w`) and silently
+mishandles its parameter-only `npn13G2` bipolar calls (no `l`/`w`, so they
+pass through as unresolved subcircuits instead of converting, corrupting
+the whole reference into an auto-synthesized-subcircuit hierarchy that
+cannot structurally match the layout side's flat netlist at all). Confirmed
+by running both the unconverted and `subckt-call`-converted reference
+directly (see this issue's own PR for the exact commands/output). **Filed
+generically against `klayout-tools`**, per `CLAUDE.md`'s friction protocol:
+[klayout-tools#1269](https://github.com/2AMLogic/klayout-tools/issues/1269).
+Worked around here with `layout/lvs_reference.py`, a small, repo-local,
+deterministic script that reads `design/netlist/*.spice` and emits the
+`layout/*/*.lvs_reference.spice` plain-element files the committed
+`lvs_request.json`s actually reference — regenerate with
+`python3 layout/lvs_reference.py` after any `design/netlist/*.spice`
+change.
+
+**Two independent, fully-attributed causes for the mismatch itself** (per
+`klt lvs`'s own `mismatches[]` categorisation in each committed report —
+neither is a routing/connectivity bug this issue introduced, and neither is
+fixable within this issue's own scope):
+
+1. **`klt`'s curated `sg13g2` extraction deck does not recognise bipolar or
+   resistor devices at all** (`klayout_tools.decks.sg13g2.EXTRACTION_DECK`
+   only models thin-oxide MOS — see this deck's own module docstring, and
+   this repo's `CLAUDE.md`: "resistor/capacitor/bipolar/diode device
+   recognition... explicitly out of scope"). Every `Q1`–`Q3`/`R1`/`R2`
+   (`bandgap_core`) and `RPU` (`bandgap_startup`) device is therefore
+   necessarily reference-only in the compare — `device.unmatched`, class
+   `NPN13G2`/`RES`, 5 of `bandgap_core`'s 8 `device.unmatched` findings and
+   1 of `bandgap_startup`'s 3. Not a new gap (already documented) and not
+   actionable from this repo's side.
+2. **This layout has no top-level routing between device instances** — a
+   real, new finding, but not a defect: `layout/common.py`'s drawing
+   primitives (`draw_hv_mos`/`draw_npn13g2`/`draw_poly_res`) each draw one
+   isolated shape group per device, with no `Metal1`/`Metal2`/`Via1` wiring
+   *between* instances. `klt extract` confirms this directly:
+   `bandgap_core.gds` extracts to **12 disconnected nets** for its 3 `pfet`
+   devices' worth of terminals (one net per terminal, no merging across
+   instances) against the schematic's 8 named nets, several of which
+   (`vdd`, `fb`, `vss`) are shared across multiple devices in the netlist
+   but never physically joined in the drawn geometry. This is exactly what
+   issue #11 documented building — a labeled floorplan/device-placement
+   layout, not a routed one (see "What this layout is / is not" above,
+   and #11's own acceptance criteria) — so it is a real, pre-existing,
+   already-disclosed limitation of the layout this issue verifies against,
+   not something #12 introduced or should silently paper over. Filed as a
+   design-specific follow-up in *this* repo (not `klayout-tools` — this is
+   about wiring up the layout, not a tool gap):
+   [#20](https://github.com/2AMLogic/sg13g2-bandgap/issues/20).
+
+Net effect: even the 3 MOS devices the deck *does* recognise on both sides
+(`pfet` `M1`/`M2`/`M3` in `bandgap_core`; `nfet` `MSENSE`/`MKFB` in
+`bandgap_startup`) show as `device.unmatched` too — not because the device
+recognition itself is wrong (same class, same L/W on both sides), but
+because `NetlistComparer`'s topology match has no surrounding net structure
+to anchor a pairing on, given cause 2 above. `status: "mismatch"` is
+reported honestly rather than claimed clean or silently downgraded to
+warnings — per `CLAUDE.md`, "Verification is the product": this repo's DRC
+result is a genuine pass; its LVS result is a genuine, fully-explained
+fail, not fabricated evidence either way.
