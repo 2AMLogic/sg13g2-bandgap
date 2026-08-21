@@ -101,34 +101,133 @@ review, the same way `spec/decision-records/`'s append-only rule is.
 ## Testbenches landed so far
 
 - **[`core-open-loop-bias/`](core-open-loop-bias/README.md)** — the bandgap
-  core's three real bipolar legs, current-biased directly (no mirror, no
-  amplifier — neither exists yet), swept across the full
-  temperature x supply x HBT/resistor-process-corner PVT grid. This is the
-  first testbench to land (issue #10) and satisfies that issue's "at
-  minimum one full PVT sweep is runnable" acceptance criterion. Read its own
-  `README.md` for exactly what it does and does not claim, and for a real
-  tooling gap this landing surfaced (below).
+  core (three real `npn13G2` legs + the real `sg13_hv_pmos` mirror + both
+  real `rppd` resistors), with the mirror biased open-loop from a
+  diode-connected replica leg because no amplifier exists yet, swept across
+  the full temperature x supply x HBT/MOS/resistor-process-corner PVT grid
+  (45 points). First testbench to land (issue #10, as an ideal-primitive
+  approximation); converted to real compact models by issue #22.
+- **[`startup-trip-point/`](startup-trip-point/README.md)** — the startup
+  circuit (`design/netlist/bandgap_startup.spice`): does it engage at cold
+  start and release once the core is running, across the same PVT grid
+  (45 points). Every device in that netlist is OSDI-gated, so this
+  experiment could not exist at all before issue #22 — which makes it the
+  end-to-end proof that the OSDI toolchain below works. Its records also
+  surface a real 125 °C worst-case margin observation; see its README.
 
-## Known environment limitation: SG13G2's MOS and resistor compact models need OSDI
+## OSDI device models: required setup, and how they are built here (issue #22)
 
-SG13G2's PSP103 HV/LV-MOS model and its `r3_cmc`-based resistor models
-(`rppd`, and presumably its sibling flavors `rsil`/`rhigh`, not yet checked)
-are Verilog-A models only instantiable in ngspice via OSDI-compiled shared
-libraries. `IHP-Open-PDK`'s `v0.3.0` release tarball does not ship prebuilt
-`.osdi` binaries, and that release's own `versions.txt` names `openvaf
-23.5.0` as the tool needed to build them — no prebuilt OpenVAF binary
-release exists upstream (checked directly against the GitHub releases API)
-and no `brew`/`pip`/`conda` package was found either, in the sandbox this
-was authored in. Only the HBT device family (`npn13G2`, a native VBIC
-level=9 model card — no OSDI needed) is currently simulatable here.
+SG13G2's PSP103.6 HV/LV-MOS models and its `r3_cmc`-based resistor models
+(`rppd`, `rsil`, `rhigh`) are Verilog-A compact models. ngspice can only
+instantiate them through OSDI-compiled shared libraries, and
+`IHP-Open-PDK` `v0.3.0` (the release [`pdk.json`](pdk.json) pins) ships the
+Verilog-A **sources** but no prebuilt `.osdi` binaries. A freshly-unpacked
+PDK therefore has no `libs.tech/ngspice/osdi/` directory at all, and every
+MOS and every resistor in `design/netlist/*.spice` fails to simulate. Only
+the HBT family (`npn13G2`, a native VBIC level=9 model card) works without
+this step.
 
-This is a genuine tooling gap, not a design or `klt` issue —
-`design/README.md` already reasoned (correctly) that it is out of
-`klayout-tools`' scope, since `klt` resolves PDK *paths*, not simulator
-device-model builds. It blocks any testbench that needs the real PMOS
-mirror or the real `rppd`/`rsil`/`rhigh` resistor compact models — i.e.
-every testbench beyond `core-open-loop-bias`'s open-loop, ideal-bias
-approximation. Tracked as a follow-up issue (filed alongside this PR); until
-it lands, every testbench here that needs a MOS or resistor device will
-need the same ideal-primitive substitution `core-open-loop-bias` uses, with
-the same explicit disclosure.
+**Cold-start setup — one command:**
+
+```bash
+export PDK_ROOT=/path/to/ihp-open-pdk   # parent dir containing ihp-sg13g2/
+export PDK=ihp-sg13g2
+sim/tools/build-osdi.sh                 # fetch pinned compiler, build models
+sim/tools/build-osdi.sh --check         # verify only (models present + loadable)
+```
+
+`build-osdi.sh` is idempotent: it exits early if the models already build
+and load, re-downloads nothing it has cached under
+`~/.cache/sg13g2-bandgap` (override with `SG13G2_TOOLS_CACHE`), and writes
+its output to `$PDK_ROOT/$PDK/libs.tech/ngspice/osdi/` — the location the
+PDK's own `.spiceinit` and `install.py` use. Nothing it produces is
+committed to this repo: `.osdi` files are platform-specific native shared
+libraries, so they are *built*, never *vendored*, here. `sim/env.sh`
+exports `SG13G2_OSDI_DIR` and warns when the models are missing, and each
+`run_*.sh` preflights with `build-osdi.sh --check` before claiming a
+result.
+
+### The approach, and why the alternatives were rejected
+
+**Chosen: compile the PDK's own Verilog-A sources with a checksum-pinned
+prebuilt OpenVAF-Reloaded (`openvaf-r` `v24.0.1mob`).**
+
+- The compact-model *code* that reaches the simulator is the PDK's own,
+  byte for byte, from the tarball already `sha256`-pinned in `pdk.json`.
+  The only third-party binary in the chain is the **compiler**, pinned by
+  `sha256` against GitHub's own published release digest and re-verified on
+  every run (`build-osdi.sh` deletes the download and exits non-zero on a
+  mismatch, rather than compiling with an unverified toolchain).
+- `openvaf-r` is not an arbitrary third-party pick: the PDK's own
+  `libs.tech/verilog-a/openvaf-compile-va.sh` and
+  `libs.tech/ngspice/install.py` both look for `openvaf-r` **first** and
+  fall back to `openvaf` only if it is absent. This build uses the same
+  flags (`-D__NGSPICE__`) and the same four-model list those scripts use,
+  so what lands in `osdi/` is what the PDK intends ngspice to load.
+
+**Rejected — build upstream OpenVAF 23.5.0 from source** (the version the
+PDK's `versions.txt` names). That release ships zero binary assets
+(re-verified 2026-08-21 via the GitHub releases API) and its last upstream
+push was 2024-08; building it requires a patched LLVM of a specific major
+version, which is a much larger and far less reproducible cold-start
+dependency than a checksummed 60 MB compiler archive — and it would still
+produce the *same* models from the *same* PDK sources. The reproducibility
+this repo needs is "a cold-start agent gets identical `.osdi` behavior from
+one documented command", which the pinned-compiler path satisfies with
+strictly fewer moving parts.
+
+**Rejected — vendor prebuilt `.osdi` binaries** (from a third party, or by
+committing this machine's build). This is the supply-chain-worst option and
+the one this repo should never take: a `.osdi` is an opaque native shared
+library that ngspice `dlopen`s, so a subtly-wrong or hostile model would
+pass every testbench here *looking* correct, and the evidence records would
+silently inherit it. They are also per-OS/per-arch, so a committed binary
+would be dead weight for most contributors. Building from the PDK's
+auditable Verilog-A source keeps the model text reviewable.
+
+### Verified, not asserted
+
+The build is **deterministic**, checked by wiping both the compiler cache
+and the output directory and rebuilding cold: the four `.osdi` files came
+back byte-for-byte identical. On `macos-aarch64` with
+`openvaf-r v24.0.1mob` against IHP-Open-PDK `v0.3.0` (2026-08-21) the
+`sha256` sums were:
+
+```
+e91a2addddaf967874049d6e9c118be0da1c84e3ec88da669d78c1f84bc2df31  psp103.osdi
+aee0280b0de1cb6dbb06b183f5868931a86b5278b5b88f70dd5d3da4e966f2f5  psp103_nqs.osdi
+8e78a6d4af23fa978df660a40fe585bc1caf38fd36e6b25aea55795c5a4535dd  r3_cmc.osdi
+ac2b43d50c720a1b060f5d4b11de0f00ff539fa433ca481fe9ec61c8bd0667d4  mosvar.osdi
+```
+
+Those sums are a convenience for confirming you built the same thing on the
+same platform — they are **not** a portability claim: a different OS/arch
+(or a different compiler pin) will legitimately produce different bytes,
+which is exactly why the binaries are rebuilt rather than committed.
+
+`sim/tools/build-osdi.sh --check` runs a real `ngspice -b` batch that
+instantiates `sg13_hv_pmos`, `sg13_hv_nmos` and `rppd` against the PDK's
+own `cornerMOShv.lib`/`cornerRES.lib` sections and fails loudly on
+`Unable to find definition of model`, `Unknown model type`, or a missing
+operating point. Both testbenches below run real OSDI-backed MOS and
+resistor devices across the full PVT grid — see their records for the
+evidence.
+
+### Platform note (macOS, arm64)
+
+The published OpenVAF-Reloaded macOS bundles carry a code signature that no
+longer matches their own bytes (`codesign -v lib/libLLVM.dylib` →
+`invalid signature (code or signature have been modified)`), so macOS
+`SIGKILL`s `openvaf-r` the instant `dyld` maps the library — observed as a
+silent exit `137` with no output whatsoever, which is easy to misread as
+"the binary is broken". `build-osdi.sh` re-signs the bundled dylibs ad-hoc
+(`codesign --force --sign -`) after the `sha256` check passes, which is
+what makes the compiler runnable. This is a note for the next agent who
+hits exit 137, not a security exception: the bytes are verified *before*
+they are re-sealed.
+
+This whole area is a genuine PDK-tooling gap, not a `klt`/`klayout-tools`
+gap — `klt` resolves PDK *paths*; it does not compile or vendor simulator
+device models. Per `CLAUDE.md`'s friction protocol, that means it belongs
+here (issue #22), not on the `klayout-tools` tracker, which is exactly
+where `design/README.md` already placed it.

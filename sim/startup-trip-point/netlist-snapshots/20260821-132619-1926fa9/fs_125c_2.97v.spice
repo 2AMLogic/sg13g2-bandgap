@@ -1,0 +1,65 @@
+* sg13g2-bandgap -- bandgap_startup PVT testbench (issue #22)
+* Generated from sim/startup-trip-point/testbench/tb_startup_trip_point.spice.tmpl
+* by sim/startup-trip-point/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run the
+* sweep. Full rationale is in sim/startup-trip-point/README.md.
+*
+* Generated for: corner=fs temp=125C vdd=2.97V
+* DUT git sha (design/netlist/bandgap_startup.spice this was copied from):
+*   4832c71
+* PDK: ihp-sg13g2 /tmp/pdks/ihp-open-pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /tmp/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* Every device in design/netlist/bandgap_startup.spice is OSDI-gated -- the
+* two sg13_hv_nmos switches need psp103.osdi and the rhigh pull-up needs
+* r3_cmc.osdi -- so before issue #22 this netlist could not be simulated at
+* all, in any form, in this environment. All three DUT devices below are
+* copied verbatim from that netlist: same instance names, same node names,
+* same W/L.
+
+.lib "/tmp/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_fs
+.lib "/tmp/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_typ
+
+.options temp=125 tnom=27
+
+Vvdd vdd 0 dc 2.97
+Vvss vss 0 dc 0
+* bandgap_startup.spice wires the rhigh bulk terminal to the global
+* substrate net `sub!`; tied to vss through a 0 V source here, as in
+* sim/core-open-loop-bias.
+Vsub sub! vss dc 0
+
+* FIXTURE 1 -- sns1 stimulus. In the assembled block, sns1 is the bandgap
+* core's own sense node (bandgap_core.spice's XQ1 collector/base). Here it
+* is driven by a source so the startup circuit's response can be swept from
+* "core is dead" (sns1 = 0) to "core is up" (sns1 = vdd) in one analysis.
+Vsns1 sns1 vss dc 0
+
+* FIXTURE 2 -- fb load. fb is the PMOS mirror gate; nothing drives it high
+* in the design yet (no error amplifier -- issue #9's scope cut), so an
+* undriven fb is a floating node once XMKFB turns off. This 10 Mohm
+* pull-up stands in for whatever eventually holds fb high, and is weak
+* enough (<= 0.4 uA) that it does not contest XMKFB's pull-down: see the
+* fb_on column of this experiment's records.
+Rfbpu vdd fb 10meg
+
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+XMKFB fb det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+.control
+pre_osdi /tmp/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /tmp/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /tmp/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /tmp/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+* 1) cold-start state: core dead (sns1 = 0), startup must be engaged.
+op
+print v(det) v(fb)
+* 2) disengage behaviour: sweep the core's sense node up and find where the
+*    detect node releases, plus the fully-running-core end state.
+dc Vsns1 0 2.97 0.005
+meas dc vtrip when v(det)=1.4850 cross=1
+meas dc det_off find v(det) at=2.9200
+meas dc fb_off find v(fb) at=2.9200
+.endc
+.end

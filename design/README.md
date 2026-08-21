@@ -165,6 +165,14 @@ actually ran, in the sandbox it ran in — not a substitute for #10.
   honest environment limitation for whoever picks up #10, which will need a
   machine (or a documented OpenVAF build step) with working `.osdi` models
   to run any MOS- or resistor-containing testbench at all.
+  **Resolved by issue #22**: `sim/tools/build-osdi.sh` now builds the
+  PSP103 and `r3_cmc` models from the PDK's own Verilog-A sources with a
+  checksum-pinned OpenVAF-Reloaded compiler, so real `sg13_hv_pmos` /
+  `sg13_hv_nmos` / `rppd` / `rhigh` devices simulate here. See
+  `sim/README.md` § "OSDI device models" for the build, and
+  `sim/core-open-loop-bias/` + `sim/startup-trip-point/` for the
+  full-PVT-grid evidence produced with them. The paragraph above is kept
+  as the historical account of what issue #9's environment could do.
 - **Not attempted**: DRC/LVS, layout, PVT corner sweeps, mismatch/Monte
   Carlo, startup-circuit transient behavior, and anything requiring the
   amplifier this issue deliberately does not build. All out of this
