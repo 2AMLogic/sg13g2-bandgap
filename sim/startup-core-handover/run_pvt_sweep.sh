@@ -14,32 +14,11 @@
 # <record-id>/ and records/<record-id>.{md,csv} -- see sim/README.md.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
-EXPERIMENT_DIR="${SCRIPT_DIR}"
+DUT_NETLIST="design/netlist/bandgap_core.spice"
+# shellcheck source=../lib/pvt_preflight.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_startup_core_handover.spice.tmpl"
-
-# shellcheck source=/dev/null
-source "${SIM_DIR}/env.sh"
-
-if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
-  echo "run_pvt_sweep.sh: no resolvable ${PDK:-ihp-sg13g2} install -- see sim/env.sh output above." >&2
-  exit 3
-fi
-
-if ! command -v ngspice >/dev/null 2>&1; then
-  echo "run_pvt_sweep.sh: ngspice not found on PATH." >&2
-  exit 3
-fi
-
-if ! "${SIM_DIR}/tools/build-osdi.sh" --check >/dev/null 2>&1; then
-  echo "run_pvt_sweep.sh: OSDI device models missing or not loadable." >&2
-  echo "run_pvt_sweep.sh: run  sim/tools/build-osdi.sh  first (see sim/README.md)." >&2
-  "${SIM_DIR}/tools/build-osdi.sh" --check >&2 || true
-  exit 3
-fi
-OSDI_DIR="${SG13G2_OSDI_DIR:-${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi}"
 
 # XMSENSE's W is read from the live design/netlist/bandgap_startup.spice
 # rather than hardcoded in the template, so this sweep always exercises
@@ -52,18 +31,11 @@ if [[ -z "${MSENSE_W}" ]]; then
   exit 3
 fi
 
-DUT_CORE_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- design/netlist/bandgap_core.spice 2>/dev/null || echo unknown)"
+# preflight derives DUT_GIT_SHA from DUT_NETLIST (bandgap_core.spice); this
+# experiment co-simulates two DUTs, so alias it as the core half and compute
+# the startup half's SHA separately.
+DUT_CORE_GIT_SHA="${DUT_GIT_SHA}"
 DUT_STARTUP_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- design/netlist/bandgap_startup.spice 2>/dev/null || echo unknown)"
-REPO_GIT_SHA="$(git -C "${REPO_ROOT}" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-RECORD_ID="$(date -u +%Y%m%d-%H%M%S)-${REPO_GIT_SHA}"
-
-CORNERS_OUT="${EXPERIMENT_DIR}/corners/${RECORD_ID}"
-SNAPSHOTS_OUT="${EXPERIMENT_DIR}/netlist-snapshots/${RECORD_ID}"
-RECORDS_DIR="${EXPERIMENT_DIR}/records"
-mkdir -p "${CORNERS_OUT}" "${SNAPSHOTS_OUT}" "${RECORDS_DIR}"
-
-CSV_OUT="${RECORDS_DIR}/${RECORD_ID}.csv"
-MD_OUT="${RECORDS_DIR}/${RECORD_ID}.md"
 
 echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,det_early_v,fb_early_v,det_final_v,fb_final_v,sns1_final_v,vref_final_v,i_mkfb_final_a" > "${CSV_OUT}"
 
@@ -78,8 +50,6 @@ declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [
 TEMPS=(-40 27 125)
 VDDS=(2.97 3.30 3.63)
 
-NGSPICE_VERSION="$(ngspice -v 2>&1 | sed -n '2p')"
-
 # Release criteria: at the end of the transient (fully ramped + settled),
 # v(det) should have dropped well below vdd/2 (the same "released" sense
 # sim/startup-trip-point uses) AND XMKFB's own contribution to the shared
@@ -89,10 +59,6 @@ NGSPICE_VERSION="$(ngspice -v 2>&1 | sed -n '2p')"
 # not just "det looks low". 1% of 5 uA = 50 nA.
 DET_RELEASE_FRAC="0.2"
 I_MKFB_RELEASE_A="50e-9"
-
-total=0
-passed=0
-failed_points=()
 
 for corner in "${CORNER_LABELS[@]}"; do
   hbt_section="${HBT_SECTION_OF[${corner}]}"
