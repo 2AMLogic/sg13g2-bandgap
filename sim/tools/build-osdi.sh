@@ -53,6 +53,19 @@ OPENVAF_SHA_macos_x86_64="1635e728a81830326c06d4f81e96f2a8943e661b906d4046084c35
 OPENVAF_ASSET_linux_x86_64="openvaf-r-${OPENVAF_TAG}-linux-x86_64.tar.gz"
 OPENVAF_SHA_linux_x86_64="3297e32f68becf5e0d4709d7f731d7d26f87f88dc136041334677d3ab36279e3"
 
+# Linux/x86_64 only (issue #31): the pinned openvaf-r release above ships
+# lib/libLLVM.so.21.1 as a *dangling symlink* to
+# ../../x86_64-linux-gnu/libLLVM.so.21.1 -- it assumes the host already has a
+# system-installed LLVM 21, which no current Ubuntu LTS ships (24.04/noble
+# tops out at libllvm20). Fetch the real .so from the official LLVM apt
+# repo's .deb (dpkg-deb -x, no root needed) and point LD_LIBRARY_PATH at it
+# for our own openvaf-r invocations. Pin re-checked 2026-08-21; see
+# https://apt.llvm.org/noble/pool/main/l/llvm-toolchain-21/ for updates.
+LIBLLVM21_DEB_URL="https://apt.llvm.org/noble/pool/main/l/llvm-toolchain-21/libllvm21_21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70_amd64.deb"
+LIBLLVM21_DEB_SHA256="f1f058fff19f9d711c32b9efe5cd473dd2f0e7d5338d082fa5a25858322048cd"
+LIBLLVM21_DEB_CODENAME="noble"
+LIBLLVM21_DEB_ASSET="libllvm21_21.1.8-${LIBLLVM21_DEB_CODENAME}_amd64.deb"
+
 # model basename -> subdirectory under libs.tech/verilog-a, mirroring the
 # PDK's own openvaf-compile-va.sh / ngspice/install.py model list.
 MODELS=("psp103:psp103" "psp103_nqs:psp103" "r3_cmc:r3_cmc" "mosvar:mosvar")
@@ -96,6 +109,69 @@ sha256_of() {
     echo "build-osdi.sh: neither sha256sum nor shasum available -- cannot verify download." >&2
     exit 3
   fi
+}
+
+# --------------------------------------------------------------------------
+# Linux/x86_64 only (issue #31): fetch, checksum-verify, and unpack the real
+# libLLVM.so.21 shared library that the pinned openvaf-r release expects the
+# host to already provide (see the LIBLLVM21_* pins above for why). Mirrors
+# the openvaf-r tarball fetch-and-verify flow below. Caller must have set
+# CACHE_DIR first. Prints the directory containing libLLVM.so.21.1 on
+# stdout for the caller to fold into LD_LIBRARY_PATH; caches the extraction
+# so repeat runs cost nothing.
+# --------------------------------------------------------------------------
+ensure_libllvm21() {
+  local deb="${CACHE_DIR}/${LIBLLVM21_DEB_ASSET}"
+  local extract_dir="${CACHE_DIR}/${LIBLLVM21_DEB_ASSET%.deb}"
+  local libdir="${extract_dir}/usr/lib/x86_64-linux-gnu"
+
+  if [[ ! -f "${libdir}/libLLVM.so.21.1" ]]; then
+    if ! command -v dpkg-deb >/dev/null 2>&1; then
+      cat >&2 <<EOF
+build-osdi.sh: openvaf-r (${OPENVAF_TAG}, linux-x86_64) needs libLLVM.so.21,
+  which this host does not provide as a system package (no current Ubuntu LTS
+  ships libllvm21; 24.04/noble tops out at libllvm20), and dpkg-deb -- needed
+  to extract it from the official LLVM apt repo's .deb without root -- is not
+  on PATH. Install dpkg-deb (Debian/Ubuntu: already present; otherwise
+  'apt-get install dpkg') or apply the workaround manually:
+
+    curl -fsSL -o libllvm21.deb '${LIBLLVM21_DEB_URL}'
+    sha256sum libllvm21.deb   # expect ${LIBLLVM21_DEB_SHA256}
+    dpkg-deb -x libllvm21.deb /tmp/libllvm21
+    export LD_LIBRARY_PATH=/tmp/libllvm21/usr/lib/x86_64-linux-gnu
+    sim/tools/build-osdi.sh
+EOF
+      exit 3
+    fi
+
+    if [[ ! -f "${deb}" ]]; then
+      echo "build-osdi.sh: fetching ${LIBLLVM21_DEB_URL}" >&2
+      curl -fsSL -o "${deb}.part" "${LIBLLVM21_DEB_URL}"
+      mv "${deb}.part" "${deb}"
+    fi
+
+    local got
+    got="$(sha256_of "${deb}")"
+    if [[ "${got}" != "${LIBLLVM21_DEB_SHA256}" ]]; then
+      echo "build-osdi.sh: SHA256 MISMATCH for ${LIBLLVM21_DEB_ASSET}" >&2
+      echo "  expected ${LIBLLVM21_DEB_SHA256}" >&2
+      echo "  got      ${got}" >&2
+      echo "build-osdi.sh: refusing to use an unverified libLLVM; removing the download." >&2
+      rm -f "${deb}"
+      exit 4
+    fi
+    echo "build-osdi.sh: sha256 ${got} OK (${LIBLLVM21_DEB_ASSET})" >&2
+
+    rm -rf "${extract_dir}"
+    mkdir -p "${extract_dir}"
+    dpkg-deb -x "${deb}" "${extract_dir}"
+  fi
+
+  [[ -f "${libdir}/libLLVM.so.21.1" ]] || {
+    echo "build-osdi.sh: ${libdir}/libLLVM.so.21.1 missing after extracting ${LIBLLVM21_DEB_ASSET}." >&2
+    exit 4
+  }
+  echo "${libdir}"
 }
 
 # --------------------------------------------------------------------------
@@ -240,7 +316,25 @@ if [[ "${uname_s}" == "Darwin" ]] && command -v codesign >/dev/null 2>&1; then
   done
 fi
 
-echo "build-osdi.sh: compiler: $("${OPENVAF}" --version 2>&1 | head -1) (${OPENVAF_REPO} ${OPENVAF_TAG})"
+# Linux/x86_64: openvaf-r's own lib/libLLVM.so.21.1 is a dangling symlink
+# (see the LIBLLVM21_* pins above) -- fetch+verify the real .so and fold its
+# directory into LD_LIBRARY_PATH for every openvaf-r invocation below.
+# Other platforms are unaffected (empty string -> LD_LIBRARY_PATH untouched).
+OPENVAF_EXTRA_LD_LIBRARY_PATH=""
+if [[ "${uname_s}/${uname_m}" == "Linux/x86_64" ]]; then
+  OPENVAF_EXTRA_LD_LIBRARY_PATH="$(ensure_libllvm21)"
+  echo "build-osdi.sh: libLLVM.so.21 resolved via ${OPENVAF_EXTRA_LD_LIBRARY_PATH} (apt.llvm.org libllvm21, issue #31)"
+fi
+
+run_openvaf() {
+  if [[ -n "${OPENVAF_EXTRA_LD_LIBRARY_PATH}" ]]; then
+    LD_LIBRARY_PATH="${OPENVAF_EXTRA_LD_LIBRARY_PATH}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" "${OPENVAF}" "$@"
+  else
+    "${OPENVAF}" "$@"
+  fi
+}
+
+echo "build-osdi.sh: compiler: $(run_openvaf --version 2>&1 | head -1) (${OPENVAF_REPO} ${OPENVAF_TAG})"
 
 mkdir -p "${OSDI_DIR}"
 for entry in "${MODELS[@]}"; do
@@ -252,7 +346,7 @@ for entry in "${MODELS[@]}"; do
   # -D__NGSPICE__ and the model list mirror the PDK's own
   # libs.tech/verilog-a/openvaf-compile-va.sh, so what lands here is what
   # the PDK intends ngspice to load -- not a locally invented build.
-  ( cd "${VA_DIR}/${subdir}" && "${OPENVAF}" -D__NGSPICE__ -o "${OSDI_DIR}/${model}.osdi" "${model}.va" )
+  ( cd "${VA_DIR}/${subdir}" && run_openvaf -D__NGSPICE__ -o "${OSDI_DIR}/${model}.osdi" "${model}.va" )
 done
 
 echo
