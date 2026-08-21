@@ -47,19 +47,39 @@ v {xschem version=3.4.8RC file_version=1.3
 * and clamps det low, turning MKFB off -- its only remaining contribution is
 * subthreshold leakage on fb.
 *
-* SIZING (PROVISIONAL, same status as bandgap_core.sch's -- not yet
-* simulation-verified; #10 owns startup-time / no-other-stable-state
-* verification across the full PVT matrix, the way gf180-bandgap's
-* sim/startup/, sim/startup-slow-ramp/, sim/startup-state-search/ and
-* sim/startup-disabled-control/ experiments did for that repo's analogous
-* circuit):
+* SIZING (re-derived against sim/ evidence -- see below; originally
+* PROVISIONAL/hand-picked, same status as bandgap_core.sch's, until #22/#24
+* built the OSDI models and the PVT-cornered testbenches that could actually
+* check it):
 *   RPU:     rhigh, w=1u, l~=1411.3u (R~=2Mohm, solved from rhigh.sym's own
 *            R(w,l) formula, b=0 bends)
-*   MSENSE:  sg13_hv_nmos, W=2u L=0.5u -- deliberately small; only needs to
-*            out-pull RPU's weak pull-up once sns1 crosses threshold, not
-*            carry any core design current.
-*   MKFB:    sg13_hv_nmos, W=2u L=0.5u -- same rationale, sized only to pull
-*            fb low against M1-M3's gate capacitance, not to carry current.
+*   MSENSE:  sg13_hv_nmos, W=10u L=0.5u. Was W=2u through #22's
+*            sim/startup-trip-point testbench; #24's cross-bench check
+*            (comparing that testbench's trip point against
+*            sim/core-open-loop-bias's real sns1 operating point) found the
+*            W=2u trip point sitting ABOVE the core's own sns1 at 125 C in
+*            the wcs/sf corners (wcs_125c_2.97v/3.30v/3.63v, sf_125c_3.63v)
+*            by a few mV -- meaning MKFB would not fully release once the
+*            core is actually running there. #24's co-simulated
+*            core+startup transient testbench
+*            (sim/startup-trip-point/testbench/tb_startup_core_cosim.spice.tmpl)
+*            confirmed this is a real, and substantially amplified, problem:
+*            with the W=2u sense device, the unreleased MKFB current
+*            (~15-17uA at the worst point) drives the mirror current well
+*            above its ~5uA design point, which self-consistently holds
+*            sns1 high enough to keep MKFB partially on -- a stable
+*            partial-release state, not a transient artifact (checked out
+*            to 10ms). Widening MSENSE to W=10u (5x) drops the residual
+*            MKFB current below ~1nA and recovers sns1 to within 0.1mV of
+*            the core-only (no startup circuit) operating point at every
+*            previously-failing corner, confirmed by re-running both the
+*            co-simulation and the standalone sim/startup-trip-point sweep;
+*            see spec/decision-records/0003-startup-sense-nmos-resize.md.
+*   MKFB:    sg13_hv_nmos, W=2u L=0.5u -- unchanged; sized only to pull fb
+*            low against M1-M3's gate capacitance once MSENSE has clamped
+*            det low, not to carry current itself, and #24 found no reason
+*            to resize it (the margin problem is MSENSE's release strength
+*            vs RPU, not MKFB's pull-down strength).
 *
 * Pins: vdd, vss, sns1, fb
 }
@@ -73,7 +93,7 @@ N 0 -30 0 -50 {}
 C {lab_pin.sym} 0 -50 0 0 {name=l1 lab=vdd}
 N 0 30 0 50 {}
 C {lab_pin.sym} 0 50 0 0 {name=l2 lab=det}
-C {sg13g2_pr/sg13_hv_nmos.sym} 400 0 0 0 {name=MSENSE model=sg13_hv_nmos w=2u l=0.5u ng=1 m=1}
+C {sg13g2_pr/sg13_hv_nmos.sym} 400 0 0 0 {name=MSENSE model=sg13_hv_nmos w=10u l=0.5u ng=1 m=1}
 N 420 -30 440 -50 {}
 C {lab_pin.sym} 440 -50 0 0 {name=l3 lab=det}
 N 380 0 360 0 {}
