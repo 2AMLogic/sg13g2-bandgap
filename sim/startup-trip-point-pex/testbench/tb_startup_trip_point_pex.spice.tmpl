@@ -62,9 +62,15 @@
 *     vss directly, mirroring the schematic's real intent, rather than
 *     wiring to a deck-synthesized net this testbench has no independent
 *     way to validate.
-*   - Same zero-wire-parasitics caveat as core-open-loop-bias-pex: the
-*     sg13g2 deck's PARASITICS.metals/metal_overlaps tables are empty for
-*     Metal1/Metal2, so `--parasitics` reports zero wire R/C here too.
+*   - klayout-tools#1280/#1282 (issue #37) populated the sg13g2 deck's
+*     PARASITICS.metals/metal_overlaps coefficient tables (Metal1/Metal2,
+*     later the full Metal1-TopMetal2 stack). Re-extracting against the
+*     current deck now yields non-zero r_count/c_count -- this run wires
+*     in those wire R/C cards verbatim (see "Wire parasitics" below), the
+*     first PEX record here to carry them. XMSENSE's gate net \$4 gets no
+*     wire model either way (a single-terminal, deck-disconnected net in
+*     this isolated cell's own extraction -- the testbench's own `sns1`
+*     drive below is a fixture bridging that gap, unchanged by this pass).
 
 .lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerMOShv.lib" @@MOS_SECTION@@
 .lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerRES.lib" @@RES_SECTION@@
@@ -94,10 +100,32 @@ Rfbpu vdd fb 10meg
 XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
 
 * Extracted NMOS switches -- see file header above for the body-net
-* substitution; XMSENSE's w/as/ad/ps/pd below now match the corrected,
+* substitution; XMSENSE's w/as/ad/ps/pd below match the corrected,
 * regenerated layout (issue #32; layout/bandgap_startup/pex_extract_report.json).
-XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
-XMKFB fb det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
+* Drain/source pins (and XMKFB's gate) are wired to the exact per-terminal
+* wire-parasitic hub node names layout/bandgap_startup/bandgap_startup.pex.spice's
+* own M$1/M$2 cards use (M$1 = XMSENSE: det__t0/vss__t0; M$2 = XMKFB:
+* fb__t0/det__t1/vss__t1) -- the "Wire parasitics" block below ties each
+* hub back to its real net (det/fb/vss) through that file's own series R
+* (+ ground C, no DC effect but included for completeness). Body stays vss
+* directly (testbench fixture, unchanged -- see file header).
+XMSENSE det__t0 sns1 vss__t0 vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMKFB fb__t0 det__t1 vss__t1 vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
+
+* Wire parasitics (issue #37) -- verbatim R/C cards from
+* layout/bandgap_startup/bandgap_startup.pex.spice's --parasitics output
+* (that file's M$1/M$2 cards are already re-encoded above as XMSENSE/
+* XMKFB; these are its remaining, non-MOS cards). Regenerate this block
+* together with the geometry above if the layout or deck ever changes.
+Rdet_t0 det__t0 det 266.75315
+Rdet_t1 det__t1 det 266.75315
+Cdet det vsubs 1.30709866e-13
+Rfb_t0 fb__t0 fb 0.6286
+Cfb fb vsubs 2.1056e-16
+Rvss_t0 vss__t0 vss 5.4071
+Rvss_t1 vss__t1 vss 5.4071
+Cvss vss vsubs 2.34311e-15
+Rvsubs_dctie vsubs 0 1e+12
 
 .control
 pre_osdi @@OSDI_DIR@@/psp103.osdi

@@ -467,19 +467,32 @@ extraction does and does not model, and the resulting PVT-sweep evidence
 under `sim/`. Two findings from this pass, beyond what's already documented
 above:
 
-1. **New finding: the `sg13g2` deck's own `PARASITICS.metals`/
-   `metal_overlaps` coefficient tables are empty for Metal1 and Metal2** —
-   both `pex_extract_report.json`s' own `warnings` say so directly:
-   *"'sg13g2' deck's PARASITICS.metals has no R/C coefficient for Metal1,
-   Metal2 -- --parasitics reports zero resistance and capacitance for that
-   metal level on every net"*. `--parasitics` runs without error and
-   reports `status: "extracted"`, but `parasitics.r_count` /
-   `parasitics.c_count` are both `0` in every committed report — real
-   drawn device geometry, zero wire parasitics, regardless of layout
-   content. This is a deck-content gap, not specific to this design, so it
-   was **filed generically against `klayout-tools`**
-   ([klayout-tools#1277](https://github.com/2AMLogic/klayout-tools/issues/1277)), per `CLAUDE.md`'s
-   friction protocol.
+1. **Resolved (issue #37, 2026-08-21): the `sg13g2` deck's own
+   `PARASITICS.metals`/`metal_overlaps` coefficient tables were empty for
+   Metal1 and Metal2** at the time this section was first written —
+   `pex_extract_report.json`'s own `warnings` said so directly, and
+   `parasitics.r_count`/`parasitics.c_count` both read `0` in the reports
+   PR #33 committed. This was a deck-content gap, not specific to this
+   design, so it was **filed generically against `klayout-tools`**
+   ([klayout-tools#1277](https://github.com/2AMLogic/klayout-tools/issues/1277)),
+   per `CLAUDE.md`'s friction protocol — which closed via
+   [klayout-tools#1280](https://github.com/2AMLogic/klayout-tools/pull/1280)
+   (Metal1/Metal2), later broadened by
+   [klayout-tools#1282](https://github.com/2AMLogic/klayout-tools/pull/1282)
+   to the full Metal1-TopMetal2 stack. Re-extracting `bandgap_core.gds`/
+   `bandgap_startup.gds` against the current deck (issue #37) now reports
+   `r_count: 9, c_count: 7`/`r_count: 5, c_count: 3` respectively, both
+   `metals_without_coefficient` lists empty, and no other metal level newly
+   reports zero RC. **Bipolar (`npn13G2`) and resistor (`rppd`/`rhigh`)
+   device recognition is a separate, still-open gap** — see the LVS section
+   above (cause 1) and `sim/core-open-loop-bias-pex/README.md`'s "What this
+   does and does not model" for the current, more nuanced picture (both
+   resistor flavours now have a deck-side recognizer, per issue #1235, but
+   this repo's own `draw_poly_res` doesn't yet draw the marker layers
+   either needs — a layout gap, not a `klt` one). Do not conflate the two:
+   wire-parasitics modelling and bipolar/resistor device recognition are
+   independent deck capabilities that happened to both be tracked from this
+   same section.
 2. **Resolved (issue #32): `layout/bandgap_startup/generate.py` drew
    `XMSENSE` at `w=2u`, stale relative to `design/netlist/bandgap_startup.spice`'s
    `w=10u`.** [Decision record

@@ -5,7 +5,7 @@
   "top": "bandgap_startup",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_startup.pex.spice",
-  "netlist_sha256": "dd5de63a9548644838ee70341409f6d77a7178503fb1081da17fbf0e544b9082",
+  "netlist_sha256": "d3c49f94a9e61e696c257117173f5b55f681bfc15db45658d53abc9dbeead482",
   "status": "extracted",
   "device_count": 2,
   "net_count": 5,
@@ -21,11 +21,6 @@
       "shapes": 2
     },
     {
-      "layer": 7,
-      "datatype": 0,
-      "shapes": 2
-    },
-    {
       "layer": 8,
       "datatype": 1,
       "shapes": 7
@@ -37,19 +32,23 @@
     },
     {
       "layer": 128,
-      "datatype": 0,
-      "shapes": 1
-    },
-    {
-      "layer": 128,
       "datatype": 1,
       "shapes": 1
     }
   ],
-  "device_recognition_only_layers": [],
+  "device_recognition_only_layers": [
+    {
+      "layer": 128,
+      "datatype": 0,
+      "shapes": 1
+    }
+  ],
   "device_classes": [
     "nfet",
-    "pfet"
+    "pfet",
+    "resistor",
+    "dantenna",
+    "dpantenna"
   ],
   "devices": [
     {
@@ -119,9 +118,7 @@
   "warnings": [
     "1 routing-stack cluster (1 shape on 8/0) join no extracted net -- no via lands on this geometry and no same-layer wiring touches it, so it is invisible to the extracted netlist and to every downstream `klt lvs`/`klt sim` view; deliberate dead metal (artwork, fill) is expected here, unexplained dead metal usually means the connection you intended is missing -- see dead_metal[] for the per-cluster layer/bbox/shape count.",
     "1 net connect to exactly one device terminal -- a MOS gate -- and are not a declared pin: these gates have no DC path from anywhere else in the netlist, so they are almost certainly unconnected inputs rather than legitimate floating nodes; resimulating this netlist directly will hit a singular matrix on these nets -- see single_terminal_nets[] for the full list.",
-    "6 layers (5/1, 7/0, 8/1, 63/0, 128/0, 128/1) carrying 16 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation.",
-    "'sg13g2' deck's PARASITICS.metals has no R/C coefficient for Metal1, Metal2 -- --parasitics reports zero resistance and capacitance for that metal level on every net, understating the true value. See docs/cli/extract.md's 'Parasitic (RC) extraction' section.",
-    "'sg13g2' deck's PARASITICS.metal_overlaps has no vertical-overlap coupling coefficient for Metal1/Metal2 -- --parasitics reports zero net-to-net coupling capacitance for that adjacent metal-level pair, understating the true value (the corresponding area still charges to ground, unlike a pair with a curated coefficient). See docs/cli/extract.md's 'Parasitic (RC) extraction' section."
+    "4 layers (5/1, 8/1, 63/0, 128/1) carrying 13 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
   ],
   "black_box_regions": [],
   "abstracted_cells": [],
@@ -160,44 +157,104 @@
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:a64d3a7b716b746cefa22a2672184831dd5d17fabfe09abd398e1862b770ee0f"
+      "content_hash": "sha256:72c12aadf165e17090871284ebf8688f2066e6d11967f30723945c3efc12bf59",
+      "released": false
     },
     "input": {
       "content_hash": "sha256:106a5ebdbfc5dcb63666b4ae036b7d2b0503e0b05c52be268d74ec020e30c745"
     }
   },
   "parasitics": {
-    "r_count": 0,
-    "c_count": 0,
+    "r_count": 5,
+    "c_count": 3,
     "cc_count": 0,
     "l_count": 0,
-    "total_resistance_ohm": 0.0,
-    "total_capacitance_ff": 0.0,
+    "total_resistance_ohm": 544.9491,
+    "total_capacitance_ff": 133.263536,
     "total_coupling_capacitance_ff": 0.0,
     "total_inductance_nh": 0.0,
-    "nets": [],
-    "metals_without_coefficient": [
+    "nets": [
       {
-        "metal_index": 0,
-        "layer": 8,
-        "datatype": 0
+        "net": "det",
+        "net_id": 2,
+        "resistance_ohm": 533.5063,
+        "capacitance_ff": 130.709866,
+        "inductance_nh": 0.0,
+        "hub_net": "det",
+        "rc_model": "lumped",
+        "terminals": [
+          {
+            "device": "$1",
+            "terminal": "D",
+            "leg_net": "det__t0",
+            "resistance_ohm": 266.7532
+          },
+          {
+            "device": "$2",
+            "terminal": "G",
+            "leg_net": "det__t1",
+            "resistance_ohm": 266.7532
+          }
+        ],
+        "segments": [],
+        "coupled": []
       },
       {
-        "metal_index": 1,
-        "layer": 10,
-        "datatype": 0
-      }
-    ],
-    "overlap_pairs_without_coefficient": [
+        "net": "fb",
+        "net_id": 3,
+        "resistance_ohm": 0.6286,
+        "capacitance_ff": 0.21056,
+        "inductance_nh": 0.0,
+        "hub_net": "fb",
+        "rc_model": "lumped",
+        "terminals": [
+          {
+            "device": "$2",
+            "terminal": "D",
+            "leg_net": "fb__t0",
+            "resistance_ohm": 0.6286
+          }
+        ],
+        "segments": [],
+        "coupled": []
+      },
       {
-        "lower_metal_index": 0,
-        "upper_metal_index": 1,
-        "lower_layer": 8,
-        "lower_datatype": 0,
-        "upper_layer": 10,
-        "upper_datatype": 0
+        "net": "vss",
+        "net_id": 1,
+        "resistance_ohm": 10.8142,
+        "capacitance_ff": 2.34311,
+        "inductance_nh": 0.0,
+        "hub_net": "vss",
+        "rc_model": "lumped",
+        "terminals": [
+          {
+            "device": "$1",
+            "terminal": "S",
+            "leg_net": "vss__t0",
+            "resistance_ohm": 5.4071
+          },
+          {
+            "device": "$2",
+            "terminal": "S",
+            "leg_net": "vss__t1",
+            "resistance_ohm": 5.4071
+          }
+        ],
+        "segments": [],
+        "coupled": []
       }
     ],
+    "substrate_dc_tie": {
+      "resistance_ohm": 1000000000000.0,
+      "nets": [
+        {
+          "net": "vsubs",
+          "device": "Rvsubs_dctie"
+        }
+      ]
+    },
+    "metals_without_coefficient": [],
+    "overlap_pairs_without_coefficient": [],
     "critical_nets": [],
     "distributed_rc": false,
     "model": {
