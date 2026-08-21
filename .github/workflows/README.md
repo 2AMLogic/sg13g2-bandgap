@@ -19,8 +19,9 @@ structure/hygiene that already exists in this repo today — nothing more.
   `README.md` starting with a `# ` heading, per this repo's directory
   convention. It does not check the *content* of those READMEs beyond that
   — an intentionally sparse "empty until the first work lands here"
-  placeholder README (the current state of `sim/`, `layout/`, and
-  `measurements/`) passes.
+  placeholder README (the current state of `layout/` and `measurements/`;
+  `sim/README.md` now documents a real evidence-record convention as of
+  #10, though nothing in this workflow enforces it yet — see below) passes.
 
 Both checks are plain bash scripts under `.github/scripts/`, runnable
 locally the same way CI runs them:
@@ -37,8 +38,13 @@ does **not** yet validate:
 
 - Schematic/netlist content in `design/` (e.g. that `.sch` files netlist
   cleanly, or that symbols resolve against the SG13G2 PDK).
-- Testbench or PVT-corner result formats in `sim/` — there is no `sim/`
-  evidence format yet to check.
+- Testbench or PVT-corner result formats in `sim/` — `sim/README.md`
+  documents a real evidence-record convention (record IDs, corner-id
+  grammar, append-only rule) as of #10, and one testbench
+  (`sim/core-open-loop-bias/`) already produces records against it, but
+  this workflow does not yet parse or enforce that convention (e.g. no
+  append-only check comparable to gf180-bandgap's `sim/check_records.py`
+  lint step).
 - DRC/LVS/PEX report formats or pass/fail status in `layout/` — no
   DRC/LVS/PEX artifacts exist yet.
 - Characterization/measurement data formats in `measurements/` — empty

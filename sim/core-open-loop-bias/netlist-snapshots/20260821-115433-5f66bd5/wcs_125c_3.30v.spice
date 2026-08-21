@@ -1,0 +1,73 @@
+* sg13g2-bandgap -- bandgap_core open-loop PVT testbench (issue #10)
+* Generated from sim/core-open-loop-bias/testbench/tb_core_open_loop_bias.spice.tmpl
+* by sim/core-open-loop-bias/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full rationale for every substitution below is in
+* sim/core-open-loop-bias/README.md; this header is a short pointer, not a
+* restatement.
+*
+* Generated for: corner=wcs temp=125C vdd=3.30V
+* DUT git sha (design/netlist/bandgap_core.spice this was copied from):
+*   4832c71
+* PDK: ihp-sg13g2 /tmp/pdks/ihp-open-pdk (see sim/pdk.json for the pinned release)
+*
+* DUT devices below are copied verbatim from design/netlist/bandgap_core.spice
+* -- same instance names, same node names, same W/L/Nx geometries -- for the
+* three real bipolar legs (XQ1/XQ2/XQ3, npn13G2) this testbench exercises
+* through the PDK's own real, native (non-OSDI) VBIC level=9 model card.
+*
+* Two substitutions from the real bandgap_core.spice netlist, both required
+* by a genuine tooling gap (not a design choice) -- full account in
+* sim/core-open-loop-bias/README.md "Known simulation gap":
+*   1. XM1/XM2/XM3 (sg13_hv_pmos current-mirror legs) -> ideal 5uA/leg
+*      current sources. SG13G2's HV-MOS PSP103 model is only instantiable
+*      in ngspice via an OSDI-compiled Verilog-A shared library that this
+*      PDK release does not ship prebuilt and this environment has no
+*      OpenVAF build to compile (confirmed by a direct osdi-load failure,
+*      not assumed) -- and no error amplifier exists yet (issue #9's scope
+*      cut) to close the mirror's feedback loop even if it could load.
+*   2. XR1/XR2 (rppd resistors) -> ideal R devices, value computed from the
+*      SAME per-corner sheet-resistance parameter (rsh_rppd) the real rppd
+*      model would use, times the drawn L/W from design/netlist/
+*      bandgap_core.spice. rppd's own compact model (r3_cmc) is *also*
+*      OSDI-gated -- confirmed independently in this same investigation,
+*      not previously documented in design/README.md.
+
+.lib "/tmp/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_wcs
+.lib "/tmp/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_wcs
+
+.options temp=125 tnom=27
+
+* Drawn geometry, copied from design/netlist/bandgap_core.spice's
+* `XR2 ... rppd w=2u l=82.7u` / `XR1 ... rppd w=2u l=694.5u` instances.
+* weff = w + 0.006u (rppd's own weff formula, resistors_mod.lib); leff = l
+* at b=0 (also that subckt's own formula -- both instances use the default
+* b=0). rsh_rppd comes from the res_wcs .lib section just loaded
+* above, so it is this corner's real, PDK-sourced sheet resistance, not a
+* value transcribed by hand.
+.param r2_weff=2u+0.006u
+.param r1_weff=2u+0.006u
+.param r2_squares=82.7u/r2_weff
+.param r1_squares=694.5u/r1_weff
+
+Vvdd vdd 0 dc 3.30
+Vvss vss 0 dc 0
+
+* Ideal 5uA/leg current-source stand-ins for XM1/XM2/XM3 -- magnitude
+* matches issue #9's own informal nominal-point check (design/README.md).
+Ileg1 vdd sns1 dc 5u
+Ileg2 vdd sns2 dc 5u
+Ileg3 vdd vref dc 5u
+
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+R2 sns2 cb2 {rsh_rppd*r2_squares}
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+R1 vref cb3 {rsh_rppd*r1_squares}
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+.op
+.control
+run
+print v(vref) v(sns1) v(sns2) v(cb2) v(cb3) @r1[resistance] @r2[resistance]
+.endc
+.end

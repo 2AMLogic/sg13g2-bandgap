@@ -1,0 +1,331 @@
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core open-loop pvt testbench (issue #10)
+
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+v(vref) = 1.085450e+00
+v(sns1) = 5.903682e-01
+v(sns2) = 5.749376e-01
+v(cb2) = 5.159839e-01
+v(cb3) = 5.903682e-01
+@r1[resistance] = 9.901645e+04
+@r2[resistance] = 1.179073e+04
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+	Node                                  Voltage
+	----                                  -------
+	----	-------
+	q.xq1.qnpn13g2#collCI            5.897754e-01
+	q.xq1.qnpn13g2#substrate         3.436723e-08
+	q.xq2.qnpn13g2#collCI            5.159099e-01
+	q.xq2.qnpn13g2#substrate         4.125398e-07
+	q.xq3.qnpn13g2#collCI            5.897754e-01
+	q.xq3.qnpn13g2#substrate         3.436723e-08
+	xq3.t                            3.350878e-02
+	xq3.s1                           3.423645e-08
+	cb3                              5.903682e-01
+	xq2.t                            4.507079e-03
+	xq2.s1                           4.119676e-07
+	cb2                              5.159839e-01
+	xq1.t                            3.350880e-02
+	xq1.s1                           3.423645e-08
+	vref                             1.085450e+00
+	sns2                             5.749376e-01
+	sns1                             5.903682e-01
+	vss                              0.000000e+00
+	vdd                              2.970000e+00
+
+	Source	Current
+	------	-------
+
+	vvdd#branch                      -1.50000e-05
+	vvss#branch                      1.500000e-05
+
+ Capacitor models (Fixed capacitor)
+      model                     C
+
+        cap                     0
+         cj                     0
+       cjsw                     0
+       defw                 1e-05
+       defl                     0
+     narrow                     0
+      short                     0
+        del                     0
+        tc1                     0
+        tc2                     0
+         di                     0
+      thick                     0
+     bv_max                 1e+99
+
+ Resistor models (Simple linear resistor)
+      model                     R
+
+        rsh                     0
+     narrow                     0
+      short                     0
+        tc1                     0
+        tc2                     0
+        tce                     0
+       defw                 1e-05
+          l                 1e-05
+         kf                     0
+         af                     0
+          r                     0
+     bv_max                 1e+99
+         lf                     1
+         wf                     1
+         ef                     1
+
+ VBIC models (Vertical Bipolar Inter-Company Model)
+      model   xq3:npn13g2_nx_vbic   xq2:npn13g2_nx_vbic   xq1:npn13g2_nx_vbic
+
+       type                   npn                   npn                   npn
+      selft                     0                     0                     0
+       tnom                    27                    27                    27
+        rcx                 62.92                 7.865                 62.92
+        rci                  51.6                  6.45                  51.6
+         vo                   0.8                   0.8                   0.8
+       gamm              2.25e-14              2.25e-14              2.25e-14
+       hrcf                  1000                  1000                  1000
+        rbx               28.9673               4.01766               28.9673
+        rbi               91.9597               12.7545               91.9597
+         re               36.2204               4.52755               36.2204
+         rs                     1                     1                     1
+        rbp                    22                  2.75                    22
+         is            8.8985e-18            7.1188e-17            8.8985e-18
+         nf                 1.018                 1.018                 1.018
+         nr                  1.01                  1.01                  1.01
+         fc                   0.8                   0.8                   0.8
+       cbeo           2.07053e-16           1.57251e-15           2.07053e-16
+        cje            2.5491e-15           1.93597e-14            2.5491e-15
+         pe                  0.92                  0.92                  0.92
+         me                  0.12                  0.12                  0.12
+        aje                  -0.5                  -0.5                  -0.5
+       cbco               5.9e-16              4.72e-15               5.9e-16
+        cjc           4.32225e-16            3.4578e-15           4.32225e-16
+        qco                 1e-18                 1e-18                 1e-18
+       cjep            1.0057e-15            8.0456e-15            1.0057e-15
+         pc                 0.558                 0.558                 0.558
+         mc                  0.12                  0.12                  0.12
+        ajc                  -0.5                  -0.5                  -0.5
+       cjcp           1.66971e-15           8.81276e-15           1.66971e-15
+         ps                  0.46                  0.46                  0.46
+         ms                  0.23                  0.23                  0.23
+        ajs                  -0.5                  -0.5                  -0.5
+       ibei            6.3175e-20             5.054e-19            6.3175e-20
+        wbe                     1                     1                     1
+        nei                 1.066                 1.066                 1.066
+       iben                 1e-16                 8e-16                 1e-16
+        nen                     2                     2                     2
+       ibci              3.75e-21                 3e-20              3.75e-21
+        nci                 1.103                 1.103                 1.103
+       ibcn               2.5e-16                 2e-15               2.5e-16
+        ncn                  1.96                  1.96                  1.96
+       avc1                   2.4                   2.4                   2.4
+       avc2                 10.81                 10.81                 10.81
+        isp                 1e-20                 8e-20                 1e-20
+        wsp                     1                     1                     1
+        nfp                  1.04                  1.04                  1.04
+      ibeip                 1e-19                 8e-19                 1e-19
+      ibenp                 5e-15                 4e-14                 5e-15
+      ibcip           7.57858e-16           3.24901e-15           7.57858e-16
+       ncip                     1                     1                     1
+      ibcnp              1.25e-15                 1e-14              1.25e-15
+       ncnp                   1.5                   1.5                   1.5
+        vef                   189                   189                   189
+        ver                   5.3                   5.3                   5.3
+        ikf               0.00225                 0.018               0.00225
+        ikr                0.0025                  0.02                0.0025
+        ikp                     0                     0                     0
+         tf           2.81397e-13           2.81397e-13           2.81397e-13
+        qtf                 1e-18                 1e-18                 1e-18
+        xtf                    10                    10                    10
+        vtf                    20                    20                    20
+        itf               0.14625                  1.17               0.14625
+         tr               3.5e-13               3.5e-13               3.5e-13
+         td                     0                     0                     0
+        kfn               2.4e-08                 3e-09               2.4e-08
+        afn                   1.8                   1.8                   1.8
+        bfn                     1                     1                     1
+        xre                 -0.42                 -0.42                 -0.42
+       xrbi                     0                     0                     0
+       xrci                     0                     0                     0
+        xrs                   1.5                   1.5                   1.5
+        xvo                   1.5                   1.5                   1.5
+         ea                 1.056                 1.056                 1.056
+       eaie                 1.056                 1.056                 1.056
+       eaic                  1.12                  1.12                  1.12
+       eais                  1.12                  1.12                  1.12
+       eane                  1.12                  1.12                  1.12
+       eanc                  1.12                  1.12                  1.12
+       eans                  1.12                  1.12                  1.12
+        xis                   2.3                   2.3                   2.3
+        xii                   3.3                   3.3                   3.3
+        xin                   3.3                   3.3                   3.3
+        tnf               0.00015               0.00015               0.00015
+       tavc              -0.00188              -0.00188              -0.00188
+        rth                 11352               1746.99                 11352
+        cth                 1e-12             3.091e-12                 1e-12
+        vrt                     0                     0                     0
+        art                   0.1                   0.1                   0.1
+       ccso                     0                     0                     0
+        qbm                     0                     0                     0
+        nkf                   0.5                   0.5                   0.5
+       xikf                     0                     0                     0
+       xrcx                 0.245                 0.245                 0.245
+       xrbx                   0.9                   0.9                   0.9
+       xrbp                     0                     0                     0
+       isrr                     1                     1                     1
+       xisr                     0                     0                     0
+       dear                     0                     0                     0
+        eap                  1.12                  1.12                  1.12
+       vbbe                     0                     0                     0
+       nbbe                     1                     1                     1
+       ibbe                 1e-06                 1e-06                 1e-06
+     tvbbe1                     0                     0                     0
+     tvbbe2                     0                     0                     0
+      tnbbe                     0                     0                     0
+       ebbe                     0                     0                     0
+      dtemp                     0                     0                     0
+       vers                   1.2                   1.2                   1.2
+       vref                     0                     0                     0
+    vbe_max                   1.6                   1.6                   1.6
+    vbc_max                   5.1                   5.1                   5.1
+    vce_max                   1.6                   1.6                   1.6
+   vsub_max                 1e+99                 1e+99                 1e+99
+     vbefwd                   0.2                   0.2                   0.2
+     vbcfwd                   0.2                   0.2                   0.2
+    vsubfwd                   0.2                   0.2                   0.2
+
+ Capacitor: Fixed capacitor
+     device            c.xq3.csub            c.xq2.csub            c.xq1.csub
+      model                     C                     C                     C
+capacitance              2.15e-14               1.1e-14              2.15e-14
+      dtemp                     0                     0                     0
+     bv_max                 1e+99                 1e+99                 1e+99
+          i                     0                     0                     0
+          p                     0                     0                     0
+
+ Isource: Independent current source
+     device                 ileg3                 ileg2                 ileg1
+         dc                 5e-06                 5e-06                 5e-06
+          m                     1                     1                     1
+      acmag                     0                     0                     0
+      pulse                     -                     -                     -
+        sin                     -                     -                     -
+        exp                     -                     -                     -
+        pwl                     -                     -                     -
+       sffm                     -                     -                     -
+         am                     -                     -                     -
+    trnoise                     -                     -                     -
+   trrandom                     -                     -                     -
+          v              -1.88455              -2.39506              -2.37963
+          p           9.42275e-06           1.19753e-05           1.18982e-05
+    current                 5e-06                 5e-06                 5e-06
+
+ Resistor: Simple linear resistor
+     device              r.xq3.rt            r.xq3.rsub                    r1
+      model                     R                     R                     R
+ resistance                 1e+09                   400               99016.5
+         ac                 1e+09                   400               99016.5
+      dtemp                     0                     0                     0
+     bv_max                 1e+99                 1e+99                 1e+99
+      noisy                     1                     1                     1
+          i           3.35088e-11           8.55911e-11                 5e-06
+          p           1.12284e-12           2.93034e-18           2.47541e-06
+
+ Resistor: Simple linear resistor
+     device              r.xq2.rt            r.xq2.rsub                    r2
+      model                     R                     R                     R
+ resistance                 1e+09                  1100               11790.7
+         ac                 1e+09                  1100               11790.7
+      dtemp                     0                     0                     0
+     bv_max                 1e+99                 1e+99                 1e+99
+      noisy                     1                     1                     1
+          i           4.50708e-12           3.74516e-10                 5e-06
+          p           2.03138e-14           1.54288e-16           2.94768e-07
+
+ Resistor: Simple linear resistor
+     device              r.xq1.rt            r.xq1.rsub
+      model                     R                     R
+ resistance                 1e+09                   400
+         ac                 1e+09                   400
+      dtemp                     0                     0
+     bv_max                 1e+99                 1e+99
+      noisy                     1                     1
+          i           3.35088e-11           8.55911e-11
+          p           1.12284e-12           2.93034e-18
+
+ VBIC: Vertical Bipolar Inter-Company Model
+     device        q.xq3.qnpn13g2        q.xq2.qnpn13g2        q.xq1.qnpn13g2
+      model   xq3:npn13g2_nx_vbic   xq2:npn13g2_nx_vbic   xq1:npn13g2_nx_vbic
+        vbe              0.590205              0.515963              0.590205
+        vbc            0.00059053           7.37385e-05            0.00059053
+         ic           4.98053e-06           4.97899e-06           4.98053e-06
+         ib           1.93818e-08           2.06403e-08           1.93818e-08
+         ie          -4.99991e-06          -4.99963e-06          -4.99991e-06
+         is           8.55911e-11           3.74516e-10           8.55911e-11
+          p           2.95184e-06           2.57992e-06           2.95184e-06
+       beta               256.969               241.227               256.969
+         gm           0.000139274           0.000139496           0.000139274
+         go          -2.34894e-08          -2.39581e-08          -2.34894e-08
+        gpi           5.27569e-07            5.5812e-07           5.27569e-07
+        gmu           2.45351e-12           1.21102e-11           2.45351e-12
+         gx             0.0121824             0.0864354             0.0121824
+        cbe           3.01082e-15           2.19293e-14           3.01082e-15
+       cbex                     0                     0                     0
+        cbc           4.57935e-16           3.66274e-15           4.57935e-16
+       cbcx           1.47118e-26           1.45531e-26           1.47118e-26
+       cbep           1.06543e-15           8.52236e-15           1.06543e-15
+       cbcp           1.46784e-15           7.92098e-15           1.46784e-15
+
+ Vsource: Independent voltage source
+     device                  vvss                  vvdd
+         dc                     0                  2.97
+      acmag                     0                     0
+      pulse                     -                     -
+        sin                     -                     -
+        exp                     -                     -
+        pwl                     -                     -
+       sffm                     -                     -
+         am                     -                     -
+    trnoise                     -                     -
+   trrandom                     -                     -
+    portnum                     0                     0
+         z0                     0                     0
+        pwr                     0                     0
+       freq                     0                     0
+      phase                     0                     0
+          i               1.5e-05              -1.5e-05
+          p                     0            -4.455e-05
+
+
+Total analysis time (seconds) = 0.009106
+
+Total elapsed time (seconds) = 0.053 
+
+Total DRAM available = 49152.000 MB.
+DRAM currently available = 30551.328 MB.
+Maximum ngspice program size =   10.797 MB.
+Current ngspice program size =   10.797 MB.
+
