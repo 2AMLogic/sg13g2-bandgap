@@ -173,6 +173,8 @@ the same checkout `spec/porting-plan.md` cites), not invented:
 | `EmWind.drawing` | 33/0 |
 | `PolyRes.drawing` | 128/0 |
 | `TEXT.drawing` | 63/0 |
+| `EXTBlock.drawing` | 111/0 |
+| `SalBlock.drawing` | 28/0 |
 
 ## Reproducing
 
@@ -301,8 +303,8 @@ source, not a runtime dependency of running it.
 
 | Cell | Report | Status | Deck (content hash) |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:a64d3a7b...` |
-| `bandgap_startup` | `layout/bandgap_startup/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:a64d3a7b...` |
+| `bandgap_core` | `layout/bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:72c12aad...` |
+| `bandgap_startup` | `layout/bandgap_startup/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:72c12aad...` |
 
 The 26 `cont.width.1` violations this issue's own informational run
 originally found (see "What this layout is / is not" above) were fixed by
@@ -316,13 +318,19 @@ the fix only grows each `Cont` box further into its own device's already-
 generous `Activ`/`Metal1` margin (verified: re-running finds 0 new
 violations of any kind, not just a disappeared `cont.width.1` count).
 Reproduce: `klt drc --check layout/bandgap_core/drc_report.json` (or
-`--rerun` for a full re-check), run from the repo root.
+`--rerun` for a full re-check), run from the repo root. `draw_poly_res`'s
+new `rppd`/`rhigh` marker geometry (issue #20, below) adds no DRC exposure
+of its own — the curated deck declares no rules at all for
+`PolyRes`/`EXTBlock`/`pSD`/`SalBlock`/`nSD`, and the new `GatPoly` resistor
+body is comfortably clear of every `Gat*`/`Cnt.d` floor (re-verified after
+that change; both cells stayed `clean`, 0 violations, not merely assumed
+still clean from before).
 
-### LVS — still `mismatch`, three independent, fully-attributed causes (issue #20)
+### LVS — still `mismatch`, resistor recognition now resolved (issues #20/#27)
 
 | Cell | Report | Status | Engine |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (31 findings, 29 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (30 findings, 29 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
 | `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | `mismatch` (16 findings, 14 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
 
 Reproduce: `klt lvs layout/bandgap_core/lvs_request.json` (run from
@@ -351,7 +359,94 @@ deterministic script that reads `design/netlist/*.spice` and emits the
 `layout/*/*.lvs_reference.spice` plain-element files the committed
 `lvs_request.json`s actually reference — regenerate with
 `python3 layout/lvs_reference.py` after any `design/netlist/*.spice`
-change.
+change. **Updated for issue #20's resistor-recognition rescope**: each
+`R`-card now carries its real model name (`rppd`/`rhigh`) and `L=`/`W=`
+geometry after its literal resistance value (`R2 sns2 cb2 10751.0 rppd
+L=82.7U W=2U`), not a bare value-only card — `NetlistSpiceReader` names a
+bare-value R-element's device class the fixed generic `RES`, which can
+never pair against `klt`'s sg13g2 deck's own `rppd`/`rhigh`
+`ResistorDevice.name` on the layout side; the model-name form lets the
+reader assign the class from that token instead (verified interactively:
+produces an `RPPD`/`RHIGH`-named class on the reference side, which
+`NetlistComparer.same_device_classes`'s default same-name matching pairs
+case-insensitively against the layout's own lowercase `rppd`/`rhigh` —
+confirmed against this repo's own real `klt lvs` run, not merely asserted
+from the API docs' wording, see "Resistor recognition" below).
+
+### Resistor recognition (issue #20 rescope, 2026-08-23)
+
+`rppd`/`rhigh` poly-resistor recognition landed upstream in `klt`'s curated
+`sg13g2` deck (klayout-tools#1236/#1248, both merged) — but it requires
+geometry `layout/common.py::draw_poly_res` did not draw. This pass adds it:
+
+- **`GatPoly` is the deck's real resistor *body* layer** —
+  `klayout_tools.decks.sg13g2.EXTRACTION_DECK.resistors`'s own
+  `body=(5, 0)` field — **not** `PolyRes` (128,0), which is only the
+  *marker* layer ANDed with it. Before this issue, `draw_poly_res` drew
+  only `PolyRes`; with no `GatPoly` present at all, the recognised
+  `body` region was always empty regardless of which marker layers were
+  drawn. `draw_poly_res` now draws a `GatPoly` "dog-bone" (a narrow core
+  matching the marked segment's own `w`/`l` exactly, with a *wider* head
+  at each end for the terminal contacts) — the narrow/wide-head split
+  matters beyond DRC: `klt`'s native `kdb.DeviceExtractorResistor`
+  requires the un-marked conductor left after the marked core is cut out
+  to split into exactly **two** disjoint polygons (one per terminal); an
+  initial uniform-width attempt left a thin un-marked sliver connecting
+  both heads into one polygon, and `klt extract` logged `"Expected two
+  polygons on contacts interacting with one resistor shape (found 1) -
+  resistor shape ignored"` and dropped the device (verified directly, not
+  assumed — see this issue's own PR).
+- **Marker layers**: `PolyRes` (128,0, unchanged), `EXTBlock` (111,0),
+  `pSD` (14,0), `SalBlock` (28,0) — `rppd`'s own `requires` tuple — drawn
+  coincident with the marked core for every resistor instance (`R1`/`R2`
+  in `bandgap_core`, `RPU` in `bandgap_startup`). `RPU`'s schematic model
+  is `rhigh`, which additionally *requires* `nSD` (7,0) over the same
+  segment (the layer that positively disambiguates it from `rppd`, whose
+  own `excludes` drops any segment carrying `nSD`) — `draw_poly_res` now
+  draws that too when `flavor="rhigh"`, so `RPU` recognises as the
+  electrically-correct `rhigh` class (1360 Ω/sq) rather than mis-resolving
+  to `rppd` (260 Ω/sq).
+- **The installed `klt` needed upgrading.** This environment's pinned
+  `klayout-tools` (`0.2.0`, pip) predates klayout-tools#1236/#1248 — its
+  `decks/sg13g2.py` declares no `EXTBlock`/`pSD`/`SalBlock`/resistor
+  recognition at all, so the first re-run after drawing the new marker
+  layers still extracted 0 resistor devices. Upgrading to the current
+  PyPI release (`klayout-tools==0.3.0`, `uv tool install klayout-tools==0.3.0
+  --force`) picked up the merged capability; re-running then recognised
+  `R1`/`R2` as `rppd` and `RPU` as `rhigh` (`klt extract`'s own
+  `device_counts`). Not itself a layout change, but recorded here since a
+  future pass re-diagnosing "why doesn't `klt extract` see my marker
+  layers" should check the installed `klt`/`klayout-tools` version before
+  re-investigating the geometry.
+
+**Result: `R1`/`R2`/`RPU` move from *never extracted* to recognised,
+correctly classed, and genuinely candidate-paired by `klt lvs` — but not
+all the way to `device.matched`.** Before this pass, `klt extract` found 0
+resistor devices at all (`device_counts: {"pfet": 3}` only) and `klt lvs`'s
+`RES`-class reference devices (`R1`/`R2`/`RPU`) were each a fully isolated,
+one-sided `device.unmatched` finding (`device.reference` populated,
+`device.layout: null` — no candidate on the layout side even existed).
+After this pass, `klt extract` reports `device_counts: {"pfet": 3, "rppd":
+2}` (`bandgap_core`) / `{"nfet": 2, "rhigh": 1}` (`bandgap_startup`), and
+`klt lvs` now finds a real two-sided candidate pairing for every one of
+them (e.g. `bandgap_core`: `{"class": "rppd", "device": {"layout": "$4",
+"reference": "2"}}` — both sides populated in the *same* mismatch entry,
+the same shape the deck-recognised `pfet`/`nfet` MOS devices already had).
+That pairing still resolves to `device.unmatched`, not `device.matched`,
+for the same reason the `pfet`/`nfet` pairings do (see "Net effect"
+below): `counts.nets.matched` is `0` on **both** cells, for **every**
+top-level net (`vdd`, `vss`, `sns1`, `sns2`, `cb2`, `cb3`, `vref`, `fb`/
+`det`) — a total, circuit-wide net-topology break the three permanent
+blockers below cause on their own, independent of resistor recognition.
+No device on either cell — MOS or resistor — can reach `device.matched`
+while every net it touches is itself unmatched; this is not a new or
+resistor-specific gap this pass introduced, it is the same pre-existing
+break #27 already fully diagnosed (causes 1 and 3 below directly corrupt
+the net graph; cause 2, `bandgap_startup`'s `poly_label` gap, does the
+same for `MKFB`'s gate net specifically). Re-attempting `hints.same_nets`
+to force a match here would face the identical `hints.rejected` outcome
+#27's own PR already hit for the MOS devices, for the identical root
+cause — not re-attempted, per this issue's own explicit scope boundary.
 
 **#20's routing is real and verified, but does not, on its own, close the
 gap** — `klt extract`'s own device/net breakdown confirms the physical
@@ -366,40 +461,33 @@ surfaced **two further, independent, out-of-this-repo's-control causes**
 that #12's original two-cause attribution did not anticipate — both
 confirmed by direct experiment, not inferred:
 
-1. **`klt`'s curated `sg13g2` extraction deck does not recognise bipolar or
-   resistor devices at all** (unchanged from #12;
-   `klayout_tools.decks.sg13g2.EXTRACTION_DECK` only models thin-oxide MOS —
-   see this deck's own module docstring, and this repo's `CLAUDE.md`:
-   "resistor/capacitor/bipolar/diode device recognition... explicitly out
-   of scope"). Every `Q1`–`Q3`/`R1`/`R2` (`bandgap_core`) and `RPU`
-   (`bandgap_startup`) device is therefore necessarily reference-only in
-   the compare — `device.unmatched`, class `NPN13G2`/`RES`. Not
-   actionable from this repo's side.
-2. **New finding: the same curated deck declares no well/substrate-tap
-   layer at all** (`EXTRACTION_DECK.tap = None`, `well_label = None`, and
-   — unlike `klt`'s own `gf180mcu.py` deck, which derives an equivalent tap
-   region from its `tap_nplus`/`tap_pplus` implant layers per issue #1084 —
-   `sg13g2.py` declares **no** `tap_nplus`/`tap_pplus` fallback either).
-   Concretely, per `klt extract`'s own output against the routed
-   `bandgap_core.gds`: every `pfet`'s body terminal extracts to its own
-   **anonymous, per-device** net (`$11`/`$12`/`$13` — three *separate*
-   floating nets, one per instance, flagged by extract's own
-   `unbiased_pmos_body_nets`/`device.body_unverified` warning), never the
-   schematic's real, shared `vdd` well tie
-   (`XM1 sns1 fb vdd vdd sg13_hv_pmos ...` — the 4th terminal is `vdd`,
-   same as the source). In `bandgap_startup`, both `nfet` bodies extract to
-   a *shared* but still wrong net — `klt`'s deck-synthesized global
-   `vsubs` fallback (`connect_global`), not the schematic's real
-   body-tied-to-`vss` (`MSENSE det sns1 vss vss nfet ...` — 4th terminal
-   `vss`, same as source). Either way this is a genuine **structural**
-   difference between the two netlists' MOS device signatures (the body
-   terminal is part of `NetlistComparer`'s 4-terminal MOS match), not an
-   artifact of this issue's routing — no amount of additional `Metal1`/
-   `Via1` wiring changes what `klt extract` assigns as a MOS body net, since
-   the assignment is a property of the extraction deck's own declared
-   fields, not the drawn geometry. **Filed generically against
-   `klayout-tools`**, per `CLAUDE.md`'s friction protocol:
-   [klayout-tools#1273](https://github.com/2AMLogic/klayout-tools/issues/1273).
+1. **Bipolar device recognition is permanently declined upstream**
+   (`klayout_tools.decks.sg13g2.EXTRACTION_DECK` still models no bipolar
+   device class at all; `klayout-tools#1242` investigated and declined it
+   permanently — closed as `klayout-tools#1232`'s own `completed`, a
+   docs-only PR, not something a future pass should re-investigate). Every
+   `Q1`–`Q3` (`bandgap_core`) device is therefore necessarily
+   reference-only in the compare — `device.unmatched`, class `NPN13G2`.
+   **Resistor recognition, by contrast, is resolved** — see "Resistor
+   recognition" above: `R1`/`R2`/`RPU` are no longer in this bucket as of
+   this issue.
+2. **Resolved upstream, not yet exercised by this layout**: the curated
+   deck previously declared no well/substrate-tap layer at all; this was
+   filed as [klayout-tools#1273](https://github.com/2AMLogic/klayout-tools/issues/1273)
+   and closed/merged 2026-08-21 — `decks/sg13g2.py` now declares
+   `tap_nplus=(7, 0)` (`nSD`)/`tap_pplus=(14, 0)` (`pSD`), the same
+   implant-derived tap-region fallback `gf180mcu.py`'s own deck already
+   used (issue #1084). Re-verified directly for this issue (not assumed
+   still-broken from #27's original text): `klt extract` **still** reports
+   `device.body_unverified` for every `pfet`/`nfet` body terminal on both
+   cells, because this repo's own `draw_hv_mos` (`layout/common.py`) draws
+   no distinct tap/well-tie ring at all — with the deck-side capability now
+   present but no drawn tap geometry anywhere to derive a real net from,
+   every body terminal still falls back to an anonymous (`bandgap_core`,
+   PMOS) or deck-synthesized `vsubs` (`bandgap_startup`, NMOS) net. This is
+   now a **layout gap**, not a deck gap — actionable by a future issue that
+   adds tap-ring geometry to `draw_hv_mos`, out of this issue's own scope
+   (marker-layer resistor recognition only).
 3. **New finding, `bandgap_core` only: a genuine device-symmetry ambiguity
    cause 1 exposes.** `M1`/`M2`/`M3` are drawn with *identical* `w`/`l`
    (`10u`/`1u`) and identical `source`/`gate` nets (`vdd`/`fb`); the only
@@ -426,22 +514,72 @@ confirmed by direct experiment, not inferred:
    independent of this symmetry issue. Not filed against `klayout-tools` —
    this is a consequence of cause 1 (already filed, out of scope) combined
    with this specific circuit's own topology, not a `klt` capability gap.
+   **Not independently re-tested under issue #20's resistor recognition**:
+   `R1`/`R2` are no longer invisible to the layout-side extraction (unlike
+   when this experiment ran), and `R1`/`R2` differ in length (`l=694.5u`
+   vs `l=82.7u`) — in principle this *could* now distinguish `M2`
+   (`→R2→Q2`) from `M3` (`→R1→Q3`) structurally, narrowing the automorphism
+   to a smaller ambiguity (or none). Re-running the same `hints.same_nets`
+   experiment to check is exactly the automorphism-resolution work this
+   issue's own scope explicitly excludes ("do not attempt... via routing or
+   LVS hints") — left untested here deliberately, not because the outcome
+   is assumed unchanged.
 
-Net effect: even the MOS devices the deck *does* recognise on both sides
-(`pfet` `M1`/`M2`/`M3` in `bandgap_core`; `nfet` `MSENSE`/`MKFB` in
-`bandgap_startup`) still show as `device.unmatched` — not because #20's
-routing is wrong (it is verified correct, per the `klt extract` net counts
-above), but because of causes 2 and 3, both newly diagnosed here and both
-outside this repo's control. `status: "mismatch"` is reported honestly
-rather than claimed clean or silently downgraded to warnings — per
-`CLAUDE.md`, "Verification is the product": this repo's DRC result is a
-genuine pass; its LVS result is a genuine, fully-explained fail, not
-fabricated evidence either way. Reaching a clean MOS-device-level LVS match
-for `bandgap_startup` is blocked purely on `klayout-tools`#1273 (well/
-substrate-tap modelling for `sg13g2`) landing upstream; `bandgap_core` needs
-#1273 *and* whatever further downstream effect cause 3's symmetry ambiguity
-has once #1273 lands (not re-testable until then) — neither is further
-work available in this repo today.
+Net effect: even the devices the deck *does* recognise on both sides
+(`pfet` `M1`/`M2`/`M3` in `bandgap_core`; `nfet` `MSENSE`/`MKFB` and
+`rhigh` `RPU` in `bandgap_startup`; `rppd` `R1`/`R2` in `bandgap_core`)
+still show as `device.unmatched` — not because #20's routing (or this
+issue's own resistor-recognition work) is wrong; both are verified correct
+(`klt extract`'s own net counts for routing, and the fresh `rppd`/`rhigh`
+`device_counts` for resistor recognition, both above). `counts.nets.matched`
+is `0` on both cells for **every** top-level net, so no device pairing
+attempted against any of those nets can resolve to `device.matched` either
+— see "Permanent blockers" below for the three causes this traces to.
+`status: "mismatch"` is reported honestly rather than claimed clean or
+silently downgraded to warnings — per `CLAUDE.md`, "Verification is the
+product": this repo's DRC result is a genuine pass; its LVS result is a
+genuine, fully-explained fail, not fabricated evidence either way.
+
+### Permanent blockers (issue #20 rescope, 2026-08-23)
+
+Three causes are now understood, from this issue's and #27's own recorded
+evidence, to be **permanently unreachable through routing, marker-layer
+geometry, or `klt lvs` hints alone** — a future pass should not
+re-investigate any of these from scratch without a new upstream capability
+or a schematic-level circuit change:
+
+1. **Bipolar (SiGe HBT) device recognition is permanently declined
+   upstream** (`klayout-tools#1242`, closed; `klayout-tools#1232`'s own
+   `completed` docs-only PR, no code change to wait on). Every
+   `Q1`–`Q3` (`bandgap_core`) instance stays `device.unmatched`,
+   class `NPN13G2`, indefinitely.
+2. **`bandgap_core`'s `M1`/`M2`/`M3` were a genuine graph automorphism**
+   at the recognised-device level when bipolar *and* resistor devices were
+   both excluded from the comparison (cause 3 above, PR #27's own
+   experiment, before issue #20's resistor recognition) — confirmed by
+   direct experiment at the time: explicit `hints.same_nets` pairings were
+   rejected by the comparer, with conflicting `net.merged`/`net.split`
+   findings as evidence a different, equally-valid correspondence exists
+   under the layout's own more symmetric graph structure. **Not
+   independently re-tested since resistor recognition landed** (see cause
+   3 above's own caveat) — `R1`/`R2` now genuinely differ in length and
+   are no longer invisible to the layout side, which could in principle
+   narrow or resolve this specific ambiguity; re-running the hints
+   experiment to check is itself the automorphism-resolution work this
+   issue's scope explicitly excludes. Listed here as a blocker this issue
+   did not resolve, not as a settled-permanent fact independent of #20.
+3. **`bandgap_startup`'s `MSENSE.gate` net extracts as an anonymous net**,
+   independent of resistor recognition, because the curated deck declares
+   no `poly_label` layer at all (`EXTRACTION_DECK.poly_label=None`) — GDS
+   text placed on a `GatPoly`-adjacent label layer is simply not a signal
+   this deck's net-naming pass reads for a gate terminal (unlike
+   `Metal1.text`/`Metal2.text`, see this file's own module-level comment on
+   `L_METAL1_TEXT`/`L_METAL2_TEXT` in `layout/common.py`). Re-verified
+   directly for this issue: `klt extract` reports `MSENSE`'s gate net as
+   `$4` (`MSENSE`'s own schematic net is `sns1`), never `sns1` by name —
+   a structural, permanent deck limitation (no drawn or derivable poly-label
+   geometry can produce a name from a layer the deck's connectivity graph
+   never reads at all), not a routing or layout-marker gap.
 
 ## Post-layout parasitic extraction (issue #14)
 
@@ -483,16 +621,24 @@ above:
    `bandgap_startup.gds` against the current deck (issue #37) now reports
    `r_count: 9, c_count: 7`/`r_count: 5, c_count: 3` respectively, both
    `metals_without_coefficient` lists empty, and no other metal level newly
-   reports zero RC. **Bipolar (`npn13G2`) and resistor (`rppd`/`rhigh`)
-   device recognition is a separate, still-open gap** — see the LVS section
-   above (cause 1) and `sim/core-open-loop-bias-pex/README.md`'s "What this
-   does and does not model" for the current, more nuanced picture (both
-   resistor flavours now have a deck-side recognizer, per issue #1235, but
-   this repo's own `draw_poly_res` doesn't yet draw the marker layers
-   either needs — a layout gap, not a `klt` one). Do not conflate the two:
-   wire-parasitics modelling and bipolar/resistor device recognition are
-   independent deck capabilities that happened to both be tracked from this
-   same section.
+   reports zero RC. **Bipolar (`npn13G2`) device recognition is a separate,
+   permanently-declined gap** (`klayout-tools#1242`) — see "Permanent
+   blockers" above. **Resistor (`rppd`/`rhigh`) device recognition is
+   resolved as of issue #20**: `draw_poly_res` now draws the marker layers
+   (and the `GatPoly` body layer) that recognition needs — see "Resistor
+   recognition" above. Do not conflate the two: wire-parasitics modelling
+   and bipolar/resistor device recognition are independent deck
+   capabilities that happened to both be tracked from this same section.
+   **Not yet re-extracted for PEX**: this issue's `draw_poly_res` change
+   modifies the exact GDS this section's own committed
+   `bandgap_core.pex.spice`/`bandgap_startup.pex.spice` and
+   `pex_extract_report.json` were extracted from — those artifacts (and the
+   downstream `sim/core-open-loop-bias-pex`/`sim/startup-trip-point-pex`
+   PVT-sweep evidence built on them) are now stale relative to the
+   regenerated GDS and current `klt` version, and out of this issue's own
+   scope (DRC/LVS device recognition only) to regenerate and re-validate —
+   left as a follow-up rather than silently re-extracted without re-running
+   the PVT sweeps that depend on them.
 2. **Resolved (issue #32): `layout/bandgap_startup/generate.py` drew
    `XMSENSE` at `w=2u`, stale relative to `design/netlist/bandgap_startup.spice`'s
    `w=10u`.** [Decision record

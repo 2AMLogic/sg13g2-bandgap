@@ -54,6 +54,14 @@ L_EMWIND = (33, 0)
 L_POLYRES = (128, 0)
 L_POLYRES_LABEL = (128, 1)
 L_TEXT = (63, 0)
+# rppd/rhigh poly-resistor recognition marker layers (issue #20), read the
+# same way as every other layer above -- ihp-sg13g2/libs.tech/klayout/tech/
+# sg13g2.lyp's own <source> entries -- and independently confirmed against
+# klayout_tools.decks.sg13g2.EXTRACTION_DECK.resistors's own declared
+# `requires=((111, 0), (14, 0), (28, 0))` (rppd)/`((111, 0), (14, 0), (7, 0),
+# (28, 0))` (rhigh) tuples.
+L_EXTBLOCK = (111, 0)
+L_SALBLOCK = (28, 0)
 # Real net-name text layers for `klt lvs`'s `EXTRACTION_DECK.metal_labels`
 # (`klayout_tools.decks.sg13g2.EXTRACTION_DECK`: `metal_labels=((8, 25),
 # (10, 25))`) -- **not** the same as `L_METAL1_LABEL`/`L_METAL2_LABEL`
@@ -93,6 +101,8 @@ LAYER_NAMES: dict[tuple[int, int], str] = {
     L_POLYRES: "PolyRes.drawing",
     L_POLYRES_LABEL: "PolyRes.label",
     L_TEXT: "TEXT.drawing",
+    L_EXTBLOCK: "EXTBlock.drawing",
+    L_SALBLOCK: "SalBlock.drawing",
     L_METAL1_TEXT: "Metal1.text",
     L_METAL2_TEXT: "Metal2.text",
 }
@@ -341,6 +351,33 @@ def draw_hv_mos(
     }
 
 
+# rppd/rhigh recognition geometry constants (issue #20). klt's curated
+# sg13g2 deck's `ResistorDevice.body` for every poly-resistor flavour is
+# `GatPoly.drawing` (5, 0) -- **not** `PolyRes.drawing` (128, 0), which is
+# only the *marker* layer ANDed with it (`klayout_tools.decks.sg13g2
+# .EXTRACTION_DECK.resistors`'s own `body=(5, 0)` field; confirmed reading
+# `klayout_tools.extract._resolve_resistors`, whose `body = base(GatPoly) &
+# marker(PolyRes) & requires... - excludes...`). Before this issue,
+# `draw_poly_res` drew only `PolyRes` -- with no `GatPoly` present at all,
+# `body` always came out empty and the resistor was never recognised,
+# independent of which marker layers were drawn. Fixing that means drawing a
+# `GatPoly` bar *longer* than the `PolyRes`/`EXTBlock`/`pSD`/`SalBlock`
+# marked "core" segment: the recognised device's own terminals are `body -
+# segment` (the deck's own `terminal` field defaults to `body`, i.e.
+# `GatPoly` again) -- if `GatPoly` exactly matched the core's extent, the
+# whole bar would BE the recognised segment and no `GatPoly` conductor would
+# remain to contact for either terminal. `RES_HEAD_UM` is that extra
+# per-end length, `RES_GATPOLY_Y_MARGIN_UM` is the GatPoly-widens-past-the-
+# marked-core Y-margin `gatpoly.enclosing.cont.1` (0.07um floor) needs once
+# the previously poly-absent end contacts land on real GatPoly (both
+# verified DRC-clean by this issue's own `klt drc` re-run, not merely
+# asserted).
+RES_HEAD_UM = 0.4
+RES_GATPOLY_Y_MARGIN_UM = 0.1
+RES_CONT_LEN_UM = 0.2
+RES_CONT_MARGIN_UM = 0.1
+
+
 def draw_poly_res(
     b: Builder,
     name: str,
@@ -364,6 +401,42 @@ def draw_poly_res(
     is how the resistor would actually be folded for a compact final
     layout. See ``layout/README.md`` "What this layout is / is not".
 
+    **rppd/rhigh recognition (issue #20).** The ``[x0, x0 + l_um]`` core --
+    the same footprint this function always drew on ``PolyRes`` -- is now
+    also covered by ``GatPoly`` (the deck's real resistor *body* layer, see
+    the ``RES_*`` module constants' own docstring above) plus the marker
+    layers each flavour's own recognition requires
+    (``klayout_tools.decks.sg13g2.EXTRACTION_DECK.resistors``): ``rppd``
+    needs ``EXTBlock`` (111,0), ``pSD`` (14,0), ``SalBlock`` (28,0);
+    ``rhigh`` needs those same three **plus** ``nSD`` (7,0) over the same
+    segment -- the one layer that positively disambiguates it from ``rppd``
+    (whose own ``excludes`` drops any segment carrying ``nSD``, precisely so
+    a segment carrying both implants can only ever match ``rhigh``, never
+    ``rppd``). ``flavor="rhigh"`` (``RPU``) therefore additionally draws
+    ``nSD``; ``flavor="rppd"`` (``R1``/``R2``) does not.
+
+    ``GatPoly`` extends ``RES_HEAD_UM`` microns past each end of that marked
+    core as a *wider* "dog-bone" head -- the recognised device's un-marked
+    terminal, which is where the end contacts now land (previously they sat
+    directly on the ``PolyRes`` core itself, with no ``GatPoly`` under them
+    at all). Each head is ``RES_GATPOLY_Y_MARGIN_UM`` microns taller than
+    the core's own ``w_um`` width (clearing ``gatpoly.enclosing.cont.1``'s
+    0.07um floor around the end contacts) -- but the core segment itself
+    stays exactly ``w_um`` tall, with **no** margin added there. This
+    matters beyond DRC: `klt`'s native resistor extractor
+    (``kdb.DeviceExtractorResistor``) requires the *un-marked* conductor
+    left after the marked core is cut out to split into exactly **two**
+    disjoint polygons (one per terminal) -- an earlier version of this
+    function widened the *whole* bar uniformly, which left a thin sliver of
+    un-marked ``GatPoly`` running along the top/bottom edge of the core
+    connecting both heads into one single polygon, and `klt extract` logged
+    ``"Expected two polygons on contacts interacting with one resistor
+    shape (found 1) - resistor shape ignored"`` and dropped the device
+    entirely (verified directly, not assumed -- see this issue's own PR).
+    Keeping the core segment's cross-section an exact match for the marker
+    boxes below (no margin) ensures cutting it out leaves the two wider
+    heads fully disjoint.
+
     End-pad terminals are labeled twice, same convention as
     ``draw_npn13g2``/``draw_hv_mos`` above (``PolyRes.label``/(8,1) plus the
     real net-naming ``Metal1.text``/(8,25)).
@@ -373,17 +446,53 @@ def draw_poly_res(
     ``"length"`` in microns), for issue #20's routing pass.
     """
     x_hi = x0 + l_um
+
+    # GatPoly resistor body (the deck's real recognised-device conductor):
+    # a wider head at each end (for the terminal contacts) plus the core
+    # strip in between, sized to exactly match the marker boxes below (see
+    # this function's own docstring for why the core must carry no extra
+    # margin).
+    b.box(
+        L_GATPOLY,
+        x0 - RES_HEAD_UM,
+        y0 - w_um / 2 - RES_GATPOLY_Y_MARGIN_UM,
+        x0,
+        y0 + w_um / 2 + RES_GATPOLY_Y_MARGIN_UM,
+    )
+    b.box(L_GATPOLY, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
+    b.box(
+        L_GATPOLY,
+        x_hi,
+        y0 - w_um / 2 - RES_GATPOLY_Y_MARGIN_UM,
+        x_hi + RES_HEAD_UM,
+        y0 + w_um / 2 + RES_GATPOLY_Y_MARGIN_UM,
+    )
+
+    # The marked "core" -- PolyRes plus the rppd requires-layers, all
+    # exactly coincident with each other and with the schematic's own w/l.
     b.box(L_POLYRES, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
+    b.box(L_EXTBLOCK, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
+    b.box(L_PSD, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
+    b.box(L_SALBLOCK, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
+    if flavor == "rhigh":
+        b.box(L_NSD, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
     b.label(L_POLYRES_LABEL, f"{name}", (x0 + x_hi) / 2, y0)
 
-    end_a_pad = (x0 - 0.2, y0 - w_um / 2 - 0.1, x0 + min(0.3, l_um / 4), y0 + w_um / 2 + 0.1)
-    b.box(L_CONT, x0, y0 - w_um / 2, x0 + min(0.3, l_um / 4), y0 + w_um / 2)
+    # End_a terminal head: GatPoly's own left head, contacted
+    # RES_CONT_MARGIN_UM microns clear of the bar's real left edge.
+    cont_a_x0 = x0 - RES_HEAD_UM + RES_CONT_MARGIN_UM
+    cont_a_x1 = cont_a_x0 + RES_CONT_LEN_UM
+    b.box(L_CONT, cont_a_x0, y0 - w_um / 2, cont_a_x1, y0 + w_um / 2)
+    end_a_pad = (x0 - RES_HEAD_UM - 0.1, y0 - w_um / 2 - 0.1, x0, y0 + w_um / 2 + 0.1)
     b.box(L_METAL1, *end_a_pad)
     b.label(L_METAL1_LABEL, end_a_net, x0, y0 + w_um / 2 + 0.4)
     b.label(L_METAL1_TEXT, end_a_net, x0, y0 + w_um / 2 + 0.4)
 
-    end_b_pad = (x_hi - min(0.3, l_um / 4), y0 - w_um / 2 - 0.1, x_hi + 0.2, y0 + w_um / 2 + 0.1)
-    b.box(L_CONT, x_hi - min(0.3, l_um / 4), y0 - w_um / 2, x_hi, y0 + w_um / 2)
+    # End_b terminal head: GatPoly's own right head, mirrored.
+    cont_b_x1 = x_hi + RES_HEAD_UM - RES_CONT_MARGIN_UM
+    cont_b_x0 = cont_b_x1 - RES_CONT_LEN_UM
+    b.box(L_CONT, cont_b_x0, y0 - w_um / 2, cont_b_x1, y0 + w_um / 2)
+    end_b_pad = (x_hi, y0 - w_um / 2 - 0.1, x_hi + RES_HEAD_UM + 0.1, y0 + w_um / 2 + 0.1)
     b.box(L_METAL1, *end_b_pad)
     b.label(L_METAL1_LABEL, end_b_net, x_hi, y0 + w_um / 2 + 0.4)
     b.label(L_METAL1_TEXT, end_b_net, x_hi, y0 + w_um / 2 + 0.4)

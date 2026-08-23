@@ -5,7 +5,7 @@
 * directly, and why klt's own `reference.form: "subckt-call"`
 * converter cannot handle this circuit's mixed MOS/BJT/resistor
 * device set either).
-RPU vdd det 1919368.0
+RPU vdd det 1919368.0 rhigh L=1411.3U W=1U
 MSENSE det sns1 vss vss nfet L=0.5U W=10U
 MKFB fb det vss vss nfet L=0.5U W=2U
 .end
