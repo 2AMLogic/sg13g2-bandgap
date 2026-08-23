@@ -6,9 +6,18 @@ open PDK — designed by AI agents driving
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
 open-source xschem + ngspice flow.
 
-**Status: just opened, blocked on tooling.** Nothing is designed yet, and
-design cannot start until `klt` can resolve this PDK — see the prerequisite
-below.
+**Status: schematic captured and simulated across PVT; layout DRC-clean, LVS
+not yet matched.** The `klt` resolver gap that once blocked this repo closed
+on 2026-08-05
+([klayout-tools#522](https://github.com/2AMLogic/klayout-tools/issues/522)),
+and a curated SG13G2 DRC/LVS starter deck now ships with klayout-tools
+([#905](https://github.com/2AMLogic/klayout-tools/issues/905) /
+[#911](https://github.com/2AMLogic/klayout-tools/pull/911)); design work has
+proceeded since. `spec/`, `design/`, `sim/`, and `layout/` are all populated,
+including pre- and post-layout (PEX) PVT sweeps and committed `klt drc` /
+`klt lvs` reports. The current open blockers are the not-yet-routed floorplan
+that keeps LVS from a device-level match (#20) and ratification of the draft
+target-spec table below (#13) — not the tooling.
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
@@ -38,19 +47,7 @@ SG13G2 being a **BiCMOS** process is a genuine bonus: it offers real bipolar
 devices rather than the parasitic PNPs the CMOS ports rely on, which is a
 different device class for extraction and LVS to handle.
 
-## Prerequisite — read before starting
-
-`klt pdk` currently resolves only the open_pdks directory layout. The
-`ihp130` tree bundled in lambdapdk is **not** IHP-Open-PDK's SG13G2, so
-neither path works today. Resolver support is the blocking prerequisite and
-is tracked upstream; until it lands, this repo holds specification and
-porting-plan work only.
-
-Do not work around this by hand-wiring paths. The resolver gap is exactly
-the kind of friction this repo exists to surface — file it and improve it,
-rather than routing past it.
-
-## Target specification (DRAFT — engineering to ratify, see issue #1)
+## Target specification (DRAFT — engineering to ratify, see issue #13)
 
 | Parameter | Target | Stretch |
 |---|---|---|
@@ -74,7 +71,11 @@ inappropriate rather than merely harder, change it and record why.
 
 Maturity ladder: tooling resolved → spec ratified → schematic simulated
 across PVT → layout DRC/LVS-clean → post-layout re-verification → shuttle
-seat → measured silicon. **Current position: blocked, pre-spec.**
+seat → measured silicon. **Current position: tooling resolved; schematic
+simulated across PVT, pre- and post-layout (PEX); layout DRC-clean but LVS
+not yet device-matched (#20). Spec ratification is still open (#13), so the
+ladder's second rung is climbed out of order — the draft table above is what
+the sims are measured against.**
 
 ## Repo layout
 
@@ -92,8 +93,9 @@ A `hygiene` workflow (`.github/workflows/hygiene.yml`) runs on every push and
 pull request. It checks that decision records in `spec/decision-records/`
 follow `TEMPLATE.md`'s required sections, and that `design/`, `sim/`,
 `layout/`, and `measurements/` follow this repo's `README.md` convention.
-It does not (yet) validate DRC/LVS/PEX/characterization artifact formats —
-those don't exist yet. Full scope and known gaps:
+It does not (yet) validate the DRC/LVS/PEX report formats now committed
+under `layout/`, nor characterization artifacts (there is no silicon yet).
+Full scope and known gaps:
 [`.github/workflows/README.md`](.github/workflows/README.md).
 
 ## License
