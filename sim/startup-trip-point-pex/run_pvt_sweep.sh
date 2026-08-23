@@ -69,21 +69,13 @@ for corner in "${CORNER_LABELS[@]}"; do
         -e "s|@@LAYOUT_GIT_SHA@@|${LAYOUT_GIT_SHA}|g" \
         "${TEMPLATE}" > "${netlist}"
 
-      set +e
-      ngspice -b "${netlist}" > "${log}" 2>&1
-      rc=$?
-      set -e
+      run_pvt_point "${netlist}" "${log}"
 
       det_on=$(grep -E '^v\(det\)' "${log}" | head -1 | awk '{print $3}')
       fb_on=$(grep -E '^v\(fb\)' "${log}" | head -1 | awk '{print $3}')
       vtrip=$(grep -E '^vtrip' "${log}" | head -1 | awk '{print $3}')
       det_off=$(grep -E '^det_off' "${log}" | head -1 | awk '{print $3}')
       fb_off=$(grep -E '^fb_off' "${log}" | head -1 | awk '{print $3}')
-
-      model_error=0
-      if grep -qiE "Unable to find definition of model|couldn't be loaded|Unknown model type" "${log}"; then
-        model_error=1
-      fi
 
       # Same four explicit pass criteria as sim/startup-trip-point (not
       # merely a clean ngspice exit) -- see that experiment's script for the

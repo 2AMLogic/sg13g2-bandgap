@@ -85,10 +85,7 @@ for corner in "${CORNER_LABELS[@]}"; do
         -e "s|@@DUT_GIT_SHA@@|core=${DUT_CORE_GIT_SHA} startup=${DUT_STARTUP_GIT_SHA}|g" \
         "${TEMPLATE}" > "${netlist}"
 
-      set +e
-      ngspice -b "${netlist}" > "${log}" 2>&1
-      rc=$?
-      set -e
+      run_pvt_point "${netlist}" "${log}"
 
       det_early=$(grep -E '^v_det_early' "${log}" | head -1 | awk '{print $3}')
       fb_early=$(grep -E '^v_fb_early' "${log}" | head -1 | awk '{print $3}')
@@ -97,11 +94,6 @@ for corner in "${CORNER_LABELS[@]}"; do
       sns1_final=$(grep -E '^v_sns1_v' "${log}" | head -1 | awk '{print $3}')
       vref_final=$(grep -E '^v_vref_v' "${log}" | head -1 | awk '{print $3}')
       i_mkfb_final=$(grep -E '^i_mkfb_v' "${log}" | head -1 | awk '{print $3}')
-
-      model_error=0
-      if grep -qiE "Unable to find definition of model|couldn't be loaded|Unknown model type" "${log}"; then
-        model_error=1
-      fi
 
       verdict=PASS
       if [[ $rc -ne 0 || $model_error -ne 0 ]]; then

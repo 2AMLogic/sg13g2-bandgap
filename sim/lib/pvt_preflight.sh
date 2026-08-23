@@ -24,6 +24,7 @@
 #   CORNERS_OUT, SNAPSHOTS_OUT, RECORDS_DIR, CSV_OUT, MD_OUT (dirs created)
 #   NGSPICE_VERSION
 #   total=0, passed=0, failed_points=()
+#   run_pvt_point() function -- see its own header comment below
 #
 # Callers still define their own CSV header, corner-label -> section maps,
 # per-point measurement extraction, pass/fail criteria, and records/<id>.md
@@ -83,3 +84,36 @@ NGSPICE_VERSION="$(ngspice -v 2>&1 | sed -n '2p')"
 total=0
 passed=0
 failed_points=()
+
+# run_pvt_point NETLIST LOG
+#   Runs one ngspice batch invocation against NETLIST, logging to LOG, then
+#   scans the log for the model-load-failure signature every PVT sweep in
+#   this repo treats as a hard failure of the point in its own right (a
+#   missing/unloadable OSDI model does not always produce a non-zero ngspice
+#   exit, so `rc` alone is not sufficient). Extracted in issue #48 because
+#   this pair of blocks was duplicated byte-for-byte across all 5
+#   run_pvt_sweep.sh scripts (the same failure mode pvt_preflight.sh itself
+#   was extracted to fix in issue #28).
+#
+# Sets on return (caller-visible, not local -- matches this file's own
+# "Provides on return" convention above):
+#   rc           -- ngspice's exit status
+#   model_error  -- 1 if the log matched a model-load-failure signature, else 0
+#
+# Callers still do their own per-point measurement extraction and pass/fail
+# criteria from LOG after calling this -- that differs per experiment and
+# stays in each run_pvt_sweep.sh.
+run_pvt_point() {
+  local netlist="$1"
+  local log="$2"
+
+  set +e
+  ngspice -b "${netlist}" > "${log}" 2>&1
+  rc=$?
+  set -e
+
+  model_error=0
+  if grep -qiE "Unable to find definition of model|couldn't be loaded|Unknown model type" "${log}"; then
+    model_error=1
+  fi
+}
