@@ -45,8 +45,11 @@ does **not** yet validate:
   this workflow does not yet parse or enforce that convention (e.g. no
   append-only check comparable to gf180-bandgap's `sim/check_records.py`
   lint step).
-- DRC/LVS/PEX report formats or pass/fail status in `layout/` — no
-  DRC/LVS/PEX artifacts exist yet.
+- DRC/LVS/PEX report formats or pass/fail status in `layout/` — clean
+  `drc_report.json`, `lvs_report.json`, `pex_extract_report.json`, and
+  `*.pex.spice` are now committed under `layout/bandgap_core/` and
+  `layout/bandgap_startup/` (as of #11/#12/#14), but this workflow does not
+  yet parse or validate their content.
 - Characterization/measurement data formats in `measurements/` — empty
   until tape-out.
 - Markdown style/lint (line length, table formatting, etc.) on `README.md`
@@ -59,10 +62,12 @@ does **not** yet validate:
   can add markdown linting with a repo-tuned config once someone wants to
   enforce a specific style.
 
-As #9 (schematic), #10 (testbenches), #11 (layout), #12 (DRC/LVS), #14
-(PEX), and #15 (characterization) land real artifacts, this workflow is
-the natural place to add format/freshness validation for each of them
-(e.g. "DRC/LVS JSON reports parse and assert `status: clean`/`status:
-match`") — see issue #16 for the original scoping discussion. Extending
-those checks is follow-on work, not something this workflow claims to do
-yet.
+#9 (schematic), #10 (testbenches), #11 (layout), #12 (DRC/LVS), and #14
+(PEX) have all landed real artifacts; only #15 (characterization report
+under `measurements/`) is still open. For each of the landed artifact
+classes, this workflow is the natural place to add format/freshness
+validation (e.g. "DRC/LVS JSON reports parse and assert `status:
+clean`/`status: match`") — see issue #16 for the original scoping
+discussion. Extending those checks, and adding the equivalent validation
+once #15 lands, is follow-on work, not something this workflow claims to
+do yet.
