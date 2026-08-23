@@ -61,12 +61,11 @@ _MOS_CLASS = {
 
 # Poly-resistor sheet resistance, from spec/porting-plan.md's own citation
 # table ("Rppd ... ~260 Ohm/sq", "Rhigh ... ~1360 Ohm/sq") -- approximate
-# (that table itself says "~"), not a calibrated PDK model value. This
-# script only needs *some* numeric R for NetlistSpiceReader's plain
-# R-element syntax to parse; klt's sg13g2 EXTRACTION_DECK does not extract
-# resistors at all (out of scope, see CLAUDE.md/layout/README.md), so every
-# R device converted here is reference-only in the LVS compare regardless of
-# this value -- it never participates in a device.property comparison.
+# (that table itself says "~"), not a calibrated PDK model value. Used to
+# compute the R-element's own literal resistance value below (issue #20:
+# now a real, compared device.property, not merely a placeholder -- see
+# that issue's own marker-layer work landing `rppd`/`rhigh` recognition in
+# klt's curated sg13g2 deck, klayout-tools#1236/#1248).
 _RES_SHEET_OHM_PER_SQ = {
     "rppd": 260.0,
     "rhigh": 1360.0,
@@ -144,14 +143,36 @@ def convert(reference_path: str) -> list[str]:
                 # 2-terminal R-element -- the third (substrate-tie) node
                 # this circuit's XR* calls carry is dropped; klayout's
                 # built-in resistor device class is 2-terminal only
-                # (verified interactively: terminals A/B), and klt's
-                # sg13g2 EXTRACTION_DECK does not recognise resistors at
-                # all either way (see this file's module docstring).
+                # (verified interactively: terminals A/B).
+                #
+                # Model-name form (issue #20): `R<name> n1 n2 <value> <model>
+                # L=... W=...` -- **not** a bare `R<name> n1 n2 <value>`
+                # card. `NetlistSpiceReader` names a bare-value R-element's
+                # device class the fixed generic "RES" (verified
+                # interactively), which never matches klt's sg13g2 deck's
+                # own `rppd`/`rhigh` `ResistorDevice.name` on the layout
+                # side -- `NetlistComparer.same_device_classes` pairs by
+                # name (case-insensitively, per its own docs; confirmed
+                # against this repo's own `nfet`/`pfet` MOS classes, which
+                # already round-trip through the same reader's uppercasing
+                # unaffected), so a literally different word ("RES" vs
+                # "rppd") never pairs regardless of case. Writing the real
+                # schematic model name (`rppd`/`rhigh`, matching
+                # `layout/common.py::draw_poly_res`'s own class-selecting
+                # marker-layer choice for each flavour) as the positional
+                # model token lets `NetlistSpiceReader` assign the device
+                # class from it instead (verified interactively: produces a
+                # `RPPD`/`RHIGH`-named class, `NetlistComparer` pairs case-
+                # insensitively against the layout's own lowercase
+                # `rppd`/`rhigh`).
                 n1, n2, _sub = nodes
                 l_um = float(params["l"].rstrip("uU"))
                 w_um = float(params["w"].rstrip("uU"))
                 r_ohm = _RES_SHEET_OHM_PER_SQ[model_lower] * (l_um / w_um)
-                out.append(f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f}")
+                out.append(
+                    f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f} "
+                    f"{model_lower} L={_um(params['l'])} W={_um(params['w'])}"
+                )
             else:
                 raise ValueError(f"unrecognised device model {model!r} on line: {line}")
 

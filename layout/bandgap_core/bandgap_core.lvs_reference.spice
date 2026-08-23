@@ -8,9 +8,9 @@
 M1 sns1 fb vdd vdd pfet L=1U W=10U
 Q1 sns1 sns1 vss vss npn13g2
 M2 sns2 fb vdd vdd pfet L=1U W=10U
-R2 sns2 cb2 10751.0
+R2 sns2 cb2 10751.0 rppd L=82.7U W=2U
 Q2 cb2 cb2 vss vss npn13g2
 M3 vref fb vdd vdd pfet L=1U W=10U
-R1 vref cb3 90285.0
+R1 vref cb3 90285.0 rppd L=694.5U W=2U
 Q3 cb3 cb3 vss vss npn13g2
 .end
