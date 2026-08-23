@@ -35,21 +35,17 @@ import klayout.db as kdb
 # main @ 22f2a25 (2026-08-05), the same checkout spec/porting-plan.md cites.
 # --------------------------------------------------------------------------- #
 L_ACTIV = (1, 0)
-L_ACTIV_LABEL = (1, 1)
 L_GATPOLY = (5, 0)
 L_GATPOLY_LABEL = (5, 1)
 L_NSD = (7, 0)
 L_CONT = (6, 0)
 L_METAL1 = (8, 0)
 L_METAL1_LABEL = (8, 1)
-L_METAL1_PIN = (8, 2)
 L_PSD = (14, 0)
 L_VIA1 = (19, 0)
 L_METAL2 = (10, 0)
 L_METAL2_LABEL = (10, 1)
-L_METAL2_PIN = (10, 2)
 L_NWELL = (31, 0)
-L_NBULAY = (32, 0)
 L_EMWIND = (33, 0)
 L_POLYRES = (128, 0)
 L_POLYRES_LABEL = (128, 1)
@@ -82,21 +78,17 @@ L_METAL2_TEXT = (10, 25)
 
 LAYER_NAMES: dict[tuple[int, int], str] = {
     L_ACTIV: "Activ.drawing",
-    L_ACTIV_LABEL: "Activ.label",
     L_GATPOLY: "GatPoly.drawing",
     L_GATPOLY_LABEL: "GatPoly.label",
     L_NSD: "nSD.drawing",
     L_CONT: "Cont.drawing",
     L_METAL1: "Metal1.drawing",
     L_METAL1_LABEL: "Metal1.label",
-    L_METAL1_PIN: "Metal1.pin",
     L_PSD: "pSD.drawing",
     L_VIA1: "Via1.drawing",
     L_METAL2: "Metal2.drawing",
     L_METAL2_LABEL: "Metal2.label",
-    L_METAL2_PIN: "Metal2.pin",
     L_NWELL: "NWell.drawing",
-    L_NBULAY: "nBuLay.drawing",
     L_EMWIND: "EmWind.drawing",
     L_POLYRES: "PolyRes.drawing",
     L_POLYRES_LABEL: "PolyRes.label",
