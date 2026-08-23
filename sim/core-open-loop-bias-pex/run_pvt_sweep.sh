@@ -71,10 +71,7 @@ for corner in "${CORNER_LABELS[@]}"; do
         -e "s|@@LAYOUT_GIT_SHA@@|${LAYOUT_GIT_SHA}|g" \
         "${TEMPLATE}" > "${netlist}"
 
-      set +e
-      ngspice -b "${netlist}" > "${log}" 2>&1
-      rc=$?
-      set -e
+      run_pvt_point "${netlist}" "${log}"
 
       vref=$(grep -E '^v\(vref\)' "${log}" | awk '{print $3}')
       vfb=$(grep -E '^v\(pex_fb\)' "${log}" | awk '{print $3}')
@@ -85,11 +82,6 @@ for corner in "${CORNER_LABELS[@]}"; do
       i1=$(grep -E '^i\(vm1\)' "${log}" | awk '{print $3}')
       i2=$(grep -E '^i\(vm2\)' "${log}" | awk '{print $3}')
       i3=$(grep -E '^i\(vm3\)' "${log}" | awk '{print $3}')
-
-      model_error=0
-      if grep -qiE "Unable to find definition of model|couldn't be loaded|Unknown model type" "${log}"; then
-        model_error=1
-      fi
 
       if [[ $rc -eq 0 && $model_error -eq 0 && -n "${vref:-}" && -n "${vbe1:-}" \
             && -n "${vbe2:-}" && -n "${i1:-}" && -n "${i2:-}" && -n "${i3:-}" ]]; then
