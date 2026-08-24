@@ -31,13 +31,9 @@ echo "corner_label,mos_section,res_section,temp_c,vdd_v,status,det_on_v,fb_on_v,
 
 # Same corner-label vocabulary as sim/startup-trip-point (see that
 # experiment's README for the pairing rationale), minus the HBT axis.
-CORNER_LABELS=(typ bcs wcs sf fs)
-declare -A RES_SECTION_OF=( [typ]=res_typ [bcs]=res_bcs [wcs]=res_wcs [sf]=res_typ [fs]=res_typ )
-declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [fs]=mos_fs )
-
-TEMPS=(-40 27 125)
-VDDS=(2.97 3.30 3.63)
-
+# CORNER_LABELS/TEMPS/VDDS/RES_SECTION_OF/MOS_SECTION_OF come from
+# sim/lib/pvt_preflight.sh (shared across all 5 run_pvt_sweep.sh scripts as
+# of issue #51).
 for corner in "${CORNER_LABELS[@]}"; do
   res_section="${RES_SECTION_OF[${corner}]}"
   mos_section="${MOS_SECTION_OF[${corner}]}"
@@ -171,8 +167,4 @@ done
   echo "  (agent), issue #14."
 } > "${MD_OUT}"
 
-echo "Wrote ${passed}/${total} PASS -> ${MD_OUT}"
-if [[ ${#failed_points[@]} -gt 0 ]]; then
-  echo "FAILED POINTS: ${failed_points[*]}" >&2
-  exit 1
-fi
+write_pvt_summary

@@ -34,18 +34,12 @@ TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_core_open_loop_bias_pex.spice.tmpl"
 echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,status,vref_v,vpexfb_v,vbe_q1_v,vbe_q2_v,vbe_q3_v,dvbe_ptat_v,i_leg1_a,i_leg2_a,i_leg3_a,r1_ohm,r2_ohm" > "${CSV_OUT}"
 
 # Same corner-label vocabulary and HBT/MOS/resistor section pairing as
-# sim/core-open-loop-bias -- see that experiment's README for the rationale;
-# unchanged here since the bipolar/resistor devices are the same
-# schematic-sourced instances and the MOS corner axis applies to the same
-# sg13_hv_pmos compact model, just with extracted-layout geometry.
-CORNER_LABELS=(typ bcs wcs sf fs)
-declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
-declare -A RES_SECTION_OF=( [typ]=res_typ [bcs]=res_bcs [wcs]=res_wcs [sf]=res_typ [fs]=res_typ )
-declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [fs]=mos_fs )
-
-TEMPS=(-40 27 125)
-VDDS=(2.97 3.30 3.63)
-
+# sim/core-open-loop-bias -- CORNER_LABELS/TEMPS/VDDS/HBT_SECTION_OF/
+# RES_SECTION_OF/MOS_SECTION_OF come from sim/lib/pvt_preflight.sh (shared
+# across all 5 run_pvt_sweep.sh scripts as of issue #51); unchanged here
+# since the bipolar/resistor devices are the same schematic-sourced
+# instances and the MOS corner axis applies to the same sg13_hv_pmos compact
+# model, just with extracted-layout geometry.
 for corner in "${CORNER_LABELS[@]}"; do
   hbt_section="${HBT_SECTION_OF[${corner}]}"
   res_section="${RES_SECTION_OF[${corner}]}"
@@ -152,8 +146,4 @@ done
   echo "  (agent), issue #14."
 } > "${MD_OUT}"
 
-echo "Wrote ${passed}/${total} PASS -> ${MD_OUT}"
-if [[ ${#failed_points[@]} -gt 0 ]]; then
-  echo "FAILED POINTS: ${failed_points[*]}" >&2
-  exit 1
-fi
+write_pvt_summary
