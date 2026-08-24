@@ -24,12 +24,15 @@
 #   CORNERS_OUT, SNAPSHOTS_OUT, RECORDS_DIR, CSV_OUT, MD_OUT (dirs created)
 #   NGSPICE_VERSION
 #   total=0, passed=0, failed_points=()
-#   run_pvt_point() function -- see its own header comment below
+#   CORNER_LABELS, VDDS, TEMPS -- the shared PVT sweep grid (see below)
+#   MOS_SECTION_OF, RES_SECTION_OF, HBT_SECTION_OF -- corner-label -> PDK
+#     corner-lib section maps (see below)
+#   run_pvt_point() function     -- see its own header comment below
+#   write_pvt_summary() function -- see its own header comment below
 #
-# Callers still define their own CSV header, corner-label -> section maps,
-# per-point measurement extraction, pass/fail criteria, and records/<id>.md
-# narrative -- none of that is shared here on purpose (it differs
-# substantively per experiment).
+# Callers still define their own CSV header, per-point measurement
+# extraction, pass/fail criteria, and records/<id>.md narrative -- none of
+# that is shared here on purpose (it differs substantively per experiment).
 
 if [[ -z "${DUT_NETLIST:-}" ]]; then
   echo "pvt_preflight.sh: DUT_NETLIST must be set before sourcing this file." >&2
@@ -85,6 +88,32 @@ total=0
 passed=0
 failed_points=()
 
+# The shared PVT sweep grid: process corner x supply x temperature, plus the
+# corner-label -> PDK corner-lib section maps every experiment uses to build
+# its per-point netlist. Extracted in issue #51 -- these six definitions were
+# copy-pasted byte-for-byte across all 5 run_pvt_sweep.sh scripts (confirmed
+# with diff/sort|uniq -c against the pre-#51 tree); the same physical PVT
+# grid and the same PSP103 sg13_hv_pmos/sg13_hv_nmos + r3_cmc resistor
+# devices are biased identically in every experiment, so there was nothing
+# experiment-specific left to keep local.
+#
+# CORNER_LABELS: typ/bcs/wcs reuse the label the PDK itself assigns in
+# cornerHBT.lib and cornerRES.lib, paired with the cornerMOShv.lib section of
+# matching intent (tt / ff = best case / ss = worst case). sf and fs are the
+# two skewed MOS corners, which cornerHBT.lib and cornerRES.lib have no
+# counterpart for, so they run against the typical HBT/resistor sections --
+# see sim/core-open-loop-bias/README.md for the full pairing rationale.
+CORNER_LABELS=(typ bcs wcs sf fs)
+VDDS=(2.97 3.30 3.63)
+TEMPS=(-40 27 125)
+declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [fs]=mos_fs )
+declare -A RES_SECTION_OF=( [typ]=res_typ [bcs]=res_bcs [wcs]=res_wcs [sf]=res_typ [fs]=res_typ )
+# Only meaningful for the experiments whose DUT includes a real bipolar
+# device (core-open-loop-bias, core-open-loop-bias-pex, startup-core-handover
+# -- the two startup-trip-point[-pex] experiments have no HBT in their DUT
+# and simply never reference this map).
+declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
+
 # run_pvt_point NETLIST LOG
 #   Runs one ngspice batch invocation against NETLIST, logging to LOG, then
 #   scans the log for the model-load-failure signature every PVT sweep in
@@ -115,5 +144,20 @@ run_pvt_point() {
   model_error=0
   if grep -qiE "Unable to find definition of model|couldn't be loaded|Unknown model type" "${log}"; then
     model_error=1
+  fi
+}
+
+# write_pvt_summary
+#   Prints the "Wrote N/M PASS -> MD_OUT" summary line and, if any points
+#   failed, prints the failed-point list to stderr and exits 1. Extracted in
+#   issue #51 because this trailer block was duplicated byte-for-byte across
+#   all 5 run_pvt_sweep.sh scripts. Must be called as the last statement in
+#   each caller (it may `exit 1`, matching the pre-extraction behavior of
+#   each script) after MD_OUT, passed, total, and failed_points are final.
+write_pvt_summary() {
+  echo "Wrote ${passed}/${total} PASS -> ${MD_OUT}"
+  if [[ ${#failed_points[@]} -gt 0 ]]; then
+    echo "FAILED POINTS: ${failed_points[*]}" >&2
+    exit 1
   fi
 }

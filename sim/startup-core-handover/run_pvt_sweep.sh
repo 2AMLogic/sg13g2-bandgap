@@ -41,14 +41,10 @@ echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,sta
 
 # Same corner-label vocabulary as sim/core-open-loop-bias (all five
 # cornerMOShv.lib process sections, the HBT axis included since the core's
-# real npn13G2 legs are DUT devices here too).
-CORNER_LABELS=(typ bcs wcs sf fs)
-declare -A HBT_SECTION_OF=( [typ]=hbt_typ [bcs]=hbt_bcs [wcs]=hbt_wcs [sf]=hbt_typ [fs]=hbt_typ )
-declare -A RES_SECTION_OF=( [typ]=res_typ [bcs]=res_bcs [wcs]=res_wcs [sf]=res_typ [fs]=res_typ )
-declare -A MOS_SECTION_OF=( [typ]=mos_tt [bcs]=mos_ff [wcs]=mos_ss [sf]=mos_sf [fs]=mos_fs )
-
-TEMPS=(-40 27 125)
-VDDS=(2.97 3.30 3.63)
+# real npn13G2 legs are DUT devices here too). CORNER_LABELS/TEMPS/VDDS/
+# HBT_SECTION_OF/RES_SECTION_OF/MOS_SECTION_OF come from
+# sim/lib/pvt_preflight.sh (shared across all 5 run_pvt_sweep.sh scripts as
+# of issue #51).
 
 # Release criteria: at the end of the transient (fully ramped + settled),
 # v(det) should have dropped well below vdd/2 (the same "released" sense
@@ -172,8 +168,4 @@ done
   echo "  (agent), issue #24."
 } > "${MD_OUT}"
 
-echo "Wrote ${passed}/${total} PASS -> ${MD_OUT}"
-if [[ ${#failed_points[@]} -gt 0 ]]; then
-  echo "FAILED POINTS: ${failed_points[*]}" >&2
-  exit 1
-fi
+write_pvt_summary
