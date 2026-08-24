@@ -44,7 +44,6 @@ non-empty only when the source netlist actually changed.
 from __future__ import annotations
 
 import os
-import re
 
 REPO_ROOT = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
@@ -70,8 +69,6 @@ _RES_SHEET_OHM_PER_SQ = {
     "rppd": 260.0,
     "rhigh": 1360.0,
 }
-
-_LINE_RE = re.compile(r"^X(\S+)\s+(.*)$")
 
 
 def _parse_device_line(line: str) -> tuple[str, list[str], str, dict[str, str]]:
