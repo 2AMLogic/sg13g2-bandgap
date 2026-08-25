@@ -1,9 +1,12 @@
 # sim/ — PVT-cornered testbenches and evidence records
 
-This directory holds ngspice testbenches and their results for the SG13G2
-bandgap. It follows the same evidence-record convention the fleet's more
+This directory holds ngspice testbenches and their results for the
+sg13g2-bandgap fleet block, across **two PDK variants** as of issue #65:
+SG13G2 (the original, flat `sim/<slug>/` layout below) and SG13CMOS5L (the
+`sim/sg13cmos5l-<slug>/`-prefixed layout — see "Multiple PDK variants"
+below). It follows the same evidence-record convention the fleet's more
 mature ports (`gf180-bandgap`, `sky130-bandgap`) established, adapted where
-SG13G2's own tooling forces a difference (noted explicitly below, not
+this repo's own tooling forces a difference (noted explicitly below, not
 silently). Per `CLAUDE.md`: **verification is the product, no claim without
 a testbench**, and results here are **append-only evidence** — a re-run
 mints a new, timestamped record; nothing under `records/`,
@@ -11,19 +14,50 @@ mints a new, timestamped record; nothing under `records/`,
 
 ## PDK pin
 
-Every record in this tree is generated against the SG13G2 PDK revision
+Every SG13G2 record in this tree is generated against the PDK revision
 pinned in [`pdk.json`](pdk.json) (currently `IHP-Open-PDK` tag `v0.3.0`,
 fetchable via `klayout-tools`' `scripts/fetch-ihp-sg13g2.sh` — the same
-fetch `design/README.md` documents for schematic-entry work). A record's own
-`## PDK` field additionally states the exact `PDK_ROOT`/`ngspice -v` the run
-used, so a later reader can tell whether their own environment matches
-without re-deriving it from `pdk.json` alone.
+fetch `design/README.md` documents for schematic-entry work). Every
+SG13CMOS5L record (`sim/sg13cmos5l-*/`) is generated against the revision
+pinned in [`pdk-sg13cmos5l.json`](pdk-sg13cmos5l.json) instead — a separate
+file, not a restructuring of `pdk.json`, because the two PDKs pin
+differently (a tagged, checksummed tarball release for SG13G2 vs. a live
+git-commit pin for SG13CMOS5L, which ships no tagged release at all — see
+that file's own `_comment` for the full rationale). A record's own `## PDK`
+field additionally states the exact `PDK_ROOT`/`ngspice -v` the run used, so
+a later reader can tell whether their own environment matches without
+re-deriving it from either pin file alone.
 
 `source env.sh` resolves `PDK_ROOT`/`PDK` the same way `design/xschemrc`
 does (env vars first, then the usual open_pdks install prefixes) — every
 testbench's `run_*.sh` sources it, and an interactive `ngspice` session can
 too, so nothing here can silently drift onto a different install than what a
-script used.
+script used. `PDK` defaults to `ihp-sg13g2`; every SG13CMOS5L testbench's own
+cold-start invocation documents `export PDK=ihp-sg13cmos5l` explicitly.
+
+## Multiple PDK variants (issue #65)
+
+`design/`'s own multi-PDK convention (`design/sg13cmos5l/` as a sibling
+subdirectory of the flat SG13G2 `design/*.sch`, see
+`design/sg13cmos5l/README.md`'s "Placement decision") does **not** carry
+over to `sim/` unchanged. `sim/`'s own CI enforcement
+([`.github/scripts/check_evidence_formats.py`](../.github/scripts/check_evidence_formats.py))
+discovers experiments by walking exactly **one level** under `sim/`
+(`p in sim.iterdir() if (p / "records").is_dir()`) — a
+`sim/sg13cmos5l/<slug>/records/` nesting (mirroring `design/`'s subdirectory
+choice) would sit two levels deep and be silently invisible to that checker,
+which would defeat the entire "mechanical enforcement" section below without
+any error. So SG13CMOS5L experiments instead live **flat, directly under
+`sim/`**, with the PDK variant folded into the slug's own name as a
+`sg13cmos5l-` prefix (`sim/sg13cmos5l-core-open-loop-bias/`,
+`sim/sg13cmos5l-startup-trip-point/`, `sim/sg13cmos5l-closed-loop-startup/`)
+— every other convention in this file (the `README.md`/`run_*.sh`/
+`testbench/`/`records/`/`corners/`/`netlist-snapshots/` shape, the
+`<record-id>` grammar, the append-only rule) is unchanged and applies
+identically to both PDK variants; only the top-level directory name and
+which `pdk*.json` file a record traces to differ. A future third PDK variant
+should follow the same `<pdk-variant>-<slug>/` prefix pattern, not a nested
+subdirectory, for the same CI-visibility reason.
 
 ## Directory / naming convention
 
@@ -62,6 +96,20 @@ sim/
   / `cornerDIO.lib`, each with its own section vocabulary — `hbt_typ`,
   `mos_ff`, `res_wcs`, ... — so which families and sections a given
   `<process>` label covers is testbench-specific, not fixed fleet-wide).
+  SG13CMOS5L's `pnpMPA` devices (its bipolar family, in place of SG13G2's
+  `npn13G2` HBT — see `spec/decision-records/0004-cmos5l-bipolar-device-selection.md`)
+  are corner-swept from `cornerPNP.lib` instead of `cornerHBT.lib`, with
+  section names `typ`/`bcs`/`wcs` (no `hbt_` prefix, and — like
+  `cornerHBT.lib` — no skewed `sf`/`fs`-equivalent section, so every
+  `sim/sg13cmos5l-*/run_pvt_sweep.sh` falls those two grid points back to
+  `typ` the same way SG13G2's shared `HBT_SECTION_OF` map already does; see
+  `sim/pdk-sg13cmos5l.json` `"bipolar_device_note"`). Every other device
+  family's corner-lib section vocabulary (`cornerMOShv.lib`, `cornerRES.lib`,
+  etc.) is literally shared between the two PDKs — same files, reached via
+  symlink from the SG13CMOS5L install (see `sim/pdk-sg13cmos5l.json`
+  `"relationship_to_ihp_sg13g2"`) — so `<process>` labels like `mos_tt`/
+  `res_wcs` mean exactly the same thing in a `sim/sg13cmos5l-*/` corner-id as
+  they do in a `sim/<slug>/` one.
 
 ### Deliberate deviation from the gf180-bandgap/sky130-bandgap layout: per-corner-point netlist snapshots
 
@@ -208,6 +256,33 @@ from no checker at all.
   near-singular startup instant — see that experiment's README for the full
   account, including a latent `set -euo pipefail`-vs-`grep`-no-match
   fragility this experiment's `run_pvt_sweep.sh` fixes.
+- **[`sg13cmos5l-core-open-loop-bias/`](sg13cmos5l-core-open-loop-bias/README.md)**,
+  **[`sg13cmos5l-startup-trip-point/`](sg13cmos5l-startup-trip-point/README.md)**
+  and **[`sg13cmos5l-closed-loop-startup/`](sg13cmos5l-closed-loop-startup/README.md)**
+  — the SG13CMOS5L PDK variant's counterparts to `core-open-loop-bias`,
+  `startup-trip-point` and `closed-loop-startup` above (issue #65, phase 2/4
+  of the SG13CMOS5L port, issue #63), exercising
+  `design/sg13cmos5l/bandgap_core.sch`/`bandgap_startup.sch`/`bandgap_amp.sch`
+  (issues #64/#68) — a genuinely different core topology (grounded-collector
+  `pnpMPA` legs, since SG13CMOS5L has no HBT — DR-0004 — vs. SG13G2's
+  grounded-emitter `npn13G2`), not a re-parameterization of the SG13G2
+  netlists. All three run at the same 45-point temperature x supply x
+  process-corner grid (the 3.3V HV-flavor analog rail only — see
+  `sim/pdk-sg13cmos5l.json` `"supply_rails"` for why the parent epic's "1.2V
+  digital" framing does not apply to this analog-only block) and land
+  45/45 PASS: `sg13cmos5l-core-open-loop-bias`'s open-loop `vref` ranges
+  1.019-1.340 V across the grid (no ratified spec target yet — see
+  `spec/porting-plan-sg13cmos5l.md`); `sg13cmos5l-closed-loop-startup`'s
+  worst-corner `|sns1-sns2|` is 93 uV (well inside its 20 mV bar) with `vref`
+  in a 1.189-1.200 V band, and its `typ`/27 degC/3.3V point reproduces
+  `design/sg13cmos5l/README.md`'s own informal single-corner check exactly
+  (see that experiment's README "Cross-check" section). Unlike SG13G2, this
+  PDK ships its OSDI models prebuilt — no `sim/tools/build-osdi.sh` compile
+  step needed (see `sim/pdk-sg13cmos5l.json` `"osdi_toolchain"`) — and its
+  own front-end device `.lib` files are symlinks into a sibling `ihp-sg13g2`
+  checkout, a real install-shape gap filed at
+  [`2AMLogic/klayout-tools#1406`](https://github.com/2AMLogic/klayout-tools/issues/1406)
+  (see `sim/pdk-sg13cmos5l.json` `"sibling_checkout_requirement"`).
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 

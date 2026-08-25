@@ -1,0 +1,22 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-bandgap -- sg13cmos5l bandgap_startup pvt testbench (issue #65)
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+v(det) = 3.630000e+00
+v(fb) = 2.131609e-04
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.51500e+00
+No. of Data Rows : 727
+vtrip               =  5.79960e-01
+det_off             =  1.70799e-04
+fb_off              =  3.63000e+00
+Note: Simulation executed from .control section 
