@@ -9,6 +9,13 @@ but it does record two decisions this issue was scoped to make (see
 and
 [`decision-records/0002-supply-voltage-scope.md`](decision-records/0002-supply-voltage-scope.md)).
 
+**A second PDK variant, IHP SG13CMOS5L, is ported separately** — see
+[`porting-plan-sg13cmos5l.md`](porting-plan-sg13cmos5l.md) (issue #64,
+phase 1/4 of #63). This document remains the SG13G2-only plan; it is not
+retrofitted to cover both PDKs, the same way `design/bandgap_core.sch`
+(SG13G2) and `design/sg13cmos5l/bandgap_core.sch` (SG13CMOS5L) are kept as
+separate schematics rather than one parameterized over both device menus.
+
 **Sources checked** (read first, per the issue body, rather than starting
 from a blank page):
 

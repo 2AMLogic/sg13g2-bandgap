@@ -8,6 +8,14 @@ for what this issue's own, informal, non-`sim/`-evidence checks did and did
 not confirm, and `sim/core-open-loop-bias/README.md` for the first real
 `sim/`-evidence testbench built on top of it).
 
+**Multi-PDK note (issue #64)**: everything below is the original IHP SG13G2
+port. A second PDK variant, IHP SG13CMOS5L, is being ported starting with
+[`sg13cmos5l/`](sg13cmos5l/README.md) (issue #64, phase 1/4 of #63) — a
+separate, PDK-named subdirectory rather than a modification of the
+schematics below (see that directory's README for the placement rationale
+and why SG13CMOS5L needed a different bipolar-device topology,
+[`spec/decision-records/0004-cmos5l-bipolar-device-selection.md`](../spec/decision-records/0004-cmos5l-bipolar-device-selection.md)).
+
 ```
 design/
   xschemrc        repo xschem config: resolves the SG13G2 PDK, adds repo
