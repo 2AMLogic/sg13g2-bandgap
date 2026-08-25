@@ -22,16 +22,35 @@ original bug-reproducing record from before the fix
 below and on disk, per this directory's append-only convention — it is
 historical evidence of the bug this issue fixed, not a live caveat.
 
-**Update (issue #37, `records/20260821-231306-9ea33c1.{md,csv}` — the
-current record):** re-extracted against the *same* corrected `w=10u`
-geometry, but with the `sg13g2` deck's now-populated parasitics tables, so
-this is the first record here to carry real Metal1/Metal2 **wire R/C**
-(see "Wire resistance and capacitance" below). It does **not** change the
-issue #32 conclusion: 45/45 PASS, and the cross-bench margin bug decision
-record 0003 describes stays **resolved** — every one of the 45 points keeps
-a positive margin, minimum `+63.59 mV`. Wire parasitics move `vtrip` by at
-most `17 µV` (median `9 µV`) relative to issue #32's own wire-RC-free
-record.
+**Update (issue #37, `records/20260821-231306-9ea33c1.{md,csv}`):**
+re-extracted against the *same* corrected `w=10u` geometry, but with the
+`sg13g2` deck's now-populated parasitics tables, so this was the first
+record here to carry real Metal1/Metal2 **wire R/C** (see "Wire resistance
+and capacitance" below). It did **not** change the issue #32 conclusion:
+45/45 PASS, and the cross-bench margin bug decision record 0003 describes
+stayed **resolved** — every one of the 45 points kept a positive margin,
+minimum `+63.59 mV`. Wire parasitics moved `vtrip` by at most `17 µV`
+(median `9 µV`) relative to issue #32's own wire-RC-free record.
+
+**Update (issue #56, `records/20260825-132535-eeea775.{md,csv}` — the
+current record):** the committed PEX evidence had gone stale relative to
+`layout/bandgap_startup/bandgap_startup.gds` — PR #45 added resistor
+marker layers to the layout, but only the DRC/LVS reports were regenerated
+against it at the time, not the PEX leg. Re-extracting and re-running this
+sweep against the current GDS: **max `|Δvtrip|` across all 45 points vs.
+the immediately-preceding record is `3 µV`** — noise at the CSV's own
+printed precision. The cross-bench margin-bug comparison against
+`core-open-loop-bias-pex`'s own refreshed record (issue #56) stays
+resolved: all 45 points positive, minimum margin `+63.5956 mV` at
+`wcs_125c_3.63v` (was `+63.5946 mV` at the same point, pre-#56 — a ~1 µV
+shift, consistent with the near-zero `vref`/`vtrip` deltas above, not a
+regression). As with
+`core-open-loop-bias-pex`, PR #45's marker layers also made the `sg13g2`
+deck's `rhigh` recognizer match `XRPU` for the first time here
+(`device_counts` went from `{"nfet": 2}` to `{"nfet": 2, "rhigh": 1}`) —
+see "NOT modelled" below; this testbench's architecture is otherwise
+unchanged, and consuming the newly-recognised resistor is tracked as a
+follow-on, [issue #59](https://github.com/2AMLogic/sg13g2-bandgap/issues/59).
 
 ## Dependency on layout/README.md
 
@@ -92,19 +111,29 @@ after regenerating the layout).
   the committed GDS actually is. See "Cross-bench observation" below for
   the before/after margin numbers, and `records/20260821-160458-42d8348.md`
   (preserved) for the original `w=2u` bug-reproducing record.
-- **Resistor devices are not extracted at all here.** Same situation
-  `core-open-loop-bias-pex/README.md` documents for `rppd`: `rhigh` (this
-  experiment's `XRPU`) *does* have a recognizer in
-  `EXTRACTION_DECK.resistors` (`klayout_tools.decks.sg13g2`, issue #1235),
-  but `layout/common.py`'s shared `draw_poly_res` (used by both cells' poly
-  resistors) never draws the `pSD`/`SalBlock`/`EXTBlock` marker layers
-  either flavour's recognition additionally requires beyond the `PolyRes`
-  body — a layout-drawing gap in this repo, not a `klayout-tools` one.
-  `device_classes` here reads `["nfet", "pfet", "resistor", "dantenna",
-  "dpantenna"]` and `device_counts` is `{"nfet": 2}`, zero resistor
-  instances recognised either way. `XRPU` (`rhigh`) is therefore still
-  spliced in verbatim from `design/netlist/bandgap_startup.spice`, wired to
-  the extraction's own real, physically-routed `vdd`/`det` net names.
+- **The resistor device is now recognised (issue #56), but still not
+  consumed by this testbench.** `rhigh` (this experiment's `XRPU`) already
+  had a recognizer in `EXTRACTION_DECK.resistors`
+  (`klayout_tools.decks.sg13g2`, issue #1235) before PR #45, but
+  `layout/common.py`'s shared `draw_poly_res` (used by both cells' poly
+  resistors) only drew the `PolyRes` body and a `Metal1` end pad, never the
+  `pSD`/`SalBlock`/`EXTBlock` marker layers `rhigh`/`rppd` recognition
+  additionally requires — a layout-drawing gap in this repo, not a
+  `klayout-tools` one. **PR #45 added those marker layers to the GDS**, and
+  re-extracting against the current layout (issue #56) confirms
+  recognition now succeeds: `device_counts` reads `{"nfet": 2, "rhigh":
+  1}` (up from `{"nfet": 2}`), with a real `rhigh` device card (`R$3`,
+  drawn resistance `1919368 ohm` from the layout's own geometry) in the
+  re-extracted `bandgap_startup.pex.spice`. **This testbench does not yet
+  consume that** — `XRPU` (`rhigh`) is still spliced in verbatim from
+  `design/netlist/bandgap_startup.spice`, wired to the extraction's own
+  real, physically-routed `vdd`/`det` net names; the newly-extracted `R$3`
+  device card and its isolated two-node net (`\$5`/`\$5__t0`) are
+  deliberately omitted from
+  `testbench/tb_startup_trip_point_pex.spice.tmpl` rather than
+  double-counted alongside the schematic splice. Incorporating it is
+  tracked as a follow-on:
+  [issue #59](https://github.com/2AMLogic/sg13g2-bandgap/issues/59).
 - **Body terminal substituted, not extracted as-is.** Both extracted
   devices' body terminals land on the deck's own synthesized global
   fallback net (`vsubs` in `bandgap_startup.pex.spice`), not the
@@ -125,8 +154,11 @@ klt extract --deck sg13g2 --parasitics bandgap_startup.gds \
 ```
 
 Same deck-version caveat as `core-open-loop-bias-pex/README.md`'s "Cold-start
-invocation" section: the committed extraction here was produced from a
-`klt` build at `klayout-tools` commit `dab6e5b`, not the (currently stale,
+invocation" section: the committed extraction here records
+`provenance.klt_version: "0.3.0"` in the JSON (issue #56) — the producing
+environment's `klt --version` banner read `0.3.0+g71cbae53b7e6.dirty`, but
+only the coarser `0.3.0` is persisted, so that is the checkable figure. Either
+way it is not the (currently stale,
 [klayout-tools#1249](https://github.com/2AMLogic/klayout-tools/issues/1249))
 `pip`-installed `klayout-tools==0.2.0`. Confirm `pex_extract_report.json`'s
 `parasitics.r_count`/`c_count` are non-zero before trusting a re-run, and
@@ -196,6 +228,17 @@ at the corrected `w=10u`, matching the schematic):
 All **45/45** points now show a positive margin (the previously-failing 4
 points now clear by 63-73 mV; every other point clears by 63-229 mV — see
 the full record CSV for every point).
+
+**After issue #56's re-extraction** (`records/20260825-132535-eeea775.csv`
+against `records/20260825-132531-eeea775.csv` — current, post-PR-#45-marker-
+layer evidence): the same 4 points read `sf_125c_3.63v` `+72.80`,
+`wcs_125c_2.97v` `+67.99`, `wcs_125c_3.30v` `+65.53`, `wcs_125c_3.63v`
+`+63.60` (mV) — each within `0.05 mV` of the issue #32/#37 figures directly
+above, i.e. unchanged within this pair of experiments' own few-µV noise
+floor (see the "Update (issue #56)" note at the top of this file). All
+45/45 points stay positive; the margin-bug fix these two experiments
+cross-confirm is unaffected by PR #45's resistor-recognition marker
+layers.
 
 **What this means**: decision record 0003 widened `XMSENSE` to `w=10u` in
 `design/netlist/bandgap_startup.spice` at the schematic level (issue #24/PR

@@ -12,16 +12,24 @@
 * pin vsubs
 .SUBCKT bandgap_startup det fb vss vsubs
 * device instance $1 r0 *1 0,0 nfet
-M$1 det__t0 \$4 vss__t0 vsubs nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$1 det__t1 \$4 vss__t0 vsubs nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 20,0 nfet
-M$2 fb__t0 det__t1 vss__t1 vsubs nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U
+M$2 fb__t0 det__t2 vss__t1 vsubs nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U
 + PD=4.8U
+* device instance $3 r0 *1 705.65,20 rhigh
+R$3 \$5__t0 det__t0 vsubs 1919368 rhigh
+* device instance _5_t0 r0 *1 0,0 
+R_5_t0 \$5__t0 \$5 0.264
+* device instance _5 r0 *1 0,0 
+C_5 \$5 vsubs 1.55598e-16
 * device instance det_t0 r0 *1 0,0 
-Rdet_t0 det__t0 det 266.75315
+Rdet_t0 det__t0 det 266.808047442
 * device instance det_t1 r0 *1 0,0 
-Rdet_t1 det__t1 det 266.75315
+Rdet_t1 det__t1 det 139.15243699
+* device instance det_t2 r0 *1 0,0 
+Rdet_t2 det__t2 det 127.655815568
 * device instance det r0 *1 0,0 
-Cdet det vsubs 1.30709866e-13
+Cdet det vsubs 1.30736768e-13
 * device instance fb_t0 r0 *1 0,0 
 Rfb_t0 fb__t0 fb 0.6286
 * device instance fb r0 *1 0,0 
