@@ -154,9 +154,11 @@ klt extract --deck sg13g2 --parasitics bandgap_startup.gds \
 ```
 
 Same deck-version caveat as `core-open-loop-bias-pex/README.md`'s "Cold-start
-invocation" section: the committed extraction here was produced from
-`klt 0.3.0+g71cbae53b7e6.dirty` (`provenance.klt_version` in the JSON,
-issue #56), not the (currently stale,
+invocation" section: the committed extraction here records
+`provenance.klt_version: "0.3.0"` in the JSON (issue #56) — the producing
+environment's `klt --version` banner read `0.3.0+g71cbae53b7e6.dirty`, but
+only the coarser `0.3.0` is persisted, so that is the checkable figure. Either
+way it is not the (currently stale,
 [klayout-tools#1249](https://github.com/2AMLogic/klayout-tools/issues/1249))
 `pip`-installed `klayout-tools==0.2.0`. Confirm `pex_extract_report.json`'s
 `parasitics.r_count`/`c_count` are non-zero before trusting a re-run, and

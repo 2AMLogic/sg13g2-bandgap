@@ -146,9 +146,15 @@ klt extract --deck sg13g2 --parasitics bandgap_core.gds \
 
 **Re-verify the deck version before regenerating.** The committed
 `pex_extract_report.json`/`bandgap_core.pex.spice` (issue #56, 2026-08-25)
-were produced from `klt 0.3.0+g71cbae53b7e6.dirty` (`provenance.klt_version`
-in the JSON), the first record here from a tagged/released deck build
-(`provenance.deck.released: true`) rather than a pre-release dev commit.
+record `provenance.klt_version: "0.3.0"` — that is the only `klt` version
+string the JSON persists, and it is what a re-run should be compared
+against. (The producing environment's own `klt --version` banner printed the
+fuller `klt 0.3.0+g71cbae53b7e6.dirty`, but the extractor does not write that
+build suffix into the report, so it is *not* checkable from the committed
+evidence — do not treat it as recorded provenance.) Separately, the same JSON
+records `provenance.deck.released: true`, the first record here from a
+tagged/released **deck** build rather than a pre-release dev commit; that is
+a property of the DRC/LVS deck, not of the `klt` binary.
 `pip install klayout-tools` (`klayout-tools==0.2.0` as of this writing) is
 [known-stale relative to `main`](https://github.com/2AMLogic/klayout-tools/issues/1249)
 and does not yet carry the Metal1/Metal2 PARASITICS fix
