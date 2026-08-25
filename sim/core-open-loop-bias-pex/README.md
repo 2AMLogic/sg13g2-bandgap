@@ -10,6 +10,26 @@ schematic-level testbench copies `design/netlist/bandgap_core.spice`'s own
 `pex_extract_report.json`). Read this file before trusting a record here —
 it is **not** a pure layout extraction re-simulated as-is.
 
+**Update (issue #56, `records/20260825-132531-eeea775.{md,csv}` — the
+current record):** the committed PEX evidence had gone stale relative to
+`layout/bandgap_core/bandgap_core.gds` — PR #45 added resistor marker
+layers (`GatPoly` dog-bone bodies plus `EXTBlock`/`pSD`/`SalBlock`/`nSD`
+markers) to the layout, but only the DRC/LVS reports were regenerated
+against it at the time, not the PEX leg. Re-extracting and re-running this
+sweep against the current GDS: **max `|Δvref|` across all 45 points vs.
+the immediately-preceding record (`records/20260821-225609-837323a.csv`)
+is `1 µV`** — noise at the CSV's own printed precision, not a real move.
+One thing *did* change beyond "small-to-none," though, and is worth
+stating plainly rather than folding into a rounding error: PR #45's marker
+layers made the `sg13g2` deck's `rppd` recognizer actually match both poly
+resistors in this layout for the first time (`device_counts` went from
+`{"pfet": 3}` to `{"pfet": 3, "rppd": 2}`) — see the "NOT modelled"
+section below for what that does and does not change here. This
+testbench's own architecture (which devices are extracted vs.
+schematic-spliced) is unchanged by this pass; incorporating the
+newly-recognised resistors is tracked as a follow-on,
+[issue #59](https://github.com/2AMLogic/sg13g2-bandgap/issues/59).
+
 ## Dependency on layout/README.md
 
 `layout/bandgap_core/lvs_report.json` reads `status: "mismatch"` as of this
@@ -57,35 +77,37 @@ README restates the parts that matter for simulation; `layout/README.md`'s
 
 **NOT modelled (disclosed, not silently omitted):**
 
-- **Bipolar and resistor devices are still not extracted here** — but the
-  underlying deck capability picture changed since PR #33's original
-  README text, so re-verify rather than trust the old claim verbatim:
-  `pex_extract_report.json`'s `device_classes` now lists `["nfet", "pfet",
-  "resistor", "dantenna", "dpantenna"]` (grown from `["nfet", "pfet"]`),
-  and `device_counts` still reads `{"pfet": 3}` — zero resistor/diode
-  instances recognised in *this* layout. Two independent, non-conflated
-  reasons: **(1) `npn13G2`/`npn13G2l`/`npn13G2v`** (SiGe HBTs) are not
-  simply unrecognised yet — `klayout_tools.decks.sg13g2`'s own module
-  docstring documents this as a materially harder gap than a missing
-  device-class entry (multi-terminal marker-layer disambiguation this
-  engine's device model doesn't yet express) — unaffected by this pass,
-  still the same deck gap `layout/README.md`'s LVS section documents
-  (cause 1). **(2) `rppd`** (the poly resistor flavour `R1`/`R2` use) *does*
-  now have a recognizer in `EXTRACTION_DECK.resistors` — but this specific
-  layout's `draw_poly_res` (`layout/common.py`) only draws the `PolyRes`
-  body and a `Metal1` end pad, never the `pSD`/`SalBlock`/`EXTBlock` marker
-  layers `rppd` recognition additionally requires — confirmed directly:
-  layer `128/0` (`PolyRes.drawing`) dropped out of both
-  `pex_extract_report.json`'s `ignored_layers` entirely in this
-  re-extraction (it is no longer outside the deck's connectivity graph),
-  yet still contributes zero recognised resistor devices. This is a
-  layout-drawing gap in this repo, not a `klayout-tools` gap — not filed
-  upstream, and not fixed in this pass (out of scope for issue #37; noted
-  for a future layout-regeneration issue). `XQ1`/`XQ2`/`XQ3` (`npn13G2`)
-  and `XR1`/`XR2` (`rppd`) are therefore still spliced in **verbatim** from
-  `design/netlist/bandgap_core.spice`, wired to the extraction's own real,
-  physically-routed net names (`sns1`, `sns2`, `cb2`, `cb3`, `vref`, `vss` —
-  all real pins in `pex_extract_report.json`, not invented nodes).
+- **Bipolar devices are still not extracted here; resistors now ARE
+  recognised, but still not consumed by this testbench (issue #56).** Two
+  independent, non-conflated situations: **(1) `npn13G2`/`npn13G2l`/
+  `npn13G2v`** (SiGe HBTs) are not simply unrecognised yet —
+  `klayout_tools.decks.sg13g2`'s own module docstring documents this as a
+  materially harder gap than a missing device-class entry (multi-terminal
+  marker-layer disambiguation this engine's device model doesn't yet
+  express) — unaffected by PR #45, still the same deck gap
+  `layout/README.md`'s LVS section documents (cause 1). **(2) `rppd`**
+  (the poly resistor flavour `R1`/`R2` use) already had a recognizer in
+  `EXTRACTION_DECK.resistors` before PR #45, but this layout's
+  `draw_poly_res` (`layout/common.py`) only drew the `PolyRes` body and a
+  `Metal1` end pad, never the `pSD`/`SalBlock`/`EXTBlock` marker layers
+  `rppd` recognition additionally requires. **PR #45 added those marker
+  layers to the GDS**, and re-extracting against the current layout (issue
+  #56) confirms recognition now succeeds: `device_counts` reads `{"pfet":
+  3, "rppd": 2}` (up from `{"pfet": 3}`), with two real `rppd` device cards
+  (`R$4`/`R$5`, drawn resistances `10751 ohm` / `90285 ohm` from the
+  layout's own geometry) in the re-extracted
+  `bandgap_core.pex.spice`. **This testbench does not yet consume that —**
+  `XQ1`/`XQ2`/`XQ3` (`npn13G2`) and `XR1`/`XR2` (`rppd`) are still spliced
+  in **verbatim** from `design/netlist/bandgap_core.spice`, wired to the
+  extraction's own real, physically-routed net names (`sns1`, `sns2`,
+  `cb2`, `cb3`, `vref`, `vss` — all real pins in `pex_extract_report.json`,
+  not invented nodes); the newly-extracted `R$4`/`R$5` device cards and
+  their terminal-only wire-parasitic legs are deliberately omitted from
+  `testbench/tb_core_open_loop_bias_pex.spice.tmpl` rather than
+  double-counted alongside the schematic splice. Incorporating them is a
+  bigger step than a re-extraction/re-run (it changes which devices are
+  extracted vs. schematic-sourced), tracked as a follow-on:
+  [issue #59](https://github.com/2AMLogic/sg13g2-bandgap/issues/59).
 - **PMOS body is a testbench fixture, not an extracted tie.** The
   extraction's own `unbiased_pmos_body_nets` warns all three PMOS bodies
   land on an anonymous, single-terminal net with no DC path (same root
@@ -123,13 +145,15 @@ klt extract --deck sg13g2 --parasitics bandgap_core.gds \
 ```
 
 **Re-verify the deck version before regenerating.** The committed
-`pex_extract_report.json`/`bandgap_core.pex.spice` (issue #37, 2026-08-21)
-were produced from a `klt` build at `klayout-tools` commit `dab6e5b`
-(`provenance.deck.content_hash` in the JSON), not a tagged PyPI release —
+`pex_extract_report.json`/`bandgap_core.pex.spice` (issue #56, 2026-08-25)
+were produced from `klt 0.3.0+g71cbae53b7e6.dirty` (`provenance.klt_version`
+in the JSON), the first record here from a tagged/released deck build
+(`provenance.deck.released: true`) rather than a pre-release dev commit.
 `pip install klayout-tools` (`klayout-tools==0.2.0` as of this writing) is
 [known-stale relative to `main`](https://github.com/2AMLogic/klayout-tools/issues/1249)
 and does not yet carry the Metal1/Metal2 PARASITICS fix
-([klayout-tools#1280](https://github.com/2AMLogic/klayout-tools/pull/1280)).
+([klayout-tools#1280](https://github.com/2AMLogic/klayout-tools/pull/1280))
+nor the resistor-recognition marker layers PR #45 added the layout side of.
 If re-running with a `pip`-installed `klt`, confirm `pex_extract_report.json`'s
 `parasitics.r_count`/`c_count` are non-zero before trusting the result — a
 stale install will silently reproduce the old zero-RC behavior with

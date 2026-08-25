@@ -49,11 +49,19 @@
 *     corrected w=10u width now clears at all 45 points (the 4 points that
 *     failed at the stale w=2u width -- wcs_125c_{2.97,3.30,3.63}v,
 *     sf_125c_3.63v -- now pass).
-*   - XRPU (rhigh) is NOT extracted from the layout at all -- same
-*     bipolar/resistor recognition gap as core-open-loop-bias-pex. Spliced
-*     in verbatim from design/netlist/bandgap_startup.spice, wired to the
-*     same real layout net names (vdd/det) the extraction itself reports
-*     as real, physically-routed pins.
+*   - XRPU (rhigh) is still spliced in verbatim from
+*     design/netlist/bandgap_startup.spice, wired to the same real layout
+*     net names (vdd/det) the extraction itself reports as real,
+*     physically-routed pins -- but as of issue #56 this is a deliberate
+*     choice, not a deck limitation anymore: PR #45's resistor marker
+*     layers made the sg13g2 deck's `rhigh` recognizer actually match this
+*     layout's poly resistor (pex_extract_report.json's device_counts now
+*     reads `{"nfet": 2, "rhigh": 1}`, up from `{"nfet": 2}`). This
+*     testbench does not yet consume that newly-extracted R$3 (real
+*     drawn-geometry resistance 1919368 ohm) -- doing so changes which
+*     devices are extracted vs. schematic-sourced, a bigger step than issue
+*     #56's re-extraction/re-run scope. See README.md's "Update (issue
+*     #56)" section and the follow-on issue it links for the full account.
 *   - Both extracted devices' body terminals land on the deck's own
 *     synthesized global fallback net (`vsubs` in
 *     layout/bandgap_startup/bandgap_startup.pex.spice), not the
@@ -104,22 +112,31 @@ XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
 * regenerated layout (issue #32; layout/bandgap_startup/pex_extract_report.json).
 * Drain/source pins (and XMKFB's gate) are wired to the exact per-terminal
 * wire-parasitic hub node names layout/bandgap_startup/bandgap_startup.pex.spice's
-* own M$1/M$2 cards use (M$1 = XMSENSE: det__t0/vss__t0; M$2 = XMKFB:
-* fb__t0/det__t1/vss__t1) -- the "Wire parasitics" block below ties each
-* hub back to its real net (det/fb/vss) through that file's own series R
-* (+ ground C, no DC effect but included for completeness). Body stays vss
-* directly (testbench fixture, unchanged -- see file header).
-XMSENSE det__t0 sns1 vss__t0 vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
-XMKFB fb__t0 det__t1 vss__t1 vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
+* own M$1/M$2 cards use (M$1 = XMSENSE: det__t1/vss__t0; M$2 = XMKFB:
+* fb__t0/det__t2/vss__t1 -- issue #56's re-extraction renumbered det's
+* per-terminal hub indices from t0/t1 to t1/t2, since `det__t0` is now the
+* newly-recognized XRPU/rhigh device's own terminal, see file header) --
+* the "Wire parasitics" block below ties each hub back to its real net
+* (det/fb/vss) through that file's own series R (+ ground C, no DC effect
+* but included for completeness). Body stays vss directly (testbench
+* fixture, unchanged -- see file header).
+XMSENSE det__t1 sns1 vss__t0 vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMKFB fb__t0 det__t2 vss__t1 vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
 
-* Wire parasitics (issue #37) -- verbatim R/C cards from
-* layout/bandgap_startup/bandgap_startup.pex.spice's --parasitics output
-* (that file's M$1/M$2 cards are already re-encoded above as XMSENSE/
-* XMKFB; these are its remaining, non-MOS cards). Regenerate this block
-* together with the geometry above if the layout or deck ever changes.
-Rdet_t0 det__t0 det 266.75315
-Rdet_t1 det__t1 det 266.75315
-Cdet det vsubs 1.30709866e-13
+* Wire parasitics (issue #37, refreshed issue #56) -- verbatim R/C cards
+* from layout/bandgap_startup/bandgap_startup.pex.spice's --parasitics
+* output (that file's M$1/M$2 cards are already re-encoded above as
+* XMSENSE/XMKFB; these are its remaining, non-device cards). Issue #56's
+* re-extraction now ALSO reports a rhigh device card (R$3, see file
+* header) that this testbench does not instantiate, plus its own isolated
+* two-node net (\$5/\$5__t0) -- both omitted below, since nothing else in
+* this testbench would connect to them. `det`'s own R/C values below
+* reflect the renumbered star split described above. Regenerate this
+* block together with the geometry above if the layout or deck ever
+* changes.
+Rdet_t1 det__t1 det 139.15243699
+Rdet_t2 det__t2 det 127.655815568
+Cdet det vsubs 1.30736768e-13
 Rfb_t0 fb__t0 fb 0.6286
 Cfb fb vsubs 2.1056e-16
 Rvss_t0 vss__t0 vss 5.4071

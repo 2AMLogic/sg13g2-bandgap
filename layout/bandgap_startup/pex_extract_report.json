@@ -5,13 +5,14 @@
   "top": "bandgap_startup",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_startup.pex.spice",
-  "netlist_sha256": "d3c49f94a9e61e696c257117173f5b55f681bfc15db45658d53abc9dbeead482",
+  "netlist_sha256": "b41c28b9b46e23136a7e7a8f06ea09f80da4108d1f59f030ac8c601429f802ec",
   "status": "extracted",
-  "device_count": 2,
-  "net_count": 5,
+  "device_count": 3,
+  "net_count": 6,
   "pin_count": 4,
   "device_counts": {
-    "nfet": 2
+    "nfet": 2,
+    "rhigh": 1
   },
   "dummy_devices_dropped": 0,
   "ignored_layers": [
@@ -37,6 +38,16 @@
     }
   ],
   "device_recognition_only_layers": [
+    {
+      "layer": 28,
+      "datatype": 0,
+      "shapes": 1
+    },
+    {
+      "layer": 111,
+      "datatype": 0,
+      "shapes": 1
+    },
     {
       "layer": 128,
       "datatype": 0,
@@ -86,6 +97,22 @@
         "ps_um": 4.8,
         "pd_um": 4.8
       }
+    },
+    {
+      "name": "$3",
+      "class": "rhigh",
+      "nets": {
+        "a": "\\$5",
+        "b": "det",
+        "w": "vsubs"
+      },
+      "params": {
+        "r_ohm": 1919368.0,
+        "l_um": 1411.3,
+        "w_um": 1.0,
+        "area_um2": 1411.3,
+        "perimeter_um": 2824.6
+      }
     }
   ],
   "nets": [
@@ -95,9 +122,14 @@
       "device_count": 1
     },
     {
+      "name": "\\$5",
+      "pin": false,
+      "device_count": 1
+    },
+    {
       "name": "det",
       "pin": true,
-      "device_count": 2
+      "device_count": 3
     },
     {
       "name": "fb",
@@ -112,12 +144,12 @@
     {
       "name": "vsubs",
       "pin": true,
-      "device_count": 2
+      "device_count": 3
     }
   ],
   "warnings": [
-    "1 routing-stack cluster (1 shape on 8/0) join no extracted net -- no via lands on this geometry and no same-layer wiring touches it, so it is invisible to the extracted netlist and to every downstream `klt lvs`/`klt sim` view; deliberate dead metal (artwork, fill) is expected here, unexplained dead metal usually means the connection you intended is missing -- see dead_metal[] for the per-cluster layer/bbox/shape count.",
     "1 net connect to exactly one device terminal -- a MOS gate -- and are not a declared pin: these gates have no DC path from anywhere else in the netlist, so they are almost certainly unconnected inputs rather than legitimate floating nodes; resimulating this netlist directly will hit a singular matrix on these nets -- see single_terminal_nets[] for the full list.",
+    "1 net connect to exactly one device terminal -- source/drain/body/resistor-equivalent, not a gate -- and are not a declared pin; this can be a legitimate single-terminal tie (e.g. an intentionally unterminated dummy's diffusion tie), but confirm these nets have no other intended connectivity -- see single_terminal_nets[] for the full list.",
     "4 layers (5/1, 8/1, 63/0, 128/1) carrying 13 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
   ],
   "black_box_regions": [],
@@ -132,68 +164,85 @@
       "device": "$1",
       "terminal": "g",
       "terminal_kind": "gate"
-    }
-  ],
-  "dead_metal": [
+    },
     {
-      "role": "metal0",
-      "layer": 8,
-      "datatype": 0,
-      "bbox_um": {
-        "left": -0.2,
-        "bottom": 19.4,
-        "right": 0.3,
-        "top": 20.6
-      },
-      "shapes": 1,
-      "area_um2": 0.6
+      "net": "\\$5",
+      "device": "$3",
+      "terminal": "a",
+      "terminal_kind": "a"
     }
   ],
+  "dead_metal": [],
   "matched_device_groups": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.2.0",
-    "klayout_version": "0.30.10",
+    "klt_version": "0.3.0",
+    "klayout_version": "0.30.11",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
       "content_hash": "sha256:72c12aadf165e17090871284ebf8688f2066e6d11967f30723945c3efc12bf59",
-      "released": false
+      "released": true
     },
     "input": {
-      "content_hash": "sha256:106a5ebdbfc5dcb63666b4ae036b7d2b0503e0b05c52be268d74ec020e30c745"
+      "content_hash": "sha256:60d038f30372252076cf0c2c6a97f029bed8a2a16868d1078e362db1e992268c"
     }
   },
   "parasitics": {
-    "r_count": 5,
-    "c_count": 3,
+    "r_count": 7,
+    "c_count": 4,
     "cc_count": 0,
     "l_count": 0,
-    "total_resistance_ohm": 544.9491,
-    "total_capacitance_ff": 133.263536,
+    "total_resistance_ohm": 545.3231,
+    "total_capacitance_ff": 133.446036,
     "total_coupling_capacitance_ff": 0.0,
     "total_inductance_nh": 0.0,
     "nets": [
       {
+        "net": "\\$5",
+        "net_id": 5,
+        "resistance_ohm": 0.264,
+        "capacitance_ff": 0.155598,
+        "inductance_nh": 0.0,
+        "hub_net": "\\$5",
+        "rc_model": "lumped",
+        "terminals": [
+          {
+            "device": "$3",
+            "terminal": "A",
+            "leg_net": "\\$5__t0",
+            "resistance_ohm": 0.264
+          }
+        ],
+        "segments": [],
+        "coupled": []
+      },
+      {
         "net": "det",
         "net_id": 2,
-        "resistance_ohm": 533.5063,
-        "capacitance_ff": 130.709866,
+        "resistance_ohm": 533.6163,
+        "capacitance_ff": 130.736768,
         "inductance_nh": 0.0,
         "hub_net": "det",
         "rc_model": "lumped",
         "terminals": [
           {
+            "device": "$3",
+            "terminal": "B",
+            "leg_net": "det__t0",
+            "resistance_ohm": 266.808
+          },
+          {
             "device": "$1",
             "terminal": "D",
-            "leg_net": "det__t0",
-            "resistance_ohm": 266.7532
+            "leg_net": "det__t1",
+            "resistance_ohm": 139.1524
           },
           {
             "device": "$2",
             "terminal": "G",
-            "leg_net": "det__t1",
-            "resistance_ohm": 266.7532
+            "leg_net": "det__t2",
+            "resistance_ohm": 127.6558
           }
         ],
         "segments": [],
