@@ -10,8 +10,28 @@ schematic-level testbench copies `design/netlist/bandgap_core.spice`'s own
 `pex_extract_report.json`). Read this file before trusting a record here —
 it is **not** a pure layout extraction re-simulated as-is.
 
-**Update (issue #59, `records/20260825-143531-648b320.{md,csv}` — the
-current record):** `XR1`/`XR2` (`rppd`) are now instantiated from the
+**Update (issue #59, follow-up correction,
+`records/20260825-145023-2ff6265.{md,csv}` — the current record):** the
+record minted immediately below (`20260825-143531-648b320`) contradicts
+itself: this experiment's `run_pvt_sweep.sh` still echoed the pre-#59
+boilerplate "(bipolar/resistor devices are schematic-sourced, not
+extracted; …)" into the generated record's **Claim** paragraph, two lines
+above the **Devices** paragraph that correctly reports `XR1`/`XR2` as
+extracted. The script's boilerplate is fixed and the sweep re-run to mint
+a corrected record. Records are append-only, so
+`20260825-143531-648b320` stays on disk with its stale sentence — read
+`20260825-145023-2ff6265` instead; its `.csv` is **byte-identical** to
+`20260825-143531-648b320.csv` (45/45 PASS, every measured value
+unchanged), because the fix was prose-only and touched no simulated
+quantity. The same stale phrasing was also corrected in both PEX sweep
+scripts' own file-header comments (`core-open-loop-bias-pex` and
+`startup-trip-point-pex`); `startup-trip-point-pex`'s record boilerplate
+never carried it, so its `records/20260825-143537-648b320.{md,csv}`
+remains the current startup record.
+
+**Update (issue #59, `records/20260825-143531-648b320.{md,csv}` —
+superseded for prose by `20260825-145023-2ff6265` above, identical
+numbers):** `XR1`/`XR2` (`rppd`) are now instantiated from the
 extracted `R$5`/`R$4` devices instead of spliced verbatim from
 `design/netlist/bandgap_core.spice` — see the "NOT modelled" section
 below for the full account, including an important correction: the

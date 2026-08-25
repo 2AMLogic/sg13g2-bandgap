@@ -275,9 +275,12 @@ experiments cross-confirm was unaffected by PR #45's resistor-recognition
 marker layers.
 
 **After issue #59's resistor re-encoding** (`records/20260825-143537-648b320.csv`
-against `records/20260825-143531-648b320.csv` — current, both experiments'
-resistors now instantiated from the extraction rather than spliced from
-the schematic): the same 4 points read `sf_125c_3.63v` `+72.80`,
+against `core-open-loop-bias-pex`'s `records/20260825-143531-648b320.csv`,
+whose numbers are carried forward byte-identically by that experiment's
+current record `records/20260825-145023-2ff6265.csv` — see its README's
+"Update (issue #59, follow-up correction)"; both experiments' resistors
+are now instantiated from the extraction rather than spliced from the
+schematic): the same 4 points read `sf_125c_3.63v` `+72.80`,
 `wcs_125c_2.97v` `+68.00`, `wcs_125c_3.30v` `+65.54`, `wcs_125c_3.63v`
 `+63.60` (mV) — each within `0.01 mV` of the issue #56 figures directly
 above, despite `core-open-loop-bias-pex`'s own `vref` moving by up to
