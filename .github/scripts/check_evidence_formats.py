@@ -41,7 +41,7 @@ least one netlist or template.
   `status` column reads `PASS`. This is the anti-overclaim check — a record
   cannot say 45/45 while its own parsed data says otherwise.
 
-**C. `layout/<cell>/` DRC/LVS/PEX reports** — each report parses, carries
+**C. `layout/<cell>/` DRC/LVS/extract/PEX reports** — each report parses, carries
 `schema_version` / `status` / `provenance.deck.content_hash` / `klt_version`,
 uses a known status vocabulary, is internally consistent (a `clean` DRC has zero
 violations; a `match` LVS has zero mismatches), and — for DRC — enumerates its
@@ -575,6 +575,31 @@ def check_layout(root: Path, report: Report) -> None:
                                waivers, used_waivers)
                 else:
                     report.fail(rel, "missing 'reference' — the netlist compared against")
+
+            elif path.name == "extract_report.json":
+                # A plain (non-parasitic) `klt extract` report, committed as
+                # the machine-readable evidence behind a cell's documented
+                # deck-coverage gaps — `warnings`/`ignored_layers`/
+                # `unmodelled_poly`/`voltage_domain_warnings`/
+                # `unbiased_pmos_body_nets` (layout/sg13cmos5l-bandgap_core,
+                # issue #66). Same status vocabulary and same two freshness
+                # anchors as the PEX report below: a gap list produced
+                # against a superseded GDS is exactly as stale as a verdict
+                # produced against one.
+                if status not in PEX_STATUSES:
+                    report.fail(rel, f"status {status!r} not in {sorted(PEX_STATUSES)}")
+                netlist = data.get("netlist_path")
+                if not netlist:
+                    report.fail(rel, "missing 'netlist_path'")
+                else:
+                    check_hash(report, root, rel, "extracted netlist",
+                               data.get("netlist_sha256"), cell_dir / str(netlist),
+                               waivers, used_waivers)
+                provenance_input = (data.get("provenance") or {}).get("input")
+                check_hash(report, root, rel, "input gds",
+                           provenance_input.get("content_hash")
+                           if isinstance(provenance_input, dict) else None,
+                           gds, waivers, used_waivers)
 
             elif path.name == "pex_extract_report.json":
                 if status not in PEX_STATUSES:

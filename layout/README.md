@@ -3,6 +3,13 @@
 Physical layout for the two schematics landed in #9 (`design/bandgap_core.sch`,
 `design/bandgap_startup.sch`). This directory is no longer a placeholder:
 
+> **Two PDKs share this directory.** Everything from here down to the
+> `SG13CMOS5L port (issue #66)` heading at the end describes the **SG13G2**
+> block (`common.py`, `bandgap_core/`, `bandgap_startup/`). The SG13CMOS5L
+> port (`common_sg13cmos5l.py`, `sg13cmos5l-bandgap_core/`) has its own
+> layer table, its own primitives and its own DRC/LVS verdicts — jump
+> straight to that section rather than reading anything below across.
+
 ```
 layout/
   README.md                  this file
@@ -710,3 +717,298 @@ above:
    (`wcs_125c_{2.97,3.30,3.63}v`, `sf_125c_3.63v`) — see
    `sim/startup-trip-point-pex/README.md`'s updated "Cross-bench
    observation" section for the before/after numbers.
+
+---
+
+# SG13CMOS5L port (issue #66)
+
+Everything above this line is the **SG13G2** block. This section covers the
+**SG13CMOS5L** port's own layout, which shares this directory (and this
+repo's evidence conventions) but almost none of its code.
+
+```
+layout/
+  common_sg13cmos5l.py             CMOS5L drawing primitives — a deliberate
+                                    fork of common.py (different layer table,
+                                    different net-label layer, different
+                                    device set; see that module's docstring)
+  sg13cmos5l-bandgap_core/
+    generate.py                     draws + routes the cell
+    sg13cmos5l-bandgap_core.gds     committed, deterministic layout
+    sg13cmos5l-bandgap_core.lvs_reference.spice   generated reference netlist
+    sg13cmos5l-bandgap_core.extracted.spice       klt extract output
+    lvs_request.json                klt lvs request
+    drc_report.json                 committed klt drc report
+    lvs_report.json                 committed klt lvs report
+    extract_report.json             committed klt extract report (the
+                                     machine-readable evidence for the
+                                     deck-coverage gaps documented below)
+```
+
+**Directory naming.** `layout/sg13cmos5l-<cell>/`, mirroring `sim/`'s own
+per-PDK prefix convention (`sim/sg13cmos5l-core-open-loop-bias/`, …) rather
+than a nested `layout/sg13cmos5l/<cell>/`. Nesting would have put the cell
+one level below where `.github/scripts/check_evidence_formats.py` looks for
+cells (`layout/*/` holding a `<dirname>.gds`), silently exempting every new
+report from the format/freshness checks — the opposite of what committing
+them is for.
+
+## Reproducing
+
+```bash
+uv run --with klayout python3 layout/sg13cmos5l-bandgap_core/generate.py
+python3 layout/lvs_reference.py            # regenerates all three reference netlists
+
+cd layout/sg13cmos5l-bandgap_core
+klt drc --deck sg13cmos5l sg13cmos5l-bandgap_core.gds --format json > drc_report.json
+klt lvs lvs_request.json --format json > lvs_report.json
+klt extract --deck sg13cmos5l sg13cmos5l-bandgap_core.gds \
+  -o sg13cmos5l-bandgap_core.extracted.spice --format json > extract_report.json
+```
+
+Output is byte-for-byte deterministic (`SaveLayoutOptions.gds2_write_timestamps
+= False`), so re-running `generate.py` leaves `git diff` empty — verified.
+
+`klt` version used for every report in this section: **`0.3.0+gc27f7eccf49c`**
+(KLayout `0.30.11`). The `sg13cmos5l` deck did not exist in the `klt` build
+this host carried when issue #66 was filed (`0.3.0+g3c14ac2f8903`, whose
+`decks` registry returned only `['gf180mcu', 'sg13g2', 'sky130']`); it landed
+upstream in klayout-tools#1408 and this host's `klt` was reinstalled from
+that source before any report below was produced. `--deck sg13cmos5l` is the
+real, working flag spelling — confirmed by running it, **not** by reading
+`--help`, whose `--deck` list still names only `sky130, gf180mcu, sg13g2`
+(filed upstream, see "Tooling friction filed upstream" below).
+
+## Cell: `sg13cmos5l-bandgap_core`
+
+One-to-one with `design/sg13cmos5l/netlist/bandgap_core.spice` (schematic
+from #64): `M1`/`M2`/`M3` `sg13_hv_pmos` `w=10u l=1u`, `R2` `rppd`
+`w=2u l=85.1u`, `R1` `rppd` `w=2u l=647.0u`, `Q1`/`Q3` `pnpMPA` `w=1u l=2u`,
+`Q2` `pnpMPA` `w=8u l=2u`. Top cell `sg13cmos5l_bandgap_core`, bbox
+`(-8.48, -3.21)`–`(800.2, 61.7)` µm, 682 polygons across 12
+layer/datatype combinations (`R1`'s straight 647 µm bar dominates the
+bounding box, exactly as `bandgap_core`'s does on the SG13G2 side).
+
+**Single-metal, planar by necessity.** The curated `sg13cmos5l` deck's
+extraction stack is `metals=((8, 0),)` with `vias=()` — one routing metal, no
+via — where the `sg13g2` deck declares seven metals and six vias. A `Metal2`
+jumper would be invisible to `klt extract` and would split the net it
+carries, so this cell is routed entirely on `Metal1` plus a `GatPoly` bar for
+the gate-to-gate `fb` net, with a floorplan arranged so no two nets ever need
+to cross (see `generate.py`'s own floorplan table).
+
+**HV flavour: drawn, not modelled.** The schematic's transistors are the
+thick-gate-oxide `sg13_hv_pmos`, so `draw_hv_pmos` draws the real
+`ThickGateOx` (44/0) marker. The curated deck's `mos_flavours` is empty, so
+it binds them to the plain `pfet` class anyway — but drawing the marker makes
+`klt` say so itself rather than leaving an HV device disguised as clean LV
+geometry: both `drc_report.json` (`coverage.voltage_domain_warnings`) and
+`extract_report.json` (`warnings`, `voltage_domain_warnings`) carry a
+`44/0` entry naming the gap.
+
+### SG13CMOS5L layer numbers
+
+Read directly from `ihp-sg13cmos5l/libs.tech/klayout/tech/sg13cmos5l.lyp`'s
+own `<name>`/`<source>` entries (IHP release v0.2.0, the install
+`klt pdk list` resolves at `~/share/pdk/ihp-sg13cmos5l`) — **not** copied
+from the SG13G2 table above and not assumed identical to it:
+
+| Layer | GDS (layer/datatype) | Used for |
+|---|---|---|
+| `Activ.drawing` | 1/0 | MOS diffusion, PNP emitter/base/collector |
+| `GatPoly.drawing` | 5/0 | MOS gate, `fb` routing bar, `rppd` conductor |
+| `Cont.drawing` | 6/0 | every contact |
+| `nSD.drawing` | 7/0 | (declared, unused by this cell) |
+| `Metal1.drawing` | 8/0 | all routing |
+| `Metal1.pin` | 8/2 | **net names** (`EXTRACTION_DECK.metal_labels`) |
+| `pSD.drawing` | 14/0 | p+ implant (PMOS S/D, PNP emitter + collector ring, `rppd` body) |
+| `SalBlock.drawing` | 28/0 | `rppd` silicide block |
+| `NWell.drawing` | 31/0 | PMOS well, PNP base |
+| `NWell.pin` | 31/2 | well names (`EXTRACTION_DECK.well_label`) |
+| `ThickGateOx.drawing` | 44/0 | HV (thick-oxide) marker |
+| `TEXT.drawing` | 63/0 | human-readable annotation only |
+| `EXTBlock.drawing` | 111/0 | `rppd` extraction marker |
+| `PolyRes.drawing` | 128/0 | `rppd` body marker |
+
+The **net-label layer is the one difference most likely to bite a future
+port**: this deck reads net names from `Metal1.pin` (8/2) and well names from
+`NWell.pin` (31/2), where the `sg13g2` deck reads `Metal1.text`/`Metal2.text`
+(8/25, 10/25) and declares no well label at all. Labelling the SG13G2 layers
+here would leave every net anonymous — the same class of mistake issue #20
+already made once in the other direction.
+
+Device geometry is likewise read from CMOS5L's **own** PyCell sources
+(`libs.tech/klayout/python/sg13cmos5l_pycell_lib/ihp/{pmosHV,pnpMPA,rppd}_code.py`)
+and its own `sg13cmos5l_tech.json` `techParams` table, cited per constant in
+`layout/common_sg13cmos5l.py`.
+
+### SG13CMOS5L: DRC — clean
+
+| Cell | Report | Status | Deck (content hash) |
+| --- | --- | --- | --- |
+| `sg13cmos5l-bandgap_core` | `layout/sg13cmos5l-bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13cmos5l`, `sha256:9a4e18f2fd7a…` |
+
+Reproduce: `klt drc --check layout/sg13cmos5l-bandgap_core/drc_report.json`
+(or `--rerun` for a full re-check).
+
+The deck is a six-rule MOS-only starter (`activ.width.1`/`activ.space.1`,
+`gatpoly.width.1`/`gatpoly.space.1`, `metal1.width.1`/`metal1.space.1`) —
+`coverage.layers_in_stream_without_rules` lists the nine drawn layers it has
+no rule for at all (`Cont`, `Metal1.pin`, `pSD`, `SalBlock`, `NWell`,
+`ThickGateOx`, `TEXT`, `EXTBlock`, `PolyRes`). **A clean verdict here is a
+much weaker statement than a clean SG13G2 run**, and this section is where
+that qualification travels with it.
+
+Two real defects were found and fixed by the first two DRC runs, not waved
+through:
+
+1. **`metal1.space.1` × 4** — each PNP's ring straps stopped at the `Activ`
+   ring outline instead of the `Metal1` ring drawn 0.02 µm inside it (the
+   PCell's own inset), leaving a 0.02 µm gap the deck correctly read as a
+   notch rather than a connection. `draw_pnpmpa` now returns
+   `base_ring_m1`/`collector_ring_m1` and the routing straps against those.
+2. **`metal1.width.1` × 2** — the `sns2`/`vref` drops landed on their
+   resistor end-pads *off-centre*, so the drop overhung the pad edge and the
+   join was a step rather than a T. Landing a 0.30 µm stem wholly inside the
+   0.50 µm pad measures 0.212 µm across the T's own diagonal, clear of the
+   0.16 µm floor.
+
+### SG13CMOS5L: LVS — `mismatch`, fully attributed
+
+| Cell | Report | Status | Engine |
+| --- | --- | --- | --- |
+| `sg13cmos5l-bandgap_core` | `layout/sg13cmos5l-bandgap_core/lvs_report.json` | `mismatch` (27 findings, 25 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+
+```
+nets:    layout=7  reference=8  matched=0
+devices: layout=3  reference=8  matched=0
+category_counts: device.body_unverified 1, device.unmatched 8,
+                 net.unmatched 15, topology 3
+```
+
+Reproduce: `klt lvs lvs_request.json` from
+`layout/sg13cmos5l-bandgap_core/` (the request's relative paths resolve
+against its own directory), or `klt lvs --check lvs_report.json` to verify
+the committed report against the current inputs without re-running.
+
+**This is reported as `mismatch` deliberately.** Four independent causes are
+each attributed below, every one of them a property of the curated deck's
+present coverage rather than of this layout, and every one filed upstream.
+No reference netlist was trimmed, no net was renamed and no device was
+dropped to manufacture a `match` — the same honest-reporting posture #20 and
+#4 (item 4) established for the SG13G2 side, and the same one the CI checker
+enforces (it asserts a `match` has zero mismatches; it deliberately does not
+demand a verdict).
+
+1. **No bipolar device class** — `EXTRACTION_DECK.bipolars == ()`, so `Q1`,
+   `Q2` and `Q3` have no layout counterpart (3 × `device.unmatched`). This
+   one is **not** expected to close: `ihp-sg13cmos5l`'s own
+   `lvs/rule_decks/bjt_extraction.lvs` and `custom_bjt_extractor.lvs` are
+   relative symlinks into the sibling `ihp-sg13g2` checkout its
+   `.github/ihp-sg13g2.ref` pins (both resolve on this host, which *does*
+   carry that sibling at `~/share/pdk/ihp-sg13g2`), and extract `pnpMPA`
+   through the very `CustomBJTExtractor` klayout-tools#1232/#1242 already
+   investigated and declined for SG13G2 — including the specific finding that
+   `pnpMPA`'s base/collector terminals are restricted per-instance to the
+   region interacting with its own computed emitter extents, which
+   `BipolarDevice`'s static `requires`/`excludes` model cannot express. The
+   CMOS5L bipolar gap is the same permanent blocker as the SG13G2 one, on
+   literally the same source file. Nothing in a future layout pass will move
+   it.
+2. **No resistor recognition, and the unmodelled body *shorts* its own
+   terminals** — `EXTRACTION_DECK.resistors == ()`, so `R1`/`R2` are
+   unmatched (2 × `device.unmatched`); worse, their `GatPoly` bodies are
+   contacted at both ends, so `klt extract` absorbs them into ordinary
+   interconnect and merges `sns2` with `e2` and `vref` with `e3`
+   (`extract_report.json`'s `unmodelled_poly` and `merged_net_labels`
+   sections record both, in `klt`'s own words). That collapse is why *zero*
+   devices match rather than three: with two nets merged and five of eight
+   devices invisible, the surviving three PFETs are a perfectly symmetric
+   sub-graph with no distinguishing structure left — the same automorphism
+   trap the SG13G2 cell hit, arrived at by a different route. Filed as
+   klayout-tools#1415.
+3. **No HV MOS flavour** — `mos_flavours == ()`, so `M1`/`M2`/`M3` bind to
+   the LV `pfet` class regardless of the drawn `ThickGateOx`; the reference
+   netlist maps `sg13_hv_pmos` to `pfet` to match, and the drawn marker makes
+   the substitution visible in both reports rather than silent. Filed as
+   klayout-tools#1416.
+4. **No well/substrate tap** — `tap`/`tap_nplus`/`tap_pplus` are all `None`
+   (the only curated deck for which that is true), so no drawn geometry can
+   join a well net to a supply rail and all three PMOS bodies compare against
+   an anonymous well net (`device.body_unverified`). Filed as
+   klayout-tools#1414. **Tried and rejected**: labelling the shared n-well
+   `vdd` on `NWell.pin`. It names the isolated net but cannot connect it —
+   the netlist simply grows a second, disjoint `vdd$1` net, `klt lvs`'s
+   finding count is unchanged at 27, and the only real effect is to suppress
+   `klt extract`'s own "PMOS devices tie their body to an anonymous net with
+   no DC bias path" warning. Suppressing the most direct evidence of the gap
+   to gain a misleading net name is the wrong trade; the wells are left
+   unlabelled and the warning stands in `extract_report.json`.
+
+### Reference netlist
+
+`layout/lvs_reference.py` gained a `pdk="sg13cmos5l"` mode (issue #66) that
+converts `design/sg13cmos5l/netlist/bandgap_core.spice` into the plain-element
+form `klt lvs` requires. Two things it does that the SG13G2 path did not need:
+
+- **`pnpMPA` is a 3-terminal `Q` element** (`Q1 vss vss sns1 pnpmpa AE=2P
+  PE=6U`), where SG13G2's `npn13G2` is 4-terminal. Its size parameters are
+  emitter area/perimeter, not `w`/`l`, and xschem emits them as *expressions*
+  (`a={ 1u * 2u }`) — so the line parser is now brace-aware and a small
+  suffix-aware evaluator resolves them.
+- **`rppd`'s value uses CMOS5L's own symbol formula**
+  (`libs.tech/xschem/sg13cmos5l_pr/rppd.sym`'s `value=` expression: a
+  `70 µΩ·m` end term plus 260 Ω/sq over the width-corrected `w + 6 nm`),
+  rather than the flat sheet approximation the SG13G2 path uses. Worth
+  keeping separate: CMOS5L's `techParams` carries **two** sheet values
+  (`rppd_rspec = 250.0`, `rppdG2_rspec = 260.0`) and it is the symbol, not
+  the bare `rspec`, that says which one the schematic's own annotated value
+  uses.
+
+The SG13G2 pair's generated netlists are **byte-identical** after this change
+(verified: `git diff` empty). The new `* PDK:` provenance header is emitted
+only for a non-default PDK, precisely so the two still-fresh SG13G2
+`lvs_report.json`s — which pin those files' exact bytes in
+`environment.reference_sha256` — are not marked stale by a cosmetic edit.
+
+### Tooling friction filed upstream
+
+Per `CLAUDE.md`'s friction protocol, every gap this phase hit is filed
+generically against the tool, not worked around in this repo:
+
+| Gap | Upstream issue |
+|---|---|
+| No well/substrate tap layers in the `sg13cmos5l` deck | [klayout-tools#1414](https://github.com/2AMLogic/klayout-tools/issues/1414) |
+| No poly-resistor recognition; unmodelled body shorts its terminals | [klayout-tools#1415](https://github.com/2AMLogic/klayout-tools/issues/1415) |
+| No HV (`ThickGateOx`) MOS flavour | [klayout-tools#1416](https://github.com/2AMLogic/klayout-tools/issues/1416) |
+| Only `Metal1` modelled, no via — forces planar single-metal layout | [klayout-tools#1417](https://github.com/2AMLogic/klayout-tools/issues/1417) |
+| `sg13cmos5l` missing from `--deck` help text and from `drc.md`/`lvs.md`/`pdk.md` | [klayout-tools#1418](https://github.com/2AMLogic/klayout-tools/issues/1418) |
+
+Bipolar (`pnpMPA`) recognition is deliberately **not** re-filed: see cause 1
+above — it is the same source file, and the same finding, klayout-tools#1242
+already closed as investigated-and-declined for SG13G2.
+
+### What this layout is / is not
+
+Everything the SG13G2 section's "What this layout is / is not" says applies
+here too (simplified representative footprints, not PCell-exact stacks;
+straight rather than folded resistor bars; no guard rings, fill or seal ring;
+no analog matching structures — no common-centroid mirror interdigitation, no
+dummy devices). Two CMOS5L-specific additions:
+
+- **`Q2` is drawn as one `w=8u` emitter, not eight unit devices.** That
+  matches the netlist's own `a={ 8u * 2u }` / `p={ (8u + 2u) * 2 }` exactly,
+  but it is *not* how a real matched 8× PNP would be built, and CMOS5L's own
+  PCell says so: `pnpMPA_maxW` is `2.0u` in `sg13cmos5l_tech.json`, so a
+  single `w=8u` `pnpMPA` instance cannot be generated by the PDK at all.
+  Tracked for the design side as **#73**, out of this layout phase's scope.
+- **The n-well is shared across `M1`/`M2`/`M3`** (rather than one well per
+  device) so the three body terminals resolve to a single well net, matching
+  the schematic's common `vdd` body tie — the only part of the body
+  connection the deck can express at all (cause 4 above).
+
+Only `bandgap_core` is laid out. `bandgap_startup`, `bandgap_amp` and
+`bandgap_top` (schematics landed in #70) are not — issue #66's acceptance
+criteria scope this phase to "bandgap_core at minimum", and the four
+deck-coverage causes above would be identical for the other three cells.
+Tracked as **#74**.

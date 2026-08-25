@@ -1,0 +1,232 @@
+{
+  "schema_version": 3,
+  "file": "sg13cmos5l-bandgap_core.gds",
+  "deck": "sg13cmos5l",
+  "top": "sg13cmos5l_bandgap_core",
+  "dbu_um": 0.001,
+  "netlist_path": "sg13cmos5l-bandgap_core.extracted.spice",
+  "netlist_sha256": "a8bc396149cd7b4a1990e6143f5bd851fa2c7f18d2b1fb34fd99281fb5c95a7f",
+  "status": "extracted",
+  "device_count": 3,
+  "net_count": 7,
+  "pin_count": 6,
+  "device_counts": {
+    "pfet": 3
+  },
+  "dummy_devices_dropped": 0,
+  "ignored_layers": [
+    {
+      "layer": 14,
+      "datatype": 0,
+      "shapes": 20
+    },
+    {
+      "layer": 28,
+      "datatype": 0,
+      "shapes": 2
+    },
+    {
+      "layer": 44,
+      "datatype": 0,
+      "shapes": 3
+    },
+    {
+      "layer": 63,
+      "datatype": 0,
+      "shapes": 8
+    },
+    {
+      "layer": 111,
+      "datatype": 0,
+      "shapes": 2
+    },
+    {
+      "layer": 128,
+      "datatype": 0,
+      "shapes": 2
+    }
+  ],
+  "device_recognition_only_layers": [],
+  "device_classes": [
+    "nfet",
+    "pfet"
+  ],
+  "devices": [
+    {
+      "name": "$1",
+      "class": "pfet",
+      "nets": {
+        "s": "sns1",
+        "g": "fb",
+        "d": "vdd",
+        "b": "\\$13"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 10.0,
+        "as_um2": 4.0,
+        "ad_um2": 4.0,
+        "ps_um": 20.8,
+        "pd_um": 20.8
+      }
+    },
+    {
+      "name": "$2",
+      "class": "pfet",
+      "nets": {
+        "s": "e2|sns2",
+        "g": "fb",
+        "d": "vdd",
+        "b": "\\$13"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 10.0,
+        "as_um2": 4.0,
+        "ad_um2": 4.0,
+        "ps_um": 20.8,
+        "pd_um": 20.8
+      }
+    },
+    {
+      "name": "$3",
+      "class": "pfet",
+      "nets": {
+        "s": "e3|vref",
+        "g": "fb",
+        "d": "vdd",
+        "b": "\\$13"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 10.0,
+        "as_um2": 4.0,
+        "ad_um2": 4.0,
+        "ps_um": 20.8,
+        "pd_um": 20.8
+      }
+    }
+  ],
+  "nets": [
+    {
+      "name": "\\$13",
+      "pin": false,
+      "device_count": 3
+    },
+    {
+      "name": "e2|sns2",
+      "pin": true,
+      "device_count": 1
+    },
+    {
+      "name": "e3|vref",
+      "pin": true,
+      "device_count": 1
+    },
+    {
+      "name": "fb",
+      "pin": true,
+      "device_count": 3
+    },
+    {
+      "name": "sns1",
+      "pin": true,
+      "device_count": 1
+    },
+    {
+      "name": "vdd",
+      "pin": true,
+      "device_count": 3
+    },
+    {
+      "name": "vss",
+      "pin": true,
+      "device_count": 0
+    }
+  ],
+  "warnings": [
+    "2 poly-layer shapes not part of any recognised nfet/pfet gate touch contact at 2+ separate points (the resistor-body signature) and carry no resistor-marker layer at all; this deck may not model the device class drawn here, and its terminals have been absorbed into ordinary interconnect as an unintended short -- see docs/cli/extract.md's 'Known limitation: unmodelled device geometry'.",
+    "MOS device geometry overlaps the '44/0' voltage-domain marker: ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). This MOS-only starter models neither side of that split yet: EXTRACTION_DECK recognises only the LV (thin-gate-oxide) NMOS/PMOS pair (mirroring sg13g2.py's own #905 starter scope; the HV pair is left for a follow-on issue, the sg13cmos5l sibling of sg13g2.py's issue #1231), and this curated deck's DRC rules apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note).",
+    "net 'e2|sns2' merges 2 distinct labels (e2, sns2) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
+    "net 'e3|vref' merges 2 distinct labels (e3, vref) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
+    "3 PMOS devices tie their body to an anonymous net with no DC bias path -- no drawn (or derivable) well tie connects this PMOS body to a real supply rail on this layout, so it is left floating rather than tied to a real supply rail; resimulating this netlist directly will not reproduce the schematic-level PMOS body bias -- see unbiased_pmos_body_nets[] for the full list. See docs/cli/extract.md's 'Parasitic (RC) extraction' section.",
+    "6 layers (14/0, 28/0, 44/0, 63/0, 111/0, 128/0) carrying 37 shapes are outside 'sg13cmos5l' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
+  ],
+  "black_box_regions": [],
+  "abstracted_cells": [],
+  "unmodelled_poly": [
+    {
+      "bbox_um": {
+        "left": 44.6,
+        "bottom": 43.9,
+        "right": 130.5,
+        "top": 46.1
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 149.6,
+        "bottom": 13.9,
+        "right": 797.4,
+        "top": 16.1
+      },
+      "reason": "unmarked"
+    }
+  ],
+  "merged_net_labels": [
+    {
+      "net": "e2|sns2",
+      "labels": [
+        "e2",
+        "sns2"
+      ]
+    },
+    {
+      "net": "e3|vref",
+      "labels": [
+        "e3",
+        "vref"
+      ]
+    }
+  ],
+  "voltage_domain_warnings": [
+    {
+      "marker": "44/0",
+      "description": "ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). This MOS-only starter models neither side of that split yet: EXTRACTION_DECK recognises only the LV (thin-gate-oxide) NMOS/PMOS pair (mirroring sg13g2.py's own #905 starter scope; the HV pair is left for a follow-on issue, the sg13cmos5l sibling of sg13g2.py's issue #1231), and this curated deck's DRC rules apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note)."
+    }
+  ],
+  "unbiased_pmos_body_nets": [
+    {
+      "device": "$1",
+      "net": "\\$13"
+    },
+    {
+      "device": "$2",
+      "net": "\\$13"
+    },
+    {
+      "device": "$3",
+      "net": "\\$13"
+    }
+  ],
+  "single_terminal_nets": [],
+  "dead_metal": [],
+  "matched_device_groups": [],
+  "pdk": null,
+  "provenance": {
+    "klt_version": "0.3.0",
+    "klayout_version": "0.30.11",
+    "pdk": null,
+    "deck": {
+      "name": "sg13cmos5l",
+      "content_hash": "sha256:9a4e18f2fd7a0d39d02abc220141dd5c300158e2540cd19f2f2ea9151f965b80",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:5bc5475289c024975b7754b67dd5539f2cbd798a95b5cd376794b9e8d82e2c54"
+    }
+  },
+  "parasitics": null,
+  "spef_path": null
+}
