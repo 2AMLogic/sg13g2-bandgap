@@ -193,6 +193,21 @@ from no checker at all.
   same cross-bench comparison against the corrected layout now clears at
   all 45 points — see that experiment's README for the full before/after
   writeup.
+- **[`closed-loop-startup/`](closed-loop-startup/README.md)** — the first
+  genuinely closed-loop testbench in this tree (issue #58): co-simulates
+  `bandgap_core` + `bandgap_amp` + `bandgap_startup` in one netlist, wired
+  exactly as `design/bandgap_top.sch` specifies, under the same transient
+  `vdd` ramp `startup-core-handover` uses. Every prior testbench above
+  substitutes an ideal diode-connected-replica current fixture for the
+  mirror bias because no amplifier existed yet; this experiment removes
+  that fixture entirely — the real amplifier now closes the loop
+  dynamically. 45/45 PVT points confirm the assembled block self-starts and
+  settles to a real closed-loop equilibrium (worst-corner `|sns1-sns2|`
+  0.51 mV, `vref` in a 1.134-1.215 V band). Needed a solver convergence aid
+  (`rshunt`/`gmin`) at a handful of corners during the transient's early,
+  near-singular startup instant — see that experiment's README for the full
+  account, including a latent `set -euo pipefail`-vs-`grep`-no-match
+  fragility this experiment's `run_pvt_sweep.sh` fixes.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 
