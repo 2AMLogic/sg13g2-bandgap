@@ -9,8 +9,9 @@
 # Requires ngspice on PATH plus the OSDI device models sim/tools/build-osdi.sh
 # builds. Does not require xschem or klt to RUN (klt was used once, offline,
 # to produce the committed layout/bandgap_startup/bandgap_startup.pex.spice
-# this sweep splices a schematic-sourced resistor device into -- see that
-# file and this experiment's README.md for how to regenerate it, and for
+# this sweep re-encodes its devices from -- including the pull-up resistor,
+# extracted as of issue #59 rather than spliced from the schematic -- see
+# that file and this experiment's README.md for how to regenerate it, and for
 # the w=2u-vs-w=10u XMSENSE caveat this experiment's own README documents
 # up front).
 #
@@ -137,13 +138,13 @@ done
   echo "  \`${LAYOUT_GIT_SHA}\`), body tied to vss as a testbench fixture"
   echo "  (extraction reports it on the deck's synthesized \`vsubs\` global,"
   echo "  not the schematic's real vss tie -- klayout-tools, filed"
-  echo "  generically). XRPU (rhigh) -- spliced verbatim from"
-  echo "  \`design/netlist/bandgap_startup.spice\` (schematic git sha"
-  echo "  \`${DUT_GIT_SHA}\`); the sg13g2 extraction deck NOW recognises it"
-  echo "  as an extracted \`rhigh\` device (issue #56, PR #45's resistor"
-  echo "  marker layers), but this testbench still splices it from the"
-  echo "  schematic rather than the extraction -- see README.md for the"
-  echo "  current, more nuanced picture."
+  echo "  generically). XRPU (rhigh) is now instantiated from the extracted"
+  echo "  R\$3 device (issue #59) instead of spliced from the schematic --"
+  echo "  real drawn geometry via an X-subckt call to the real rhigh PDK"
+  echo "  subckt, bulk on vsubs rather than the schematic's sub!, its"
+  echo "  isolated \$5 net tied to vdd as a testbench fixture (see"
+  echo "  README.md for why -- this layout never exposes vdd as a declared"
+  echo "  pin). See README.md for the current, more nuanced picture."
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\` -- pinned release: see"
   echo "  \`sim/pdk.json\`."
   echo "- **OSDI models**: \`${OSDI_DIR}\` -- built by \`sim/tools/build-osdi.sh\`;"

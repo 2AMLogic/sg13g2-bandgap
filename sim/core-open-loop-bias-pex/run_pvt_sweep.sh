@@ -11,8 +11,9 @@
 # PATH plus the OSDI device models sim/tools/build-osdi.sh builds; does not
 # require xschem or klt to RUN (klt was used once, offline, to produce the
 # committed layout/bandgap_core/bandgap_core.pex.spice this sweep splices
-# schematic-sourced devices into -- see that file and this experiment's
-# README.md for how to regenerate it).
+# the schematic-sourced bipolar devices into -- the resistors are extracted
+# as of issue #59 -- see that file and this experiment's README.md for how
+# to regenerate it).
 #
 # Runs the full PVT grid (process corner x temperature x supply) from the
 # template in testbench/, one ngspice batch invocation per point, and
@@ -37,9 +38,10 @@ echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,status,vref_
 # sim/core-open-loop-bias -- CORNER_LABELS/TEMPS/VDDS/HBT_SECTION_OF/
 # RES_SECTION_OF/MOS_SECTION_OF come from sim/lib/pvt_preflight.sh (shared
 # across all 5 run_pvt_sweep.sh scripts as of issue #51); unchanged here
-# since the bipolar/resistor devices are the same schematic-sourced
-# instances and the MOS corner axis applies to the same sg13_hv_pmos compact
-# model, just with extracted-layout geometry.
+# since the bipolar devices are the same schematic-sourced instances, and
+# both the resistor and MOS corner axes apply to the same rppd/sg13_hv_pmos
+# compact models as the schematic-level sweep -- the extracted rppd
+# resistors (issue #59) and PMOS legs just carry extracted-layout geometry.
 for corner in "${CORNER_LABELS[@]}"; do
   hbt_section="${HBT_SECTION_OF[${corner}]}"
   res_section="${RES_SECTION_OF[${corner}]}"
@@ -104,22 +106,23 @@ done
   echo "  a summed CTAT+PTAT vref across the full PVT grid. This is"
   echo "  post-layout (PEX) evidence for issue #14 -- see this directory's"
   echo "  README.md for exactly what is and is not extracted/modelled"
-  echo "  (bipolar/resistor devices are schematic-sourced, not extracted;"
-  echo "  Metal1/Metal2 wire R/C are now modelled, issue #37; PMOS body is a"
+  echo "  (bipolar devices are still schematic-sourced, not extracted; the"
+  echo "  rppd resistors ARE extracted as of issue #59; Metal1/Metal2 wire"
+  echo "  R/C are now modelled, issue #37; PMOS body is a"
   echo "  testbench fixture, not a real extracted tie). NOT a claim against"
   echo "  any ratified spec row (none is ratified yet -- see #13)."
   echo "- **Devices**: XM1/XM2/XM3 -- sg13_hv_pmos, geometry (+ wire R/C,"
   echo "  issue #37) from \`layout/bandgap_core/bandgap_core.pex.spice\`"
   echo "  (\`klt extract --deck sg13g2 --parasitics\`, layout git sha"
-  echo "  \`${LAYOUT_GIT_SHA}\`). XQ1-XQ3 (npn13G2) and XR1/XR2 (rppd) --"
-  echo "  spliced verbatim from \`design/netlist/bandgap_core.spice\`"
-  echo "  (schematic git sha \`${DUT_GIT_SHA}\`); the sg13g2 extraction deck"
-  echo "  still does not recognise XQ1-XQ3 as *extracted* devices here"
-  echo "  (klayout-tools, filed generically). XR1/XR2 ARE now recognised"
-  echo "  as extracted \`rppd\` devices (issue #56, PR #45's resistor marker"
-  echo "  layers) but this testbench still splices them from the schematic"
-  echo "  rather than the extraction -- see README.md and layout/README.md"
-  echo "  for the current, more nuanced picture."
+  echo "  \`${LAYOUT_GIT_SHA}\`). XQ1-XQ3 (npn13G2) still spliced verbatim"
+  echo "  from \`design/netlist/bandgap_core.spice\` (schematic git sha"
+  echo "  \`${DUT_GIT_SHA}\`) -- the sg13g2 extraction deck still does not"
+  echo "  recognise bipolar devices (klayout-tools, filed generically)."
+  echo "  XR1/XR2 (rppd) are now instantiated from the extracted R\$5/R\$4"
+  echo "  devices (issue #59) instead of spliced from the schematic -- real"
+  echo "  drawn geometry via an X-subckt call to the real rppd PDK subckt,"
+  echo "  bulk on vsubs rather than the schematic's sub!. See README.md and"
+  echo "  layout/README.md for the current, more nuanced picture."
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\` -- pinned release: see"
   echo "  \`sim/pdk.json\` (IHP-Open-PDK v0.3.0 as fetched by this repo's"
   echo "  convention; re-verify PDK_ROOT actually resolves to that release"
