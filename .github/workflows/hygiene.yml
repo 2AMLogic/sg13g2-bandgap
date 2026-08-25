@@ -2,6 +2,12 @@ name: hygiene
 
 # Repo-hygiene checks — see .github/workflows/README.md for exactly what
 # this workflow does and does not validate.
+#
+# Everything here is headless and PDK-free: it runs on a bare ubuntu runner
+# with nothing but bash and python3 (stdlib). CI checks the *shape* and the
+# *freshness* of the evidence a PR adds; it never runs klt, ngspice or the PDK,
+# and it never mints evidence (per CLAUDE.md, sim/ results are deliberate,
+# append-only evidence produced by a human or agent on a real machine).
 
 on:
   push:
@@ -17,9 +23,27 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          # The append-only evidence check diffs against
+          # `git merge-base origin/main HEAD`. The default depth-1 checkout has
+          # neither origin/main nor enough history for a merge base, which would
+          # downgrade that check to a hard failure under
+          # --require-append-only — hence full history.
+          fetch-depth: 0
 
       - name: Decision records follow TEMPLATE.md
         run: .github/scripts/check-decision-records.sh
 
       - name: Evidence directories follow README.md convention
         run: .github/scripts/check-repo-structure.sh
+
+      - name: Evidence-format checker self-test
+        # Runs first: a format checker that cannot fail is indistinguishable
+        # from no checker at all, so prove it still rejects each defect class
+        # before trusting its verdict on the real tree.
+        run: python3 .github/scripts/test_check_evidence_formats.py
+
+      - name: Evidence formats and freshness
+        # --require-append-only: fail loudly rather than silently skipping if
+        # the merge base stops resolving (a skipped check reads as a pass).
+        run: python3 .github/scripts/check_evidence_formats.py --require-append-only

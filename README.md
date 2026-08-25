@@ -91,11 +91,22 @@ measurements/  silicon characterization (empty until tape-out)
 
 A `hygiene` workflow (`.github/workflows/hygiene.yml`) runs on every push and
 pull request. It checks that decision records in `spec/decision-records/`
-follow `TEMPLATE.md`'s required sections, and that `design/`, `sim/`,
-`layout/`, and `measurements/` follow this repo's `README.md` convention.
-It does not (yet) validate the DRC/LVS/PEX report formats now committed
-under `layout/`, nor characterization artifacts (there is no silicon yet).
-Full scope and known gaps:
+follow `TEMPLATE.md`'s required sections, that `design/`, `sim/`, `layout/`,
+and `measurements/` follow this repo's `README.md` convention, and that the
+committed **evidence** is well-formed, self-consistent, append-only and fresh:
+
+```bash
+python3 .github/scripts/check_evidence_formats.py       # what CI runs
+python3 .github/scripts/test_check_evidence_formats.py  # the checker's self-test
+```
+
+Every `sim/` record is checked against the convention in
+[`sim/README.md`](sim/README.md) — including that its `N/M points PASS`
+headline agrees with its own parsed CSV and its own raw per-point logs — and
+every `layout/` DRC/LVS/PEX report is checked against the sha256 of the input
+it says it consumed, because *staleness is failure*. It does not yet validate
+characterization artifacts (there is no silicon yet). Full scope, known gaps
+and the waiver mechanism for known-stale reports:
 [`.github/workflows/README.md`](.github/workflows/README.md).
 
 ## License
