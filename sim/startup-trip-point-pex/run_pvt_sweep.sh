@@ -9,8 +9,9 @@
 # Requires ngspice on PATH plus the OSDI device models sim/tools/build-osdi.sh
 # builds. Does not require xschem or klt to RUN (klt was used once, offline,
 # to produce the committed layout/bandgap_startup/bandgap_startup.pex.spice
-# this sweep splices a schematic-sourced resistor device into -- see that
-# file and this experiment's README.md for how to regenerate it, and for
+# this sweep re-encodes its devices from -- including the pull-up resistor,
+# extracted as of issue #59 rather than spliced from the schematic -- see
+# that file and this experiment's README.md for how to regenerate it, and for
 # the w=2u-vs-w=10u XMSENSE caveat this experiment's own README documents
 # up front).
 #
