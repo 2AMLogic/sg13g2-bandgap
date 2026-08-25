@@ -87,16 +87,59 @@ links to the testbench/snapshots/logs, and a timestamp/author. See
 `core-open-loop-bias/records/*.md` for a real example, or
 `core-open-loop-bias/run_pvt_sweep.sh` for how one is generated.
 
+Concretely, and enforced by
+[`.github/scripts/check_evidence_formats.py`](../.github/scripts/check_evidence_formats.py)
+(see "Mechanical enforcement" below):
+
+- the first line is `# Record <record-id>`, repeating the filename exactly;
+- these fields are present and non-empty, as `- **Name**: value` bullets —
+  **Experiment**, **Claim**, **PDK**, **ngspice**, **Corner matrix run**,
+  **Result**, **Links**, **Timestamp / author** — plus at least one
+  netlist-provenance field: **Netlist provenance** (pre-layout records, which
+  have one netlist) or **Devices** (the PEX records, where provenance is
+  per-device because some devices are extracted and some are spliced in from
+  the schematic);
+- **Timestamp / author** carries a UTC ISO-8601 instant (`…Z`);
+- **Result** opens with `<passed>/<total> points PASS`, and both numbers are
+  checked against the record's own `.csv`. A record cannot claim 45/45 while
+  its parsed data says otherwise;
+- the `.csv` sibling exists, carries `corner_label`, `temp_c`, `vdd_v` and
+  `status` columns, and every `status` reads `PASS` or `FAIL`;
+- the corner ids named by the CSV rows, by `corners/<record-id>/*.log`, and by
+  `netlist-snapshots/<record-id>/*.spice` are the **same set** — a record
+  cannot claim a PVT point it has no netlist or no log for, and cannot quietly
+  drop one.
+
 ## Append-only rule
 
 `records/*.md`, `records/*.csv`, `netlist-snapshots/**` and `corners/**`
 files are **never** edited or deleted after creation. A correction or a
-re-run always mints a new `<record-id>`; nothing is enforced mechanically
-for this yet (unlike gf180-bandgap's `sim/check_records.py` lint step — that
-is fleet-pattern infrastructure this repo has not built; a future CI pass,
-tracked under #16, is the natural place to add it once more than one
-experiment exists here). Until then this is enforced by convention and PR
-review, the same way `spec/decision-records/`'s append-only rule is.
+re-run always mints a new `<record-id>`.
+
+This is now enforced mechanically, not just by PR review: the checker below
+diffs `sim/*/records/`, `sim/*/netlist-snapshots/` and `sim/*/corners/`
+against the merge base and fails on any modification or deletion. Adding a
+new `<record-id>` is always allowed; touching a landed one never is.
+
+## Mechanical enforcement
+
+```bash
+python3 .github/scripts/check_evidence_formats.py       # what CI runs
+python3 .github/scripts/test_check_evidence_formats.py  # the checker's own self-test
+```
+
+Stdlib only — no venv, no PDK, no ngspice, no `klt`. It runs on every push and
+PR (`.github/workflows/hygiene.yml`) and covers three things: the record format
+documented above, the append-only rule, and the freshness of the `layout/`
+DRC/LVS/PEX reports (see `layout/README.md`). It is the sg13g2 counterpart to
+gf180-bandgap's `sim/check_records.py`, adapted to this repo's own convention
+(per-point netlist-snapshot *directories*, `.md`+`.csv` record pairs).
+
+**CI checks the shape of evidence; it never produces evidence.** Every record
+under `sim/` is minted deliberately by a human or agent on a machine with the
+PDK, the OSDI models and ngspice — never by a CI robot. The self-test runs
+first in CI, because a format checker that cannot fail is indistinguishable
+from no checker at all.
 
 ## Testbenches landed so far
 

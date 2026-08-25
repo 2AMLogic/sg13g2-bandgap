@@ -1,0 +1,21 @@
+{
+  "_comment": "Known-stale evidence, waived explicitly rather than silently. .github/scripts/check_evidence_formats.py fails on any report whose recorded input hash no longer matches the committed input ('staleness is failure', klayout-tools docs/design-evidence-tiers.md). An entry here downgrades one such failure to a loud note -- and only that one: the waiver names the exact report, the exact check, and the exact stale hash. It SELF-EXPIRES: once the evidence is regenerated, the recorded_hash below no longer matches and the checker fails until the entry is deleted. Every entry must name a tracking issue. Waiving without one is a schema error, not a judgement call.",
+  "waivers": [
+    {
+      "report": "layout/bandgap_core/pex_extract_report.json",
+      "check": "input gds",
+      "recorded_hash": "sha256:bdc6496e56a74a736814664fcd3ad2c30dfe0f48d5af1bb58804e8be4a9e6620",
+      "issue": "#56",
+      "reason": "PEX extraction predates PR #45's resistor marker layers (last extracted at f940680, GDS last regenerated at bf9051c). The DRC and LVS reports for this cell WERE regenerated in PR #45 and are fresh; only the PEX leg was not. Re-extraction plus a re-run of sim/core-open-loop-bias-pex needs klt + PDK + ngspice + OSDI models, which CI deliberately does not have.",
+      "since": "2026-08-25"
+    },
+    {
+      "report": "layout/bandgap_startup/pex_extract_report.json",
+      "check": "input gds",
+      "recorded_hash": "sha256:106a5ebdbfc5dcb63666b4ae036b7d2b0503e0b05c52be268d74ec020e30c745",
+      "issue": "#56",
+      "reason": "Same cause as bandgap_core above: PEX extraction predates PR #45's resistor marker layers. Blocks nothing else -- this cell's DRC and LVS reports are fresh against the current GDS. Clearing it means re-extracting and re-running sim/startup-trip-point-pex, minting new append-only records.",
+      "since": "2026-08-25"
+    }
+  ]
+}

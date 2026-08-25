@@ -581,6 +581,49 @@ or a schematic-level circuit change:
    geometry can produce a name from a layer the deck's connectivity graph
    never reads at all), not a routing or layout-marker gap.
 
+## Evidence freshness, enforced in CI
+
+Per the klayout-tools evidence ladder, **staleness is failure**: a report whose
+verdict was produced against a different GDS than the one committed today is not
+evidence, however clean it reads. Every report here records the sha256 of what it
+consumed —
+
+| report | recorded input hash | checked against |
+|---|---|---|
+| `drc_report.json` | `provenance.input.content_hash` | `<cell>.gds` |
+| `lvs_report.json` | `environment.layout_sha256` | `<cell>.gds` |
+| `lvs_report.json` | `environment.reference_sha256` | `<cell>.lvs_reference.spice` |
+| `pex_extract_report.json` | `provenance.input.content_hash` | `<cell>.gds` |
+| `pex_extract_report.json` | `netlist_sha256` | `<cell>.pex.spice` |
+
+— and `.github/scripts/check_evidence_formats.py` re-derives all five on every
+push and PR. A mismatch fails the build. The checker also asserts each report is
+internally consistent (a `clean` DRC has zero violations, a `match` LVS has zero
+mismatches) and that the DRC report still enumerates its deck coverage gaps —
+but it deliberately does **not** demand a particular verdict. This repo's LVS
+legitimately reads `mismatch` for the reasons documented above; CI's job is to
+keep that verdict honest and fresh, not to demand one the deck cannot produce.
+
+### Known-stale evidence: `layout/evidence-freshness-waivers.json`
+
+Regenerating a report can require `klt`, the PDK, ngspice and OSDI models, none
+of which CI has — so a stale report cannot always be fixed on the spot. It can
+be **waived**, but only explicitly: an entry in
+`layout/evidence-freshness-waivers.json` names the exact report, the exact
+check, the exact stale hash, a tracking issue (required — a waiver with no issue
+is a schema error), and the reason. A waived check prints a loud `STALE (waived,
+#N)` note instead of failing.
+
+Waivers **self-expire**: once the evidence is regenerated, the recorded hash no
+longer matches and the checker fails until the entry is deleted — so a waiver
+cannot quietly outlive the problem it describes.
+
+Both cells' `pex_extract_report.json` are waived today, tracked at **#56**: the
+PEX leg was last extracted at `f940680` (PR #39) while the GDS was last
+regenerated at `bf9051c` (PR #45, the resistor marker layers) — the same
+follow-up item 1 of "Post-layout parasitic extraction" below already describes
+in prose. Their DRC and LVS reports *were* regenerated in PR #45 and are fresh.
+
 ## Post-layout parasitic extraction (issue #14)
 
 Per this issue's own dependency text, LVS's `mismatch` status above is the
@@ -638,7 +681,11 @@ above:
    regenerated GDS and current `klt` version, and out of this issue's own
    scope (DRC/LVS device recognition only) to regenerate and re-validate —
    left as a follow-up rather than silently re-extracted without re-running
-   the PVT sweeps that depend on them.
+   the PVT sweeps that depend on them. **That follow-up is now filed as #56**,
+   and the staleness is no longer prose-only: it is detected mechanically by
+   `.github/scripts/check_evidence_formats.py` and waived by name in
+   `layout/evidence-freshness-waivers.json` — see "Evidence freshness,
+   enforced in CI" above.
 2. **Resolved (issue #32): `layout/bandgap_startup/generate.py` drew
    `XMSENSE` at `w=2u`, stale relative to `design/netlist/bandgap_startup.spice`'s
    `w=10u`.** [Decision record
