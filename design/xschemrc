@@ -68,6 +68,26 @@ set REPO_ROOT [file dirname [file dirname [file normalize [info script]]]]
 
 if { ![info exists XSCHEM_LIBRARY_PATH] } { set XSCHEM_LIBRARY_PATH {} }
 append XSCHEM_LIBRARY_PATH :${XSCHEM_SHAREDIR}/xschem_library/devices
+
+# Search the invoking schematic's own directory FIRST, ahead of the flat
+# design/ directory below. Needed since issue #68: design/sg13cmos5l/ (and
+# any future design/<pdk-variant>/ dir, issue #64's own placement decision)
+# holds schematics with the SAME base filenames as design/'s own SG13G2
+# originals (bandgap_core.sch, bandgap_amp.sch, ...) -- without this entry
+# searched first, a hierarchical instantiation from within
+# design/sg13cmos5l/ (e.g. bandgap_top.sch placing "bandgap_core.sym")
+# silently resolves to design/bandgap_core.sym/.sch instead (both on the
+# path, same base name), producing a netlist built from the WRONG PDK's
+# devices with no error -- confirmed by reproducing exactly this failure
+# while porting bandgap_top.sch for issue #68 (SG13G2's npn13G2 turning up
+# in what should be an all-pnpMPA SG13CMOS5L netlist). [pwd] matches this
+# repo's own documented invocation convention for both PDK variants
+# (`cd design && xschem ...` for SG13G2, `cd design/sg13cmos5l && xschem
+# ...` for SG13CMOS5L -- see design/README.md and
+# design/sg13cmos5l/README.md's own "Running xschem" sections) so it
+# resolves to the correct per-invocation directory without hardcoding any
+# PDK-variant name here.
+append XSCHEM_LIBRARY_PATH :[pwd]
 append XSCHEM_LIBRARY_PATH :[file join $REPO_ROOT design]
 append XSCHEM_LIBRARY_PATH :[file join $REPO_ROOT design symbols]
 
