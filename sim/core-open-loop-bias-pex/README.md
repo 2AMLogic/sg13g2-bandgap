@@ -10,8 +10,28 @@ schematic-level testbench copies `design/netlist/bandgap_core.spice`'s own
 `pex_extract_report.json`). Read this file before trusting a record here —
 it is **not** a pure layout extraction re-simulated as-is.
 
-**Update (issue #56, `records/20260825-132531-eeea775.{md,csv}` — the
-current record):** the committed PEX evidence had gone stale relative to
+**Update (issue #59, `records/20260825-143531-648b320.{md,csv}` — the
+current record):** `XR1`/`XR2` (`rppd`) are now instantiated from the
+extracted `R$5`/`R$4` devices instead of spliced verbatim from
+`design/netlist/bandgap_core.spice` — see the "NOT modelled" section
+below for the full account, including an important correction: the
+extraction's own native `R$4 sns2__t0 cb2__t0 vsubs 10751 rppd` card is
+**not** literal simulatable ngspice syntax (confirmed by direct testing,
+not assumed) — `XR1`/`XR2` below are X-subckt calls to the real `rppd`
+PDK subckt, the same re-encoding the PMOS mirror legs already needed.
+**Max `|Δvref|` across all 45 points vs. the immediately-preceding
+(schematic-resistor) record (`records/20260825-132531-eeea775.csv`) is
+`0.951 mV`** (at `bcs_125c_3.63v`) — a real, measured move, not noise;
+the resistor bulk terminal moving from the schematic fixture's `sub!`
+(shorted to `vss`) to the extraction's real `vsubs` (a ~1 TΩ tie to
+ground) changes the bias `rppd`'s body sees, which measurably shifts its
+resistance via the `r3_cmc` model's own bias dependence. All 45 points
+stay physically sensible (no singular-matrix or dangling-node failures);
+the cross-bench margin comparison against `startup-trip-point-pex`
+(below) stays resolved at every point.
+
+**Update (issue #56, `records/20260825-132531-eeea775.{md,csv}`):** the
+committed PEX evidence had gone stale relative to
 `layout/bandgap_core/bandgap_core.gds` — PR #45 added resistor marker
 layers (`GatPoly` dog-bone bodies plus `EXTBlock`/`pSD`/`SalBlock`/`nSD`
 markers) to the layout, but only the DRC/LVS reports were regenerated
@@ -26,9 +46,8 @@ resistors in this layout for the first time (`device_counts` went from
 `{"pfet": 3}` to `{"pfet": 3, "rppd": 2}`) — see the "NOT modelled"
 section below for what that does and does not change here. This
 testbench's own architecture (which devices are extracted vs.
-schematic-spliced) is unchanged by this pass; incorporating the
-newly-recognised resistors is tracked as a follow-on,
-[issue #59](https://github.com/2AMLogic/sg13g2-bandgap/issues/59).
+schematic-spliced) was unchanged by this pass; incorporating the
+newly-recognised resistors was tracked as issue #59, now resolved above.
 
 ## Dependency on layout/README.md
 
@@ -75,39 +94,46 @@ README restates the parts that matter for simulation; `layout/README.md`'s
   analysis point (open circuit at DC), included anyway for completeness. See
   "Cold-start invocation" below for the exact regeneration command.
 
+**Modelled, from the real routed layout (continued) — resistors (issue #59):**
+
+- **`XR1`/`XR2` (`rppd`) are now instantiated from the extracted `R$5`/
+  `R$4` devices**, using real drawn geometry from `pex_extract_report.json`
+  (`w_um`/`l_um` — numerically identical to the schematic's own nominal
+  `w`/`l` for both resistors: these are fixed-geometry poly resistors, so
+  this pass buys no *geometry* correction on its own). **Important
+  correction, found by direct testing while implementing issue #59, not
+  assumed from `bandgap_core.pex.spice`'s own text:** that file's native
+  `R$4 sns2__t0 cb2__t0 vsubs 10751 rppd` card is **not** literal
+  simulatable ngspice syntax — a 2-terminal `R` element cannot take a 3rd
+  node before its value (ngspice errors `unknown parameter (vsubs)`);
+  `rppd` is a PDK subckt (`.subckt rppd 1 2 bn`, in
+  `resistors_mod.lib`), the same situation the `pfet`/`nfet` M-cards
+  already needed X-subckt re-encoding for (see above). `XR1`/`XR2` are
+  therefore X-subckt calls to the real `rppd` subckt, bulk on `vsubs`
+  (the extraction's real reported bulk net) instead of the schematic
+  fixture's `sub!`. Separately: `pex_extract_report.json`'s own `r_ohm`
+  field (`10751`/`90285`) is klt's own first-order `rsh * l_um / w_um`
+  sheet-resistance estimate (confirmed exactly: `260 * 82.7 / 2 = 10751`,
+  `260 * 694.5 / 2 = 90285`) — not the full `r3_cmc` compact-model
+  resistance. Simulating the X-subckt form at the same drawn geometry
+  computes `~10722 Ω` / `~89782 Ω` (`res_typ`, 27 °C), within `~0.5%` of
+  `r_ohm` — small, and in the expected direction (the compact model adds
+  contact/end-effect terms the sheet-resistance formula omits). Disclosed
+  here rather than silently reconciled.
+
 **NOT modelled (disclosed, not silently omitted):**
 
-- **Bipolar devices are still not extracted here; resistors now ARE
-  recognised, but still not consumed by this testbench (issue #56).** Two
-  independent, non-conflated situations: **(1) `npn13G2`/`npn13G2l`/
-  `npn13G2v`** (SiGe HBTs) are not simply unrecognised yet —
+- **Bipolar devices are still not extracted here.** `npn13G2`/`npn13G2l`/
+  `npn13G2v` (SiGe HBTs) are not simply unrecognised yet —
   `klayout_tools.decks.sg13g2`'s own module docstring documents this as a
   materially harder gap than a missing device-class entry (multi-terminal
   marker-layer disambiguation this engine's device model doesn't yet
-  express) — unaffected by PR #45, still the same deck gap
-  `layout/README.md`'s LVS section documents (cause 1). **(2) `rppd`**
-  (the poly resistor flavour `R1`/`R2` use) already had a recognizer in
-  `EXTRACTION_DECK.resistors` before PR #45, but this layout's
-  `draw_poly_res` (`layout/common.py`) only drew the `PolyRes` body and a
-  `Metal1` end pad, never the `pSD`/`SalBlock`/`EXTBlock` marker layers
-  `rppd` recognition additionally requires. **PR #45 added those marker
-  layers to the GDS**, and re-extracting against the current layout (issue
-  #56) confirms recognition now succeeds: `device_counts` reads `{"pfet":
-  3, "rppd": 2}` (up from `{"pfet": 3}`), with two real `rppd` device cards
-  (`R$4`/`R$5`, drawn resistances `10751 ohm` / `90285 ohm` from the
-  layout's own geometry) in the re-extracted
-  `bandgap_core.pex.spice`. **This testbench does not yet consume that —**
-  `XQ1`/`XQ2`/`XQ3` (`npn13G2`) and `XR1`/`XR2` (`rppd`) are still spliced
-  in **verbatim** from `design/netlist/bandgap_core.spice`, wired to the
-  extraction's own real, physically-routed net names (`sns1`, `sns2`,
-  `cb2`, `cb3`, `vref`, `vss` — all real pins in `pex_extract_report.json`,
-  not invented nodes); the newly-extracted `R$4`/`R$5` device cards and
-  their terminal-only wire-parasitic legs are deliberately omitted from
-  `testbench/tb_core_open_loop_bias_pex.spice.tmpl` rather than
-  double-counted alongside the schematic splice. Incorporating them is a
-  bigger step than a re-extraction/re-run (it changes which devices are
-  extracted vs. schematic-sourced), tracked as a follow-on:
-  [issue #59](https://github.com/2AMLogic/sg13g2-bandgap/issues/59).
+  express) — the same deck gap `layout/README.md`'s LVS section documents
+  (cause 1). `XQ1`/`XQ2`/`XQ3` are still spliced in **verbatim** from
+  `design/netlist/bandgap_core.spice`, wired to the extraction's own real,
+  physically-routed net names (`sns1`, `sns2`, `cb2`, `cb3`, `vref`,
+  `vss` — all real pins in `pex_extract_report.json`, not invented
+  nodes).
 - **PMOS body is a testbench fixture, not an extracted tie.** The
   extraction's own `unbiased_pmos_body_nets` warns all three PMOS bodies
   land on an anonymous, single-terminal net with no DC path (same root
@@ -135,8 +161,9 @@ README restates the parts that matter for simulation; `layout/README.md`'s
 Same prerequisites as `sim/core-open-loop-bias/` (ngspice, a resolvable
 SG13G2 PDK install, OSDI models via `sim/tools/build-osdi.sh`). Does **not**
 require `klt` to run this script — `klt` was used once, offline, to produce
-the committed `layout/bandgap_core/bandgap_core.pex.spice` this splices
-schematic devices into. Regenerate that input with:
+the committed `layout/bandgap_core/bandgap_core.pex.spice` this testbench
+re-encodes the extracted PMOS/resistor devices from (issue #59) and still
+splices the bipolar devices into. Regenerate that input with:
 
 ```bash
 cd layout/bandgap_core

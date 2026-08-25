@@ -177,10 +177,13 @@ from no checker at all.
   `layout/bandgap_startup/bandgap_startup.gds`, not the schematic. Both
   read the pre-layout (schematic-only) records above unchanged — this is
   new, additional evidence, not a replacement. Each README states in full
-  what the extraction does and does not model (bipolar/resistor devices
-  are not recognised by the sg13g2 deck and are schematic-sourced;
-  wire parasitics are zero — the deck's own R/C coefficient tables are
-  empty for this layout's metal levels). `startup-trip-point-pex`'s own
+  what the extraction does and does not model (bipolar devices are still
+  not recognised by the sg13g2 deck and remain schematic-sourced;
+  resistor devices are now recognised and instantiated from the
+  extraction as of issue #59, previously schematic-sourced too; wire
+  parasitics are now non-zero and modelled as of issue #37 — see each
+  experiment's own README for the up-to-date, full account rather than
+  this summary). `startup-trip-point-pex`'s own
   cross-bench comparison against `core-open-loop-bias-pex` originally
   found that `layout/bandgap_startup.gds` still drew `XMSENSE` at the
   pre-decision-record-0003 `w=2u` (the schematic was widened to `w=10u`,

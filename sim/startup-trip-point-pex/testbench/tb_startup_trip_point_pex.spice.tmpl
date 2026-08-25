@@ -6,8 +6,11 @@
 * the sweep. Full rationale is in sim/startup-trip-point-pex/README.md.
 *
 * Generated for: corner=@@CORNER_LABEL@@ temp=@@TEMP_C@@C vdd=@@VDD@@V
-* DUT git sha (design/netlist/bandgap_startup.spice, for the spliced-in
-* resistor device -- see below):
+* DUT git sha (design/netlist/bandgap_startup.spice -- as of issue #59,
+* nothing in this testbench is spliced in verbatim from that file anymore
+* (XMSENSE/XMKFB since issue #14/#32, XRPU's resistor since issue #59, are
+* all re-encoded from the layout extraction); still recorded for
+* traceability against the schematic's own nominal geometry -- see below):
 *   @@DUT_GIT_SHA@@
 * Layout git sha (layout/bandgap_startup/bandgap_startup.gds, extraction
 * input):
@@ -49,19 +52,44 @@
 *     corrected w=10u width now clears at all 45 points (the 4 points that
 *     failed at the stale w=2u width -- wcs_125c_{2.97,3.30,3.63}v,
 *     sf_125c_3.63v -- now pass).
-*   - XRPU (rhigh) is still spliced in verbatim from
-*     design/netlist/bandgap_startup.spice, wired to the same real layout
-*     net names (vdd/det) the extraction itself reports as real,
-*     physically-routed pins -- but as of issue #56 this is a deliberate
-*     choice, not a deck limitation anymore: PR #45's resistor marker
+*   - XRPU (rhigh) is now instantiated from the extracted R$3 device
+*     (issue #59) instead of being spliced verbatim from
+*     design/netlist/bandgap_startup.spice -- PR #45's resistor marker
 *     layers made the sg13g2 deck's `rhigh` recognizer actually match this
-*     layout's poly resistor (pex_extract_report.json's device_counts now
-*     reads `{"nfet": 2, "rhigh": 1}`, up from `{"nfet": 2}`). This
-*     testbench does not yet consume that newly-extracted R$3 (real
-*     drawn-geometry resistance 1919368 ohm) -- doing so changes which
-*     devices are extracted vs. schematic-sourced, a bigger step than issue
-*     #56's re-extraction/re-run scope. See README.md's "Update (issue
-*     #56)" section and the follow-on issue it links for the full account.
+*     layout's poly resistor (pex_extract_report.json's device_counts reads
+*     `{"nfet": 2, "rhigh": 1}`). IMPORTANT caveat, confirmed by direct
+*     ngspice testing, not assumed from bandgap_startup.pex.spice's own
+*     text: that file's native `R$3 \$5__t0 det__t0 vsubs 1919368 rhigh`
+*     card is NOT literal simulatable ngspice syntax (a 2-terminal `R`
+*     element cannot take a 3rd node before its value -- ngspice errors
+*     "unknown parameter (vsubs)") -- `rhigh`/`rppd` are PDK subckts
+*     (`1 2 bn` pins), the same situation the nfet M-cards above already
+*     needed X-subckt re-encoding for. XRPU below is therefore an X-subckt
+*     call to the real `rhigh` subckt using pex_extract_report.json's own
+*     drawn `w_um`/`l_um` (numerically identical to the schematic's own
+*     nominal `w`/`l` -- this is a fixed-geometry poly resistor, so this
+*     pass buys no *geometry* correction, only the bulk-node correction
+*     below, the isolated \$5 net's termination, and the newly-wired
+*     hub-terminal parasitics). R$3's own "a" terminal lands on an
+*     isolated, unlabeled two-node net (`\$5`/`\$5__t0`) rather than the
+*     schematic's real `vdd` -- this layout simply never exposes `vdd` as a
+*     declared pin at all (`.SUBCKT bandgap_startup det fb vss vsubs`, no
+*     `vdd`), a layout-labeling gap distinct from the marker-layer gap PR
+*     #45 fixed, out of this issue's own scope. FIXTURE 3 below ties `\$5`
+*     to `vdd` directly (a 0 V source, so `i(vtie5)` reads R$3's own
+*     current), the testbench's own resolution for that gap -- not a claim
+*     that the real layout routes `\$5` to `vdd`. Bulk lands on `vsubs`
+*     (the extraction's real reported bulk net), not the schematic's
+*     `sub!` -- the now-unused `Vsub sub! vss` fixture is removed below.
+*     Separately: `pex_extract_report.json`'s own `r_ohm` field (1919368)
+*     is klt's own first-order `rsh * l_um / w_um` sheet-resistance
+*     estimate (confirmed exactly: `1360 * 1411.3 / 1 = 1919368`), not the
+*     full `r3_cmc` compact-model resistance -- simulating the X-subckt
+*     form above at the same drawn geometry computes ~2.086 Mohm (res_typ,
+*     27C), ~8.7% above `r_ohm` (larger than the two rppd resistors'
+*     ~0.5% gap in core-open-loop-bias-pex -- the compact model's
+*     contact/end-effect terms scale differently for this much
+*     narrower/longer device). Disclosed, not silently reconciled.
 *   - Both extracted devices' body terminals land on the deck's own
 *     synthesized global fallback net (`vsubs` in
 *     layout/bandgap_startup/bandgap_startup.pex.spice), not the
@@ -87,10 +115,13 @@
 
 Vvdd vdd 0 dc @@VDD@@
 Vvss vss 0 dc 0
-* bandgap_startup.spice wires the rhigh bulk terminal to the global
-* substrate net `sub!`; tied to vss through a 0 V source here, as in
-* sim/startup-trip-point.
-Vsub sub! vss dc 0
+* bandgap_startup.spice's schematic-splice convention wired the rhigh bulk
+* terminal to the global substrate net `sub!`, fixtured to vss via a 0 V
+* source (sim/startup-trip-point's own fixture). As of issue #59, XRPU
+* below is the extracted R$3 device instead, whose real bulk net is
+* `vsubs` -- already stabilized by `Rvsubs_dctie` in the "Wire parasitics"
+* block below -- so the `sub!`/`Vsub` fixture is no longer referenced by
+* anything in this file and is removed rather than left as dead code.
 
 * FIXTURE 1 -- sns1 stimulus, same convention as sim/startup-trip-point:
 * sns1 is bandgap_core's own sense node in the assembled block; here it is
@@ -104,8 +135,20 @@ Vsns1 sns1 vss dc 0
 * high once XMKFB turns off.
 Rfbpu vdd fb 10meg
 
-* Resistor -- schematic-sourced, see file header above.
-XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+* FIXTURE 3 -- isolated $5 net termination. See file header above for why
+* R$3's own "a" terminal lands on this isolated, unlabeled net rather than
+* a real `vdd` pin; this 0 V source ties it to `vdd` directly (a real
+* short, not a high-impedance approximation), so `i(vtie5)` also reads
+* R$3's own device current.
+Vtie5 \$5 vdd dc 0
+
+* Resistor -- extracted from the routed layout as of issue #59 (R$3 in
+* layout/bandgap_startup/bandgap_startup.pex.spice), re-encoded as an
+* X-subckt call to the real rhigh PDK subckt (see file header for why the
+* pex.spice file's own native R$3 card is not directly simulatable, and
+* for the r_ohm-vs-simulated-resistance caveat). XRPU keeps the
+* schematic's own instance name for continuity.
+XRPU \$5__t0 det__t0 vsubs rhigh w=1u l=1411.3u m=1 b=0
 
 * Extracted NMOS switches -- see file header above for the body-net
 * substitution; XMSENSE's w/as/ad/ps/pd below match the corrected,
@@ -123,17 +166,19 @@ XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
 XMSENSE det__t1 sns1 vss__t0 vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
 XMKFB fb__t0 det__t2 vss__t1 vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
 
-* Wire parasitics (issue #37, refreshed issue #56) -- verbatim R/C cards
-* from layout/bandgap_startup/bandgap_startup.pex.spice's --parasitics
-* output (that file's M$1/M$2 cards are already re-encoded above as
-* XMSENSE/XMKFB; these are its remaining, non-device cards). Issue #56's
-* re-extraction now ALSO reports a rhigh device card (R$3, see file
-* header) that this testbench does not instantiate, plus its own isolated
-* two-node net (\$5/\$5__t0) -- both omitted below, since nothing else in
-* this testbench would connect to them. `det`'s own R/C values below
-* reflect the renumbered star split described above. Regenerate this
-* block together with the geometry above if the layout or deck ever
-* changes.
+* Wire parasitics (issue #37, refreshed issue #56, extended issue #59) --
+* verbatim R/C cards from layout/bandgap_startup/bandgap_startup.pex.spice's
+* --parasitics output (that file's M$1/M$2 cards are already re-encoded
+* above as XMSENSE/XMKFB; R$3 is re-encoded above as XRPU). Issue #59 adds
+* this file's own R_5_t0/C_5 (the isolated \$5/\$5__t0 net's own leg) and
+* Rdet_t0 (R$3's own hub-terminal leg on `det`) -- both previously omitted
+* here specifically because R$3 was not yet instantiated. `det`'s own R/C
+* values below reflect the star split issue #56 already renumbered.
+* Regenerate this block together with the geometry above if the layout or
+* deck ever changes.
+R_5_t0 \$5__t0 \$5 0.264
+C_5 \$5 vsubs 1.55598e-16
+Rdet_t0 det__t0 det 266.808047442
 Rdet_t1 det__t1 det 139.15243699
 Rdet_t2 det__t2 det 127.655815568
 Cdet det vsubs 1.30736768e-13

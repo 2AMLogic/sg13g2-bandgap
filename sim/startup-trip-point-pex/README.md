@@ -32,15 +32,37 @@ stayed **resolved** — every one of the 45 points kept a positive margin,
 minimum `+63.59 mV`. Wire parasitics moved `vtrip` by at most `17 µV`
 (median `9 µV`) relative to issue #32's own wire-RC-free record.
 
-**Update (issue #56, `records/20260825-132535-eeea775.{md,csv}` — the
-current record):** the committed PEX evidence had gone stale relative to
+**Update (issue #59, `records/20260825-143537-648b320.{md,csv}` — the
+current record):** `XRPU` (`rhigh`) is now instantiated from the extracted
+`R$3` device instead of spliced verbatim from
+`design/netlist/bandgap_startup.spice` — see the "NOT modelled" section
+below for the full account, including an important correction: the
+extraction's own native `R$3 \$5__t0 det__t0 vsubs 1919368 rhigh` card is
+**not** literal simulatable ngspice syntax (confirmed by direct testing,
+not assumed) — `XRPU` below is an X-subckt call to the real `rhigh` PDK
+subckt, the same re-encoding `core-open-loop-bias-pex`'s resistors (issue
+#59) and this file's own NMOS switches already needed. **Max `|Δvtrip|`
+across all 45 points vs. the immediately-preceding (schematic-resistor)
+record (`records/20260825-132535-eeea775.csv`) is `11 µV`** — small,
+consistent with `vtrip`'s comparatively weak dependence on `XRPU`'s exact
+value at this circuit's trip point (dominated by NMOS threshold ratios,
+not the pull-up's bias current the way `core-open-loop-bias-pex`'s `vref`
+is). The cross-bench margin-bug comparison against
+`core-open-loop-bias-pex`'s own refreshed record (issue #59) stays
+resolved: all 45 points positive, minimum margin `+63.6026 mV` at
+`wcs_125c_3.63v` (was `+63.5956 mV` at the same point, pre-#59 — within
+this pair of experiments' own few-µV/mV noise floor, not a regression) —
+see "Cross-bench observation" below for the full table.
+
+**Update (issue #56, `records/20260825-132535-eeea775.{md,csv}`):** the
+committed PEX evidence had gone stale relative to
 `layout/bandgap_startup/bandgap_startup.gds` — PR #45 added resistor
 marker layers to the layout, but only the DRC/LVS reports were regenerated
 against it at the time, not the PEX leg. Re-extracting and re-running this
 sweep against the current GDS: **max `|Δvtrip|` across all 45 points vs.
 the immediately-preceding record is `3 µV`** — noise at the CSV's own
 printed precision. The cross-bench margin-bug comparison against
-`core-open-loop-bias-pex`'s own refreshed record (issue #56) stays
+`core-open-loop-bias-pex`'s own refreshed record (issue #56) stayed
 resolved: all 45 points positive, minimum margin `+63.5956 mV` at
 `wcs_125c_3.63v` (was `+63.5946 mV` at the same point, pre-#56 — a ~1 µV
 shift, consistent with the near-zero `vref`/`vtrip` deltas above, not a
@@ -48,9 +70,8 @@ regression). As with
 `core-open-loop-bias-pex`, PR #45's marker layers also made the `sg13g2`
 deck's `rhigh` recognizer match `XRPU` for the first time here
 (`device_counts` went from `{"nfet": 2}` to `{"nfet": 2, "rhigh": 1}`) —
-see "NOT modelled" below; this testbench's architecture is otherwise
-unchanged, and consuming the newly-recognised resistor is tracked as a
-follow-on, [issue #59](https://github.com/2AMLogic/sg13g2-bandgap/issues/59).
+this testbench's architecture was otherwise unchanged, and consuming the
+newly-recognised resistor was tracked as issue #59, now resolved above.
 
 ## Dependency on layout/README.md
 
@@ -95,6 +116,37 @@ after regenerating the layout).
   isolated cell's own extraction, unaffected by the deck fix; the
   testbench's own `Vsns1` drive is a fixture bridging that separate gap,
   unchanged by this pass.
+- **`XRPU` (`rhigh`) is now instantiated from the extracted `R$3` device
+  (issue #59)**, using real drawn geometry from `pex_extract_report.json`
+  (`w_um`/`l_um` — numerically identical to the schematic's own nominal
+  `w`/`l`: this is a fixed-geometry poly resistor, so this pass buys no
+  *geometry* correction on its own). **Important correction, found by
+  direct testing while implementing issue #59, not assumed from
+  `bandgap_startup.pex.spice`'s own text:** that file's native
+  `R$3 \$5__t0 det__t0 vsubs 1919368 rhigh` card is **not** literal
+  simulatable ngspice syntax — a 2-terminal `R` element cannot take a 3rd
+  node before its value (ngspice errors `unknown parameter (vsubs)`);
+  `rhigh` is a PDK subckt (`.subckt rhigh 1 2 bn`, in
+  `resistors_mod.lib`), the same situation the `nfet` M-cards above
+  already needed X-subckt re-encoding for. `XRPU` is therefore an
+  X-subckt call to the real `rhigh` subckt, bulk on `vsubs` instead of the
+  schematic fixture's `sub!`. `R$3`'s own "a" terminal lands on an
+  isolated, unlabeled two-node net (`\$5`/`\$5__t0`) rather than the
+  schematic's real `vdd` — this layout simply never exposes `vdd` as a
+  declared pin at all (`.SUBCKT bandgap_startup det fb vss vsubs`, no
+  `vdd`), a layout-labeling gap distinct from the marker-layer gap PR #45
+  fixed. The testbench ties `\$5` to `vdd` directly (`Vtie5`, a 0 V
+  source, FIXTURE 3) rather than the real layout's own routing, which this
+  isolated-cell extraction cannot independently confirm. Separately:
+  `pex_extract_report.json`'s own `r_ohm` field (`1919368`) is klt's own
+  first-order `rsh * l_um / w_um` sheet-resistance estimate (confirmed
+  exactly: `1360 * 1411.3 / 1 = 1919368`) — not the full `r3_cmc`
+  compact-model resistance. Simulating the X-subckt form at the same drawn
+  geometry computes `~2.086 MΩ` (`res_typ`, 27 °C), `~8.7%` above `r_ohm`
+  — larger than the two `rppd` resistors' `~0.5%` gap in
+  `core-open-loop-bias-pex` (the compact model's contact/end-effect terms
+  scale differently for this much narrower/longer device). Disclosed here
+  rather than silently reconciled.
 
 **NOT modelled, or modelled differently than the current schematic
 (disclosed, not silently omitted):**
@@ -111,35 +163,18 @@ after regenerating the layout).
   the committed GDS actually is. See "Cross-bench observation" below for
   the before/after margin numbers, and `records/20260821-160458-42d8348.md`
   (preserved) for the original `w=2u` bug-reproducing record.
-- **The resistor device is now recognised (issue #56), but still not
-  consumed by this testbench.** `rhigh` (this experiment's `XRPU`) already
-  had a recognizer in `EXTRACTION_DECK.resistors`
-  (`klayout_tools.decks.sg13g2`, issue #1235) before PR #45, but
-  `layout/common.py`'s shared `draw_poly_res` (used by both cells' poly
-  resistors) only drew the `PolyRes` body and a `Metal1` end pad, never the
-  `pSD`/`SalBlock`/`EXTBlock` marker layers `rhigh`/`rppd` recognition
-  additionally requires — a layout-drawing gap in this repo, not a
-  `klayout-tools` one. **PR #45 added those marker layers to the GDS**, and
-  re-extracting against the current layout (issue #56) confirms
-  recognition now succeeds: `device_counts` reads `{"nfet": 2, "rhigh":
-  1}` (up from `{"nfet": 2}`), with a real `rhigh` device card (`R$3`,
-  drawn resistance `1919368 ohm` from the layout's own geometry) in the
-  re-extracted `bandgap_startup.pex.spice`. **This testbench does not yet
-  consume that** — `XRPU` (`rhigh`) is still spliced in verbatim from
-  `design/netlist/bandgap_startup.spice`, wired to the extraction's own
-  real, physically-routed `vdd`/`det` net names; the newly-extracted `R$3`
-  device card and its isolated two-node net (`\$5`/`\$5__t0`) are
-  deliberately omitted from
-  `testbench/tb_startup_trip_point_pex.spice.tmpl` rather than
-  double-counted alongside the schematic splice. Incorporating it is
-  tracked as a follow-on:
-  [issue #59](https://github.com/2AMLogic/sg13g2-bandgap/issues/59).
-- **Body terminal substituted, not extracted as-is.** Both extracted
-  devices' body terminals land on the deck's own synthesized global
-  fallback net (`vsubs` in `bandgap_startup.pex.spice`), not the
-  schematic's real body-tied-to-`vss` (`layout/README.md`'s LVS cause 2).
-  This testbench ties body to `vss` directly instead, mirroring the
-  schematic's real intent.
+- **`XMSENSE`/`XMKFB`'s body terminal is substituted, not extracted
+  as-is.** Both extracted NMOS devices' body terminals land on the deck's
+  own synthesized global fallback net (`vsubs` in
+  `bandgap_startup.pex.spice`), not the schematic's real
+  body-tied-to-`vss` (`layout/README.md`'s LVS cause 2). This testbench
+  ties body to `vss` directly instead, mirroring the schematic's real
+  intent. `XRPU` (issue #59, above) is treated differently on purpose: its
+  real extracted bulk (`vsubs`) is kept as-is rather than substituted,
+  since the schematic's own `rhigh` bulk convention (`sub!`, tied to `vss`
+  as a testbench fixture) was itself already an approximation, not a
+  ground-truth tie this testbench has independent reason to prefer over
+  the extraction's own reported bulk net.
 
 ## Cold-start invocation
 
@@ -230,15 +265,29 @@ points now clear by 63-73 mV; every other point clears by 63-229 mV — see
 the full record CSV for every point).
 
 **After issue #56's re-extraction** (`records/20260825-132535-eeea775.csv`
-against `records/20260825-132531-eeea775.csv` — current, post-PR-#45-marker-
-layer evidence): the same 4 points read `sf_125c_3.63v` `+72.80`,
+against `records/20260825-132531-eeea775.csv` — post-PR-#45-marker-layer
+evidence, pre-#59): the same 4 points read `sf_125c_3.63v` `+72.80`,
 `wcs_125c_2.97v` `+67.99`, `wcs_125c_3.30v` `+65.53`, `wcs_125c_3.63v`
 `+63.60` (mV) — each within `0.05 mV` of the issue #32/#37 figures directly
 above, i.e. unchanged within this pair of experiments' own few-µV noise
-floor (see the "Update (issue #56)" note at the top of this file). All
-45/45 points stay positive; the margin-bug fix these two experiments
-cross-confirm is unaffected by PR #45's resistor-recognition marker
-layers.
+floor. All 45/45 points stay positive; the margin-bug fix these two
+experiments cross-confirm was unaffected by PR #45's resistor-recognition
+marker layers.
+
+**After issue #59's resistor re-encoding** (`records/20260825-143537-648b320.csv`
+against `records/20260825-143531-648b320.csv` — current, both experiments'
+resistors now instantiated from the extraction rather than spliced from
+the schematic): the same 4 points read `sf_125c_3.63v` `+72.80`,
+`wcs_125c_2.97v` `+68.00`, `wcs_125c_3.30v` `+65.54`, `wcs_125c_3.63v`
+`+63.60` (mV) — each within `0.01 mV` of the issue #56 figures directly
+above, despite `core-open-loop-bias-pex`'s own `vref` moving by up to
+`0.951 mV` at some PVT points (see that experiment's README "Update (issue
+#59)") — the margin comparison uses `sns1` (the PTAT bipolar sense
+voltage), not `vref`, and `sns1` itself barely moves, so the margin figures
+stay essentially unchanged. All 45/45 points stay positive (minimum
+`+63.6026 mV` at `wcs_125c_3.63v`); the margin-bug fix these two
+experiments cross-confirm is unaffected by incorporating the extracted
+resistor devices.
 
 **What this means**: decision record 0003 widened `XMSENSE` to `w=10u` in
 `design/netlist/bandgap_startup.spice` at the schematic level (issue #24/PR
