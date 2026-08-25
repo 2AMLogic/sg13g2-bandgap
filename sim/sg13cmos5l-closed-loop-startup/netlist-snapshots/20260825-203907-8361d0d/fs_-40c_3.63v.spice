@@ -1,0 +1,125 @@
+* sg13g2-bandgap -- SG13CMOS5L bandgap_core + bandgap_amp + bandgap_startup
+* co-simulated closed-loop testbench (issue #65)
+* Generated from
+* sim/sg13cmos5l-closed-loop-startup/testbench/tb_sg13cmos5l_closed_loop_startup.spice.tmpl
+* by sim/sg13cmos5l-closed-loop-startup/run_pvt_sweep.sh -- do not edit a
+* generated netlist-snapshots/*.spice file directly, edit this template and
+* re-run the sweep. Full rationale is in
+* sim/sg13cmos5l-closed-loop-startup/README.md.
+*
+* Generated for: corner=fs temp=-40C vdd=3.63V
+* DUT git sha (design/sg13cmos5l/netlist/bandgap_core.spice,
+* design/sg13cmos5l/netlist/bandgap_amp.spice and
+* design/sg13cmos5l/netlist/bandgap_startup.spice this was copied from):
+*   core=e13e9dc amp=8361d0d startup=8361d0d
+* PDK: ihp-sg13cmos5l /home/ubuntu/share/pdk (see sim/pdk-sg13cmos5l.json for the pinned
+*   revision)
+* OSDI models: /home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi (this PDK ships these prebuilt -- see
+*   sim/pdk-sg13cmos5l.json "osdi_toolchain")
+*
+* All three DUTs are copied verbatim from
+* design/sg13cmos5l/netlist/bandgap_core.spice,
+* design/sg13cmos5l/netlist/bandgap_amp.spice and
+* design/sg13cmos5l/netlist/bandgap_startup.spice -- same instance names,
+* same node names, same W/L/a/p -- and wired together exactly as
+* design/sg13cmos5l/bandgap_top.sch specifies (core.fb <- amp.out,
+* core.sns1 -> amp.in_n, core.sns2 -> amp.in_p, startup.sns1 <- core.sns1,
+* startup.fb -> core.fb -- same wiring pattern SG13G2's own bandgap_top.sch
+* uses). This is the closed-loop counterpart to
+* sim/sg13cmos5l-core-open-loop-bias's open-loop fixture: the real
+* bandgap_amp devices now hold "fb" at whatever level makes sns1 = sns2,
+* exactly the job design/sg13cmos5l/bandgap_amp.sch's header describes, and
+* this is a formal, PVT-cornered version of design/sg13cmos5l/README.md's
+* own single-nominal-corner informal closed-loop check (issue #68).
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/models/cornerPNP.lib" typ
+.lib "/home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/models/cornerMOShv.lib" mos_fs
+.lib "/home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/models/cornerRES.lib" res_typ
+
+* rshunt=1e9 / gmin=1e-9: convergence aids only, both far below any current
+* this testbench measures -- same values and same rationale
+* sim/closed-loop-startup uses for the SG13G2 core (see that experiment's own
+* template header for the full dev-time account of why this exact
+* combination was needed there). design/sg13cmos5l/README.md's own informal
+* closed-loop check (issue #68) reused the identical aids for the same
+* numerically-stiff-early-ramp reason with this PDK's grounded-collector
+* pnpMPA legs.
+.options temp=-40 tnom=27 rshunt=1e9 gmin=1e-9
+
+* FIXTURE -- transient supply ramp, the same shape sim/closed-loop-startup
+* and design/sg13cmos5l/README.md's own informal check use: vdd itself
+* ramps 0 -> VDD over 200 us and holds to 2 ms, so the assembled block's own
+* cold-start -> closed-loop-settled transition is what the simulator solves
+* for.
+Vvdd vdd 0 PWL(0 0 200u 3.63 2m 3.63)
+Vvss vss 0 dc 0
+* Both bandgap_core.spice and bandgap_amp.spice wire their resistor bulk
+* terminals (rppd inside the core) to the global substrate net `sub!`, the
+* same convention every testbench in this tree uses.
+Vsub sub! vss dc 0
+
+* DUT -- design/sg13cmos5l/netlist/bandgap_core.spice, verbatim.
+* Grounded-collector pnpMPA legs (base+collector at vss, emitter at the
+* sense node) -- the reverse of SG13G2's own grounded-emitter npn13G2 core;
+* see sim/sg13cmos5l-core-open-loop-bias/README.md for the full topology
+* account.
+XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQ1 vss vss sns1 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
+XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR2 sns2 e2 sub! rppd w=2u l=85.1u m=1 b=0
+XQ2 vss vss e2 pnpMPA a={ 8u * 2u } p={ ( 8u + 2u ) * 2 } m=1
+XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR1 vref e3 sub! rppd w=2u l=647.0u m=1 b=0
+XQ3 vss vss e3 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
+
+* DUT -- design/sg13cmos5l/netlist/bandgap_amp.spice, verbatim. in_p <-
+* sns2 (non-inverting), in_n <- sns1 (inverting), out -> fb -- same polarity
+* SG13G2's own closed-loop-startup uses, re-derived (not assumed) against
+* this core's own topology in design/sg13cmos5l/bandgap_amp.sch's own header
+* (issue #68).
+XMTAIL tail fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP2 d2 sns1 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP4 fb pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN3 fb d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+
+* DUT -- design/sg13cmos5l/netlist/bandgap_startup.spice, verbatim. `sns1`
+* and `fb` are shared with the core and amp DUTs above -- the nodes the
+* assembled block actually connects. No separate stimulus source drives
+* either one.
+*
+* FIXTURE -- Vmkfb is a 0 V ammeter in series with XMKFB's drain, so the
+* startup circuit's own contribution to the shared fb node can be measured
+* directly (i_mkfb below) rather than inferred from fb's voltage alone. A
+* 0 V source is a DC/transient short and does not move the operating point.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+.control
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/r3_cmc.osdi
+tran 2u 2m
+* Early-ramp check (t=20us, vdd ~10% of final value, core+amp still
+* degenerate/starting): the startup circuit should still be actively
+* engaged (det high, fb low).
+meas tran v_det_early find v(det) at=20u
+meas tran v_fb_early find v(fb) at=20u
+* Final (fully ramped + settled) closed-loop state -- the actual claim
+* under test: did the real error amplifier close the loop and settle, with
+* the startup circuit fully released?
+meas tran v_fb_v find v(fb) at=2m
+meas tran v_sns1_v find v(sns1) at=2m
+meas tran v_sns2_v find v(sns2) at=2m
+meas tran v_vref_v find v(vref) at=2m
+meas tran v_det_v find v(det) at=2m
+meas tran i_mkfb_v find i(Vmkfb) at=2m
+.endc
+.end
