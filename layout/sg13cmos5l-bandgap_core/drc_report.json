@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "file": "sg13cmos5l-bandgap_core.gds",
+  "deck": "sg13cmos5l",
+  "dbu_um": 0.001,
+  "status": "clean",
+  "violation_count": 0,
+  "rule_counts": {},
+  "violations": [],
+  "coverage": {
+    "deck_layers": [
+      "1/0",
+      "5/0",
+      "8/0"
+    ],
+    "layers_checked": [
+      "1/0",
+      "5/0",
+      "8/0"
+    ],
+    "layers_in_stream_without_rules": [
+      "6/0",
+      "8/2",
+      "14/0",
+      "28/0",
+      "31/0",
+      "44/0",
+      "63/0",
+      "111/0",
+      "128/0"
+    ],
+    "rules_skipped": [],
+    "voltage_domain_warnings": [
+      {
+        "marker": "44/0",
+        "description": "ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). This MOS-only starter models neither side of that split yet: EXTRACTION_DECK recognises only the LV (thin-gate-oxide) NMOS/PMOS pair (mirroring sg13g2.py's own #905 starter scope; the HV pair is left for a follow-on issue, the sg13cmos5l sibling of sg13g2.py's issue #1231), and this curated deck's DRC rules apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note)."
+      }
+    ],
+    "deck_scope": [
+      "5.16 Metal1",
+      "5.5 Activ",
+      "5.8 GatPoly"
+    ]
+  },
+  "provenance": {
+    "klt_version": "0.3.0",
+    "klayout_version": "0.30.11",
+    "pdk": null,
+    "deck": {
+      "name": "sg13cmos5l",
+      "content_hash": "sha256:9a4e18f2fd7a0d39d02abc220141dd5c300158e2540cd19f2f2ea9151f965b80",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:5bc5475289c024975b7754b67dd5539f2cbd798a95b5cd376794b9e8d82e2c54"
+    }
+  }
+}
