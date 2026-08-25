@@ -77,6 +77,19 @@ not yet device-matched (#20). Spec ratification is still open (#13), so the
 ladder's second rung is climbed out of order — the draft table above is what
 the sims are measured against.**
 
+## Chipalooza
+
+This repo also carries a second port of the same bandgap design onto IHP
+SG13CMOS5L (a CMOS-only sibling process to SG13G2), targeting the
+Chipalooza Challenge #2 brief. Schematic capture and PVT-cornered
+pre-layout simulation are done (45/45 points PASS across three
+testbenches); layout and DRC/LVS sign-off are still open. See
+[`docs/chipalooza/challenge-2-proposal.md`](docs/chipalooza/challenge-2-proposal.md)
+for the full proposal: positioning, I/O budget, functional description, a
+spec table re-derived from the SG13CMOS5L `sim/` evidence, and a bench
+test plan for measured silicon. Tracked by issue #63 (parent) and its four
+phase issues (#64-#67).
+
 ## Repo layout
 
 ```
