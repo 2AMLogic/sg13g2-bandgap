@@ -124,6 +124,37 @@ def build_fixture(root: Path) -> None:
         encoding="utf-8",
     )
 
+    # extract_report.json (plain klt extract) and pex_extract_report.json
+    # (parasitic extract) share the same status vocabulary and freshness
+    # checks in check_evidence_formats.py — cover both report kinds here.
+    plain_netlist_bytes = b".SUBCKT synth_cell\n.ENDS\n"
+    (cell / "synth_cell.spice").write_bytes(plain_netlist_bytes)
+    (cell / "extract_report.json").write_text(
+        json.dumps({
+            "schema_version": 1,
+            "netlist_path": "synth_cell.spice",
+            "netlist_sha256": sha256_bytes(plain_netlist_bytes),
+            "status": "extracted",
+            "provenance": {"klt_version": "0.3.0", "deck": deck,
+                           "input": {"content_hash": "sha256:" + sha256_bytes(gds_bytes)}},
+        }, indent=1),
+        encoding="utf-8",
+    )
+
+    pex_netlist_bytes = b".SUBCKT synth_cell\n* pex\n.ENDS\n"
+    (cell / "synth_cell.pex.spice").write_bytes(pex_netlist_bytes)
+    (cell / "pex_extract_report.json").write_text(
+        json.dumps({
+            "schema_version": 1,
+            "netlist_path": "synth_cell.pex.spice",
+            "netlist_sha256": sha256_bytes(pex_netlist_bytes),
+            "status": "extracted",
+            "provenance": {"klt_version": "0.3.0", "deck": deck,
+                           "input": {"content_hash": "sha256:" + sha256_bytes(gds_bytes)}},
+        }, indent=1),
+        encoding="utf-8",
+    )
+
 
 def run_checker(root: Path, *extra: str) -> tuple[int, str]:
     proc = subprocess.run(
@@ -245,6 +276,42 @@ def case_unhashed_deck(root: Path):
     return "content_hash' is not a sha256 digest"
 
 
+def case_extract_report_bad_status(root: Path):
+    edit_json(root / "layout/synth_cell/extract_report.json",
+              lambda d: d.update(status="bogus"))
+    return "status 'bogus' not in"
+
+
+def case_extract_report_missing_netlist_path(root: Path):
+    edit_json(root / "layout/synth_cell/extract_report.json",
+              lambda d: d.pop("netlist_path"))
+    return "missing 'netlist_path'"
+
+
+def case_extract_report_stale_netlist(root: Path):
+    netlist = root / "layout/synth_cell/synth_cell.spice"
+    netlist.write_bytes(netlist.read_bytes() + b"* edited\n")
+    return "extract_report.json [extracted netlist]"
+
+
+def case_pex_extract_report_bad_status(root: Path):
+    edit_json(root / "layout/synth_cell/pex_extract_report.json",
+              lambda d: d.update(status="bogus"))
+    return "status 'bogus' not in"
+
+
+def case_pex_extract_report_missing_netlist_path(root: Path):
+    edit_json(root / "layout/synth_cell/pex_extract_report.json",
+              lambda d: d.pop("netlist_path"))
+    return "missing 'netlist_path'"
+
+
+def case_pex_extract_report_stale_netlist(root: Path):
+    netlist = root / "layout/synth_cell/synth_cell.pex.spice"
+    netlist.write_bytes(netlist.read_bytes() + b"* edited\n")
+    return "pex_extract_report.json [extracted netlist]"
+
+
 def case_waiver_without_issue(root: Path):
     case_stale_drc_input(root)
     (root / "layout/evidence-freshness-waivers.json").write_text(
@@ -309,11 +376,16 @@ def case_waiver_guards_nothing(root: Path):
 def case_valid_waiver_passes(root: Path):
     """The whole point of the waiver: loud notes, exit 0.
 
-    Editing the GDS invalidates *both* reports that name it, so both checks have
-    to be waived by name — which is the property being demonstrated.
+    Editing the GDS invalidates *every* report that names it as its input, so
+    each such check has to be waived by name — which is the property being
+    demonstrated.
     """
     drc = json.loads((root / "layout/synth_cell/drc_report.json").read_text(encoding="utf-8"))
     lvs = json.loads((root / "layout/synth_cell/lvs_report.json").read_text(encoding="utf-8"))
+    extract = json.loads(
+        (root / "layout/synth_cell/extract_report.json").read_text(encoding="utf-8"))
+    pex = json.loads(
+        (root / "layout/synth_cell/pex_extract_report.json").read_text(encoding="utf-8"))
     case_stale_drc_input(root)
     (root / "layout/evidence-freshness-waivers.json").write_text(
         json.dumps({"waivers": [
@@ -328,6 +400,20 @@ def case_valid_waiver_passes(root: Path):
                 "report": "layout/synth_cell/lvs_report.json",
                 "check": "layout",
                 "recorded_hash": lvs["environment"]["layout_sha256"],
+                "issue": "#56",
+                "reason": "tracked follow-up",
+            },
+            {
+                "report": "layout/synth_cell/extract_report.json",
+                "check": "input gds",
+                "recorded_hash": extract["provenance"]["input"]["content_hash"],
+                "issue": "#56",
+                "reason": "tracked follow-up",
+            },
+            {
+                "report": "layout/synth_cell/pex_extract_report.json",
+                "check": "input gds",
+                "recorded_hash": pex["provenance"]["input"]["content_hash"],
                 "issue": "#56",
                 "reason": "tracked follow-up",
             },
@@ -354,6 +440,17 @@ CASES = [
     ("LVS status contradicts its own mismatch count", case_lvs_status_contradiction),
     ("DRC report drops its coverage-gap enumeration", case_missing_coverage),
     ("deck is not identified by content hash", case_unhashed_deck),
+    ("extract_report.json rejects a status outside the vocabulary",
+     case_extract_report_bad_status),
+    ("extract_report.json rejects a missing netlist_path", case_extract_report_missing_netlist_path),
+    ("extract_report.json rejects a netlist edited after extraction",
+     case_extract_report_stale_netlist),
+    ("pex_extract_report.json rejects a status outside the vocabulary",
+     case_pex_extract_report_bad_status),
+    ("pex_extract_report.json rejects a missing netlist_path",
+     case_pex_extract_report_missing_netlist_path),
+    ("pex_extract_report.json rejects a netlist edited after extraction",
+     case_pex_extract_report_stale_netlist),
     ("waiver without a tracking issue is rejected", case_waiver_without_issue),
     ("waiver silences only its own check", case_waiver_silences_only_its_own_check),
     ("obsolete waiver self-expires", case_obsolete_waiver_self_expires),
