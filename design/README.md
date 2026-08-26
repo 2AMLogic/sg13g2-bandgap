@@ -339,6 +339,21 @@ actually ran, in the sandbox it ran in — not a substitute for #10.
     artifact. A 5 mV offset would move `vref` by roughly 44 mV, a sizable
     fraction of its ~1.13-1.22 V nominal range, underscoring why this
     untrimmed reference is offset-sensitive.
+- **Now attempted (issue #95)** — closed-loop quiescent supply current
+  (Iq), the last `spec/porting-plan.md` §6 draft-table row (besides area, a
+  layout-geometry metric out of `sim/`-testbench scope) with no `sim/`
+  testbench coverage at all:
+  - [`sim/closed-loop-iq/README.md`](../sim/closed-loop-iq/README.md)
+    measures total `vdd` quiescent supply current through the real closed
+    loop (no ideal current-source fixture standing in for any block) across
+    the same 45-point PVT grid, confirmed settled
+    (`|i(Vvdd)(3ms)-i(Vvdd)(2ms)| <= 100 nA`) before trusting the reading —
+    the same settle-then-measure discipline `sim/closed-loop-vref-pvt` uses
+    for `vref`. Result: settled Iq 19.98-42.37 µA across the 45-point grid,
+    rising with temperature and supply as expected for a `VBE`-referenced
+    bias network. Not a claim against `spec/porting-plan.md` §6's
+    still-unratified `Iq < 50 µA` draft target (#13); see that README's own
+    disclaimer.
 - **Still not attempted**: any claim against `spec/porting-plan.md` §6's
   draft target table as a pass/fail verdict — that table remains
   unratified (#13), and per `klayout-tools`' `docs/design-evidence-tiers.md`
