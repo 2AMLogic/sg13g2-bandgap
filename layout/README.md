@@ -779,16 +779,34 @@ klt extract --deck sg13cmos5l sg13cmos5l-bandgap_core.gds \
 Output is byte-for-byte deterministic (`SaveLayoutOptions.gds2_write_timestamps
 = False`), so re-running `generate.py` leaves `git diff` empty — verified.
 
-`klt` version used for every report in this section: **`0.3.0+gc27f7eccf49c`**
-(KLayout `0.30.11`) — for #74's two cells as well as #66's, and deliberately
-so: every report below cites the same deck content hash
-(`sha256:9a4e18f2fd7a…`), so the three cells' verdicts are comparable and the
-committed `bandgap_core` reports did not have to be re-minted against a newer
-deck to add two neighbours. The `sg13cmos5l` deck did not exist in the `klt`
-build this host carried when issue #66 was filed (`0.3.0+g3c14ac2f8903`, whose
-`decks` registry returned only `['gf180mcu', 'sg13g2', 'sky130']`); it landed
-upstream in klayout-tools#1408 and this host's `klt` was reinstalled from
-that source before any report below was produced. `--deck sg13cmos5l` is the
+`klt` versions used for the reports in this section: **`0.3.0+gc27f7eccf49c`**
+and **`0.3.0+g07b1f04f29f2`** (both KLayout `0.30.11`), split by which cell's
+reports they minted:
+
+- **`0.3.0+gc27f7eccf49c`** produced `bandgap_amp`'s and `bandgap_startup`'s
+  reports (issue #74) *and* `bandgap_core`'s original ones (issue #66) —
+  deliberately one build for all three, so the already-committed `bandgap_core`
+  reports did not have to be re-minted against a newer deck merely to add two
+  neighbours.
+- **`0.3.0+g07b1f04f29f2`** produced the `bandgap_core` reports committed here,
+  regenerated for issue #73's Q2 rebuild (DR-0005, see "Q2: 8 parallel unit
+  devices" below). That build was reinstalled from a local `klayout-tools`
+  checkout for that regeneration.
+
+The two builds carry the **same `sg13cmos5l` deck content hash**
+(`sha256:9a4e18f2fd7a…`) — verified identical deck, only the surrounding `klt`
+build differs — so every report below still cites one and the same deck and the
+three cells' verdicts remain comparable across the build boundary. `klt`'s own
+`provenance.klt_version` field records the release (`0.3.0`) rather than the
+`+g…` build suffix, so the reports themselves cannot distinguish the two; the
+deck `content_hash` they *do* record is the field that matters, and it matches
+across all three cells.
+
+The `sg13cmos5l` deck did not exist in the `klt` build this host carried when
+issue #66 was filed (`0.3.0+g3c14ac2f8903`, whose `decks` registry returned
+only `['gf180mcu', 'sg13g2', 'sky130']`); it landed upstream in
+klayout-tools#1408 and this host's `klt` was reinstalled from that source
+before any report below was produced. `--deck sg13cmos5l` is the
 real, working flag spelling — confirmed by running it, **not** by reading
 `--help`, whose `--deck` list still names only `sky130, gf180mcu, sg13g2`
 (filed upstream, see "Tooling friction filed upstream" below).
@@ -798,10 +816,49 @@ real, working flag spelling — confirmed by running it, **not** by reading
 One-to-one with `design/sg13cmos5l/netlist/bandgap_core.spice` (schematic
 from #64): `M1`/`M2`/`M3` `sg13_hv_pmos` `w=10u l=1u`, `R2` `rppd`
 `w=2u l=85.1u`, `R1` `rppd` `w=2u l=647.0u`, `Q1`/`Q3` `pnpMPA` `w=1u l=2u`,
-`Q2` `pnpMPA` `w=8u l=2u`. Top cell `sg13cmos5l_bandgap_core`, bbox
-`(-8.48, -3.21)`–`(800.2, 61.7)` µm, 682 polygons across 12
-layer/datatype combinations (`R1`'s straight 647 µm bar dominates the
-bounding box, exactly as `bandgap_core`'s does on the SG13G2 side).
+`Q2` 8x parallel `pnpMPA` `w=1u l=2u` unit instances (issue #73, DR-0005 --
+see "Q2: 8 parallel unit devices" below; **not** the single `w=8u l=2u`
+device this cell originally drew, which exceeded the PCell's own `maxW`).
+Top cell `sg13cmos5l_bandgap_core`, bbox `(-8.48, -3.21)`–`(830.2, 61.7)` µm
+(widened from `(800.2, 61.7)`: `X_M3`/`R1`/`Q3` shifted right, 150 -> 180, to
+make room for Q2's 8-unit row), 1174 polygons across 12 layer/datatype
+combinations (`R1`'s straight 647 µm bar still dominates the bounding box,
+exactly as `bandgap_core`'s does on the SG13G2 side).
+
+### Q2: 8 parallel unit devices (issue #73, DR-0005)
+
+The SG13CMOS5L layout phase (this section, issue #66) originally found that
+the schematic's `Q2` (a single `pnpMPA` `w=8u l=2u`) could not be
+PCell-generated: CMOS5L's `pnpMPA_maxW` is 2.0 µm
+(`sg13cmos5l_pycell_lib/sg13cmos5l_tech.json`), so `generate.py` drew that
+instance's emitter geometry by hand to match the netlist's `a`/`p` exactly
+-- an honest rendering of a non-buildable device, not a real PCell
+instantiation. Issue #73 / DR-0005 resolved this at the design level: `Q2`
+is now `pnpMPA a={1u*2u} p={(1u+2u)*2} m=8` -- 8 parallel copies of the same
+unit device `Q1`/`Q3` already use, electrically identical to the
+single-wide-emitter construction it replaces (DR-0005 shows the compact
+model depends only on `a`, never `p`, and SPICE's `m=` multiplier is
+mathematically equivalent to an area multiplier for this model). This
+layout now draws 8 real, individually-PCell-buildable `pnpMPA` unit
+instances (`w=1u l=2u`, each well inside `pnpMPA_maxW`) in a row, all wired
+in parallel -- see `generate.py`'s own module docstring for the exact
+routing (a shared Metal1 emitter trunk plus a chained vss strap, both
+direct extensions of the patterns every other device in this cell already
+uses) and floorplan-shift rationale (`X_M3` 150 -> 180).
+
+**Re-verified, not just re-drawn**: `klt drc` stays `clean` (0 violations,
+same as before), and `klt lvs`'s `mismatch` finding counts are **exactly
+unchanged** (27 findings, 25 error-severity, identical `category_counts`)
+-- because `klt lvs`'s reference-side device count treats a `pnpMPA` call's
+`m=` as a property of one logical device, not a physical expansion, and the
+curated deck's `bipolars=()` gap (unchanged, see below) makes every
+`pnpMPA` instance invisible to layout-side extraction regardless of how
+many physical copies are drawn. `layout/lvs_reference.py`'s `pnpMPA`
+conversion is updated to carry `m=` through as the reference `Q` line's
+`M=` parameter (previously dropped entirely -- inconsequential while every
+`m=` in this cell's netlist was `1`, newly load-bearing now that `Q2`'s is
+not), so the reference netlist honestly says what the schematic built even
+though the deck cannot yet compare it.
 
 **Single-metal, planar by necessity.** The curated `sg13cmos5l` deck's
 extraction stack is `metals=((8, 0),)` with `vias=()` — one routing metal, no
@@ -1223,12 +1280,15 @@ straight rather than folded resistor bars; no guard rings, fill or seal ring;
 no analog matching structures — no common-centroid mirror interdigitation, no
 dummy devices). Two CMOS5L-specific additions:
 
-- **`Q2` is drawn as one `w=8u` emitter, not eight unit devices.** That
-  matches the netlist's own `a={ 8u * 2u }` / `p={ (8u + 2u) * 2 }` exactly,
-  but it is *not* how a real matched 8× PNP would be built, and CMOS5L's own
-  PCell says so: `pnpMPA_maxW` is `2.0u` in `sg13cmos5l_tech.json`, so a
-  single `w=8u` `pnpMPA` instance cannot be generated by the PDK at all.
-  Tracked for the design side as **#73**, out of this layout phase's scope.
+- **`Q2` is now drawn as 8 parallel unit devices, not one wide emitter**
+  (issue #73, DR-0005 — resolved; see "Q2: 8 parallel unit devices" above for
+  the full account). It was originally drawn as one `w=8u` emitter matching
+  the netlist's then-`a={ 8u * 2u }` / `p={ (8u + 2u) * 2 }` exactly, flagged
+  here as *not* how a real matched 8× PNP would be built and, worse, not even
+  PCell-buildable (`pnpMPA_maxW` is `2.0u` in `sg13cmos5l_tech.json`). The
+  design-side fix (issue #73) and this layout's own regeneration landed
+  together in the same change. `bandgap_core` only — `bandgap_amp` and
+  `bandgap_startup` (#74) draw no bipolars at all.
 - **The n-well is shared across each cell's PMOS** (rather than one well per
   device) so their body terminals resolve to a single well net, matching the
   schematic's common `vdd` body tie — the only part of the body connection

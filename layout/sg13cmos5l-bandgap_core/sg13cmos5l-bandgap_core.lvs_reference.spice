@@ -7,11 +7,11 @@
 * device set either).
 * PDK: sg13cmos5l
 M1 sns1 fb vdd vdd pfet L=1U W=10U
-Q1 vss vss sns1 pnpmpa AE=2P PE=6U
+Q1 vss vss sns1 pnpmpa AE=2P PE=6U M=1
 M2 sns2 fb vdd vdd pfet L=1U W=10U
 R2 sns2 e2 11064.9 rppd L=85.1U W=2U
-Q2 vss vss e2 pnpmpa AE=16P PE=20U
+Q2 vss vss e2 pnpmpa AE=2P PE=6U M=8
 M3 vref fb vdd vdd pfet L=1U W=10U
 R1 vref e3 83893.4 rppd L=647U W=2U
-Q3 vss vss e3 pnpmpa AE=2P PE=6U
+Q3 vss vss e3 pnpmpa AE=2P PE=6U M=1
 .end

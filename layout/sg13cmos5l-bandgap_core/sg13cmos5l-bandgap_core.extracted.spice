@@ -9,9 +9,9 @@
 * pin vss
 .SUBCKT sg13cmos5l_bandgap_core e2|sns2 e3|vref fb sns1 vdd vss
 * device instance $1 r0 *1 0,60 pfet
-M$1 vdd fb sns1 \$13 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$1 vdd fb sns1 \$27 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 45,60 pfet
-M$2 vdd fb e2|sns2 \$13 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
-* device instance $3 r0 *1 150,60 pfet
-M$3 vdd fb e3|vref \$13 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$2 vdd fb e2|sns2 \$27 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $3 r0 *1 180,60 pfet
+M$3 vdd fb e3|vref \$27 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 .ENDS sg13cmos5l_bandgap_core
