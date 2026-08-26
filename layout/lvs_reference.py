@@ -167,6 +167,42 @@ def _cmos5l_rppd_ohms(w_um: float, l_um: float) -> float:
     return 70.0e-6 / w_m + 260.0 * l_m / (w_m + 6.0e-9)
 
 
+def _cmos5l_rhigh_ohms(w_um: float, l_um: float) -> float:
+    """SG13CMOS5L ``rhigh`` resistance, evaluated with that PDK's own symbol
+    formula -- the ``rhigh`` sibling of :func:`_cmos5l_rppd_ohms` (issue #74,
+    needed by ``bandgap_startup``'s ``RPU``).
+
+    Read verbatim from ``ihp-sg13cmos5l/libs.tech/xschem/sg13cmos5l_pr/
+    rhigh.sym``'s ``value=`` expression::
+
+        (1.6e-4/@w + 1360.0*((@b+1)*@l + (1.081*(@w-0.04e-6)+0.18e-6)*@b)
+         / (@w-0.04e-6)) / @m
+
+    with ``b=0`` (``design/sg13cmos5l/bandgap_startup.sch``'s ``RPU`` is
+    drawn straight, ``b=0``) and ``m=1``: a ``160 uOhm*m`` end/contact term
+    plus 1360 Ohm/sq over the width-corrected ``w - 40 nm``. Two things
+    differ from the ``rppd`` formula beyond the constants -- the width
+    correction is **negative** here (``rhigh_lwd = -0.04u`` in CMOS5L's own
+    ``techParams``, where ``rppd``'s is ``+6 nm``), and the sheet value the
+    symbol uses is ``rhighG2_rspec`` (1360.0), not the bare ``rhigh_rspec``
+    (1300.0) -- the same "it is the symbol, not the bare ``rspec``, that says
+    which sheet value the schematic's annotated value uses" point
+    :func:`_cmos5l_rppd_ohms` documents for ``rppd``'s own 250/260 pair.
+    """
+    w_m, l_m = w_um * 1e-6, l_um * 1e-6
+    return 1.6e-4 / w_m + 1360.0 * l_m / (w_m - 0.04e-6)
+
+
+#: ``pdk="sg13cmos5l"`` resistor value formulae, keyed by schematic model
+#: name -- each that PDK's own ``.sym`` ``value=`` expression rather than the
+#: flat sheet-resistance approximation ``_RES_SHEET_OHM_PER_SQ`` uses for the
+#: SG13G2 port.
+_CMOS5L_RES_OHMS = {
+    "rppd": _cmos5l_rppd_ohms,
+    "rhigh": _cmos5l_rhigh_ohms,
+}
+
+
 def convert(reference_path: str, pdk: str = "sg13g2") -> list[str]:
     """Convert one subckt-call reference netlist to plain-element lines.
 
@@ -223,16 +259,16 @@ def convert(reference_path: str, pdk: str = "sg13g2") -> list[str]:
                     f"{_element_name(instance, 'Q')} {c} {b} {e} {model_lower} "
                     f"AE={area_um2:g}P PE={perim_um:g}U"
                 )
-            elif model_lower == "rppd" and pdk == "sg13cmos5l":
+            elif model_lower in _CMOS5L_RES_OHMS and pdk == "sg13cmos5l":
                 # Same 2-terminal R-element shape as the SG13G2 path below
                 # (third, substrate-tie node dropped; model name written as
-                # the positional model token so the reader assigns an RPPD
-                # device class rather than the generic "RES"), but valued
-                # with CMOS5L's own symbol formula.
+                # the positional model token so the reader assigns an RPPD /
+                # RHIGH device class rather than the generic "RES"), but
+                # valued with CMOS5L's own per-flavour symbol formula.
                 n1, n2, _sub = nodes
                 l_um = float(params["l"].rstrip("uU"))
                 w_um = float(params["w"].rstrip("uU"))
-                r_ohm = _cmos5l_rppd_ohms(w_um, l_um)
+                r_ohm = _CMOS5L_RES_OHMS[model_lower](w_um, l_um)
                 out.append(
                     f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f} "
                     f"{model_lower} L={_um(params['l'])} W={_um(params['w'])}"
@@ -323,6 +359,27 @@ if __name__ == "__main__":
         os.path.join(
             REPO_ROOT,
             "layout/sg13cmos5l-bandgap_core/sg13cmos5l-bandgap_core.lvs_reference.spice",
+        ),
+        pdk="sg13cmos5l",
+    )
+    # The other two CMOS5L leaf cells (issue #74). bandgap_top is deliberately
+    # absent: it is a *hierarchical* netlist (three subckt calls, no device
+    # lines of its own), which this converter's device-line grammar cannot
+    # express -- see layout/README.md "Cell: sg13cmos5l-bandgap_top" for why
+    # that cell is out of scope here and what it would take.
+    _write(
+        os.path.join(REPO_ROOT, "design/sg13cmos5l/netlist/bandgap_startup.spice"),
+        os.path.join(
+            REPO_ROOT,
+            "layout/sg13cmos5l-bandgap_startup/sg13cmos5l-bandgap_startup.lvs_reference.spice",
+        ),
+        pdk="sg13cmos5l",
+    )
+    _write(
+        os.path.join(REPO_ROOT, "design/sg13cmos5l/netlist/bandgap_amp.spice"),
+        os.path.join(
+            REPO_ROOT,
+            "layout/sg13cmos5l-bandgap_amp/sg13cmos5l-bandgap_amp.lvs_reference.spice",
         ),
         pdk="sg13cmos5l",
     )
