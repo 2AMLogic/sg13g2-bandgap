@@ -353,6 +353,16 @@ from no checker at all.
   across PVT and within ~5% of a hand-derived `R1/R2` (≈8.40) first-order
   estimate — a real, explicable circuit property, not a testbench
   artifact.
+- **[`closed-loop-iq/`](closed-loop-iq/README.md)** — closed-loop quiescent
+  supply current (Iq) characterization (issue #95, follow-on to #86/#88):
+  the same co-simulated `bandgap_core` + `bandgap_amp` + `bandgap_startup`
+  topology `closed-loop-vref-pvt` uses, but measuring total `vdd` current
+  (`i(Vvdd)`, held and re-checked at both `t=2ms` and `t=3ms` to confirm it
+  has genuinely stopped moving) instead of `vref`'s DC value. 45/45 PVT
+  points PASS; settled Iq ranges 19.98-42.37 µA, rising with temperature and
+  supply as expected for a `VBE`-referenced bias network — not a claim
+  against `spec/porting-plan.md` §6's still-unratified `Iq < 50 µA` draft
+  target (#13); see that experiment's README for the full disclaimer.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 

@@ -1,0 +1,125 @@
+* sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+* co-simulated closed-loop quiescent supply current (Iq) testbench (issue
+* #95, follow-on to #86/#88). Generated from
+* sim/closed-loop-iq/testbench/tb_closed_loop_iq.spice.tmpl
+* by sim/closed-loop-iq/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full rationale is in sim/closed-loop-iq/README.md.
+*
+* Generated for: corner=wcs temp=27C vdd=3.63V
+* DUT git sha (design/netlist/bandgap_core.spice,
+* design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice
+* this was copied from):
+*   core=4832c71 amp=397fe2d startup=66ac99d
+* PDK: ihp-sg13g2 /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* This is the SAME co-simulated topology sim/closed-loop-startup/ and
+* sim/closed-loop-vref-pvt/ use (all three DUTs copied verbatim, wired
+* exactly as design/bandgap_top.sch specifies -- see
+* sim/closed-loop-startup/testbench/tb_closed_loop_startup.spice.tmpl's own
+* header for the full device-copy rationale, not repeated here). This
+* testbench's own claim is different again: not "does it start and close
+* the loop" (sim/closed-loop-startup) and not "what DC value does vref
+* settle to" (sim/closed-loop-vref-pvt), but "how much total quiescent
+* current does the assembled block draw from vdd once it has settled". The
+* vdd ramp is held to 3 ms (matching sim/closed-loop-vref-pvt, not
+* sim/closed-loop-startup's 2 ms) and i(Vvdd) -- the fixture ammeter every
+* testbench in this tree already has, since Vvdd is the supply source
+* itself -- is measured at BOTH t=2ms and t=3ms plus averaged over
+* [2ms,3ms], so run_pvt_sweep.sh can confirm the current has genuinely
+* stopped moving before reporting it as this experiment's headline number.
+
+.lib "/Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_wcs
+.lib "/Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_ss
+.lib "/Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_wcs
+
+* rshunt=1e9 / gmin=1e-9: the same convergence aids sim/closed-loop-startup
+* needed at a handful of PVT corners during the very early (sub-1V) part of
+* the vdd ramp, where bandgap_core's diode-connected npn13G2 legs sit at a
+* genuinely near-singular, near-zero-bias operating point before any real
+* current has been established -- see that experiment's README "A real
+* numerical finding" section for the full whack-a-mole derivation of this
+* exact pair of values. This testbench drives the same three DUTs through
+* the same kind of ramp, so it inherits the same numerical stiffness at the
+* same early instant and needs the same aids.
+.options temp=27 tnom=27 rshunt=1e9 gmin=1e-9
+
+* FIXTURE -- transient supply ramp: vdd ramps 0 -> VDD over 200 us (same
+* rise sim/closed-loop-startup and sim/closed-loop-vref-pvt use) and holds
+* to 3 ms (matching sim/closed-loop-vref-pvt's 3 ms hold, one longer than
+* sim/closed-loop-startup's 2 ms) so this testbench can measure i(Vvdd) at
+* two separated time points (2 ms and 3 ms) and confirm it has stopped
+* moving between them before trusting it as a settled quiescent value.
+Vvdd vdd 0 PWL(0 0 200u 3.63 3m 3.63)
+Vvss vss 0 dc 0
+* both bandgap_core.spice and bandgap_amp.spice wire their resistor bulk
+* terminals (rppd inside the core) to the global substrate net `sub!`,
+* the same convention every testbench in this tree uses.
+Vsub sub! vss dc 0
+
+* DUT -- design/netlist/bandgap_core.spice, verbatim.
+XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR1 vref cb3 sub! rppd w=2u l=694.5u m=1 b=0
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+* DUT -- design/netlist/bandgap_amp.spice, verbatim. in_p <- sns2
+* (non-inverting), in_n <- sns1 (inverting), out -> fb -- see
+* design/bandgap_amp.sch's own header "polarity" section for the
+* derivation of which sense node is which input.
+XMTAIL tail fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP2 d2 sns1 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP4 fb pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN3 fb d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+
+* DUT -- design/netlist/bandgap_startup.spice, verbatim. `sns1` and `fb`
+* are shared with the core and amp DUTs above -- the nodes the assembled
+* block actually connects. No separate stimulus source drives either one.
+*
+* FIXTURE -- Vmkfb is a 0 V ammeter in series with XMKFB's drain, so the
+* startup circuit's own contribution to the shared fb node can be measured
+* directly (i_mkfb below) rather than inferred from fb's voltage alone. A
+* 0 V source is a DC/transient short and does not move the operating point.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+.control
+pre_osdi /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /Users/rwalters/GitHub/klayout-tools/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+tran 2u 3m
+* Loop-closure / startup-release sanity (same criteria/sense as
+* sim/closed-loop-startup and sim/closed-loop-vref-pvt, evaluated here at
+* t=3ms) -- prerequisite for trusting the i(Vvdd) reading below as a real
+* closed-loop quiescent operating point rather than a still-starting or
+* railed transient.
+meas tran v_fb_v find v(fb) at=3m
+meas tran v_sns1_v find v(sns1) at=3m
+meas tran v_sns2_v find v(sns2) at=3m
+meas tran v_det_v find v(det) at=3m
+meas tran i_mkfb_v find i(Vmkfb) at=3m
+* The claim under test: total vdd supply current at two separated time
+* points, plus its average over the same [2ms,3ms] window, so
+* run_pvt_sweep.sh can confirm it has stopped moving (a real settled
+* quiescent value, not a still-slewing snapshot) before reporting it. Vvdd
+* is an independent voltage source, so ngspice's passive sign convention
+* reports i(Vvdd) negative while the source is delivering (not absorbing)
+* current to the circuit -- run_pvt_sweep.sh takes the absolute value.
+meas tran i_vdd_2ms find i(Vvdd) at=2m
+meas tran i_vdd_3ms find i(Vvdd) at=3m
+meas tran i_vdd_avg avg i(Vvdd) from=2m to=3m
+.endc
+.end
