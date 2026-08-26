@@ -1,5 +1,6 @@
-** sch_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-64/design/sg13cmos5l/bandgap_core.sch
+** sch_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-73/design/sg13cmos5l/bandgap_core.sch
 **.subckt bandgap_core vdd vss fb sns1 sns2 vref
+
 *.iopin vdd
 *.iopin vss
 *.iopin fb
@@ -10,7 +11,7 @@ XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
 XQ1 vss vss sns1 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
 XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
 XR2 sns2 e2 sub! rppd w=2u l=85.1u m=1 b=0
-XQ2 vss vss e2 pnpMPA a={ 8u * 2u } p={ ( 8u + 2u ) * 2 } m=1
+XQ2 vss vss e2 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=8
 XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
 XR1 vref e3 sub! rppd w=2u l=647.0u m=1 b=0
 XQ3 vss vss e3 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
