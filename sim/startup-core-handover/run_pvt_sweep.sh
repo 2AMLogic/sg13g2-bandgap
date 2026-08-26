@@ -24,12 +24,9 @@ TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_startup_core_handover.spice.tmpl"
 # rather than hardcoded in the template, so this sweep always exercises
 # whatever the schematic currently specifies -- load-bearing for issue #24,
 # which reruns this exact sweep both before and after resizing XMSENSE.
-MSENSE_LINE="$(grep -E '^XMSENSE ' "${REPO_ROOT}/design/netlist/bandgap_startup.spice")"
-MSENSE_W="$(echo "${MSENSE_LINE}" | grep -oE 'w=[0-9.]+u' | head -1 | sed -e 's/w=//')"
-if [[ -z "${MSENSE_W}" ]]; then
-  echo "run_pvt_sweep.sh: could not parse XMSENSE's w= from design/netlist/bandgap_startup.spice" >&2
-  exit 3
-fi
+# shellcheck source=../lib/msense_width.sh
+source "${SIM_DIR}/lib/msense_width.sh"
+read_msense_width "design/netlist/bandgap_startup.spice"
 
 # preflight derives DUT_GIT_SHA from DUT_NETLIST (bandgap_core.spice); this
 # experiment co-simulates two DUTs, so alias it as the core half and compute
