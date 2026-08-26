@@ -1,0 +1,51 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- sg13cmos5l bandgap_core + bandgap_amp + bandgap_startup
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+sns1                               2.91325e-22
+fb                                           0
+sns2                               3.30666e-21
+e2                                 3.30657e-21
+xr2.dt                                       0
+vref                               1.75877e-16
+e3                                 1.75818e-16
+xr1.dt                                       0
+tail                                         0
+d1                                           0
+d2                                           0
+pn                                           0
+det                                          0
+xrpu.dt                                      0
+fbx                                          0
+vmkfb#branch                                 0
+vsub#branch                                  0
+vvss#branch                        1.75811e-25
+vvdd#branch                       -1.05504e-24
+
+ Reference value :  0.00000e+00 Reference value :  1.33500e-03
+No. of Data Rows : 1013
+v_det_early         =  3.56687e-01
+v_fb_early          =  1.52697e-01
+v_fb_v              =  2.79944e+00
+v_sns1_v            =  7.80526e-01
+v_sns2_v            =  7.80315e-01
+v_vref_v            =  1.19709e+00
+v_det_v             =  3.59961e-03
+i_mkfb_v            =  2.79960e-09
+Note: Simulation executed from .control section 
