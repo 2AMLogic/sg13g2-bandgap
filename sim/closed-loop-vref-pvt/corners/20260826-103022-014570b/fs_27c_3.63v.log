@@ -1,0 +1,54 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+sns1                              -6.54057e-26
+fb                                           0
+xq1.s1                            -1.91574e-32
+xq1.t                              6.34491e-53
+sns2                               5.67107e-16
+cb2                                5.67036e-16
+xr2.dt                                       0
+xq2.s1                             1.73434e-21
+xq2.t                              5.28715e-22
+vref                              -2.59266e-22
+cb3                               -2.59032e-22
+xr1.dt                                       0
+xq3.s1                            -1.09184e-28
+xq3.t                              7.06859e-40
+tail                                         0
+d1                                           0
+d2                                           0
+pn                                           0
+det                                          0
+xrpu.dt                                      0
+fbx                                          0
+vmkfb#branch                                 0
+vsub#branch                                  0
+vvss#branch                        2.67236e-24
+vvdd#branch                       -8.34289e-24
+
+ Reference value :  1.88773e-04 Reference value :  6.69000e-04 Reference value :  1.16900e-03 Reference value :  1.61900e-03 Reference value :  2.10900e-03 Reference value :  2.49900e-03 Reference value :  2.96900e-03
+No. of Data Rows : 1512
+v_fb_v              =  2.79685e+00
+v_sns1_v            =  7.08692e-01
+v_sns2_v            =  7.08473e-01
+v_det_v             =  6.47936e-03
+i_mkfb_v            =  2.79720e-09
+v_vref_2ms          =  1.16699e+00
+v_vref_3ms          =  1.16699e+00
+Note: Simulation executed from .control section 

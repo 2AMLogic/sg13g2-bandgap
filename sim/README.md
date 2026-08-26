@@ -301,6 +301,32 @@ from no checker at all.
   [klayout-tools#1440](https://github.com/2AMLogic/klayout-tools/issues/1440).
   See that experiment's README for the full account of what device
   geometry is extracted vs. what remains schematic-sourced.
+- **[`closed-loop-vref-pvt/`](closed-loop-vref-pvt/README.md)** — closed-loop
+  DC/`vref` characterization (issue #86, follow-on to #58): the same
+  co-simulated `bandgap_core` + `bandgap_amp` + `bandgap_startup` topology
+  `closed-loop-startup` uses, but measuring `vref`'s settled DC value (held
+  and re-checked at both `t=2ms` and `t=3ms` to confirm it has genuinely
+  stopped moving) instead of proving startup/loop-closure. 45/45 PVT points
+  PASS; `vref` ranges 1.134-1.215 V, matching `closed-loop-startup`'s own
+  independently-measured band. Also computes an informal temperature
+  coefficient per process-corner/supply group (~349-376 ppm/°C, endpoint
+  method) — not a claim against `spec/porting-plan.md` §6's still-unratified
+  target row (#13); see that experiment's README for the full disclaimer
+  and why that number is expected given this design has no trim network yet.
+- **[`loop-gain-phase-margin/`](loop-gain-phase-margin/README.md)** — the
+  first small-signal AC stability testbench in this tree (issue #86,
+  follow-on to #58): the loop is broken at the shared `fb` node with a
+  Middlebrook-style single voltage-injection probe (a large break inductor
+  plus a series AC source), and the resulting DC operating point is seeded
+  via `.nodeset` from `closed-loop-startup`'s own committed per-corner
+  transient endpoints (re-verified per point, not just trusted) since this
+  loop-broken topology cannot reuse that experiment's own vdd-ramp bring-up
+  directly (confirmed empirically — see that experiment's README). 45/45
+  PVT points PASS: unconditionally stable everywhere on this repo's PVT
+  grid, phase margin 85-119°, DC loop gain 45.1-47.5 dB, unity-gain
+  crossover 41.5-53.3 MHz. PSRR and offset/mismatch remain explicitly
+  deferred past this issue — see `design/README.md`'s updated "Not
+  attempted" list and #88, the follow-up issue this issue files.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 

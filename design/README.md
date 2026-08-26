@@ -283,12 +283,40 @@ actually ran, in the sandbox it ran in — not a substitute for #10.
   `sim/` tree has needed a convergence aid at all — every prior PVT sweep
   used an idealized fixture at exactly the node this amplifier's own real
   devices now drive dynamically through a genuinely stiff instant.
-- **Not attempted**: loop-gain/phase-margin/stability measurement (no
-  small-signal AC testbench yet — this issue's testbench is transient-only),
-  PSRR, offset/mismatch, and any claim against `spec/porting-plan.md` §6's
-  draft target table (not ratified — #13). All explicitly out of this
-  issue's scope; see `sim/closed-loop-startup/README.md`'s own "what this
-  testbench claims, and what it does not" section.
+- **Now attempted (issue #86)** — closed-loop DC/`vref` characterization
+  and loop-gain/phase-margin, both through the real closed loop (no ideal
+  feedback fixture):
+  - [`sim/closed-loop-vref-pvt/README.md`](../sim/closed-loop-vref-pvt/README.md)
+    measures `vref`'s settled DC value across the same 45-point PVT grid
+    (1.134-1.215 V, matching `sim/closed-loop-startup`'s own independently-
+    measured band) and computes an **informal** temperature coefficient per
+    process-corner/supply group (~349-376 ppm/°C, endpoint method) — well
+    above `spec/porting-plan.md` §6's draft (unratified, #13) `< 50 ppm/°C`
+    target, but expected and not itself a design defect: this design has no
+    trim network yet (issue #9's explicit scope cut, "Explicitly out of
+    scope" above), and an untrimmed VBE-based reference's TC is normally in
+    the hundreds-of-ppm/°C range without one. Not a claim against the
+    (still-unratified) spec row — see that README's own disclaimer.
+  - [`sim/loop-gain-phase-margin/README.md`](../sim/loop-gain-phase-margin/README.md)
+    measures loop gain/phase margin via a small-signal AC analysis (loop
+    broken at `fb` with a Middlebrook-style single voltage-injection probe,
+    DC bias `.nodeset`-seeded from `sim/closed-loop-startup`'s own settled
+    transient endpoints and re-verified per point). Result: unconditionally
+    stable at all 45 PVT points, phase margin 85-119°, DC loop gain
+    45.1-47.5 dB, unity-gain crossover 41.5-53.3 MHz — a wide margin, read
+    as a property of this specific lightly-loaded topology's naturally
+    far-out dominant pole (no explicit compensation capacitor exists in
+    `bandgap_amp.sch`'s first pass), not as evidence that a future revision
+    could never need one.
+- **Still not attempted**: PSRR and offset/mismatch — both explicitly
+  deferred by issue #86 per its own acceptance criteria's escape hatch
+  (tracked by #88; Monte Carlo itself is tracked separately in #4 checklist
+  item 6, currently N/A per #5). Also still not attempted: any
+  claim against `spec/porting-plan.md` §6's draft target table as a
+  pass/fail verdict — that table remains unratified (#13), and per
+  `klayout-tools`' `docs/design-evidence-tiers.md` T1 checklist (referenced
+  from issue #4), producing the capability to run that comparison is not
+  the same as running it.
 
 ## Tooling/PDK friction encountered
 
