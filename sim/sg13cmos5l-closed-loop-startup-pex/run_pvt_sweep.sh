@@ -28,7 +28,7 @@ DUT_NETLIST="design/sg13cmos5l/netlist/bandgap_core.spice"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 
 LAYOUT_GDS="layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds"
-LAYOUT_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- "${LAYOUT_GDS}" 2>/dev/null || echo unknown)"
+LAYOUT_GIT_SHA="$(dut_git_sha "${LAYOUT_GDS}")"
 
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_sg13cmos5l_closed_loop_startup_pex.spice.tmpl"
 
@@ -40,7 +40,7 @@ TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_sg13cmos5l_closed_loop_startup_pex.spic
 # three co-simulated schematics. bandgap_amp contributes no schematic-sourced
 # device here (fully extracted), so no separate SHA is tracked for it.
 DUT_CORE_GIT_SHA="${DUT_GIT_SHA}"
-DUT_STARTUP_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- design/sg13cmos5l/netlist/bandgap_startup.spice 2>/dev/null || echo unknown)"
+DUT_STARTUP_GIT_SHA="$(dut_git_sha design/sg13cmos5l/netlist/bandgap_startup.spice)"
 
 echo "corner_label,pnp_section,mos_section,res_section,temp_c,vdd_v,status,det_early_v,fb_early_v,fb_final_v,sns1_final_v,sns2_final_v,vref_final_v,det_final_v,i_mkfb_final_a,dvsns_final_v" > "${CSV_OUT}"
 

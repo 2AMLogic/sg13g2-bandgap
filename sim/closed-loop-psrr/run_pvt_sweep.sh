@@ -43,8 +43,8 @@ source "${SIM_DIR}/lib/nodeset_seed.sh"
 # experiment co-simulates three DUTs, so alias it as the core half and
 # compute the amp/startup halves' SHAs separately.
 DUT_CORE_GIT_SHA="${DUT_GIT_SHA}"
-DUT_AMP_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- design/netlist/bandgap_amp.spice 2>/dev/null || echo unknown)"
-DUT_STARTUP_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- design/netlist/bandgap_startup.spice 2>/dev/null || echo unknown)"
+DUT_AMP_GIT_SHA="$(dut_git_sha design/netlist/bandgap_amp.spice)"
+DUT_STARTUP_GIT_SHA="$(dut_git_sha design/netlist/bandgap_startup.spice)"
 
 echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,fb_seed_v,fb_op_v,sns1_op_v,sns2_op_v,vref_op_v,psrr_dc_db,psrr_min_db,psrr_min_freq_hz,psrr_1khz_db,psrr_100khz_db,psrr_1mhz_db" > "${CSV_OUT}"
 

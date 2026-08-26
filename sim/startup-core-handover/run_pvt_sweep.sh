@@ -35,7 +35,7 @@ fi
 # experiment co-simulates two DUTs, so alias it as the core half and compute
 # the startup half's SHA separately.
 DUT_CORE_GIT_SHA="${DUT_GIT_SHA}"
-DUT_STARTUP_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- design/netlist/bandgap_startup.spice 2>/dev/null || echo unknown)"
+DUT_STARTUP_GIT_SHA="$(dut_git_sha design/netlist/bandgap_startup.spice)"
 
 echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,det_early_v,fb_early_v,det_final_v,fb_final_v,sns1_final_v,vref_final_v,i_mkfb_final_a" > "${CSV_OUT}"
 
