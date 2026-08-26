@@ -4,7 +4,7 @@
   "deck": "sg13cmos5l",
   "top": "sg13cmos5l_bandgap_core",
   "dbu_um": 0.001,
-  "netlist_path": "/Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-73/layout/sg13cmos5l-bandgap_core/sg13cmos5l-bandgap_core.extracted.spice",
+  "netlist_path": "sg13cmos5l-bandgap_core.extracted.spice",
   "netlist_sha256": "6e9197e3829732c7beac71f44718646be271e279f2914f18a1fbabc00a5bcfe9",
   "status": "extracted",
   "device_count": 3,
