@@ -876,3 +876,8 @@ def boundary_port(
     b.box(L_METAL1, *box)
     b.net_label(net, (box[0] + box[2]) / 2, (box[1] + box[3]) / 2)
     return box
+
+
+def pad_center_x(pad: tuple[float, float, float, float]) -> float:
+    """X centre of a returned terminal pad box."""
+    return (pad[0] + pad[2]) / 2

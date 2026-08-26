@@ -138,6 +138,7 @@ from common_sg13cmos5l import (  # noqa: E402
     boundary_port,
     draw_hv_nmos,
     draw_hv_pmos,
+    pad_center_x,
     poly_tab,
     poly_underpass,
     route_h,
@@ -325,7 +326,7 @@ def _route(
     route_h(b, L_METAL1, Y_OUT_LANE, X_PN_TAB, X_MN4, width=TRUNK_W)
     route_v(b, L_METAL1, X_PN_TAB, Y_OUT_LANE, Y_P1, width=TRUNK_W)
     drain = mp3["drain_pad"]
-    b.box(L_METAL1, pn_tab[0], drain[1], _pad_center_x(drain), drain[3])
+    b.box(L_METAL1, pn_tab[0], drain[1], pad_center_x(drain), drain[3])
 
     # -- in_p / in_n: the input pair's gates, each escaping to its own
     # labelled tap. Without one the net would extract as an anonymous `$N`:
@@ -370,11 +371,6 @@ def _gate_link(b: Builder, y: float, x0: float, x1: float) -> None:
     already cover their own ``Activ``.
     """
     route_h(b, L_GATPOLY, y, x0, x1, width=GATE_LINK_W)
-
-
-def _pad_center_x(pad: tuple[float, float, float, float]) -> float:
-    """X centre of a returned terminal pad box."""
-    return (pad[0] + pad[2]) / 2
 
 
 if __name__ == "__main__":
