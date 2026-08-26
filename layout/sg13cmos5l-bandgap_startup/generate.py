@@ -58,6 +58,24 @@ MOS flavour, no well/substrate tap; only "no bipolar device class" is moot,
 this cell having no bipolar). Each is re-verified against this cell's own
 reports rather than restated -- see ``layout/README.md`` "Cell:
 ``sg13cmos5l-bandgap_startup``".
+
+Boundary ports for ``bandgap_top`` assembly (issue #76)
+---------------------------------------------------------
+
+``vdd`` (``RPU``'s own left head) already sits flush against the cell's own
+left+top edges; ``vss`` (the merged NMOS source rail) already sits flush
+against the bottom edge. ``sns1``/``fb`` did not -- each is an interior gate
+tab (``X_SNS1_TAB=1388``, ``MKFB``'s own drain pad at ``x=1419..1421``).
+Both now get a dedicated :func:`boundary_port`:
+
+* ``sns1`` -- straight down from its own tap to the bottom edge. The tap
+  sits at ``x=1388``, 2 um clear of the ``vss`` rail's own left edge
+  (``x=1390``), so the drop needs no crossing at all.
+* ``fb`` -- ``MKFB``'s own drain pad sits directly above the ``vss`` rail
+  (whose x-span, ``1390..1421``, includes the pad's own x-position), so a
+  straight drop down would short ``fb`` to ``vss``. Instead it jogs *up*
+  first, clear of ``det``'s own tap column (which only reaches
+  ``y=Y_DET_LANE=3``), then right to the cell's right edge.
 """
 
 from __future__ import annotations
@@ -71,6 +89,7 @@ from common_sg13cmos5l import (  # noqa: E402
     L_GATPOLY,
     L_METAL1,
     Builder,
+    boundary_port,
     draw_hv_nmos,
     draw_rhigh,
     poly_tab,
@@ -109,6 +128,23 @@ X_SNS1_TAB = 1388.0
 #: ``MKFB``'s ``fb`` drain pad (which ends at x=1421) by >2 um.
 X_DET_TAB = 1423.5
 
+# -- boundary ports for bandgap_top assembly (issue #76) -- see this
+# module's own docstring "Boundary ports for bandgap_top assembly".
+Y_SNS1_PORT = -1.2
+#: fb jogs up to this height before turning right to the cell's own edge --
+#: above det's own horizontal lane at Y_DET_LANE=3, which spans the entire
+#: x=1395..1423.5 run (MSENSE to the det tab) and therefore crosses fb's own
+#: column at x=1420. That crossing is resolved with a vertical poly
+#: underpass spanning Y_FB_UNDERPASS, the same single-metal crossing
+#: technique bandgap_amp/bandgap_core use, oriented across a horizontal
+#: metal lane instead of a vertical one. The underpass's own landing pads
+#: (0.5 um square, centred 2.0 um from det's lane) clear `metal1.space.1`'s
+#: 0.18 um floor against that lane's own Metal1 by a wide margin -- a
+#: tighter first attempt (pads 0.25 um from the lane) did not.
+Y_FB_JOG = 6.0
+Y_FB_UNDERPASS = (2.0, 4.0)
+X_FB_PORT = 1424.4
+
 
 def build() -> Builder:
     b = Builder(TOP_CELL)
@@ -119,21 +155,27 @@ def build() -> Builder:
     )
     mkfb = draw_hv_nmos(b, "MKFB", MKFB_W, MKFB_L, X_MKFB, Y_MOS, "det", "vss", "fb")
 
-    _route(b, rpu, msense, mkfb)
-    return b
+    ports = _route(b, rpu, msense, mkfb)
+    return b, ports
 
 
-def _route(b: Builder, rpu: dict, msense: dict, mkfb: dict) -> None:
+def _route(b: Builder, rpu: dict, msense: dict, mkfb: dict) -> dict[str, tuple[float, float, float, float]]:
     """Wire every schematic net. Only ``det`` and ``vss`` need routing at
     all; ``vdd``/``sns1``/``fb`` are ports whose single in-cell member the
-    device primitives have already labelled."""
+    device primitives have already labelled.
+
+    Returns the ``{net: pad_box}`` boundary-port map (issue #76) covering
+    all four of this cell's schematic ports."""
 
     # -- vss: MSENSE and MKFB source pads (both at the bottom of their own
     # footprint, draw_hv_nmos's mirrored orientation), merged by one Metal1
     # bar spanning the row. The pads carry their own "vss" Metal1.pin labels
     # already; this bar only makes the two one physically-connected shape.
+    # Already flush with the cell's own bottom edge, so this rail doubles
+    # as vss's own boundary pad (issue #76).
     src = msense["source_pad"]
-    b.box(L_METAL1, src[0], src[1], mkfb["source_pad"][2], src[3])
+    vss_pad = (src[0], src[1], mkfb["source_pad"][2], src[3])
+    b.box(L_METAL1, *vss_pad)
 
     # -- det: RPU's right head -> MSENSE.drain -> MKFB.gate, via one
     # horizontal lane at Y_DET_LANE. The drop off RPU's head is centred on
@@ -160,7 +202,39 @@ def _route(b: Builder, rpu: dict, msense: dict, mkfb: dict) -> None:
     # pad contacted to its poly (same gap bandgap_core's `fb` tap works
     # around, and the same one layout/README.md records for SG13G2's `det`).
     route_h(b, L_GATPOLY, Y_MOS, X_SNS1_TAB, msense["gate_box"][0], width=TRUNK_W)
-    poly_tab(b, X_SNS1_TAB, Y_MOS, net="sns1")
+    sns1_tab = poly_tab(b, X_SNS1_TAB, Y_MOS, net="sns1")
+    # Boundary port (issue #76): straight down to the bottom edge -- the tab
+    # sits 2 um clear of the vss rail's own left edge (x=1390), so no
+    # crossing is needed. See this module's own docstring.
+    sns1_pad = boundary_port(b, "sns1", "bottom", Y_SNS1_PORT, X_SNS1_TAB)
+    route_v(b, L_METAL1, X_SNS1_TAB, sns1_pad[3], sns1_tab[1], width=TRUNK_W)
+
+    # Boundary port (issue #76): fb's own drain pad sits directly above the
+    # vss rail (whose x-span, 1390..1421, includes the pad's own position),
+    # so it jogs up first, then right to the cell's own edge -- crossing
+    # det's own horizontal lane at Y_DET_LANE=3 (which spans the entire
+    # x=1395..1423.5 run) on a vertical poly underpass, since that lane
+    # covers fb's own column (x=1420) too.
+    x_fb = _pad_center_x(mkfb["drain_pad"])
+    fb_pad = boundary_port(b, "fb", "right", X_FB_PORT, Y_FB_JOG)
+    route_v(b, L_METAL1, x_fb, mkfb["drain_pad"][3], Y_FB_UNDERPASS[0], width=TRUNK_W)
+    poly_tab(b, x_fb, Y_FB_UNDERPASS[0])
+    route_v(b, L_GATPOLY, x_fb, Y_FB_UNDERPASS[0], Y_FB_UNDERPASS[1], width=TRUNK_W)
+    poly_tab(b, x_fb, Y_FB_UNDERPASS[1])
+    route_v(b, L_METAL1, x_fb, Y_FB_UNDERPASS[1], Y_FB_JOG, width=TRUNK_W)
+    route_h(b, L_METAL1, Y_FB_JOG, x_fb, fb_pad[0], width=TRUNK_W)
+
+    # vdd's own boundary pad (issue #76): RPU's own left head already sits
+    # flush with the cell's own left+top edges, so it doubles as vdd's own
+    # boundary pad -- no new geometry needed.
+    vdd_pad = rpu["end_a_pad"]
+
+    return {
+        "vdd": vdd_pad,
+        "vss": vss_pad,
+        "sns1": sns1_pad,
+        "fb": fb_pad,
+    }
 
 
 def _pad_center_x(pad: tuple[float, float, float, float]) -> float:
@@ -169,6 +243,7 @@ def _pad_center_x(pad: tuple[float, float, float, float]) -> float:
 
 
 if __name__ == "__main__":
-    builder = build()
+    builder, ports = build()
     builder.write(OUTPUT)
+    print("ports:", {net: tuple(round(v, 3) for v in box) for net, box in ports.items()})
     print(f"wrote {OUTPUT}: bbox={builder.cell.dbbox()}")

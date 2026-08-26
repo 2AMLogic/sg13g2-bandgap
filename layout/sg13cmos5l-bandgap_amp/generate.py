@@ -98,6 +98,29 @@ global, which no drawn substrate tie can resolve to ``vss``.
 
 LVS status is recorded, with each cause re-verified against this cell's own
 reports, in ``layout/README.md`` "Cell: ``sg13cmos5l-bandgap_amp``".
+
+Boundary ports for ``bandgap_top`` assembly (issue #76)
+---------------------------------------------------------
+
+``vdd`` (top rail), ``vss`` (bottom rail) and ``out`` (``MN3``'s own drain
+pad, whose device width happens to reach the cell's left edge) were already
+flush with this cell's own bounding box. ``in_p``/``in_n`` were not -- each
+is a poly gate tap in the interior (``X_IN_P_TAB=7``, ``X_IN_N_TAB=58``),
+same gap issue #76 found in ``bandgap_core``. Both now get a dedicated
+:func:`boundary_port`, reached by extending each tap's own gate-link
+sideways to a cell edge:
+
+* ``in_p`` -- left, at ``y=20`` (the input pair's own row) -- crossing
+  ``out``'s own vertical stub at ``x=0`` (which spans the entire
+  ``y=0.64..36`` band between ``MN3``'s drain and the underpass lane) on a
+  second :func:`poly_underpass`, distinct from the one this cell already
+  uses for ``out`` itself.
+* ``in_n`` -- right, at the same ``y=20`` -- crossing ``pn``'s own vertical
+  stub at ``x=65`` (``MN4``'s drain up to the ``Y_OUT_LANE`` turn) on a
+  third poly underpass.
+
+``build()`` now returns ``(Builder, ports)``, a ``{net: pad_box}`` map
+covering all five of this cell's schematic ports.
 """
 
 from __future__ import annotations
@@ -112,6 +135,7 @@ from common_sg13cmos5l import (  # noqa: E402
     L_METAL1,
     L_NWELL,
     Builder,
+    boundary_port,
     draw_hv_nmos,
     draw_hv_pmos,
     poly_tab,
@@ -168,6 +192,17 @@ X_IN_N_TAB = 58.0  # on MP2's gate, escaping right
 #: module's docstring for why the crossing exists at all.
 X_UNDERPASS = (16.0, 24.0)
 
+# -- boundary ports for bandgap_top assembly (issue #76) -- see this
+# module's own docstring "Boundary ports for bandgap_top assembly".
+Y_IN_P_PORT = 20.0
+X_IN_P_PORT = -7.0
+#: in_p's crossing of out's own vertical stub at x=0 (spans y=0.64..36).
+X_IN_P_UNDERPASS = (-2.0, 2.0)
+Y_IN_N_PORT = 20.0
+X_IN_N_PORT = 77.0
+#: in_n's crossing of pn's own vertical stub at x=65 (spans y=0.64..36).
+X_IN_N_UNDERPASS = (63.0, 67.0)
+
 
 def build() -> Builder:
     b = Builder(TOP_CELL)
@@ -208,8 +243,8 @@ def build() -> Builder:
         max(w[2] for w in wells), max(w[3] for w in wells),
     )
 
-    _route(b, mn3, mn1, mn2, mn4, mp1, mp2, mtail, mp4, mp3)
-    return b
+    ports = _route(b, mn3, mn1, mn2, mn4, mp1, mp2, mtail, mp4, mp3)
+    return b, ports
 
 
 def _route(
@@ -217,20 +252,29 @@ def _route(
     mn3: dict, mn1: dict, mn2: dict, mn4: dict,
     mp1: dict, mp2: dict,
     mtail: dict, mp4: dict, mp3: dict,
-) -> None:
+) -> dict[str, tuple[float, float, float, float]]:
     """Wire every schematic net. Each block names the net it wires; see the
-    module docstring for the floorplan and for the one crossing."""
+    module docstring for the floorplan and for the one crossing.
+
+    Returns the ``{net: pad_box}`` boundary-port map (issue #76) covering
+    all five of this cell's schematic ports."""
 
     # -- vdd: MTAIL/MP4/MP3 source pads, merged by one Metal1 bar. The pads
     # already carry their own "vdd" Metal1.pin labels; this bar only makes
-    # the three one physically-connected shape.
+    # the three one physically-connected shape. Already flush with the
+    # cell's own top+right edges (issue #76's boundary-port survey), so this
+    # rail doubles as vdd's own boundary pad.
     src = mtail["source_pad"]
-    b.box(L_METAL1, src[0], src[1], mp3["source_pad"][2], src[3])
+    vdd_pad = (src[0], src[1], mp3["source_pad"][2], src[3])
+    b.box(L_METAL1, *vdd_pad)
 
     # -- vss: all four NMOS source pads (at the *bottom* of their own
     # footprints, draw_hv_nmos's mirrored orientation), same construction.
+    # Already flush with the cell's own left+bottom edges, so this rail
+    # doubles as vss's own boundary pad (issue #76).
     nsrc = mn3["source_pad"]
-    b.box(L_METAL1, nsrc[0], nsrc[1], mn4["source_pad"][2], nsrc[3])
+    vss_pad = (nsrc[0], nsrc[1], mn4["source_pad"][2], nsrc[3])
+    b.box(L_METAL1, *vss_pad)
 
     # -- tail: MP1/MP2 source pads merged, with MTAIL's drain dropping onto
     # the result. The drop lands wholly inside MP1's own source pad (x=20 is
@@ -258,7 +302,10 @@ def _route(
     # -- out: MN3.drain (bottom row) -> MP4.drain and MTAIL.gate (top row).
     # The lane at Y_OUT_LANE dips onto GatPoly across X_UNDERPASS to pass
     # under MTAIL's drain drop -- the cell's one crossing, see the module
-    # docstring.
+    # docstring. MN3's own drain pad already reaches the cell's own left
+    # edge (its device width places it there), so it doubles as out's own
+    # boundary pad (issue #76).
+    out_pad = mn3["drain_pad"]
     route_v(b, L_METAL1, X_MN3, mn3["drain_pad"][3], Y_OUT_LANE, width=TRUNK_W)
     route_h(b, L_METAL1, Y_OUT_LANE, X_MN3, X_UNDERPASS[0], width=TRUNK_W)
     poly_underpass(b, Y_OUT_LANE, X_UNDERPASS[0], X_UNDERPASS[1], width=TRUNK_W)
@@ -289,6 +336,28 @@ def _route(
     _gate_link(b, Y_P2, mp2["gate_box"][2], X_IN_N_TAB)
     poly_tab(b, X_IN_N_TAB, Y_P2, net="in_n")
 
+    # Boundary ports (issue #76): both taps are interior. in_p escapes left
+    # at the same y, crossing out's own vertical stub at x=0 (which spans
+    # y=0.64..36) on a poly_underpass; in_n escapes right, crossing pn's own
+    # vertical stub at x=65 on a second one. See this module's own docstring.
+    in_p_pad = boundary_port(b, "in_p", "left", X_IN_P_PORT, Y_IN_P_PORT)
+    route_h(b, L_METAL1, Y_IN_P_PORT, in_p_pad[2], X_IN_P_UNDERPASS[0], width=TRUNK_W)
+    poly_underpass(b, Y_IN_P_PORT, X_IN_P_UNDERPASS[0], X_IN_P_UNDERPASS[1], width=TRUNK_W)
+    route_h(b, L_METAL1, Y_IN_P_PORT, X_IN_P_UNDERPASS[1], X_IN_P_TAB, width=TRUNK_W)
+
+    in_n_pad = boundary_port(b, "in_n", "right", X_IN_N_PORT, Y_IN_N_PORT)
+    route_h(b, L_METAL1, Y_IN_N_PORT, X_IN_N_TAB, X_IN_N_UNDERPASS[0], width=TRUNK_W)
+    poly_underpass(b, Y_IN_N_PORT, X_IN_N_UNDERPASS[0], X_IN_N_UNDERPASS[1], width=TRUNK_W)
+    route_h(b, L_METAL1, Y_IN_N_PORT, X_IN_N_UNDERPASS[1], in_n_pad[0], width=TRUNK_W)
+
+    return {
+        "vdd": vdd_pad,
+        "vss": vss_pad,
+        "out": out_pad,
+        "in_p": in_p_pad,
+        "in_n": in_n_pad,
+    }
+
 
 def _gate_link(b: Builder, y: float, x0: float, x1: float) -> None:
     """Join two gate rectangles (or a gate and a tap column) with a
@@ -309,6 +378,7 @@ def _pad_center_x(pad: tuple[float, float, float, float]) -> float:
 
 
 if __name__ == "__main__":
-    builder = build()
+    builder, ports = build()
     builder.write(OUTPUT)
+    print("ports:", {net: tuple(round(v, 3) for v in box) for net, box in ports.items()})
     print(f"wrote {OUTPUT}: bbox={builder.cell.dbbox()}")

@@ -122,7 +122,7 @@
     }
   ],
   "warnings": [
-    "1 poly-layer shape not part of any recognised nfet/pfet gate touch contact at 2+ separate points (the resistor-body signature) and carry no resistor-marker layer at all; this deck may not model the device class drawn here, and its terminals have been absorbed into ordinary interconnect as an unintended short -- see docs/cli/extract.md's 'Known limitation: unmodelled device geometry'.",
+    "2 poly-layer shapes not part of any recognised nfet/pfet gate touch contact at 2+ separate points (the resistor-body signature) and carry no resistor-marker layer at all; this deck may not model the device class drawn here, and its terminals have been absorbed into ordinary interconnect as an unintended short -- see docs/cli/extract.md's 'Known limitation: unmodelled device geometry'.",
     "MOS device geometry overlaps the '44/0' voltage-domain marker: ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). This MOS-only starter models neither side of that split yet: EXTRACTION_DECK recognises only the LV (thin-gate-oxide) NMOS/PMOS pair (mirroring sg13g2.py's own #905 starter scope; the HV pair is left for a follow-on issue, the sg13cmos5l sibling of sg13g2.py's issue #1231), and this curated deck's DRC rules apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note).",
     "net 'det|vdd' merges 2 distinct labels (det, vdd) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
     "7 layers (7/0, 14/0, 28/0, 44/0, 63/0, 111/0, 128/0) carrying 10 shapes are outside 'sg13cmos5l' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
@@ -136,6 +136,15 @@
         "bottom": 7.4,
         "right": 1411.7,
         "top": 8.6
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 1419.65,
+        "bottom": 1.65,
+        "right": 1420.35,
+        "top": 4.35
       },
       "reason": "unmarked"
     }
@@ -170,7 +179,7 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:7d8dd8febc6ef116ba03ad64f12bf96816c5f17990622ca9fa30e4c3a6f14738"
+      "content_hash": "sha256:03c46e76773192b2b8c4d7f175a9fb110b9381eb777a33932475e8e277a96051"
     }
   },
   "parasitics": null,

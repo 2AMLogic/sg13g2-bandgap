@@ -803,3 +803,76 @@ def poly_underpass(
     """
     route_h(b, L_GATPOLY, y, x0, x1, width=width)
     return poly_tab(b, x0, y), poly_tab(b, x1, y)
+
+
+# --------------------------------------------------------------------------- #
+# Boundary-port-pad convention (issue #76). Every cell port gets a dedicated
+# Metal1 pad drawn flush with one edge of the cell's own floorplan -- clear of
+# every other net's routing, and returned to the caller as a plain
+# ``{net: (x0, y0, x1, y1)}`` box -- rather than a parent assembly reaching
+# into whatever internal device pad happens to carry the net (the "plausible
+# but not correct" failure this issue's own analysis warns against: with one
+# modelled metal and no via, routing into an interior pad can only be done by
+# threading a corridor the cell never reserved, e.g. crossing straight through
+# a PNP's own grounded-collector ring).
+# --------------------------------------------------------------------------- #
+
+#: Default pad footprint for a :func:`boundary_port` -- the same 0.50 um
+#: :data:`TAB_PAD_UM` square every other landing pad in this module uses, so a
+#: 0.30 um (``TRUNK_W``-class) stub always lands wholly inside it in both
+#: axes, per the T-junction rule ``bandgap_core``'s first DRC run established
+#: (see ``layout/README.md`` finding 2).
+BOUNDARY_PORT_SIZE_UM = TAB_PAD_UM
+
+#: Default inward extent (how far the pad reaches in from the cell's edge
+#: toward the interior), same value as the pad's own width so the default
+#: shape is a plain square.
+BOUNDARY_PORT_DEPTH_UM = TAB_PAD_UM
+
+
+def boundary_port(
+    b: Builder,
+    net: str,
+    side: str,
+    coord: float,
+    pos: float,
+    size: float = BOUNDARY_PORT_SIZE_UM,
+    depth: float = BOUNDARY_PORT_DEPTH_UM,
+) -> tuple[float, float, float, float]:
+    """Draw a dedicated ``Metal1`` port pad flush with one edge of the
+    cell's own floorplan, labelled ``net`` on ``Metal1.pin``, and return its
+    box for the caller's own routing (a stub connecting the cell's existing
+    internal net to this pad) and for a parent assembly's ``{net: pad_box}``
+    map.
+
+    ``side`` names which edge the pad's *outer* face sits flush against:
+
+    * ``"left"``   -- outer face at ``x = coord``, pad extends ``+depth``
+      to the right (into the cell); ``pos`` is the pad's centre y.
+    * ``"right"``  -- outer face at ``x = coord``, pad extends ``-depth``
+      to the left; ``pos`` is the pad's centre y.
+    * ``"top"``    -- outer face at ``y = coord``, pad extends ``-depth``
+      down; ``pos`` is the pad's centre x.
+    * ``"bottom"`` -- outer face at ``y = coord``, pad extends ``+depth``
+      up; ``pos`` is the pad's centre x.
+
+    The caller is responsible for the pad's chosen edge/position being clear
+    of every other net's drawn geometry -- this only draws the pad and its
+    label, it does not check reachability (see each ``generate.py``'s own
+    floorplan analysis for why its own choice of edge/position/crossings is
+    safe, including which crossings need a :func:`poly_underpass`).
+    """
+    half = size / 2
+    if side == "left":
+        box = (coord, pos - half, coord + depth, pos + half)
+    elif side == "right":
+        box = (coord - depth, pos - half, coord, pos + half)
+    elif side == "top":
+        box = (pos - half, coord - depth, pos + half, coord)
+    elif side == "bottom":
+        box = (pos - half, coord, pos + half, coord + depth)
+    else:
+        raise ValueError(f"boundary_port: side must be left/right/top/bottom, got {side!r}")
+    b.box(L_METAL1, *box)
+    b.net_label(net, (box[0] + box[2]) / 2, (box[1] + box[3]) / 2)
+    return box

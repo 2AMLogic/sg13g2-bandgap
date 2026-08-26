@@ -203,6 +203,124 @@ _CMOS5L_RES_OHMS = {
 }
 
 
+def _convert_device_line(line: str, pdk: str) -> str:
+    """Convert one already-fully-connected ``X<name> node... model
+    param=value...`` device line to its plain-element ``klt lvs`` form.
+
+    Factored out of :func:`convert` (issue #76) so :func:`flatten` can reuse
+    the exact same per-device-model dispatch on a device line whose nodes
+    have already been substituted through a parent subckt call's own
+    connection map -- the two entry points differ only in *where* the node
+    list comes from (the file's own line, unchanged, for :func:`convert`;
+    a renamed copy for :func:`flatten`), never in how one device line is
+    turned into a plain-element one.
+    """
+    instance, nodes, model, params = _parse_device_line(line)
+    model_lower = model.lower()
+
+    if model_lower == "pnpmpa":
+        # SG13CMOS5L's only bipolar device (DR-0004) -- a *three*-
+        # terminal subckt call (C B E), unlike SG13G2's 4-terminal
+        # npn13G2 below. `NetlistSpiceReader` accepts a 3-node
+        # Q-element directly (verified interactively against the
+        # pip `klayout` package: produces a PNPMPA-named class with
+        # terminals C/B/E and AE/PE/... parameters). The schematic's
+        # own `a`/`p` (emitter area/perimeter, the parameters
+        # pnpMPA's model card is scaled by -- there is no w/l on
+        # this device's SPICE line at all) are carried across as the
+        # reader's own AE/PE, so a future deck that *does* recognise
+        # this device class has real parameters to compare against.
+        # Moot for today's compare: klt's curated sg13cmos5l
+        # EXTRACTION_DECK declares `bipolars=()`.
+        c, b, e = nodes
+        area_um2, perim_um = _pnpmpa_a_p(params)
+        # `m=` (SPICE's standard parallel-device multiplier -- issue
+        # #73/DR-0005 rebuilt bandgap_core.sch's Q2 as 8 parallel
+        # unit-area pnpMPA devices via `m=8` instead of one wide
+        # emitter, so this is no longer always `1`) is carried
+        # across as the reader's own `M=`, the same element
+        # parameter `klayout.db.NetlistSpiceReader` already assigns
+        # a device-multiplicity meaning to for every other device
+        # class this converter emits (`M1 ... W=10U` implicitly
+        # carries `M=1` by the reader's own default). Moot for
+        # today's compare either way: klt's curated sg13cmos5l
+        # EXTRACTION_DECK declares `bipolars=()`, so this device
+        # class is not compared at all -- but the reference netlist
+        # should still say what the schematic actually built.
+        m = params.get("m", "1")
+        return (
+            f"{_element_name(instance, 'Q')} {c} {b} {e} {model_lower} "
+            f"AE={area_um2:g}P PE={perim_um:g}U M={float(m):g}"
+        )
+    elif model_lower in _CMOS5L_RES_OHMS and pdk == "sg13cmos5l":
+        # Same 2-terminal R-element shape as the SG13G2 path below
+        # (third, substrate-tie node dropped; model name written as
+        # the positional model token so the reader assigns an RPPD /
+        # RHIGH device class rather than the generic "RES"), but
+        # valued with CMOS5L's own per-flavour symbol formula.
+        n1, n2, _sub = nodes
+        l_um = float(params["l"].rstrip("uU"))
+        w_um = float(params["w"].rstrip("uU"))
+        r_ohm = _CMOS5L_RES_OHMS[model_lower](w_um, l_um)
+        return (
+            f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f} "
+            f"{model_lower} L={_um(params['l'])} W={_um(params['w'])}"
+        )
+    elif model_lower in _MOS_CLASS:
+        d, g, s, b = nodes
+        return (
+            f"{_element_name(instance, 'M')} {d} {g} {s} {b} "
+            f"{_MOS_CLASS[model_lower]} "
+            f"L={_um(params['l'])} W={_um(params['w'])}"
+        )
+    elif model_lower == "npn13g2":
+        # 4-terminal Q-element (C B E S) -- NetlistSpiceReader
+        # accepts this directly (verified interactively: produces a
+        # BJT4Transistor-style class with terminals C/B/E/S). `Nx`
+        # (emitter stripe multiplicity) has no plain-element
+        # counterpart and is dropped -- moot for this compare since
+        # klt's sg13g2 EXTRACTION_DECK does not recognise bipolar
+        # devices at all (see this file's module docstring).
+        c, b, e, s = nodes
+        return f"{_element_name(instance, 'Q')} {c} {b} {e} {s} {model_lower}"
+    elif model_lower in _RES_SHEET_OHM_PER_SQ:
+        # 2-terminal R-element -- the third (substrate-tie) node
+        # this circuit's XR* calls carry is dropped; klayout's
+        # built-in resistor device class is 2-terminal only
+        # (verified interactively: terminals A/B).
+        #
+        # Model-name form (issue #20): `R<name> n1 n2 <value> <model>
+        # L=... W=...` -- **not** a bare `R<name> n1 n2 <value>`
+        # card. `NetlistSpiceReader` names a bare-value R-element's
+        # device class the fixed generic "RES" (verified
+        # interactively), which never matches klt's sg13g2 deck's
+        # own `rppd`/`rhigh` `ResistorDevice.name` on the layout
+        # side -- `NetlistComparer.same_device_classes` pairs by
+        # name (case-insensitively, per its own docs; confirmed
+        # against this repo's own `nfet`/`pfet` MOS classes, which
+        # already round-trip through the same reader's uppercasing
+        # unaffected), so a literally different word ("RES" vs
+        # "rppd") never pairs regardless of case. Writing the real
+        # schematic model name (`rppd`/`rhigh`, matching
+        # `layout/common.py::draw_poly_res`'s own class-selecting
+        # marker-layer choice for each flavour) as the positional
+        # model token lets `NetlistSpiceReader` assign the device
+        # class from it instead (verified interactively: produces a
+        # `RPPD`/`RHIGH`-named class, `NetlistComparer` pairs case-
+        # insensitively against the layout's own lowercase
+        # `rppd`/`rhigh`).
+        n1, n2, _sub = nodes
+        l_um = float(params["l"].rstrip("uU"))
+        w_um = float(params["w"].rstrip("uU"))
+        r_ohm = _RES_SHEET_OHM_PER_SQ[model_lower] * (l_um / w_um)
+        return (
+            f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f} "
+            f"{model_lower} L={_um(params['l'])} W={_um(params['w'])}"
+        )
+    else:
+        raise ValueError(f"unrecognised device model {model!r} on line: {line}")
+
+
 def convert(reference_path: str, pdk: str = "sg13g2") -> list[str]:
     """Convert one subckt-call reference netlist to plain-element lines.
 
@@ -236,112 +354,124 @@ def convert(reference_path: str, pdk: str = "sg13g2") -> list[str]:
             line = raw_line.strip()
             if not line.startswith("X"):
                 continue
-            instance, nodes, model, params = _parse_device_line(line)
-            model_lower = model.lower()
+            out.append(_convert_device_line(line, pdk))
 
-            if model_lower == "pnpmpa":
-                # SG13CMOS5L's only bipolar device (DR-0004) -- a *three*-
-                # terminal subckt call (C B E), unlike SG13G2's 4-terminal
-                # npn13G2 below. `NetlistSpiceReader` accepts a 3-node
-                # Q-element directly (verified interactively against the
-                # pip `klayout` package: produces a PNPMPA-named class with
-                # terminals C/B/E and AE/PE/... parameters). The schematic's
-                # own `a`/`p` (emitter area/perimeter, the parameters
-                # pnpMPA's model card is scaled by -- there is no w/l on
-                # this device's SPICE line at all) are carried across as the
-                # reader's own AE/PE, so a future deck that *does* recognise
-                # this device class has real parameters to compare against.
-                # Moot for today's compare: klt's curated sg13cmos5l
-                # EXTRACTION_DECK declares `bipolars=()`.
-                c, b, e = nodes
-                area_um2, perim_um = _pnpmpa_a_p(params)
-                # `m=` (SPICE's standard parallel-device multiplier -- issue
-                # #73/DR-0005 rebuilt bandgap_core.sch's Q2 as 8 parallel
-                # unit-area pnpMPA devices via `m=8` instead of one wide
-                # emitter, so this is no longer always `1`) is carried
-                # across as the reader's own `M=`, the same element
-                # parameter `klayout.db.NetlistSpiceReader` already assigns
-                # a device-multiplicity meaning to for every other device
-                # class this converter emits (`M1 ... W=10U` implicitly
-                # carries `M=1` by the reader's own default). Moot for
-                # today's compare either way: klt's curated sg13cmos5l
-                # EXTRACTION_DECK declares `bipolars=()`, so this device
-                # class is not compared at all -- but the reference netlist
-                # should still say what the schematic actually built.
-                m = params.get("m", "1")
-                out.append(
-                    f"{_element_name(instance, 'Q')} {c} {b} {e} {model_lower} "
-                    f"AE={area_um2:g}P PE={perim_um:g}U M={float(m):g}"
-                )
-            elif model_lower in _CMOS5L_RES_OHMS and pdk == "sg13cmos5l":
-                # Same 2-terminal R-element shape as the SG13G2 path below
-                # (third, substrate-tie node dropped; model name written as
-                # the positional model token so the reader assigns an RPPD /
-                # RHIGH device class rather than the generic "RES"), but
-                # valued with CMOS5L's own per-flavour symbol formula.
-                n1, n2, _sub = nodes
-                l_um = float(params["l"].rstrip("uU"))
-                w_um = float(params["w"].rstrip("uU"))
-                r_ohm = _CMOS5L_RES_OHMS[model_lower](w_um, l_um)
-                out.append(
-                    f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f} "
-                    f"{model_lower} L={_um(params['l'])} W={_um(params['w'])}"
-                )
-            elif model_lower in _MOS_CLASS:
-                d, g, s, b = nodes
-                out.append(
-                    f"{_element_name(instance, 'M')} {d} {g} {s} {b} "
-                    f"{_MOS_CLASS[model_lower]} "
-                    f"L={_um(params['l'])} W={_um(params['w'])}"
-                )
-            elif model_lower == "npn13g2":
-                # 4-terminal Q-element (C B E S) -- NetlistSpiceReader
-                # accepts this directly (verified interactively: produces a
-                # BJT4Transistor-style class with terminals C/B/E/S). `Nx`
-                # (emitter stripe multiplicity) has no plain-element
-                # counterpart and is dropped -- moot for this compare since
-                # klt's sg13g2 EXTRACTION_DECK does not recognise bipolar
-                # devices at all (see this file's module docstring).
-                c, b, e, s = nodes
-                out.append(
-                    f"{_element_name(instance, 'Q')} {c} {b} {e} {s} {model_lower}"
-                )
-            elif model_lower in _RES_SHEET_OHM_PER_SQ:
-                # 2-terminal R-element -- the third (substrate-tie) node
-                # this circuit's XR* calls carry is dropped; klayout's
-                # built-in resistor device class is 2-terminal only
-                # (verified interactively: terminals A/B).
-                #
-                # Model-name form (issue #20): `R<name> n1 n2 <value> <model>
-                # L=... W=...` -- **not** a bare `R<name> n1 n2 <value>`
-                # card. `NetlistSpiceReader` names a bare-value R-element's
-                # device class the fixed generic "RES" (verified
-                # interactively), which never matches klt's sg13g2 deck's
-                # own `rppd`/`rhigh` `ResistorDevice.name` on the layout
-                # side -- `NetlistComparer.same_device_classes` pairs by
-                # name (case-insensitively, per its own docs; confirmed
-                # against this repo's own `nfet`/`pfet` MOS classes, which
-                # already round-trip through the same reader's uppercasing
-                # unaffected), so a literally different word ("RES" vs
-                # "rppd") never pairs regardless of case. Writing the real
-                # schematic model name (`rppd`/`rhigh`, matching
-                # `layout/common.py::draw_poly_res`'s own class-selecting
-                # marker-layer choice for each flavour) as the positional
-                # model token lets `NetlistSpiceReader` assign the device
-                # class from it instead (verified interactively: produces a
-                # `RPPD`/`RHIGH`-named class, `NetlistComparer` pairs case-
-                # insensitively against the layout's own lowercase
-                # `rppd`/`rhigh`).
-                n1, n2, _sub = nodes
-                l_um = float(params["l"].rstrip("uU"))
-                w_um = float(params["w"].rstrip("uU"))
-                r_ohm = _RES_SHEET_OHM_PER_SQ[model_lower] * (l_um / w_um)
-                out.append(
-                    f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f} "
-                    f"{model_lower} L={_um(params['l'])} W={_um(params['w'])}"
-                )
+    out.append(".end")
+    return out
+
+
+def _parse_subckt_blocks(path: str) -> tuple[list[str], dict[str, dict]]:
+    """Split a hierarchical SPICE deck into its top-level lines and its
+    named ``.subckt``/``.ends`` blocks (issue #76's flattening mode).
+
+    ``design/sg13cmos5l/netlist/bandgap_top.spice`` is exactly this shape:
+    a top-level circuit (three ``X`` subckt calls, no device lines of its
+    own) followed by the three called subckts' own full bodies, expanded
+    inline by xschem for readability (each own port list plus its own
+    device lines) -- a normal, directly simulatable ngspice hierarchy, not
+    yet flattened into one plain-element netlist. A commented-out
+    ``**.subckt bandgap_top ...`` / ``**.ends`` pair also brackets the
+    top-level calls in the file (xschem's own visual grouping); ``**`` is
+    still a `*`-prefixed comment to SPICE, so it is skipped exactly like
+    every other comment line here and never confused with a real block.
+
+    Returns ``(top_lines, subckts)`` where ``top_lines`` is every non-blank,
+    non-comment line outside any real (uncommented) ``.subckt`` block, and
+    ``subckts`` maps each block's own name to
+    ``{"ports": [...], "lines": [...]}`` (its own declared port list, in
+    order, and its own raw device lines, both unprocessed).
+    """
+    top_lines: list[str] = []
+    subckts: dict[str, dict] = {}
+    current: str | None = None
+    with open(path) as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("*"):
+                continue
+            lowered = line.lower()
+            if lowered.startswith(".subckt"):
+                tokens = line.split()
+                name = tokens[1]
+                current = name
+                subckts[name] = {"ports": tokens[2:], "lines": []}
+                continue
+            if lowered.startswith(".ends"):
+                current = None
+                continue
+            if lowered == ".end":
+                continue
+            if current is not None:
+                subckts[current]["lines"].append(line)
             else:
-                raise ValueError(f"unrecognised device model {model!r} on line: {line}")
+                top_lines.append(line)
+    return top_lines, subckts
+
+
+def flatten(top_path: str, pdk: str = "sg13cmos5l") -> list[str]:
+    """Flatten a hierarchical top-level netlist (issue #76) to the same
+    plain-element form :func:`convert` produces for a flat one.
+
+    ``bandgap_top.spice`` has no device lines of its own -- only three
+    subckt calls (``Xx1``/``Xx2``/``Xx3``, instantiating ``bandgap_core``/
+    ``bandgap_amp``/``bandgap_startup``) -- so :func:`convert`'s per-line
+    grammar (which expects every ``X`` line to *be* a device) cannot express
+    it. This walks each top-level ``X`` call instead: looks up the called
+    subckt's own body (parsed by :func:`_parse_subckt_blocks` from the same
+    file, since ``bandgap_top.spice`` carries all three children's full
+    definitions inline), builds that instance's own node-substitution map
+    (its declared ports, positionally, to the actual nodes the top-level
+    call connects them to), and re-emits each of the child's own device
+    lines with its nodes substituted through that map before handing the
+    result to :func:`_convert_device_line` -- the exact same per-device-
+    model dispatch :func:`convert` uses, so a flattened and a flat netlist
+    are converted identically device-line-by-device-line.
+
+    A child net that is **not** one of its subckt's own ports (e.g.
+    ``bandgap_core``'s ``e2``/``e3``, ``bandgap_amp``'s ``d1``/``d2``/``pn``/
+    ``tail``, ``bandgap_startup``'s ``det``) is scoped to that instance with
+    an ``<instance>.`` prefix, matching the standard SPICE flattening
+    convention for a subcircuit's own internal nodes, so two children's
+    identically-named internal nets (none happen to collide in this design,
+    but a flattener should not rely on that) can never be merged by name.
+    """
+    top_lines, subckts = _parse_subckt_blocks(top_path)
+    out: list[str] = [
+        "* Auto-generated by layout/lvs_reference.py's flatten() -- DO NOT EDIT BY HAND.",
+        f"* Source: {os.path.relpath(top_path, REPO_ROOT)} (flattened)",
+        "* Plain-element form for `klt lvs`, expanded from a hierarchical",
+        "* top-level netlist whose own X-calls are subckt instantiations,",
+        "* not devices -- see flatten()'s own docstring.",
+    ]
+    if pdk != "sg13g2":
+        out.append(f"* PDK: {pdk}")
+    for line in top_lines:
+        if not line.startswith("X"):
+            continue
+        instance, call_nodes, subckt_name, _params = _parse_device_line(line)
+        child = subckts[subckt_name]
+        ports = child["ports"]
+        if len(call_nodes) != len(ports):
+            raise ValueError(
+                f"{subckt_name}: call {instance!r} connects {len(call_nodes)} "
+                f"node(s) but the subckt declares {len(ports)} port(s)"
+            )
+        node_map = dict(zip(ports, call_nodes))
+        for device_line in child["lines"]:
+            if not device_line.startswith("X"):
+                continue
+            d_instance, d_nodes, d_model, d_params = _parse_device_line(device_line)
+            renamed_nodes = [node_map.get(n, f"{instance}.{n}") for n in d_nodes]
+            # Scope the device's own instance name too (not just its
+            # internal nets): none of this design's three children happen
+            # to reuse an instance name, but a flattener should not depend
+            # on that -- see this function's own docstring.
+            renamed_instance = f"{instance}_{d_instance}"
+            param_str = " ".join(f"{k}={v}" for k, v in d_params.items())
+            renamed_line = (
+                f"X{renamed_instance} {' '.join(renamed_nodes)} {d_model} {param_str}".strip()
+            )
+            out.append(_convert_device_line(renamed_line, pdk))
 
     out.append(".end")
     return out
