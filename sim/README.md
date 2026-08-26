@@ -327,6 +327,32 @@ from no checker at all.
   crossover 41.5-53.3 MHz. PSRR and offset/mismatch remain explicitly
   deferred past this issue — see `design/README.md`'s updated "Not
   attempted" list and #88, the follow-up issue this issue files.
+- **[`closed-loop-psrr/`](closed-loop-psrr/README.md)** — closed-loop
+  power-supply-rejection (issue #88, follow-on to #86/#58): unlike
+  `loop-gain-phase-margin`, the `fb` loop is left fully closed (PSRR is
+  inherently a closed-loop property) and a 1V/0deg small-signal AC
+  perturbation is injected directly on `vdd` instead, around a DC
+  operating point `.nodeset`-seeded from `closed-loop-startup`'s own
+  committed per-corner transient endpoints (re-verified per point). 45/45
+  PVT points PASS: DC PSRR 57.1-105.2 dB across the grid (the high end is
+  a bias-point-specific near-cancellation at 27°C/3.63V — see that
+  README), degrading to a worst case of 3.2-4.8 dB near 31-40 MHz, the
+  same decade `loop-gain-phase-margin`'s independently-measured
+  41.5-53.3 MHz unity-gain crossover falls in — two independently-built
+  testbenches corroborating where this design's regulation runs out of
+  headroom. Not a claim against `spec/porting-plan.md` §6's still-
+  unratified `PSRR @ DC > 60 dB` draft target (#13).
+- **[`closed-loop-offset/`](closed-loop-offset/README.md)** — a
+  deterministic offset/mismatch sensitivity check (issue #88, follow-on
+  to #86/#58), explicitly **not** a Monte Carlo/statistical claim (that
+  infrastructure is out of scope, #4 checklist item 6, N/A per #5): a
+  ±5 mV DC probe in series with `bandgap_amp`'s inverting input, swept at
+  three representative PVT points (not the full 45-point grid — a
+  deliberate "single-point/sensitivity" scope). Result: `vref` sensitivity
+  to an amplifier input offset (`dVref/dVos`) is ≈8.78-8.80 V/V, flat
+  across PVT and within ~5% of a hand-derived `R1/R2` (≈8.40) first-order
+  estimate — a real, explicable circuit property, not a testbench
+  artifact.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 
