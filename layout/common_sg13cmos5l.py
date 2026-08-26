@@ -330,6 +330,88 @@ def draw_hv_pmos(
     }
 
 
+def draw_hv_nmos(
+    b: Builder,
+    name: str,
+    w_um: float,
+    l_um: float,
+    x0: float,
+    y0: float,
+    gate_net: str,
+    source_net: str,
+    drain_net: str,
+) -> dict:
+    """Draw a simplified single-finger ``sg13_hv_nmos`` footprint (issue #74).
+
+    Layer stack taken from CMOS5L's own ``nmosHV_code.py`` ``genLayout()``,
+    which -- unlike ``pmosHV_code.py`` -- declares **only** ``Activ`` (1/0),
+    ``GatPoly`` (5/0), ``Cont`` (6/0), ``Metal1`` (8/0) and ``ThickGateOx``
+    (44/0): no implant marker and no well. That is not an omission in this
+    transcription, it is how the PDK draws an NMOS. In SG13's layer scheme
+    ``pSD`` (14/0) is the *only* drawn implant mask and n+ is its complement,
+    and the NMOS body is the p-substrate itself, so an NMOS is
+    ``Activ`` outside every ``NWell`` with no ``pSD`` over it. The curated
+    ``sg13cmos5l`` deck models exactly that split ("NMOS = active outside
+    nwell, PMOS = active inside nwell", ``decks/sg13cmos5l.py``'s own
+    ``EXTRACTION_DECK`` comment), so drawing an implant here would be both
+    wrong against the PCell and invisible to the extractor.
+
+    **Source and drain are mirrored relative to :func:`draw_hv_pmos`** --
+    source at the *bottom* of the footprint, drain at the *top*. Every NMOS
+    in this port's two CMOS5L cells has its source on ``vss`` and its drain
+    facing a PMOS above it (``bandgap_amp``'s four load/output devices,
+    ``bandgap_startup``'s ``MSENSE``/``MKFB``), so the mirrored orientation
+    puts a shared ``vss`` rail directly under the row and every drain
+    connection on the side it has to travel to. The dict this returns keeps
+    the same ``source_pad``/``drain_pad`` key names, so a caller reads the
+    terminal it means rather than a y-position.
+
+    ``ThickGateOx`` is drawn for the same reason :func:`draw_hv_pmos` draws
+    it (see that function's docstring): the deck's ``mos_flavours`` is empty,
+    so this binds to the plain ``nfet`` class regardless, but drawing the
+    real marker makes `klt` report the unmodelled-HV gap itself instead of
+    hiding an HV device behind LV-looking geometry.
+
+    Returns the same shape :func:`draw_hv_pmos` does, minus ``nwell`` (this
+    device has none): ``source_pad``/``drain_pad`` Metal1 boxes, ``gate_box``,
+    ``gate_y_lo``/``gate_y_hi`` and ``width``.
+    """
+    ext = 0.4  # source/drain diffusion extension past the gate edge
+    x_lo, x_hi = x0 - w_um / 2, x0 + w_um / 2
+    y_lo, y_hi = y0 - (l_um / 2 + ext), y0 + (l_um / 2 + ext)
+
+    b.box(L_ACTIV, x_lo, y_lo, x_hi, y_hi)
+
+    gate_box = (x_lo - GAT_C, y0 - l_um / 2, x_hi + GAT_C, y0 + l_um / 2)
+    b.box(L_GATPOLY, *gate_box)
+
+    # ThickGateOx: TGO_a past the diffusion, TGO_c past the gate endcaps.
+    # No NWell branch here (cf. draw_hv_pmos's "now check, if NWell is drawn
+    # bigger" case) -- an NMOS has no well to be enclosed by.
+    b.box(L_THICKGATEOX, x_lo - TGO_A, y_lo - TGO_C, x_hi + TGO_A, y_hi + TGO_C)
+
+    # Drain (top) and source (bottom) contact rows + Metal1 pads.
+    drain_pad = (x_lo, y_hi - (CNT_A + 2 * M1_C1), x_hi, y_hi)
+    b.box(L_METAL1, *drain_pad)
+    cont_array(b, x_lo + CNT_C, y_hi - CNT_C - CNT_A, x_hi - CNT_C, y_hi - CNT_C)
+    b.net_label(drain_net, x0, (drain_pad[1] + drain_pad[3]) / 2)
+
+    source_pad = (x_lo, y_lo, x_hi, y_lo + (CNT_A + 2 * M1_C1))
+    b.box(L_METAL1, *source_pad)
+    cont_array(b, x_lo + CNT_C, y_lo + CNT_C, x_hi - CNT_C, y_lo + CNT_C + CNT_A)
+    b.net_label(source_net, x0, (source_pad[1] + source_pad[3]) / 2)
+
+    b.annotate(f"{name}(sg13_hv_nmos w={w_um}u l={l_um}u g={gate_net})", x0, y_hi + 0.8)
+    return {
+        "width": x_hi - x_lo,
+        "source_pad": source_pad,
+        "drain_pad": drain_pad,
+        "gate_box": gate_box,
+        "gate_y_lo": y0 - l_um / 2,
+        "gate_y_hi": y0 + l_um / 2,
+    }
+
+
 def pnpmpa_extent(w_um: float, l_um: float) -> dict[str, float]:
     """Half-extents of every ring in a ``pnpMPA`` footprint, computed with
     CMOS5L's **own** ``pnpMPA_code.py`` ``genLayout()`` formulae (variable
@@ -512,7 +594,69 @@ def draw_rppd(
     end_a_net: str,
     end_b_net: str,
 ) -> dict:
-    """Draw a straight (unfolded) ``rppd`` poly resistor body.
+    """Draw a straight (unfolded) ``rppd`` poly resistor body -- see
+    :func:`_draw_poly_res`, of which this is the ``flavor="rppd"`` case.
+
+    Kept as its own named entry point (rather than callers passing a flavour
+    string) because ``rppd`` is the only resistor ``bandgap_core`` uses and
+    that cell's ``generate.py`` predates the ``rhigh`` flavour; the drawn
+    geometry is byte-identical to what this function drew before
+    :func:`draw_rhigh` was factored out of it (verified: regenerating
+    ``sg13cmos5l-bandgap_core.gds`` leaves ``git diff`` empty).
+    """
+    return _draw_poly_res(b, name, "rppd", w_um, l_um, x0, y0, end_a_net, end_b_net)
+
+
+def draw_rhigh(
+    b: Builder,
+    name: str,
+    w_um: float,
+    l_um: float,
+    x0: float,
+    y0: float,
+    end_a_net: str,
+    end_b_net: str,
+) -> dict:
+    """Draw a straight (unfolded) ``rhigh`` poly resistor body (issue #74).
+
+    Same construction as :func:`draw_rppd` -- CMOS5L's ``rhigh`` and ``rppd``
+    are both ``GatPoly``-bodied poly resistors sharing one PCell base class
+    (``res_base_code.ResistorBase``) -- with **one** layer difference, read
+    from ``rhigh_code.py``'s own layer block: it additionally carries
+    ``nSD`` (7/0) over the marked body (``nsdover = techparams['Rhi_c']``),
+    where ``rppd_code.py`` declares no ``nSD`` at all. That is the layer
+    that physically distinguishes the two flavours, and it is the same
+    ``rppd``-vs-``rhigh`` discriminator ``layout/common.py``'s SG13G2
+    ``draw_poly_res`` already draws.
+
+    As with ``rppd``, the curated ``sg13cmos5l`` deck recognises no resistor
+    at all (``EXTRACTION_DECK.resistors == ()``), so the marker set here is
+    drawn for fidelity to the PCell, not to satisfy an extractor -- and, as
+    ``layout/README.md`` records for ``bandgap_core``, the unmodelled body
+    is absorbed into interconnect and *shorts* its own two terminals
+    (klayout-tools#1415).
+
+    ``bandgap_startup``'s ``RPU`` is ``w=1u l=1411.3u``: drawn straight, that
+    is a ~1.4 mm bar which single-handedly sets the cell's bounding box --
+    the same honest-rendering-of-the-netlist choice ``draw_rppd`` documents
+    for ``R1``'s 647 um bar, and the same one ``layout/bandgap_startup`` made
+    for this identical device on the SG13G2 side.
+    """
+    return _draw_poly_res(b, name, "rhigh", w_um, l_um, x0, y0, end_a_net, end_b_net)
+
+
+def _draw_poly_res(
+    b: Builder,
+    name: str,
+    flavor: str,
+    w_um: float,
+    l_um: float,
+    x0: float,
+    y0: float,
+    end_a_net: str,
+    end_b_net: str,
+) -> dict:
+    """Draw a straight (unfolded) ``rppd``/``rhigh`` poly resistor body.
 
     Layer stack read from CMOS5L's own ``rppd_code.py``: ``GatPoly`` (5/0)
     is the physical conductor (its ``contpolylayer``), ``PolyRes`` (128/0)
@@ -549,6 +693,12 @@ def draw_rppd(
 
     for layer in (L_POLYRES, L_EXTBLOCK, L_PSD, L_SALBLOCK):
         b.box(layer, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
+    if flavor == "rhigh":
+        # The one layer that distinguishes the two flavours -- rhigh_code.py
+        # declares `nsdlayer = 'nSD'` and encloses the body by `Rhi_c`;
+        # rppd_code.py declares no nSD at all. Same discriminator
+        # layout/common.py's SG13G2 draw_poly_res draws.
+        b.box(L_NSD, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
 
     # End A / end B: contacts on the un-marked heads + Metal1 pads.
     cont_a_x0 = x0 - RES_HEAD_UM + RES_CONT_MARGIN_UM
@@ -563,7 +713,7 @@ def draw_rppd(
     b.box(L_METAL1, *end_b_pad)
     b.net_label(end_b_net, (end_b_pad[0] + end_b_pad[2]) / 2, y0)
 
-    b.annotate(f"{name}(rppd w={w_um}u l={l_um}u)", (x0 + x_hi) / 2, y0 - w_um / 2 - 0.9)
+    b.annotate(f"{name}({flavor} w={w_um}u l={l_um}u)", (x0 + x_hi) / 2, y0 - w_um / 2 - 0.9)
     return {"length": l_um, "end_a_pad": end_a_pad, "end_b_pad": end_b_pad}
 
 
@@ -574,8 +724,14 @@ def draw_rppd(
 # would be invisible to `klt extract` and any net routed through it would
 # come back broken. (`layout/common.py`'s SG13G2 counterpart routes freely
 # on Metal2/Via1 because that deck's stack declares them.) The consequence
-# for this cell is a strictly planar, single-metal floorplan -- see
+# for `bandgap_core` is a strictly planar, single-metal floorplan -- see
 # `layout/sg13cmos5l-bandgap_core/generate.py`'s own docstring.
+#
+# `GatPoly` is the second conductor this constraint leaves, and issue #74's
+# cells use it as one: `bandgap_amp` is not planar at one metal, so it
+# crosses `out` under the tail drop on a `poly_underpass` (below). That is a
+# real crossing, not a workaround for the deck gap -- Metal1 and GatPoly are
+# separate nets in the deck's connectivity, joined only through `Cont`.
 # --------------------------------------------------------------------------- #
 
 
@@ -584,6 +740,92 @@ def route_h(b: Builder, layer: tuple[int, int], y_center: float, x0: float, x1: 
     ``[x0, x1]`` (order-independent), ``width`` microns tall."""
     half = width / 2
     b.box(layer, min(x0, x1), y_center - half, max(x0, x1), y_center + half)
+
+
+#: Side of the square ``Metal1`` landing pad :func:`poly_tab` places over its
+#: contact. Deliberately larger than ``bandgap_core``'s own one-off ``fb``
+#: tap pad (0.40 x 0.20): that pad is a *terminal* -- nothing is routed to
+#: it -- whereas every tab below is a junction a ``TRUNK_W``-wide trunk lands
+#: on. ``bandgap_core``'s first DRC run established the rule (``layout/
+#: README.md``, SG13CMOS5L DRC finding 2): a trunk that overhangs its landing
+#: pad's edge turns the join into a step and ``metal1.width.1`` flags the
+#: notch, so the pad must be wider than the widest trunk that lands on it in
+#: *both* axes. 0.50 um clears a 0.30 um trunk with 0.10 um to spare per side.
+TAB_PAD_UM = 0.50
+
+#: ``GatPoly`` enclosure of :func:`poly_tab`'s Metal1 pad. The curated deck
+#: has no enclosure rule at all (its six rules are width/space on Activ,
+#: GatPoly and Metal1 only), so this is drawn to CMOS5L's own ``Cnt_d``
+#: (0.07 um, GatPoly enclosure of Cont) with margin rather than to a rule
+#: `klt drc` would catch.
+TAB_POLY_MARGIN_UM = 0.10
+
+
+def poly_tab(
+    b: Builder,
+    x: float,
+    y: float,
+    net: str | None = None,
+    pad: float = TAB_PAD_UM,
+) -> tuple[float, float, float, float]:
+    """Contact a ``GatPoly`` conductor to a ``Metal1`` landing pad at
+    ``(x, y)``, returning that pad's box.
+
+    The curated ``sg13cmos5l`` deck declares ``poly_label=None``, so a
+    poly-only net can neither be *named* nor reach ``Metal1`` without one of
+    these (the same gap ``bandgap_core``'s ``fb`` tap works around, and the
+    same one ``layout/README.md`` already records for SG13G2's ``det``).
+    Passing ``net`` also drops a ``Metal1.pin`` label on the pad.
+
+    The caller is responsible for there being ``GatPoly`` at ``(x, y)`` --
+    this draws its own small enclosing poly pad, but a tab placed off the
+    conductor it means to contact silently creates an isolated stub.
+    **Place tabs over field only**: poly-over-``Activ`` is a transistor
+    gate, and a contact there would short a device's gate to its own
+    channel region's implant.
+    """
+    half = pad / 2
+    m = TAB_POLY_MARGIN_UM
+    b.box(L_GATPOLY, x - half - m, y - half - m, x + half + m, y + half + m)
+    b.box(L_CONT, x - CNT_A / 2, y - CNT_A / 2, x + CNT_A / 2, y + CNT_A / 2)
+    metal_pad = (x - half, y - half, x + half, y + half)
+    b.box(L_METAL1, *metal_pad)
+    if net is not None:
+        b.net_label(net, x, y)
+    return metal_pad
+
+
+def poly_underpass(
+    b: Builder,
+    y: float,
+    x0: float,
+    x1: float,
+    width: float = 0.3,
+) -> tuple[tuple[float, float, float, float], tuple[float, float, float, float]]:
+    """Carry one net under another on ``GatPoly``, returning the two
+    ``Metal1`` landing pads (left, right) a caller routes into.
+
+    **Why this exists.** The curated ``sg13cmos5l`` deck models one routing
+    metal and no via (``metals=((8, 0),)``, ``vias=()``,
+    klayout-tools#1417), which is why ``bandgap_core`` is strictly planar.
+    ``bandgap_amp`` is not a planar circuit at that constraint: it is a
+    five-PMOS/four-NMOS OTA whose ``out`` node must reach both the tail
+    device's gate (top row) and the second-stage NMOS drain (bottom row)
+    across the tail device's own drain drop. A poly underpass -- the
+    standard single-metal answer, and one this PDK's own layer stack
+    supports -- resolves that crossing without a second metal: ``GatPoly``
+    and ``Metal1`` are separate conductors in the deck's connectivity
+    (joined only through ``Cont`` (6/0)), so a poly strip passing beneath a
+    Metal1 trunk is a genuine crossing, not a short. Verified, not assumed:
+    ``bandgap_amp``'s own ``klt extract`` run reports ``out`` as one net
+    with the underpass in place.
+
+    Draws the poly strip plus a :func:`poly_tab` at each end. **Must cross
+    field only** -- see :func:`poly_tab`'s own warning; a poly underpass over
+    ``Activ`` is a parasitic transistor, not a wire.
+    """
+    route_h(b, L_GATPOLY, y, x0, x1, width=width)
+    return poly_tab(b, x0, y), poly_tab(b, x1, y)
 
 
 def route_v(b: Builder, layer: tuple[int, int], x_center: float, y0: float, y1: float, width: float = 0.3) -> None:

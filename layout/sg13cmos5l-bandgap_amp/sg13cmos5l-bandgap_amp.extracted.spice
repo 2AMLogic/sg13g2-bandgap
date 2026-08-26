@@ -1,0 +1,33 @@
+* extracted by klt extract --deck sg13cmos5l
+
+* cell sg13cmos5l_bandgap_amp
+* pin d1
+* pin d2
+* pin in_n
+* pin in_p
+* pin out
+* pin pn
+* pin tail
+* pin vdd
+* pin vss
+* pin vsubs
+.SUBCKT sg13cmos5l_bandgap_amp d1 d2 in_n in_p out pn tail vdd vss vsubs
+* device instance $1 r0 *1 0,0 nfet
+M$1 out d1 vss vsubs nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $2 r0 *1 20,0 nfet
+M$2 d1 d1 vss vsubs nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $3 r0 *1 45,0 nfet
+M$3 d2 d2 vss vsubs nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $4 r0 *1 65,0 nfet
+M$4 pn d2 vss vsubs nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $5 r0 *1 20,20 pfet
+M$5 tail in_p d1 \$10 pfet L=1U W=20U AS=8P AD=8P PS=40.8U PD=40.8U
+* device instance $6 r0 *1 45,20 pfet
+M$6 tail in_n d2 \$10 pfet L=1U W=20U AS=8P AD=8P PS=40.8U PD=40.8U
+* device instance $7 r0 *1 20,40 pfet
+M$7 vdd out tail \$10 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $8 r0 *1 45,40 pfet
+M$8 vdd pn out \$10 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $9 r0 *1 70,40 pfet
+M$9 vdd pn pn \$10 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+.ENDS sg13cmos5l_bandgap_amp
