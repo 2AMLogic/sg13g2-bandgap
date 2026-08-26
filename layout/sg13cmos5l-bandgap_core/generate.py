@@ -19,14 +19,57 @@ Output is byte-for-byte deterministic (GDSII header timestamps disabled via
 Devices instantiated, one-to-one against
 ``design/sg13cmos5l/netlist/bandgap_core.spice``:
 
-    M1 sg13_hv_pmos w=10u l=1u   -- branch 1 mirror leg (vdd/fb -> sns1)
-    Q1 pnpMPA w=1u l=2u          -- branch 1, grounded-collector (sns1 -> vss)
-    M2 sg13_hv_pmos w=10u l=1u   -- branch 2 mirror leg (vdd/fb -> sns2)
-    R2 rppd w=2u l=85.1u         -- PTAT resistor (sns2 -> e2)
-    Q2 pnpMPA w=8u l=2u          -- branch 2, grounded-collector (e2 -> vss)
-    M3 sg13_hv_pmos w=10u l=1u   -- output branch mirror leg (vdd/fb -> vref)
-    R1 rppd w=2u l=647.0u        -- summing resistor (vref -> e3)
-    Q3 pnpMPA w=1u l=2u          -- output branch, grounded-collector (e3 -> vss)
+    M1 sg13_hv_pmos w=10u l=1u    -- branch 1 mirror leg (vdd/fb -> sns1)
+    Q1 pnpMPA w=1u l=2u           -- branch 1, grounded-collector (sns1 -> vss)
+    M2 sg13_hv_pmos w=10u l=1u    -- branch 2 mirror leg (vdd/fb -> sns2)
+    R2 rppd w=2u l=85.1u          -- PTAT resistor (sns2 -> e2)
+    Q2 8x pnpMPA w=1u l=2u m=8    -- branch 2, grounded-collector (e2 -> vss),
+                                     drawn as 8 parallel unit-geometry PCell
+                                     instances (issue #73, DR-0005) -- see
+                                     "Q2: 8 parallel unit devices" below
+    M3 sg13_hv_pmos w=10u l=1u    -- output branch mirror leg (vdd/fb -> vref)
+    R1 rppd w=2u l=647.0u         -- summing resistor (vref -> e3)
+    Q3 pnpMPA w=1u l=2u           -- output branch, grounded-collector (e3 -> vss)
+
+Q2: 8 parallel unit devices (issue #73, DR-0005)
+-------------------------------------------------
+
+The schematic's ``Q2`` is ``pnpMPA a={1u*2u} p={(1u+2u)*2} m=8`` -- 8 parallel
+copies of the same unit device ``Q1``/``Q3`` use, not one wide emitter. A
+single ``w=8u`` instance cannot be PCell-generated at all: CMOS5L's
+``pnpMPA_maxW`` is 2.0 um (``sg13cmos5l_tech.json``), and ``pnpMPA_code.py``'s
+``genLayout()`` sizes the emitter window directly from ``w``/``l`` with no
+internal arraying (its own ``m`` "Multiplier" param spec is declared but
+never read by ``genLayout()``). This layout therefore calls
+:func:`draw_pnpmpa` (the same helper drawing ``Q1``/``Q3``) 8 times at
+``w=1u l=2u`` -- each individually well inside ``pnpMPA_maxW`` -- and wires
+all 8 in parallel:
+
+* **Emitters** all tie to ``e2`` via a shared Metal1 trunk (``Q2_BUS_Y``,
+  chosen above every unit's own collector-ring outer top edge so the trunk
+  never touches a ring's Metal1 -- see the sizing comment next to
+  ``Q2_BUS_Y`` below), which ``R2`` then drops onto from above -- the same
+  "emitter escapes straight up through its own ring's open-top gap"
+  construction every other ``pnpMPA`` instance in this cell already uses,
+  just repeated per unit and then bussed.
+* **Base/collector rings** (both ``vss``) are tied unit-to-unit exactly like
+  the former ``Q1``-to-``Q2`` strap was (:func:`_tie_rings` per unit, then a
+  chain of :func:`route_h` straps between consecutive units) -- the ``vss``
+  aisle down to ``Q3``'s row still taps this chain at ``X_VSS_AISLE`` (87),
+  which lies inside the *first* link of the chain (``Q1`` to ``Q2`` unit 0),
+  unchanged from before.
+
+``X_M3`` (and everything positioned relative to it -- ``R1``, ``Q3``, the
+``vref``/``e3`` routing) shifted right, 150 -> 180, to make room for the
+8-unit row: at ``Q2_PITCH_X=6.0`` um centre-to-centre (a unit's own
+collector-ring bbox is 5.5 um wide, so this clears the deck's
+``activ.space.1`` rule with 0.5 um margin either side), the row spans
+``Q2_X0=123.75`` to ``165.75``, versus the single ``w=8u`` device's former
+``120.6``..``140.1`` -- about 25 um wider, comfortably inside the new gap to
+``X_M3``. This is electrically inert (DR-0005 shows the 8-unit-device and
+single-wide-device constructions are the same circuit to the compact
+model) -- a pure floorplan consequence of the PCell not supporting an
+internal array.
 
 Single-metal, strictly planar floorplan
 ---------------------------------------
@@ -41,11 +84,13 @@ artifact of the layout rather than of the deck. So every net below is
 routed on ``Metal1`` (plus ``GatPoly`` for the gate-to-gate ``fb`` bar), and
 the floorplan is arranged so that **no two nets ever need to cross**:
 
-    y=60   MOS row          M1 (x=0)      M2 (x=45)     M3 (x=150)
+    y=60   MOS row          M1 (x=0)      M2 (x=45)     M3 (x=180)
     y=45   R2 row                         R2 [45 .. 130.1]
-    y=30   Q1/Q2 row        Q1 (x=0)                    Q2 (x=130.35)
-    y=15   R1 row                                       R1 [150 .. 797]
-    y=0    Q3 row                                       Q3 (x=797.25)
+    y=34   Q2 e2 trunk                                  Q2[0..7] emitter bus
+    y=30   Q1/Q2 row        Q1 (x=0)                    Q2[0..7] (x=123.75,
+                                                          129.75, ..., 165.75)
+    y=15   R1 row                                       R1 [180 .. 827]
+    y=0    Q3 row                                       Q3 (x=827.25)
 
 Each branch is a left-to-right, top-to-bottom chain (mirror leg -> series
 resistor -> PNP), and each resistor *starts* at its own mirror leg's column
@@ -54,23 +99,24 @@ row's horizontal extent. The two long ``rppd`` bars (85.1 um and 647.0 um,
 drawn straight -- see ``draw_rppd``) are what forces the columns this far
 apart.
 
-``vss`` is the one net that does span rows: the three PNPs' base/collector
-rings sit on two different rows with ``R1``'s 647 um bar between them. It
-reaches ``Q3``'s row down a dedicated vertical aisle at ``x=87``, which
-crosses ``R1``'s row well left of that bar's left head (x=149.6) and lands,
-at the top, on the ``Q1``-to-``Q2`` strap (which spans x=2.7..120.6). No
-other net has a shape anywhere in that corridor.
+``vss`` is the one net that does span rows: the PNPs' base/collector rings
+sit on two different rows with ``R1``'s 647 um bar between them. It reaches
+``Q3``'s row down a dedicated vertical aisle at ``x=87``, which crosses
+``R1``'s row well left of that bar's left head (x=179.5) and lands, at the
+top, on the ``Q1``-to-``Q2[0]`` strap (which spans x=2.7..121.0). No other
+net has a shape anywhere in that corridor.
 
 What this layout does **not** try to do is force an LVS `match`. The
 curated ``sg13cmos5l`` deck recognises MOS devices only -- no bipolar
 (``bipolars=()``), no resistor (``resistors=()``), no HV MOS flavour
-(``mos_flavours=()``), and no well/substrate tap (``tap=None``) -- so five
-of this cell's eight devices cannot be recognised at all, and the three
-that can have an unmodellable body terminal. Those are deck-coverage gaps,
-filed upstream per ``CLAUDE.md``'s friction protocol and enumerated with
-their evidence in ``layout/README.md`` "SG13CMOS5L: LVS -- ``mismatch``,
-fully attributed". The layout's own job is to be physically right and DRC
-clean, which it is.
+(``mos_flavours=()``), and no well/substrate tap (``tap=None``) -- so 12 of
+this cell's 15 devices (10 bipolar unit instances -- ``Q1``, 8x ``Q2``,
+``Q3`` -- plus 2 resistors) cannot be recognised at all, and the 3 that can
+(``M1``-``M3``) have an unmodellable body terminal. Those are deck-coverage
+gaps, filed upstream per ``CLAUDE.md``'s friction protocol and enumerated
+with their evidence in ``layout/README.md`` "SG13CMOS5L: LVS --
+``mismatch``, fully attributed". The layout's own job is to be physically
+right and DRC clean, which it is.
 """
 
 from __future__ import annotations
@@ -113,23 +159,45 @@ Y_Q12 = 30.0
 Y_R1 = 15.0
 Y_Q3 = 0.0
 
-# Column origins.
+# Column origins. X_M3 shifted 150 -> 180 (issue #73/DR-0005) to make room
+# for Q2's 8-unit row -- see this module's own docstring.
 X_M1 = 0.0
 X_M2 = 45.0
-X_M3 = 150.0
+X_M3 = 180.0
 
 # Device sizes, read from design/sg13cmos5l/netlist/bandgap_core.spice.
 MOS_W, MOS_L = 10.0, 1.0
 R2_W, R2_L = 2.0, 85.1
 R1_W, R1_L = 2.0, 647.0
 Q_UNIT_W, Q_L = 1.0, 2.0
-Q2_W = 8.0
+
+#: Q2's construction (issue #73, DR-0005): 8 parallel *unit*-geometry
+#: ``pnpMPA`` instances (``Q_UNIT_W``/``Q_L``, same as Q1/Q3), not one wide
+#: emitter -- see this module's own docstring. ``Q2_PITCH_X`` clears a unit
+#: device's own collector-ring bbox (5.5 um wide -- computed from
+#: ``pnpmpa_extent(1.0, 2.0)`` the same way ``common_sg13cmos5l.py`` derives
+#: it) with 0.5 um margin either side against the deck's ``activ.space.1``
+#: rule. ``Q2_X0`` is the leftmost unit's own centre x, chosen so the row's
+#: left edge (121.0) clears ``X_VSS_AISLE`` (87) with the same margin the
+#: former single-device Q2 left it (120.6).
+Q2_N = 8
+Q2_PITCH_X = 6.0
+Q2_X0 = 123.75
+
+#: Shared Metal1 trunk every Q2 unit's emitter escapes straight up onto
+#: (through its own ring's open-top gap, same construction every other
+#: ``pnpMPA`` instance in this cell already uses). A unit device's own
+#: collector-ring outer top edge sits at ``Y_Q12 + h3act + d3act = 33.01``
+#: um (``pnpmpa_extent(1.0, 2.0)``'s ``h3act`` plus the ring's own
+#: ``d3act=0.35`` half-width); 34.0 clears that with ~1 um margin, so the
+#: trunk never touches a ring's Metal1.
+Q2_BUS_Y = 34.0
 
 #: The ``vss`` aisle: a clear vertical corridor from the Q1/Q2 row down to
 #: the Q3 row. Two constraints, both with tens of microns to spare at 87:
-#: it must cross ``R1``'s row left of that bar's left head (x=149.6), and it
-#: must land on the ``Q1``-to-``Q2`` strap, i.e. inside x=2.7..120.6 (right
-#: of ``Q1``'s outer ring edge, left of ``Q2``'s).
+#: it must cross ``R1``'s row left of that bar's left head (x=179.5), and it
+#: must land on the ``Q1``-to-``Q2[0]`` strap, i.e. inside x=2.7..121.0
+#: (right of ``Q1``'s outer ring edge, left of the first Q2 unit's).
 X_VSS_AISLE = 87.0
 
 
@@ -164,18 +232,30 @@ def build() -> Builder:
     r2 = draw_rppd(b, "R2", R2_W, R2_L, X_M2, Y_R2, end_a_net="sns2", end_b_net="e2")
     r1 = draw_rppd(b, "R1", R1_W, R1_L, X_M3, Y_R1, end_a_net="vref", end_b_net="e3")
 
-    # -- the three grounded-collector PNPs, each under its own branch ------
-    x_q2 = _pad_center_x(r2["end_b_pad"])
+    # -- the grounded-collector PNPs, each under its own branch -------------
     x_q3 = _pad_center_x(r1["end_b_pad"])
     q1 = draw_pnpmpa(b, "Q1", Q_UNIT_W, Q_L, X_M1, Y_Q12, "sns1", "vss", "vss")
-    q2 = draw_pnpmpa(b, "Q2", Q2_W, Q_L, x_q2, Y_Q12, "e2", "vss", "vss")
+    q2_units = [
+        draw_pnpmpa(b, f"Q2_{i}", Q_UNIT_W, Q_L, Q2_X0 + i * Q2_PITCH_X, Y_Q12, "e2", "vss", "vss")
+        for i in range(Q2_N)
+    ]
     q3 = draw_pnpmpa(b, "Q3", Q_UNIT_W, Q_L, x_q3, Y_Q3, "e3", "vss", "vss")
 
-    _route(b, m1, m2, m3, r1, r2, q1, q2, q3)
+    _route(b, m1, m2, m3, r1, r2, q1, q2_units, q3)
     return b
 
 
-def _route(b: Builder, m1: dict, m2: dict, m3: dict, r1: dict, r2: dict, q1: dict, q2: dict, q3: dict) -> None:
+def _route(
+    b: Builder,
+    m1: dict,
+    m2: dict,
+    m3: dict,
+    r1: dict,
+    r2: dict,
+    q1: dict,
+    q2_units: list[dict],
+    q3: dict,
+) -> None:
     """Wire every schematic net. Each block names the net it wires; see the
     module docstring for why all of it is single-metal and planar."""
 
@@ -208,14 +288,24 @@ def _route(b: Builder, m1: dict, m2: dict, m3: dict, r1: dict, r2: dict, q1: dic
     route_v(b, L_METAL1, _pad_center_x(r2["end_a_pad"]), r2["end_a_pad"][3],
             m2["drain_pad"][3], width=TRUNK_W)
 
-    # -- e2: R2.end_b -> Q2.emitter, straight down (R2's far end sits
-    # directly above Q2 by construction).
+    # -- e2: R2.end_b -> Q2's 8-unit array (issue #73/DR-0005). Each unit's
+    # emitter escapes straight up through its own ring's open-top gap onto
+    # the shared Q2_BUS_Y trunk (see this module's own docstring for why
+    # that height clears every ring's Metal1); R2's own end_b pad then drops
+    # straight down onto that trunk, landing inside its span (the trunk
+    # spans the full row, x=123.75..165.75, and R2's drop is at x=130.35).
+    for q in q2_units:
+        route_v(b, L_METAL1, _pad_center_x(q["emitter_pad"]), Q2_BUS_Y,
+                q["emitter_pad"][3], width=TRUNK_W)
+    x_bus_lo = _pad_center_x(q2_units[0]["emitter_pad"])
+    x_bus_hi = _pad_center_x(q2_units[-1]["emitter_pad"])
+    route_h(b, L_METAL1, Q2_BUS_Y, x_bus_lo, x_bus_hi, width=TRUNK_W)
     x_e2 = _pad_center_x(r2["end_b_pad"])
-    route_v(b, L_METAL1, x_e2, q2["emitter_pad"][3], r2["end_b_pad"][1], width=TRUNK_W)
+    route_v(b, L_METAL1, x_e2, Q2_BUS_Y, r2["end_b_pad"][1], width=TRUNK_W)
 
-    # -- vref: M3.drain -> R1.end_a, straight down column x=150 (same
-    # pad-centred landing as sns2 above). Clears R2's right end (x=130.6)
-    # and Q2's right edge by ~10 um.
+    # -- vref: M3.drain -> R1.end_a, straight down column x=180 (same
+    # pad-centred landing as sns2 above). Clears the Q2 row's right edge
+    # (165.75+2.75=168.5) by ~11.5 um.
     route_v(b, L_METAL1, _pad_center_x(r1["end_a_pad"]), r1["end_a_pad"][3],
             m3["drain_pad"][3], width=TRUNK_W)
 
@@ -224,10 +314,17 @@ def _route(b: Builder, m1: dict, m2: dict, m3: dict, r1: dict, r2: dict, q1: dic
     route_v(b, L_METAL1, x_e3, q3["emitter_pad"][3], r1["end_b_pad"][1], width=TRUNK_W)
 
     # -- vss: every PNP's base ring + collector ring, all tied together.
-    for q, y in ((q1, Y_Q12), (q2, Y_Q12), (q3, Y_Q3)):
-        _tie_rings(b, q, y)
-    # Q1 <-> Q2 along their shared row, then down the aisle to Q3's row.
-    route_h(b, L_METAL1, Y_Q12, q1["collector_ring_m1"][2], q2["collector_ring_m1"][0], width=TRUNK_W)
+    _tie_rings(b, q1, Y_Q12)
+    for q in q2_units:
+        _tie_rings(b, q, Y_Q12)
+    _tie_rings(b, q3, Y_Q3)
+    # Q1 <-> Q2[0] <-> Q2[1] <-> ... <-> Q2[7] along their shared row (the
+    # aisle taps the first link, Q1<->Q2[0], exactly as it tapped the former
+    # Q1<->Q2 single-device link), then down the aisle to Q3's row.
+    chain = [q1, *q2_units]
+    for left, right in zip(chain, chain[1:]):
+        route_h(b, L_METAL1, Y_Q12, left["collector_ring_m1"][2], right["collector_ring_m1"][0],
+                width=TRUNK_W)
     route_v(b, L_METAL1, X_VSS_AISLE, Y_Q3, Y_Q12, width=TRUNK_W)
     route_h(b, L_METAL1, Y_Q3, X_VSS_AISLE, q3["collector_ring_m1"][0], width=TRUNK_W)
 

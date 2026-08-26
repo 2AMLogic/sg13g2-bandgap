@@ -5,7 +5,7 @@
   "top": "sg13cmos5l_bandgap_core",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_core.extracted.spice",
-  "netlist_sha256": "a8bc396149cd7b4a1990e6143f5bd851fa2c7f18d2b1fb34fd99281fb5c95a7f",
+  "netlist_sha256": "6e9197e3829732c7beac71f44718646be271e279f2914f18a1fbabc00a5bcfe9",
   "status": "extracted",
   "device_count": 3,
   "net_count": 7,
@@ -18,7 +18,7 @@
     {
       "layer": 14,
       "datatype": 0,
-      "shapes": 20
+      "shapes": 55
     },
     {
       "layer": 28,
@@ -33,7 +33,7 @@
     {
       "layer": 63,
       "datatype": 0,
-      "shapes": 8
+      "shapes": 15
     },
     {
       "layer": 111,
@@ -59,7 +59,7 @@
         "s": "sns1",
         "g": "fb",
         "d": "vdd",
-        "b": "\\$13"
+        "b": "\\$27"
       },
       "params": {
         "l_um": 1.0,
@@ -77,7 +77,7 @@
         "s": "e2|sns2",
         "g": "fb",
         "d": "vdd",
-        "b": "\\$13"
+        "b": "\\$27"
       },
       "params": {
         "l_um": 1.0,
@@ -95,7 +95,7 @@
         "s": "e3|vref",
         "g": "fb",
         "d": "vdd",
-        "b": "\\$13"
+        "b": "\\$27"
       },
       "params": {
         "l_um": 1.0,
@@ -109,7 +109,7 @@
   ],
   "nets": [
     {
-      "name": "\\$13",
+      "name": "\\$27",
       "pin": false,
       "device_count": 3
     },
@@ -150,7 +150,7 @@
     "net 'e2|sns2' merges 2 distinct labels (e2, sns2) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
     "net 'e3|vref' merges 2 distinct labels (e3, vref) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
     "3 PMOS devices tie their body to an anonymous net with no DC bias path -- no drawn (or derivable) well tie connects this PMOS body to a real supply rail on this layout, so it is left floating rather than tied to a real supply rail; resimulating this netlist directly will not reproduce the schematic-level PMOS body bias -- see unbiased_pmos_body_nets[] for the full list. See docs/cli/extract.md's 'Parasitic (RC) extraction' section.",
-    "6 layers (14/0, 28/0, 44/0, 63/0, 111/0, 128/0) carrying 37 shapes are outside 'sg13cmos5l' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
+    "6 layers (14/0, 28/0, 44/0, 63/0, 111/0, 128/0) carrying 79 shapes are outside 'sg13cmos5l' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
   ],
   "black_box_regions": [],
   "abstracted_cells": [],
@@ -166,9 +166,9 @@
     },
     {
       "bbox_um": {
-        "left": 149.6,
+        "left": 179.6,
         "bottom": 13.9,
-        "right": 797.4,
+        "right": 827.4,
         "top": 16.1
       },
       "reason": "unmarked"
@@ -199,15 +199,15 @@
   "unbiased_pmos_body_nets": [
     {
       "device": "$1",
-      "net": "\\$13"
+      "net": "\\$27"
     },
     {
       "device": "$2",
-      "net": "\\$13"
+      "net": "\\$27"
     },
     {
       "device": "$3",
-      "net": "\\$13"
+      "net": "\\$27"
     }
   ],
   "single_terminal_nets": [],
@@ -224,7 +224,7 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:5bc5475289c024975b7754b67dd5539f2cbd798a95b5cd376794b9e8d82e2c54"
+      "content_hash": "sha256:e1def2e91edb83d205cc750d53394c48c8225291a7a297b702cd6fd7c805b09a"
     }
   },
   "parasitics": null,

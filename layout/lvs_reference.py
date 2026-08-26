@@ -255,9 +255,23 @@ def convert(reference_path: str, pdk: str = "sg13g2") -> list[str]:
                 # EXTRACTION_DECK declares `bipolars=()`.
                 c, b, e = nodes
                 area_um2, perim_um = _pnpmpa_a_p(params)
+                # `m=` (SPICE's standard parallel-device multiplier -- issue
+                # #73/DR-0005 rebuilt bandgap_core.sch's Q2 as 8 parallel
+                # unit-area pnpMPA devices via `m=8` instead of one wide
+                # emitter, so this is no longer always `1`) is carried
+                # across as the reader's own `M=`, the same element
+                # parameter `klayout.db.NetlistSpiceReader` already assigns
+                # a device-multiplicity meaning to for every other device
+                # class this converter emits (`M1 ... W=10U` implicitly
+                # carries `M=1` by the reader's own default). Moot for
+                # today's compare either way: klt's curated sg13cmos5l
+                # EXTRACTION_DECK declares `bipolars=()`, so this device
+                # class is not compared at all -- but the reference netlist
+                # should still say what the schematic actually built.
+                m = params.get("m", "1")
                 out.append(
                     f"{_element_name(instance, 'Q')} {c} {b} {e} {model_lower} "
-                    f"AE={area_um2:g}P PE={perim_um:g}U"
+                    f"AE={area_um2:g}P PE={perim_um:g}U M={float(m):g}"
                 )
             elif model_lower in _CMOS5L_RES_OHMS and pdk == "sg13cmos5l":
                 # Same 2-terminal R-element shape as the SG13G2 path below

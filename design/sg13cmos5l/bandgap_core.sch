@@ -12,24 +12,37 @@ v {xschem version=3.4.8RC file_version=1.3
 * THIS IS NOT A COPY OF EITHER. Supply flavor (3.3V HV) is inherited
 * unchanged from DR-0002.
 *
+* Q2's 8x device is built as 8 parallel UNIT (w=1u l=2u) instances via the
+* SPICE `m=8` multiplier, not a single w=8u wide emitter -- see
+* spec/decision-records/0005-cmos5l-q2-matched-array-construction.md
+* (DR-0005, amends DR-0004): a single w=8u pnpMPA exceeds this PCell's own
+* maxW (2.0u, sg13cmos5l_tech.json), so it cannot be PCell-generated at all,
+* and 8 parallel unit devices is the standard way to build a matched array
+* regardless. DR-0005 also shows (direct model-card read + an ngspice
+* cross-check) that sg13cmos5l_pnpMPA_mod.lib's `p` (perimeter) parameter is
+* computed but never referenced by any `.model` equation -- only `a` (area)
+* matters -- so `m=8` unit devices and the old single w=8u*l=2u device are
+* electrically IDENTICAL (both give the model's `area`-scaled is/ikf/isc/rb/
+* rc/re the same total 16 um^2 effective area); this schematic's sizing
+* below (derived against the old single-device construction) is therefore
+* unchanged by this switch, re-confirmed by the PVT re-run DR-0005 records.
+*
 * Three matched sg13_hv_pmos mirror legs (M1, M2, M3), gate-driven by an
 * external error amplifier via "fb" (out of this phase's scope -- see
 * design/sg13cmos5l/README.md; #65/#66 are the sim/layout follow-on
 * phases, an amp/startup/top follow-up is filed separately):
 *
-*   Q1 (pnpMPA, w=1u l=2u, unit) -- branch 1, sensed directly at sns1
-*                                   (M1 drain == Q1 emitter, no series R).
-*   Q2 (pnpMPA, w=8u l=2u, 8x)   -- branch 2, 8x drawn (area = w*l, a
-*                                   standard SPICE BJT area multiplier --
-*                                   confirmed by reading
-*                                   sg13cmos5l_pnpMPA_mod.lib's own
-*                                   .subckt directly, DR-0004), fed through
-*                                   PTAT resistor R2 from the M2 mirror
-*                                   node "sns2" down to Q2's emitter "e2".
-*   Q3 (pnpMPA, w=1u l=2u, unit) -- output branch, fed through summing
-*                                   resistor R1 from the M3 mirror node
-*                                   ("vref" directly, no cascode in this
-*                                   first pass) down to Q3's emitter "e3".
+*   Q1 (pnpMPA, w=1u l=2u, unit)   -- branch 1, sensed directly at sns1
+*                                     (M1 drain == Q1 emitter, no series R).
+*   Q2 (pnpMPA, w=1u l=2u, m=8)    -- branch 2, 8 parallel unit devices
+*                                     (area = w*l per device, SPICE `m=8`
+*                                     multiplier -- DR-0005), fed through
+*                                     PTAT resistor R2 from the M2 mirror
+*                                     node "sns2" down to Q2's emitter "e2".
+*   Q3 (pnpMPA, w=1u l=2u, unit)   -- output branch, fed through summing
+*                                     resistor R1 from the M3 mirror node
+*                                     ("vref" directly, no cascode in this
+*                                     first pass) down to Q3's emitter "e3".
 *
 * Each pnpMPA is wired grounded-collector: base tied to collector, that
 * shared node tied to vss (the model card's own header, "DUT:
@@ -61,8 +74,11 @@ v {xschem version=3.4.8RC file_version=1.3
 *   ../bandgap_core.sch's own first pass used, kept for continuity, not
 *   independently re-derived for pnpMPA's own error budget).
 *   Standalone pnpMPA op-point at 5uA (typ corner, 27C):
-*     VEB(w=1u,l=2u) = 0.780540 V   (Q1, Q3 CTAT term)
-*     VEB(w=8u,l=2u) = 0.725188 V   (Q2)
+*     VEB(w=1u,l=2u)        = 0.780540 V   (Q1, Q3 CTAT term)
+*     VEB(w=8u,l=2u m=1)    = 0.725188 V   (Q2, pre-DR-0005 construction)
+*     VEB(w=1u,l=2u m=8)    = 0.725188 V   (Q2, DR-0005 construction --
+*                                            bit-for-bit identical, direct
+*                                            ngspice cross-check in DR-0005)
 *     dVEB(Q1,Q2)    = 0.055352 V  (vs. VT*ln(8) ~= 0.053746V ideal --
 *                                    the ~3% excess matches the model's
 *                                    own nf=1.015 non-ideality factor)
@@ -126,7 +142,7 @@ N 400 370 400 350 {}
 C {lab_pin.sym} 400 350 0 0 {name=l13 lab=sns2}
 N 400 430 400 450 {}
 C {lab_pin.sym} 400 450 0 0 {name=l14 lab=e2}
-C {sg13cmos5l_pr/pnpMPA.sym} 400 600 0 0 {name=Q2 model=pnpMPA spiceprefix=X w=8u l=2u m=1}
+C {sg13cmos5l_pr/pnpMPA.sym} 400 600 0 0 {name=Q2 model=pnpMPA spiceprefix=X w=1u l=2u m=8}
 N 420 630 440 650 {}
 C {lab_pin.sym} 440 650 0 0 {name=l15 lab=vss}
 N 380 600 360 600 {}

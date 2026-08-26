@@ -50,19 +50,38 @@ re-parameterizing `../bandgap_core.sch` (SG13G2's grounded-*emitter* NPN
 core) — **this is a genuinely new schematic, not a copy of either.**
 
 **`bandgap_core.sch`** — three `pnpMPA` legs (Q1 unit `w=1u l=2u`, Q2 at
-`w=8u l=2u` for the 8:1-area PTAT delta-VEB, Q3 unit output device), each
-diode-connected (base tied to collector) with the shared node tied to
-`vss` — grounded-collector, emitter driven from a matched `sg13_hv_pmos`
-mirror leg gated by an external `fb` node (DR-0002's 3.3V HV supply
-flavor, inherited unchanged). `R2` sets the PTAT current once an external
-amplifier forces `sns1 = sns2`; `R1` sums the CTAT `VEB(Q3)` with the
-PTAT `I*R1` term at `vref`. `rppd` (mild-TC precision resistor, same
-flavor this repo's SG13G2 core and both sibling repos favor) is used for
-both resistors. No cascode, trim, compensation cap, error amplifier, or
+`w=1u l=2u m=8` — 8 parallel unit devices for the 8:1-area PTAT delta-VEB,
+Q3 unit output device), each diode-connected (base tied to collector) with
+the shared node tied to `vss` — grounded-collector, emitter driven from a
+matched `sg13_hv_pmos` mirror leg gated by an external `fb` node (DR-0002's
+3.3V HV supply flavor, inherited unchanged). `R2` sets the PTAT current once
+an external amplifier forces `sns1 = sns2`; `R1` sums the CTAT `VEB(Q3)`
+with the PTAT `I*R1` term at `vref`. `rppd` (mild-TC precision resistor,
+same flavor this repo's SG13G2 core and both sibling repos favor) is used
+for both resistors. No cascode, trim, compensation cap, error amplifier, or
 startup circuit at THIS phase — `bandgap_core` only, matching issue #64's
 acceptance criteria's "at minimum `bandgap_core`" bar. Full topology
 rationale and the provisional sizing derivation are in the schematic's own
 header comment.
+
+**Q2's matched-array construction (issue #73, DR-0005)**: Q2 was originally
+captured as a single `pnpMPA` instance with `w=8u l=2u` — an 8x-area device
+built as one wide emitter. The SG13CMOS5L layout phase (issue #66) found
+that construction unbuildable (`w=8u` exceeds this PCell's own
+`pnpMPA_maxW` of 2.0µm — `pnpMPA_code.py`'s PCell generator cannot draw it
+at all) and not how a matched 8x array is built anyway (the standard is N
+unit devices in parallel). Issue #73 / DR-0005 changed Q2 to 8 parallel
+`w=1u l=2u` unit devices via the SPICE `m=8` multiplier — each unit device
+is well inside `pnpMPA_maxW`, and DR-0005 shows (direct model-card read,
+confirmed by an ngspice cross-check) that this is electrically **identical**
+to the old single-device construction: `pnpMPA`'s `.model` equations use
+only the `a` (area) parameter, never `p` (perimeter, computed but unused),
+and SPICE's `m=` subcircuit multiplier is mathematically equivalent to an
+`area` multiplier for this model's linear/inverse-linear area dependence.
+The re-run `sim/sg13cmos5l-*` PVT evidence (see those experiments' own
+`records/`) confirms the numbers are unchanged. See
+`spec/decision-records/0005-cmos5l-q2-matched-array-construction.md` for
+the full account.
 
 ## What's here (issue #68 -- startup, amplifier, top-level integration)
 
