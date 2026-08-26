@@ -1,15 +1,17 @@
 # Chipalooza Challenge #2 — sign-off proposal: SG13CMOS5L bandgap voltage reference
 
-**Status: pre-layout proposal, not a finished sign-off.** This document
-covers phases 1/4-2/4 of the SG13CMOS5L port (issue #63): device-topology
-decision + schematic capture (#64/#68) and PVT-cornered pre-layout
-simulation (#65). Phase 3/4, layout + DRC/LVS-clean GDS (issue #66), is
-**still open as of this writing** — see "Sign-off status against the
-brief" below. The Challenge #2 brief's full bar (schematic + pre-layout
-sim -> layout + post-layout sim over PVT -> DRC/LVS-clean GDS,
-open-source-EDA-verifiable) is **not yet met**; this document proposes the
-block and reports what has been verified so far, honestly bounded by what
-has not.
+**Status: layout + post-layout PVT sim landed; not a finished sign-off.**
+This document covers phases 1/4-3/4 of the SG13CMOS5L port (issue #63):
+device-topology decision + schematic capture (#64/#68), PVT-cornered
+pre-layout simulation (#65), and layout + post-layout PVT simulation
+(#81/#84). The Challenge #2 brief's full bar (schematic + pre-layout sim ->
+layout + post-layout sim over PVT -> DRC/LVS-clean GDS,
+open-source-EDA-verifiable) is **not yet fully met** — DRC is clean, but
+LVS reports a fully-attributed `mismatch` against `klayout-tools`' curated
+SG13CMOS5L deck's known starter-scope gaps, not a real circuit defect — see
+"Sign-off status against the brief" below for the complete, per-stage
+breakdown. This document proposes the block and reports what has been
+verified so far, honestly bounded by what has not.
 
 Block-only document: no personal or institutional detail below, per the
 epic's (2AMLogic/2am#542) Tier 1 disclosure scope.
@@ -158,14 +160,15 @@ row above claims these numbers as a spec result):**
 | Brief stage | Status |
 |---|---|
 | Schematic + pre-layout sim | **Done.** `design/sg13cmos5l/bandgap_top.sch` (+ `bandgap_core`/`bandgap_amp`/`bandgap_startup`) captured (issues #64, #68); three PVT-cornered pre-layout testbenches landed with 45/45 PASS each (issue #65, section 4 above). |
-| Layout + post-layout sim over PVT | **Not started.** Tracked by issue #66, currently open. |
-| DRC/LVS-clean GDS, in-repo, open-source-EDA-verifiable | **Not started.** Same dependency, issue #66. |
+| Layout + post-layout sim over PVT | **Done, with a disclosed gap.** `layout/sg13cmos5l-bandgap_top/` assembled from the three leaf cells (issue #81); post-layout (PEX) re-simulation of all 14 MOS devices' real drawn geometry across the same 45-point PVT grid lands 45/45 PASS (issue #84, `sim/sg13cmos5l-closed-loop-startup-pex/`). No wire (metal) parasitics are modelled — `klt extract --deck sg13cmos5l --parasitics` fails outright on a `klayout-tools` deck-registry bug found and filed this pass ([klayout-tools#1440](https://github.com/2AMLogic/klayout-tools/issues/1440)) — so this is device-geometry PEX evidence, not the wire-RC-inclusive claim the SG13G2 side carries (issue #37). See `sim/sg13cmos5l-closed-loop-startup-pex/README.md` for the full disclosure. |
+| DRC/LVS-clean GDS, in-repo, open-source-EDA-verifiable | **DRC clean; LVS is not literally clean.** `layout/sg13cmos5l-bandgap_top/drc_report.json` reports `clean`, 0 violations. `lvs_report.json` reports `status: "mismatch"` (51 findings), but every finding is fully attributed to four documented starter-deck limitations (no bipolar/resistor device recognition, no HV MOS flavour, no well/substrate tap — each independently filed against `klayout-tools`), not a real connectivity defect in this layout — see `layout/README.md`'s "SG13CMOS5L: LVS" section for the full attribution. The brief's bar as literally worded ("LVS-clean") is therefore not fully met; the gap is a young open-source deck's coverage limit, disclosed and tracked upstream, not a circuit or layout error. |
 
-The brief's full sign-off bar requires all three stages. **This document
-covers only the first stage.** It should be read as a pre-layout proposal
-and positioning statement, not a completed Challenge #2 submission —
-update this document once issue #66 lands post-layout PVT results and a
-DRC/LVS-clean GDS.
+The brief's full sign-off bar requires all three stages. Schematic + pre-layout
+sim (stage 1) and layout + post-layout PVT sim (stage 2) are both landed;
+stage 3 (a literally LVS-clean GDS) remains open pending the `klayout-tools`
+deck-coverage gaps named above — this document should still be read as
+reporting real, PVT-cornered verification evidence with every caveat
+disclosed, not as a completed, unconditional Challenge #2 submission.
 
 ## 6. Bench test plan (for measured silicon, if/when it returns)
 

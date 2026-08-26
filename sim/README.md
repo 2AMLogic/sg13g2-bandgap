@@ -283,6 +283,24 @@ from no checker at all.
   checkout, a real install-shape gap filed at
   [`2AMLogic/klayout-tools#1406`](https://github.com/2AMLogic/klayout-tools/issues/1406)
   (see `sim/pdk-sg13cmos5l.json` `"sibling_checkout_requirement"`).
+- **[`sg13cmos5l-closed-loop-startup-pex/`](sg13cmos5l-closed-loop-startup-pex/README.md)**
+  — the SG13CMOS5L port's post-layout (PEX) counterpart to
+  `sg13cmos5l-closed-loop-startup` above (issue #84, the last open item
+  against parent issue #63's Acceptance Criteria after #81 assembled
+  `layout/sg13cmos5l-bandgap_top/`). Top-level scope (all three leaf cells'
+  14 MOS devices re-extracted from the one assembled GDS, not three
+  separate per-leaf-cell PEX testbenches), same 45-point PVT grid and pass
+  criteria as the pre-layout precedent, and lands 45/45 PASS with
+  per-point results matching that precedent to 5-6 significant figures
+  (expected: only junction geometry changed, no wire parasitics were
+  added). **Materially weaker than the SG13G2 PEX pair above in one way**:
+  no wire/metal parasitics are modelled at all, because
+  `klt extract --deck sg13cmos5l --parasitics` fails outright — a deck
+  registry-wiring bug distinct from (and found on top of) the
+  already-known bipolar/resistor device-class gaps, filed generically as
+  [klayout-tools#1440](https://github.com/2AMLogic/klayout-tools/issues/1440).
+  See that experiment's README for the full account of what device
+  geometry is extracted vs. what remains schematic-sourced.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 
