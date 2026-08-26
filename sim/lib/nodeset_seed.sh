@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Shared nodeset-seed provenance lookup, sourced (not executed) by any
-# experiment's run_pvt_sweep.sh that needs sim/closed-loop-startup's own
-# per-corner DC-bias .nodeset seed values -- currently
-# sim/closed-loop-psrr/run_pvt_sweep.sh and
-# sim/loop-gain-phase-margin/run_pvt_sweep.sh. Extracted in issue #99
-# because this block was duplicated byte-for-byte across both scripts (the
-# same shape of duplication sim/lib/pvt_preflight.sh was extracted to fix in
-# issue #28).
+# experiment script that needs sim/closed-loop-startup's own per-corner
+# DC-bias .nodeset seed values -- currently
+# sim/closed-loop-psrr/run_pvt_sweep.sh, sim/loop-gain-phase-margin/
+# run_pvt_sweep.sh and sim/closed-loop-offset/run_offset_check.sh.
+# Extracted in issue #99 because this block was duplicated byte-for-byte
+# across the first two scripts (the same shape of duplication
+# sim/lib/pvt_preflight.sh was extracted to fix in issue #28); issue #101
+# folded in the third (near-duplicate, differing only in its message
+# prefix) caller and parameterized that prefix so all three -- and any
+# future caller -- can share this file with zero per-caller configuration.
 #
 # Caller contract:
 #   - `set -euo pipefail` before sourcing (this file relies on it: the
@@ -14,6 +17,10 @@
 #     status, matching the pre-extraction behavior of each script).
 #   - Source this AFTER sim/lib/pvt_preflight.sh -- it needs SIM_DIR and
 #     REPO_ROOT, which pvt_preflight.sh provides.
+#   - Source this file directly from the experiment script's top level (not
+#     from inside a function) so `${BASH_SOURCE[1]}` below resolves to the
+#     calling script's own path, matching sim/lib/pvt_preflight.sh's own
+#     `SCRIPT_DIR` convention.
 #
 # Provides on return:
 #   SEED_CSV, SEED_GIT_SHA -- provenance of the sourced seed record
@@ -24,17 +31,23 @@
 # none of that is shared here on purpose (it differs substantively per
 # experiment).
 
+# Caller's own basename (e.g. "run_pvt_sweep.sh" or "run_offset_check.sh"),
+# derived (not a caller-set contract variable) so every caller's own
+# error/log output below is labeled with its own script name rather than a
+# hardcoded one.
+caller_name="$(basename "${BASH_SOURCE[1]}")"
+
 # Nodeset provenance: the most recent committed sim/closed-loop-startup
 # record (see README.md "Nodeset provenance" for why this cross-experiment
 # read is necessary and how it is verified per-point, not just trusted).
 SEED_CSV="$(ls -1 "${SIM_DIR}/closed-loop-startup/records/"*.csv 2>/dev/null | sort | tail -1 || true)"
 if [[ -z "${SEED_CSV}" || ! -f "${SEED_CSV}" ]]; then
-  echo "run_pvt_sweep.sh: no sim/closed-loop-startup/records/*.csv found -- this" >&2
-  echo "run_pvt_sweep.sh: experiment needs that experiment's DC-bias seed values." >&2
-  echo "run_pvt_sweep.sh: run sim/closed-loop-startup/run_pvt_sweep.sh first." >&2
+  echo "${caller_name}: no sim/closed-loop-startup/records/*.csv found -- this" >&2
+  echo "${caller_name}: experiment needs that experiment's DC-bias seed values." >&2
+  echo "${caller_name}: run sim/closed-loop-startup/run_pvt_sweep.sh first." >&2
   exit 3
 fi
-echo "run_pvt_sweep.sh: nodeset seeds sourced from ${SEED_CSV}"
+echo "${caller_name}: nodeset seeds sourced from ${SEED_CSV}"
 SEED_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- "${SEED_CSV}" 2>/dev/null || echo unknown)"
 
 # lookup_seed CORNER TEMP VDD FIELD
