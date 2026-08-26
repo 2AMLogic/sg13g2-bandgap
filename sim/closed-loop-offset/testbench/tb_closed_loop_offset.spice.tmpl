@@ -1,0 +1,126 @@
+* sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+* closed-loop deterministic input-referred-offset sensitivity testbench
+* (issue #88, follow-on to #86/#58). Generated from
+* sim/closed-loop-offset/testbench/tb_closed_loop_offset.spice.tmpl
+* by sim/closed-loop-offset/run_offset_check.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the check. Full methodology rationale is in
+* sim/closed-loop-offset/README.md.
+*
+* Generated for: point=@@POINT_LABEL@@ corner=@@CORNER_LABEL@@
+* temp=@@TEMP_C@@C vdd=@@VDD@@V vos=@@VOS@@V
+* DUT git sha (design/netlist/bandgap_core.spice,
+* design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice
+* this was copied from):
+*   @@DUT_GIT_SHA@@
+* PDK: @@PDK@@ @@PDK_ROOT@@ (see sim/pdk.json for the pinned release)
+* OSDI models: @@OSDI_DIR@@ (built by sim/tools/build-osdi.sh)
+*
+* --------------------------------------------------------- offset probe
+* This is NOT a Monte Carlo / statistical mismatch claim (out of scope --
+* see README and design/README.md's issue #58 section). It is a
+* deterministic input-referred-offset PROBE: a DC voltage source Vos is
+* inserted in series between the shared "sns1" node (bandgap_core's own
+* output) and a new node "sns1_amp" that ONLY design/bandgap_amp.spice's
+* XMP2 gate (in_n, the inverting input -- see design/bandgap_amp.sch's own
+* header "polarity" derivation) is tied to, everywhere else this
+* co-simulation is identical to sim/closed-loop-vref-pvt/'s own topology
+* (single shared fb node, loop not broken). This is the standard way to
+* model an amplifier's own input-referred offset voltage: in series with
+* one input. Sweeping Vos to +VOS and -VOS and comparing the resulting
+* vref against the Vos=0 baseline measures this design's own vref
+* SENSITIVITY to an amplifier input offset (dVref/dVos) -- useful
+* regardless of what this amplifier's OWN real offset happens to be
+* (unknown without Monte Carlo mismatch data this repo does not have).
+*
+* ------------------------------------------------------- DC bias: nodeset
+* Same .nodeset-seeding technique sim/loop-gain-phase-margin/ and
+* sim/closed-loop-psrr/ both use, and for the same reason (this circuit
+* has more than one DC equilibrium, and a bare .op has no guaranteed way
+* to land in the intended one) -- seeded from sim/closed-loop-startup's
+* own committed per-corner converged transient endpoint for the REAL
+* (Vos=0) circuit. This is only a Newton-Raphson initial-guess HINT, not
+* an enforced constraint, so it remains a useful head start even though
+* the actual Vos!=0 runs are expected to converge to a DIFFERENT
+* equilibrium than the seed (that shift IS the effect under test) --
+* unlike sim/closed-loop-psrr/, this testbench does NOT gate pass/fail on
+* "op landed near its seed" for that reason (see README "Pass/fail
+* criteria" -- the check here is that the loop is still genuinely closed
+* around its OWN new equilibrium, not that it reproduces the Vos=0 one).
+.nodeset v(fb)=@@FB_SEED@@ v(sns1)=@@SNS1_SEED@@ v(sns1_amp)=@@SNS1_SEED@@ v(sns2)=@@SNS2_SEED@@ v(vref)=@@VREF_SEED@@
+
+.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerHBT.lib" @@HBT_SECTION@@
+.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerMOShv.lib" @@MOS_SECTION@@
+.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerRES.lib" @@RES_SECTION@@
+
+.options temp=@@TEMP_C@@ tnom=27
+
+* FIXTURE -- vdd is a fixed DC source (no ramp, no AC): this testbench
+* measures a DC operating-point shift under a deterministic offset probe,
+* not a startup transient or a small-signal frequency response.
+Vvdd vdd 0 dc @@VDD@@
+Vvss vss 0 dc 0
+Vsub sub! vss dc 0
+
+* DUT -- design/netlist/bandgap_core.spice, verbatim (loop NOT broken).
+XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR1 vref cb3 sub! rppd w=2u l=694.5u m=1 b=0
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+* DUT -- design/netlist/bandgap_amp.spice, verbatim, EXCEPT XMP2's gate
+* (in_n, the inverting input) is tied to "sns1_amp" instead of "sns1" --
+* see "offset probe" above. in_p <- sns2 (non-inverting) is untouched.
+XMTAIL tail fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP2 d2 sns1_amp tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP4 fb pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN3 fb d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+
+* FIXTURE -- the offset probe itself: a DC source in series between the
+* real sns1 node and the amp-only sns1_amp node. A 0V Vos (the baseline
+* point) reduces this to a plain wire, reproducing
+* sim/closed-loop-vref-pvt/'s own unmodified topology exactly.
+Vos sns1_amp sns1 dc @@VOS@@
+
+* DUT -- design/netlist/bandgap_startup.spice, verbatim. `sns1` and `fb`
+* are shared with the core and amp DUTs above -- the nodes the assembled
+* block actually connects. Note: XMSENSE's gate is tied to the REAL sns1
+* (not sns1_amp) -- the startup circuit is not part of the "amplifier"
+* the offset probe models, so it is left on the unperturbed node, same as
+* design/bandgap_top.sch's own wiring intends (XMSENSE senses the core's
+* actual sns1, not an amplifier-internal offset-shifted copy of it).
+*
+* FIXTURE -- Vmkfb is a 0V ammeter in series with XMKFB's drain (same
+* fixture every closed-loop experiment in this tree uses). A 0V source is
+* a DC short and does not move the operating point.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=@@MSENSE_W@@ l=0.5u ng=1 m=1
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+.control
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
+pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
+op
+* Parsed by run_offset_check.sh from these exact "v(node) = value" lines
+* (ngspice has no ".meas op" analysis type -- "print" is this tree's
+* standard way to pull a DC operating-point value out of a .control
+* block).
+print v(fb)
+print v(sns1)
+print v(sns1_amp)
+print v(sns2)
+print v(vref)
+.endc
+.end

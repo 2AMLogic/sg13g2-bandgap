@@ -308,15 +308,45 @@ actually ran, in the sandbox it ran in — not a substitute for #10.
     far-out dominant pole (no explicit compensation capacitor exists in
     `bandgap_amp.sch`'s first pass), not as evidence that a future revision
     could never need one.
-- **Still not attempted**: PSRR and offset/mismatch — both explicitly
-  deferred by issue #86 per its own acceptance criteria's escape hatch
-  (tracked by #88; Monte Carlo itself is tracked separately in #4 checklist
-  item 6, currently N/A per #5). Also still not attempted: any
-  claim against `spec/porting-plan.md` §6's draft target table as a
-  pass/fail verdict — that table remains unratified (#13), and per
-  `klayout-tools`' `docs/design-evidence-tiers.md` T1 checklist (referenced
-  from issue #4), producing the capability to run that comparison is not
-  the same as running it.
+- **Now attempted (issue #88)** — PSRR and an informal, deterministic
+  offset/mismatch sensitivity check, closing out the two items #86 had
+  deferred:
+  - [`sim/closed-loop-psrr/README.md`](../sim/closed-loop-psrr/README.md)
+    measures closed-loop power-supply rejection at `vref` via a
+    small-signal AC analysis (loop left closed, a 1V/0deg AC perturbation
+    injected directly on `vdd`, DC bias `.nodeset`-seeded from
+    `sim/closed-loop-startup`'s own settled transient endpoints and
+    re-verified per point). Result: DC PSRR 57.1-105.2 dB across the
+    45-point grid (the high end is a bias-point-specific near-cancellation
+    at 27°C/3.63V, not typical behavior — see that README), degrading to a
+    worst case of 3.2-4.8 dB near 31-40 MHz, the same decade
+    `sim/loop-gain-phase-margin`'s independently-measured 41.5-53.3 MHz
+    unity-gain crossover falls in — two independent testbenches agreeing
+    on where this design's regulation runs out of headroom. Not a claim
+    against `spec/porting-plan.md` §6's still-unratified `PSRR @ DC > 60
+    dB` draft target (#13); see that README's own disclaimer.
+  - [`sim/closed-loop-offset/README.md`](../sim/closed-loop-offset/README.md)
+    is explicitly **not** a Monte Carlo/statistical mismatch claim (that
+    infrastructure remains out of scope, #4 checklist item 6, N/A per #5).
+    It injects a deterministic ±5 mV DC offset probe in series with
+    `bandgap_amp`'s inverting input at three representative PVT points (not
+    the full 45-point grid — a deliberate "single-point/sensitivity check"
+    scope, per issue #88's own escape hatch) and measures this design's
+    `vref` sensitivity to an amplifier input offset: `dVref/dVos` ≈
+    8.78-8.80 V/V, essentially flat across PVT and consistent (within ~5%)
+    with a hand-derived `R1/R2` (`694.5u/82.7u` ≈ 8.40) first-order
+    estimate — a real, explicable circuit property, not a testbench
+    artifact. A 5 mV offset would move `vref` by roughly 44 mV, a sizable
+    fraction of its ~1.13-1.22 V nominal range, underscoring why this
+    untrimmed reference is offset-sensitive.
+- **Still not attempted**: any claim against `spec/porting-plan.md` §6's
+  draft target table as a pass/fail verdict — that table remains
+  unratified (#13), and per `klayout-tools`' `docs/design-evidence-tiers.md`
+  T1 checklist (referenced from issue #4), producing the capability to run
+  that comparison is not the same as running it. Also still not attempted:
+  Monte Carlo mismatch/yield analysis (#4 checklist item 6, N/A per #5) —
+  `sim/closed-loop-offset/` above is a deterministic sensitivity
+  substitute, not a replacement for it.
 
 ## Tooling/PDK friction encountered
 
