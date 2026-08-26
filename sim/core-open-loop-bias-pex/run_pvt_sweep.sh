@@ -28,7 +28,7 @@ LAYOUT_GDS="layout/bandgap_core/bandgap_core.gds"
 # shellcheck source=../lib/pvt_preflight.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 
-LAYOUT_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- "${LAYOUT_GDS}" 2>/dev/null || echo unknown)"
+LAYOUT_GIT_SHA="$(dut_git_sha "${LAYOUT_GDS}")"
 
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_core_open_loop_bias_pex.spice.tmpl"
 

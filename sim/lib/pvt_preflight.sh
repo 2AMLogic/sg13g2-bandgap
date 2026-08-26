@@ -27,6 +27,10 @@
 #   CORNER_LABELS, VDDS, TEMPS -- the shared PVT sweep grid (see below)
 #   MOS_SECTION_OF, RES_SECTION_OF, HBT_SECTION_OF -- corner-label -> PDK
 #     corner-lib section maps (see below)
+#   dut_git_sha() function        -- see its own header comment below; callers
+#     with a second/third provenance file to stamp (e.g. bandgap_amp,
+#     bandgap_startup, or a layout GDS) call this instead of re-deriving
+#     DUT_GIT_SHA's one-liner inline
 #   run_pvt_point() function     -- see its own header comment below
 #   write_pvt_summary() function -- see its own header comment below
 #
@@ -70,7 +74,22 @@ if ! "${SIM_DIR}/tools/build-osdi.sh" --check >/dev/null 2>&1; then
 fi
 OSDI_DIR="${SG13G2_OSDI_DIR:-${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi}"
 
-DUT_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- "${DUT_NETLIST}" 2>/dev/null || echo unknown)"
+# dut_git_sha PATH
+#   Prints PATH's most recent commit's short SHA (PATH is a repo-relative
+#   git pathspec, resolved against REPO_ROOT), or "unknown" if PATH has no
+#   git history or git itself fails. Extracted in issue #103 because this
+#   exact one-liner -- originally written once below for DUT_NETLIST -- had
+#   been hand-retyped 17 times across 9 run_pvt_sweep.sh scripts to stamp
+#   provenance for a second/third DUT file (bandgap_amp, bandgap_startup) or
+#   a layout GDS. Every caller of this function, including the DUT_GIT_SHA
+#   assignment immediately below, gets the exact same fallback semantics
+#   (`2>/dev/null || echo unknown`) from one definition instead of N
+#   hand-typed copies that could silently drift.
+dut_git_sha() {
+  git -C "${REPO_ROOT}" log -1 --format=%h -- "$1" 2>/dev/null || echo unknown
+}
+
+DUT_GIT_SHA="$(dut_git_sha "${DUT_NETLIST}")"
 REPO_GIT_SHA="$(git -C "${REPO_ROOT}" rev-parse --short HEAD 2>/dev/null || echo unknown)"
 RECORD_ID="$(date -u +%Y%m%d-%H%M%S)-${REPO_GIT_SHA}"
 
