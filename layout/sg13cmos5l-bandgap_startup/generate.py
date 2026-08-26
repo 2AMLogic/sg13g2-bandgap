@@ -92,6 +92,7 @@ from common_sg13cmos5l import (  # noqa: E402
     boundary_port,
     draw_hv_nmos,
     draw_rhigh,
+    pad_center_x,
     poly_tab,
     route_h,
     route_v,
@@ -184,7 +185,7 @@ def _route(b: Builder, rpu: dict, msense: dict, mkfb: dict) -> dict[str, tuple[f
     # bandgap_core's first DRC run established (a stem that overhangs its
     # landing pad's edge makes the join a step, and `metal1.width.1` flags
     # the notch).
-    x_rpu_det = _pad_center_x(rpu["end_b_pad"])
+    x_rpu_det = pad_center_x(rpu["end_b_pad"])
     route_v(b, L_METAL1, x_rpu_det, Y_DET_LANE, rpu["end_b_pad"][1], width=TRUNK_W)
     route_h(b, L_METAL1, Y_DET_LANE, X_MSENSE, X_DET_TAB, width=TRUNK_W)
     route_v(b, L_METAL1, X_MSENSE, msense["drain_pad"][3], Y_DET_LANE, width=TRUNK_W)
@@ -215,7 +216,7 @@ def _route(b: Builder, rpu: dict, msense: dict, mkfb: dict) -> dict[str, tuple[f
     # det's own horizontal lane at Y_DET_LANE=3 (which spans the entire
     # x=1395..1423.5 run) on a vertical poly underpass, since that lane
     # covers fb's own column (x=1420) too.
-    x_fb = _pad_center_x(mkfb["drain_pad"])
+    x_fb = pad_center_x(mkfb["drain_pad"])
     fb_pad = boundary_port(b, "fb", "right", X_FB_PORT, Y_FB_JOG)
     route_v(b, L_METAL1, x_fb, mkfb["drain_pad"][3], Y_FB_UNDERPASS[0], width=TRUNK_W)
     poly_tab(b, x_fb, Y_FB_UNDERPASS[0])
@@ -235,11 +236,6 @@ def _route(b: Builder, rpu: dict, msense: dict, mkfb: dict) -> dict[str, tuple[f
         "sns1": sns1_pad,
         "fb": fb_pad,
     }
-
-
-def _pad_center_x(pad: tuple[float, float, float, float]) -> float:
-    """X centre of a returned terminal pad box."""
-    return (pad[0] + pad[2]) / 2
 
 
 if __name__ == "__main__":

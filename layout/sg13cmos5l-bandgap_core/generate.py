@@ -184,6 +184,7 @@ from common_sg13cmos5l import (  # noqa: E402
     draw_hv_pmos,
     draw_pnpmpa,
     draw_rppd,
+    pad_center_x,
     poly_underpass,
     route_h,
     route_v,
@@ -295,7 +296,7 @@ def build() -> Builder:
     r1 = draw_rppd(b, "R1", R1_W, R1_L, X_M3, Y_R1, end_a_net="vref", end_b_net="e3")
 
     # -- the grounded-collector PNPs, each under its own branch -------------
-    x_q3 = _pad_center_x(r1["end_b_pad"])
+    x_q3 = pad_center_x(r1["end_b_pad"])
     q1 = draw_pnpmpa(b, "Q1", Q_UNIT_W, Q_L, X_M1, Y_Q12, "sns1", "vss", "vss")
     q2_units = [
         draw_pnpmpa(b, f"Q2_{i}", Q_UNIT_W, Q_L, Q2_X0 + i * Q2_PITCH_X, Y_Q12, "e2", "vss", "vss")
@@ -363,7 +364,7 @@ def _route(
     # first DRC run). A 0.30 um stem landing wholly inside a 0.50 um pad
     # measures 0.30*cos(45) = 0.212 um across the T's own diagonal, clear of
     # the 0.16 um floor.
-    x_sns2 = _pad_center_x(r2["end_a_pad"])
+    x_sns2 = pad_center_x(r2["end_a_pad"])
     route_v(b, L_METAL1, x_sns2, r2["end_a_pad"][3],
             m2["drain_pad"][3], width=TRUNK_W)
     # Boundary port (issue #76): branch right off this trunk at y=50, out to
@@ -382,18 +383,18 @@ def _route(
     # straight down onto that trunk, landing inside its span (the trunk
     # spans the full row, x=123.75..165.75, and R2's drop is at x=130.35).
     for q in q2_units:
-        route_v(b, L_METAL1, _pad_center_x(q["emitter_pad"]), Q2_BUS_Y,
+        route_v(b, L_METAL1, pad_center_x(q["emitter_pad"]), Q2_BUS_Y,
                 q["emitter_pad"][3], width=TRUNK_W)
-    x_bus_lo = _pad_center_x(q2_units[0]["emitter_pad"])
-    x_bus_hi = _pad_center_x(q2_units[-1]["emitter_pad"])
+    x_bus_lo = pad_center_x(q2_units[0]["emitter_pad"])
+    x_bus_hi = pad_center_x(q2_units[-1]["emitter_pad"])
     route_h(b, L_METAL1, Q2_BUS_Y, x_bus_lo, x_bus_hi, width=TRUNK_W)
-    x_e2 = _pad_center_x(r2["end_b_pad"])
+    x_e2 = pad_center_x(r2["end_b_pad"])
     route_v(b, L_METAL1, x_e2, Q2_BUS_Y, r2["end_b_pad"][1], width=TRUNK_W)
 
     # -- vref: M3.drain -> R1.end_a, straight down column x=180 (same
     # pad-centred landing as sns2 above). Clears the Q2 row's right edge
     # (165.75+2.75=168.5) by ~11.5 um.
-    x_vref = _pad_center_x(r1["end_a_pad"])
+    x_vref = pad_center_x(r1["end_a_pad"])
     route_v(b, L_METAL1, x_vref, r1["end_a_pad"][3],
             m3["drain_pad"][3], width=TRUNK_W)
     # Boundary port (issue #76): branch right off this trunk at y=40 --
@@ -405,7 +406,7 @@ def _route(
     route_h(b, L_METAL1, Y_VREF_PORT, x_vref, vref_pad[0], width=TRUNK_W)
 
     # -- e3: R1.end_b -> Q3.emitter, same construction as e2.
-    x_e3 = _pad_center_x(r1["end_b_pad"])
+    x_e3 = pad_center_x(r1["end_b_pad"])
     route_v(b, L_METAL1, x_e3, q3["emitter_pad"][3], r1["end_b_pad"][1], width=TRUNK_W)
 
     # -- vss: every PNP's base ring + collector ring, all tied together.
@@ -445,11 +446,6 @@ def _tie_rings(b: Builder, q: dict, y: float) -> None:
     with a short horizontal Metal1 stub on the device's left side, clear of
     the emitter escape route through the rings' open top."""
     route_h(b, L_METAL1, y, q["collector_ring_m1"][0], q["base_ring_m1"][0], width=TRUNK_W)
-
-
-def _pad_center_x(pad: tuple[float, float, float, float]) -> float:
-    """X centre of a returned terminal pad box."""
-    return (pad[0] + pad[2]) / 2
 
 
 def _fb_tap(b: Builder, x: float, y: float) -> tuple[float, float, float, float]:
