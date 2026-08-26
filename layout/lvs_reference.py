@@ -484,6 +484,13 @@ def _write(reference_path: str, output_path: str, pdk: str = "sg13g2") -> None:
     print(f"wrote {output_path}")
 
 
+def _write_flattened(top_path: str, output_path: str, pdk: str = "sg13cmos5l") -> None:
+    lines = flatten(top_path, pdk=pdk)
+    with open(output_path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    print(f"wrote {output_path}")
+
+
 if __name__ == "__main__":
     _write(
         os.path.join(REPO_ROOT, "design/netlist/bandgap_core.spice"),
@@ -506,11 +513,7 @@ if __name__ == "__main__":
         ),
         pdk="sg13cmos5l",
     )
-    # The other two CMOS5L leaf cells (issue #74). bandgap_top is deliberately
-    # absent: it is a *hierarchical* netlist (three subckt calls, no device
-    # lines of its own), which this converter's device-line grammar cannot
-    # express -- see layout/README.md "Cell: sg13cmos5l-bandgap_top" for why
-    # that cell is out of scope here and what it would take.
+    # The other two CMOS5L leaf cells (issue #74).
     _write(
         os.path.join(REPO_ROOT, "design/sg13cmos5l/netlist/bandgap_startup.spice"),
         os.path.join(
@@ -524,6 +527,17 @@ if __name__ == "__main__":
         os.path.join(
             REPO_ROOT,
             "layout/sg13cmos5l-bandgap_amp/sg13cmos5l-bandgap_amp.lvs_reference.spice",
+        ),
+        pdk="sg13cmos5l",
+    )
+    # bandgap_top (issue #81) -- the hierarchical assembly netlist, whose own
+    # X-calls are subckt instantiations rather than devices (see flatten()'s
+    # own docstring for why convert() cannot express this file directly).
+    _write_flattened(
+        os.path.join(REPO_ROOT, "design/sg13cmos5l/netlist/bandgap_top.spice"),
+        os.path.join(
+            REPO_ROOT,
+            "layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.lvs_reference.spice",
         ),
         pdk="sg13cmos5l",
     )
