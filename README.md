@@ -81,14 +81,18 @@ the sims are measured against.**
 
 This repo also carries a second port of the same bandgap design onto IHP
 SG13CMOS5L (a CMOS-only sibling process to SG13G2), targeting the
-Chipalooza Challenge #2 brief. Schematic capture and PVT-cornered
-pre-layout simulation are done (45/45 points PASS across three
-testbenches); layout and DRC/LVS sign-off are still open. See
+Chipalooza Challenge #2 brief. Schematic capture, PVT-cornered pre-layout
+simulation, layout, and post-layout (PEX) PVT simulation are all done
+(45/45 points PASS in every testbench, including the post-layout pass);
+the assembled GDS is DRC-clean, and LVS reports a fully-attributed
+`mismatch` against `klayout-tools`' curated SG13CMOS5L deck's documented
+starter-scope gaps, not a real circuit defect. See
 [`docs/chipalooza/challenge-2-proposal.md`](docs/chipalooza/challenge-2-proposal.md)
 for the full proposal: positioning, I/O budget, functional description, a
-spec table re-derived from the SG13CMOS5L `sim/` evidence, and a bench
-test plan for measured silicon. Tracked by issue #63 (parent) and its four
-phase issues (#64-#67).
+spec table re-derived from the SG13CMOS5L `sim/` evidence, a bench test
+plan for measured silicon, and the complete per-stage sign-off breakdown.
+Tracked by issue #63 (parent) and its phase/follow-on issues
+(#64-#67, #73, #74, #76, #81, #84).
 
 ## Repo layout
 
