@@ -259,7 +259,7 @@
     }
   ],
   "warnings": [
-    "1 poly-layer shape not part of any recognised nfet/pfet gate touch contact at 2+ separate points (the resistor-body signature) and carry no resistor-marker layer at all; this deck may not model the device class drawn here, and its terminals have been absorbed into ordinary interconnect as an unintended short -- see docs/cli/extract.md's 'Known limitation: unmodelled device geometry'.",
+    "3 poly-layer shapes not part of any recognised nfet/pfet gate touch contact at 2+ separate points (the resistor-body signature) and carry no resistor-marker layer at all; this deck may not model the device class drawn here, and its terminals have been absorbed into ordinary interconnect as an unintended short -- see docs/cli/extract.md's 'Known limitation: unmodelled device geometry'.",
     "MOS device geometry overlaps the '44/0' voltage-domain marker: ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). This MOS-only starter models neither side of that split yet: EXTRACTION_DECK recognises only the LV (thin-gate-oxide) NMOS/PMOS pair (mirroring sg13g2.py's own #905 starter scope; the HV pair is left for a follow-on issue, the sg13cmos5l sibling of sg13g2.py's issue #1231), and this curated deck's DRC rules apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note).",
     "5 PMOS devices tie their body to an anonymous net with no DC bias path -- no drawn (or derivable) well tie connects this PMOS body to a real supply rail on this layout, so it is left floating rather than tied to a real supply rail; resimulating this netlist directly will not reproduce the schematic-level PMOS body bias -- see unbiased_pmos_body_nets[] for the full list. See docs/cli/extract.md's 'Parasitic (RC) extraction' section.",
     "3 layers (14/0, 44/0, 63/0) carrying 23 shapes are outside 'sg13cmos5l' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
@@ -269,10 +269,28 @@
   "unmodelled_poly": [
     {
       "bbox_um": {
+        "left": -2.35,
+        "bottom": 19.65,
+        "right": 2.35,
+        "top": 20.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
         "left": 15.65,
         "bottom": 35.65,
         "right": 24.35,
         "top": 36.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 62.65,
+        "bottom": 19.65,
+        "right": 67.35,
+        "top": 20.35
       },
       "reason": "unmarked"
     }
@@ -320,7 +338,7 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:d054affeadfea575dd58b2366deddecf3cdd560545840a55d8bfcb60e0352278"
+      "content_hash": "sha256:cc44856b8ddcd3c64df3a058569f552f2e9068ec275ee4e3d7fd5dea09ee51e2"
     }
   },
   "parasitics": null,
