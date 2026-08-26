@@ -726,11 +726,11 @@ Everything above this line is the **SG13G2** block. This section covers the
 **SG13CMOS5L** port's own layout, which shares this directory (and this
 repo's evidence conventions) but almost none of its code.
 
-All three cell directories below now carry the boundary-port-pad convention
+All three leaf cell directories below carry the boundary-port-pad convention
 issue #76 added (each cell's own `Metal1` pad per schematic port, on the
 cell's own edge, returned from `generate.py`'s `build()` as a `{net:
-pad_box}` map) — the assembly itself, `sg13cmos5l-bandgap_top/`, does not
-exist yet; see "Cells not laid out" below and issue #81.
+pad_box}` map) — `sg13cmos5l-bandgap_top/` (issue #81) is the hierarchical
+assembly of those three; see "Cell: `sg13cmos5l-bandgap_top`" below.
 
 ```
 layout/
@@ -741,9 +741,15 @@ layout/
   sg13cmos5l-bandgap_core/         issue #66
   sg13cmos5l-bandgap_amp/          issue #74
   sg13cmos5l-bandgap_startup/      issue #74
+  sg13cmos5l-bandgap_top/          issue #81 — hierarchical assembly of the
+                                    three cells above, not a leaf cell of its
+                                    own (its own generate.py instances the
+                                    three leaves' already-committed GDS files
+                                    rather than drawing devices)
 ```
 
-Every cell directory carries the same seven files:
+Every leaf cell directory (and `sg13cmos5l-bandgap_top/`) carries the same
+seven files:
 
 ```
   sg13cmos5l-bandgap_<cell>/
@@ -773,9 +779,13 @@ them is for.
 for cell in core amp startup; do
   uv run --with klayout python3 "layout/sg13cmos5l-bandgap_$cell/generate.py"
 done
+# bandgap_top (issue #81) reads the three leaf GDS files above as cell
+# instances, so it must run after them, not in the same loop:
+uv run --with klayout python3 layout/sg13cmos5l-bandgap_top/generate.py
+
 python3 layout/lvs_reference.py            # regenerates every reference netlist
 
-cd layout/sg13cmos5l-bandgap_core          # or -bandgap_amp / -bandgap_startup
+cd layout/sg13cmos5l-bandgap_core          # or -bandgap_amp / -bandgap_startup / -bandgap_top
 klt drc --deck sg13cmos5l sg13cmos5l-bandgap_core.gds --format json > drc_report.json
 klt lvs lvs_request.json --format json > lvs_report.json
 klt extract --deck sg13cmos5l sg13cmos5l-bandgap_core.gds \
@@ -807,6 +817,12 @@ three cells' verdicts remain comparable across the build boundary. `klt`'s own
 `+g…` build suffix, so the reports themselves cannot distinguish the two; the
 deck `content_hash` they *do* record is the field that matters, and it matches
 across all three cells.
+
+`sg13cmos5l-bandgap_top`'s own reports (issue #81) were minted with
+**`0.3.0+g3f98b441bf2f`** (KLayout `0.30.11`) — a later build still, but
+carrying the identical deck `content_hash` (`sha256:9a4e18f2fd7a…`) as the
+three builds above, so its verdicts remain directly comparable to the leaf
+cells' own.
 
 The `sg13cmos5l` deck did not exist in the `klt` build this host carried when
 issue #66 was filed (`0.3.0+g3c14ac2f8903`, whose `decks` registry returned
@@ -1068,6 +1084,144 @@ anything). `klt lvs`'s finding counts are unchanged (16 findings, 14
 error-severity). One new `unmodelled_poly` entry appears in
 `extract_report.json` (the vertical underpass's own poly strip) — the same
 already-filed klayout-tools#1425 gap, not a new one.
+
+## Cell: `sg13cmos5l-bandgap_top` (issue #81)
+
+The hierarchical assembly of the three leaf cells above, one-to-one against
+`design/sg13cmos5l/netlist/bandgap_top.spice`'s own `.subckt bandgap_top vdd
+vss vref` line (`Xx1 vdd vss fb sns1 sns2 vref bandgap_core`, `Xx2 sns2 sns1
+vss fb vdd bandgap_amp`, `Xx3 vdd vss sns1 fb bandgap_startup`). Unlike every
+other `generate.py` in this repo, this one does **not** draw device geometry:
+`layout/sg13cmos5l-bandgap_top/generate.py` reads the three already-committed
+leaf GDS files as `klayout.db` cell instances (`kdb.CellInstArray`) into one
+new layout, then draws only the inter-cell routing between each leaf's own
+`boundary_port()` pad (issue #76) — no leaf cell's own internal geometry is
+touched. Top cell `sg13cmos5l_bandgap_top`, bbox `(-50.25, -10.25)`–`(2405.5,
+120.5)` µm, assembled from `sg13cmos5l-bandgap_core.gds` (~840 µm),
+`sg13cmos5l-bandgap_amp.gds` (~84 µm) and `sg13cmos5l-bandgap_startup.gds`
+(~1425 µm).
+
+**Floorplan.** The three cells sit side by side, left to right (core, amp,
+startup), separated by 30 µm gaps that are empty at *every* height — no
+cell's own bounding box reaches into a neighbour's gap at any `y`, since the
+three occupy disjoint x-ranges (`core (-10, -3.21)-(830.5, 61.7)`, `amp
+(860.5, -1.24)-(944.5, 41.7)`, `startup (974.5, -1.2)-(2399.4, 8.6)`). No
+mirroring: every inter-cell connection is routed via a dedicated bus/column
+rather than relying on adjacent edges lining up.
+
+**Routing: buses + poly risers.** `vdd`, `vss`, `fb` and `sns1` each need all
+three cells — a four-nets-deep channel-routing problem at this assembly's own
+single modelled metal (`metals=((8, 0),)`, `vias=()`, klayout-tools#1417,
+the same constraint every leaf cell's own floorplan already works within).
+Four full-span nets cannot all avoid crossing each other purely by placement
+(a bus reaching three widely-separated cells necessarily spans the x-range
+any *other* bus's riser must cross to reach a taller one), so this follows
+the same answer the leaf cells already established for their own internal
+crossings: cross on `GatPoly` instead. Each net gets one straight horizontal
+`Metal1` bus (`vdd`@75 µm, `vss`@90 µm, `fb`@105 µm, `sns1`@120 µm — all
+comfortably above every leaf cell's own bounding-box top, `core`'s 61.7 µm
+being the tallest) plus one `GatPoly` riser per contributing cell, each at
+its own dedicated column, transitioning `Metal1`↔`GatPoly` via `poly_tab()`
+at both ends — the same primitive every leaf cell's own `poly_underpass()`
+already uses. `sns2` (core+amp only) and `vref` (core + this assembly's own
+external port) are routed directly, entirely on `Metal1`, through a column
+chosen to clear every other net's own path.
+
+**One real short found and fixed, not glossed over.** `bandgap_startup`'s own
+`RPU` (a deck-unrecognised `rhigh` resistor) draws its conductor body as one
+unbroken `GatPoly` bar spanning almost that cell's entire width (local
+`x=0..1411.3`, `y=7.5..8.5`) — both `sns1`'s and `vss`'s own natural riser
+columns (chosen to reuse each cell's own existing tap/pad locations) fall
+within that span. The first attempt routed straight through on `GatPoly`,
+which physically merged `sns1` and `vss` into `RPU`'s own already-documented
+`vdd|det` short (caught immediately by `klt extract`: `s`/`d` of `bandgap_top`'s
+own M1 both read `det|in_n|sns1|vdd|vss` — a five-way merge, not the intended
+`in_n|sns1` pair). Fixed by bridging *over* the resistor body on `Metal1`
+instead (the reverse of the usual crossing: `GatPoly` below and above the
+body, `Metal1` across it) — but the first bridge attempt (0.2 µm clearance
+past the body's own `7.5..8.5`) *still* merged, because `poly_tab()`'s own
+`GatPoly` landing pad is itself 0.70 µm tall (0.35 µm each side of the
+transition point) and so its own pad overlapped the body even though the
+riser's long run did not. Widening the bridge to `(6.8, 9.2)` (clearing the
+pad's own half-height plus margin) resolved it — re-verified via `klt
+extract` at each step, isolating `_route_sns1`/`_route_vss` alone before
+re-testing the full assembly, not merely re-run once and assumed fixed.
+
+**Re-verified, not just laid out**: `klt extract`'s own net list confirms
+each of the six shared nets merges into exactly one physically-connected net
+across all of its contributing cells (`vdd`→`det|vdd` — see below, `vss`
+alone, `fb|out`, `in_n|sns1`, `e2|in_p|sns2`, `e3|vref`), with no other
+accidental short. `device_counts`: `{"nfet": 6, "pfet": 8}` — the sum of each
+leaf's own MOS devices (core 3 pfet; amp 5 pfet + 4 nfet; startup 2 nfet),
+confirming no device was dropped or duplicated by the assembly.
+
+### DRC — clean
+
+| Cell | Report | Status | Deck (content hash) |
+| --- | --- | --- | --- |
+| `sg13cmos5l-bandgap_top` | `layout/sg13cmos5l-bandgap_top/drc_report.json` | `clean`, 0 violations | `sg13cmos5l`, `sha256:9a4e18f2fd7a…` (same content hash as the three leaf cells) |
+
+Reproduce: `klt drc --check layout/sg13cmos5l-bandgap_top/drc_report.json`
+(or `--rerun` for a full re-check).
+
+### LVS — `mismatch`, same four causes, re-verified for this cell
+
+| Report | Status | Engine | nets | devices | pins |
+| --- | --- | --- | --- | --- | --- |
+| `layout/sg13cmos5l-bandgap_top/lvs_report.json` | `mismatch` (51 findings, 49 error-severity) | `klayout` | layout=13, reference=13, matched=0 | layout=14, reference=20, matched=0 | layout=11, reference=0, matched=11 |
+
+Reproduce: `klt lvs lvs_request.json` from `layout/sg13cmos5l-bandgap_top/`
+(run against `lvs_reference.flatten()`'s own output — `python3
+layout/lvs_reference.py` regenerates
+`sg13cmos5l-bandgap_top.lvs_reference.spice` from
+`design/sg13cmos5l/netlist/bandgap_top.spice` directly, without needing an
+assembled GDS); `klt lvs --check lvs_report.json` verifies the committed
+report against the current inputs without re-running the compare.
+
+The same four causes each leaf cell already hits, re-verified against this
+assembly's own report rather than assumed to carry over unchanged:
+
+1. **No bipolar device class** (`klayout-tools#1242`, permanently declined) —
+   all 10 `pnpMPA` instances inside `bandgap_core` (`Q1`, 8×`Q2` unit, `Q3`)
+   are reference-only `device.unmatched`, class `PNPMPA`.
+2. **No resistor recognition, and the unmodelled body shorts its own
+   terminals** (`klayout-tools#1415`) — `R1`/`R2` (`bandgap_core`) and `RPU`
+   (`bandgap_startup`) are reference-only `device.unmatched`, class
+   `RPPD`/`RHIGH`; their own unmodelled `GatPoly` bodies short `sns2`↔`e2`
+   and `vref`↔`e3` (`bandgap_core`) and `vdd`↔`det` (`bandgap_startup`) —
+   confirmed in `extract_report.json`'s own `merged_net_labels`
+   (`det|vdd`, `e2|in_p|sns2`, `e3|vref`), the *same* three merges each leaf
+   cell's own report already recorded, now additionally carrying the
+   assembly's own intentional cross-cell merges (`in_p`/`in_n` are amp's own
+   names for `sns2`/`sns1`, `out` is amp's own name for `fb`).
+3. **No HV MOS flavour** (`mos_flavours=()`) — every `sg13_hv_pmos`/
+   `sg13_hv_nmos` instance across all three leaf cells binds to the plain
+   `pfet`/`nfet` class regardless; `extract_report.json`'s own
+   `voltage_domain_warnings` names the gap against the `44/0` `ThickGateOx`
+   marker every device still carries.
+4. **No well/substrate tap** (`tap`/`tap_nplus`/`tap_pplus` all `None`) —
+   `device.body_unverified` (2 warning-severity findings: one covering all 6
+   `nfet` bodies against the deck-synthesized `vsubs` global, one covering
+   all 8 `pfet` bodies against an anonymous well net) and
+   `unbiased_pmos_body_nets` (8 entries) both confirm no drawn tap geometry
+   resolves any MOS body terminal to a real schematic net — the same gap
+   each leaf cell's own report already carries, unchanged by the assembly.
+
+With every device's net-graph correspondence broken by causes 3–4 above
+(`counts.nets.matched: 0` for all 13 nets), no MOS device pairing can reach
+`device.matched` either — the same "net topology break blocks every
+downstream device match" mechanism already documented for each leaf cell,
+not a new finding at the assembly level. `status: "mismatch"` is reported
+honestly, per `CLAUDE.md`'s "Verification is the product" — no reference
+device was dropped and no net was renamed to manufacture a `match`.
+
+**New `unmodelled_poly` entries, same already-filed gap.** This assembly's
+own poly risers (21 `unmodelled_poly` entries in `extract_report.json`) read
+exactly like every leaf cell's own `poly_underpass()`/gate-tap poly already
+does — an intentional poly wire with no resistor-marker geometry reads as an
+unmodelled resistor body to this deck. Same already-filed
+[klayout-tools#1425](https://github.com/2AMLogic/klayout-tools/issues/1425),
+not a new gap.
 
 ## SG13CMOS5L layer numbers
 
@@ -1378,9 +1532,9 @@ check this): the output parses cleanly via
 `klayout.db.NetlistSpiceReader` into one `.TOP` circuit, 20 devices (8 from
 `bandgap_core`, 9 from `bandgap_amp`, 3 from `bandgap_startup`) and 13 nets
 (6 shared — `fb`/`sns1`/`sns2`/`vdd`/`vref`/`vss` — plus 7 correctly-scoped
-internal ones). Not yet run through `klt lvs` against a real GDS, since
-`bandgap_top` has no layout yet — tracked as **#81**, see "Cells not laid
-out" below.
+internal ones). Run through `klt lvs` against the assembled
+`sg13cmos5l-bandgap_top.gds` in issue #81 — see "Cell:
+`sg13cmos5l-bandgap_top`" above.
 
 The SG13G2 pair's generated netlists are **byte-identical** after this change
 (verified: `git diff` empty). The new `* PDK:` provenance header is emitted
@@ -1444,34 +1598,21 @@ dummy devices). Two CMOS5L-specific additions:
 
 ## Cells not laid out
 
-`bandgap_top` (schematic landed in #70) has no layout yet. It is not a
-fourth leaf cell but an **assembly** of the three above — `Xx1 vdd vss fb
-sns1 sns2 vref bandgap_core`, `Xx2 sns2 sns1 vss fb vdd bandgap_amp`, `Xx3
-vdd vss sns1 fb bandgap_startup` (`design/sg13cmos5l/netlist/
-bandgap_top.spice`'s own top-level netlist) — and issue #76 closed the
-blocker that had kept it out of scope: **none of the three leaf cells had a
-boundary port**. Every net name used to be a `Metal1.pin` label on whatever
+None, as of issue #81. `bandgap_top` (schematic landed in #70) was the last
+one — it is not a fourth leaf cell but an **assembly** of the three others
+(`Xx1 vdd vss fb sns1 sns2 vref bandgap_core`, `Xx2 sns2 sns1 vss fb vdd
+bandgap_amp`, `Xx3 vdd vss sns1 fb bandgap_startup`,
+`design/sg13cmos5l/netlist/bandgap_top.spice`'s own top-level netlist), and
+its own layout — `layout/sg13cmos5l-bandgap_top/` — is now assembled,
+routed, and DRC/LVS/extract-verified. See "Cell:
+`sg13cmos5l-bandgap_top` (issue #81)" above for the full account
+(floorplan, routing, the short found and fixed, and the LVS attribution).
+
+This section's own history, briefly: issue #76 closed the blocker that had
+kept the assembly out of scope — **none of the three leaf cells had a
+boundary port** (every net name used to be a `Metal1.pin` label on whatever
 *internal* device pad happened to carry the net, sufficient for a
 standalone leaf-cell LVS but leaving several ports physically unreachable
-from outside the cell's own footprint (in `bandgap_core`, `fb`/`vdd` were
-reachable but `sns1`/`sns2`/`vref` were not — see each cell's own "Boundary
-ports for `bandgap_top` assembly" subsection above for the fix, per cell).
-
-GDS hierarchy itself was never the blocker — verified during #74: `klt
-extract` reads sub-cell instances and flattens them into the top `.SUBCKT`,
-so a flattened reference netlist (now `lvs_reference.flatten()`, issue #76 —
-see "Reference netlist" above) is all `klt lvs` needs.
-
-**What issue #76 closed**: the `common_sg13cmos5l.boundary_port()`
-convention itself; all three leaf cells regenerated with a dedicated
-boundary pad per schematic port (`bandgap_core`'s three new reports
-re-pinned to its new GDS bytes; `bandgap_amp`/`bandgap_startup` likewise);
-and `lvs_reference.py`'s `flatten()` mode, verified directly against
-`bandgap_top.spice` without needing an assembled GDS.
-
-**What is still open**: the actual `layout/sg13cmos5l-bandgap_top/`
-assembly — floorplanning and routing the three now-port-equipped cells
-together (810 µm, ~84 µm and 1424 µm blocks) and committing its own
-DRC/LVS/extract evidence set. Deliberately scoped out of #76 rather than
-rushed (its own floorplan is a real exercise, not an abutment) — tracked as
-**#81**.
+from outside the cell's own footprint), and added the
+`common_sg13cmos5l.boundary_port()` convention plus `lvs_reference.py`'s
+`flatten()` mode. Issue #81 (this section) did the assembly itself.

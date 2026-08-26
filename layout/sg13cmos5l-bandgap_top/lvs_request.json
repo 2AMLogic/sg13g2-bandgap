@@ -1,0 +1,12 @@
+{
+  "schema": "klt.lvs.request/1",
+  "engine": "klayout",
+  "layout": {
+    "file": "sg13cmos5l-bandgap_top.gds",
+    "deck": "sg13cmos5l",
+    "top": "sg13cmos5l_bandgap_top"
+  },
+  "reference": {
+    "netlist": "sg13cmos5l-bandgap_top.lvs_reference.spice"
+  }
+}
