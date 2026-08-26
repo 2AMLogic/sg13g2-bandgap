@@ -49,6 +49,7 @@ own packing loop). See ``layout/README.md`` "What this layout is / is not".
 from __future__ import annotations
 
 import klayout.db as kdb
+from _klayout_builder_base import BuilderBase, route_h, route_v  # noqa: F401
 
 # --------------------------------------------------------------------------- #
 # SG13CMOS5L GDS layer numbers, read from
@@ -119,33 +120,19 @@ TGO_C = 0.34  # TGO_c  -- ThickGateOx overlay over GatPoly
 CONT_PITCH = CNT_A + CNT_B
 
 
-class Builder:
+class Builder(BuilderBase):
     """``kdb.Layout``/cell/layer setup plus small box/label/text primitives.
 
     Micron-in, database-unit-out (``dbu = 0.001``, i.e. 1 nm -- matching
     ``sg13cmos5l.lyt``'s own ``<dbu>0.001</dbu>`` and `klt`'s
     ``decks.get_nominal_dbu("sg13cmos5l") == 0.001``), same convention as
-    ``layout/common.py``'s own ``Builder``.
+    ``layout/common.py``'s own ``Builder``. ``__init__``/``_u``/``box``/
+    ``write`` are inherited from :class:`_klayout_builder_base.BuilderBase`;
+    ``ring``/``net_label``/``well_label``/``annotate`` are CMOS5L-specific.
     """
 
     def __init__(self, top_cell: str) -> None:
-        self.layout = kdb.Layout()
-        self.layout.dbu = 0.001
-        self.cell = self.layout.create_cell(top_cell)
-        self._layers: dict[tuple[int, int], int] = {}
-        for pair, name in LAYER_NAMES.items():
-            index = self.layout.layer(*pair)
-            self.layout.set_info(index, kdb.LayerInfo(pair[0], pair[1], name))
-            self._layers[pair] = index
-
-    def _u(self, value_um: float) -> int:
-        return int(round(value_um / self.layout.dbu))
-
-    def box(self, layer: tuple[int, int], x0: float, y0: float, x1: float, y1: float) -> None:
-        idx = self._layers[layer]
-        self.cell.shapes(idx).insert(
-            kdb.Box(self._u(x0), self._u(y0), self._u(x1), self._u(y1))
-        )
+        super().__init__(top_cell, LAYER_NAMES)
 
     def ring(
         self,
@@ -196,11 +183,6 @@ class Builder:
         play)."""
         idx = self._layers[L_TEXT]
         self.cell.shapes(idx).insert(kdb.Text(text, self._u(x), self._u(y)))
-
-    def write(self, path: str) -> None:
-        opts = kdb.SaveLayoutOptions()
-        opts.gds2_write_timestamps = False
-        self.layout.write(path, opts)
 
 
 def cont_array(b: Builder, x0: float, y0: float, x1: float, y1: float) -> None:
@@ -732,14 +714,9 @@ def _draw_poly_res(
 # crosses `out` under the tail drop on a `poly_underpass` (below). That is a
 # real crossing, not a workaround for the deck gap -- Metal1 and GatPoly are
 # separate nets in the deck's connectivity, joined only through `Cont`.
+# ``route_h``/``route_v`` are PDK-agnostic (issue #78); re-exported above
+# from ``_klayout_builder_base`` so this module's own name stays stable.
 # --------------------------------------------------------------------------- #
-
-
-def route_h(b: Builder, layer: tuple[int, int], y_center: float, x0: float, x1: float, width: float = 0.3) -> None:
-    """Horizontal routing bar on ``layer`` at ``y_center``, spanning
-    ``[x0, x1]`` (order-independent), ``width`` microns tall."""
-    half = width / 2
-    b.box(layer, min(x0, x1), y_center - half, max(x0, x1), y_center + half)
 
 
 #: Side of the square ``Metal1`` landing pad :func:`poly_tab` places over its
@@ -826,10 +803,3 @@ def poly_underpass(
     """
     route_h(b, L_GATPOLY, y, x0, x1, width=width)
     return poly_tab(b, x0, y), poly_tab(b, x1, y)
-
-
-def route_v(b: Builder, layer: tuple[int, int], x_center: float, y0: float, y1: float, width: float = 0.3) -> None:
-    """Vertical routing bar on ``layer`` at ``x_center``, spanning
-    ``[y0, y1]`` (order-independent), ``width`` microns wide."""
-    half = width / 2
-    b.box(layer, x_center - half, min(y0, y1), x_center + half, max(y0, y1))

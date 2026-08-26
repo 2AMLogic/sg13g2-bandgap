@@ -28,6 +28,7 @@ SG13G2 KLayout technology's own layer-properties file
 from __future__ import annotations
 
 import klayout.db as kdb
+from _klayout_builder_base import BuilderBase, route_h, route_v  # noqa: F401
 
 # --------------------------------------------------------------------------- #
 # SG13G2 GDS layer numbers, read from
@@ -119,42 +120,23 @@ HBT_MARGIN_X_UM = 3.35
 HBT_HALF_HEIGHT_UM = 3.1
 
 
-class Builder:
+class Builder(BuilderBase):
     """``kdb.Layout``/cell/layer setup plus small box/label/text primitives.
 
     All coordinates taken by these methods are in microns (float); converted
     to the layout's integer database units (``dbu = 0.001``, i.e. 1 nm) by
     rounding, matching the fleet's existing ``layout/common/klayout_builder.py``
-    convention (gf180-bandgap).
+    convention (gf180-bandgap). ``__init__``/``_u``/``box``/``write`` are
+    inherited from :class:`_klayout_builder_base.BuilderBase`; ``label`` is
+    SG13G2-specific.
     """
 
     def __init__(self, top_cell: str) -> None:
-        self.layout = kdb.Layout()
-        self.layout.dbu = 0.001
-        self.cell = self.layout.create_cell(top_cell)
-        self._layers: dict[tuple[int, int], int] = {}
-        for pair, name in LAYER_NAMES.items():
-            index = self.layout.layer(*pair)
-            self.layout.set_info(index, kdb.LayerInfo(pair[0], pair[1], name))
-            self._layers[pair] = index
-
-    def _u(self, value_um: float) -> int:
-        return int(round(value_um / self.layout.dbu))
-
-    def box(self, layer: tuple[int, int], x0: float, y0: float, x1: float, y1: float) -> None:
-        idx = self._layers[layer]
-        self.cell.shapes(idx).insert(
-            kdb.Box(self._u(x0), self._u(y0), self._u(x1), self._u(y1))
-        )
+        super().__init__(top_cell, LAYER_NAMES)
 
     def label(self, layer: tuple[int, int], text: str, x: float, y: float) -> None:
         idx = self._layers[layer]
         self.cell.shapes(idx).insert(kdb.Text(text, self._u(x), self._u(y)))
-
-    def write(self, path: str) -> None:
-        opts = kdb.SaveLayoutOptions()
-        opts.gds2_write_timestamps = False
-        self.layout.write(path, opts)
 
 
 def draw_npn13g2(
@@ -503,26 +485,9 @@ def draw_poly_res(
 # the two cells' floorplans are different enough (row/column layout vs.
 # devices spread across a >1mm resistor bar) that a bespoke per-net call
 # sequence is clearer than a one-size-fits-all algorithm here.
+# ``route_h``/``route_v`` are PDK-agnostic (issue #78); re-exported above
+# from ``_klayout_builder_base`` so this module's own name stays stable.
 # --------------------------------------------------------------------------- #
-
-
-def route_h(b: Builder, layer: tuple[int, int], y_center: float, x0: float, x1: float, width: float = 0.3) -> None:
-    """Draw a horizontal routing bar on ``layer`` at ``y_center``, spanning
-    ``[x0, x1]`` (order-independent), ``width`` microns tall. Used to tie
-    together terminal pads that already share a Y-band (e.g. every ``vdd``
-    MOS source pad in ``bandgap_core``) or as one leg of an L-shaped route.
-    """
-    half = width / 2
-    b.box(layer, min(x0, x1), y_center - half, max(x0, x1), y_center + half)
-
-
-def route_v(b: Builder, layer: tuple[int, int], x_center: float, y0: float, y1: float, width: float = 0.3) -> None:
-    """Draw a vertical routing bar on ``layer`` at ``x_center``, spanning
-    ``[y0, y1]`` (order-independent), ``width`` microns wide -- the
-    vertical-leg counterpart of :func:`route_h`.
-    """
-    half = width / 2
-    b.box(layer, x_center - half, min(y0, y1), x_center + half, max(y0, y1))
 
 
 def via1_tap(b: Builder, x_center: float, y_center: float, size: float = 0.25) -> None:
