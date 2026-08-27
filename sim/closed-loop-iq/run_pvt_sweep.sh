@@ -63,10 +63,7 @@ for corner in "${CORNER_LABELS[@]}"; do
   mos_section="${MOS_SECTION_OF[${corner}]}"
   for temp in "${TEMPS[@]}"; do
     for vdd in "${VDDS[@]}"; do
-      total=$((total + 1))
-      corner_id="${corner}_${temp}c_${vdd}v"
-      netlist="${SNAPSHOTS_OUT}/${corner_id}.spice"
-      log="${CORNERS_OUT}/${corner_id}.log"
+      next_corner_id "${corner}" "${temp}" "${vdd}"
 
       common_pvt_sed_args "${temp}" "${vdd}" "${corner}"
       sed \
@@ -126,11 +123,7 @@ for corner in "${CORNER_LABELS[@]}"; do
         iq_avg_abs=$(awk -v a="${iq_avg}" 'BEGIN{print (a<0)?-a:a}')
       fi
 
-      if [[ "${verdict}" == "PASS" ]]; then
-        passed=$((passed + 1))
-      else
-        failed_points+=("${corner_id}")
-      fi
+      tally_verdict "${verdict}" "${corner_id}"
       echo "${corner},${hbt_section},${mos_section},${res_section},${temp},${vdd},${MSENSE_W},${verdict},${fb_v},${sns1_v},${sns2_v},${det_v},${i_mkfb_a},${dvsns_v},${iq_2ms_abs},${iq_3ms_abs},${iq_avg_abs},${settle_delta}" >> "${CSV_OUT}"
     done
   done

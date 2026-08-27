@@ -60,10 +60,7 @@ for corner in "${CORNER_LABELS[@]}"; do
   mos_section="${MOS_SECTION_OF[${corner}]}"
   for temp in "${TEMPS[@]}"; do
     for vdd in "${VDDS[@]}"; do
-      total=$((total + 1))
-      corner_id="${corner}_${temp}c_${vdd}v"
-      netlist="${SNAPSHOTS_OUT}/${corner_id}.spice"
-      log="${CORNERS_OUT}/${corner_id}.log"
+      next_corner_id "${corner}" "${temp}" "${vdd}"
 
       common_pvt_sed_args "${temp}" "${vdd}" "${corner}"
       sed \
@@ -104,11 +101,7 @@ for corner in "${CORNER_LABELS[@]}"; do
         verdict=$(pvt_closed_loop_verdict "${det_v}" "${i_mkfb_a}" "${fb_v}" "${dvsns_v}" "${vdd}" "${settle_delta}" "${SETTLE_TOL_V}")
       fi
 
-      if [[ "${verdict}" == "PASS" ]]; then
-        passed=$((passed + 1))
-      else
-        failed_points+=("${corner_id}")
-      fi
+      tally_verdict "${verdict}" "${corner_id}"
       echo "${corner},${hbt_section},${mos_section},${res_section},${temp},${vdd},${MSENSE_W},${verdict},${fb_v},${sns1_v},${sns2_v},${det_v},${i_mkfb_a},${dvsns_v},${vref_2ms},${vref_3ms},${settle_delta}" >> "${CSV_OUT}"
     done
   done

@@ -45,10 +45,7 @@ for corner in "${CORNER_LABELS[@]}"; do
   mos_section="${MOS_SECTION_OF[${corner}]}"
   for temp in "${TEMPS[@]}"; do
     for vdd in "${VDDS[@]}"; do
-      total=$((total + 1))
-      corner_id="${corner}_${temp}c_${vdd}v"
-      netlist="${SNAPSHOTS_OUT}/${corner_id}.spice"
-      log="${CORNERS_OUT}/${corner_id}.log"
+      next_corner_id "${corner}" "${temp}" "${vdd}"
 
       common_pvt_sed_args "${temp}" "${vdd}" "${corner}"
       sed \
