@@ -14,9 +14,16 @@ class BuilderBase:
     """``kdb.Layout``/cell/layer setup plus box/write primitives, in microns
     (converted to ``dbu = 0.001``, i.e. 1 nm, database units by rounding)."""
 
-    def __init__(self, top_cell: str, layer_names: dict[tuple[int, int], str]) -> None:
-        self.layout = kdb.Layout()
-        self.layout.dbu = 0.001
+    def __init__(
+        self,
+        top_cell: str,
+        layer_names: dict[tuple[int, int], str],
+        layout: kdb.Layout | None = None,
+    ) -> None:
+        if layout is None:
+            layout = kdb.Layout()
+            layout.dbu = 0.001
+        self.layout = layout
         self.cell = self.layout.create_cell(top_cell)
         self._layers: dict[tuple[int, int], int] = {}
         for pair, name in layer_names.items():
