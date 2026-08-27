@@ -21,6 +21,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 # shellcheck source=../lib/pvt_sed_common.sh
 source "${SIM_DIR}/lib/pvt_sed_common.sh"
 
+# shellcheck source=../lib/pvt_verdict_common.sh
+source "${SIM_DIR}/lib/pvt_verdict_common.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_startup_core_handover.spice.tmpl"
 
 # XMSENSE's W is read from the live design/netlist/bandgap_startup.spice
@@ -51,9 +54,13 @@ echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,sta
 # fb node (i_mkfb, measured through the Vmkfb ammeter) should have decayed
 # to a small fraction of the ~5 uA/leg design current -- i.e. the startup
 # circuit is no longer meaningfully perturbing the core's own bias point,
-# not just "det looks low". 1% of 5 uA = 50 nA.
-DET_RELEASE_FRAC="0.2"
-I_MKFB_RELEASE_A="50e-9"
+# not just "det looks low". 1% of 5 uA = 50 nA. DET_RELEASE_FRAC and
+# I_MKFB_RELEASE_A come from sim/lib/pvt_verdict_common.sh (shared with
+# every other closed-loop PVT sweep in this tree); unlike those sweeps this
+# testbench co-simulates only core+startup (no amplifier, hence no sns2/fb
+# loop to close or rail-margin to check), so it does not call that file's
+# pvt_closed_loop_verdict() -- the awk below checks only these two release
+# criteria.
 
 for corner in "${CORNER_LABELS[@]}"; do
   hbt_section="${HBT_SECTION_OF[${corner}]}"

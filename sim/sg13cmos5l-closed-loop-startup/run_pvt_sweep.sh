@@ -24,6 +24,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 # shellcheck source=../lib/pvt_sed_common.sh
 source "${SIM_DIR}/lib/pvt_sed_common.sh"
 
+# shellcheck source=../lib/pvt_verdict_common.sh
+source "${SIM_DIR}/lib/pvt_verdict_common.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_sg13cmos5l_closed_loop_startup.spice.tmpl"
 
 # XMSENSE's W is read from the live
@@ -47,18 +50,12 @@ echo "corner_label,pnp_section,mos_section,res_section,temp_c,vdd_v,msense_w,sta
 # MOS_SECTION_OF come from sim/lib/pvt_preflight.sh.
 declare -A PNP_SECTION_OF=( [typ]=typ [bcs]=bcs [wcs]=wcs [sf]=typ [fs]=typ )
 
-# Pass criteria -- three independent claims, all required, at the end of
-# the transient (fully ramped + settled). Identical bar
-# sim/closed-loop-startup uses for the SG13G2 core (see that script's own
-# comment for the full rationale behind each threshold):
-#   1. Startup released: v(det) <= 0.2*vdd AND |i(XMKFB)| <= 50 nA.
-#   2. Loop closed: |sns1 - sns2| <= DVSNS_CLOSE_V.
-#   3. Not railed: fb sits strictly inside (vss, vdd), away from either
-#      supply rail by at least FB_RAIL_MARGIN_V.
-DET_RELEASE_FRAC="0.2"
-I_MKFB_RELEASE_A="50e-9"
-DVSNS_CLOSE_V="0.020"
-FB_RAIL_MARGIN_V="0.05"
+# Pass criteria -- three independent claims (startup released, loop closed,
+# not railed), all required, at the end of the transient (fully ramped +
+# settled). Identical bar sim/closed-loop-startup uses for the SG13G2 core:
+# DET_RELEASE_FRAC/I_MKFB_RELEASE_A/DVSNS_CLOSE_V/FB_RAIL_MARGIN_V and the
+# verdict formula itself come from sim/lib/pvt_verdict_common.sh -- see that
+# file's own header comment for the full rationale behind each threshold.
 
 for corner in "${CORNER_LABELS[@]}"; do
   pnp_section="${PNP_SECTION_OF[${corner}]}"
@@ -108,18 +105,7 @@ for corner in "${CORNER_LABELS[@]}"; do
         verdict=FAIL
       else
         dvsns_final=$(awk -v a="${sns1_final}" -v b="${sns2_final}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
-        verdict=$(awk -v det_final="${det_final}" -v i_mkfb_final="${i_mkfb_final}" \
-                      -v vdd="${vdd}" -v det_frac="${DET_RELEASE_FRAC}" -v i_thresh="${I_MKFB_RELEASE_A}" \
-                      -v dvsns="${dvsns_final}" -v dvsns_thresh="${DVSNS_CLOSE_V}" \
-                      -v fb="${fb_final}" -v rail_margin="${FB_RAIL_MARGIN_V}" \
-          'BEGIN{
-             i_abs = (i_mkfb_final < 0) ? -i_mkfb_final : i_mkfb_final;
-             startup_released = (det_final <= det_frac*vdd) && (i_abs <= i_thresh);
-             loop_closed = (dvsns <= dvsns_thresh);
-             not_railed = (fb >= rail_margin) && (fb <= vdd - rail_margin);
-             ok = startup_released && loop_closed && not_railed;
-             print ok ? "PASS" : "FAIL";
-           }')
+        verdict=$(pvt_closed_loop_verdict "${det_final}" "${i_mkfb_final}" "${fb_final}" "${dvsns_final}" "${vdd}")
       fi
 
       if [[ "${verdict}" == "PASS" ]]; then

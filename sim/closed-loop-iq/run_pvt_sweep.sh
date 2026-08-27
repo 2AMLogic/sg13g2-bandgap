@@ -21,6 +21,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 # shellcheck source=../lib/pvt_sed_common.sh
 source "${SIM_DIR}/lib/pvt_sed_common.sh"
 
+# shellcheck source=../lib/pvt_verdict_common.sh
+source "${SIM_DIR}/lib/pvt_verdict_common.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_closed_loop_iq.spice.tmpl"
 
 # XMSENSE's W is read from the live design/netlist/bandgap_startup.spice,
@@ -38,14 +41,12 @@ alias_dut_git_shas AMP=design/netlist/bandgap_amp.spice STARTUP=design/netlist/b
 echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,fb_v,sns1_v,sns2_v,det_v,i_mkfb_a,dvsns_v,iq_2ms_a,iq_3ms_a,iq_avg_a,iq_settle_delta_a" > "${CSV_OUT}"
 
 # Pass criteria -- the same loop-closure/startup-release/not-railed bar
-# sim/closed-loop-startup and sim/closed-loop-vref-pvt use (a prerequisite:
-# a railed or unclosed loop has no meaningful quiescent operating point to
-# report), PLUS a settledness check specific to this experiment's own Iq
-# claim.
-DET_RELEASE_FRAC="0.2"
-I_MKFB_RELEASE_A="50e-9"
-DVSNS_CLOSE_V="0.020"
-FB_RAIL_MARGIN_V="0.05"
+# sim/closed-loop-startup and sim/closed-loop-vref-pvt use (DET_RELEASE_FRAC/
+# I_MKFB_RELEASE_A/DVSNS_CLOSE_V/FB_RAIL_MARGIN_V and the verdict formula
+# itself come from sim/lib/pvt_verdict_common.sh -- see that file's own
+# header comment for the full rationale; a railed or unclosed loop has no
+# meaningful quiescent operating point to report), PLUS a settledness check
+# specific to this experiment's own Iq claim.
 # The total vdd current must not move by more than 100 nA between t=2ms and
 # t=3ms -- confirms the reported Iq is a genuine settled quiescent value,
 # not a still-slewing transient snapshot. 100 nA is a tight bound relative
@@ -104,20 +105,7 @@ for corner in "${CORNER_LABELS[@]}"; do
       else
         dvsns_v=$(awk -v a="${sns1_v}" -v b="${sns2_v}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
         settle_delta=$(awk -v a="${iq_2ms}" -v b="${iq_3ms}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
-        verdict=$(awk -v det_v="${det_v}" -v i_mkfb_a="${i_mkfb_a}" \
-                      -v vdd="${vdd}" -v det_frac="${DET_RELEASE_FRAC}" -v i_thresh="${I_MKFB_RELEASE_A}" \
-                      -v dvsns="${dvsns_v}" -v dvsns_thresh="${DVSNS_CLOSE_V}" \
-                      -v fb="${fb_v}" -v rail_margin="${FB_RAIL_MARGIN_V}" \
-                      -v sdelta="${settle_delta}" -v sdelta_thresh="${SETTLE_TOL_A}" \
-          'BEGIN{
-             i_abs = (i_mkfb_a < 0) ? -i_mkfb_a : i_mkfb_a;
-             startup_released = (det_v <= det_frac*vdd) && (i_abs <= i_thresh);
-             loop_closed = (dvsns <= dvsns_thresh);
-             not_railed = (fb >= rail_margin) && (fb <= vdd - rail_margin);
-             settled = (sdelta <= sdelta_thresh);
-             ok = startup_released && loop_closed && not_railed && settled;
-             print ok ? "PASS" : "FAIL";
-           }')
+        verdict=$(pvt_closed_loop_verdict "${det_v}" "${i_mkfb_a}" "${fb_v}" "${dvsns_v}" "${vdd}" "${settle_delta}" "${SETTLE_TOL_A}")
       fi
 
       # Iq is reported as a magnitude: Vvdd is an independent voltage
