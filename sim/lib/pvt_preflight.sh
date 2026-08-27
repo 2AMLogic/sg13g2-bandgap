@@ -31,6 +31,7 @@
 #     with a second/third provenance file to stamp (e.g. bandgap_amp,
 #     bandgap_startup, or a layout GDS) call this instead of re-deriving
 #     DUT_GIT_SHA's one-liner inline
+#   alias_dut_git_shas() function -- see its own header comment below
 #   run_pvt_point() function     -- see its own header comment below
 #   write_pvt_summary() function -- see its own header comment below
 #
@@ -87,6 +88,26 @@ OSDI_DIR="${SG13G2_OSDI_DIR:-${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi}"
 #   hand-typed copies that could silently drift.
 dut_git_sha() {
   git -C "${REPO_ROOT}" log -1 --format=%h -- "$1" 2>/dev/null || echo unknown
+}
+
+# alias_dut_git_shas LABEL=PATH [LABEL=PATH ...]
+#   Sets DUT_CORE_GIT_SHA="${DUT_GIT_SHA}" -- the alias every multi-DUT caller
+#   needs, since DUT_GIT_SHA/DUT_NETLIST refer to the core schematic in every
+#   co-simulation experiment -- then DUT_<LABEL>_GIT_SHA="$(dut_git_sha PATH)"
+#   for each LABEL=PATH pair given, e.g.
+#   `alias_dut_git_shas AMP=design/netlist/bandgap_amp.spice
+#   STARTUP=design/netlist/bandgap_startup.spice`. Extracted in issue #110
+#   because this aliasing block -- the callers of dut_git_sha(), not the
+#   lookup itself (#103/#106) -- had been hand-retyped across 8
+#   run_pvt_sweep.sh scripts that each co-simulate a second and/or third DUT.
+alias_dut_git_shas() {
+  DUT_CORE_GIT_SHA="${DUT_GIT_SHA}"
+  local pair label path
+  for pair in "$@"; do
+    label="${pair%%=*}"
+    path="${pair#*=}"
+    printf -v "DUT_${label}_GIT_SHA" '%s' "$(dut_git_sha "${path}")"
+  done
 }
 
 DUT_GIT_SHA="$(dut_git_sha "${DUT_NETLIST}")"

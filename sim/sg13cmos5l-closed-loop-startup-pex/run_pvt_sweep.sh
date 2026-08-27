@@ -42,8 +42,7 @@ TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_sg13cmos5l_closed_loop_startup_pex.spic
 # separately -- same pattern sim/sg13cmos5l-closed-loop-startup uses for its
 # three co-simulated schematics. bandgap_amp contributes no schematic-sourced
 # device here (fully extracted), so no separate SHA is tracked for it.
-DUT_CORE_GIT_SHA="${DUT_GIT_SHA}"
-DUT_STARTUP_GIT_SHA="$(dut_git_sha design/sg13cmos5l/netlist/bandgap_startup.spice)"
+alias_dut_git_shas STARTUP=design/sg13cmos5l/netlist/bandgap_startup.spice
 
 echo "corner_label,pnp_section,mos_section,res_section,temp_c,vdd_v,status,det_early_v,fb_early_v,fb_final_v,sns1_final_v,sns2_final_v,vref_final_v,det_final_v,i_mkfb_final_a,dvsns_final_v" > "${CSV_OUT}"
 
