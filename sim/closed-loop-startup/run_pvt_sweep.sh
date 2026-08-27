@@ -18,6 +18,9 @@ DUT_NETLIST="design/netlist/bandgap_core.spice"
 # shellcheck source=../lib/pvt_preflight.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 
+# shellcheck source=../lib/pvt_sed_common.sh
+source "${SIM_DIR}/lib/pvt_sed_common.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_closed_loop_startup.spice.tmpl"
 
 # XMSENSE's W is read from the live design/netlist/bandgap_startup.spice,
@@ -75,16 +78,12 @@ for corner in "${CORNER_LABELS[@]}"; do
       netlist="${SNAPSHOTS_OUT}/${corner_id}.spice"
       log="${CORNERS_OUT}/${corner_id}.log"
 
+      common_pvt_sed_args "${temp}" "${vdd}" "${corner}"
       sed \
-        -e "s|@@PDK_ROOT@@|${PDK_ROOT}|g" \
-        -e "s|@@PDK@@|${PDK}|g" \
-        -e "s|@@OSDI_DIR@@|${OSDI_DIR}|g" \
+        "${COMMON_SED_ARGS[@]}" \
         -e "s|@@HBT_SECTION@@|${hbt_section}|g" \
         -e "s|@@MOS_SECTION@@|${mos_section}|g" \
         -e "s|@@RES_SECTION@@|${res_section}|g" \
-        -e "s|@@TEMP_C@@|${temp}|g" \
-        -e "s|@@VDD@@|${vdd}|g" \
-        -e "s|@@CORNER_LABEL@@|${corner}|g" \
         -e "s|@@MSENSE_W@@|${MSENSE_W}|g" \
         -e "s|@@DUT_GIT_SHA@@|core=${DUT_CORE_GIT_SHA} amp=${DUT_AMP_GIT_SHA} startup=${DUT_STARTUP_GIT_SHA}|g" \
         "${TEMPLATE}" > "${netlist}"
