@@ -33,9 +33,7 @@ read_msense_width "design/netlist/bandgap_startup.spice"
 # preflight derives DUT_GIT_SHA from DUT_NETLIST (bandgap_core.spice); this
 # experiment co-simulates three DUTs, so alias it as the core half and
 # compute the amp/startup halves' SHAs separately.
-DUT_CORE_GIT_SHA="${DUT_GIT_SHA}"
-DUT_AMP_GIT_SHA="$(dut_git_sha design/netlist/bandgap_amp.spice)"
-DUT_STARTUP_GIT_SHA="$(dut_git_sha design/netlist/bandgap_startup.spice)"
+alias_dut_git_shas AMP=design/netlist/bandgap_amp.spice STARTUP=design/netlist/bandgap_startup.spice
 
 echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,fb_v,sns1_v,sns2_v,det_v,i_mkfb_a,dvsns_v,vref_2ms_v,vref_3ms_v,vref_settle_delta_v" > "${CSV_OUT}"
 
