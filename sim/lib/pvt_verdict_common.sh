@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 # Shared PVT closed-loop pass-criteria constants and verdict logic, sourced
-# (not executed) by six experiments' run_pvt_sweep.sh under sim/*/ --
-# sim/closed-loop-iq, sim/closed-loop-startup,
-# sim/sg13cmos5l-closed-loop-startup, sim/sg13cmos5l-closed-loop-startup-pex,
-# sim/closed-loop-vref-pvt and sim/startup-core-handover. Extracted in issue
-# #114 because the four tolerance constants below were byte-identical (where
-# used) across all six, and the startup_released/loop_closed/not_railed[/
-# settled] verdict awk formula was duplicated near-identically across five
-# of the six (every one of them except sim/startup-core-handover, whose
-# testbench co-simulates only core+startup -- no amplifier, hence no sns2/fb
-# loop to close or rail-margin to check, hence no shared verdict call there;
-# see that script's own smaller inline awk). Same shape of duplication
-# sim/lib/pvt_preflight.sh (#28/#103), sim/lib/msense_width.sh (#105/#107)
-# and sim/lib/pvt_sed_common.sh (#108/#109) were extracted to fix.
+# (not executed) by run_pvt_sweep.sh scripts under sim/*/. Originally
+# extracted (issue #114) for six experiments -- sim/closed-loop-iq,
+# sim/closed-loop-startup, sim/sg13cmos5l-closed-loop-startup,
+# sim/sg13cmos5l-closed-loop-startup-pex, sim/closed-loop-vref-pvt and
+# sim/startup-core-handover -- because the four tolerance constants below
+# were byte-identical (where used) across all six, and the
+# startup_released/loop_closed/not_railed[/settled] verdict awk formula was
+# duplicated near-identically across five of the six (every one of them
+# except sim/startup-core-handover, whose testbench co-simulates only
+# core+startup -- no amplifier, hence no sns2/fb loop to close or
+# rail-margin to check, hence no shared verdict call there; see that
+# script's own smaller inline awk). Extended in issue #122 to five more
+# scripts -- sim/closed-loop-psrr, sim/loop-gain-phase-margin,
+# sim/sg13cmos5l-startup-trip-point, sim/startup-trip-point and
+# sim/startup-trip-point-pex -- purely for tally_verdict() (below); none of
+# those five compute a pvt_closed_loop_verdict()-shaped verdict, so they use
+# only that one function. Same shape of duplication sim/lib/pvt_preflight.sh
+# (#28/#103), sim/lib/msense_width.sh (#105/#107) and
+# sim/lib/pvt_sed_common.sh (#108/#109) were extracted to fix.
 #
 # Caller contract:
 #   - Source this AFTER sim/lib/pvt_preflight.sh -- matches the sourcing
@@ -36,11 +42,17 @@
 #     additionally ANDs in an experiment-specific settledness bound
 #     (closed-loop-iq's Iq-settling check, closed-loop-vref-pvt's
 #     vref-settling check).
+#   - Call `tally_verdict "${verdict}" "${corner_id}"` once per PVT point,
+#     after `verdict` is fully computed (however that script computes it --
+#     via pvt_closed_loop_verdict() above or its own experiment-specific
+#     formula) and after `corner_id` is set (by
+#     sim/lib/pvt_sed_common.sh's next_corner_id()).
 #
 # Provides on return:
 #   DET_RELEASE_FRAC, I_MKFB_RELEASE_A, DVSNS_CLOSE_V, FB_RAIL_MARGIN_V --
 #     the four tolerance constants (see rationale below)
 #   pvt_closed_loop_verdict() function -- see its own header comment below
+#   tally_verdict() function           -- see its own header comment below
 #
 # Callers still own everything else: their own signal-specific `.measure`
 # extraction (the `iq_*`/`vref_*` measurements, TC computation), the
@@ -111,4 +123,33 @@ pvt_closed_loop_verdict() {
        ok = startup_released && loop_closed && not_railed && settled;
        print ok ? "PASS" : "FAIL";
      }'
+}
+
+# tally_verdict VERDICT CORNER_ID
+#   Increments `passed` (set to 0 by sim/lib/pvt_preflight.sh, sourced first
+#   per that file's caller contract) if VERDICT is "PASS", else appends
+#   CORNER_ID to `failed_points` (same array, set to `()` by
+#   pvt_preflight.sh) -- both caller-visible, not local, matching this
+#   file's own pvt_closed_loop_verdict() and
+#   sim/lib/pvt_preflight.sh's run_pvt_point() convention. Extracted in
+#   issue #122 because this exact 4-line if/else block was byte-identical,
+#   confirmed by hashing each script's own copy, across the 11
+#   run_pvt_sweep.sh scripts under sim/*/ that compute a plain `verdict`
+#   string per point (the three core-open-loop-bias variants inline an
+#   experiment-specific CSV row `echo` in both branches instead, so they
+#   keep their own inline tally -- see issue #122's own "Not included" note).
+#
+#   Callers still own everything before this call (their own verdict
+#   computation, e.g. via pvt_closed_loop_verdict() above or an
+#   experiment-specific formula) and the CSV row `echo` after it -- this
+#   function only wraps the shared tally, matching this file's and
+#   sim/lib/pvt_sed_common.sh's existing "wrap only the shared portion"
+#   convention.
+tally_verdict() {
+  local verdict="$1" corner_id="$2"
+  if [[ "${verdict}" == "PASS" ]]; then
+    passed=$((passed + 1))
+  else
+    failed_points+=("${corner_id}")
+  fi
 }

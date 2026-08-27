@@ -27,6 +27,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 # shellcheck source=../lib/pvt_sed_common.sh
 source "${SIM_DIR}/lib/pvt_sed_common.sh"
 
+# shellcheck source=../lib/pvt_verdict_common.sh
+source "${SIM_DIR}/lib/pvt_verdict_common.sh"
+
 LAYOUT_GIT_SHA="$(dut_git_sha "${LAYOUT_GDS}")"
 
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_startup_trip_point_pex.spice.tmpl"
@@ -43,10 +46,7 @@ for corner in "${CORNER_LABELS[@]}"; do
   mos_section="${MOS_SECTION_OF[${corner}]}"
   for temp in "${TEMPS[@]}"; do
     for vdd in "${VDDS[@]}"; do
-      total=$((total + 1))
-      corner_id="${corner}_${temp}c_${vdd}v"
-      netlist="${SNAPSHOTS_OUT}/${corner_id}.spice"
-      log="${CORNERS_OUT}/${corner_id}.log"
+      next_corner_id "${corner}" "${temp}" "${vdd}"
 
       vdd_half=$(awk -v v="${vdd}" 'BEGIN{printf "%.4f", v/2}')
       # ngspice's `meas ... at=` refuses the exact end point of a dc sweep
@@ -96,11 +96,7 @@ for corner in "${CORNER_LABELS[@]}"; do
            }')
       fi
 
-      if [[ "${verdict}" == "PASS" ]]; then
-        passed=$((passed + 1))
-      else
-        failed_points+=("${corner_id}")
-      fi
+      tally_verdict "${verdict}" "${corner_id}"
       echo "${corner},${mos_section},${res_section},${temp},${vdd},${verdict},${det_on},${fb_on},${vtrip},${det_off},${fb_off}" >> "${CSV_OUT}"
     done
   done

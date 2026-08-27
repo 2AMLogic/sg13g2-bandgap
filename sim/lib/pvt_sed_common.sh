@@ -25,6 +25,7 @@
 #
 # Provides on return:
 #   common_pvt_sed_args() function -- see its own header comment below
+#   next_corner_id() function      -- see its own header comment below
 #
 # Callers still own the rest of their `sed` call (their own script-specific
 # tokens like @@HBT_SECTION@@, @@MSENSE_W@@, @@LAYOUT_GIT_SHA@@, seed
@@ -51,4 +52,34 @@ common_pvt_sed_args() {
     -e "s|@@VDD@@|${vdd}|g"
     -e "s|@@CORNER_LABEL@@|${corner_label}|g"
   )
+}
+
+# next_corner_id CORNER TEMP_C VDD
+#   Sets corner_id/netlist/log (caller-visible, not local -- matches this
+#   file's own common_pvt_sed_args() and sim/lib/pvt_preflight.sh's
+#   run_pvt_point() convention) for the next PVT point and increments
+#   `total` (set to 0 by sim/lib/pvt_preflight.sh, sourced first per that
+#   file's caller contract). Extracted in issue #122 because this exact
+#   4-line block -- `total=$((total + 1))` plus the corner_id/netlist/log
+#   assignments it feeds -- was byte-identical, confirmed by hashing each
+#   script's own copy, across all 14 run_pvt_sweep.sh scripts under sim/*/,
+#   as the first statement in each script's own per-point loop body (most
+#   callers follow it immediately with common_pvt_sed_args(); a few instead
+#   compute their own per-point locals like vdd_half/vdd_off first -- either
+#   way, this call must come first in the loop body, since it is what
+#   defines the point's own corner_id/netlist/log for everything after it).
+#
+#   CORNER_ID's format string (`${corner}_${temp}c_${vdd}v`) and NETLIST/LOG's
+#   paths (under SNAPSHOTS_OUT/CORNERS_OUT, both set by
+#   sim/lib/pvt_preflight.sh) become part of the on-disk netlist/log
+#   filenames and CSV/record output every committed evidence record already
+#   references, so this call must be made with the exact same CORNER/TEMP_C/
+#   VDD values, in the exact same per-point loop position, every caller's
+#   own pre-extraction inline block used.
+next_corner_id() {
+  local corner="$1" temp_c="$2" vdd="$3"
+  total=$((total + 1))
+  corner_id="${corner}_${temp_c}c_${vdd}v"
+  netlist="${SNAPSHOTS_OUT}/${corner_id}.spice"
+  log="${CORNERS_OUT}/${corner_id}.log"
 }
