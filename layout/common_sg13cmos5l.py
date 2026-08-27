@@ -128,7 +128,7 @@ class Builder(BuilderBase):
     ``decks.get_nominal_dbu("sg13cmos5l") == 0.001``), same convention as
     ``layout/common.py``'s own ``Builder``. ``__init__``/``_u``/``box``/
     ``write`` are inherited from :class:`_klayout_builder_base.BuilderBase`;
-    ``ring``/``net_label``/``well_label``/``annotate`` are CMOS5L-specific.
+    ``ring``/``net_label``/``annotate`` are CMOS5L-specific.
     """
 
     def __init__(self, top_cell: str) -> None:
@@ -167,13 +167,6 @@ class Builder(BuilderBase):
         for net naming. Must land on a real ``Metal1.drawing`` shape (the
         deck's ``connect(metals[0], metal_labels[0])``) to name anything."""
         idx = self._layers[L_METAL1_PIN]
-        self.cell.shapes(idx).insert(kdb.Text(text, self._u(x), self._u(y)))
-
-    def well_label(self, text: str, x: float, y: float) -> None:
-        """Place a well-net name on ``NWell.pin`` (31, 2) -- the deck's own
-        ``EXTRACTION_DECK.well_label`` layer, which names the n-well net a
-        PMOS body terminal resolves to."""
-        idx = self._layers[L_NWELL_PIN]
         self.cell.shapes(idx).insert(kdb.Text(text, self._u(x), self._u(y)))
 
     def annotate(self, text: str, x: float, y: float) -> None:
