@@ -26,6 +26,9 @@ DUT_NETLIST="design/netlist/bandgap_core.spice"
 # shellcheck source=../lib/pvt_preflight.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 
+# shellcheck source=../lib/pvt_sed_common.sh
+source "${SIM_DIR}/lib/pvt_sed_common.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_closed_loop_offset.spice.tmpl"
 
 # XMSENSE's W is read from the live design/netlist/bandgap_startup.spice,
@@ -108,18 +111,14 @@ for pi in "${!POINT_CORNERS[@]}"; do
       continue
     fi
 
+    common_pvt_sed_args "${temp}" "${vdd}" "${corner}"
     sed \
-      -e "s|@@PDK_ROOT@@|${PDK_ROOT}|g" \
-      -e "s|@@PDK@@|${PDK}|g" \
-      -e "s|@@OSDI_DIR@@|${OSDI_DIR}|g" \
+      "${COMMON_SED_ARGS[@]}" \
       -e "s|@@HBT_SECTION@@|${hbt_section}|g" \
       -e "s|@@MOS_SECTION@@|${mos_section}|g" \
       -e "s|@@RES_SECTION@@|${res_section}|g" \
-      -e "s|@@TEMP_C@@|${temp}|g" \
-      -e "s|@@VDD@@|${vdd}|g" \
       -e "s|@@VOS@@|${vos}|g" \
       -e "s|@@POINT_LABEL@@|${corner_label}|g" \
-      -e "s|@@CORNER_LABEL@@|${corner}|g" \
       -e "s|@@MSENSE_W@@|${MSENSE_W}|g" \
       -e "s|@@FB_SEED@@|${fb_seed}|g" \
       -e "s|@@SNS1_SEED@@|${sns1_seed}|g" \
