@@ -498,6 +498,12 @@ def _common_report_checks(report: Report, rel: str, data: dict) -> None:
                          "verdict came from must be identified by content")
 
 
+def _provenance_input_hash(data: dict) -> str | None:
+    """Return provenance.input.content_hash, or None if either level is missing/malformed."""
+    input_ = (data.get("provenance") or {}).get("input")
+    return input_.get("content_hash") if isinstance(input_, dict) else None
+
+
 def check_layout(root: Path, report: Report) -> None:
     layout = root / "layout"
     if not layout.is_dir():
@@ -547,9 +553,7 @@ def check_layout(root: Path, report: Report) -> None:
                 if not isinstance(coverage, dict) or "rules_skipped" not in coverage:
                     report.fail(rel, "missing 'coverage.rules_skipped' — deck coverage gaps must "
                                      "be enumerated alongside the verdict")
-                check_hash(report, root, rel, "input gds",
-                           (data.get("provenance") or {}).get("input", {}).get("content_hash")
-                           if isinstance((data.get("provenance") or {}).get("input"), dict) else None,
+                check_hash(report, root, rel, "input gds", _provenance_input_hash(data),
                            gds, waivers, used_waivers)
 
             elif path.name == "lvs_report.json":
@@ -596,10 +600,7 @@ def check_layout(root: Path, report: Report) -> None:
                     check_hash(report, root, rel, "extracted netlist",
                                data.get("netlist_sha256"), cell_dir / str(netlist),
                                waivers, used_waivers)
-                provenance_input = (data.get("provenance") or {}).get("input")
-                check_hash(report, root, rel, "input gds",
-                           provenance_input.get("content_hash")
-                           if isinstance(provenance_input, dict) else None,
+                check_hash(report, root, rel, "input gds", _provenance_input_hash(data),
                            gds, waivers, used_waivers)
 
     for key, waiver in sorted(waivers.items()):
