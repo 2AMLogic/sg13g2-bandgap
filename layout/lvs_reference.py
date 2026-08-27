@@ -203,6 +203,24 @@ _CMOS5L_RES_OHMS = {
 }
 
 
+def _res_element_line(
+    instance: str,
+    nodes: list[str],
+    model_lower: str,
+    params: dict[str, str],
+    r_ohm: float,
+) -> str:
+    """Format one plain-element R-element line, given its already-computed
+    resistance -- shared by the SG13G2 sheet-resistance path and the
+    CMOS5L symbol-formula path in :func:`_convert_device_line`, which
+    differ only in how ``r_ohm`` is derived."""
+    n1, n2, _sub = nodes
+    return (
+        f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f} "
+        f"{model_lower} L={_um(params['l'])} W={_um(params['w'])}"
+    )
+
+
 def _convert_device_line(line: str, pdk: str) -> str:
     """Convert one already-fully-connected ``X<name> node... model
     param=value...`` device line to its plain-element ``klt lvs`` form.
@@ -258,14 +276,10 @@ def _convert_device_line(line: str, pdk: str) -> str:
         # the positional model token so the reader assigns an RPPD /
         # RHIGH device class rather than the generic "RES"), but
         # valued with CMOS5L's own per-flavour symbol formula.
-        n1, n2, _sub = nodes
         l_um = float(params["l"].rstrip("uU"))
         w_um = float(params["w"].rstrip("uU"))
         r_ohm = _CMOS5L_RES_OHMS[model_lower](w_um, l_um)
-        return (
-            f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f} "
-            f"{model_lower} L={_um(params['l'])} W={_um(params['w'])}"
-        )
+        return _res_element_line(instance, nodes, model_lower, params, r_ohm)
     elif model_lower in _MOS_CLASS:
         d, g, s, b = nodes
         return (
@@ -309,14 +323,10 @@ def _convert_device_line(line: str, pdk: str) -> str:
         # `RPPD`/`RHIGH`-named class, `NetlistComparer` pairs case-
         # insensitively against the layout's own lowercase
         # `rppd`/`rhigh`).
-        n1, n2, _sub = nodes
         l_um = float(params["l"].rstrip("uU"))
         w_um = float(params["w"].rstrip("uU"))
         r_ohm = _RES_SHEET_OHM_PER_SQ[model_lower] * (l_um / w_um)
-        return (
-            f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f} "
-            f"{model_lower} L={_um(params['l'])} W={_um(params['w'])}"
-        )
+        return _res_element_line(instance, nodes, model_lower, params, r_ohm)
     else:
         raise ValueError(f"unrecognised device model {model!r} on line: {line}")
 
