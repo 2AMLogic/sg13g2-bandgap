@@ -111,6 +111,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import klayout.db as kdb  # noqa: E402
+from _klayout_builder_base import BuilderBase  # noqa: E402
 from common_sg13cmos5l import (  # noqa: E402
     L_GATPOLY,
     L_METAL1,
@@ -219,16 +220,12 @@ class TopBuilder(Builder):
     """
 
     def __init__(self, layout: kdb.Layout, top_cell: str) -> None:
-        # Deliberately does NOT call BuilderBase.__init__ (which always
-        # creates a brand-new kdb.Layout) -- `layout` here already carries
-        # the three leaf cells, read in by build() below.
-        self.layout = layout
-        self.cell = layout.create_cell(top_cell)
-        self._layers: dict[tuple[int, int], int] = {}
-        for pair, name in LAYER_NAMES.items():
-            index = layout.layer(*pair)
-            layout.set_info(index, kdb.LayerInfo(pair[0], pair[1], name))
-            self._layers[pair] = index
+        # BuilderBase.__init__'s own `layout` parameter (issue #129) reuses
+        # `layout` here -- already carrying the three leaf cells read in by
+        # build() below -- instead of creating a brand-new kdb.Layout.
+        # Calls BuilderBase directly (bypassing Builder.__init__, which only
+        # takes `top_cell` and always creates a fresh layout).
+        BuilderBase.__init__(self, top_cell, LAYER_NAMES, layout=layout)
 
 
 def build() -> TopBuilder:
