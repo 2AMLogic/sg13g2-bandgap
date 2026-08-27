@@ -21,6 +21,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 # shellcheck source=../lib/pvt_sed_common.sh
 source "${SIM_DIR}/lib/pvt_sed_common.sh"
 
+# shellcheck source=../lib/pvt_verdict_common.sh
+source "${SIM_DIR}/lib/pvt_verdict_common.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_closed_loop_startup.spice.tmpl"
 
 # XMSENSE's W is read from the live design/netlist/bandgap_startup.spice,
@@ -41,29 +44,12 @@ echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,sta
 # (CORNER_LABELS/TEMPS/VDDS/HBT_SECTION_OF/RES_SECTION_OF/MOS_SECTION_OF
 # come from sim/lib/pvt_preflight.sh).
 
-# Pass criteria -- three independent claims, all required, at the end of
-# the transient (fully ramped + settled):
-#   1. Startup released: v(det) <= 0.2*vdd (same release sense
-#      sim/startup-trip-point and sim/startup-core-handover use) AND
-#      |i(XMKFB)| <= 50 nA (1% of the ~5 uA/leg open-loop design current).
-#   2. Loop closed: |sns1 - sns2| <= DVSNS_CLOSE_V -- the amplifier's whole
-#      job is forcing these two nodes equal; a finite-gain single-stage OTA
-#      cannot make them exactly equal, so this is a loop-closure tolerance,
-#      not a spec claim. 20 mV is a generous bound relative to the ~55 mV
-#      dVBE(Q1,Q2) design swing (roughly 3x the ~0.4-7 mV residual measured
-#      in this schematic's own dev-time nominal-corner check) -- loose
-#      enough to tolerate real PVT-driven loop-gain variation, tight enough
-#      that a genuinely unclosed loop (e.g. a polarity bug making this
-#      positive feedback) fails it.
-#   3. Not railed: fb sits strictly inside (vss, vdd), away from either
-#      supply rail by at least FB_RAIL_MARGIN_V -- confirms the amplifier
-#      found a real interior equilibrium (a working negative-feedback
-#      servo) rather than saturating to one supply (what a positive-
-#      feedback/polarity-bug loop would do instead).
-DET_RELEASE_FRAC="0.2"
-I_MKFB_RELEASE_A="50e-9"
-DVSNS_CLOSE_V="0.020"
-FB_RAIL_MARGIN_V="0.05"
+# Pass criteria -- three independent claims (startup released, loop closed,
+# not railed), all required, at the end of the transient (fully ramped +
+# settled): DET_RELEASE_FRAC/I_MKFB_RELEASE_A/DVSNS_CLOSE_V/
+# FB_RAIL_MARGIN_V and the verdict formula itself come from
+# sim/lib/pvt_verdict_common.sh -- see that file's own header comment for
+# the full rationale behind each threshold.
 
 for corner in "${CORNER_LABELS[@]}"; do
   hbt_section="${HBT_SECTION_OF[${corner}]}"
@@ -117,18 +103,7 @@ for corner in "${CORNER_LABELS[@]}"; do
         verdict=FAIL
       else
         dvsns_final=$(awk -v a="${sns1_final}" -v b="${sns2_final}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
-        verdict=$(awk -v det_final="${det_final}" -v i_mkfb_final="${i_mkfb_final}" \
-                      -v vdd="${vdd}" -v det_frac="${DET_RELEASE_FRAC}" -v i_thresh="${I_MKFB_RELEASE_A}" \
-                      -v dvsns="${dvsns_final}" -v dvsns_thresh="${DVSNS_CLOSE_V}" \
-                      -v fb="${fb_final}" -v rail_margin="${FB_RAIL_MARGIN_V}" \
-          'BEGIN{
-             i_abs = (i_mkfb_final < 0) ? -i_mkfb_final : i_mkfb_final;
-             startup_released = (det_final <= det_frac*vdd) && (i_abs <= i_thresh);
-             loop_closed = (dvsns <= dvsns_thresh);
-             not_railed = (fb >= rail_margin) && (fb <= vdd - rail_margin);
-             ok = startup_released && loop_closed && not_railed;
-             print ok ? "PASS" : "FAIL";
-           }')
+        verdict=$(pvt_closed_loop_verdict "${det_final}" "${i_mkfb_final}" "${fb_final}" "${dvsns_final}" "${vdd}")
       fi
 
       if [[ "${verdict}" == "PASS" ]]; then

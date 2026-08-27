@@ -30,6 +30,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 # shellcheck source=../lib/pvt_sed_common.sh
 source "${SIM_DIR}/lib/pvt_sed_common.sh"
 
+# shellcheck source=../lib/pvt_verdict_common.sh
+source "${SIM_DIR}/lib/pvt_verdict_common.sh"
+
 LAYOUT_GDS="layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds"
 LAYOUT_GIT_SHA="$(dut_git_sha "${LAYOUT_GDS}")"
 
@@ -53,13 +56,11 @@ echo "corner_label,pnp_section,mos_section,res_section,temp_c,vdd_v,status,det_e
 declare -A PNP_SECTION_OF=( [typ]=typ [bcs]=bcs [wcs]=wcs [sf]=typ [fs]=typ )
 
 # Pass criteria -- identical bar sim/sg13cmos5l-closed-loop-startup uses
-# (see that script's own comment for the full rationale behind each
-# threshold): unchanged here since post-layout MOS geometry does not alter
-# what "started up" and "closed the loop" mean.
-DET_RELEASE_FRAC="0.2"
-I_MKFB_RELEASE_A="50e-9"
-DVSNS_CLOSE_V="0.020"
-FB_RAIL_MARGIN_V="0.05"
+# (DET_RELEASE_FRAC/I_MKFB_RELEASE_A/DVSNS_CLOSE_V/FB_RAIL_MARGIN_V and the
+# verdict formula itself come from sim/lib/pvt_verdict_common.sh -- see that
+# file's own header comment for the full rationale behind each threshold):
+# unchanged here since post-layout MOS geometry does not alter what
+# "started up" and "closed the loop" mean.
 
 for corner in "${CORNER_LABELS[@]}"; do
   pnp_section="${PNP_SECTION_OF[${corner}]}"
@@ -106,18 +107,7 @@ for corner in "${CORNER_LABELS[@]}"; do
         verdict=FAIL
       else
         dvsns_final=$(awk -v a="${sns1_final}" -v b="${sns2_final}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
-        verdict=$(awk -v det_final="${det_final}" -v i_mkfb_final="${i_mkfb_final}" \
-                      -v vdd="${vdd}" -v det_frac="${DET_RELEASE_FRAC}" -v i_thresh="${I_MKFB_RELEASE_A}" \
-                      -v dvsns="${dvsns_final}" -v dvsns_thresh="${DVSNS_CLOSE_V}" \
-                      -v fb="${fb_final}" -v rail_margin="${FB_RAIL_MARGIN_V}" \
-          'BEGIN{
-             i_abs = (i_mkfb_final < 0) ? -i_mkfb_final : i_mkfb_final;
-             startup_released = (det_final <= det_frac*vdd) && (i_abs <= i_thresh);
-             loop_closed = (dvsns <= dvsns_thresh);
-             not_railed = (fb >= rail_margin) && (fb <= vdd - rail_margin);
-             ok = startup_released && loop_closed && not_railed;
-             print ok ? "PASS" : "FAIL";
-           }')
+        verdict=$(pvt_closed_loop_verdict "${det_final}" "${i_mkfb_final}" "${fb_final}" "${dvsns_final}" "${vdd}")
       fi
 
       if [[ "${verdict}" == "PASS" ]]; then
