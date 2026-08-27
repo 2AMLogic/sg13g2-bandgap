@@ -27,6 +27,9 @@ DUT_NETLIST="design/sg13cmos5l/netlist/bandgap_core.spice"
 # shellcheck source=../lib/pvt_preflight.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 
+# shellcheck source=../lib/pvt_sed_common.sh
+source "${SIM_DIR}/lib/pvt_sed_common.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_sg13cmos5l_core_open_loop_bias.spice.tmpl"
 
 echo "corner_label,pnp_section,mos_section,res_section,temp_c,vdd_v,status,vref_v,vfb_v,veb_q1_v,veb_q2_v,veb_q3_v,dveb_ptat_v,i_leg1_a,i_leg2_a,i_leg3_a,r1_ohm,r2_ohm" > "${CSV_OUT}"
@@ -55,16 +58,12 @@ for corner in "${CORNER_LABELS[@]}"; do
       netlist="${SNAPSHOTS_OUT}/${corner_id}.spice"
       log="${CORNERS_OUT}/${corner_id}.log"
 
+      common_pvt_sed_args "${temp}" "${vdd}" "${corner}"
       sed \
-        -e "s|@@PDK_ROOT@@|${PDK_ROOT}|g" \
-        -e "s|@@PDK@@|${PDK}|g" \
-        -e "s|@@OSDI_DIR@@|${OSDI_DIR}|g" \
+        "${COMMON_SED_ARGS[@]}" \
         -e "s|@@PNP_SECTION@@|${pnp_section}|g" \
         -e "s|@@MOS_SECTION@@|${mos_section}|g" \
         -e "s|@@RES_SECTION@@|${res_section}|g" \
-        -e "s|@@TEMP_C@@|${temp}|g" \
-        -e "s|@@VDD@@|${vdd}|g" \
-        -e "s|@@CORNER_LABEL@@|${corner}|g" \
         -e "s|@@DUT_GIT_SHA@@|${DUT_GIT_SHA}|g" \
         "${TEMPLATE}" > "${netlist}"
 

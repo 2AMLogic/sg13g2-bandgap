@@ -21,6 +21,9 @@ DUT_NETLIST="design/sg13cmos5l/netlist/bandgap_startup.spice"
 # shellcheck source=../lib/pvt_preflight.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 
+# shellcheck source=../lib/pvt_sed_common.sh
+source "${SIM_DIR}/lib/pvt_sed_common.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_sg13cmos5l_startup_trip_point.spice.tmpl"
 
 echo "corner_label,mos_section,res_section,temp_c,vdd_v,status,det_on_v,fb_on_v,vtrip_v,det_off_v,fb_off_v" > "${CSV_OUT}"
@@ -48,17 +51,13 @@ for corner in "${CORNER_LABELS[@]}"; do
       # sweep step short of vdd.
       vdd_off=$(awk -v v="${vdd}" 'BEGIN{printf "%.4f", v-0.05}')
 
+      common_pvt_sed_args "${temp}" "${vdd}" "${corner}"
       sed \
-        -e "s|@@PDK_ROOT@@|${PDK_ROOT}|g" \
-        -e "s|@@PDK@@|${PDK}|g" \
-        -e "s|@@OSDI_DIR@@|${OSDI_DIR}|g" \
+        "${COMMON_SED_ARGS[@]}" \
         -e "s|@@MOS_SECTION@@|${mos_section}|g" \
         -e "s|@@RES_SECTION@@|${res_section}|g" \
-        -e "s|@@TEMP_C@@|${temp}|g" \
-        -e "s|@@VDD@@|${vdd}|g" \
         -e "s|@@VDD_HALF@@|${vdd_half}|g" \
         -e "s|@@VDD_OFF@@|${vdd_off}|g" \
-        -e "s|@@CORNER_LABEL@@|${corner}|g" \
         -e "s|@@DUT_GIT_SHA@@|${DUT_GIT_SHA}|g" \
         "${TEMPLATE}" > "${netlist}"
 
