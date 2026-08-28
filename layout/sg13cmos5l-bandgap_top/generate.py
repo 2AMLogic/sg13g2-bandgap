@@ -111,11 +111,9 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import klayout.db as kdb  # noqa: E402
-from _klayout_builder_base import BuilderBase  # noqa: E402
 from common_sg13cmos5l import (  # noqa: E402
     L_GATPOLY,
     L_METAL1,
-    LAYER_NAMES,
     Builder,
     poly_tab,
     route_h,
@@ -207,28 +205,7 @@ X_PORT_VSS = -45.0
 X_PORT_VREF = -50.0
 
 
-class TopBuilder(Builder):
-    """A :class:`common_sg13cmos5l.Builder` attached to an **existing**
-    ``kdb.Layout`` (already populated by reading the three leaf GDS files),
-    rather than one that creates a brand-new layout of its own.
-
-    This is the only difference from the parent class -- reusing
-    ``Builder``'s ``box``/``net_label``/``_u`` methods lets this module call
-    :func:`common_sg13cmos5l.poly_tab`/``route_h``/``route_v`` unchanged
-    against the merged assembly layout, exactly as every leaf cell's own
-    ``generate.py`` already does against its own private layout.
-    """
-
-    def __init__(self, layout: kdb.Layout, top_cell: str) -> None:
-        # BuilderBase.__init__'s own `layout` parameter (issue #129) reuses
-        # `layout` here -- already carrying the three leaf cells read in by
-        # build() below -- instead of creating a brand-new kdb.Layout.
-        # Calls BuilderBase directly (bypassing Builder.__init__, which only
-        # takes `top_cell` and always creates a fresh layout).
-        BuilderBase.__init__(self, top_cell, LAYER_NAMES, layout=layout)
-
-
-def build() -> TopBuilder:
+def build() -> Builder:
     layout = kdb.Layout()
     layout.dbu = 0.001
 
@@ -245,7 +222,7 @@ def build() -> TopBuilder:
     amp_idx = layout.cell(AMP_CELL).cell_index()
     startup_idx = layout.cell(STARTUP_CELL).cell_index()
 
-    b = TopBuilder(layout, TOP_CELL)
+    b = Builder(TOP_CELL, layout=layout)
 
     def u(value_um: float) -> int:
         return int(round(value_um / layout.dbu))
@@ -286,7 +263,7 @@ STARTUP_RPU_BODY_Y = (6.8, 9.2)
 
 
 def _riser(
-    b: TopBuilder,
+    b: Builder,
     x: float,
     y_near: float,
     y_bus: float,
@@ -329,7 +306,7 @@ def _riser(
 
 
 def _route_bus_net(
-    b: TopBuilder,
+    b: Builder,
     net: str,
     y_bus: float,
     risers: list[tuple[float, float, tuple[float, float] | None]],
@@ -352,7 +329,7 @@ def _route_bus_net(
         b.net_label(net, port_x + 0.25, y_bus)
 
 
-def _route_vdd(b: TopBuilder) -> None:
+def _route_vdd(b: Builder) -> None:
     """``vdd``: core, amp, startup, and bandgap_top's own external port.
 
     Each cell's own vdd pad sits on (or very near) that cell's own
@@ -382,7 +359,7 @@ def _route_vdd(b: TopBuilder) -> None:
     )
 
 
-def _route_vss(b: TopBuilder) -> None:
+def _route_vss(b: Builder) -> None:
     """``vss``: core, amp, startup, and bandgap_top's own external port.
 
     ``core``'s own vss pad (Q3's collector ring) and ``amp``'s own vss pad
@@ -420,7 +397,7 @@ def _route_vss(b: TopBuilder) -> None:
     )
 
 
-def _route_fb(b: TopBuilder) -> None:
+def _route_fb(b: Builder) -> None:
     """``fb``: core, amp.out, startup -- internal net, no top-level port."""
     core_pad = CORE["fb"]
     y_core = (core_pad[1] + core_pad[3]) / 2  # 60.0
@@ -445,7 +422,7 @@ def _route_fb(b: TopBuilder) -> None:
     )
 
 
-def _route_sns1(b: TopBuilder) -> None:
+def _route_sns1(b: Builder) -> None:
     """``sns1``: core, amp.in_n, startup -- internal net, no top-level port."""
     core_pad = CORE["sns1"]
     y_core = (core_pad[1] + core_pad[3]) / 2  # 50.0
@@ -477,7 +454,7 @@ def _route_sns1(b: TopBuilder) -> None:
     )
 
 
-def _route_sns2(b: TopBuilder) -> None:
+def _route_sns2(b: Builder) -> None:
     """``sns2``: core + amp only. Routed directly through the core-amp gap
     -- no bus needed for a 2-cell net. Uses x=845 (distinct from vss's own
     832/858 and fb's own 855 in the same gap) and y=50/20 (distinct from
@@ -493,7 +470,7 @@ def _route_sns2(b: TopBuilder) -> None:
     route_h(b, L_METAL1, y_amp, x_mid, amp_pad[0], width=TRUNK_W)
 
 
-def _route_vref(b: TopBuilder) -> None:
+def _route_vref(b: Builder) -> None:
     """``vref``: core only, brought out to bandgap_top's own external port.
 
     Routed entirely on Metal1: down from core's own pad (x=838, distinct
@@ -520,7 +497,7 @@ def _route_vref(b: TopBuilder) -> None:
     b.box(L_METAL1, X_PORT_VREF - half, y_safe - half, X_PORT_VREF + half, y_safe + half)
 
 
-def _route(b: TopBuilder) -> None:
+def _route(b: Builder) -> None:
     _route_vdd(b)
     _route_vss(b)
     _route_fb(b)

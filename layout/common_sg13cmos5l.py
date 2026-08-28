@@ -131,8 +131,8 @@ class Builder(BuilderBase):
     ``ring``/``net_label``/``annotate`` are CMOS5L-specific.
     """
 
-    def __init__(self, top_cell: str) -> None:
-        super().__init__(top_cell, LAYER_NAMES)
+    def __init__(self, top_cell: str, layout: kdb.Layout | None = None) -> None:
+        super().__init__(top_cell, LAYER_NAMES, layout=layout)
 
     def ring(
         self,
