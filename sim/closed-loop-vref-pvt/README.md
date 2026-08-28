@@ -100,6 +100,10 @@ A point is `PASS` only if, at the end of the transient (`t=3ms`):
    — confirms the reported `vref` is a genuine DC value, not a still-moving
    transient snapshot.
 
+`VBE(Q3)` (added by issue #133, see "VBE(Q3) measurement" below) is recorded
+at every point but is **not** part of the pass/fail verdict above — it is a
+decision-support quantity, not a new gate.
+
 `ngspice` exiting non-zero, a model-load error, or any `.measure` coming
 back empty also fails the point, same convention as every other testbench
 in this tree.
@@ -134,6 +138,28 @@ already). The informal TC table (`records/<record-id>-tc.csv`, reproduced
 in the record's own `.md`) reads 349-376 ppm/°C across the 15
 corner/supply groups — see "What this testbench claims" above for why that
 number is expected, not a target miss.
+
+## VBE(Q3) measurement (issue #133)
+
+Alongside `vref`, this testbench also measures `v(cb3)` — Q3's
+diode-connected base/collector node, which **is** `VBE(Q3)` directly, since
+Q3's emitter is tied to `vss` (the 0 V reference) — at the same two time
+points (`t=2ms`/`t=3ms`) and settledness convention `vref` uses. This is
+decision-support evidence for the `#128` Output-reference escalation, which
+traced the untrimmed `vref` accuracy gap to an unverified `VBE(Q3)≈0.75V`
+sizing assumption in `design/bandgap_core.sch`'s own header (R1 was hand-sized
+from that assumption, never a measured value) — see
+`sim/closed-loop-vref-pvt/133-vbe-q3-r1-rederivation.md` for the re-derived R1 and the
+untrimmed-accuracy-band question this measurement answers.
+
+Latest committed record (`records/20260828-190552-4e4a2c8.md`): `VBE(Q3)` at
+`t=3ms` ranges **0.5857 V (125 °C, worst case) to 0.7892 V (−40 °C, worst
+case)** across the 45-point grid, settling at **0.70857 V** at the design's
+own nominal corner (`typ`/27 °C/3.30 V) — 41.4 mV below the
+`design/bandgap_core.sch` header's assumed 0.75 V, closely matching the `#128`
+EE-key review's own independent re-derivation (`sns1 ≈ VBE(Q1)` at 0.7087 V,
+a different corner point in that record but the same device family and
+current).
 
 ## Running
 
