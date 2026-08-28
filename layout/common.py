@@ -367,7 +367,7 @@ def draw_poly_res(
 
     Sized to the schematic's own committed ``w``/``l`` (``rppd`` R1/R2,
     ``rhigh`` RPU) -- drawn as a single straight ``PolyRes`` bar, **not**
-    meandered/folded into a compact serpentine. For R1 (``l=694.5u``) and
+    meandered/folded into a compact serpentine. For R1 (``l=511u``) and
     RPU (``l=1411.3u``) this makes for a very long, thin body (sub-mm to
     ~1.4 mm) -- an honest, literal rendering of the netlist's own
     (provisional, not yet simulation-verified per

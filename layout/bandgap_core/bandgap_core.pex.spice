@@ -23,16 +23,16 @@ M$2 vdd__t2 \$9 sns2__t1 \$13 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 M$3 vdd__t1 \$9 vref__t1 \$12 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $4 r0 *1 41.35,40 rppd
 R$4 sns2__t0 cb2__t0 vsubs 10751 rppd
-* device instance $5 r0 *1 347.25,60 rppd
-R$5 vref__t0 cb3__t0 vsubs 90285 rppd
+* device instance $5 r0 *1 255.5,60 rppd
+R$5 vref__t0 cb3__t0 vsubs 66430 rppd
 * device instance cb2_t0 r0 *1 0,0 
 Rcb2_t0 cb2__t0 cb2 29.0653
 * device instance cb2 r0 *1 0,0 
 Ccb2 cb2 vsubs 9.160686e-15
 * device instance cb3_t0 r0 *1 0,0 
-Rcb3_t0 cb3__t0 cb3 166.8545
+Rcb3_t0 cb3__t0 cb3 120.7173
 * device instance cb3 r0 *1 0,0 
-Ccb3 cb3 vsubs 5.0523725e-14
+Ccb3 cb3 vsubs 3.6585249e-14
 * device instance sns1_t0 r0 *1 0,0 
 Rsns1_t0 sns1__t0 sns1 15.1283
 * device instance sns1 r0 *1 0,0 

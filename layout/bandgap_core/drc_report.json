@@ -100,15 +100,15 @@
   },
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.10",
+    "klayout_version": "0.30.11",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
       "content_hash": "sha256:72c12aadf165e17090871284ebf8688f2066e6d11967f30723945c3efc12bf59",
-      "released": false
+      "released": true
     },
     "input": {
-      "content_hash": "sha256:99d22b39f1cba1ff0c03cdf9d8eae9f390fe5607650a74fc0b5c0224557b6d4e"
+      "content_hash": "sha256:50c12d79ee279257391680d1e3ea2d5a588386167fd541d25ec4c3a060684433"
     }
   }
 }

@@ -153,7 +153,7 @@ and `pnpMPA`'s pin count/naming).
   issue's scope — those two PyCells are not what the issue's tooling-
   friction checks are about). `R1`/`R2`/`RPU` (`draw_poly_res`) are drawn
   as straight, unfolded bars at the schematics' literal `w`/`l` — for `R1`
-  (`l=694.5u`) and `RPU` (`l=1411.3u`) this makes for a very long, thin
+  (`l=511u`) and `RPU` (`l=1411.3u`) this makes for a very long, thin
   body (sub-mm to ~1.4 mm), an honest rendering of the netlist's own
   provisional (not yet simulation-verified — see each schematic's header)
   sizing, not a claim about how the resistor would actually be folded for
@@ -523,7 +523,7 @@ confirmed by direct experiment, not inferred:
    with this specific circuit's own topology, not a `klt` capability gap.
    **Not independently re-tested under issue #20's resistor recognition**:
    `R1`/`R2` are no longer invisible to the layout-side extraction (unlike
-   when this experiment ran), and `R1`/`R2` differ in length (`l=694.5u`
+   when this experiment ran), and `R1`/`R2` differ in length (`l=511u`
    vs `l=82.7u`) — in principle this *could* now distinguish `M2`
    (`→R2→Q2`) from `M3` (`→R1→Q3`) structurally, narrowing the automorphism
    to a smaller ambiguity (or none). Re-running the same `hints.same_nets`

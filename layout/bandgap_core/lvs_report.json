@@ -52,19 +52,19 @@
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.10",
-    "layout_sha256": "99d22b39f1cba1ff0c03cdf9d8eae9f390fe5607650a74fc0b5c0224557b6d4e",
-    "reference_sha256": "2807e9525e745fc27749928adddce27563a1cb7d02a7e3a3745a9c2c83164c18",
+    "engine_version": "0.30.11",
+    "layout_sha256": "50c12d79ee279257391680d1e3ea2d5a588386167fd541d25ec4c3a060684433",
+    "reference_sha256": "387e2f8ea857ea1fe7558a77a38faf746e7ffb24fc818aeeedd30d1a26e56453",
     "extracted_netlist": null
   },
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.10",
+    "klayout_version": "0.30.11",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
       "content_hash": "sha256:72c12aadf165e17090871284ebf8688f2066e6d11967f30723945c3efc12bf59",
-      "released": false
+      "released": true
     },
     "input": null
   },
