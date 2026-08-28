@@ -1,0 +1,54 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+sns1                               7.05096e-25
+fb                                           0
+xq1.s1                             2.79517e-31
+xq1.t                               1.6669e-29
+sns2                               3.24623e-30
+cb2                                3.24589e-30
+xr2.dt                                       0
+xq2.s1                             3.26817e-36
+xq2.t                               1.8028e-43
+vref                              -2.03082e-25
+cb3                               -2.02949e-25
+xr1.dt                                       0
+xq3.s1                            -8.30223e-32
+xq3.t                              1.52838e-31
+tail                                         0
+d1                                           0
+d2                                           0
+pn                                           0
+det                                          0
+xrpu.dt                                      0
+fbx                                          0
+vmkfb#branch                                 0
+vsub#branch                                  0
+vvss#branch                        1.48944e-33
+vvdd#branch                       -5.30344e-33
+
+ Reference value :  2.00000e-08 Reference value :  8.00000e-08 Reference value :  1.25600e-05 Reference value :  1.10373e-04 Reference value :  4.73000e-04 Reference value :  6.11000e-04 Reference value :  9.95000e-04 Reference value :  1.45100e-03 Reference value :  1.55700e-03 Reference value :  1.92900e-03 Reference value :  2.36700e-03 Reference value :  2.84100e-03
+No. of Data Rows : 1512
+v_fb_v              =  2.49303e+00
+v_sns1_v            =  7.85041e-01
+v_sns2_v            =  7.84928e-01
+v_det_v             =  5.65211e-03
+i_mkfb_v            =  2.49311e-09
+v_vref_2ms          =  1.04472e+00
+v_vref_3ms          =  1.04472e+00
+Note: Simulation executed from .control section 
