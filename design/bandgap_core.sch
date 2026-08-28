@@ -74,16 +74,44 @@ v {xschem version=3.4.8RC file_version=1.3
 *         -> rppd, w=2um (>=2um per the process spec's precision-resistor
 *            recommendation, spec/porting-plan.md Sec 2), l ~= 82.7um
 *            (solved from rppd.sym's own R(w,l) formula, b=0 bends)
-*     R1 sized for a provisional vref ~= 1.2V target with VBE(Q3) ~= 0.75V
-*         assumed (not yet simulated): R1 = (1.2 - 0.75)/5uA = 90 kOhm
-*         -> rppd, w=2um, l ~= 694.5um (same formula)
+*     R1 was originally sized for a provisional vref ~= 1.2V target with
+*         VBE(Q3) ~= 0.75V assumed (not yet simulated): R1 = (1.2 - 0.75)/5uA
+*         = 90 kOhm -> rppd, w=2um, l ~= 694.5um (same formula). #86's
+*         closed-loop PVT sweep grounded that provisional value in real
+*         sim/ evidence and found its measured TC (349-376 ppm/C across all
+*         15 process corners, sim/closed-loop-vref-pvt/records/
+*         20260826-103022-014570b-tc.csv) ~7-8x over the draft
+*         spec/porting-plan.md Sec 6 TC row (< 50 ppm/C) -- the R1/R2
+*         ratio's implied PTAT gain (R1/R2*ln(8) ~= 17.5) undercancels
+*         VBE(Q3)'s CTAT slope for npn13G2 at this branch current, which
+*         needs measurably less PTAT gain than the ~17-20x rule-of-thumb
+*         silicon-BJT literature value to null first-order TC.
+*     R1 RETUNED (issue #134): a resistor-ratio-only retune, R2 unchanged --
+*         l = 511um (R1/R2*ln(8) ~= 12.85, down from ~17.5), found by
+*         sweeping R1 in sim (design current I is set by R2 alone, so this
+*         retune does not change branch current, only the vref DC level and
+*         its TC) and selecting the length nearest the sim-measured
+*         minimum-|TC| crossing at the typ/3.30V corner, then confirmed
+*         across all 15 process corners x 3 supplies via both the endpoint
+*         method (matching sim/closed-loop-vref-pvt's own 3-temperature-point
+*         convention) and a finer 8-temperature-point box-method scan (needed
+*         because vref(T) is no longer monotonic this close to the
+*         first-order-cancellation point -- see
+*         measurements/2026-08-tc-retune/README.md for the full derivation,
+*         per-corner table and the vref(T) curvature analysis). Worst-case
+*         measured box TC across the grid is ~19 ppm/C (wcs corner) --
+*         inside the draft < 50 ppm/C row. This retune trades away the
+*         (also-unverified, separately tracked -- issue #133) ~1.2V Output
+*         reference target: vref moves to ~1.045V at this R1/R2 ratio. R1's
+*         length change also desyncs layout/bandgap_core's existing GDS/PEX
+*         evidence (sized for l=694.5um) -- re-layout is tracked as a
+*         separate follow-on, not done in this schematic-level fix.
 *   Mirror M1=M2=M3: sg13_hv_pmos, W=10u/L=1u (W/L=10, matched across all
 *   three legs by construction -- mirror accuracy depends on this match,
 *   not on the absolute W/L chosen here).
-* None of these values are simulation-grounded yet -- #10 will re-derive
-* them against the actual VBIC model card and PVT corners the way gf180's
-* #55/#61/#96/#147 chain did for its own core (see that repo's
-* design/bandgap_core.sch header for the shape of that process).
+* R2 is unchanged; R1 is simulation-grounded as of issue #134 (see above).
+* Earlier note ("#10 will re-derive them") predates #86's PVT-sweep grounding
+* and #134's retune -- kept for history, superseded by the above.
 *
 * Pins: vdd, vss, fb, sns1, sns2, vref
 }
@@ -142,7 +170,7 @@ N 780 200 760 200 {}
 C {lab_pin.sym} 760 200 0 0 {name=l21 lab=fb}
 N 820 230 840 250 {}
 C {lab_pin.sym} 840 250 0 0 {name=l22 lab=vref}
-C {sg13g2_pr/rppd.sym} 800 400 0 0 {name=R1 model=rppd body=sub! spiceprefix=X w=2u l=694.5u b=0 m=1}
+C {sg13g2_pr/rppd.sym} 800 400 0 0 {name=R1 model=rppd body=sub! spiceprefix=X w=2u l=511u b=0 m=1}
 N 800 370 800 350 {}
 C {lab_pin.sym} 800 350 0 0 {name=l23 lab=vref}
 N 800 430 800 450 {}
