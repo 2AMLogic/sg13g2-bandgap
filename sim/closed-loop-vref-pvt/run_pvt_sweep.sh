@@ -38,7 +38,7 @@ read_msense_width "design/netlist/bandgap_startup.spice"
 # compute the amp/startup halves' SHAs separately.
 alias_dut_git_shas AMP=design/netlist/bandgap_amp.spice STARTUP=design/netlist/bandgap_startup.spice
 
-echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,fb_v,sns1_v,sns2_v,det_v,i_mkfb_a,dvsns_v,vref_2ms_v,vref_3ms_v,vref_settle_delta_v" > "${CSV_OUT}"
+echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,fb_v,sns1_v,sns2_v,det_v,i_mkfb_a,dvsns_v,vref_2ms_v,vref_3ms_v,vref_settle_delta_v,vbeq3_2ms_v,vbeq3_3ms_v" > "${CSV_OUT}"
 
 # Pass criteria -- the same loop-closure/startup-release/not-railed bar
 # sim/closed-loop-startup uses (DET_RELEASE_FRAC/I_MKFB_RELEASE_A/
@@ -87,6 +87,15 @@ for corner in "${CORNER_LABELS[@]}"; do
       i_mkfb_a=$(grep -E '^i_mkfb_v' "${log}" | head -1 | awk '{print $3}' || true)
       vref_2ms=$(grep -E '^v_vref_2ms' "${log}" | head -1 | awk '{print $3}' || true)
       vref_3ms=$(grep -E '^v_vref_3ms' "${log}" | head -1 | awk '{print $3}' || true)
+      # VBE(Q3) (issue #133): v(cb3), Q3's diode-connected base/collector
+      # node -- see the template's own header comment for why v(cb3) IS
+      # VBE(Q3) directly (Q3's emitter is tied to vss, the 0V reference).
+      # Recorded for evidence/decision-support only, same `|| true`
+      # convergence-fallback convention as every other measure above -- not
+      # part of the pass/fail verdict (pvt_closed_loop_verdict's signature
+      # is unchanged; this is a new recorded quantity, not a new gate).
+      vbeq3_2ms=$(grep -E '^v_vbeq3_2ms' "${log}" | head -1 | awk '{print $3}' || true)
+      vbeq3_3ms=$(grep -E '^v_vbeq3_3ms' "${log}" | head -1 | awk '{print $3}' || true)
 
       verdict=PASS
       dvsns_v=""
@@ -102,7 +111,7 @@ for corner in "${CORNER_LABELS[@]}"; do
       fi
 
       tally_verdict "${verdict}" "${corner_id}"
-      echo "${corner},${hbt_section},${mos_section},${res_section},${temp},${vdd},${MSENSE_W},${verdict},${fb_v},${sns1_v},${sns2_v},${det_v},${i_mkfb_a},${dvsns_v},${vref_2ms},${vref_3ms},${settle_delta}" >> "${CSV_OUT}"
+      echo "${corner},${hbt_section},${mos_section},${res_section},${temp},${vdd},${MSENSE_W},${verdict},${fb_v},${sns1_v},${sns2_v},${det_v},${i_mkfb_a},${dvsns_v},${vref_2ms},${vref_3ms},${settle_delta},${vbeq3_2ms},${vbeq3_3ms}" >> "${CSV_OUT}"
     done
   done
 done
@@ -150,7 +159,13 @@ done
   echo "  (records/${RECORD_ID}-tc.csv) -- see that file and the README's"
   echo "  own disclaimer: this is NOT a claim against"
   echo "  spec/porting-plan.md Sec 6's draft (unratified, #13) vref/TC"
-  echo "  target row."
+  echo "  target row. Also measures VBE(Q3) (v(cb3), same settledness check"
+  echo "  as vref above) at every point (issue #133) -- decision-support"
+  echo "  evidence for the #128 Output-reference escalation, which traced"
+  echo "  the untrimmed vref accuracy gap to an unverified"
+  echo "  VBE(Q3)~=0.75V sizing assumption in design/bandgap_core.sch; see"
+  echo "  sim/closed-loop-vref-pvt/133-vbe-q3-r1-rederivation.md for the re-derivation"
+  echo "  this record's own VBE(Q3) column feeds."
   echo "- **XMSENSE width this run used**: w=${MSENSE_W} (read from the live"
   echo "  design/netlist/bandgap_startup.spice at run time, same convention"
   echo "  sim/closed-loop-startup uses)."
@@ -195,6 +210,17 @@ done
   tail -n +2 "${TC_OUT}" | while IFS=, read -r c v vn v27 v125 tc; do
     echo "| ${c} | ${v} | ${vn} | ${v27} | ${v125} | ${tc} |"
   done
+  echo
+  echo "## VBE(Q3) per PVT point (issue #133)"
+  echo
+  echo "\`v(cb3)\` at \`t=3ms\` (settled -- see \`vref_settle_delta_v\`"
+  echo "criterion above, applied identically to this node), one row per"
+  echo "PASSing point. Full data (both t=2ms/t=3ms readings, every point):"
+  echo "\`records/${RECORD_ID}.csv\` columns \`vbeq3_2ms_v\`/\`vbeq3_3ms_v\`."
+  echo
+  echo "| corner | temp (C) | vdd (V) | VBE(Q3) at 3ms (V) |"
+  echo "|---|---|---|---|"
+  awk -F, 'NR>1 && $8=="PASS" {printf "| %s | %s | %s | %s |\n", $1, $5, $6, $19}' "${CSV_OUT}"
 } > "${MD_OUT}"
 
 write_pvt_summary

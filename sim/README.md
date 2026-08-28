@@ -313,6 +313,12 @@ from no checker at all.
   method) — not a claim against `spec/porting-plan.md` §6's still-unratified
   target row (#13); see that experiment's README for the full disclaimer
   and why that number is expected given this design has no trim network yet.
+  Issue #133 added a `VBE(Q3)` probe to this same testbench (decision-support
+  for the #128 Output-reference escalation): `VBE(Q3)` at the design's own
+  nominal corner (`typ`/27°C/3.30V) measures 0.70857 V, 41.4 mV below the
+  0.75 V sizing assumption `design/bandgap_core.sch`'s header derived R1
+  from — see `sim/closed-loop-vref-pvt/133-vbe-q3-r1-rederivation.md` for the re-derived
+  R1 and untrimmed-accuracy-band finding this measurement feeds.
 - **[`loop-gain-phase-margin/`](loop-gain-phase-margin/README.md)** — the
   first small-signal AC stability testbench in this tree (issue #86,
   follow-on to #58): the loop is broken at the shared `fb` node with a

@@ -6,13 +6,13 @@
 * netlist-snapshots/*.spice file directly, edit this template and re-run
 * the sweep. Full rationale is in sim/closed-loop-vref-pvt/README.md.
 *
-* Generated for: corner=@@CORNER_LABEL@@ temp=@@TEMP_C@@C vdd=@@VDD@@V
+* Generated for: corner=bcs temp=125C vdd=2.97V
 * DUT git sha (design/netlist/bandgap_core.spice,
 * design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice
 * this was copied from):
-*   @@DUT_GIT_SHA@@
-* PDK: @@PDK@@ @@PDK_ROOT@@ (see sim/pdk.json for the pinned release)
-* OSDI models: @@OSDI_DIR@@ (built by sim/tools/build-osdi.sh)
+*   core=4832c71 amp=397fe2d startup=66ac99d
+* PDK: ihp-sg13g2 /home/ubuntu/share/pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
 *
 * This is the SAME co-simulated topology sim/closed-loop-startup/ uses
 * (all three DUTs copied verbatim, wired exactly as design/bandgap_top.sch
@@ -32,9 +32,9 @@
 * escalation, which traced the untrimmed vref accuracy gap to an
 * unverified VBE(Q3)~=0.75V sizing assumption in design/bandgap_core.sch.
 
-.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerHBT.lib" @@HBT_SECTION@@
-.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerMOShv.lib" @@MOS_SECTION@@
-.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerRES.lib" @@RES_SECTION@@
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_bcs
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_ff
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_bcs
 
 * rshunt=1e9 / gmin=1e-9: the same convergence aids sim/closed-loop-startup
 * needed at a handful of PVT corners during the very early (sub-1V) part of
@@ -45,7 +45,7 @@
 * exact pair of values. This testbench drives the same three DUTs through
 * the same kind of ramp, so it inherits the same numerical stiffness at the
 * same early instant and needs the same aids.
-.options temp=@@TEMP_C@@ tnom=27 rshunt=1e9 gmin=1e-9
+.options temp=125 tnom=27 rshunt=1e9 gmin=1e-9
 
 * FIXTURE -- transient supply ramp: vdd ramps 0 -> VDD over 200 us (same
 * rise sim/closed-loop-startup and sim/startup-core-handover use) and holds
@@ -53,7 +53,7 @@
 * testbench can measure vref at two separated time points (2 ms and 3 ms)
 * and confirm it has stopped moving between them before trusting it as a
 * DC value.
-Vvdd vdd 0 PWL(0 0 200u @@VDD@@ 3m @@VDD@@)
+Vvdd vdd 0 PWL(0 0 200u 2.97 3m 2.97)
 Vvss vss 0 dc 0
 * both bandgap_core.spice and bandgap_amp.spice wire their resistor bulk
 * terminals (rppd inside the core) to the global substrate net `sub!`,
@@ -93,15 +93,15 @@ XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
 * directly (i_mkfb below) rather than inferred from fb's voltage alone. A
 * 0 V source is a DC/transient short and does not move the operating point.
 XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
-XMSENSE det sns1 vss vss sg13_hv_nmos w=@@MSENSE_W@@ l=0.5u ng=1 m=1
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1
 Vmkfb fb fbx dc 0
 XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
 
 .control
-pre_osdi @@OSDI_DIR@@/psp103.osdi
-pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
-pre_osdi @@OSDI_DIR@@/mosvar.osdi
-pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
 tran 2u 3m
 * Loop-closure / startup-release sanity (same criteria/sense as
 * sim/closed-loop-startup, evaluated here at t=3ms instead of 2ms) --
