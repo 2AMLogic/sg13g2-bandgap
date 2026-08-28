@@ -25,7 +25,7 @@ Devices instantiated, one-to-one against ``design/netlist/bandgap_core.spice``
     R2 rppd w=2u l=82.7u         -- PTAT resistor (sns2 -> cb2)
     Q2 npn13G2 Nx=8              -- branch 2, diode-connected (cb2 -> vss)
     M3 sg13_hv_pmos w=10u l=1u   -- output branch mirror leg (vdd/fb -> vref)
-    R1 rppd w=2u l=694.5u        -- summing resistor (vref -> cb3)
+    R1 rppd w=2u l=511u          -- summing resistor (vref -> cb3)
     Q3 npn13G2 Nx=1              -- output branch, diode-connected (cb3 -> vss)
 
 **Routing (issue #20).** After placing all 8 devices, this script wires up
@@ -144,10 +144,11 @@ def build() -> Builder:
     x3 = 110.0
     m3 = draw_hv_mos(b, "M3", "pmos", 10.0, 1.0, x3, mos_y, gate_net="fb", source_net="vdd", drain_net="vref")
     q3 = draw_npn13g2(b, "Q3", 1, x3, hbt_y, collector_net="cb3", base_net="cb3", emitter_net="vss")
-    # R1 is drawn as a long straight bar (l=694.5u, see draw_poly_res's own
-    # docstring) on its own row so it does not overlap the compact devices
-    # above -- runs from x=0 out past x3's column.
-    r1 = draw_poly_res(b, "R1", "rppd", 2.0, 694.5, 0.0, res_y + 20.0, end_a_net="vref", end_b_net="cb3")
+    # R1 is drawn as a long straight bar (l=511u, see draw_poly_res's own
+    # docstring -- resized from 694.5u to match design/bandgap_core.sch's
+    # own R1/R2 retune, issue #134/PR #136, per issue #137) on its own row
+    # so it does not overlap the compact devices above.
+    r1 = draw_poly_res(b, "R1", "rppd", 2.0, 511.0, 0.0, res_y + 20.0, end_a_net="vref", end_b_net="cb3")
 
     _route(b, m1, q1, m2, q2, r2, m3, q3, r1)
 

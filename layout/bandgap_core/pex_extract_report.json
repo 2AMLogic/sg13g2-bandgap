@@ -1,11 +1,11 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "file": "bandgap_core.gds",
   "deck": "sg13g2",
   "top": "bandgap_core",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_core.pex.spice",
-  "netlist_sha256": "5df93d94773010ba6b783e870001886b824d9bf0b0c6ecb1df7dce2e91deaa8e",
+  "netlist_sha256": "a10a040361ba698bca2606d4bc7d4ec473ac8f246ea8b675621fd6ed526e94c4",
   "status": "extracted",
   "device_count": 5,
   "net_count": 12,
@@ -151,11 +151,11 @@
         "w": "vsubs"
       },
       "params": {
-        "r_ohm": 90285.0,
-        "l_um": 694.5,
+        "r_ohm": 66430.0,
+        "l_um": 511.0,
         "w_um": 2.0,
-        "area_um2": 1389.0,
-        "perimeter_um": 1393.0
+        "area_um2": 1022.0,
+        "perimeter_um": 1026.0
       }
     }
   ],
@@ -278,7 +278,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:99d22b39f1cba1ff0c03cdf9d8eae9f390fe5607650a74fc0b5c0224557b6d4e"
+      "content_hash": "sha256:50c12d79ee279257391680d1e3ea2d5a588386167fd541d25ec4c3a060684433"
     }
   },
   "parasitics": {
@@ -286,8 +286,8 @@
     "c_count": 7,
     "cc_count": 8,
     "l_count": 0,
-    "total_resistance_ohm": 316.9715,
-    "total_capacitance_ff": 104.875844,
+    "total_resistance_ohm": 270.8343,
+    "total_capacitance_ff": 90.937368,
     "total_coupling_capacitance_ff": 0.121844,
     "total_inductance_nh": 0.0,
     "nets": [
@@ -336,8 +336,8 @@
       {
         "net": "cb3",
         "net_id": 2,
-        "resistance_ohm": 166.8545,
-        "capacitance_ff": 50.523725,
+        "resistance_ohm": 120.7173,
+        "capacitance_ff": 36.585249,
         "inductance_nh": 0.0,
         "hub_net": "cb3",
         "rc_model": "lumped",
@@ -346,7 +346,7 @@
             "device": "$5",
             "terminal": "B",
             "leg_net": "cb3__t0",
-            "resistance_ohm": 166.8545
+            "resistance_ohm": 120.7173
           }
         ],
         "segments": [],
