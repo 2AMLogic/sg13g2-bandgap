@@ -362,11 +362,17 @@ from no checker at all.
   transient endpoints (re-verified per point, not just trusted) since this
   loop-broken topology cannot reuse that experiment's own vdd-ramp bring-up
   directly (confirmed empirically — see that experiment's README). 45/45
-  PVT points PASS: unconditionally stable everywhere on this repo's PVT
-  grid, phase margin 85-119°, DC loop gain 45.1-47.5 dB, unity-gain
-  crossover 41.5-53.3 MHz. PSRR and offset/mismatch remain explicitly
-  deferred past this issue — see `design/README.md`'s updated "Not
-  attempted" list and #88, the follow-up issue this issue files.
+  PVT points PASS: phase margin 43.9-117.1° and DC loop gain
+  45.1-47.5 dB wherever a crossing is found, unity-gain crossover
+  41.7-52.9 MHz — but gain margin is a much thinner story: 41/45 points'
+  own resonant notch sits within a guard-banded ±1.0 dB of 0 dB (issue
+  #146), one of which finds no crossing at all in a given re-run and PASSes
+  via that guard band rather than a measured phase margin — see that
+  experiment's own README "Pass/fail criteria" for why a bare crossing test
+  was not robust to this corner grid's own solver noise. PSRR and
+  offset/mismatch remain explicitly deferred past this issue — see
+  `design/README.md`'s updated "Not attempted" list and #88, the follow-up
+  issue this issue files.
 - **[`closed-loop-psrr/`](closed-loop-psrr/README.md)** — closed-loop
   power-supply-rejection (issue #88, follow-on to #86/#58): unlike
   `loop-gain-phase-margin`, the `fb` loop is left fully closed (PSRR is
