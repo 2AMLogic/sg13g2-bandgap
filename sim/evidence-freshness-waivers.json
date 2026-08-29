@@ -51,27 +51,6 @@
       "reason": "#134/PR #136 retuned bandgap_core's R1 (rppd l=694.5u -> l=511u, commit 8bb15bc); this experiment has not been re-run since. Tracked for a fresh PVT sweep."
     },
     {
-      "report": "sim/sg13cmos5l-closed-loop-startup-pex/records/20260826-082317-0485f7e.md",
-      "check": "design/sg13cmos5l/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:635c2225cb69e335c65280a8d9d10aecfbb3d34f1ae8d367e251c218939d2bc2",
-      "issue": "#142",
-      "reason": "DR-0005's own re-run record carries the pre-DR-0005 XQ2 (a={ 8u * 2u } m=1) in its netlist snapshots while the committed netlist has m=8 unit devices -- under investigation, out of scope for the SG13G2 T1 tracker."
-    },
-    {
-      "report": "sim/sg13cmos5l-closed-loop-startup/records/20260826-003738-b8ec543.md",
-      "check": "design/sg13cmos5l/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:635c2225cb69e335c65280a8d9d10aecfbb3d34f1ae8d367e251c218939d2bc2",
-      "issue": "#142",
-      "reason": "DR-0005's own re-run record carries the pre-DR-0005 XQ2 (a={ 8u * 2u } m=1) in its netlist snapshots while the committed netlist has m=8 unit devices -- under investigation, out of scope for the SG13G2 T1 tracker."
-    },
-    {
-      "report": "sim/sg13cmos5l-core-open-loop-bias/records/20260826-003704-b8ec543.md",
-      "check": "design/sg13cmos5l/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:635c2225cb69e335c65280a8d9d10aecfbb3d34f1ae8d367e251c218939d2bc2",
-      "issue": "#142",
-      "reason": "DR-0005's own re-run record carries the pre-DR-0005 XQ2 (a={ 8u * 2u } m=1) in its netlist snapshots while the committed netlist has m=8 unit devices -- under investigation, out of scope for the SG13G2 T1 tracker."
-    },
-    {
       "report": "sim/startup-core-handover/records/20260821-144329-60f50a7.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:bd35f8a15d19b73a826867089cee2329e37b5caab35cafcce6e0969ef76d03a6",
