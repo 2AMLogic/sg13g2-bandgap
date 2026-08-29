@@ -169,6 +169,39 @@ diffs `sim/*/records/`, `sim/*/netlist-snapshots/` and `sim/*/corners/`
 against the merge base and fails on any modification or deletion. Adding a
 new `<record-id>` is always allowed; touching a landed one never is.
 
+## DUT freshness ("staleness is failure")
+
+Append-only keeps old evidence honest. It does **not** keep the *newest*
+evidence current — when a design file changes, every record that predates the
+change silently becomes a measurement of a circuit that no longer exists. The
+evidence ladder treats that as a failure, not a footnote.
+
+So each experiment's newest record is checked against the design it names:
+
+- The record's `- **Netlist provenance**` / `- **Devices**` field names the
+  committed `design/**` netlist(s) it ran against.
+- Its per-point `netlist-snapshots/<record-id>/*.spice` are compared, device by
+  device, against those netlists. The DUT's instance set, models and parameters
+  must still match.
+- **Node names are not compared** — a testbench legitimately rewires the DUT's
+  ports into its own fixture nets. **Extra parameters are allowed** — a
+  PEX-sourced device carries `as`/`ad`/`ps`/`pd` the schematic does not. What
+  cannot differ is a device that was resized, re-modelled, added or dropped.
+- Only the **newest** record per experiment is required to be fresh. Older
+  records are superseded history and are kept, never regenerated.
+
+A record whose DUT is a layout-extracted netlist is not covered here (nothing
+yet ties it back to the extraction it consumed); the checker prints a
+`DUT freshness not checked: …` note rather than passing silently.
+
+Known-stale records are waived **by name** in
+[`evidence-freshness-waivers.json`](evidence-freshness-waivers.json), the `sim/`
+counterpart of `layout/evidence-freshness-waivers.json`. Each entry must name a
+tracking issue and the exact stale device signature, and it self-expires two
+ways: re-running the record changes the signature, and appending a newer record
+makes the entry match nothing at all. Either way CI fails until the entry is
+deleted — a waiver buys tracked, disclosed staleness, never silence.
+
 ## Mechanical enforcement
 
 ```bash
@@ -177,9 +210,10 @@ python3 .github/scripts/test_check_evidence_formats.py  # the checker's own self
 ```
 
 Stdlib only — no venv, no PDK, no ngspice, no `klt`. It runs on every push and
-PR (`.github/workflows/hygiene.yml`) and covers three things: the record format
-documented above, the append-only rule, and the freshness of the `layout/`
-DRC/LVS/PEX reports (see `layout/README.md`). It is the sg13g2 counterpart to
+PR (`.github/workflows/hygiene.yml`) and covers four things: the record format
+documented above, the append-only rule, the DUT-freshness rule above, and the
+freshness of the `layout/` DRC/LVS/PEX reports (see `layout/README.md`). It is
+the sg13g2 counterpart to
 gf180-bandgap's `sim/check_records.py`, adapted to this repo's own convention
 (per-point netlist-snapshot *directories*, `.md`+`.csv` record pairs).
 

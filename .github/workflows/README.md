@@ -32,7 +32,7 @@ structure/hygiene that already exists in this repo today — nothing more.
   checker itself: a format checker that cannot fail is indistinguishable
   from no checker at all.
 - **`.github/scripts/check_evidence_formats.py`** — the evidence-format and
-  freshness gate. Three things, all headless and PDK-free:
+  freshness gate. Four things, all headless and PDK-free:
   1. **`sim/` record format** — every `sim/<slug>/records/<record-id>.md`
      against the convention `sim/README.md` documents: record-id grammar,
      required fields, the `.csv` sibling, the corner-id grammar, and the
@@ -52,6 +52,16 @@ structure/hygiene that already exists in this repo today — nothing more.
      GDS / reference netlist / extracted netlist. Known-stale reports are
      waived by name, with a tracking issue, in
      `layout/evidence-freshness-waivers.json`; see `layout/README.md`.
+  4. **`sim/` DUT freshness** — the same "staleness is failure" rule applied
+     to simulation evidence. Each experiment's **newest** record is compared
+     against the committed `design/**` netlist it names as its own
+     provenance, using the per-point netlist snapshots the record already
+     ships: the DUT's device set, models and parameters must still match.
+     Node names are not compared (a testbench legitimately rewires the DUT's
+     ports) and a netlist that only *adds* parameters — a PEX-sourced device
+     carrying `as`/`ad`/`ps`/`pd` — still matches. Known-stale records are
+     waived by name, with a tracking issue, in
+     `sim/evidence-freshness-waivers.json`; see `sim/README.md`.
 
   It deliberately does **not** demand a particular DRC/LVS *verdict*. This
   repo's LVS legitimately reads `mismatch` today for reasons documented in
@@ -81,11 +91,14 @@ does **not** yet validate:
   carry no provenance hash of the schematic they came from, so the
   sha256-based freshness check used for `layout/` has nothing to compare
   against here.
-- That a `sim/` record is fresh relative to the netlist it simulated. A
-  record names its source git sha in prose (`- **Netlist provenance**`),
-  which is not machine-comparable the way `layout/`'s recorded sha256
-  hashes are. Adding a provenance hash to the record format would close
-  this and is the natural next step.
+- That an *older* `sim/` record is fresh. Only each experiment's newest
+  record is freshness-checked (check 4 above); superseded records are kept,
+  not regenerated, because `sim/` evidence is append-only.
+- That a `sim/` record whose DUT is a **layout-extracted** netlist is fresh
+  against that netlist. `layout/`'s own hash checks cover the extracted
+  netlist itself; nothing yet ties a PEX record back to the extraction it
+  consumed, and the checker says so out loud (`note: DUT freshness not
+  checked: …`) rather than passing silently.
 - Characterization/measurement data formats in `measurements/` — empty
   until tape-out (#15).
 - Markdown style/lint (line length, table formatting, etc.) on `README.md`
@@ -111,3 +124,15 @@ rather than passing vacuously: both cells' `pex_extract_report.json` were
 produced against a GDS superseded by PR #45. That is filed as **#56** and
 waived by name in `layout/evidence-freshness-waivers.json` until the
 re-extraction and PEX PVT re-run land.
+
+The `sim/` DUT-freshness check (added later, for #4's item 5/7/9 evidence)
+did the same on its first run, finding two defects that had been invisible:
+
+- Seven SG13G2 experiments' newest records were produced against the
+  `l=694.5u` `R1` that #134/PR #136 retuned to `l=511u` — a resize that moves
+  `vref` ~12.8% at the nominal corner (#139/PR #140). Filed as **#141**.
+- The SG13CMOS5L DR-0005 commit states it re-ran two PVT sweeps against the
+  new `m=8` `Q2`, but the records it added carry the **pre**-DR-0005 `Q2`
+  (`a={ 8u * 2u } m=1`) in their own netlist snapshots. Filed as **#142**.
+
+Both sets are waived by name until fresh records land.
