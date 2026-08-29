@@ -56,12 +56,14 @@
 *     real reported bulk net for these devices), not the schematic's
 *     `sub!` -- the now-unused `Vsub sub! vss` fixture is removed below.
 *     Separately: `pex_extract_report.json`'s own `r_ohm` field (10751 /
-*     90285) is klt's own first-order `rsh * l_um / w_um` sheet-resistance
-*     estimate (confirmed exactly: `260 * 82.7 / 2 = 10751`,
-*     `260 * 694.5 / 2 = 90285`), not the full `r3_cmc` compact-model
+*     66430, current post-#134-retune extraction -- issue #141) is klt's
+*     own first-order `rsh * l_um / w_um` sheet-resistance estimate
+*     (confirmed exactly: `260 * 82.7 / 2 = 10751`,
+*     `260 * 511 / 2 = 66430`), not the full `r3_cmc` compact-model
 *     resistance -- simulating the X-subckt form above at the same drawn
-*     geometry computes ~10722 ohm / ~89782 ohm (res_typ, 27C), within
-*     ~0.5% of `r_ohm`, i.e. small and in the expected direction (the
+*     geometry computes ~10761 ohm / ~66257 ohm (res_typ, 27C, measured
+*     from this experiment's own record 20260829-103823-1d98d88), within
+*     ~0.3% of `r_ohm`, i.e. small and in the expected direction (the
 *     compact model adds contact/end-effect terms the sheet-resistance
 *     formula does not). Disclosed, not silently reconciled.
 *   - The extracted mirror legs' body terminals are genuinely floating in
@@ -186,7 +188,7 @@ XQ3 cb3 cb3 vss vss npn13G2 Nx=1
 * schematic's own instance names for continuity; the hub-terminal node
 * names below (sns2__t0/cb2__t0/vref__t0/cb3__t0) are the extraction's own.
 XR2 sns2__t0 cb2__t0 vsubs rppd w=2u l=82.7u m=1 b=0
-XR1 vref__t0 cb3__t0 vsubs rppd w=2u l=694.5u m=1 b=0
+XR1 vref__t0 cb3__t0 vsubs rppd w=2u l=511u m=1 b=0
 
 .op
 .control

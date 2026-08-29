@@ -132,11 +132,13 @@ README restates the parts that matter for simulation; `layout/README.md`'s
   therefore X-subckt calls to the real `rppd` subckt, bulk on `vsubs`
   (the extraction's real reported bulk net) instead of the schematic
   fixture's `sub!`. Separately: `pex_extract_report.json`'s own `r_ohm`
-  field (`10751`/`90285`) is klt's own first-order `rsh * l_um / w_um`
+  field (`10751`/`66430`, current post-#134-retune extraction — issue
+  #141) is klt's own first-order `rsh * l_um / w_um`
   sheet-resistance estimate (confirmed exactly: `260 * 82.7 / 2 = 10751`,
-  `260 * 694.5 / 2 = 90285`) — not the full `r3_cmc` compact-model
+  `260 * 511 / 2 = 66430`) — not the full `r3_cmc` compact-model
   resistance. Simulating the X-subckt form at the same drawn geometry
-  computes `~10722 Ω` / `~89782 Ω` (`res_typ`, 27 °C), within `~0.5%` of
+  computes `~10761 Ω` / `~66257 Ω` (`res_typ`, 27 °C, measured from
+  `records/20260829-103823-1d98d88.csv`), within `~0.3%` of
   `r_ohm` — small, and in the expected direction (the compact model adds
   contact/end-effect terms the sheet-resistance formula omits). Disclosed
   here rather than silently reconciled.

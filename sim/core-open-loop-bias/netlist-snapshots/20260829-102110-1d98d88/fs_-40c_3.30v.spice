@@ -1,0 +1,79 @@
+* sg13g2-bandgap -- bandgap_core open-loop PVT testbench (issues #10, #22)
+* Generated from sim/core-open-loop-bias/testbench/tb_core_open_loop_bias.spice.tmpl
+* by sim/core-open-loop-bias/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full rationale for every choice below is in
+* sim/core-open-loop-bias/README.md; this header is a short pointer, not a
+* restatement.
+*
+* Generated for: corner=fs temp=-40C vdd=3.30V
+* DUT git sha (design/netlist/bandgap_core.spice this was copied from):
+*   8bb15bc
+* PDK: ihp-sg13g2 /home/ubuntu/share/pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh -- see
+*   sim/README.md "OSDI device models" for provenance)
+*
+* Since issue #22 landed the OSDI toolchain, every device below is the
+* PDK's own real compact model: the three sg13_hv_pmos mirror legs
+* (PSP103.6, via psp103.osdi) and both rppd resistors (r3_cmc, via
+* r3_cmc.osdi) are instantiated exactly as design/netlist/bandgap_core.spice
+* draws them -- same instance names, same node names, same W/L/Nx -- next to
+* the three real npn13G2 bipolar legs. The ideal-current-source and ideal-R
+* substitutions this testbench used before #22 are gone; the only remaining
+* additions to the DUT netlist are the four measurement/bias elements
+* called out below, each of which is a testbench fixture, not a device
+* substitution.
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_fs
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_typ
+
+.options temp=-40 tnom=27
+
+Vvdd vdd 0 dc 3.30
+Vvss vss 0 dc 0
+* bandgap_core.spice wires both rppd bulk terminals to the global substrate
+* net `sub!`; this testbench ties it to vss through a 0 V source so the
+* substrate leakage the r3_cmc model computes is measurable rather than
+* silently shorted away.
+Vsub sub! vss dc 0
+
+* FIXTURE 1 -- open-loop mirror bias. No error amplifier exists yet (issue
+* #9's scope cut), so nothing in the design drives `fb`. A diode-connected
+* replica of the mirror device, carrying a 5 uA reference, sets it: the
+* three DUT legs below are then real PSP103 mirrors of a real PSP103
+* reference device, so their currents track W/L, temperature and the MOS
+* process corner the way the silicon would -- unlike the ideal 5 uA sources
+* this testbench used before #22, which pinned the leg current at exactly
+* 5 uA in every corner and therefore exercised no MOS behavior at all.
+* 5 uA/leg matches issue #9's own informal nominal-point check.
+XM0 fb fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Ibias fb vss dc 5u
+
+* DUT mirror legs, geometry verbatim from design/netlist/bandgap_core.spice.
+* FIXTURE 2 -- each leg's drain reaches its DUT node through a 0 V source,
+* used purely as an ammeter; a 0 V source is a short at DC and does not move
+* the operating point.
+XM1 m1d fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Vm1 m1d sns1 dc 0
+XM2 m2d fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Vm2 m2d sns2 dc 0
+XM3 m3d fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Vm3 m3d vref dc 0
+
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XR1 vref cb3 sub! rppd w=2u l=511u m=1 b=0
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+.op
+.control
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+run
+print v(vref) v(fb) v(sns1) v(sns2) v(cb2) v(cb3) i(vm1) i(vm2) i(vm3)
+.endc
+.end

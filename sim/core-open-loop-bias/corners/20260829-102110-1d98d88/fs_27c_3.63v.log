@@ -1,0 +1,2611 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core open-loop pvt testbench (issues #10, #22)
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+v(vref) = 1.044647e+00
+v(fb) = 2.797387e+00
+v(sns1) = 7.085977e-01
+v(sns2) = 7.081288e-01
+v(cb2) = 6.534278e-01
+v(cb3) = 7.085229e-01
+i(vm1) = 5.101778e-06
+i(vm2) = 5.101799e-06
+i(vm3) = 5.087465e-06
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+	Node                                  Voltage
+	----                                  -------
+	----	-------
+	n.xr2.nr1#flow(b_re2)            -5.10180e-06
+	n.xr2.nr1#flow(b_re1)            5.101799e-06
+	n.xr2.nr1#i2                     6.535171e-01
+	n.xr2.nr1#i1                     7.080395e-01
+	n.xr1.nr1#flow(b_re2)            -5.08746e-06
+	n.xr1.nr1#flow(b_re1)            5.087465e-06
+	n.xr1.nr1#i2                     7.086120e-01
+	n.xr1.nr1#i1                     1.044558e+00
+	n.xm0.nsg13_hv_pmos#BS           0.000000e+00
+	n.xm0.nsg13_hv_pmos#BI           3.630000e+00
+	n.xm0.nsg13_hv_pmos#BP           3.630000e+00
+	n.xm0.nsg13_hv_pmos#DI           3.630000e+00
+	n.xm0.nsg13_hv_pmos#SI           3.630000e+00
+	n.xm0.nsg13_hv_pmos#GP           2.797387e+00
+	n.xm0.nsg13_hv_pmos#NOI          0.000000e+00
+	n.xm1.nsg13_hv_pmos#BS           0.000000e+00
+	n.xm1.nsg13_hv_pmos#BI           3.630000e+00
+	n.xm1.nsg13_hv_pmos#BP           3.630000e+00
+	n.xm1.nsg13_hv_pmos#DI           3.630000e+00
+	n.xm1.nsg13_hv_pmos#SI           3.630000e+00
+	n.xm1.nsg13_hv_pmos#GP           2.797387e+00
+	n.xm1.nsg13_hv_pmos#NOI          0.000000e+00
+	n.xm2.nsg13_hv_pmos#BS           0.000000e+00
+	n.xm2.nsg13_hv_pmos#BI           3.630000e+00
+	n.xm2.nsg13_hv_pmos#BP           3.630000e+00
+	n.xm2.nsg13_hv_pmos#DI           3.630000e+00
+	n.xm2.nsg13_hv_pmos#SI           3.630000e+00
+	n.xm2.nsg13_hv_pmos#GP           2.797387e+00
+	n.xm2.nsg13_hv_pmos#NOI          0.000000e+00
+	n.xm3.nsg13_hv_pmos#BS           0.000000e+00
+	n.xm3.nsg13_hv_pmos#BI           3.630000e+00
+	n.xm3.nsg13_hv_pmos#BP           3.630000e+00
+	n.xm3.nsg13_hv_pmos#DI           3.630000e+00
+	n.xm3.nsg13_hv_pmos#SI           3.630000e+00
+	n.xm3.nsg13_hv_pmos#GP           2.797387e+00
+	n.xm3.nsg13_hv_pmos#NOI          0.000000e+00
+	q.xq1.qnpn13g2#collCI            7.080699e-01
+	q.xq1.qnpn13g2#substrate         2.848508e-10
+	q.xq2.qnpn13g2#collCI            6.533619e-01
+	q.xq2.qnpn13g2#substrate         7.339847e-10
+	q.xq3.qnpn13g2#collCI            7.079966e-01
+	q.xq3.qnpn13g2#substrate         2.848211e-10
+	xq3.t                            4.091870e-02
+	xq3.s1                           2.841107e-10
+	xr1.dt                           0.000000e+00
+	cb3                              7.085229e-01
+	xq2.t                            5.823856e-03
+	xq2.s1                           7.333181e-10
+	xr2.dt                           0.000000e+00
+	cb2                              6.534278e-01
+	xq1.t                            4.103815e-02
+	xq1.s1                           2.841403e-10
+	vref                             1.044647e+00
+	m3d                              1.044647e+00
+	sns2                             7.081288e-01
+	m2d                              7.081288e-01
+	sns1                             7.085977e-01
+	m1d                              7.085977e-01
+	fb                               2.797387e+00
+	sub!                             0.000000e+00
+	vss                              0.000000e+00
+	vdd                              3.630000e+00
+
+	Source	Current
+	------	-------
+
+	vvdd#branch                      -2.02910e-05
+	vvss#branch                      2.029104e-05
+	vsub#branch                      0.000000e+00
+	vm1#branch                       5.101778e-06
+	vm2#branch                       5.101799e-06
+	vm3#branch                       5.087465e-06
+
+ Capacitor models (Fixed capacitor)
+      model                     C
+
+        cap                     0
+         cj                     0
+       cjsw                     0
+       defw                 1e-05
+       defl                     0
+     narrow                     0
+      short                     0
+        del                     0
+        tc1                     0
+        tc2                     0
+         di                     0
+      thick                     0
+     bv_max                 1e+99
+
+ Resistor models (Simple linear resistor)
+      model                     R
+
+        rsh                     0
+     narrow                     0
+      short                     0
+        tc1                     0
+        tc2                     0
+        tce                     0
+       defw                 1e-05
+          l                 1e-05
+         kf                     0
+         af                     0
+          r                     0
+     bv_max                 1e+99
+         lf                     1
+         wf                     1
+         ef                     1
+
+ VBIC models (Vertical Bipolar Inter-Company Model)
+      model   xq3:npn13g2_nx_vbic   xq2:npn13g2_nx_vbic   xq1:npn13g2_nx_vbic
+
+       type                   npn                   npn                   npn
+      selft                     0                     0                     0
+       tnom                    27                    27                    27
+        rcx                    52                   6.5                    52
+        rci                  51.6                  6.45                  51.6
+         vo                   0.8                   0.8                   0.8
+       gamm              2.25e-14              2.25e-14              2.25e-14
+       hrcf                  1000                  1000                  1000
+        rbx               25.8637               3.58719               25.8637
+        rbi               82.1069               11.3879               82.1069
+         re                 28.52                 3.565                 28.52
+         rs                     1                     1                     1
+        rbp                    22                  2.75                    22
+         is            1.2025e-17              9.62e-17            1.2025e-17
+         nf                 1.018                 1.018                 1.018
+         nr                  1.01                  1.01                  1.01
+         fc                   0.8                   0.8                   0.8
+       cbeo           2.07053e-16           1.57251e-15           2.07053e-16
+        cje           2.17872e-15           1.65468e-14           2.17872e-15
+         pe                  0.92                  0.92                  0.92
+         me                  0.12                  0.12                  0.12
+        aje                  -0.5                  -0.5                  -0.5
+       cbco               5.9e-16              4.72e-15               5.9e-16
+        cjc             3.825e-16              3.06e-15             3.825e-16
+        qco                 1e-18                 1e-18                 1e-18
+       cjep               8.9e-16              7.12e-15               8.9e-16
+         pc                 0.558                 0.558                 0.558
+         mc                  0.12                  0.12                  0.12
+        ajc                  -0.5                  -0.5                  -0.5
+       cjcp           1.50424e-15           7.93942e-15           1.50424e-15
+         ps                  0.46                  0.46                  0.46
+         ms                  0.23                  0.23                  0.23
+        ajs                  -0.5                  -0.5                  -0.5
+       ibei              4.75e-20               3.8e-19              4.75e-20
+        wbe                     1                     1                     1
+        nei                 1.066                 1.066                 1.066
+       iben                 1e-16                 8e-16                 1e-16
+        nen                     2                     2                     2
+       ibci              3.75e-21                 3e-20              3.75e-21
+        nci                 1.103                 1.103                 1.103
+       ibcn               2.5e-16                 2e-15               2.5e-16
+        ncn                  1.96                  1.96                  1.96
+       avc1                   2.4                   2.4                   2.4
+       avc2                 10.81                 10.81                 10.81
+        isp                 1e-20                 8e-20                 1e-20
+        wsp                     1                     1                     1
+        nfp                  1.04                  1.04                  1.04
+      ibeip                 1e-19                 8e-19                 1e-19
+      ibenp                 5e-15                 4e-14                 5e-15
+      ibcip           7.57858e-16           3.24901e-15           7.57858e-16
+       ncip                     1                     1                     1
+      ibcnp              1.25e-15                 1e-14              1.25e-15
+       ncnp                   1.5                   1.5                   1.5
+        vef                   189                   189                   189
+        ver                   5.3                   5.3                   5.3
+        ikf               0.00225                 0.018               0.00225
+        ikr                0.0025                  0.02                0.0025
+        ikp                     0                     0                     0
+         tf              2.08e-13              2.08e-13              2.08e-13
+        qtf                 1e-18                 1e-18                 1e-18
+        xtf                    10                    10                    10
+        vtf                    20                    20                    20
+        itf               0.14625                  1.17               0.14625
+         tr               3.5e-13               3.5e-13               3.5e-13
+         td                     0                     0                     0
+        kfn               2.4e-08                 3e-09               2.4e-08
+        afn                   1.8                   1.8                   1.8
+        bfn                     1                     1                     1
+        xre                 -0.42                 -0.42                 -0.42
+       xrbi                     0                     0                     0
+       xrci                     0                     0                     0
+        xrs                   1.5                   1.5                   1.5
+        xvo                   1.5                   1.5                   1.5
+         ea                 1.056                 1.056                 1.056
+       eaie                 1.056                 1.056                 1.056
+       eaic                  1.12                  1.12                  1.12
+       eais                  1.12                  1.12                  1.12
+       eane                  1.12                  1.12                  1.12
+       eanc                  1.12                  1.12                  1.12
+       eans                  1.12                  1.12                  1.12
+        xis                   2.3                   2.3                   2.3
+        xii                   3.3                   3.3                   3.3
+        xin                   3.3                   3.3                   3.3
+        tnf               0.00015               0.00015               0.00015
+       tavc              -0.00188              -0.00188              -0.00188
+        rth                 11352               1746.99                 11352
+        cth                 1e-12             3.091e-12                 1e-12
+        vrt                     0                     0                     0
+        art                   0.1                   0.1                   0.1
+       ccso                     0                     0                     0
+        qbm                     0                     0                     0
+        nkf                   0.5                   0.5                   0.5
+       xikf                     0                     0                     0
+       xrcx                 0.245                 0.245                 0.245
+       xrbx                   0.9                   0.9                   0.9
+       xrbp                     0                     0                     0
+       isrr                     1                     1                     1
+       xisr                     0                     0                     0
+       dear                     0                     0                     0
+        eap                  1.12                  1.12                  1.12
+       vbbe                     0                     0                     0
+       nbbe                     1                     1                     1
+       ibbe                 1e-06                 1e-06                 1e-06
+     tvbbe1                     0                     0                     0
+     tvbbe2                     0                     0                     0
+      tnbbe                     0                     0                     0
+       ebbe                     0                     0                     0
+      dtemp                     0                     0                     0
+       vers                   1.2                   1.2                   1.2
+       vref                     0                     0                     0
+    vbe_max                   1.6                   1.6                   1.6
+    vbc_max                   5.1                   5.1                   5.1
+    vce_max                   1.6                   1.6                   1.6
+   vsub_max                 1e+99                 1e+99                 1e+99
+     vbefwd                   0.2                   0.2                   0.2
+     vbcfwd                   0.2                   0.2                   0.2
+    vsubfwd                   0.2                   0.2                   0.2
+
+ PSP103VA models (A simulator independent device loaded with OSDI)
+      model xm3:sg13g2_hv_pmos_ps xm2:sg13g2_hv_pmos_ps xm1:sg13g2_hv_pmos_ps
+
+      level                   104                   104                   104
+       type                    -1                    -1                    -1
+         tr                    27                    27                    27
+      swgeo                     1                     1                     1
+    swigate                     1                     1                     1
+   swimpact                     1                     1                     1
+     swgidl                     1                     1                     1
+   swjuncap                     3                     3                     3
+  swjunasym                     0                     0                     0
+      swnud                     0                     0                     0
+     swedge                     0                     0                     0
+  swdelvtac                     0                     0                     0
+      swign                     1                     1                     1
+        qmc                     1                     1                     1
+        vfb                    -1                    -1                    -1
+      stvfb                0.0005                0.0005                0.0005
+     st2vfb                     0                     0                     0
+        tox                 2e-09                 2e-09                 2e-09
+     epsrox                   3.9                   3.9                   3.9
+       neff                 5e+23                 5e+23                 5e+23
+  facneffac                     1                     1                     1
+    gfacnud                     1                     1                     1
+     vsbnud                     0                     0                     0
+    dvsbnud                     1                     1                     1
+      vnsub                     0                     0                     0
+       nslp                  0.05                  0.05                  0.05
+      dnsub                     0                     0                     0
+      dphib                     0                     0                     0
+    delvtac                     0                     0                     0
+         np                 1e+26                 1e+26                 1e+26
+      toxov                 2e-09                 2e-09                 2e-09
+     toxovd                 2e-09                 2e-09                 2e-09
+        nov                 5e+25                 5e+25                 5e+25
+       novd                 5e+25                 5e+25                 5e+25
+         ct                     0                     0                     0
+        ctg                     0                     0                     0
+        ctb                     0                     0                     0
+       stct                     1                     1                     1
+         cf                     0                     0                     0
+        cfd                     0                     0                     0
+        cfb                     0                     0                     0
+       psce                     0                     0                     0
+      psceb                     0                     0                     0
+      psced                     0                     0                     0
+       betn                  0.07                  0.07                  0.07
+      stbet                     1                     1                     1
+        mue                   0.5                   0.5                   0.5
+      stmue                     0                     0                     0
+      themu                   1.5                   1.5                   1.5
+    stthemu                   1.5                   1.5                   1.5
+         cs                     0                     0                     0
+       stcs                     0                     0                     0
+      thecs                     2                     2                     2
+    stthecs                     0                     0                     0
+       xcor                     0                     0                     0
+     stxcor                     0                     0                     0
+       feta                     1                     1                     1
+         rs                    30                    30                    30
+       strs                     1                     1                     1
+        rsb                     0                     0                     0
+        rsg                     0                     0                     0
+     thesat                     1                     1                     1
+   stthesat                     1                     1                     1
+    thesatb                     0                     0                     0
+    thesatg                     0                     0                     0
+         ax                     3                     3                     3
+        alp                  0.01                  0.01                  0.01
+       alp1                     0                     0                     0
+       alp2                     0                     0                     0
+         vp                  0.05                  0.05                  0.05
+         a1                     1                     1                     1
+         a2                    10                    10                    10
+       sta2                     0                     0                     0
+         a3                     1                     1                     1
+         a4                     0                     0                     0
+        gco                     0                     0                     0
+      iginv                     0                     0                     0
+       igov                     0                     0                     0
+      igovd                     0                     0                     0
+       stig                     2                     2                     2
+        gc2                 0.375                 0.375                 0.375
+        gc3                 0.063                 0.063                 0.063
+       chib                   3.1                   3.1                   3.1
+      agidl                     0                     0                     0
+     agidld                     0                     0                     0
+      bgidl                    41                    41                    41
+     bgidld                    41                    41                    41
+    stbgidl                     0                     0                     0
+   stbgidld                     0                     0                     0
+      cgidl                     0                     0                     0
+     cgidld                     0                     0                     0
+        cox                 1e-14                 1e-14                 1e-14
+       cgov                 1e-15                 1e-15                 1e-15
+      cgovd                 1e-15                 1e-15                 1e-15
+      cgbov                     0                     0                     0
+        cfr                     0                     0                     0
+       cfrd                     0                     0                     0
+        fnt                     1                     1                     1
+     fntexc                     0                     0                     0
+        nfa                 8e+22                 8e+22                 8e+22
+        nfb                 3e+07                 3e+07                 3e+07
+        nfc                     0                     0                     0
+         ef                     1                     1                     1
+    vfbedge                    -1                    -1                    -1
+  stvfbedge                0.0005                0.0005                0.0005
+  dphibedge                     0                     0                     0
+   neffedge                 5e+23                 5e+23                 5e+23
+     ctedge                     0                     0                     0
+   betnedge                0.0005                0.0005                0.0005
+  stbetedge                     1                     1                     1
+   psceedge                     0                     0                     0
+  pscebedge                     0                     0                     0
+  pscededge                     0                     0                     0
+     cfedge                     0                     0                     0
+    cfdedge                     0                     0                     0
+    cfbedge                     0                     0                     0
+    fntedge                     1                     1                     1
+    nfaedge                 8e+22                 8e+22                 8e+22
+    nfbedge                 3e+07                 3e+07                 3e+07
+    nfcedge                     0                     0                     0
+     efedge                     1                     1                     1
+         rg                     0                     0                     0
+        rse                     0                     0                     0
+        rde                     0                     0                     0
+      rbulk                     0                     0                     0
+      rwell                     0                     0                     0
+      rjuns                     0                     0                     0
+      rjund                     0                     0                     0
+      povfb                    -1                    -1                    -1
+      plvfb                     0                     0                     0
+      pwvfb                     0                     0                     0
+     plwvfb                     0                     0                     0
+    postvfb                0.0005                0.0005                0.0005
+    plstvfb                     0                     0                     0
+    pwstvfb                     0                     0                     0
+   plwstvfb                     0                     0                     0
+   post2vfb                     0                     0                     0
+      potox                 2e-09                 2e-09                 2e-09
+   poepsrox                   3.9                   3.9                   3.9
+     poneff                 5e+23                 5e+23                 5e+23
+     plneff                     0                     0                     0
+     pwneff                     0                     0                     0
+    plwneff                     0                     0                     0
+pofacneffac                     1                     1                     1
+plfacneffac                     0                     0                     0
+pwfacneffac                     0                     0                     0
+plwfacneffa                     0                     0                     0
+  pogfacnud                     1                     1                     1
+  plgfacnud                     0                     0                     0
+  pwgfacnud                     0                     0                     0
+ plwgfacnud                     0                     0                     0
+   povsbnud                     0                     0                     0
+  podvsbnud                     1                     1                     1
+    povnsub                     0                     0                     0
+     ponslp                  0.05                  0.05                  0.05
+    podnsub                     0                     0                     0
+    podphib                     0                     0                     0
+    pldphib                     0                     0                     0
+    pwdphib                     0                     0                     0
+   plwdphib                     0                     0                     0
+  podelvtac                     0                     0                     0
+  pldelvtac                     0                     0                     0
+  pwdelvtac                     0                     0                     0
+ plwdelvtac                     0                     0                     0
+       ponp                 1e+26                 1e+26                 1e+26
+       plnp                     0                     0                     0
+       pwnp                     0                     0                     0
+      plwnp                     0                     0                     0
+    potoxov                 2e-09                 2e-09                 2e-09
+   potoxovd                 2e-09                 2e-09                 2e-09
+      ponov                 5e+25                 5e+25                 5e+25
+      plnov                     0                     0                     0
+      pwnov                     0                     0                     0
+     plwnov                     0                     0                     0
+     ponovd                 5e+25                 5e+25                 5e+25
+     plnovd                     0                     0                     0
+     pwnovd                     0                     0                     0
+    plwnovd                     0                     0                     0
+       poct                     0                     0                     0
+       plct                     0                     0                     0
+       pwct                     0                     0                     0
+      plwct                     0                     0                     0
+      poctg                     0                     0                     0
+      poctb                     0                     0                     0
+     postct                     1                     1                     1
+       pocf                     0                     0                     0
+       plcf                     0                     0                     0
+       pwcf                     0                     0                     0
+      plwcf                     0                     0                     0
+      pocfd                     0                     0                     0
+      pocfb                     0                     0                     0
+     popsce                     0                     0                     0
+     plpsce                     0                     0                     0
+     pwpsce                     0                     0                     0
+    plwpsce                     0                     0                     0
+    popsceb                     0                     0                     0
+    popsced                     0                     0                     0
+     pobetn                  0.07                  0.07                  0.07
+     plbetn                     0                     0                     0
+     pwbetn                     0                     0                     0
+    plwbetn                     0                     0                     0
+    postbet                     1                     1                     1
+    plstbet                     0                     0                     0
+    pwstbet                     0                     0                     0
+   plwstbet                     0                     0                     0
+      pomue                   0.5                   0.5                   0.5
+      plmue                     0                     0                     0
+      pwmue                     0                     0                     0
+     plwmue                     0                     0                     0
+    postmue                     0                     0                     0
+    pothemu                   1.5                   1.5                   1.5
+  postthemu                   1.5                   1.5                   1.5
+       pocs                     0                     0                     0
+       plcs                     0                     0                     0
+       pwcs                     0                     0                     0
+      plwcs                     0                     0                     0
+     postcs                     0                     0                     0
+    pothecs                     2                     2                     2
+  postthecs                     0                     0                     0
+     poxcor                     0                     0                     0
+     plxcor                     0                     0                     0
+     pwxcor                     0                     0                     0
+    plwxcor                     0                     0                     0
+   postxcor                     0                     0                     0
+     pofeta                     1                     1                     1
+       pors                    30                    30                    30
+       plrs                     0                     0                     0
+       pwrs                     0                     0                     0
+      plwrs                     0                     0                     0
+     postrs                     1                     1                     1
+      porsb                     0                     0                     0
+      porsg                     0                     0                     0
+   pothesat                     1                     1                     1
+   plthesat                     0                     0                     0
+   pwthesat                     0                     0                     0
+  plwthesat                     0                     0                     0
+ postthesat                     1                     1                     1
+ plstthesat                     0                     0                     0
+ pwstthesat                     0                     0                     0
+plwstthesat                     0                     0                     0
+  pothesatb                     0                     0                     0
+  plthesatb                     0                     0                     0
+  pwthesatb                     0                     0                     0
+ plwthesatb                     0                     0                     0
+  pothesatg                     0                     0                     0
+  plthesatg                     0                     0                     0
+  pwthesatg                     0                     0                     0
+ plwthesatg                     0                     0                     0
+       poax                     3                     3                     3
+       plax                     0                     0                     0
+       pwax                     0                     0                     0
+      plwax                     0                     0                     0
+      poalp                  0.01                  0.01                  0.01
+      plalp                     0                     0                     0
+      pwalp                     0                     0                     0
+     plwalp                     0                     0                     0
+     poalp1                     0                     0                     0
+     plalp1                     0                     0                     0
+     pwalp1                     0                     0                     0
+    plwalp1                     0                     0                     0
+     poalp2                     0                     0                     0
+     plalp2                     0                     0                     0
+     pwalp2                     0                     0                     0
+    plwalp2                     0                     0                     0
+       povp                  0.05                  0.05                  0.05
+       poa1                     1                     1                     1
+       pla1                     0                     0                     0
+       pwa1                     0                     0                     0
+      plwa1                     0                     0                     0
+       poa2                    10                    10                    10
+     posta2                     0                     0                     0
+       poa3                     1                     1                     1
+       pla3                     0                     0                     0
+       pwa3                     0                     0                     0
+      plwa3                     0                     0                     0
+       poa4                     0                     0                     0
+       pla4                     0                     0                     0
+       pwa4                     0                     0                     0
+      plwa4                     0                     0                     0
+      pogco                     0                     0                     0
+    poiginv                     0                     0                     0
+    pliginv                     0                     0                     0
+    pwiginv                     0                     0                     0
+   plwiginv                     0                     0                     0
+     poigov                     0                     0                     0
+     pligov                     0                     0                     0
+     pwigov                     0                     0                     0
+    plwigov                     0                     0                     0
+    poigovd                     0                     0                     0
+    pligovd                     0                     0                     0
+    pwigovd                     0                     0                     0
+   plwigovd                     0                     0                     0
+     postig                     2                     2                     2
+      pogc2                 0.375                 0.375                 0.375
+      pogc3                 0.063                 0.063                 0.063
+     pochib                   3.1                   3.1                   3.1
+    poagidl                     0                     0                     0
+    plagidl                     0                     0                     0
+    pwagidl                     0                     0                     0
+   plwagidl                     0                     0                     0
+   poagidld                     0                     0                     0
+   plagidld                     0                     0                     0
+   pwagidld                     0                     0                     0
+  plwagidld                     0                     0                     0
+    pobgidl                    41                    41                    41
+   pobgidld                    41                    41                    41
+  postbgidl                     0                     0                     0
+ postbgidld                     0                     0                     0
+    pocgidl                     0                     0                     0
+   pocgidld                     0                     0                     0
+      pocox                 1e-14                 1e-14                 1e-14
+      plcox                     0                     0                     0
+      pwcox                     0                     0                     0
+     plwcox                     0                     0                     0
+     pocgov                 1e-15                 1e-15                 1e-15
+     plcgov                     0                     0                     0
+     pwcgov                     0                     0                     0
+    plwcgov                     0                     0                     0
+    pocgovd                 1e-15                 1e-15                 1e-15
+    plcgovd                     0                     0                     0
+    pwcgovd                     0                     0                     0
+   plwcgovd                     0                     0                     0
+    pocgbov                     0                     0                     0
+    plcgbov                     0                     0                     0
+    pwcgbov                     0                     0                     0
+   plwcgbov                     0                     0                     0
+      pocfr                     0                     0                     0
+      plcfr                     0                     0                     0
+      pwcfr                     0                     0                     0
+     plwcfr                     0                     0                     0
+     pocfrd                     0                     0                     0
+     plcfrd                     0                     0                     0
+     pwcfrd                     0                     0                     0
+    plwcfrd                     0                     0                     0
+      pofnt                     1                     1                     1
+   pofntexc                     0                     0                     0
+   plfntexc                     0                     0                     0
+   pwfntexc                     0                     0                     0
+  plwfntexc                     0                     0                     0
+      ponfa                 8e+22                 8e+22                 8e+22
+      plnfa                     0                     0                     0
+      pwnfa                     0                     0                     0
+     plwnfa                     0                     0                     0
+      ponfb                 3e+07                 3e+07                 3e+07
+      plnfb                     0                     0                     0
+      pwnfb                     0                     0                     0
+     plwnfb                     0                     0                     0
+      ponfc                     0                     0                     0
+      plnfc                     0                     0                     0
+      pwnfc                     0                     0                     0
+     plwnfc                     0                     0                     0
+       poef                     1                     1                     1
+  povfbedge                    -1                    -1                    -1
+postvfbedge                     0                     0                     0
+plstvfbedge                     0                     0                     0
+pwstvfbedge                     0                     0                     0
+plwstvfbedg                     0                     0                     0
+podphibedge                     0                     0                     0
+pldphibedge                     0                     0                     0
+pwdphibedge                     0                     0                     0
+plwdphibedg                     0                     0                     0
+ poneffedge                 5e+23                 5e+23                 5e+23
+ plneffedge                     0                     0                     0
+ pwneffedge                     0                     0                     0
+plwneffedge                     0                     0                     0
+   poctedge                     0                     0                     0
+   plctedge                     0                     0                     0
+   pwctedge                     0                     0                     0
+  plwctedge                     0                     0                     0
+ pobetnedge                0.0005                0.0005                0.0005
+ plbetnedge                     0                     0                     0
+ pwbetnedge                     0                     0                     0
+plwbetnedge                     0                     0                     0
+postbetedge                     1                     1                     1
+plstbetedge                     0                     0                     0
+pwstbetedge                     0                     0                     0
+plwstbetedg                     0                     0                     0
+ popsceedge                     0                     0                     0
+ plpsceedge                     0                     0                     0
+ pwpsceedge                     0                     0                     0
+plwpsceedge                     0                     0                     0
+popscebedge                     0                     0                     0
+popscededge                     0                     0                     0
+   pocfedge                     0                     0                     0
+   plcfedge                     0                     0                     0
+   pwcfedge                     0                     0                     0
+  plwcfedge                     0                     0                     0
+  pocfdedge                     0                     0                     0
+  pocfbedge                     0                     0                     0
+  pofntedge                     1                     1                     1
+  ponfaedge                 8e+22                 8e+22                 8e+22
+  plnfaedge                     0                     0                     0
+  pwnfaedge                     0                     0                     0
+ plwnfaedge                     0                     0                     0
+  ponfbedge                 3e+07                 3e+07                 3e+07
+  plnfbedge                     0                     0                     0
+  pwnfbedge                     0                     0                     0
+ plwnfbedge                     0                     0                     0
+  ponfcedge                     0                     0                     0
+  plnfcedge                     0                     0                     0
+  pwnfcedge                     0                     0                     0
+ plwnfcedge                     0                     0                     0
+   poefedge                     1                     1                     1
+  pokvthowe                     0                     0                     0
+  plkvthowe                     0                     0                     0
+  pwkvthowe                     0                     0                     0
+ plwkvthowe                     0                     0                     0
+    pokuowe                     0                     0                     0
+    plkuowe                     0                     0                     0
+    pwkuowe                     0                     0                     0
+   plwkuowe                     0                     0                     0
+       lmin                     0                     0                     0
+       lmax                     1                     1                     1
+       wmin                     0                     0                     0
+       wmax                     1                     1                     1
+      lvaro            -1.735e-09            -1.735e-09            -1.735e-09
+      lvarl                     0                     0                     0
+      lvarw                     0                     0                     0
+        lap             3.471e-08             3.471e-08             3.471e-08
+      wvaro                     0                     0                     0
+      wvarl                     0                     0                     0
+      wvarw                     0                     0                     0
+        wot                     0                     0                     0
+        dlq             3.537e-08             3.537e-08             3.537e-08
+        dwq                 3e-08                 3e-08                 3e-08
+       vfbo               -1.0717               -1.0717               -1.0717
+       vfbl                 -0.03                 -0.03                 -0.03
+       vfbw                     0                     0                     0
+      vfblw                     0                     0                     0
+     stvfbo            0.00057379            0.00057379            0.00057379
+     stvfbl            8.6794e-05            8.6794e-05            8.6794e-05
+     stvfbw            4.9309e-05            4.9309e-05            4.9309e-05
+    stvfblw           -3.6436e-05           -3.6436e-05           -3.6436e-05
+    st2vfbo                     0                     0                     0
+       toxo            7.0839e-09            7.0839e-09            7.0839e-09
+    epsroxo                   3.9                   3.9                   3.9
+      nsubo            4.2268e+23            4.2268e+23            4.2268e+23
+      nsubw               0.01112               0.01112               0.01112
+       wseg             5.362e-08             5.362e-08             5.362e-08
+       npck            8.0711e+23            8.0711e+23            8.0711e+23
+      npckw             -0.011403             -0.011403             -0.011403
+      wsegp                 1e-06                 1e-06                 1e-06
+       lpck            8.3733e-09            8.3733e-09            8.3733e-09
+      lpckw              0.077499              0.077499              0.077499
+       fol1              0.065253              0.065253              0.065253
+       fol2              0.010199              0.010199              0.010199
+ facneffaco                     1                     1                     1
+ facneffacl                     0                     0                     0
+ facneffacw                     0                     0                     0
+facneffaclw                     0                     0                     0
+   gfacnudo                     1                     1                     1
+   gfacnudl                     0                     0                     0
+gfacnudlexp                     1                     1                     1
+   gfacnudw                     0                     0                     0
+  gfacnudlw                     0                     0                     0
+    vsbnudo                     0                     0                     0
+   dvsbnudo                     1                     1                     1
+     vnsubo                     0                     0                     0
+      nslpo                  0.05                  0.05                  0.05
+     dnsubo               0.03585               0.03585               0.03585
+     dphibo            -0.0713023            -0.0713023            -0.0713023
+     dphibl            0.00581387            0.00581387            0.00581387
+  dphiblexp                2.1893                2.1893                2.1893
+     dphibw            -0.0112998            -0.0112998            -0.0112998
+    dphiblw           0.000708335           0.000708335           0.000708335
+   delvtaco                     0                     0                     0
+   delvtacl                     0                     0                     0
+delvtaclexp                     1                     1                     1
+   delvtacw                     0                     0                     0
+  delvtaclw                     0                     0                     0
+        npo             1.092e+26             1.092e+26             1.092e+26
+        npl                0.2188                0.2188                0.2188
+     toxovo            7.0839e-09            7.0839e-09            7.0839e-09
+    toxovdo                 2e-09                 2e-09                 2e-09
+        lov             3.471e-08             3.471e-08             3.471e-08
+       lovd                     0                     0                     0
+       novo              1.99e+26              1.99e+26              1.99e+26
+      novdo                 5e+25                 5e+25                 5e+25
+        cto             -0.006328             -0.006328             -0.006328
+        ctl                     0                     0                     0
+     ctlexp                     1                     1                     1
+        ctw                0.3006                0.3006                0.3006
+       ctlw              -0.01196              -0.01196              -0.01196
+       ctgo                     0                     0                     0
+       ctbo                     0                     0                     0
+      stcto                     1                     1                     1
+        cfl            0.00045884            0.00045884            0.00045884
+     cflexp                2.2055                2.2055                2.2055
+        cfw               0.45909               0.45909               0.45909
+       cfdo                     0                     0                     0
+       cfbo                     1                     1                     1
+      pscel                     0                     0                     0
+   pscelexp                     2                     2                     2
+      pscew                     0                     0                     0
+     pscebo                     0                     0                     0
+     pscedo                     0                     0                     0
+         uo              0.018428              0.018428              0.018428
+      fbet1               0.15952               0.15952               0.15952
+     fbet1w               -2.1872               -2.1872               -2.1872
+        lp1            9.9822e-08            9.9822e-08            9.9822e-08
+       lp1w               -1.0871               -1.0871               -1.0871
+      fbet2               -2.7066               -2.7066               -2.7066
+        lp2            5.8401e-08            5.8401e-08            5.8401e-08
+      betw1             -0.097534             -0.097534             -0.097534
+      betw2              0.022314              0.022314              0.022314
+       wbet            7.9844e-10            7.9844e-10            7.9844e-10
+     stbeto                1.6489                1.6489                1.6489
+     stbetl              0.029528              0.029528              0.029528
+     stbetw              0.037078              0.037078              0.037078
+    stbetlw              0.046991              0.046991              0.046991
+       mueo               1.74573               1.74573               1.74573
+       muew              -0.06367              -0.06367              -0.06367
+     stmueo                1.0816                1.0816                1.0816
+     themuo                1.0324                1.0324                1.0324
+   stthemuo               0.26337               0.26337               0.26337
+        cso               0.18648               0.18648               0.18648
+        csl               0.21903               0.21903               0.21903
+     cslexp                2.0917                2.0917                2.0917
+        csw             0.0072837             0.0072837             0.0072837
+       cslw                  0.02                  0.02                  0.02
+      stcso                     2                     2                     2
+     thecso                     2                     2                     2
+   stthecso                     0                     0                     0
+      xcoro              0.001363              0.001363              0.001363
+      xcorl                     8                     8                     8
+      xcorw             0.0060537             0.0060537             0.0060537
+     xcorlw              0.058951              0.058951              0.058951
+    stxcoro            -6.939e-18            -6.939e-18            -6.939e-18
+      fetao                1.2853                1.2853                1.2853
+       rsw1                  1970                  1970                  1970
+       rsw2             -0.057547             -0.057547             -0.057547
+      strso              -0.24812              -0.24812              -0.24812
+       rsbo              0.074639              0.074639              0.074639
+       rsgo              0.112063              0.112063              0.112063
+    thesato            8.4917e-05            8.4917e-05            8.4917e-05
+    thesatl             0.0075698             0.0075698             0.0075698
+ thesatlexp                 2.395                 2.395                 2.395
+    thesatw               0.95124               0.95124               0.95124
+   thesatlw                 -0.01                 -0.01                 -0.01
+  stthesato                3.0405                3.0405                3.0405
+  stthesatl              -0.16001              -0.16001              -0.16001
+  stthesatw              -0.96988              -0.96988              -0.96988
+ stthesatlw               0.36213               0.36213               0.36213
+   thesatbo                   0.1                   0.1                   0.1
+   thesatgo                0.6304                0.6304                0.6304
+        axo                16.822                16.822                16.822
+        axl                3.0092                3.0092                3.0092
+       alpl             0.0058454             0.0058454             0.0058454
+    alplexp               0.47562               0.47562               0.47562
+       alpw             -0.065973             -0.065973             -0.065973
+     alp1l1            4.4409e-16            4.4409e-16            4.4409e-16
+   alp1lexp                 1.347                 1.347                 1.347
+     alp1l2                     1                     1                     1
+      alp1w                     2                     2                     2
+     alp2l1            3.6779e-06            3.6779e-06            3.6779e-06
+   alp2lexp                0.2531                0.2531                0.2531
+     alp2l2            2.2204e-15            2.2204e-15            2.2204e-15
+      alp2w                0.9582                0.9582                0.9582
+        vpo            1.8436e-06            1.8436e-06            1.8436e-06
+        a1o                47.788                47.788                47.788
+        a1l              0.029145              0.029145              0.029145
+        a1w               0.01435               0.01435               0.01435
+        a2o                38.581                38.581                38.581
+      sta2o            -0.0049931            -0.0049931            -0.0049931
+        a3o                1.1753                1.1753                1.1753
+        a3l             -0.069795             -0.069795             -0.069795
+        a3w             0.0032538             0.0032538             0.0032538
+        a4o               0.12593               0.12593               0.12593
+        a4l                 -0.07                 -0.07                 -0.07
+        a4w              -0.04811              -0.04811              -0.04811
+       gcoo                     0                     0                     0
+    iginvlw                     0                     0                     0
+      igovw                     0                     0                     0
+     igovdw                     0                     0                     0
+      stigo                     2                     2                     2
+       gc2o                 0.375                 0.375                 0.375
+       gc3o                 0.063                 0.063                 0.063
+      chibo                   3.1                   3.1                   3.1
+     agidlw                 6e-10                 6e-10                 6e-10
+    agidldw                     0                     0                     0
+     bgidlo               7.45738               7.45738               7.45738
+    bgidldo                    41                    41                    41
+   stbgidlo            -0.0049461            -0.0049461            -0.0049461
+  stbgidldo                     0                     0                     0
+     cgidlo               0.23693               0.23693               0.23693
+    cgidldo                     0                     0                     0
+     cgbovl            -4.669e-16            -4.669e-16            -4.669e-16
+       cfrw                     0                     0                     0
+      cfrdw                     0                     0                     0
+       fnto                     1                     1                     1
+    fntexcl                     0                     0                     0
+      nfalw               1.3e+25               1.3e+25               1.3e+25
+      nfblw             5.289e+09             5.289e+09             5.289e+09
+      nfclw                 2e-07                 2e-07                 2e-07
+        efo                 1.152                 1.152                 1.152
+    lintnoi               2.5e-08               2.5e-08               2.5e-08
+     alpnoi                     2                     2                     2
+      wedge                 1e-08                 1e-08                 1e-08
+     wedgew                     0                     0                     0
+   vfbedgeo                    -1                    -1                    -1
+ stvfbedgeo                0.0005                0.0005                0.0005
+ stvfbedgel                     0                     0                     0
+ stvfbedgew                     0                     0                     0
+stvfbedgelw                     0                     0                     0
+ dphibedgeo                     0                     0                     0
+ dphibedgel                     0                     0                     0
+dphibedgele                     1                     1                     1
+ dphibedgew                     0                     0                     0
+dphibedgelw                     0                     0                     0
+  nsubedgeo                 5e+23                 5e+23                 5e+23
+  nsubedgel                     0                     0                     0
+nsubedgelex                     1                     1                     1
+  nsubedgew                     0                     0                     0
+ nsubedgelw                     0                     0                     0
+    ctedgeo                     0                     0                     0
+    ctedgel                     0                     0                     0
+ ctedgelexp                     1                     1                     1
+   fbetedge                     0                     0                     0
+     lpedge                 1e-08                 1e-08                 1e-08
+   betedgew                     0                     0                     0
+ stbetedgeo                     1                     1                     1
+ stbetedgel                     0                     0                     0
+ stbetedgew                     0                     0                     0
+stbetedgelw                     0                     0                     0
+  psceedgel                     0                     0                     0
+psceedgelex                     2                     2                     2
+  psceedgew                     0                     0                     0
+ pscebedgeo                     0                     0                     0
+ pscededgeo                     0                     0                     0
+    cfedgel                     0                     0                     0
+ cfedgelexp                     2                     2                     2
+    cfedgew                     0                     0                     0
+   cfdedgeo                     0                     0                     0
+   cfbedgeo                     0                     0                     0
+   fntedgeo                     1                     1                     1
+  nfaedgelw                 8e+22                 8e+22                 8e+22
+  nfbedgelw                 3e+07                 3e+07                 3e+07
+  nfcedgelw                     0                     0                     0
+    efedgeo                     1                     1                     1
+   kvthoweo                     0                     0                     0
+   kvthowel                     0                     0                     0
+   kvthowew                     0                     0                     0
+  kvthowelw                     0                     0                     0
+     kuoweo                     0                     0                     0
+     kuowel                     0                     0                     0
+     kuowew                     0                     0                     0
+    kuowelw                     0                     0                     0
+        rgo                    15                    15                    15
+       rint                     0                     0                     0
+     rvpoly                     0                     0                     0
+       rshg                    40                    40                    40
+      dlsil                     0                     0                     0
+        rsh                     0                     0                     0
+       rshd                     0                     0                     0
+     rbulko                   200                   200                   200
+     rwello                   100                   100                   100
+     rjunso                   500                   500                   500
+     rjundo                   500                   500                   500
+      saref                 1e-06                 1e-06                 1e-06
+      sbref                 1e-06                 1e-06                 1e-06
+       wlod                     0                     0                     0
+        kuo                     0                     0                     0
+      kvsat                     0                     0                     0
+       tkuo                     0                     0                     0
+       lkuo                     0                     0                     0
+       wkuo                     0                     0                     0
+       pkuo                     0                     0                     0
+    llodkuo                     0                     0                     0
+    wlodkuo                     0                     0                     0
+      kvtho                     0                     0                     0
+     lkvtho                     0                     0                     0
+     wkvtho                     0                     0                     0
+     pkvtho                     0                     0                     0
+    llodvth                     0                     0                     0
+    wlodvth                     0                     0                     0
+     stetao                     0                     0                     0
+    lodetao                     1                     1                     1
+      scref                 1e-06                 1e-06                 1e-06
+        web                     0                     0                     0
+        wec                     0                     0                     0
+      swsoa                     0                     0                     0
+    vgs_max                     3                     3                     3
+    vgd_max                     3                     3                     3
+    vgb_max                     3                     3                     3
+    vds_max                     3                     3                     3
+    vdb_max                   1.6                   1.6                   1.6
+    vsb_max                   1.6                   1.6                   1.6
+       imax             0.0024527             0.0024527             0.0024527
+        trj                    21                    21                    21
+       frev                  1000                  1000                  1000
+    cjorbot            0.00084188            0.00084188            0.00084188
+    cjorsti           4.42863e-11           4.42863e-11           4.42863e-11
+    cjorgat             3.224e-11             3.224e-11             3.224e-11
+    vbirbot               0.72606               0.72606               0.72606
+    vbirsti               0.69819               0.69819               0.69819
+    vbirgat                 1.199                 1.199                 1.199
+       pbot               0.33078               0.33078               0.33078
+       psti               0.22409               0.22409               0.22409
+       pgat                0.4474                0.4474                0.4474
+    phigbot                1.0641                1.0641                1.0641
+    phigsti                1.3946                1.3946                1.3946
+    phiggat                  1.83                  1.83                  1.83
+  idsatrbot            3.0606e-08            3.0606e-08            3.0606e-08
+  idsatrsti            3.6127e-15            3.6127e-15            3.6127e-15
+  idsatrgat                     0                     0                     0
+    csrhbot                   100                   100                   100
+    csrhsti                0.0001                0.0001                0.0001
+    csrhgat                0.0001                0.0001                0.0001
+    xjunsti              4.93e-08              4.93e-08              4.93e-08
+    xjungat             7.062e-07             7.062e-07             7.062e-07
+    ctatbot                   100                   100                   100
+    ctatsti                0.0001                0.0001                0.0001
+    ctatgat                0.0001                0.0001                0.0001
+ mefftatbot                  0.25                  0.25                  0.25
+ mefftatsti                  0.25                  0.25                  0.25
+ mefftatgat                  0.25                  0.25                  0.25
+    cbbtbot                 1e-12                 1e-12                 1e-12
+    cbbtsti                 1e-21                 1e-21                 1e-21
+    cbbtgat                 1e-18                 1e-18                 1e-18
+   fbbtrbot                 1e+09                 1e+09                 1e+09
+   fbbtrsti                 1e+09                 1e+09                 1e+09
+   fbbtrgat                 1e+09                 1e+09                 1e+09
+  stfbbtbot                -0.001                -0.001                -0.001
+  stfbbtsti                -0.001                -0.001                -0.001
+  stfbbtgat                -0.001                -0.001                -0.001
+     vbrbot                    10                    10                    10
+     vbrsti                    10                    10                    10
+     vbrgat                    10                    10                    10
+     pbrbot                     4                     4                     4
+     pbrsti                     4                     4                     4
+     pbrgat                     4                     4                     4
+   cjorbotd                 0.001                 0.001                 0.001
+   cjorstid                 1e-09                 1e-09                 1e-09
+   cjorgatd                 1e-09                 1e-09                 1e-09
+   vbirbotd                     1                     1                     1
+   vbirstid                     1                     1                     1
+   vbirgatd                     1                     1                     1
+      pbotd                   0.5                   0.5                   0.5
+      pstid                   0.5                   0.5                   0.5
+      pgatd                   0.5                   0.5                   0.5
+   phigbotd                  1.16                  1.16                  1.16
+   phigstid                  1.16                  1.16                  1.16
+   phiggatd                  1.16                  1.16                  1.16
+ idsatrbotd                 1e-12                 1e-12                 1e-12
+ idsatrstid                 1e-18                 1e-18                 1e-18
+ idsatrgatd                 1e-18                 1e-18                 1e-18
+   csrhbotd                   100                   100                   100
+   csrhstid                0.0001                0.0001                0.0001
+   csrhgatd                0.0001                0.0001                0.0001
+   xjunstid                 1e-07                 1e-07                 1e-07
+   xjungatd                 1e-07                 1e-07                 1e-07
+   ctatbotd                   100                   100                   100
+   ctatstid                0.0001                0.0001                0.0001
+   ctatgatd                0.0001                0.0001                0.0001
+mefftatbotd                  0.25                  0.25                  0.25
+mefftatstid                  0.25                  0.25                  0.25
+mefftatgatd                  0.25                  0.25                  0.25
+   cbbtbotd                 1e-12                 1e-12                 1e-12
+   cbbtstid                 1e-18                 1e-18                 1e-18
+   cbbtgatd                 1e-18                 1e-18                 1e-18
+  fbbtrbotd                 1e+09                 1e+09                 1e+09
+  fbbtrstid                 1e+09                 1e+09                 1e+09
+  fbbtrgatd                 1e+09                 1e+09                 1e+09
+ stfbbtbotd                -0.001                -0.001                -0.001
+ stfbbtstid                -0.001                -0.001                -0.001
+ stfbbtgatd                -0.001                -0.001                -0.001
+    vbrbotd                    10                    10                    10
+    vbrstid                    10                    10                    10
+    vbrgatd                    10                    10                    10
+    pbrbotd                     4                     4                     4
+    pbrstid                     4                     4                     4
+    pbrgatd                     4                     4                     4
+   swjunexp                     0                     0                     0
+    vjunref                   2.5                   2.5                   2.5
+      fjunq                  0.03                  0.03                  0.03
+   vjunrefd                   2.5                   2.5                   2.5
+     fjunqd                  0.03                  0.03                  0.03
+
+ PSP103VA models (A simulator independent device loaded with OSDI)
+      model xm0:sg13g2_hv_pmos_ps
+
+      level                   104
+       type                    -1
+         tr                    27
+      swgeo                     1
+    swigate                     1
+   swimpact                     1
+     swgidl                     1
+   swjuncap                     3
+  swjunasym                     0
+      swnud                     0
+     swedge                     0
+  swdelvtac                     0
+      swign                     1
+        qmc                     1
+        vfb                    -1
+      stvfb                0.0005
+     st2vfb                     0
+        tox                 2e-09
+     epsrox                   3.9
+       neff                 5e+23
+  facneffac                     1
+    gfacnud                     1
+     vsbnud                     0
+    dvsbnud                     1
+      vnsub                     0
+       nslp                  0.05
+      dnsub                     0
+      dphib                     0
+    delvtac                     0
+         np                 1e+26
+      toxov                 2e-09
+     toxovd                 2e-09
+        nov                 5e+25
+       novd                 5e+25
+         ct                     0
+        ctg                     0
+        ctb                     0
+       stct                     1
+         cf                     0
+        cfd                     0
+        cfb                     0
+       psce                     0
+      psceb                     0
+      psced                     0
+       betn                  0.07
+      stbet                     1
+        mue                   0.5
+      stmue                     0
+      themu                   1.5
+    stthemu                   1.5
+         cs                     0
+       stcs                     0
+      thecs                     2
+    stthecs                     0
+       xcor                     0
+     stxcor                     0
+       feta                     1
+         rs                    30
+       strs                     1
+        rsb                     0
+        rsg                     0
+     thesat                     1
+   stthesat                     1
+    thesatb                     0
+    thesatg                     0
+         ax                     3
+        alp                  0.01
+       alp1                     0
+       alp2                     0
+         vp                  0.05
+         a1                     1
+         a2                    10
+       sta2                     0
+         a3                     1
+         a4                     0
+        gco                     0
+      iginv                     0
+       igov                     0
+      igovd                     0
+       stig                     2
+        gc2                 0.375
+        gc3                 0.063
+       chib                   3.1
+      agidl                     0
+     agidld                     0
+      bgidl                    41
+     bgidld                    41
+    stbgidl                     0
+   stbgidld                     0
+      cgidl                     0
+     cgidld                     0
+        cox                 1e-14
+       cgov                 1e-15
+      cgovd                 1e-15
+      cgbov                     0
+        cfr                     0
+       cfrd                     0
+        fnt                     1
+     fntexc                     0
+        nfa                 8e+22
+        nfb                 3e+07
+        nfc                     0
+         ef                     1
+    vfbedge                    -1
+  stvfbedge                0.0005
+  dphibedge                     0
+   neffedge                 5e+23
+     ctedge                     0
+   betnedge                0.0005
+  stbetedge                     1
+   psceedge                     0
+  pscebedge                     0
+  pscededge                     0
+     cfedge                     0
+    cfdedge                     0
+    cfbedge                     0
+    fntedge                     1
+    nfaedge                 8e+22
+    nfbedge                 3e+07
+    nfcedge                     0
+     efedge                     1
+         rg                     0
+        rse                     0
+        rde                     0
+      rbulk                     0
+      rwell                     0
+      rjuns                     0
+      rjund                     0
+      povfb                    -1
+      plvfb                     0
+      pwvfb                     0
+     plwvfb                     0
+    postvfb                0.0005
+    plstvfb                     0
+    pwstvfb                     0
+   plwstvfb                     0
+   post2vfb                     0
+      potox                 2e-09
+   poepsrox                   3.9
+     poneff                 5e+23
+     plneff                     0
+     pwneff                     0
+    plwneff                     0
+pofacneffac                     1
+plfacneffac                     0
+pwfacneffac                     0
+plwfacneffa                     0
+  pogfacnud                     1
+  plgfacnud                     0
+  pwgfacnud                     0
+ plwgfacnud                     0
+   povsbnud                     0
+  podvsbnud                     1
+    povnsub                     0
+     ponslp                  0.05
+    podnsub                     0
+    podphib                     0
+    pldphib                     0
+    pwdphib                     0
+   plwdphib                     0
+  podelvtac                     0
+  pldelvtac                     0
+  pwdelvtac                     0
+ plwdelvtac                     0
+       ponp                 1e+26
+       plnp                     0
+       pwnp                     0
+      plwnp                     0
+    potoxov                 2e-09
+   potoxovd                 2e-09
+      ponov                 5e+25
+      plnov                     0
+      pwnov                     0
+     plwnov                     0
+     ponovd                 5e+25
+     plnovd                     0
+     pwnovd                     0
+    plwnovd                     0
+       poct                     0
+       plct                     0
+       pwct                     0
+      plwct                     0
+      poctg                     0
+      poctb                     0
+     postct                     1
+       pocf                     0
+       plcf                     0
+       pwcf                     0
+      plwcf                     0
+      pocfd                     0
+      pocfb                     0
+     popsce                     0
+     plpsce                     0
+     pwpsce                     0
+    plwpsce                     0
+    popsceb                     0
+    popsced                     0
+     pobetn                  0.07
+     plbetn                     0
+     pwbetn                     0
+    plwbetn                     0
+    postbet                     1
+    plstbet                     0
+    pwstbet                     0
+   plwstbet                     0
+      pomue                   0.5
+      plmue                     0
+      pwmue                     0
+     plwmue                     0
+    postmue                     0
+    pothemu                   1.5
+  postthemu                   1.5
+       pocs                     0
+       plcs                     0
+       pwcs                     0
+      plwcs                     0
+     postcs                     0
+    pothecs                     2
+  postthecs                     0
+     poxcor                     0
+     plxcor                     0
+     pwxcor                     0
+    plwxcor                     0
+   postxcor                     0
+     pofeta                     1
+       pors                    30
+       plrs                     0
+       pwrs                     0
+      plwrs                     0
+     postrs                     1
+      porsb                     0
+      porsg                     0
+   pothesat                     1
+   plthesat                     0
+   pwthesat                     0
+  plwthesat                     0
+ postthesat                     1
+ plstthesat                     0
+ pwstthesat                     0
+plwstthesat                     0
+  pothesatb                     0
+  plthesatb                     0
+  pwthesatb                     0
+ plwthesatb                     0
+  pothesatg                     0
+  plthesatg                     0
+  pwthesatg                     0
+ plwthesatg                     0
+       poax                     3
+       plax                     0
+       pwax                     0
+      plwax                     0
+      poalp                  0.01
+      plalp                     0
+      pwalp                     0
+     plwalp                     0
+     poalp1                     0
+     plalp1                     0
+     pwalp1                     0
+    plwalp1                     0
+     poalp2                     0
+     plalp2                     0
+     pwalp2                     0
+    plwalp2                     0
+       povp                  0.05
+       poa1                     1
+       pla1                     0
+       pwa1                     0
+      plwa1                     0
+       poa2                    10
+     posta2                     0
+       poa3                     1
+       pla3                     0
+       pwa3                     0
+      plwa3                     0
+       poa4                     0
+       pla4                     0
+       pwa4                     0
+      plwa4                     0
+      pogco                     0
+    poiginv                     0
+    pliginv                     0
+    pwiginv                     0
+   plwiginv                     0
+     poigov                     0
+     pligov                     0
+     pwigov                     0
+    plwigov                     0
+    poigovd                     0
+    pligovd                     0
+    pwigovd                     0
+   plwigovd                     0
+     postig                     2
+      pogc2                 0.375
+      pogc3                 0.063
+     pochib                   3.1
+    poagidl                     0
+    plagidl                     0
+    pwagidl                     0
+   plwagidl                     0
+   poagidld                     0
+   plagidld                     0
+   pwagidld                     0
+  plwagidld                     0
+    pobgidl                    41
+   pobgidld                    41
+  postbgidl                     0
+ postbgidld                     0
+    pocgidl                     0
+   pocgidld                     0
+      pocox                 1e-14
+      plcox                     0
+      pwcox                     0
+     plwcox                     0
+     pocgov                 1e-15
+     plcgov                     0
+     pwcgov                     0
+    plwcgov                     0
+    pocgovd                 1e-15
+    plcgovd                     0
+    pwcgovd                     0
+   plwcgovd                     0
+    pocgbov                     0
+    plcgbov                     0
+    pwcgbov                     0
+   plwcgbov                     0
+      pocfr                     0
+      plcfr                     0
+      pwcfr                     0
+     plwcfr                     0
+     pocfrd                     0
+     plcfrd                     0
+     pwcfrd                     0
+    plwcfrd                     0
+      pofnt                     1
+   pofntexc                     0
+   plfntexc                     0
+   pwfntexc                     0
+  plwfntexc                     0
+      ponfa                 8e+22
+      plnfa                     0
+      pwnfa                     0
+     plwnfa                     0
+      ponfb                 3e+07
+      plnfb                     0
+      pwnfb                     0
+     plwnfb                     0
+      ponfc                     0
+      plnfc                     0
+      pwnfc                     0
+     plwnfc                     0
+       poef                     1
+  povfbedge                    -1
+postvfbedge                     0
+plstvfbedge                     0
+pwstvfbedge                     0
+plwstvfbedg                     0
+podphibedge                     0
+pldphibedge                     0
+pwdphibedge                     0
+plwdphibedg                     0
+ poneffedge                 5e+23
+ plneffedge                     0
+ pwneffedge                     0
+plwneffedge                     0
+   poctedge                     0
+   plctedge                     0
+   pwctedge                     0
+  plwctedge                     0
+ pobetnedge                0.0005
+ plbetnedge                     0
+ pwbetnedge                     0
+plwbetnedge                     0
+postbetedge                     1
+plstbetedge                     0
+pwstbetedge                     0
+plwstbetedg                     0
+ popsceedge                     0
+ plpsceedge                     0
+ pwpsceedge                     0
+plwpsceedge                     0
+popscebedge                     0
+popscededge                     0
+   pocfedge                     0
+   plcfedge                     0
+   pwcfedge                     0
+  plwcfedge                     0
+  pocfdedge                     0
+  pocfbedge                     0
+  pofntedge                     1
+  ponfaedge                 8e+22
+  plnfaedge                     0
+  pwnfaedge                     0
+ plwnfaedge                     0
+  ponfbedge                 3e+07
+  plnfbedge                     0
+  pwnfbedge                     0
+ plwnfbedge                     0
+  ponfcedge                     0
+  plnfcedge                     0
+  pwnfcedge                     0
+ plwnfcedge                     0
+   poefedge                     1
+  pokvthowe                     0
+  plkvthowe                     0
+  pwkvthowe                     0
+ plwkvthowe                     0
+    pokuowe                     0
+    plkuowe                     0
+    pwkuowe                     0
+   plwkuowe                     0
+       lmin                     0
+       lmax                     1
+       wmin                     0
+       wmax                     1
+      lvaro            -1.735e-09
+      lvarl                     0
+      lvarw                     0
+        lap             3.471e-08
+      wvaro                     0
+      wvarl                     0
+      wvarw                     0
+        wot                     0
+        dlq             3.537e-08
+        dwq                 3e-08
+       vfbo               -1.0717
+       vfbl                 -0.03
+       vfbw                     0
+      vfblw                     0
+     stvfbo            0.00057379
+     stvfbl            8.6794e-05
+     stvfbw            4.9309e-05
+    stvfblw           -3.6436e-05
+    st2vfbo                     0
+       toxo            7.0839e-09
+    epsroxo                   3.9
+      nsubo            4.2268e+23
+      nsubw               0.01112
+       wseg             5.362e-08
+       npck            8.0711e+23
+      npckw             -0.011403
+      wsegp                 1e-06
+       lpck            8.3733e-09
+      lpckw              0.077499
+       fol1              0.065253
+       fol2              0.010199
+ facneffaco                     1
+ facneffacl                     0
+ facneffacw                     0
+facneffaclw                     0
+   gfacnudo                     1
+   gfacnudl                     0
+gfacnudlexp                     1
+   gfacnudw                     0
+  gfacnudlw                     0
+    vsbnudo                     0
+   dvsbnudo                     1
+     vnsubo                     0
+      nslpo                  0.05
+     dnsubo               0.03585
+     dphibo            -0.0713023
+     dphibl            0.00581387
+  dphiblexp                2.1893
+     dphibw            -0.0112998
+    dphiblw           0.000708335
+   delvtaco                     0
+   delvtacl                     0
+delvtaclexp                     1
+   delvtacw                     0
+  delvtaclw                     0
+        npo             1.092e+26
+        npl                0.2188
+     toxovo            7.0839e-09
+    toxovdo                 2e-09
+        lov             3.471e-08
+       lovd                     0
+       novo              1.99e+26
+      novdo                 5e+25
+        cto             -0.006328
+        ctl                     0
+     ctlexp                     1
+        ctw                0.3006
+       ctlw              -0.01196
+       ctgo                     0
+       ctbo                     0
+      stcto                     1
+        cfl            0.00045884
+     cflexp                2.2055
+        cfw               0.45909
+       cfdo                     0
+       cfbo                     1
+      pscel                     0
+   pscelexp                     2
+      pscew                     0
+     pscebo                     0
+     pscedo                     0
+         uo              0.018428
+      fbet1               0.15952
+     fbet1w               -2.1872
+        lp1            9.9822e-08
+       lp1w               -1.0871
+      fbet2               -2.7066
+        lp2            5.8401e-08
+      betw1             -0.097534
+      betw2              0.022314
+       wbet            7.9844e-10
+     stbeto                1.6489
+     stbetl              0.029528
+     stbetw              0.037078
+    stbetlw              0.046991
+       mueo               1.74573
+       muew              -0.06367
+     stmueo                1.0816
+     themuo                1.0324
+   stthemuo               0.26337
+        cso               0.18648
+        csl               0.21903
+     cslexp                2.0917
+        csw             0.0072837
+       cslw                  0.02
+      stcso                     2
+     thecso                     2
+   stthecso                     0
+      xcoro              0.001363
+      xcorl                     8
+      xcorw             0.0060537
+     xcorlw              0.058951
+    stxcoro            -6.939e-18
+      fetao                1.2853
+       rsw1                  1970
+       rsw2             -0.057547
+      strso              -0.24812
+       rsbo              0.074639
+       rsgo              0.112063
+    thesato            8.4917e-05
+    thesatl             0.0075698
+ thesatlexp                 2.395
+    thesatw               0.95124
+   thesatlw                 -0.01
+  stthesato                3.0405
+  stthesatl              -0.16001
+  stthesatw              -0.96988
+ stthesatlw               0.36213
+   thesatbo                   0.1
+   thesatgo                0.6304
+        axo                16.822
+        axl                3.0092
+       alpl             0.0058454
+    alplexp               0.47562
+       alpw             -0.065973
+     alp1l1            4.4409e-16
+   alp1lexp                 1.347
+     alp1l2                     1
+      alp1w                     2
+     alp2l1            3.6779e-06
+   alp2lexp                0.2531
+     alp2l2            2.2204e-15
+      alp2w                0.9582
+        vpo            1.8436e-06
+        a1o                47.788
+        a1l              0.029145
+        a1w               0.01435
+        a2o                38.581
+      sta2o            -0.0049931
+        a3o                1.1753
+        a3l             -0.069795
+        a3w             0.0032538
+        a4o               0.12593
+        a4l                 -0.07
+        a4w              -0.04811
+       gcoo                     0
+    iginvlw                     0
+      igovw                     0
+     igovdw                     0
+      stigo                     2
+       gc2o                 0.375
+       gc3o                 0.063
+      chibo                   3.1
+     agidlw                 6e-10
+    agidldw                     0
+     bgidlo               7.45738
+    bgidldo                    41
+   stbgidlo            -0.0049461
+  stbgidldo                     0
+     cgidlo               0.23693
+    cgidldo                     0
+     cgbovl            -4.669e-16
+       cfrw                     0
+      cfrdw                     0
+       fnto                     1
+    fntexcl                     0
+      nfalw               1.3e+25
+      nfblw             5.289e+09
+      nfclw                 2e-07
+        efo                 1.152
+    lintnoi               2.5e-08
+     alpnoi                     2
+      wedge                 1e-08
+     wedgew                     0
+   vfbedgeo                    -1
+ stvfbedgeo                0.0005
+ stvfbedgel                     0
+ stvfbedgew                     0
+stvfbedgelw                     0
+ dphibedgeo                     0
+ dphibedgel                     0
+dphibedgele                     1
+ dphibedgew                     0
+dphibedgelw                     0
+  nsubedgeo                 5e+23
+  nsubedgel                     0
+nsubedgelex                     1
+  nsubedgew                     0
+ nsubedgelw                     0
+    ctedgeo                     0
+    ctedgel                     0
+ ctedgelexp                     1
+   fbetedge                     0
+     lpedge                 1e-08
+   betedgew                     0
+ stbetedgeo                     1
+ stbetedgel                     0
+ stbetedgew                     0
+stbetedgelw                     0
+  psceedgel                     0
+psceedgelex                     2
+  psceedgew                     0
+ pscebedgeo                     0
+ pscededgeo                     0
+    cfedgel                     0
+ cfedgelexp                     2
+    cfedgew                     0
+   cfdedgeo                     0
+   cfbedgeo                     0
+   fntedgeo                     1
+  nfaedgelw                 8e+22
+  nfbedgelw                 3e+07
+  nfcedgelw                     0
+    efedgeo                     1
+   kvthoweo                     0
+   kvthowel                     0
+   kvthowew                     0
+  kvthowelw                     0
+     kuoweo                     0
+     kuowel                     0
+     kuowew                     0
+    kuowelw                     0
+        rgo                    15
+       rint                     0
+     rvpoly                     0
+       rshg                    40
+      dlsil                     0
+        rsh                     0
+       rshd                     0
+     rbulko                   200
+     rwello                   100
+     rjunso                   500
+     rjundo                   500
+      saref                 1e-06
+      sbref                 1e-06
+       wlod                     0
+        kuo                     0
+      kvsat                     0
+       tkuo                     0
+       lkuo                     0
+       wkuo                     0
+       pkuo                     0
+    llodkuo                     0
+    wlodkuo                     0
+      kvtho                     0
+     lkvtho                     0
+     wkvtho                     0
+     pkvtho                     0
+    llodvth                     0
+    wlodvth                     0
+     stetao                     0
+    lodetao                     1
+      scref                 1e-06
+        web                     0
+        wec                     0
+      swsoa                     0
+    vgs_max                     3
+    vgd_max                     3
+    vgb_max                     3
+    vds_max                     3
+    vdb_max                   1.6
+    vsb_max                   1.6
+       imax             0.0024527
+        trj                    21
+       frev                  1000
+    cjorbot            0.00084188
+    cjorsti           4.42863e-11
+    cjorgat             3.224e-11
+    vbirbot               0.72606
+    vbirsti               0.69819
+    vbirgat                 1.199
+       pbot               0.33078
+       psti               0.22409
+       pgat                0.4474
+    phigbot                1.0641
+    phigsti                1.3946
+    phiggat                  1.83
+  idsatrbot            3.0606e-08
+  idsatrsti            3.6127e-15
+  idsatrgat                     0
+    csrhbot                   100
+    csrhsti                0.0001
+    csrhgat                0.0001
+    xjunsti              4.93e-08
+    xjungat             7.062e-07
+    ctatbot                   100
+    ctatsti                0.0001
+    ctatgat                0.0001
+ mefftatbot                  0.25
+ mefftatsti                  0.25
+ mefftatgat                  0.25
+    cbbtbot                 1e-12
+    cbbtsti                 1e-21
+    cbbtgat                 1e-18
+   fbbtrbot                 1e+09
+   fbbtrsti                 1e+09
+   fbbtrgat                 1e+09
+  stfbbtbot                -0.001
+  stfbbtsti                -0.001
+  stfbbtgat                -0.001
+     vbrbot                    10
+     vbrsti                    10
+     vbrgat                    10
+     pbrbot                     4
+     pbrsti                     4
+     pbrgat                     4
+   cjorbotd                 0.001
+   cjorstid                 1e-09
+   cjorgatd                 1e-09
+   vbirbotd                     1
+   vbirstid                     1
+   vbirgatd                     1
+      pbotd                   0.5
+      pstid                   0.5
+      pgatd                   0.5
+   phigbotd                  1.16
+   phigstid                  1.16
+   phiggatd                  1.16
+ idsatrbotd                 1e-12
+ idsatrstid                 1e-18
+ idsatrgatd                 1e-18
+   csrhbotd                   100
+   csrhstid                0.0001
+   csrhgatd                0.0001
+   xjunstid                 1e-07
+   xjungatd                 1e-07
+   ctatbotd                   100
+   ctatstid                0.0001
+   ctatgatd                0.0001
+mefftatbotd                  0.25
+mefftatstid                  0.25
+mefftatgatd                  0.25
+   cbbtbotd                 1e-12
+   cbbtstid                 1e-18
+   cbbtgatd                 1e-18
+  fbbtrbotd                 1e+09
+  fbbtrstid                 1e+09
+  fbbtrgatd                 1e+09
+ stfbbtbotd                -0.001
+ stfbbtstid                -0.001
+ stfbbtgatd                -0.001
+    vbrbotd                    10
+    vbrstid                    10
+    vbrgatd                    10
+    pbrbotd                     4
+    pbrstid                     4
+    pbrgatd                     4
+   swjunexp                     0
+    vjunref                   2.5
+      fjunq                  0.03
+   vjunrefd                   2.5
+     fjunqd                  0.03
+
+ r3_cmc models (A simulator independent device loaded with OSDI)
+      model          xr1:res_rppd          xr2:res_rppd
+
+    version                     1                     1
+ subversion                     1                     1
+   revision                     2                     2
+      level                  1003                  1003
+       type                    -1                    -1
+      scale                     1                     1
+     shrink                     0                     0
+       tmin                  -100                  -100
+       tmax                   500                   500
+    rthresh                 0.001                 0.001
+       imax                     1                     1
+       tnom                    27                    27
+       lmin                     0                     0
+       lmax               9.9e+09               9.9e+09
+       wmin                     0                     0
+       wmax               9.9e+09               9.9e+09
+       jmax                   100                   100
+       vmax               9.9e+09               9.9e+09
+   tminclip                  -100                  -100
+   tmaxclip                   500                   500
+        rsh                   260                   260
+         xw                 0.006                 0.006
+       nwxw                     0                     0
+       wexw                     0                     0
+       fdrw                     1                     1
+    fdxwinf                     0                     0
+         xl                     0                     0
+        xlw                     0                     0
+     dxlsat                     0                     0
+        nst                     1                     1
+        ats                     0                     0
+       atsl                     0                     0
+      dfinf                0.0001                0.0001
+        dfw                     0                     0
+        dfl                     0                     0
+       dfwl                     0                     0
+   sw_dfgeo                     1                     1
+         dp                  1000                  1000
+        dpw                     0                     0
+       dpwe                   0.5                   0.5
+        dpl                     0                     0
+       dple                     2                     2
+       dpwl                     0                     0
+      ecrit                  1000                  1000
+      ecorn                   0.4                   0.4
+   sw_vsatt                     0                     0
+   sw_accpo                     0                     0
+       grpo                 1e-12                 1e-12
+         du                  0.02                  0.02
+         rc                  17.5                  17.5
+        rcw                     0                     0
+         fc                   0.9                   0.9
+        isa                     0                     0
+         na                     1                     1
+         ca                 9e-17                 9e-17
+        cja                     0                     0
+         pa                  0.75                  0.75
+         ma                  0.33                  0.33
+        aja                  -0.5                  -0.5
+        isp                     0                     0
+         np                     1                     1
+         cp               2.5e-17               2.5e-17
+        cjp                     0                     0
+         pp                  0.75                  0.75
+         mp                  0.33                  0.33
+        ajp                  -0.5                  -0.5
+        vbv                     0                     0
+        ibv                 1e-06                 1e-06
+        nbv                     1                     1
+        kfn             4.601e-11             4.601e-11
+        afn                 1.886                 1.886
+        bfn                0.9963                0.9963
+   sw_fngeo                     0                     0
+         ea                  1.12                  1.12
+        xis                     3                     3
+      xvsat                     0                     0
+        tc1               0.00017               0.00017
+        tc2                 4e-07                 4e-07
+       tc1l                     0                     0
+       tc2l                     0                     0
+       tc1w                     0                     0
+       tc2w                     0                     0
+      tc1wl                     0                     0
+      tc2wl                     0                     0
+      tc1rc              -0.00095              -0.00095
+      tc2rc                     0                     0
+      tc1dp                     0                     0
+      tc2dp                     0                     0
+     tc1vbv                     0                     0
+     tc2vbv                     0                     0
+     tc1nbv                     0                     0
+     tc1kfn                     0                     0
+      tegth                     0                     0
+       gth0                 1e-12                 1e-12
+       gthp                 2e-06                 2e-06
+       gtha                 6e-06                 6e-06
+       gthc                 1e-12                 1e-12
+       cth0                     0                     0
+       cthp                     0                     0
+       ctha              5.94e-13              5.94e-13
+       cthc                     0                     0
+   nsig_rsh                     0                     0
+     nsig_w                     0                     0
+     nsig_l                     0                     0
+    sig_rsh                     0                     0
+      sig_w                     0                     0
+      sig_l                     0                     0
+    smm_rsh                   1.5                   1.5
+      smm_w                  0.01                  0.01
+      smm_l                  0.01                  0.01
+   sw_mmgeo                     0                     0
+
+ Capacitor: Fixed capacitor
+     device            c.xq3.csub            c.xq2.csub            c.xq1.csub
+      model                     C                     C                     C
+capacitance              2.15e-14               1.1e-14              2.15e-14
+      dtemp                     0                     0                     0
+     bv_max                 1e+99                 1e+99                 1e+99
+          i                     0                     0                     0
+          p                     0                     0                     0
+
+ Isource: Independent current source
+     device                 ibias
+         dc                 5e-06
+          m                     1
+      acmag                     0
+      pulse         -
+        sin         -
+        exp         -
+        pwl         -
+       sffm         -
+         am         -
+    trnoise         -
+   trrandom         -
+          v              -2.79739
+          p           1.39869e-05
+    current                 5e-06
+
+ Resistor: Simple linear resistor
+     device              r.xq3.rt            r.xq3.rsub              r.xq2.rt
+      model                     R                     R                     R
+ resistance                 1e+09                   400                 1e+09
+         ac                 1e+09                   400                 1e+09
+      dtemp                     0                     0                     0
+     bv_max                 1e+99                 1e+99                 1e+99
+      noisy                     1                     1                     1
+          i           4.09187e-11           7.10277e-13           5.82386e-12
+          p           1.67434e-12           2.01797e-22           3.39173e-14
+
+ Resistor: Simple linear resistor
+     device            r.xq2.rsub              r.xq1.rt            r.xq1.rsub
+      model                     R                     R                     R
+ resistance                  1100                 1e+09                   400
+         ac                  1100                 1e+09                   400
+      dtemp                     0                     0                     0
+     bv_max                 1e+99                 1e+99                 1e+99
+      noisy                     1                     1                     1
+          i           6.66653e-13           4.10382e-11           7.10351e-13
+          p           4.88869e-22           1.68413e-12           2.01839e-22
+
+ VBIC: Vertical Bipolar Inter-Company Model
+     device        q.xq3.qnpn13g2        q.xq2.qnpn13g2        q.xq1.qnpn13g2
+      model   xq3:npn13g2_nx_vbic   xq2:npn13g2_nx_vbic   xq1:npn13g2_nx_vbic
+        vbe              0.708377               0.65341              0.708452
+        vbc           0.000525675           6.58638e-05           0.000527154
+         ic           5.08053e-06           5.09411e-06           5.09482e-06
+         ib            6.9362e-09            7.6925e-09           6.95486e-09
+         ie          -5.08746e-06           -5.1018e-06          -5.10178e-06
+         is           7.10277e-13           6.66653e-13           7.10351e-13
+          p           3.60458e-06           3.33366e-06           3.61511e-06
+       beta               732.466               662.217               732.556
+         gm           0.000191548            0.00019243           0.000192086
+         go          -2.34254e-08          -2.38208e-08          -2.34907e-08
+        gpi           2.49984e-07           2.74802e-07           2.50659e-07
+        gmu           4.24971e-12           4.33553e-12            4.2587e-12
+         gx               0.01395             0.0993351             0.0139503
+        cbe           2.63877e-15           1.92385e-14           2.63899e-15
+       cbex                     0                     0                     0
+        cbc            3.8255e-16           3.06005e-15           3.82551e-16
+       cbcx           4.41935e-31           4.35863e-31           4.41955e-31
+       cbep           8.90067e-16           7.12007e-15           8.90067e-16
+       cbcp           1.21402e-15           6.47881e-15             1.214e-15
+
+ Vsource: Independent voltage source
+     device                   vm3                   vm2                   vm1
+         dc                     0                     0                     0
+      acmag                     0                     0                     0
+      pulse         -         -         -
+        sin         -         -         -
+        exp         -         -         -
+        pwl         -         -         -
+       sffm         -         -         -
+         am         -         -         -
+    trnoise         -         -         -
+   trrandom         -         -         -
+    portnum                     0                     0                     0
+         z0                     0                     0                     0
+        pwr                     0                     0                     0
+       freq                     0                     0                     0
+      phase                     0                     0                     0
+          i           5.08746e-06            5.1018e-06           5.10178e-06
+          p                     0                     0                     0
+
+ Vsource: Independent voltage source
+     device                  vsub                  vvss                  vvdd
+         dc                     0                     0                  3.63
+      acmag                     0                     0                     0
+      pulse         -         -         -
+        sin         -         -         -
+        exp         -         -         -
+        pwl         -         -         -
+       sffm         -         -         -
+         am         -         -         -
+    trnoise         -         -         -
+   trrandom         -         -         -
+    portnum                     0                     0                     0
+         z0                     0                     0                     0
+        pwr                     0                     0                     0
+       freq                     0                     0                     0
+      phase                     0                     0                     0
+          i                     0            2.0291e-05           -2.0291e-05
+          p                     0                     0          -7.36565e-05
+
+ PSP103VA: A simulator independent device loaded with OSDI
+     device   n.xm3.nsg13_hv_pmos   n.xm2.nsg13_hv_pmos   n.xm1.nsg13_hv_pmos
+      model xm3:sg13g2_hv_pmos_ps xm2:sg13g2_hv_pmos_ps xm1:sg13g2_hv_pmos_ps
+   _mfactor                     1                     1                     1
+          m                     1                     1                     1
+          l                 1e-06                 1e-06                 1e-06
+          w                 1e-05                 1e-05                 1e-05
+         sa                     0                     0                     0
+         sb                     0                     0                     0
+         sd                     0                     0                     0
+        sca                     0                     0                     0
+        scb                     0                     0                     0
+        scc                     0                     0                     0
+         sc                     0                     0                     0
+         nf                     1                     1                     1
+      ngcon                     2                     2                     2
+        xgw                 1e-07                 1e-07                 1e-07
+        nrs                     0                     0                     0
+        nrd                     0                     0                     0
+         jw                 1e-06                 1e-06                 1e-06
+     delvto                     0                     0                     0
+     factuo                     1                     1                     1
+ delvtoedge                     0                     0                     0
+ factuoedge                     1                     1                     1
+   absource                 1e-12                 1e-12                 1e-12
+   lssource                 1e-06                 1e-06                 1e-06
+   lgsource                 1e-06                 1e-06                 1e-06
+    abdrain                 1e-12                 1e-12                 1e-12
+    lsdrain                 1e-06                 1e-06                 1e-06
+    lgdrain                 1e-06                 1e-06                 1e-06
+         as               3.4e-12               3.4e-12               3.4e-12
+         ps             2.068e-05             2.068e-05             2.068e-05
+         ad               3.4e-12               3.4e-12               3.4e-12
+         pd             2.068e-05             2.068e-05             2.068e-05
+       mult                     1                     1                     1
+        dta                     0                     0                     0
+      ctype                    -1                    -1                    -1
+      sdint                     1                     1                     1
+        ise          -5.08735e-06          -5.10095e-06          -5.10094e-06
+        ige                     0                     0                     0
+        ide           5.08746e-06            5.1018e-06           5.10178e-06
+        ibe          -1.17478e-10          -8.44123e-10          -8.42072e-10
+        ids           5.08735e-06           5.10095e-06           5.10094e-06
+        idb           1.17478e-10           8.44123e-10           8.42072e-10
+        isb          -6.91399e-23          -4.96795e-22          -4.95589e-22
+        igs                     0                     0                     0
+        igd                     0                     0                     0
+        igb                     0                     0                     0
+     idedge                     0                     0                     0
+       igcs                     0                     0                     0
+       igcd                     0                     0                     0
+       iavl           1.17472e-10           8.44115e-10           8.42065e-10
+      igisl                     0                     0                     0
+      igidl           7.11309e-17           1.07769e-15           1.07419e-15
+        ijs           6.91399e-23           4.96795e-22           4.95589e-22
+     ijsbot           3.16802e-24           2.27634e-23           2.27081e-23
+     ijsgat           5.47712e-23           3.93551e-22           3.92595e-22
+     ijssti           1.12007e-23           8.04812e-23           8.02857e-23
+        ijd           -5.8963e-15          -6.57392e-15          -6.57297e-15
+     ijdbot          -2.91487e-16          -3.36149e-16          -3.36084e-16
+     ijdgat          -4.61058e-15          -5.06953e-15           -5.0689e-15
+     ijdsti          -9.94226e-16          -1.16824e-15          -1.16798e-15
+        vds               2.58535               2.92187                2.9214
+        vgs              0.832613              0.832613              0.832613
+        vsb          -3.52423e-08          -2.53236e-07           -2.5262e-07
+        vto              0.696636              0.696636              0.696636
+        vts              0.696629              0.696629              0.696629
+        vth              0.695156              0.694956              0.694956
+        vgt              0.137458              0.137657              0.137657
+       vdss              0.165825              0.165912              0.165912
+       vsat               2.41953               2.75596               2.75549
+         gm           4.76172e-05           4.77147e-05           4.77145e-05
+        gmb            2.3504e-05           2.35433e-05           2.35433e-05
+        gds           4.19252e-08            4.4134e-08           4.41265e-08
+        gjs          -5.88534e-15          -5.88535e-15          -5.88535e-15
+        gjd          -1.99187e-15          -2.04074e-15          -2.04065e-15
+        cdd           7.57944e-19           9.91307e-20            9.9939e-20
+        cdg           8.05604e-15           8.04765e-15           8.04767e-15
+        cds          -1.19167e-14          -1.19033e-14          -1.19033e-14
+        cdb           3.86138e-15            3.8557e-15           3.85571e-15
+        cgd          -1.13047e-17          -1.19346e-17          -1.19339e-17
+        cgg           2.83699e-14           2.83638e-14           2.83638e-14
+        cgs           2.13051e-14           2.12918e-14           2.12918e-14
+        cgb           7.07611e-15           7.08388e-15           7.08387e-15
+        csd           5.51455e-18           5.76158e-18           5.76128e-18
+        csg           1.27057e-14           1.27056e-14           1.27056e-14
+        css           1.88216e-14           1.88191e-14           1.88191e-14
+        csb           6.11039e-15           6.10771e-15           6.10771e-15
+        cbd           6.54808e-18           6.27219e-18           6.27253e-18
+        cbg           7.60815e-15           7.61052e-15           7.61052e-15
+        cbs           9.43317e-15            9.4305e-15            9.4305e-15
+        cbb           1.70479e-14           1.70473e-14           1.70473e-14
+      cgsol           1.67657e-15           1.67657e-15           1.67657e-15
+      cgdol           1.66083e-15           1.65836e-15           1.65836e-15
+        cjs            3.7325e-15            3.7325e-15            3.7325e-15
+     cjsbot           2.92006e-15           2.92006e-15           2.92006e-15
+     cjsgat           3.29383e-16           3.29383e-16           3.29383e-16
+     cjssti           4.83061e-16           4.83061e-16           4.83061e-16
+        cjd           2.26616e-15           2.19627e-15           2.19636e-15
+     cjdbot           1.73749e-15           1.68224e-15           1.68231e-15
+     cjdgat            1.9351e-16           1.86207e-16           1.86216e-16
+     cjdsti           3.35162e-16           3.27822e-16           3.27832e-16
+       weff                 1e-05                 1e-05                 1e-05
+       leff           9.28845e-07           9.28845e-07           9.28845e-07
+          u               1135.76               1081.13               1081.31
+       rout            2.3852e+07           2.26583e+07           2.26621e+07
+     vearly               121.346               115.598               115.617
+       beff           0.000538508           0.000538462           0.000538461
+        fug           2.39014e+08           2.39569e+08           2.39568e+08
+         rg               50.3947               50.3947               50.3947
+        sfl           2.04569e-19            2.0548e-19           2.05478e-19
+    sqrtsff            3.0037e-07           3.00422e-07           3.00422e-07
+    sqrtsfw           1.81016e-08           1.80826e-08           1.80827e-08
+        sid           7.42954e-25           7.44436e-25           7.44434e-25
+        sig            9.6407e-37           9.62923e-37           9.62925e-37
+      cigid              0.458994              0.458936              0.458936
+      fknee                275346                276020                276020
+       sigs                     0                     0                     0
+       sigd                     0                     0                     0
+      siavl           3.76434e-29           2.70532e-28           2.69874e-28
+        ssi           2.21551e-41           1.59192e-40           1.58806e-40
+        sdi            1.8894e-33           2.10654e-33           2.10623e-33
+    sfledge                     0                     0                     0
+    sidedge                     0                     0                     0
+     lp_vfb                -1.104                -1.104                -1.104
+   lp_stvfb           0.000668241           0.000668241           0.000668241
+  lp_st2vfb                     0                     0                     0
+     lp_tox            7.0839e-09            7.0839e-09            7.0839e-09
+  lp_epsrox                   3.9                   3.9                   3.9
+    lp_neff           4.30708e+23           4.30708e+23           4.30708e+23
+lp_facneffa                     1                     1                     1
+ lp_gfacnud                     1                     1                     1
+  lp_vsbnud                     0                     0                     0
+ lp_dvsbnud                     1                     1                     1
+   lp_vnsub                     0                     0                     0
+    lp_nslp                  0.05                  0.05                  0.05
+   lp_dnsub               0.03585               0.03585               0.03585
+   lp_dphib            -0.0655225            -0.0655225            -0.0655225
+ lp_delvtac                     0                     0                     0
+      lp_np           1.34923e+26           1.34923e+26           1.34923e+26
+   lp_toxov            7.0839e-09            7.0839e-09            7.0839e-09
+  lp_toxovd            7.0839e-09            7.0839e-09            7.0839e-09
+     lp_nov              1.99e+26              1.99e+26              1.99e+26
+    lp_novd              1.99e+26              1.99e+26              1.99e+26
+      lp_ct                     0                     0                     0
+     lp_ctg                     0                     0                     0
+     lp_ctb                     0                     0                     0
+    lp_stct                     1                     1                     1
+      lp_cf            0.00056475            0.00056475            0.00056475
+     lp_cfd                     0                     0                     0
+     lp_cfb                     1                     1                     1
+    lp_psce                     0                     0                     0
+   lp_psceb                     0                     0                     0
+   lp_psced                     0                     0                     0
+    lp_betn              0.238356              0.238356              0.238356
+   lp_stbet               1.68946               1.68946               1.68946
+     lp_mue               1.73462               1.73462               1.73462
+   lp_stmue                1.0816                1.0816                1.0816
+   lp_themu                1.0324                1.0324                1.0324
+ lp_stthemu               0.26337               0.26337               0.26337
+      lp_cs              0.443352              0.443352              0.443352
+    lp_stcs                     2                     2                     2
+   lp_thecs                     2                     2                     2
+ lp_stthecs                     0                     0                     0
+    lp_xcor             0.0131934             0.0131934             0.0131934
+  lp_stxcor            -6.939e-18            -6.939e-18            -6.939e-18
+    lp_feta                1.2853                1.2853                1.2853
+      lp_rs               195.866               195.866               195.866
+    lp_strs              -0.24812              -0.24812              -0.24812
+     lp_rsb              0.074639              0.074639              0.074639
+     lp_rsg              0.112063              0.112063              0.112063
+  lp_thesat             0.0119655             0.0119655             0.0119655
+lp_stthesat               2.81023               2.81023               2.81023
+ lp_thesatb                   0.1                   0.1                   0.1
+ lp_thesatg                0.6304                0.6304                0.6304
+      lp_ax               3.96771               3.96771               3.96771
+     lp_alp            0.00601432            0.00601432            0.00601432
+    lp_alp1           2.68879e-16           2.68879e-16           2.68879e-16
+    lp_alp2           4.10632e-06           4.10632e-06           4.10632e-06
+      lp_vp            1.8436e-06            1.8436e-06            1.8436e-06
+      lp_a1               49.3582               49.3582               49.3582
+      lp_a2                38.581                38.581                38.581
+    lp_sta2            -0.0049931            -0.0049931            -0.0049931
+      lp_a3               1.08734               1.08734               1.08734
+      lp_a4              0.115879              0.115879              0.115879
+     lp_gco                     0                     0                     0
+   lp_iginv                     0                     0                     0
+    lp_igov                     0                     0                     0
+   lp_igovd                     0                     0                     0
+    lp_stig                     2                     2                     2
+     lp_gc2                 0.375                 0.375                 0.375
+     lp_gc3                 0.063                 0.063                 0.063
+    lp_chib                   3.1                   3.1                   3.1
+   lp_agidl            2.0826e-10            2.0826e-10            2.0826e-10
+  lp_agidld            2.0826e-10            2.0826e-10            2.0826e-10
+   lp_bgidl               7.45738               7.45738               7.45738
+  lp_bgidld               7.45738               7.45738               7.45738
+ lp_stbgidl            -0.0049461            -0.0049461            -0.0049461
+lp_stbgidld            -0.0049461            -0.0049461            -0.0049461
+   lp_cgidl               0.23693               0.23693               0.23693
+  lp_cgidld               0.23693               0.23693               0.23693
+     lp_cox           4.71428e-14           4.71428e-14           4.71428e-14
+    lp_cgov           1.69706e-15           1.69706e-15           1.69706e-15
+   lp_cgovd           1.69706e-15           1.69706e-15           1.69706e-15
+   lp_cgbov                     0                     0                     0
+     lp_cfr                     0                     0                     0
+    lp_cfrd                     0                     0                     0
+     lp_fnt                     1                     1                     1
+  lp_fntexc                     0                     0                     0
+     lp_nfa           1.56337e+24           1.56337e+24           1.56337e+24
+     lp_nfb           6.36051e+08           6.36051e+08           6.36051e+08
+     lp_nfc           2.40519e-08           2.40519e-08           2.40519e-08
+      lp_ef                 1.152                 1.152                 1.152
+ lp_vfbedge                     0                     0                     0
+lp_stvfbedg                0.0005                0.0005                0.0005
+lp_dphibedg                     0                     0                     0
+lp_neffedge                 5e+23                 5e+23                 5e+23
+  lp_ctedge                     0                     0                     0
+lp_betnedge                     0                     0                     0
+lp_stbetedg                     1                     1                     1
+lp_psceedge                     0                     0                     0
+lp_pscebedg                     0                     0                     0
+lp_pscededg                     0                     0                     0
+  lp_cfedge                     0                     0                     0
+ lp_cfdedge                     0                     0                     0
+ lp_cfbedge                     0                     0                     0
+ lp_fntedge                     1                     1                     1
+ lp_nfaedge           4.30642e+24           4.30642e+24           4.30642e+24
+ lp_nfbedge           1.61491e+09           1.61491e+09           1.61491e+09
+ lp_nfcedge                     0                     0                     0
+  lp_efedge                     1                     1                     1
+      lp_rg               50.3947               50.3947               50.3947
+     lp_rse                     0                     0                     0
+     lp_rde                     0                     0                     0
+   lp_rbulk                   200                   200                   200
+   lp_rwell                   100                   100                   100
+   lp_rjuns                   500                   500                   500
+   lp_rjund                   500                   500                   500
+         tk                300.15                300.15                300.15
+    cjosbot           2.87445e-15           2.87445e-15           2.87445e-15
+    cjossti           4.75517e-16           4.75517e-16           4.75517e-16
+    cjosgat           3.24239e-16           3.24239e-16           3.24239e-16
+    vbisbot              0.716888              0.716888              0.716888
+    vbissti              0.681709              0.681709              0.681709
+    vbisgat               1.18385               1.18385               1.18385
+  idsatsbot           2.63002e-19           2.63002e-19           2.63002e-19
+  idsatssti           1.26553e-19           1.26553e-19           1.26553e-19
+  idsatsgat                     0                     0                     0
+   cjosbotd           2.87445e-15           2.87445e-15           2.87445e-15
+   cjosstid           4.75517e-16           4.75517e-16           4.75517e-16
+   cjosgatd           3.24239e-16           3.24239e-16           3.24239e-16
+   vbisbotd              0.716888              0.716888              0.716888
+   vbisstid              0.681709              0.681709              0.681709
+   vbisgatd               1.18385               1.18385               1.18385
+ idsatsbotd           2.63002e-19           2.63002e-19           2.63002e-19
+ idsatsstid           1.26553e-19           1.26553e-19           1.26553e-19
+ idsatsgatd                     0                     0                     0
+
+ PSP103VA: A simulator independent device loaded with OSDI
+     device   n.xm0.nsg13_hv_pmos
+      model xm0:sg13g2_hv_pmos_ps
+   _mfactor                     1
+          m                     1
+          l                 1e-06
+          w                 1e-05
+         sa                     0
+         sb                     0
+         sd                     0
+        sca                     0
+        scb                     0
+        scc                     0
+         sc                     0
+         nf                     1
+      ngcon                     2
+        xgw                 1e-07
+        nrs                     0
+        nrd                     0
+         jw                 1e-06
+     delvto                     0
+     factuo                     1
+ delvtoedge                     0
+ factuoedge                     1
+   absource                 1e-12
+   lssource                 1e-06
+   lgsource                 1e-06
+    abdrain                 1e-12
+    lsdrain                 1e-06
+    lgdrain                 1e-06
+         as               3.4e-12
+         ps             2.068e-05
+         ad               3.4e-12
+         pd             2.068e-05
+       mult                     1
+        dta                     0
+      ctype                    -1
+      sdint                     1
+        ise                -5e-06
+        ige                     0
+        ide                 5e-06
+        ibe          -2.30832e-15
+        ids                 5e-06
+        idb           2.30832e-15
+        isb          -1.36431e-27
+        igs                     0
+        igd                     0
+        igb                     0
+     idedge                     0
+       igcs                     0
+       igcd                     0
+       iavl           3.83622e-27
+      igisl                     0
+      igidl                     0
+        ijs           1.36431e-27
+     ijsbot           6.25133e-29
+     ijsgat           1.08078e-27
+     ijssti           2.21019e-28
+        ijd          -2.30832e-15
+     ijdbot          -9.90449e-17
+     ijdgat          -1.88006e-15
+     ijdsti          -3.29214e-16
+        vds              0.832613
+        vgs              0.832613
+        vsb           -2.3137e-13
+        vto              0.696636
+        vts              0.696629
+        vth              0.696193
+        vgt              0.136421
+       vdss              0.165376
+       vsat              0.667238
+         gm            4.6964e-05
+        gmb           2.32305e-05
+        gds           7.00453e-08
+        gjs          -5.88534e-15
+        gjd          -2.26909e-15
+        cdd            1.4398e-17
+        cdg           8.15365e-15
+        cds          -1.20561e-14
+        cdb           3.91685e-15
+        cgd           1.69293e-18
+        cgg           2.84521e-14
+        cgs           2.14377e-14
+        cgb           7.01268e-15
+        csd           5.06593e-19
+        csg           1.27241e-14
+        css           1.88574e-14
+        csb           6.13277e-15
+        cbd           1.21985e-17
+        cbg           7.57432e-15
+        cbs           9.47579e-15
+        cbb           1.70623e-14
+      cgsol           1.67657e-15
+      cgdol           1.67217e-15
+        cjs            3.7325e-15
+     cjsbot           2.92006e-15
+     cjsgat           3.29383e-16
+     cjssti           4.83061e-16
+        cjd           2.89493e-15
+     cjdbot           2.23883e-15
+     cjdgat           2.56773e-16
+     cjdsti           3.99329e-16
+       weff                 1e-05
+       leff           9.28845e-07
+          u               670.481
+       rout           1.42765e+07
+     vearly               71.3823
+       beff           0.000537327
+        fug           2.35043e+08
+         rg               50.3947
+        sfl           1.98516e-19
+    sqrtsff           3.00008e-07
+    sqrtsfw            1.8228e-08
+        sid           7.32843e-25
+        sig           9.73332e-37
+      cigid              0.459222
+      fknee                270885
+       sigs                     0
+       sigd                     0
+      siavl           1.22927e-45
+        ssi           4.37178e-46
+        sdi           7.39674e-34
+    sfledge                     0
+    sidedge                     0
+     lp_vfb                -1.104
+   lp_stvfb           0.000668241
+  lp_st2vfb                     0
+     lp_tox            7.0839e-09
+  lp_epsrox                   3.9
+    lp_neff           4.30708e+23
+lp_facneffa                     1
+ lp_gfacnud                     1
+  lp_vsbnud                     0
+ lp_dvsbnud                     1
+   lp_vnsub                     0
+    lp_nslp                  0.05
+   lp_dnsub               0.03585
+   lp_dphib            -0.0655225
+ lp_delvtac                     0
+      lp_np           1.34923e+26
+   lp_toxov            7.0839e-09
+  lp_toxovd            7.0839e-09
+     lp_nov              1.99e+26
+    lp_novd              1.99e+26
+      lp_ct                     0
+     lp_ctg                     0
+     lp_ctb                     0
+    lp_stct                     1
+      lp_cf            0.00056475
+     lp_cfd                     0
+     lp_cfb                     1
+    lp_psce                     0
+   lp_psceb                     0
+   lp_psced                     0
+    lp_betn              0.238356
+   lp_stbet               1.68946
+     lp_mue               1.73462
+   lp_stmue                1.0816
+   lp_themu                1.0324
+ lp_stthemu               0.26337
+      lp_cs              0.443352
+    lp_stcs                     2
+   lp_thecs                     2
+ lp_stthecs                     0
+    lp_xcor             0.0131934
+  lp_stxcor            -6.939e-18
+    lp_feta                1.2853
+      lp_rs               195.866
+    lp_strs              -0.24812
+     lp_rsb              0.074639
+     lp_rsg              0.112063
+  lp_thesat             0.0119655
+lp_stthesat               2.81023
+ lp_thesatb                   0.1
+ lp_thesatg                0.6304
+      lp_ax               3.96771
+     lp_alp            0.00601432
+    lp_alp1           2.68879e-16
+    lp_alp2           4.10632e-06
+      lp_vp            1.8436e-06
+      lp_a1               49.3582
+      lp_a2                38.581
+    lp_sta2            -0.0049931
+      lp_a3               1.08734
+      lp_a4              0.115879
+     lp_gco                     0
+   lp_iginv                     0
+    lp_igov                     0
+   lp_igovd                     0
+    lp_stig                     2
+     lp_gc2                 0.375
+     lp_gc3                 0.063
+    lp_chib                   3.1
+   lp_agidl            2.0826e-10
+  lp_agidld            2.0826e-10
+   lp_bgidl               7.45738
+  lp_bgidld               7.45738
+ lp_stbgidl            -0.0049461
+lp_stbgidld            -0.0049461
+   lp_cgidl               0.23693
+  lp_cgidld               0.23693
+     lp_cox           4.71428e-14
+    lp_cgov           1.69706e-15
+   lp_cgovd           1.69706e-15
+   lp_cgbov                     0
+     lp_cfr                     0
+    lp_cfrd                     0
+     lp_fnt                     1
+  lp_fntexc                     0
+     lp_nfa           1.56337e+24
+     lp_nfb           6.36051e+08
+     lp_nfc           2.40519e-08
+      lp_ef                 1.152
+ lp_vfbedge                     0
+lp_stvfbedg                0.0005
+lp_dphibedg                     0
+lp_neffedge                 5e+23
+  lp_ctedge                     0
+lp_betnedge                     0
+lp_stbetedg                     1
+lp_psceedge                     0
+lp_pscebedg                     0
+lp_pscededg                     0
+  lp_cfedge                     0
+ lp_cfdedge                     0
+ lp_cfbedge                     0
+ lp_fntedge                     1
+ lp_nfaedge           4.30642e+24
+ lp_nfbedge           1.61491e+09
+ lp_nfcedge                     0
+  lp_efedge                     1
+      lp_rg               50.3947
+     lp_rse                     0
+     lp_rde                     0
+   lp_rbulk                   200
+   lp_rwell                   100
+   lp_rjuns                   500
+   lp_rjund                   500
+         tk                300.15
+    cjosbot           2.87445e-15
+    cjossti           4.75517e-16
+    cjosgat           3.24239e-16
+    vbisbot              0.716888
+    vbissti              0.681709
+    vbisgat               1.18385
+  idsatsbot           2.63002e-19
+  idsatssti           1.26553e-19
+  idsatsgat                     0
+   cjosbotd           2.87445e-15
+   cjosstid           4.75517e-16
+   cjosgatd           3.24239e-16
+   vbisbotd              0.716888
+   vbisstid              0.681709
+   vbisgatd               1.18385
+ idsatsbotd           2.63002e-19
+ idsatsstid           1.26553e-19
+ idsatsgatd                     0
+
+ r3_cmc: A simulator independent device loaded with OSDI
+     device             n.xr1.nr1             n.xr2.nr1
+      model          xr1:res_rppd          xr2:res_rppd
+   _mfactor                     1                     1
+          m                     1                     1
+          w             2.006e-06             2.006e-06
+          l              0.000511              8.27e-05
+         wd                     0                     0
+         a1            5.1186e-10             8.356e-11
+         p1            0.00051386             8.556e-05
+         c1                     1                     1
+         a2            5.1186e-10             8.356e-11
+         p2            0.00051386             8.556e-05
+         c2                     1                     1
+      trise                     0                     0
+   nsmm_rsh                     1                     1
+     nsmm_w                     1                     1
+     nsmm_l                     1                     1
+   sw_noise                     1                     1
+      sw_et                     0                     0
+     sw_lin                     0                     0
+    sw_mman                     0                     0
+          v             -0.336124             -0.054701
+      ibody          -5.08746e-06           -5.1018e-06
+      power           1.71002e-06           2.79073e-07
+    leff_um                   511                  82.7
+    weff_um                 2.012                 2.012
+         r0                 65825               10653.1
+       r_dc                 66069               10721.9
+       r_ac                 66034               10686.9
+        rth               121.915               749.512
+        cth           6.08889e-10           9.85423e-11
+      dt_et                     0                     0
+
+
+Total analysis time (seconds) = 2.89229
+
+Total elapsed time (seconds) = 2.945 
+
+Total DRAM available = 15700.234 MB.
+DRAM currently available = 6859.297 MB.
+Maximum ngspice program size =  524.980 MB.
+Current ngspice program size =   14.977 MB.
+
+Shared ngspice pages =   10.527 MB.
+Text (code) pages =    6.355 MB.
+Stack = 0 bytes.
+Library pages =   61.340 MB.
+

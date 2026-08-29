@@ -1,0 +1,50 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core + bandgap_startup co-simulated hand-over
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+fb                                   -0.553092
+sns1                               -8.0827e-19
+xq1.s1                            -3.23308e-28
+xq1.t                              5.37721e-54
+sns2                              -1.11419e-18
+cb2                               -1.11419e-18
+xr2.dt                                       0
+xq2.s1                            -1.22561e-27
+xq2.t                              6.36626e-54
+vref                              -9.07893e-19
+cb3                               -9.07893e-19
+xr1.dt                                       0
+xq3.s1                            -3.63157e-28
+xq3.t                               6.7844e-54
+det                                          0
+xrpu.dt                                      0
+fbx                                  -0.553092
+vmkfb#branch                      -4.99845e-06
+vsub#branch                                  0
+vvss#branch                        1.54795e-09
+vvdd#branch                       -1.54795e-09
+
+ Reference value :  1.36253e-04 Reference value :  7.95000e-04 Reference value :  1.50900e-03
+No. of Data Rows : 1012
+v_det_early         =  2.93237e-01
+v_fb_early          =  -3.37828e-01
+v_det_v             =  2.45751e-03
+v_fb_v              =  2.08544e+00
+v_sns1_v            =  7.90038e-01
+v_vref_v            =  1.12083e+00
+i_mkfb_v            =  2.12469e-14
+Note: Simulation executed from .control section 

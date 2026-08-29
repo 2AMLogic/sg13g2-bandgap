@@ -1,0 +1,125 @@
+* sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+* co-simulated closed-loop testbench (issue #58)
+* Generated from
+* sim/closed-loop-startup/testbench/tb_closed_loop_startup.spice.tmpl
+* by sim/closed-loop-startup/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full rationale is in sim/closed-loop-startup/README.md.
+*
+* Generated for: corner=bcs temp=125C vdd=3.30V
+* DUT git sha (design/netlist/bandgap_core.spice,
+* design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice
+* this was copied from):
+*   core=8bb15bc amp=397fe2d startup=66ac99d
+* PDK: ihp-sg13g2 /home/ubuntu/share/pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* All three DUTs are copied verbatim from design/netlist/bandgap_core.spice,
+* design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice
+* -- same instance names, same node names, same W/L/Nx -- and wired
+* together exactly as design/bandgap_top.sch specifies (core.fb <-
+* amp.out, core.sns1 -> amp.in_n, core.sns2 -> amp.in_p, startup.sns1 <-
+* core.sns1, startup.fb -> core.fb). This is the FIRST testbench in this
+* tree with no ideal-current-source/fixture standing in for the servo
+* loop -- sim/core-open-loop-bias and sim/startup-core-handover both use
+* an ideal diode-connected-replica fixture (XM0/Ibias) because no
+* amplifier existed yet (design/README.md, issue #9's scope cut). That
+* fixture is gone here: bandgap_amp's own real devices now hold "fb" at
+* whatever level makes sns1 = sns2, exactly the job design/bandgap_amp.sch's
+* header describes.
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_bcs
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_ff
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_bcs
+
+* rshunt=1e9 / gmin=1e-9: convergence aids only, both far below any current
+* this testbench measures. rshunt=1e9 adds a 1e-9 S shunt from every node to
+* ground (<=1 nA at 1 V); gmin=1e-9 raises ngspice's default minimum
+* junction conductance (default 1e-12) the same way dynamic gmin-stepping
+* already does internally, just applied from the start. Needed at a handful
+* of PVT corners during the very early (sub-1V) part of the vdd ramp, where
+* bandgap_core's diode-connected npn13G2 legs sit at a genuinely
+* near-singular, near-zero-bias operating point before any real current has
+* been established -- without some aid here, ngspice's transient solver can
+* hit "Timestep too small" trouble with the VBIC HBT model at exactly that
+* moment (t~=30-40us into the 200us ramp). Dev-time debugging for issue #58
+* found this a whack-a-mole problem with either aid alone at a single
+* value (rshunt=1e12 left 4/45 corners failing; rshunt=1e9 alone fixed
+* those 4 but newly failed a 5th, wcs_27c_3.30v) -- the combination below
+* is what cleared all 45 corners in this issue's own full sweep. Does not
+* relax any pass/fail criterion below; it only helps the solver step
+* through a numerically stiff instant it would otherwise stall on.
+.options temp=125 tnom=27 rshunt=1e9 gmin=1e-9
+
+* FIXTURE -- transient supply ramp, the same shape
+* sim/startup-core-handover uses: vdd itself ramps 0 -> VDD over 200 us
+* (well above the ~2 us RC set by XRPU's ~1.9-2 Mohm rhigh against MOSFET
+* gate capacitance) and holds to 2 ms, so the assembled block's own
+* cold-start -> closed-loop-settled transition is what the simulator
+* solves for.
+Vvdd vdd 0 PWL(0 0 200u 3.30 2m 3.30)
+Vvss vss 0 dc 0
+* both bandgap_core.spice and bandgap_amp.spice wire their resistor bulk
+* terminals (rppd inside the core) to the global substrate net `sub!`,
+* the same convention every testbench in this tree uses.
+Vsub sub! vss dc 0
+
+* DUT -- design/netlist/bandgap_core.spice, verbatim.
+XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR1 vref cb3 sub! rppd w=2u l=511u m=1 b=0
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+* DUT -- design/netlist/bandgap_amp.spice, verbatim. in_p <- sns2
+* (non-inverting), in_n <- sns1 (inverting), out -> fb -- see
+* design/bandgap_amp.sch's own header "polarity" section for the
+* derivation of which sense node is which input.
+XMTAIL tail fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP2 d2 sns1 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP4 fb pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN3 fb d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+
+* DUT -- design/netlist/bandgap_startup.spice, verbatim. `sns1` and `fb`
+* are shared with the core and amp DUTs above -- the nodes the assembled
+* block actually connects. No separate stimulus source drives either one.
+*
+* FIXTURE -- Vmkfb is a 0 V ammeter in series with XMKFB's drain, so the
+* startup circuit's own contribution to the shared fb node can be measured
+* directly (i_mkfb below) rather than inferred from fb's voltage alone. A
+* 0 V source is a DC/transient short and does not move the operating point.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+.control
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+tran 2u 2m
+* Early-ramp check (t=20us, vdd ~10% of final value, core+amp still
+* degenerate/starting): the startup circuit should still be actively
+* engaged (det high, fb low).
+meas tran v_det_early find v(det) at=20u
+meas tran v_fb_early find v(fb) at=20u
+* Final (fully ramped + settled) closed-loop state -- the actual claim
+* under test: did the real error amplifier close the loop and settle,
+* with the startup circuit fully released?
+meas tran v_fb_v find v(fb) at=2m
+meas tran v_sns1_v find v(sns1) at=2m
+meas tran v_sns2_v find v(sns2) at=2m
+meas tran v_vref_v find v(vref) at=2m
+meas tran v_det_v find v(det) at=2m
+meas tran i_mkfb_v find i(Vmkfb) at=2m
+.endc
+.end
