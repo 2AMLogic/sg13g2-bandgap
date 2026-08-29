@@ -58,6 +58,20 @@ records the exact stale hash — so a waiver **self-expires**: once the evidence
 regenerated the recorded hash no longer matches and the checker fails until the
 waiver is deleted.
 
+**D2. `sim/` DUT freshness** — the same rule, applied to simulation evidence. A
+record has no recorded input hash, but it ships something better: the per-point
+netlist snapshots it actually simulated. So each experiment's **newest** record
+is compared, device by device, against the committed `design/**` netlist that
+record names as its own provenance — a measurement produced against a
+superseded DUT is stale evidence no matter how honest its prose. Only models
+and parameters are compared, never node names (a testbench legitimately rewires
+the DUT's ports), and a netlist that merely *adds* parameters still matches (a
+PEX-sourced device carries `as`/`ad`/`ps`/`pd` the schematic does not).
+Known-stale records are waived through `sim/evidence-freshness-waivers.json`,
+which self-expires twice over: the recorded signature stops matching once the
+record is re-run, and the waiver stops matching anything once a newer record is
+appended.
+
 **E. Append-only evidence** — nothing under `sim/*/records/`,
 `sim/*/netlist-snapshots/` or `sim/*/corners/` may be modified or deleted
 relative to the merge base. A correction is a new `<record-id>`, never an edit.
@@ -139,6 +153,21 @@ PEX_STATUSES = frozenset({"extracted"})
 
 WAIVER_FILE = "layout/evidence-freshness-waivers.json"
 WAIVER_REQUIRED_KEYS = ("report", "check", "recorded_hash", "issue", "reason")
+
+# --- sim/ DUT-freshness constants --------------------------------------------
+
+SIM_WAIVER_FILE = "sim/evidence-freshness-waivers.json"
+
+#: A committed schematic DUT netlist named in a record's own provenance prose,
+#: e.g. `design/netlist/bandgap_core.spice` or
+#: `design/sg13cmos5l/netlist/bandgap_core.spice`. Layout-extracted (`layout/…`)
+#: netlists are deliberately excluded — see `check_sim_freshness`'s docstring.
+DUT_PATH_RE = re.compile(r"\bdesign/[A-Za-z0-9_./-]*?\.spice\b")
+
+#: A SPICE instance line: a leading instance name whose first character is a
+#: device letter, then at least one more token. Comments (`*`), directives
+#: (`.tran`, `.model`, …) and continuations (`+`) are filtered before this runs.
+INSTANCE_RE = re.compile(r"^[XxRrCcLlMmQqDdVvIiJjKkEeFfGgHhSsTtUuWwZz]\S*\s+\S")
 
 # --- append-only constants ---------------------------------------------------
 
@@ -391,29 +420,101 @@ def check_sim(root: Path, report: Report) -> None:
 # --- layout/ reports ---------------------------------------------------------
 
 
-def load_waivers(root: Path, report: Report) -> dict[tuple[str, str], dict]:
-    path = root / WAIVER_FILE
+def load_waivers(
+    root: Path, report: Report, waiver_file: str = WAIVER_FILE
+) -> dict[tuple[str, str], dict]:
+    path = root / waiver_file
     if not path.is_file():
         return {}
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        report.fail(WAIVER_FILE, f"is not valid JSON: {exc}")
+        report.fail(waiver_file, f"is not valid JSON: {exc}")
         return {}
     waivers: dict[tuple[str, str], dict] = {}
     for entry in raw.get("waivers", []):
         missing = [k for k in WAIVER_REQUIRED_KEYS if not entry.get(k)]
         if missing:
-            report.fail(WAIVER_FILE, f"waiver entry missing required key(s): {', '.join(missing)}")
+            report.fail(waiver_file, f"waiver entry missing required key(s): {', '.join(missing)}")
             continue
         if not re.match(r"^#\d+$", str(entry["issue"])):
             report.fail(
-                WAIVER_FILE,
+                waiver_file,
                 f"waiver for {entry['report']} has issue {entry['issue']!r}; expected '#<number>'",
             )
             continue
         waivers[(entry["report"], entry["check"])] = entry
     return waivers
+
+
+def report_unused_waivers(
+    report: Report,
+    waivers: dict[tuple[str, str], dict],
+    used_waivers: set[tuple[str, str]],
+    waiver_file: str,
+) -> None:
+    """A waiver that matches nothing this checker runs hides nothing — fail it."""
+    for key, waiver in sorted(waivers.items()):
+        if key not in used_waivers:
+            report.fail(
+                f"{waiver_file} [{key[0]} / {key[1]}]",
+                f"waiver matches no report/check that this checker runs (tracked at "
+                f"{waiver['issue']}) — a waiver that guards nothing hides nothing",
+            )
+
+
+def compare_recorded(
+    report: Report,
+    report_rel: str,
+    check_name: str,
+    recorded_hex: str,
+    actual_hex: str,
+    stale_detail: str,
+    waivers: dict[tuple[str, str], dict],
+    used_waivers: set[tuple[str, str]],
+    waiver_file: str,
+) -> None:
+    """Compare an evidence artifact's own recorded digest against the current one.
+
+    Shared by the `layout/` hash checks and the `sim/` DUT-signature check: both
+    reduce "is this evidence still fresh?" to two hex digests plus a waiver
+    lookup, and both need the identical four-way outcome (fresh; fresh but a
+    waiver was left behind; stale and waived; stale and not waived).
+    """
+    key = (report_rel, check_name)
+    waiver = waivers.get(key)
+
+    if recorded_hex == actual_hex:
+        if waiver is not None:
+            used_waivers.add(key)
+            report.fail(
+                f"{waiver_file} [{report_rel} / {check_name}]",
+                "waiver is obsolete — the evidence is fresh again; delete this entry "
+                f"(tracked at {waiver['issue']})",
+            )
+        return
+
+    if waiver is not None:
+        used_waivers.add(key)
+        waived_hex = SHA256_RE.match(str(waiver["recorded_hash"]).strip())
+        if not waived_hex or waived_hex.group("hex") != recorded_hex:
+            report.fail(
+                f"{waiver_file} [{report_rel} / {check_name}]",
+                f"waiver records hash {waiver['recorded_hash']!r} but the report now records "
+                f"sha256:{recorded_hex} — re-check the waiver instead of leaving it stale",
+            )
+            return
+        report.note(
+            f"STALE (waived, {waiver['issue']}): {report_rel} [{check_name}] "
+            f"{stale_detail} — {waiver['reason']}"
+        )
+        return
+
+    report.fail(
+        f"{report_rel} [{check_name}]",
+        f"STALE: {stale_detail} — regenerate the evidence, or waive it in {waiver_file} "
+        f"with a tracking issue and recorded_hash sha256:{recorded_hex}",
+    )
 
 
 def check_hash(
@@ -440,41 +541,11 @@ def check_hash(
         report.fail(where, f"input {input_path.relative_to(root)} does not exist")
         return
     actual = sha256_file(input_path)
-    key = (report_rel, check_name)
-    waiver = waivers.get(key)
-
-    if recorded_hex == actual:
-        if waiver is not None:
-            used_waivers.add(key)
-            report.fail(
-                f"{WAIVER_FILE} [{report_rel} / {check_name}]",
-                "waiver is obsolete — the evidence is fresh again; delete this entry "
-                f"(tracked at {waiver['issue']})",
-            )
-        return
-
-    if waiver is not None:
-        used_waivers.add(key)
-        waived_hex = SHA256_RE.match(str(waiver["recorded_hash"]).strip())
-        if not waived_hex or waived_hex.group("hex") != recorded_hex:
-            report.fail(
-                f"{WAIVER_FILE} [{report_rel} / {check_name}]",
-                f"waiver records hash {waiver['recorded_hash']!r} but the report now records "
-                f"sha256:{recorded_hex} — re-check the waiver instead of leaving it stale",
-            )
-            return
-        report.note(
-            f"STALE (waived, {waiver['issue']}): {report_rel} [{check_name}] was produced against "
-            f"sha256:{recorded_hex[:12]}…, but {input_path.relative_to(root)} is now "
-            f"sha256:{actual[:12]}… — {waiver['reason']}"
-        )
-        return
-
-    report.fail(
-        where,
-        f"STALE: produced against sha256:{recorded_hex}, but {input_path.relative_to(root)} is "
-        f"now sha256:{actual} — regenerate the report, or waive it in {WAIVER_FILE} with a "
-        "tracking issue",
+    compare_recorded(
+        report, report_rel, check_name, recorded_hex, actual,
+        f"produced against sha256:{recorded_hex}, but {input_path.relative_to(root)} is "
+        f"now sha256:{actual}",
+        waivers, used_waivers, WAIVER_FILE,
     )
 
 
@@ -603,13 +674,204 @@ def check_layout(root: Path, report: Report) -> None:
                 check_hash(report, root, rel, "input gds", _provenance_input_hash(data),
                            gds, waivers, used_waivers)
 
-    for key, waiver in sorted(waivers.items()):
-        if key not in used_waivers:
-            report.fail(
-                f"{WAIVER_FILE} [{key[0]} / {key[1]}]",
-                f"waiver matches no report/check that this checker runs (tracked at "
-                f"{waiver['issue']}) — a waiver that guards nothing hides nothing",
+    report_unused_waivers(report, waivers, used_waivers, WAIVER_FILE)
+
+
+# --- sim/ DUT freshness ------------------------------------------------------
+
+
+def _spice_tokens(line: str) -> list[str]:
+    """Split a SPICE instance line, keeping braced/parenthesised expressions whole.
+
+    SG13CMOS5L's bipolar instances carry geometry as expressions with internal
+    spaces (`a={ 1u * 2u } p={ ( 1u + 2u ) * 2 }`); a naive `str.split()` shreds
+    them into meaningless tokens and would report a bogus mismatch.
+    """
+    tokens: list[str] = []
+    buffer = ""
+    depth = 0
+    for char in line:
+        if char.isspace() and depth == 0:
+            if buffer:
+                tokens.append(buffer)
+                buffer = ""
+            continue
+        if char in "{(":
+            depth += 1
+        elif char in "})":
+            depth = max(0, depth - 1)
+        buffer += char
+    if buffer:
+        tokens.append(buffer)
+    return tokens
+
+
+def spice_instances(text: str) -> dict[str, tuple[str, dict[str, str]]]:
+    """Parse `{instance: (model, {param: value})}` out of a SPICE netlist.
+
+    Node names are deliberately dropped. A testbench wires the DUT's ports to
+    its own fixture nets (`out` -> `fb`, `fb` -> `fbx` for an ammeter, …), so
+    comparing nodes would flag every co-simulation as a mismatch. What must not
+    drift is the *device* set and its sizing — which is exactly what a resize
+    like #134's `R1` retune changes.
+    """
+    devices: dict[str, tuple[str, dict[str, str]]] = {}
+    for raw in text.splitlines():
+        line = " ".join(raw.split())
+        if not line or line.startswith(("*", ".", "+", "$")):
+            continue
+        if not INSTANCE_RE.match(line):
+            continue
+        tokens = _spice_tokens(line)
+        params = {}
+        positional = []
+        for token in tokens[1:]:
+            key, sep, value = token.partition("=")
+            if sep:
+                params[key.lower()] = value
+            else:
+                positional.append(token)
+        model = positional[-1] if positional else ""
+        devices[tokens[0]] = (model, params)
+    return devices
+
+
+def dut_signature(
+    dut: dict[str, tuple[str, dict[str, str]]],
+    observed: dict[str, tuple[str, dict[str, str]]] | None = None,
+) -> str:
+    """Render the DUT's device signature, optionally as seen in a snapshot.
+
+    Both sides range over exactly the DUT's own instances and parameter keys, so
+    a netlist that legitimately *adds* parameters (a PEX netlist carries
+    `as`/`ad`/`ps`/`pd` the schematic does not) still compares equal, while any
+    changed value, changed model, or dropped device does not.
+    """
+    lines = []
+    for instance in sorted(dut):
+        model, params = dut[instance]
+        if observed is None:
+            seen_model, seen_params = model, params
+        elif instance in observed:
+            seen_model, seen_params = observed[instance]
+        else:
+            lines.append(f"{instance} <absent>")
+            continue
+        rendered = " ".join(f"{key}={seen_params.get(key, '<absent>')}" for key in sorted(params))
+        lines.append(f"{instance} {seen_model} {rendered}".rstrip())
+    return "\n".join(lines)
+
+
+def sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _signature_diff(expected: str, observed: str) -> str:
+    """One-line summary of the first few instances that differ."""
+    def as_map(signature: str) -> dict[str, str]:
+        mapping = {}
+        for line in signature.splitlines():
+            if not line:
+                continue
+            instance, _, rest = line.partition(" ")
+            mapping[instance] = rest
+        return mapping
+
+    want, got = as_map(expected), as_map(observed)
+    differing = [f"{k}: netlist has {want[k]!r}, snapshot has {got.get(k, '<absent>')!r}"
+                 for k in sorted(want) if want[k] != got.get(k)]
+    head = "; ".join(differing[:3])
+    return head + (f" (+{len(differing) - 3} more)" if len(differing) > 3 else "")
+
+
+def check_sim_freshness(root: Path, report: Report) -> None:
+    """Assert each experiment's newest record was run against today's DUT.
+
+    The `layout/` reports anchor freshness on a recorded sha256 of their input.
+    A `sim/` record has no such field — but it ships something stronger: the
+    per-point netlist snapshots it actually simulated. So freshness is checked
+    structurally, by comparing the DUT devices frozen into those snapshots
+    against the committed `design/` netlist the record names as its provenance.
+
+    Scope, stated rather than assumed (the ladder's coverage-honesty bar):
+
+    - Only the **newest** record per experiment is required to be fresh. Older
+      records are superseded history; `sim/` evidence is append-only, so they
+      are kept, not regenerated.
+    - Only **schematic** DUTs (`design/**.spice`) are compared. A record whose
+      DUT is a layout-extracted netlist is covered by `layout/`'s own hash
+      checks on that netlist, not here.
+    - Device **nodes** are not compared, only models and parameters — a
+      testbench legitimately rewires the DUT's ports.
+    """
+    sim = root / "sim"
+    if not sim.is_dir():
+        return
+
+    waivers = load_waivers(root, report, SIM_WAIVER_FILE)
+    used_waivers: set[tuple[str, str]] = set()
+    uncovered: list[str] = []
+
+    experiments = sorted(p for p in sim.iterdir() if p.is_dir() and (p / RECORDS_DIR).is_dir())
+    for experiment in experiments:
+        records = sorted((experiment / RECORDS_DIR).glob("*.md"))
+        if not records:
+            continue
+        record = records[-1]
+        record_rel = str(record.relative_to(root))
+        snapshots = sorted((experiment / SNAPSHOT_DIR / record.stem).glob("*.spice"))
+        if not snapshots:
+            # Already failed by check_record(); nothing to compare against.
+            continue
+
+        text = record.read_text(encoding="utf-8")
+        dut_rels = sorted({m.group(0) for m in DUT_PATH_RE.finditer(text)})
+        dut_rels = [d for d in dut_rels if (root / d).is_file()]
+        if not dut_rels:
+            uncovered.append(f"{record_rel} (names no committed design/ netlist)")
+            continue
+
+        parsed_snapshots = {s.name: spice_instances(s.read_text(encoding="utf-8"))
+                            for s in snapshots}
+
+        for dut_rel in dut_rels:
+            report.checked += 1
+            dut = spice_instances((root / dut_rel).read_text(encoding="utf-8"))
+            if not dut:
+                report.fail(f"{record_rel} [{dut_rel}]",
+                            "the named DUT netlist holds no device instances to compare")
+                continue
+
+            expected = dut_signature(dut)
+            observed: dict[str, list[str]] = {}
+            for name, devices in parsed_snapshots.items():
+                observed.setdefault(dut_signature(dut, devices), []).append(name)
+
+            if len(observed) > 1:
+                report.fail(
+                    f"{record_rel} [{dut_rel}]",
+                    "this record's per-point netlist snapshots disagree on the DUT's own "
+                    "devices — one record cannot have simulated two different designs "
+                    f"({len(observed)} distinct device signatures across {len(snapshots)} points)",
+                )
+                continue
+
+            observed_sig = next(iter(observed))
+            if all(line.endswith("<absent>") for line in observed_sig.splitlines()):
+                uncovered.append(
+                    f"{record_rel} [{dut_rel}] (snapshots inline none of its instances)")
+                continue
+
+            compare_recorded(
+                report, record_rel, dut_rel,
+                sha256_text(observed_sig), sha256_text(expected),
+                f"its netlist snapshots simulated {_signature_diff(expected, observed_sig)}",
+                waivers, used_waivers, SIM_WAIVER_FILE,
             )
+
+    report_unused_waivers(report, waivers, used_waivers, SIM_WAIVER_FILE)
+    for entry in uncovered:
+        report.note(f"DUT freshness not checked: {entry}")
 
 
 # --- append-only -------------------------------------------------------------
@@ -679,6 +941,7 @@ def main(argv: list[str] | None = None) -> int:
     report = Report()
 
     check_sim(root, report)
+    check_sim_freshness(root, report)
     check_layout(root, report)
     if not args.skip_append_only:
         check_append_only(root, args.base_ref, args.require_append_only, report)

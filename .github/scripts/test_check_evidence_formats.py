@@ -47,6 +47,31 @@ typ,27,3.30,{status_a},1.240000e+00
 wcs,125,3.63,{status_b},1.235000e+00
 """
 
+#: The committed schematic DUT the record above names as its own provenance.
+DUT_NETLIST = """* synthetic DUT
+.subckt synthetic vdd vss out
+XM1 out bias vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR1 out cb sub! rppd w=2u l=511u m=1 b=0
+.ends
+.end
+"""
+
+#: A per-point netlist snapshot carrying that DUT. Deliberately unlike the DUT
+#: file in two ways the freshness check must tolerate: the DUT's ports are
+#: rewired to the fixture's own nets, and the PMOS carries extra geometry
+#: parameters (as a PEX-sourced device would). Neither is a design change.
+SNAPSHOT = """* per-point netlist snapshot
+XM1 outx biasx vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p
+XR1 outx cbx sub! rppd w=2u l=511u m=1 b=0
+Vsupply vdd 0 3.3
+.tran 1n 1u
+.end
+"""
+
+SIM_WAIVER_FILE = "sim/evidence-freshness-waivers.json"
+SIM_RECORD_REL = f"sim/synthetic-experiment/records/{RECORD_ID}.md"
+SIM_DUT_REL = "design/netlist/synthetic.spice"
+
 
 def sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
@@ -75,8 +100,12 @@ def build_fixture(root: Path) -> None:
     (experiment / "records" / f"{RECORD_ID}.csv").write_text(
         RECORD_CSV.format(status_a="PASS", status_b="PASS"), encoding="utf-8"
     )
+    dut = root / "design" / "netlist"
+    dut.mkdir(parents=True)
+    (dut / "synthetic.spice").write_text(DUT_NETLIST, encoding="utf-8")
+
     for kind, suffix, body in (
-        ("netlist-snapshots", ".spice", "* netlist\n"),
+        ("netlist-snapshots", ".spice", SNAPSHOT),
         ("corners", ".log", "ngspice output\n"),
     ):
         directory = experiment / kind / RECORD_ID
@@ -423,6 +452,90 @@ def case_valid_waiver_passes(root: Path):
     return None
 
 
+def _resize_dut(root: Path) -> None:
+    """Retune the committed DUT the way #134 retuned R1, leaving the record behind."""
+    dut = root / SIM_DUT_REL
+    dut.write_text(dut.read_text(encoding="utf-8").replace("l=511u", "l=694.5u"),
+                   encoding="utf-8")
+
+
+def _write_sim_waiver(root: Path, **overrides) -> None:
+    entry = {
+        "report": SIM_RECORD_REL,
+        "check": SIM_DUT_REL,
+        "recorded_hash": "sha256:" + sim_signature_digest(root),
+        "issue": "#141",
+        "reason": "tracked re-run",
+    }
+    entry.update(overrides)
+    (root / SIM_WAIVER_FILE).write_text(json.dumps({"waivers": [entry]}), encoding="utf-8")
+
+
+def sim_signature_digest(root: Path) -> str:
+    """The digest the checker will report for the fixture's snapshot signature.
+
+    Imported from the checker rather than recomputed here on purpose: a waiver
+    entry has to carry the exact digest the checker derives, and duplicating the
+    signature grammar in the test would let the two drift apart silently.
+    """
+    sys.path.insert(0, str(CHECKER.parent))
+    import check_evidence_formats as checker  # noqa: PLC0415
+
+    dut = checker.spice_instances((root / SIM_DUT_REL).read_text(encoding="utf-8"))
+    snapshot = checker.spice_instances(
+        (root / "sim/synthetic-experiment/netlist-snapshots" / RECORD_ID
+         / f"{CORNERS[0]}.spice").read_text(encoding="utf-8")
+    )
+    return checker.sha256_text(checker.dut_signature(dut, snapshot))
+
+
+def case_stale_dut_resize(root: Path):
+    """The record's snapshots must still match the committed DUT's sizing."""
+    _resize_dut(root)
+    return f"{SIM_RECORD_REL} [{SIM_DUT_REL}]"
+
+
+def case_dut_device_dropped(root: Path):
+    """A DUT device missing from the snapshots is a design change, not rewiring."""
+    snapshots = root / "sim/synthetic-experiment/netlist-snapshots" / RECORD_ID
+    for corner in CORNERS:
+        path = snapshots / f"{corner}.spice"
+        path.write_text(
+            "\n".join(line for line in path.read_text(encoding="utf-8").splitlines()
+                      if not line.startswith("XR1")) + "\n",
+            encoding="utf-8",
+        )
+    return "STALE"
+
+
+def case_snapshots_disagree_on_dut(root: Path):
+    """One record cannot have simulated two different designs."""
+    path = (root / "sim/synthetic-experiment/netlist-snapshots" / RECORD_ID
+            / f"{CORNERS[1]}.spice")
+    path.write_text(path.read_text(encoding="utf-8").replace("l=511u", "l=694.5u"),
+                    encoding="utf-8")
+    return "snapshots disagree on the DUT's own devices"
+
+
+def case_sim_waiver_without_issue(root: Path):
+    _resize_dut(root)
+    _write_sim_waiver(root, issue="")
+    return "missing required key(s): issue"
+
+
+def case_obsolete_sim_waiver_self_expires(root: Path):
+    """A waiver left behind after the record went fresh again is a failure."""
+    _write_sim_waiver(root)
+    return "waiver is obsolete"
+
+
+def case_valid_sim_waiver_passes(root: Path):
+    """The whole point of the sim waiver: a loud note, exit 0."""
+    _write_sim_waiver(root)
+    _resize_dut(root)
+    return None
+
+
 CASES = [
     ("undamaged fixture passes", case_valid),
     ("Result headline overclaims point count", case_result_overclaims_total),
@@ -456,6 +569,12 @@ CASES = [
     ("obsolete waiver self-expires", case_obsolete_waiver_self_expires),
     ("waiver that guards nothing is rejected", case_waiver_guards_nothing),
     ("valid waiver downgrades a stale report to a note", case_valid_waiver_passes),
+    ("record is stale after the committed DUT is resized", case_stale_dut_resize),
+    ("a DUT device vanishes from the netlist snapshots", case_dut_device_dropped),
+    ("per-point snapshots disagree on the DUT", case_snapshots_disagree_on_dut),
+    ("sim waiver without a tracking issue is rejected", case_sim_waiver_without_issue),
+    ("obsolete sim waiver self-expires", case_obsolete_sim_waiver_self_expires),
+    ("valid sim waiver downgrades a stale record to a note", case_valid_sim_waiver_passes),
 ]
 
 

@@ -1,0 +1,82 @@
+{
+  "_comment": "Known-stale sim/ evidence, waived explicitly rather than silently. .github/scripts/check_evidence_formats.py compares each experiment's NEWEST record's committed per-point netlist snapshots against the design/ netlist that record names as its own provenance; a record produced against a superseded DUT is stale evidence, and stale evidence fails ('staleness is failure', klayout-tools docs/design-evidence-tiers.md). An entry here downgrades exactly one such failure to a loud note: it names the exact record, the exact DUT netlist, and the exact stale device signature digest. It SELF-EXPIRES two ways -- if the record is re-run the digest no longer matches, and if a NEWER record is appended to the experiment this entry stops matching any check the checker runs. Either way CI fails until the entry is deleted. Every entry must name a tracking issue; waiving without one is a schema error, not a judgement call. This is the sim/ counterpart of layout/evidence-freshness-waivers.json.",
+  "waivers": [
+    {
+      "report": "sim/closed-loop-iq/records/20260826-152134-9b7a6de.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:bd35f8a15d19b73a826867089cee2329e37b5caab35cafcce6e0969ef76d03a6",
+      "issue": "#141",
+      "reason": "#134/PR #136 retuned bandgap_core's R1 (rppd l=694.5u -> l=511u, commit 8bb15bc); this experiment has not been re-run since. Tracked for a fresh PVT sweep."
+    },
+    {
+      "report": "sim/closed-loop-offset/records/20260826-114923-874c585.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:bd35f8a15d19b73a826867089cee2329e37b5caab35cafcce6e0969ef76d03a6",
+      "issue": "#141",
+      "reason": "#134/PR #136 retuned bandgap_core's R1 (rppd l=694.5u -> l=511u, commit 8bb15bc); this experiment has not been re-run since. Tracked for a fresh PVT sweep."
+    },
+    {
+      "report": "sim/closed-loop-psrr/records/20260826-114500-874c585.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:bd35f8a15d19b73a826867089cee2329e37b5caab35cafcce6e0969ef76d03a6",
+      "issue": "#141",
+      "reason": "#134/PR #136 retuned bandgap_core's R1 (rppd l=694.5u -> l=511u, commit 8bb15bc); this experiment has not been re-run since. Tracked for a fresh PVT sweep."
+    },
+    {
+      "report": "sim/closed-loop-startup/records/20260825-145208-403a24f.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:bd35f8a15d19b73a826867089cee2329e37b5caab35cafcce6e0969ef76d03a6",
+      "issue": "#141",
+      "reason": "#134/PR #136 retuned bandgap_core's R1 (rppd l=694.5u -> l=511u, commit 8bb15bc); this experiment has not been re-run since. Tracked for a fresh PVT sweep."
+    },
+    {
+      "report": "sim/core-open-loop-bias-pex/records/20260825-145023-2ff6265.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:bd35f8a15d19b73a826867089cee2329e37b5caab35cafcce6e0969ef76d03a6",
+      "issue": "#141",
+      "reason": "#134/PR #136 retuned bandgap_core's R1 (rppd l=694.5u -> l=511u, commit 8bb15bc); this experiment has not been re-run since. Tracked for a fresh PVT sweep."
+    },
+    {
+      "report": "sim/core-open-loop-bias/records/20260821-132250-1926fa9.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:bd35f8a15d19b73a826867089cee2329e37b5caab35cafcce6e0969ef76d03a6",
+      "issue": "#141",
+      "reason": "#134/PR #136 retuned bandgap_core's R1 (rppd l=694.5u -> l=511u, commit 8bb15bc); this experiment has not been re-run since. Tracked for a fresh PVT sweep."
+    },
+    {
+      "report": "sim/loop-gain-phase-margin/records/20260826-103412-014570b.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:bd35f8a15d19b73a826867089cee2329e37b5caab35cafcce6e0969ef76d03a6",
+      "issue": "#141",
+      "reason": "#134/PR #136 retuned bandgap_core's R1 (rppd l=694.5u -> l=511u, commit 8bb15bc); this experiment has not been re-run since. Tracked for a fresh PVT sweep."
+    },
+    {
+      "report": "sim/sg13cmos5l-closed-loop-startup-pex/records/20260826-082317-0485f7e.md",
+      "check": "design/sg13cmos5l/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:635c2225cb69e335c65280a8d9d10aecfbb3d34f1ae8d367e251c218939d2bc2",
+      "issue": "#142",
+      "reason": "DR-0005's own re-run record carries the pre-DR-0005 XQ2 (a={ 8u * 2u } m=1) in its netlist snapshots while the committed netlist has m=8 unit devices -- under investigation, out of scope for the SG13G2 T1 tracker."
+    },
+    {
+      "report": "sim/sg13cmos5l-closed-loop-startup/records/20260826-003738-b8ec543.md",
+      "check": "design/sg13cmos5l/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:635c2225cb69e335c65280a8d9d10aecfbb3d34f1ae8d367e251c218939d2bc2",
+      "issue": "#142",
+      "reason": "DR-0005's own re-run record carries the pre-DR-0005 XQ2 (a={ 8u * 2u } m=1) in its netlist snapshots while the committed netlist has m=8 unit devices -- under investigation, out of scope for the SG13G2 T1 tracker."
+    },
+    {
+      "report": "sim/sg13cmos5l-core-open-loop-bias/records/20260826-003704-b8ec543.md",
+      "check": "design/sg13cmos5l/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:635c2225cb69e335c65280a8d9d10aecfbb3d34f1ae8d367e251c218939d2bc2",
+      "issue": "#142",
+      "reason": "DR-0005's own re-run record carries the pre-DR-0005 XQ2 (a={ 8u * 2u } m=1) in its netlist snapshots while the committed netlist has m=8 unit devices -- under investigation, out of scope for the SG13G2 T1 tracker."
+    },
+    {
+      "report": "sim/startup-core-handover/records/20260821-144329-60f50a7.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:bd35f8a15d19b73a826867089cee2329e37b5caab35cafcce6e0969ef76d03a6",
+      "issue": "#141",
+      "reason": "#134/PR #136 retuned bandgap_core's R1 (rppd l=694.5u -> l=511u, commit 8bb15bc); this experiment has not been re-run since. Tracked for a fresh PVT sweep."
+    }
+  ]
+}
