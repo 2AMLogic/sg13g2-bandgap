@@ -128,7 +128,7 @@ re-extraction and PEX PVT re-run land.
 The `sim/` DUT-freshness check (added later, for #4's item 5/7/9 evidence)
 did the same on its first run, finding two defects that had been invisible:
 
-- Seven SG13G2 experiments' newest records were produced against the
+- Eight SG13G2 experiments' newest records were produced against the
   `l=694.5u` `R1` that #134/PR #136 retuned to `l=511u` — a resize that moves
   `vref` ~12.8% at the nominal corner (#139/PR #140). Filed as **#141**.
 - The SG13CMOS5L DR-0005 commit states it re-ran two PVT sweeps against the
