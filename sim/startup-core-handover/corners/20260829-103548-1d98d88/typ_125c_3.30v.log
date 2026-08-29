@@ -1,0 +1,58 @@
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core + bandgap_startup co-simulated hand-over
+
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+fb                                   -0.494376
+sns1                                         0
+xq1.s1                                       0
+xq1.t                                        0
+sns2                                         0
+cb2                                          0
+xr2.dt                                       0
+xq2.s1                                       0
+xq2.t                                        0
+vref                                         0
+cb3                                          0
+xr1.dt                                       0
+xq3.s1                                       0
+xq3.t                                        0
+det                                          0
+xrpu.dt                                      0
+fbx                                  -0.494376
+vmkfb#branch                      -4.52446e-06
+vsub#branch                                  0
+vvss#branch                        4.75537e-07
+vvdd#branch                       -4.75537e-07
+
+ Reference value :  1.67732e-04 Reference value :  4.13000e-04 Reference value :  6.89000e-04 Reference value :  1.36700e-03 Reference value :  1.97300e-03
+No. of Data Rows : 1012
+v_det_early         =  2.74050e-01
+v_fb_early          =  -2.82870e-01
+v_det_v             =  3.09149e-02
+v_fb_v              =  2.59237e+00
+v_sns1_v            =  5.80311e-01
+v_vref_v            =  9.22755e-01
+i_mkfb_v            =  5.75729e-11
+Note: Simulation executed from .control section 

@@ -1,0 +1,135 @@
+* sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+* closed-loop AC power-supply-rejection (PSRR) testbench (issue #88,
+* follow-on to #86/#58). Generated from
+* sim/closed-loop-psrr/testbench/tb_closed_loop_psrr.spice.tmpl
+* by sim/closed-loop-psrr/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full methodology rationale is in
+* sim/closed-loop-psrr/README.md.
+*
+* Generated for: corner=wcs temp=-40C vdd=2.97V
+* DUT git sha (design/netlist/bandgap_core.spice,
+* design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice
+* this was copied from):
+*   core=8bb15bc amp=397fe2d startup=66ac99d seeds=20260829-102626-1d98d88.csv@
+* PDK: ihp-sg13g2 /home/ubuntu/share/pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* ------------------------------------------------------- injection method
+* Unlike sim/loop-gain-phase-margin/, this testbench does NOT break the
+* "fb" node -- the loop stays fully closed, exactly as
+* sim/closed-loop-startup/ and sim/closed-loop-vref-pvt/ wire it (single
+* shared fb node). PSRR is a closed-loop property by definition (how well
+* the ALREADY-CLOSED loop rejects a supply perturbation at its output), so
+* there is no loop-break analogous to the Middlebrook probe
+* loop-gain-phase-margin needs to measure gain/phase around the loop.
+* Instead, a small-signal AC perturbation is injected directly in series
+* with Vvdd (Vvdd's own "ac 1 0" term below) -- the supply IS the
+* stimulus -- while Vvss (the analog ground reference every node in this
+* circuit, including vref, is ultimately measured against) stays fixed at
+* its own separate DC source, unperturbed. This mirrors the textbook PSRR
+* setup: perturb the rail being characterized, hold the reference rail
+* still, read the resulting ripple at the node under test (vref).
+*
+* PSRR (this testbench's own sign/units convention, derived not assumed,
+* see README "Sign convention"): with Vvdd's AC magnitude = 1 V (0 dB),
+* PSRR(f) = 20*log10(|v(vdd,ac)| / |v(vref,ac)|) = -dB(v(vref)) directly
+* (ngspice's db() is already 20*log10(|.|), and the 1 V AC stimulus is
+* itself 0 dB) -- a LARGER PSRR_dB means BETTER rejection (less of the
+* injected supply ripple reaches vref), the conventional PSRR sense.
+*
+* ------------------------------------------------------- DC bias: nodeset
+* Same numerical situation sim/loop-gain-phase-margin/ documents in full:
+* this circuit has (at least) two DC equilibria, and a bare `.op` with no
+* transient bring-up and no bias hint has no guaranteed way to land in the
+* intended closed-loop basin. Unlike that experiment, this testbench does
+* NOT need to invent its own bring-up workaround -- the loop here is NOT
+* broken (single "fb" node, exactly sim/closed-loop-startup/'s own
+* topology), so nothing here disrupts fb's own fast dynamics the way
+* splitting fb into fb_src/fb_load did there. The same fix is used anyway,
+* for the same reason: seed a `.nodeset` at fb/sns1/sns2/vref from
+* sim/closed-loop-startup's own most recent committed per-corner converged
+* transient endpoint (read from that experiment's own record CSV by
+* run_pvt_sweep.sh -- see README "Nodeset provenance"), which is (very
+* nearly) the true closed-loop answer for this exact corner, so `.op`'s
+* Newton-Raphson converges directly to it rather than searching from a
+* default guess that might land in the degenerate all-off equilibrium
+* design/bandgap_startup.sch exists to avoid.
+.nodeset v(fb)=2.08649e+00 v(sns1)=7.89226e-01 v(sns2)=7.89070e-01 v(vref)=1.04881e+00
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_wcs
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_ss
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_wcs
+
+.options temp=-40 tnom=27
+
+* FIXTURE -- vdd carries BOTH the fixed DC operating point (matching the
+* .nodeset seed above) AND the 1V/0deg small-signal AC stimulus this
+* testbench measures rejection of. Vvss is a separate, unperturbed 0V
+* source -- the ground reference vref is measured against -- so the AC
+* stimulus genuinely represents supply ripple relative to a quiet ground,
+* not a common shift of the whole circuit's reference.
+Vvdd vdd 0 dc 2.97 ac 1 0
+Vvss vss 0 dc 0
+Vsub sub! vss dc 0
+
+* DUT -- design/netlist/bandgap_core.spice, verbatim (loop NOT broken).
+XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XR1 vref cb3 sub! rppd w=2u l=511u m=1 b=0
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+* DUT -- design/netlist/bandgap_amp.spice, verbatim. in_p <- sns2
+* (non-inverting), in_n <- sns1 (inverting), out -> fb -- same polarity
+* design/bandgap_amp.sch's own header derives and
+* sim/closed-loop-vref-pvt/ and sim/closed-loop-startup/ both use.
+XMTAIL tail fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP2 d2 sns1 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP4 fb pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN3 fb d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+
+* DUT -- design/netlist/bandgap_startup.spice, verbatim. `sns1` and `fb`
+* are shared with the core and amp DUTs above -- the nodes the assembled
+* block actually connects. No separate stimulus source drives either one.
+*
+* FIXTURE -- Vmkfb is a 0V ammeter in series with XMKFB's drain (same
+* fixture every closed-loop experiment in this tree uses), so the startup
+* circuit's own contribution to the shared fb node can be measured
+* directly if needed. A 0V source is a DC/AC short and does not move the
+* operating point or inject anything of its own.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+.control
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+op
+* Sanity check (mirrors sim/loop-gain-phase-margin's "op landed near its
+* seed" -- see README): if .op strayed into the wrong equilibrium, fb here
+* will read far from 2.08649e+00. ngspice has no ".meas op" analysis type;
+* "print" is this tree's standard way to pull a DC operating-point value
+* out of a .control block, parsed by run_pvt_sweep.sh from this exact
+* "v(node) = value" line shape.
+print v(fb)
+print v(sns1)
+print v(sns2)
+print v(vref)
+ac dec 30 1 1e9
+let psrr_db = -db(v(vref))
+let vref_phase_deg = cph(v(vref))*180/PI
+wrdata /home/ubuntu/GitHub/sg13g2-bandgap/.loom/worktrees/issue-141/sim/closed-loop-psrr/corners/20260829-102837-1d98d88/wcs_-40c_2.97v.ac.txt psrr_db vref_phase_deg
+.endc
+.end
