@@ -1,0 +1,88 @@
+* sg13g2-bandgap -- SG13CMOS5L bandgap_core open-loop PVT testbench (issue #65)
+* Generated from
+* sim/sg13cmos5l-core-open-loop-bias/testbench/tb_sg13cmos5l_core_open_loop_bias.spice.tmpl
+* by sim/sg13cmos5l-core-open-loop-bias/run_pvt_sweep.sh -- do not edit a
+* generated netlist-snapshots/*.spice file directly, edit this template and
+* re-run the sweep. Full rationale for every choice below is in
+* sim/sg13cmos5l-core-open-loop-bias/README.md; this header is a short
+* pointer, not a restatement.
+*
+* Generated for: corner=typ temp=125C vdd=3.63V
+* DUT git sha (design/sg13cmos5l/netlist/bandgap_core.spice this was
+* copied from):
+*   a6dcd36
+* PDK: ihp-sg13cmos5l /Users/rwalters/share/pdk (see sim/pdk-sg13cmos5l.json for the pinned
+*   revision)
+* OSDI models: /Users/rwalters/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi (this PDK ships these prebuilt -- see
+*   sim/pdk-sg13cmos5l.json "osdi_toolchain"; no build-osdi.sh compile step
+*   needed for this PDK as of that pin)
+*
+* Every device below is the PDK's own real compact model: the three
+* sg13_hv_pmos mirror legs (PSP103.6, via psp103.osdi) and both rppd
+* resistors (r3_cmc, via r3_cmc.osdi) are instantiated exactly as
+* design/sg13cmos5l/netlist/bandgap_core.spice draws them -- same instance
+* names, same node names, same W/L/a/p -- next to the three real pnpMPA
+* devices (grounded-collector, diode-connected: base+collector tied to
+* vss, emitter driven by the mirror -- see design/sg13cmos5l/README.md and
+* spec/decision-records/0004-cmos5l-bipolar-device-selection.md for the
+* topology rationale, the reverse of SG13G2's own grounded-EMITTER
+* npn13G2 core). The only additions to the DUT netlist are the four
+* measurement/bias elements below (FIXTURE 1/2), each a testbench
+* fixture, not a device substitution -- same pattern
+* sim/core-open-loop-bias uses for SG13G2's own npn13G2-based core.
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/models/cornerPNP.lib" typ
+.lib "/Users/rwalters/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/models/cornerMOShv.lib" mos_tt
+.lib "/Users/rwalters/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/models/cornerRES.lib" res_typ
+
+.options temp=125 tnom=27
+
+Vvdd vdd 0 dc 3.63
+Vvss vss 0 dc 0
+* bandgap_core.spice wires both rppd bulk terminals to the global
+* substrate net `sub!`; tied to vss through a 0 V source here, the same
+* convention every testbench in this tree uses
+* (sim/core-open-loop-bias/README.md).
+Vsub sub! vss dc 0
+
+* FIXTURE 1 -- open-loop mirror bias. design/sg13cmos5l/bandgap_amp.sch and
+* bandgap_top.sch now exist (issue #68) -- unlike SG13G2's own
+* core-open-loop-bias precedent (written before design/bandgap_amp.sch
+* existed), a real amplifier IS available for this core. This experiment
+* deliberately still isolates the core's own PTAT/CTAT generation from
+* amplifier loop dynamics by biasing the mirror open-loop from a
+* diode-connected replica leg carrying 5 uA -- the same fixture pattern and
+* current sim/core-open-loop-bias/testbench uses for the SG13G2 core.
+* sim/sg13cmos5l-closed-loop-startup is the companion experiment that
+* removes this fixture entirely and lets the real amplifier close the loop.
+XM0 fb fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Ibias fb vss dc 5u
+
+* DUT mirror legs, geometry verbatim from
+* design/sg13cmos5l/netlist/bandgap_core.spice.
+* FIXTURE 2 -- each leg's drain reaches its DUT node through a 0 V source,
+* used purely as an ammeter; a 0 V source is a short at DC and does not
+* move the operating point.
+XM1 m1d fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Vm1 m1d sns1 dc 0
+XM2 m2d fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Vm2 m2d sns2 dc 0
+XM3 m3d fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Vm3 m3d vref dc 0
+
+XQ1 vss vss sns1 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
+XR2 sns2 e2 sub! rppd w=2u l=85.1u m=1 b=0
+XQ2 vss vss e2 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=8
+XR1 vref e3 sub! rppd w=2u l=647.0u m=1 b=0
+XQ3 vss vss e3 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
+
+.op
+.control
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/r3_cmc.osdi
+run
+print v(vref) v(fb) v(sns1) v(sns2) v(e2) v(e3) i(vm1) i(vm2) i(vm3)
+.endc
+.end
