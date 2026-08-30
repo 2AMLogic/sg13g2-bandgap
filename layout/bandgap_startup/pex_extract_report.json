@@ -5,7 +5,7 @@
   "top": "bandgap_startup",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_startup.pex.spice",
-  "netlist_sha256": "bacc47bdfce030f3e4024917289338bfefdaa3702f5d25fdef1e4db4eb66a590",
+  "netlist_sha256": "f780220f4aaa0fabfef7397a124a6dc6c5ffc04c482a7b9ce7437a8840203a8c",
   "status": "extracted",
   "device_count": 3,
   "net_count": 5,
@@ -65,10 +65,10 @@
       "name": "$1",
       "class": "nfet",
       "nets": {
-        "s": "vss",
-        "g": "sns1",
-        "d": "det",
-        "b": "vss"
+        "s": "VSS",
+        "g": "SNS1",
+        "d": "DET",
+        "b": "VSS"
       },
       "params": {
         "l_um": 0.5,
@@ -83,10 +83,10 @@
       "name": "$2",
       "class": "nfet",
       "nets": {
-        "s": "vss",
-        "g": "det",
-        "d": "fb",
-        "b": "vss"
+        "s": "VSS",
+        "g": "DET",
+        "d": "FB",
+        "b": "VSS"
       },
       "params": {
         "l_um": 0.5,
@@ -102,8 +102,8 @@
       "class": "rhigh",
       "nets": {
         "a": "\\$5",
-        "b": "det",
-        "w": "vss"
+        "b": "DET",
+        "w": "VSS"
       },
       "params": {
         "r_ohm": 1919368.0,
@@ -116,29 +116,29 @@
   ],
   "nets": [
     {
-      "name": "\\$5",
-      "pin": false,
-      "device_count": 1
-    },
-    {
-      "name": "det",
+      "name": "DET",
       "pin": true,
       "device_count": 3
     },
     {
-      "name": "fb",
+      "name": "FB",
       "pin": true,
       "device_count": 1
     },
     {
-      "name": "sns1",
+      "name": "SNS1",
       "pin": true,
       "device_count": 1
     },
     {
-      "name": "vss",
+      "name": "VSS",
       "pin": true,
       "device_count": 5
+    },
+    {
+      "name": "\\$5",
+      "pin": false,
+      "device_count": 1
     }
   ],
   "warnings": [
@@ -172,7 +172,7 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:3f9194417c0f87c1075d8a97bb6f31abf4332cfb5e687847ca6c1d5e822485ba"
+      "content_hash": "sha256:274e83ccceaeccd23a7c8c140d40ae6b30212e8341f798190e58c96cb62e525d"
     }
   },
   "parasitics": {
@@ -205,30 +205,30 @@
         "coupled": []
       },
       {
-        "net": "det",
+        "net": "DET",
         "net_id": 2,
         "resistance_ohm": 533.6163,
         "capacitance_ff": 130.736768,
         "inductance_nh": 0.0,
-        "hub_net": "det",
+        "hub_net": "DET",
         "rc_model": "lumped",
         "terminals": [
           {
             "device": "$3",
             "terminal": "B",
-            "leg_net": "det__t0",
+            "leg_net": "DET__t0",
             "resistance_ohm": 266.808
           },
           {
             "device": "$1",
             "terminal": "D",
-            "leg_net": "det__t1",
+            "leg_net": "DET__t1",
             "resistance_ohm": 139.1524
           },
           {
             "device": "$2",
             "terminal": "G",
-            "leg_net": "det__t2",
+            "leg_net": "DET__t2",
             "resistance_ohm": 127.6558
           }
         ],
@@ -236,18 +236,18 @@
         "coupled": []
       },
       {
-        "net": "fb",
+        "net": "FB",
         "net_id": 3,
         "resistance_ohm": 0.6286,
         "capacitance_ff": 0.21056,
         "inductance_nh": 0.0,
-        "hub_net": "fb",
+        "hub_net": "FB",
         "rc_model": "lumped",
         "terminals": [
           {
             "device": "$2",
             "terminal": "D",
-            "leg_net": "fb__t0",
+            "leg_net": "FB__t0",
             "resistance_ohm": 0.6286
           }
         ],
@@ -255,42 +255,42 @@
         "coupled": []
       },
       {
-        "net": "vss",
+        "net": "VSS",
         "net_id": 8,
         "resistance_ohm": 11.5088,
         "capacitance_ff": 2.470295,
         "inductance_nh": 0.0,
-        "hub_net": "vss",
+        "hub_net": "VSS",
         "rc_model": "lumped",
         "terminals": [
           {
             "device": "$1",
             "terminal": "S",
-            "leg_net": "vss__t0",
+            "leg_net": "VSS__t0",
             "resistance_ohm": 1.5419
           },
           {
             "device": "$2",
             "terminal": "S",
-            "leg_net": "vss__t1",
+            "leg_net": "VSS__t1",
             "resistance_ohm": 1.3353
           },
           {
             "device": "$3",
             "terminal": "W",
-            "leg_net": "vss__t2",
+            "leg_net": "VSS__t2",
             "resistance_ohm": 5.7544
           },
           {
             "device": "$1",
             "terminal": "B",
-            "leg_net": "vss__t3",
+            "leg_net": "VSS__t3",
             "resistance_ohm": 1.5419
           },
           {
             "device": "$2",
             "terminal": "B",
-            "leg_net": "vss__t4",
+            "leg_net": "VSS__t4",
             "resistance_ohm": 1.3353
           }
         ],

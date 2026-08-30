@@ -1,21 +1,4 @@
 {
   "_comment": "Known-stale evidence, waived explicitly rather than silently. .github/scripts/check_evidence_formats.py fails on any report whose recorded input hash no longer matches the committed input ('staleness is failure', klayout-tools docs/design-evidence-tiers.md). An entry here downgrades one such failure to a loud note -- and only that one: the waiver names the exact report, the exact check, and the exact stale hash. It SELF-EXPIRES: once the evidence is regenerated, the recorded_hash below no longer matches and the checker fails until the entry is deleted. Every entry must name a tracking issue. Waiving without one is a schema error, not a judgement call.",
-  "waivers": [
-    {
-      "report": "layout/bandgap_core/pex_extract_report.json",
-      "check": "input gds",
-      "recorded_hash": "sha256:78491a97117e8fb707b793c4194b7da8b883636a26dfa3c78225e56740c29f78",
-      "issue": "#159",
-      "reason": "Issue #157's net-label case fix (Builder.label() upper-cases text on the deck's real net-naming layers, matching NetlistSpiceReader's own convention) changes bandgap_core.gds's content hash even though no geometry moves -- reopening the same PEX-staleness gap issue #56 already fixed once. Re-extracting both cells before deciding to waive (rather than commit) confirmed the electrical content is unchanged: only net-name case differs in the re-extracted .pex.spice, no R/C device parameter moved. Re-extraction plus a re-run of sim/core-open-loop-bias-pex needs klt + PDK + ngspice + OSDI models, which CI deliberately does not have -- out of #157's own 'routine' scope, tracked at #159.",
-      "since": "2026-08-30"
-    },
-    {
-      "report": "layout/bandgap_startup/pex_extract_report.json",
-      "check": "input gds",
-      "recorded_hash": "sha256:3f9194417c0f87c1075d8a97bb6f31abf4332cfb5e687847ca6c1d5e822485ba",
-      "issue": "#159",
-      "reason": "Same cause as bandgap_core above: issue #157's net-label case fix changes bandgap_startup.gds's content hash with no geometry change. Blocks nothing else -- this cell's DRC and LVS reports are fresh against the current GDS (regenerated for #157). Clearing it means re-extracting and re-running sim/startup-trip-point-pex, minting new append-only records; tracked at #159.",
-      "since": "2026-08-30"
-    }
-  ]
+  "waivers": []
 }

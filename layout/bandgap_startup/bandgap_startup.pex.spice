@@ -6,46 +6,46 @@
 * - frequency: quasi-static -- one frequency-independent R and C per net; no skin effect, no distributed transmission-line behavior
 
 * cell bandgap_startup
-* pin det
-* pin fb
-* pin sns1
-* pin vss
-.SUBCKT bandgap_startup det fb sns1 vss
+* pin DET
+* pin FB
+* pin SNS1
+* pin VSS
+.SUBCKT bandgap_startup DET FB SNS1 VSS
 * device instance $1 r0 *1 0,0 nfet
-M$1 det__t1 sns1 vss__t0 vss__t3 nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$1 DET__t1 SNS1 VSS__t0 VSS__t3 nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 20,0 nfet
-M$2 fb__t0 det__t2 vss__t1 vss__t4 nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U
+M$2 FB__t0 DET__t2 VSS__t1 VSS__t4 nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U
 + PD=4.8U
 * device instance $3 r0 *1 705.65,20 rhigh
-R$3 \$5__t0 det__t0 vss__t2 1919368 rhigh
+R$3 \$5__t0 DET__t0 VSS__t2 1919368 rhigh
 * device instance _5_t0 r0 *1 0,0 
 R_5_t0 \$5__t0 \$5 0.264
 * device instance _5 r0 *1 0,0 
 C_5 \$5 vsubs 1.55598e-16
-* device instance det_t0 r0 *1 0,0 
-Rdet_t0 det__t0 det 266.808047442
-* device instance det_t1 r0 *1 0,0 
-Rdet_t1 det__t1 det 139.15243699
-* device instance det_t2 r0 *1 0,0 
-Rdet_t2 det__t2 det 127.655815568
-* device instance det r0 *1 0,0 
-Cdet det vsubs 1.30736768e-13
-* device instance fb_t0 r0 *1 0,0 
-Rfb_t0 fb__t0 fb 0.6286
-* device instance fb r0 *1 0,0 
-Cfb fb vsubs 2.1056e-16
-* device instance vss_t0 r0 *1 0,0 
-Rvss_t0 vss__t0 vss 1.54191551097
-* device instance vss_t1 r0 *1 0,0 
-Rvss_t1 vss__t1 vss 1.33528757132
-* device instance vss_t2 r0 *1 0,0 
-Rvss_t2 vss__t2 vss 5.75439383541
-* device instance vss_t3 r0 *1 0,0 
-Rvss_t3 vss__t3 vss 1.54191551097
-* device instance vss_t4 r0 *1 0,0 
-Rvss_t4 vss__t4 vss 1.33528757132
-* device instance vss r0 *1 0,0 
-Cvss vss vsubs 2.470295e-15
+* device instance DET_t0 r0 *1 0,0 
+RDET_t0 DET__t0 DET 266.808047442
+* device instance DET_t1 r0 *1 0,0 
+RDET_t1 DET__t1 DET 139.15243699
+* device instance DET_t2 r0 *1 0,0 
+RDET_t2 DET__t2 DET 127.655815568
+* device instance DET r0 *1 0,0 
+CDET DET vsubs 1.30736768e-13
+* device instance FB_t0 r0 *1 0,0 
+RFB_t0 FB__t0 FB 0.6286
+* device instance FB r0 *1 0,0 
+CFB FB vsubs 2.1056e-16
+* device instance VSS_t0 r0 *1 0,0 
+RVSS_t0 VSS__t0 VSS 1.54191551097
+* device instance VSS_t1 r0 *1 0,0 
+RVSS_t1 VSS__t1 VSS 1.33528757132
+* device instance VSS_t2 r0 *1 0,0 
+RVSS_t2 VSS__t2 VSS 5.75439383541
+* device instance VSS_t3 r0 *1 0,0 
+RVSS_t3 VSS__t3 VSS 1.54191551097
+* device instance VSS_t4 r0 *1 0,0 
+RVSS_t4 VSS__t4 VSS 1.33528757132
+* device instance VSS r0 *1 0,0 
+CVSS VSS vsubs 2.470295e-15
 * device instance vsubs_dctie r0 *1 0,0 
 Rvsubs_dctie vsubs 0 1e+12
 .ENDS bandgap_startup
