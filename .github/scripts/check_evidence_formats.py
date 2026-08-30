@@ -633,10 +633,27 @@ def check_layout(root: Path, report: Report) -> None:
                 if not data.get("engine"):
                     report.fail(rel, "missing 'engine' — the LVS engine must be named")
                 count = data.get("mismatch_count")
+                error_count = data.get("error_count")
                 if not isinstance(count, int):
                     report.fail(rel, "missing integer 'mismatch_count'")
-                elif (status == "match") != (count == 0):
+                elif count == 0 and status != "match":
+                    # Zero mismatches (of any severity) always yields a
+                    # match verdict — but the converse does not hold: a
+                    # `severity: "warning"`-only mismatch (e.g. a
+                    # `device.bulk_reconciled` disclosure, docs/cli/lvs.md,
+                    # "`mismatch_count` ... Can be nonzero even when
+                    # `status` is `"match"`") never changes `status`, so a
+                    # nonzero `mismatch_count` alongside `status: "match"`
+                    # is not itself a contradiction (issue #161).
                     report.fail(rel, f"status {status!r} contradicts mismatch_count {count}")
+                if not isinstance(error_count, int):
+                    report.fail(rel, "missing integer 'error_count'")
+                elif status == "match" and error_count != 0:
+                    # docs/cli/lvs.md: "`0` on a `status: 'match'` report
+                    # exactly (a `'match'` verdict never carries an `error`
+                    # entry)" — this is the invariant `mismatch_count` alone
+                    # cannot express once a warning-only match is possible.
+                    report.fail(rel, f"status {status!r} contradicts error_count {error_count}")
                 counts = data.get("counts")
                 if not isinstance(counts, dict) or not {"nets", "devices"} <= set(counts):
                     report.fail(rel, "missing 'counts.nets'/'counts.devices'")

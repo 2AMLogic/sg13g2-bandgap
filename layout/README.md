@@ -333,12 +333,12 @@ body is comfortably clear of every `Gat*`/`Cnt.d` floor (re-verified after
 that change; both cells stayed `clean`, 0 violations, not merely assumed
 still clean from before).
 
-### LVS — still `mismatch`, resistor recognition now resolved (issues #20/#27)
+### LVS — `bandgap_startup` reaches `match`, `bandgap_core` narrowed to its one permanent cause (issues #20/#27, #161)
 
 | Cell | Report | Status | Engine |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (10 findings, 9 error-severity — unchanged in count after issue #157's net-label case fix, same causes reclassified from `net.merged`/`net.split` to `net.unmatched`; see "Net-name case-identity conflict resolved (issue #157)" below) | `klayout` (`klayout.db.NetlistComparer`) |
-| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | `mismatch` (3 findings, 2 error-severity — down from 5/4 after issue #157's net-label case fix; see "Net-name case-identity conflict resolved (issue #157)" below) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (6 findings, 4 error-severity — down from 10/9 after issue #161's `rppd` bulk-terminal reconciliation; the 4 errors are exactly `Q1`–`Q3` `device.unmatched` plus their own class-level topology entry, the permanent bipolar-recognition cause; see "`rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)" below) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | **`match`** (`error_count: 0`; `mismatch_count: 2` is two `severity: "warning"` disclosures, down from 3/2 after issue #161's `rhigh` bulk-terminal reconciliation; see "`rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)" below) | `klayout` (`klayout.db.NetlistComparer`) |
 
 Reproduce: `klt lvs layout/bandgap_core/lvs_request.json` (run from
 `layout/bandgap_core/`, since the request's relative paths resolve against
@@ -555,7 +555,7 @@ silently downgraded to warnings — per `CLAUDE.md`, "Verification is the
 product": this repo's DRC result is a genuine pass; its LVS result is a
 genuine, fully-explained fail, not fabricated evidence either way.
 
-### Permanent blockers (issue #20 rescope, 2026-08-23; cause 2 resolved in-repo via issue #149, cause 3 resolved upstream via issue #152, the well/substrate-tap gap resolved in-repo via issue #155 (2026-08-30), and the net-name case-identity conflict issue #155 newly exposed resolved in-repo via issue #157, 2026-08-30)
+### Permanent blockers (issue #20 rescope, 2026-08-23; cause 2 resolved in-repo via issue #149, cause 3 resolved upstream via issue #152, the well/substrate-tap gap resolved in-repo via issue #155 (2026-08-30), the net-name case-identity conflict issue #155 newly exposed resolved in-repo via issue #157 (2026-08-30), and the `rppd`/`rhigh` bulk-terminal-count mismatch resolved via issue #161 (2026-08-30) — see "`rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)" below)
 
 One cause remains **permanently unreachable through routing, marker-layer
 geometry, or `klt lvs` hints alone** — a future pass should not
@@ -587,13 +587,17 @@ conflict resolved (issue #157)" below): `Builder.label()`
 (`layout/common.py`) now upper-cases the text it draws on the deck's real
 net-naming layers, matching the reader's own convention.
 
-All are kept in this list for their own record, and because **neither cell
-reaches a clean `match` even with all of them resolved**: `bandgap_core`
-still blocks on cause 1 below (permanent) plus a pre-existing `rppd`
-bulk-terminal-count mismatch (see issue #155's own entry below);
-`bandgap_startup` on that same `rppd`/`rhigh` cause alone now (issue #157
-cleared the case-identity conflict that used to sit alongside it — see
-"Net-name case-identity conflict resolved (issue #157)" below).
+All are kept in this list for their own record. As of issue #161
+(2026-08-30), the `rppd`/`rhigh` bulk-terminal-count mismatch that used to
+sit alongside cause 1 on both cells is **also resolved** (see "`rppd`/
+`rhigh` bulk-terminal mismatch resolved (issue #161)" below) —
+`bandgap_startup` now reaches `status: "match"` (`error_count: 0`; its
+`mismatch_count: 2` is two `severity: "warning"` disclosures, never a real
+defect). `bandgap_core` cannot follow it all the way to `match`: cause 1
+above (bipolar recognition, permanently declined upstream) is independent
+of the bulk-terminal fix and still leaves `Q1`–`Q3` `device.unmatched` —
+but its report now narrows to *exactly* that permanent cause plus the same
+two disclosure-only warnings `bandgap_startup` carries.
 
 1. **Bipolar (SiGe HBT) device recognition is permanently declined
    upstream** (`klayout-tools#1242`, closed; `klayout-tools#1232`'s own
@@ -943,6 +947,122 @@ pre-existing, both out of this issue's scope, both already tracked.
 decomposed layout (`36` findings, `35` error-severity — the raw count
 rises only because there are now 6 recognised pfets to individually
 report `device.unmatched` instead of 3, not because anything regressed).
+
+### `rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)
+
+**Root cause, confirmed directly** (not re-derived from prior write-ups):
+the installed `klt`'s curated `sg13g2` deck
+(`klayout_tools.decks.sg13g2.EXTRACTION_DECK.resistors`) declares every
+poly-resistor flavour this circuit uses — `rppd` and `rhigh` — with
+`bulk_to_substrate=True`. That selects `klayout.db
+.DeviceExtractorResistorWithBulk` over the plain two-terminal
+`DeviceExtractorResistor`, which extracts a *third* terminal (`W`,
+alongside the two-terminal `A`/`B` heads) tied to the deck's substrate/well
+connectivity — mirroring upstream's own real LVS deck, which ties
+`rppd_sub`/`rhigh_sub` to `pwell` (see that deck module's own inline
+citation of `res_extraction.lvs`). `layout/lvs_reference.py`'s converted
+`R`-cards, by contrast, are plain two-terminal SPICE (`R<n> <p1> <p2>
+<value> <model>`) — `klayout.db.NetlistSpiceReader`'s only resistor-element
+reading, with no third-terminal syntax to express. Every `rppd`/`rhigh`
+instance therefore compared a 3-terminal layout-side device against a
+2-terminal reference-side one — a `device.unmatched` on both cells, plus a
+`net.unmatched` on `bandgap_core`'s `vsubs` net (the synthesized bulk net
+the two `rppd` instances' third terminal lands on, with nothing on the
+reference side to pair it against).
+
+**Fix — direction 1, via `klt lvs`'s own built-in reconciliation hook**,
+not a hand-rolled workaround: `request.reference.device_bulk` (issue #506
+in `klayout-tools`, `klt lvs`'s own "issue #504's option 1") declares that
+a named reference-side device class is missing exactly the terminal the
+same-named layout-side class carries, and ties every reference instance's
+new terminal to a named net — reconciling the two classes to the same
+arity *before* `NetlistComparer.compare()` runs, so a real, honest
+`device.matched` pairing becomes possible instead of only diagnosable. This
+is a request-file option, not a code change to `layout/lvs_reference.py` or
+`layout/common.py` — no reference-conversion syntax could express a third
+SPICE-`R` terminal at all (confirmed above), so the fix lives entirely in
+each cell's `lvs_request.json`:
+
+```json
+"reference": {
+  "netlist": "bandgap_startup.lvs_reference.spice",
+  "device_bulk": { "rhigh": "VSS" }
+}
+```
+
+```json
+"reference": {
+  "netlist": "bandgap_core.lvs_reference.spice",
+  "device_bulk": { "rppd": "vsubs" }
+}
+```
+
+The two cells name **different** nets, each read directly off a fresh `klt
+extract` of that cell's own layout (not guessed or copy-pasted between
+cells) — `RPU`'s (`bandgap_startup`) synthesized bulk terminal already
+resolves to the real, routed `VSS` net (issue #155's tap-ring bridges the
+`nfet` body into the same net as `rhigh`'s bulk tie in this cell), while
+`R1`/`R2`'s (`bandgap_core`) synthesized bulk terminal stays on the deck's
+anonymous `vsubs` global (this cell has no `nfet` device at all — every
+device is `pfet`, whose body ties to `VDD`, not the substrate — so nothing
+in this cell's own layout merges `vsubs` into a real net, independent of
+and not regressed by issue #155's tap-ring work). Naming the net a request
+declares is an *assertion*, not an independently re-derived fact — `klt
+lvs` discloses every reconciled class as its own `severity: "warning"`,
+`category: "device.bulk_reconciled"` mismatch entry precisely so a
+`"match"` reached this way is never silently indistinguishable from a
+fully independent one (see `docs/cli/lvs.md`, "`device.bulk_reconciled`").
+
+**Verified with a fresh `klt lvs` re-run on both cells** (`klt
+0.3.0+gc6dbf66c53c6`, `klayout 0.30.12`, deck `content_hash:
+sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda` —
+the same deck build issue #152 last moved both cells to; re-verified
+`klt drc --check --rerun` stays byte-identical to the committed
+`drc_report.json` on both cells, `clean`, 0 violations, confirming no
+geometry changed and this fix's evidence refresh is LVS-only):
+
+- **`bandgap_startup` reaches `status: "match"`** — `mismatch_count: 2`,
+  `error_count: 0`. Both remaining entries are `severity: "warning"`: the
+  `device.bulk_reconciled` disclosure above, and the same pre-existing,
+  informational "device class has no counterpart on the other side, but no
+  devices of this class were extracted either" `topology` entry every prior
+  report on this cell has also carried. This is the first cell in this
+  repo's history to reach `status: "match"`.
+- **`bandgap_core` narrows to exactly the one permanent cause left**:
+  `mismatch_count: 6`, `error_count: 4`. The 4 errors are `Q1`–`Q3`
+  `device.unmatched` (`NPN13G2`, permanent blocker #1, bipolar recognition
+  permanently declined upstream) plus their own class-level `topology`
+  "device class could not be mapped to a counterpart" entry — the same
+  cause reported at two granularities, not a new or independent one. The
+  other 2 entries are the same `device.bulk_reconciled` disclosure and
+  benign no-op `topology` entry `bandgap_startup` also carries.
+  `counts.nets.matched` rose from 2 to 5 (`SNS2`, `VDD`, `VREF`, and the
+  reconciled `vsubs` all now pair; `FB`↔`\$9` already did) — every net this
+  cell's own `pfet`/`rppd` devices touch, which is everything except the
+  bipolar-only `VSS` net neither side's comparer can currently reach
+  (permanent blocker #1's own consequence, not a new gap).
+
+**Evidence-format checker bug found and fixed alongside this issue**
+(`.github/scripts/check_evidence_formats.py`): the checker asserted
+`(status == "match") == (mismatch_count == 0)`, an invariant `klt lvs`'s
+own documented contract does not make — "`mismatch_count` ... [c]an be
+nonzero even when `status` is `'match'`" for exactly this
+`device.bulk_reconciled`-disclosure case (`docs/cli/lvs.md`). No prior
+report in this repo had ever reached `status: "match"`, so this gap in the
+checker had never been exercised before `bandgap_startup`'s fresh report
+above tripped it. Fixed to check `error_count == 0` for a `"match"`
+verdict (the invariant `klt lvs`'s docs actually guarantee) and
+`mismatch_count == 0` implies `"match"` (the converse direction, still
+sound) instead — both directions covered by new self-test cases in
+`.github/scripts/test_check_evidence_formats.py`
+(`case_lvs_match_with_warning_only_disclosure`,
+`case_lvs_zero_mismatches_not_match`).
+
+Reproduce: `klt lvs layout/bandgap_startup/lvs_request.json` / `klt lvs
+layout/bandgap_core/lvs_request.json`, from each cell's own directory;
+`python3 .github/scripts/check_evidence_formats.py` and `python3
+.github/scripts/test_check_evidence_formats.py` for the evidence-format
+fix.
 
 ## Evidence freshness, enforced in CI
 

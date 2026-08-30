@@ -144,6 +144,7 @@ def build_fixture(root: Path) -> None:
             "reference": "synth_cell.lvs_reference.spice",
             "status": "mismatch",
             "mismatch_count": 3,
+            "error_count": 3,
             "counts": {"nets": {"matched": 0}, "devices": {"matched": 0}, "pins": {"matched": 0}},
             "environment": {"engine": "klayout",
                             "layout_sha256": sha256_bytes(gds_bytes),
@@ -289,9 +290,37 @@ def case_drc_status_contradiction(root: Path):
 
 
 def case_lvs_status_contradiction(root: Path):
+    # `error_count` (3, unchanged) still says this compare found real
+    # defects, so forging `status: "match"` over it must still be caught —
+    # even though `mismatch_count` alone (issue #161) no longer can, since a
+    # `severity: "warning"`-only report can legitimately carry a nonzero
+    # `mismatch_count` under a real `"match"` verdict (see
+    # case_lvs_match_with_warning_only_disclosure below).
     edit_json(root / "layout/synth_cell/lvs_report.json",
               lambda d: d.update(status="match"))
-    return "contradicts mismatch_count 3"
+    return "contradicts error_count 3"
+
+
+def case_lvs_zero_mismatches_not_match(root: Path):
+    # The converse invariant: zero mismatches of any severity always means
+    # a match verdict (docs/cli/lvs.md's own safety net guarantees a
+    # `"mismatch"` verdict never reports an empty `mismatches[]`), so a
+    # `status: "mismatch"` alongside `mismatch_count: 0` is still a
+    # contradiction under the new (issue #161) check.
+    edit_json(root / "layout/synth_cell/lvs_report.json",
+              lambda d: d.update(mismatch_count=0, error_count=0))
+    return "contradicts mismatch_count 0"
+
+
+def case_lvs_match_with_warning_only_disclosure(root: Path):
+    # Issue #161: `klt lvs`'s `reference.device_bulk` reconciliation (and
+    # other disclosure-only categories, e.g. `device.bulk_reconciled`)
+    # emits a `severity: "warning"` entry that never changes `status` —
+    # docs/cli/lvs.md: "`mismatch_count` ... Can be nonzero even when
+    # `status` is `'match'`". This must pass, not fail, the checker.
+    edit_json(root / "layout/synth_cell/lvs_report.json",
+              lambda d: d.update(status="match", mismatch_count=1, error_count=0))
+    return None
 
 
 def case_missing_coverage(root: Path):
@@ -551,6 +580,9 @@ CASES = [
     ("LVS reference netlist edited after the run", case_stale_lvs_reference),
     ("DRC status contradicts its own violation count", case_drc_status_contradiction),
     ("LVS status contradicts its own mismatch count", case_lvs_status_contradiction),
+    ("LVS zero mismatch_count must be a match verdict", case_lvs_zero_mismatches_not_match),
+    ("LVS match verdict tolerates a warning-only nonzero mismatch_count",
+     case_lvs_match_with_warning_only_disclosure),
     ("DRC report drops its coverage-gap enumeration", case_missing_coverage),
     ("deck is not identified by content hash", case_unhashed_deck),
     ("extract_report.json rejects a status outside the vocabulary",
