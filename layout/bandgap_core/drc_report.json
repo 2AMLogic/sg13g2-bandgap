@@ -36,6 +36,7 @@
     ],
     "layers_in_stream_without_rules": [
       "5/1",
+      "7/0",
       "8/1",
       "8/25",
       "10/1",
@@ -100,15 +101,15 @@
   },
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.11",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:72c12aadf165e17090871284ebf8688f2066e6d11967f30723945c3efc12bf59",
-      "released": true
+      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "released": false
     },
     "input": {
-      "content_hash": "sha256:4bae4480de87f8cd0fa38d9a5d9b5909d71157ec762f960c58c5c1373d9ad7c1"
+      "content_hash": "sha256:78491a97117e8fb707b793c4194b7da8b883636a26dfa3c78225e56740c29f78"
     }
   }
 }
