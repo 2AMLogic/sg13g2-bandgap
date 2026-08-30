@@ -5,11 +5,11 @@
   "top": "bandgap_core",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_core.pex.spice",
-  "netlist_sha256": "babac48c9683858ec36d66c66e3e7cbcf5ecc40cdcd44da425aa62cebce9ee73",
+  "netlist_sha256": "77cd89b1fe57bdc2d49ee8d705b70b19d1bdf2e37ff8299bb8fbee036ecf38c4",
   "status": "extracted",
   "device_count": 8,
-  "net_count": 15,
-  "pin_count": 8,
+  "net_count": 9,
+  "pin_count": 9,
   "device_counts": {
     "pfet": 6,
     "rppd": 2
@@ -17,14 +17,9 @@
   "dummy_devices_dropped": 0,
   "ignored_layers": [
     {
-      "layer": 5,
-      "datatype": 1,
-      "shapes": 6
-    },
-    {
       "layer": 8,
       "datatype": 1,
-      "shapes": 22
+      "shapes": 28
     },
     {
       "layer": 10,
@@ -67,6 +62,10 @@
   "device_classes": [
     "nfet",
     "pfet",
+    "cap_cmim",
+    "rfcmim",
+    "cap_cmomi",
+    "cap_cmomf",
     "resistor",
     "dantenna",
     "dpantenna"
@@ -77,9 +76,9 @@
       "class": "pfet",
       "nets": {
         "s": "sns1",
-        "g": "\\$9",
+        "g": "fb",
         "d": "vdd",
-        "b": "\\$11"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -95,9 +94,9 @@
       "class": "pfet",
       "nets": {
         "s": "sns2",
-        "g": "\\$9",
+        "g": "fb",
         "d": "vdd",
-        "b": "\\$14"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -113,9 +112,9 @@
       "class": "pfet",
       "nets": {
         "s": "sns2",
-        "g": "\\$9",
+        "g": "fb",
         "d": "vdd",
-        "b": "\\$15"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -131,9 +130,9 @@
       "class": "pfet",
       "nets": {
         "s": "vref",
-        "g": "\\$9",
+        "g": "fb",
         "d": "vdd",
-        "b": "\\$17"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -149,9 +148,9 @@
       "class": "pfet",
       "nets": {
         "s": "vref",
-        "g": "\\$9",
+        "g": "fb",
         "d": "vdd",
-        "b": "\\$18"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -167,9 +166,9 @@
       "class": "pfet",
       "nets": {
         "s": "vref",
-        "g": "\\$9",
+        "g": "fb",
         "d": "vdd",
-        "b": "\\$19"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -215,41 +214,6 @@
   ],
   "nets": [
     {
-      "name": "\\$11",
-      "pin": false,
-      "device_count": 1
-    },
-    {
-      "name": "\\$14",
-      "pin": false,
-      "device_count": 1
-    },
-    {
-      "name": "\\$15",
-      "pin": false,
-      "device_count": 1
-    },
-    {
-      "name": "\\$17",
-      "pin": false,
-      "device_count": 1
-    },
-    {
-      "name": "\\$18",
-      "pin": false,
-      "device_count": 1
-    },
-    {
-      "name": "\\$19",
-      "pin": false,
-      "device_count": 1
-    },
-    {
-      "name": "\\$9",
-      "pin": false,
-      "device_count": 6
-    },
-    {
       "name": "cb2",
       "pin": true,
       "device_count": 1
@@ -258,6 +222,11 @@
       "name": "cb3",
       "pin": true,
       "device_count": 1
+    },
+    {
+      "name": "fb",
+      "pin": true,
+      "device_count": 6
     },
     {
       "name": "sns1",
@@ -272,7 +241,7 @@
     {
       "name": "vdd",
       "pin": true,
-      "device_count": 6
+      "device_count": 12
     },
     {
       "name": "vref",
@@ -291,102 +260,38 @@
     }
   ],
   "warnings": [
-    "6 PMOS devices tie their body to an anonymous net with no DC bias path -- no drawn (or derivable) well tie connects this PMOS body to a real supply rail on this layout, so it is left floating rather than tied to a real supply rail; resimulating this netlist directly will not reproduce the schematic-level PMOS body bias -- see unbiased_pmos_body_nets[] for the full list. See docs/cli/extract.md's 'Parasitic (RC) extraction' section.",
-    "6 nets connect to exactly one device terminal -- source/drain/body/resistor-equivalent, not a gate -- and are not a declared pin; this can be a legitimate single-terminal tie (e.g. an intentionally unterminated dummy's diffusion tie), but confirm these nets have no other intended connectivity -- see single_terminal_nets[] for the full list.",
-    "6 layers (5/1, 8/1, 10/1, 33/0, 63/0, 128/1) carrying 54 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
+    "5 layers (8/1, 10/1, 33/0, 63/0, 128/1) carrying 54 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
   ],
   "black_box_regions": [],
   "abstracted_cells": [],
   "unmodelled_poly": [],
   "merged_net_labels": [],
   "voltage_domain_warnings": [],
-  "unbiased_pmos_body_nets": [
-    {
-      "device": "$1",
-      "net": "\\$11"
-    },
-    {
-      "device": "$2",
-      "net": "\\$14"
-    },
-    {
-      "device": "$3",
-      "net": "\\$15"
-    },
-    {
-      "device": "$4",
-      "net": "\\$17"
-    },
-    {
-      "device": "$5",
-      "net": "\\$18"
-    },
-    {
-      "device": "$6",
-      "net": "\\$19"
-    }
-  ],
-  "single_terminal_nets": [
-    {
-      "net": "\\$11",
-      "device": "$1",
-      "terminal": "b",
-      "terminal_kind": "body"
-    },
-    {
-      "net": "\\$14",
-      "device": "$2",
-      "terminal": "b",
-      "terminal_kind": "body"
-    },
-    {
-      "net": "\\$15",
-      "device": "$3",
-      "terminal": "b",
-      "terminal_kind": "body"
-    },
-    {
-      "net": "\\$17",
-      "device": "$4",
-      "terminal": "b",
-      "terminal_kind": "body"
-    },
-    {
-      "net": "\\$18",
-      "device": "$5",
-      "terminal": "b",
-      "terminal_kind": "body"
-    },
-    {
-      "net": "\\$19",
-      "device": "$6",
-      "terminal": "b",
-      "terminal_kind": "body"
-    }
-  ],
+  "unbiased_pmos_body_nets": [],
+  "single_terminal_nets": [],
   "dead_metal": [],
   "matched_device_groups": [],
   "pdk": null,
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.11",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:72c12aadf165e17090871284ebf8688f2066e6d11967f30723945c3efc12bf59",
-      "released": true
+      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "released": false
     },
     "input": {
-      "content_hash": "sha256:4bae4480de87f8cd0fa38d9a5d9b5909d71157ec762f960c58c5c1373d9ad7c1"
+      "content_hash": "sha256:78491a97117e8fb707b793c4194b7da8b883636a26dfa3c78225e56740c29f78"
     }
   },
   "parasitics": {
-    "r_count": 17,
+    "r_count": 23,
     "c_count": 7,
     "cc_count": 8,
     "l_count": 0,
-    "total_resistance_ohm": 284.7413,
-    "total_capacitance_ff": 95.929051,
+    "total_resistance_ohm": 286.6098,
+    "total_capacitance_ff": 96.310606,
     "total_coupling_capacitance_ff": 0.121844,
     "total_inductance_nh": 0.0,
     "nets": [
@@ -562,8 +467,8 @@
       {
         "net": "vdd",
         "net_id": 10,
-        "resistance_ohm": 43.8429,
-        "capacitance_ff": 12.764375,
+        "resistance_ohm": 45.7114,
+        "capacitance_ff": 13.14593,
         "inductance_nh": 0.0,
         "hub_net": "vdd",
         "rc_model": "lumped",
@@ -572,37 +477,73 @@
             "device": "$1",
             "terminal": "D",
             "leg_net": "vdd__t0",
-            "resistance_ohm": 12.9536
+            "resistance_ohm": 6.7528
+          },
+          {
+            "device": "$1",
+            "terminal": "B",
+            "leg_net": "vdd__t1",
+            "resistance_ohm": 6.7528
           },
           {
             "device": "$2",
             "terminal": "D",
-            "leg_net": "vdd__t1",
-            "resistance_ohm": 5.4804
+            "leg_net": "vdd__t2",
+            "resistance_ohm": 2.857
+          },
+          {
+            "device": "$2",
+            "terminal": "B",
+            "leg_net": "vdd__t3",
+            "resistance_ohm": 2.857
           },
           {
             "device": "$3",
             "terminal": "D",
-            "leg_net": "vdd__t2",
-            "resistance_ohm": 3.4875
+            "leg_net": "vdd__t4",
+            "resistance_ohm": 1.8181
+          },
+          {
+            "device": "$3",
+            "terminal": "B",
+            "leg_net": "vdd__t5",
+            "resistance_ohm": 1.8181
           },
           {
             "device": "$4",
             "terminal": "D",
-            "leg_net": "vdd__t3",
-            "resistance_ohm": 5.3143
+            "leg_net": "vdd__t6",
+            "resistance_ohm": 2.7704
+          },
+          {
+            "device": "$4",
+            "terminal": "B",
+            "leg_net": "vdd__t7",
+            "resistance_ohm": 2.7704
+          },
+          {
+            "device": "$6",
+            "terminal": "B",
+            "leg_net": "vdd__t8",
+            "resistance_ohm": 4.8482
+          },
+          {
+            "device": "$5",
+            "terminal": "B",
+            "leg_net": "vdd__t9",
+            "resistance_ohm": 3.8093
           },
           {
             "device": "$6",
             "terminal": "D",
-            "leg_net": "vdd__t4",
-            "resistance_ohm": 9.3
+            "leg_net": "vdd__t10",
+            "resistance_ohm": 4.8482
           },
           {
             "device": "$5",
             "terminal": "D",
-            "leg_net": "vdd__t5",
-            "resistance_ohm": 7.3072
+            "leg_net": "vdd__t11",
+            "resistance_ohm": 3.8093
           }
         ],
         "segments": [],

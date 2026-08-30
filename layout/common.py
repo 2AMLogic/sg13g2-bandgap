@@ -239,6 +239,58 @@ def draw_npn13g2(
     }
 
 
+# Well/substrate-tap ring geometry (issue #155, T1 tracker #4 item 4's last
+# remaining `bandgap_startup` LVS gap). `klt`'s curated `sg13g2` deck draws
+# no distinct tap mask of its own (`EXTRACTION_DECK.tap=None`) -- instead it
+# *derives* an equivalent tap region from the opposite-doping implant marker
+# already used for ordinary MOS source/drain recognition
+# (`tap_nplus=(7,0)`/nSD, `tap_pplus=(14,0)`/pSD, `klayout-tools#1273`,
+# mirroring gf180mcu's own #1084): an nSD-covered `Activ` shape *inside*
+# `NWell` is a well tie (opposite doping from a PMOS's own source/drain,
+# which this module draws with no implant marker at all under the
+# active/poly/nwell idiom -- see below), and a pSD-covered `Activ` shape
+# *outside* every `NWell` is a substrate tie (opposite doping from an NMOS's
+# own `nSD`-marked source/drain, drawn just above). Before this issue,
+# `draw_hv_mos` drew neither, so every MOS body terminal extracted to an
+# anonymous (`pfet`, no tap-to-`NWell` connectivity at all) or
+# deck-synthesized global `vsubs` (`nfet`, the deck's own `connect_global`
+# fallback) net -- never the schematic's real body tie.
+#
+# Placement: a compact tap island sits `TAP_GAP_UM` clear of the device's
+# own `Activ` box (>= `activ.space.1`'s 0.21um floor, margin) on whichever
+# side (`+y`/"source" or `-y`/"drain") the tap's own body net matches an
+# already-drawn terminal pad, plus a short `Metal1` bridge that physically
+# overlaps that pad by `TAP_BRIDGE_OVERLAP_UM` -- so the tap rides along on
+# *real* geometric connectivity to whatever net that pad's own later routing
+# resolves to (each cell's own `_route()` already merges every leg's source
+# pad into one continuous `vdd` rail / drain pad into one continuous `vss`
+# rail -- see `bandgap_core/generate.py`'s and `bandgap_startup/generate.py`'s
+# own module docstrings), not merely a same-spelled label on an otherwise
+# disconnected island. The tap's own `Metal1` pad is labeled with the body
+# net too (belt-and-suspenders, same double-labeling convention as every
+# other terminal in this module) -- for an `nfet` body this is also what
+# resolves the deck's synthesized `vsubs` global to the real net name (see
+# `klayout_tools.extract`'s own `_detect_diode_substrate_label_divergence`
+# docstring: "a p+/Comp tap contacted up to a VSS-labelled Metal1 gives the
+# ... net VSS, not vsubs" -- the identical mechanism, confirmed against the
+# installed `klayout-tools` source for this issue, not merely assumed).
+#
+# No DRC rule in this curated deck's own `DECK` list constrains `NWell`,
+# `nSD`, or `pSD` directly (only `Activ`/`GatPoly`/`Cont`/`Metal1`+ carry
+# checks) -- so the only floors this geometry must clear are the ordinary
+# `Activ`/`Cont`/`Metal1` ones already cited throughout this module
+# (`activ.width.1` 0.15um, `activ.space.1` 0.21um,
+# `activ.enclosing.cont.1`/`gatpoly.enclosing.cont.1` 0.07um, `cont.width.1`
+# 0.16um, `metal1.width.1` 0.16um) -- all satisfied with real margin below.
+TAP_GAP_UM = 0.25
+TAP_ACTIV_UM = 0.34
+TAP_IMPLANT_MARGIN_UM = 0.1
+TAP_CONT_UM = 0.16
+TAP_BRIDGE_W_UM = 0.2
+TAP_BRIDGE_OVERLAP_UM = 0.05
+TAP_NWELL_MARGIN_UM = 0.1
+
+
 def draw_hv_mos(
     b: Builder,
     name: str,
@@ -250,8 +302,11 @@ def draw_hv_mos(
     gate_net: str,
     source_net: str,
     drain_net: str,
+    body_net: str | None = None,
 ) -> dict:
-    """Draw a simplified ``sg13_hv_{n,p}mos`` footprint (Activ+GatPoly+Cont).
+    """Draw a simplified ``sg13_hv_{n,p}mos`` footprint (Activ+GatPoly+Cont),
+    plus one well/substrate-tap ring (issue #155, see the ``TAP_*`` module
+    constants' own comment above).
 
     A generic single-finger MOS footprint (not read from a PDK PyCell source
     -- ``pmosHV_code.py``/``nmosHV_code.py`` exist in
@@ -275,12 +330,25 @@ def draw_hv_mos(
     ``fb``), it is never named at all -- LVS topology matching does not
     require it.
 
+    ``body_net`` (issue #155) is the schematic's real body-terminal net for
+    this instance -- every existing caller in this repo ties a PMOS's body
+    to its own ``source_net`` and an NMOS's body to its own ``drain_net``
+    (verified against every ``XM*``/``XQ*`` instance line in
+    ``design/netlist/bandgap_core.spice``/``bandgap_startup.spice``: e.g.
+    ``XM1 sns1 fb vdd vdd sg13_hv_pmos`` -- drain/gate/source/body =
+    sns1/fb/vdd/vdd -- and ``XMSENSE det sns1 vss vss sg13_hv_nmos`` --
+    drain/gate/source/body = det/sns1/vss/vss), so that pairing is this
+    parameter's default when the caller leaves it unset, keeping every
+    existing call site unchanged. Pass it explicitly for a future instance
+    whose body ties to neither of its own ``source_net``/``drain_net``.
+
     Returns a dict of this device's terminal geometry (each a ``(x0, y0,
     x1, y1)`` box in microns; ``"gate_box"`` is the drawn ``GatPoly``
     rectangle, ``"gate_y_lo"``/``"gate_y_hi"`` the channel-length band a
-    routing pass can safely widen a connecting poly bar within; plus
-    ``"width"`` in microns), for issue #20's routing pass to use -- see
-    ``draw_npn13g2``'s docstring for the same convention.
+    routing pass can safely widen a connecting poly bar within; ``"tap_pad"``
+    the drawn tap ring's own ``Metal1`` box; plus ``"width"`` in microns),
+    for issue #20's routing pass to use -- see ``draw_npn13g2``'s docstring
+    for the same convention.
     """
     ext = 0.4
     x_lo = x0 - w_um / 2
@@ -288,13 +356,44 @@ def draw_hv_mos(
     y_lo = y0 - (l_um / 2 + ext)
     y_hi = y0 + (l_um / 2 + ext)
 
+    if body_net is None:
+        body_net = source_net if flavor == "pmos" else drain_net
+    # Which existing terminal (source, at the +y/top edge, or drain, at the
+    # -y/bottom edge -- this module's own fixed drawing convention) the tap
+    # ring's bridge reaches for. Defaults to the flavor's own documented
+    # convention above when `body_net` matches neither exactly, so a future
+    # caller passing an unrelated `body_net` still gets a labeled (if
+    # unbridged) tap rather than a `KeyError`/crash.
+    tap_at_source = body_net == source_net or (
+        body_net != drain_net and flavor == "pmos"
+    )
+    if tap_at_source:
+        tap_y_lo = y_hi + TAP_GAP_UM
+        tap_y_hi = tap_y_lo + TAP_ACTIV_UM
+    else:
+        tap_y_hi = y_lo - TAP_GAP_UM
+        tap_y_lo = tap_y_hi - TAP_ACTIV_UM
+    tap_x_lo = x0 - TAP_ACTIV_UM / 2
+    tap_x_hi = x0 + TAP_ACTIV_UM / 2
+
     b.box(L_ACTIV, x_lo, y_lo, x_hi, y_hi)
     gate_box = (x_lo - 0.1, y0 - l_um / 2, x_hi + 0.1, y0 + l_um / 2)
     b.box(L_GATPOLY, *gate_box)
     b.label(L_GATPOLY_LABEL, gate_net, x0, y0)
 
     if flavor == "pmos":
-        b.box(L_NWELL, x_lo - 0.4, y_lo - 0.4, x_hi + 0.4, y_hi + 0.4)
+        # NWell must enclose the tap ring too (the well-tie derivation
+        # requires the tap's own nSD-marked Activ to sit *inside* this same
+        # NWell island) -- extended on whichever side the tap landed on,
+        # past its own outer edge by TAP_NWELL_MARGIN_UM; the opposite edge
+        # keeps the original 0.4um margin unchanged.
+        nwell_y_lo = y_lo - 0.4
+        nwell_y_hi = y_hi + 0.4
+        if tap_at_source:
+            nwell_y_hi = max(nwell_y_hi, tap_y_hi + TAP_NWELL_MARGIN_UM)
+        else:
+            nwell_y_lo = min(nwell_y_lo, tap_y_lo - TAP_NWELL_MARGIN_UM)
+        b.box(L_NWELL, x_lo - 0.4, nwell_y_lo, x_hi + 0.4, nwell_y_hi)
     else:
         b.box(L_NSD, x_lo - 0.1, y_lo - 0.1, x_hi + 0.1, y_hi + 0.1)
 
@@ -314,6 +413,41 @@ def draw_hv_mos(
     b.label(L_METAL1_LABEL, drain_net, x0, y_lo + 0.15)
     b.label(L_METAL1_TEXT, drain_net, x0, y_lo + 0.15)
 
+    # Tap ring: a small, separate Activ island (never touching the device's
+    # own source/drain Activ above -- TAP_GAP_UM clears activ.space.1) on
+    # the opposite-doping implant marker, contacted and landed on Metal1,
+    # bridged into whichever pad (source or drain) carries this instance's
+    # own body_net.
+    tap_implant = L_NSD if flavor == "pmos" else L_PSD
+    b.box(L_ACTIV, tap_x_lo, tap_y_lo, tap_x_hi, tap_y_hi)
+    b.box(
+        tap_implant,
+        tap_x_lo - TAP_IMPLANT_MARGIN_UM,
+        tap_y_lo - TAP_IMPLANT_MARGIN_UM,
+        tap_x_hi + TAP_IMPLANT_MARGIN_UM,
+        tap_y_hi + TAP_IMPLANT_MARGIN_UM,
+    )
+    tap_y_center = (tap_y_lo + tap_y_hi) / 2
+    cont_half = TAP_CONT_UM / 2
+    b.box(
+        L_CONT,
+        x0 - cont_half,
+        tap_y_center - cont_half,
+        x0 + cont_half,
+        tap_y_center + cont_half,
+    )
+    tap_pad = (tap_x_lo, tap_y_lo, tap_x_hi, tap_y_hi)
+    b.box(L_METAL1, *tap_pad)
+    b.label(L_METAL1_LABEL, body_net, x0, tap_y_center)
+    b.label(L_METAL1_TEXT, body_net, x0, tap_y_center)
+
+    bridge_x_lo, bridge_x_hi = x0 - TAP_BRIDGE_W_UM / 2, x0 + TAP_BRIDGE_W_UM / 2
+    if tap_at_source:
+        bridge_y_lo, bridge_y_hi = y_hi - TAP_BRIDGE_OVERLAP_UM, tap_y_lo
+    else:
+        bridge_y_lo, bridge_y_hi = tap_y_hi, y_lo + TAP_BRIDGE_OVERLAP_UM
+    b.box(L_METAL1, bridge_x_lo, bridge_y_lo, bridge_x_hi, bridge_y_hi)
+
     b.label(L_TEXT, f"{name}({flavor} w={w_um}u l={l_um}u)", x0, y_hi + 0.6)
     return {
         "width": x_hi - x_lo,
@@ -322,6 +456,7 @@ def draw_hv_mos(
         "gate_box": gate_box,
         "gate_y_lo": y0 - l_um / 2,
         "gate_y_hi": y0 + l_um / 2,
+        "tap_pad": tap_pad,
     }
 
 

@@ -8,16 +8,16 @@
 * cell bandgap_startup
 * pin det
 * pin fb
+* pin sns1
 * pin vss
-* pin vsubs
-.SUBCKT bandgap_startup det fb vss vsubs
+.SUBCKT bandgap_startup det fb sns1 vss
 * device instance $1 r0 *1 0,0 nfet
-M$1 det__t1 \$4 vss__t0 vsubs nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$1 det__t1 sns1 vss__t0 vss__t3 nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 20,0 nfet
-M$2 fb__t0 det__t2 vss__t1 vsubs nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U
+M$2 fb__t0 det__t2 vss__t1 vss__t4 nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U
 + PD=4.8U
 * device instance $3 r0 *1 705.65,20 rhigh
-R$3 \$5__t0 det__t0 vsubs 1919368 rhigh
+R$3 \$5__t0 det__t0 vss__t2 1919368 rhigh
 * device instance _5_t0 r0 *1 0,0 
 R_5_t0 \$5__t0 \$5 0.264
 * device instance _5 r0 *1 0,0 
@@ -35,11 +35,17 @@ Rfb_t0 fb__t0 fb 0.6286
 * device instance fb r0 *1 0,0 
 Cfb fb vsubs 2.1056e-16
 * device instance vss_t0 r0 *1 0,0 
-Rvss_t0 vss__t0 vss 5.4071
+Rvss_t0 vss__t0 vss 1.54191551097
 * device instance vss_t1 r0 *1 0,0 
-Rvss_t1 vss__t1 vss 5.4071
+Rvss_t1 vss__t1 vss 1.33528757132
+* device instance vss_t2 r0 *1 0,0 
+Rvss_t2 vss__t2 vss 5.75439383541
+* device instance vss_t3 r0 *1 0,0 
+Rvss_t3 vss__t3 vss 1.54191551097
+* device instance vss_t4 r0 *1 0,0 
+Rvss_t4 vss__t4 vss 1.33528757132
 * device instance vss r0 *1 0,0 
-Cvss vss vsubs 2.34311e-15
+Cvss vss vsubs 2.470295e-15
 * device instance vsubs_dctie r0 *1 0,0 
 Rvsubs_dctie vsubs 0 1e+12
 .ENDS bandgap_startup

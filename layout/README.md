@@ -310,8 +310,8 @@ source, not a runtime dependency of running it.
 
 | Cell | Report | Status | Deck (content hash) |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:72c12aad...` |
-| `bandgap_startup` | `layout/bandgap_startup/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:894326a4...` (refreshed, issue #152 — `bandgap_core` not re-run, still on the prior deck build) |
+| `bandgap_core` | `layout/bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:894326a4...` (refreshed, issue #155 — new tap-ring `Activ`/`Cont`/`Metal1` geometry introduces no new violations) |
+| `bandgap_startup` | `layout/bandgap_startup/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:894326a4...` (refreshed, issue #155, same deck build issue #152 already moved both cells to) |
 
 The 26 `cont.width.1` violations this issue's own informational run
 originally found (see "What this layout is / is not" above) were fixed by
@@ -337,8 +337,8 @@ still clean from before).
 
 | Cell | Report | Status | Engine |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (36 findings, 35 error-severity — issue #149's `M1`/`M2`/`M3` unit-device decomposition raises the raw finding count since there are now 6 recognised pfets instead of 3, but resolves the automorphism itself; see "`M1`/`M2`/`M3` automorphism resolved" below) | `klayout` (`klayout.db.NetlistComparer`) |
-| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | `mismatch` (16 findings, 14 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (10 findings, 9 error-severity — down from 36/35 after issue #155's tap-ring fix; see "Well/substrate-tap ring geometry added (issue #155)" below) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | `mismatch` (5 findings, 4 error-severity — down from 16/14 after issue #155's tap-ring fix; see "Well/substrate-tap ring geometry added (issue #155)" below) | `klayout` (`klayout.db.NetlistComparer`) |
 
 Reproduce: `klt lvs layout/bandgap_core/lvs_request.json` (run from
 `layout/bandgap_core/`, since the request's relative paths resolve against
@@ -555,7 +555,7 @@ silently downgraded to warnings — per `CLAUDE.md`, "Verification is the
 product": this repo's DRC result is a genuine pass; its LVS result is a
 genuine, fully-explained fail, not fabricated evidence either way.
 
-### Permanent blockers (issue #20 rescope, 2026-08-23; cause 2 resolved in-repo via issue #149 and cause 3 resolved upstream via issue #152, both 2026-08-30)
+### Permanent blockers (issue #20 rescope, 2026-08-23; cause 2 resolved in-repo via issue #149, cause 3 resolved upstream via issue #152, and the well/substrate-tap gap resolved in-repo via issue #155, all 2026-08-30)
 
 One cause remains **permanently unreachable through routing, marker-layer
 geometry, or `klt lvs` hints alone** — a future pass should not
@@ -570,11 +570,20 @@ marker geometry or hints:
 - **cause 3** by a new upstream capability (`klayout-tools#1481`, re-verified
   for issue #152, see below).
 
-Both are kept in this list for their own record, and because neither cell
-reaches a clean `match` even with them resolved: `bandgap_core` still blocks
-on cause 1 below plus the unexercised well/substrate-tap gap, and
-`bandgap_startup` on that same tap gap — the separate, already-documented
-reason cause 3's own entry now spells out.
+The well/substrate-tap gap cause 3's own entry used to name as the reason
+neither cell could reach `net.matched` has *also* since been resolved
+in-repo (issue #155's `draw_hv_mos` tap-ring geometry, see "Well/substrate-
+tap ring geometry added (issue #155)" below) — every `nfet`/`pfet` body
+terminal on both cells now resolves to its real schematic net, not an
+anonymous or deck-synthesized `vsubs` net.
+
+All are kept in this list for their own record, and because **neither cell
+reaches a clean `match` even with all of them resolved**: `bandgap_core`
+still blocks on cause 1 below (permanent) plus a pre-existing `rppd`
+bulk-terminal-count mismatch (see issue #155's own entry below);
+`bandgap_startup` on that same `rppd`/`rhigh` cause plus a newly-exposed
+net-name case-identity conflict, tracked at #157 (see issue #155's own
+entry below for both).
 
 1. **Bipolar (SiGe HBT) device recognition is permanently declined
    upstream** (`klayout-tools#1242`, closed; `klayout-tools#1232`'s own
@@ -621,21 +630,111 @@ reason cause 3's own entry now spells out.
    anonymous `$4`. See the refreshed
    `layout/bandgap_startup/lvs_report.json` (and `drc_report.json`, whose
    content hash moved with the deck but whose verdict stayed `clean`, 0
-   violations). **This does not get `bandgap_startup` to a clean `match`**:
-   the fresh run still reports `status: "mismatch"`, the same 16
-   findings/14 error-severity as before this fix (only the previously
-   anonymous net's own name changed, plus a knock-on pin-count shift from
-   4 to 5) — because the separate, already-documented well/substrate-tap
-   gap (cause 2 under "Net effect" above:
-   [klayout-tools#1273](https://github.com/2AMLogic/klayout-tools/issues/1273)
+   violations). **This did not, on its own, get `bandgap_startup` to a
+   clean `match`** at the time: the well/substrate-tap gap (cause 2 under
+   "Net effect" above: [klayout-tools#1273](https://github.com/2AMLogic/klayout-tools/issues/1273)
    resolved the deck side, but this repo's own `draw_hv_mos`
-   (`layout/common.py`) still draws no tap-ring geometry, so both `nfet`
-   body terminals fall back to the deck-synthesized `vsubs` net) remains
-   unresolved and independently keeps every net on this cell from reaching
-   `net.matched`. Fixing that gap — adding tap-ring geometry to
-   `draw_hv_mos` — is a separate, unfiled, bigger-scope future issue
-   (affecting every `draw_hv_mos` caller, not just `bandgap_startup`), not
-   attempted here.
+   (`layout/common.py`) drew no tap-ring geometry, so both `nfet` body
+   terminals fell back to the deck-synthesized `vsubs` net) remained
+   unresolved and independently kept every net on this cell from reaching
+   `net.matched`. **RESOLVED in-repo, issue #155** — see "Well/substrate-tap
+   ring geometry added (issue #155)" immediately below.
+
+### Well/substrate-tap ring geometry added (issue #155)
+
+The well/substrate-tap gap cause 3's own entry named above is now fixed at
+the layout level: `draw_hv_mos` (`layout/common.py`) draws one tap ring per
+MOS instance — a small, separate `Activ` island (never touching the
+device's own source/drain `Activ`, clearing `activ.space.1`'s 0.21um floor
+with margin) on the *opposite*-doping implant marker from the device's own
+source/drain (`nSD`/(7,0) for a `pmos` tap inside its own `NWell`, `pSD`/
+(14,0) for an `nmos` tap outside every `NWell`) — exactly the geometry the
+deck's own `tap_nplus`/`tap_pplus` derivation
+([klayout-tools#1273](https://github.com/2AMLogic/klayout-tools/issues/1273))
+reads. Each ring is contacted and landed on `Metal1`, bridged (a short,
+overlapping `Metal1` strip) into whichever of the device's own source/drain
+pads carries its real body net — every existing call site in this repo ties
+a `pmos`'s body to its own `source_net` and an `nmos`'s body to its own
+`drain_net` (verified against every `XM*` instance line in
+`design/netlist/bandgap_core.spice`/`bandgap_startup.spice`), which is
+`draw_hv_mos`'s new `body_net` parameter's default, so no existing call site
+needed to change. `NWell` is widened on whichever side a `pmos` tap lands on
+to keep it inside the same well island the well-tie derivation requires.
+
+**Verified: every MOS body terminal now extracts to its real schematic net,
+not an anonymous or deck-synthesized `vsubs` net.** Fresh `klt extract`
+against both regenerated cells:
+
+```
+# bandgap_startup.gds (klt extract --deck sg13g2 --top bandgap_startup)
+M$1 det sns1 vss vss nfet L=0.5U W=10U   <- MSENSE (D=det G=sns1 S=vss B=vss, exact match)
+M$2 fb det vss vss nfet L=0.5U W=2U      <- MKFB   (D=fb G=det S=vss B=vss, exact match)
+
+# bandgap_core.gds (klt extract --deck sg13g2 --top bandgap_core)
+M$1 vdd fb sns1 vdd pfet L=1U W=10U   <- M1   (S=vdd B=vdd, exact match)
+M$2 vdd fb sns2 vdd pfet L=1U W=9U    <- M2A  (S=vdd B=vdd, exact match)
+M$3 vdd fb sns2 vdd pfet L=1U W=1U    <- M2B  (S=vdd B=vdd, exact match)
+M$4 vdd fb vref vdd pfet L=1U W=8U    <- M3A  (S=vdd B=vdd, exact match)
+M$5 vdd fb vref vdd pfet L=1U W=1U    <- M3B  (S=vdd B=vdd, exact match)
+M$6 vdd fb vref vdd pfet L=1U W=1U    <- M3C  (S=vdd B=vdd, exact match)
+```
+
+**DRC stays clean, 0 violations, on both cells** (`klt drc`, re-verified
+after the new tap-ring geometry) — no DRC rule in the curated deck's own
+`DECK` list constrains `NWell`/`nSD`/`pSD` directly, so the only floors the
+new geometry had to clear were the ordinary `Activ`/`Cont`/`Metal1` ones
+(all satisfied with real margin — see `layout/common.py`'s own `TAP_*`
+module constants and their comment for the exact numbers).
+
+**Fresh `klt lvs`, both cells, honest results — neither reaches `match`:**
+
+- **`bandgap_startup`**: `mismatch_count` 16 -> **5** (14 -> **4**
+  error-severity). Both `nfet` devices (`MSENSE`/`MKFB`) now report
+  `device.matched` with exactly-correct terminals (see the `klt extract`
+  dump above). The 5 remaining findings are **two independent causes,
+  neither the tap gap**:
+  1. `RPU`/`rhigh` stays `device.unmatched` — a pre-existing,
+     already-present-before-this-fix cause (the same baseline report
+     already listed it): this deck's `rhigh` resistor extracts with a
+     synthesized 3rd (`vsubs`-global) bulk terminal
+     (`DeviceExtractorResistorWithBulk`), while the reference's plain
+     `RPU vdd det … rhigh` card is 2-terminal — a terminal-count mismatch,
+     unrelated to well/substrate-tap geometry.
+  2. A **newly-exposed** net-name case-identity conflict: `klt lvs`'s
+     reference side is read via KLayout's own `NetlistSpiceReader`, which
+     uppercases every net name (`vss` -> `VSS`, `det` -> `DET`) — this
+     repo's own `layout/common.py` labels match `design/netlist/*.spice`'s
+     own lowercase spelling instead. `NetlistComparer` still correctly
+     pairs `det`/`vss` topologically (both devices' terminals match
+     exactly, confirmed above) but reports `topology`/"name identity
+     conflict" for each, since the two sides' net names now differ only in
+     case. This could not surface before this fix — with 0 devices
+     matching, no net correspondence existed to expose it. Filed at **#157**
+     for a future pass (case-folding options evaluated there, not decided
+     here — this issue's own scope is `draw_hv_mos`'s tap-ring geometry,
+     not the net-labeling/reference-conversion case convention).
+- **`bandgap_core`**: `mismatch_count` 36 -> **10** (35 -> **9**
+  error-severity); matched devices 0 -> **6** (every `pfet`), matched nets
+  0 -> **2**. Remaining causes: permanent blocker #1 above (bipolar, 3
+  `Q1`-`Q3` `device.unmatched`), the same pre-existing `rppd` bulk-terminal
+  3-vs-2 mismatch as `bandgap_startup`'s `RPU` above (`R1`/`R2`, 2
+  `device.unmatched`), and a `net.merged`/`net.split` finding on `VSS`
+  that traces to that same `rppd` bulk-terminal artifact (the resistors'
+  own synthesized `vsubs` bulk net does not merge with the real, routed
+  `vss` net in this cell the way the tap ring's bridge merges an `nfet`
+  body with its own drain pad in `bandgap_startup`) — **not** a
+  well/substrate-tap regression: `bandgap_core` has no `nmos` devices at
+  all, and this cell's own PMOS body ties are independently confirmed
+  exact-match above. As documented in permanent blocker #1, `bandgap_core`
+  cannot reach a clean `match` regardless (bipolar recognition is
+  permanently declined upstream) — this fix's job here was narrowing the
+  mismatch count and confirming every `pfet` body tie, both achieved.
+
+Reproduce: `klt extract`/`klt drc`/`klt lvs` exactly as documented earlier
+in this section, against `layout/bandgap_core/bandgap_core.gds`/
+`layout/bandgap_startup/bandgap_startup.gds` regenerated via
+`python3 layout/bandgap_core/generate.py`/`layout/bandgap_startup/generate.py`
+(deterministic — a second run leaves `git diff` empty, verified).
 
 ### `M1`/`M2`/`M3` automorphism resolved (issue #149)
 

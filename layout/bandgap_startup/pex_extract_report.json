@@ -1,14 +1,14 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "file": "bandgap_startup.gds",
   "deck": "sg13g2",
   "top": "bandgap_startup",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_startup.pex.spice",
-  "netlist_sha256": "b41c28b9b46e23136a7e7a8f06ea09f80da4108d1f59f030ac8c601429f802ec",
+  "netlist_sha256": "bacc47bdfce030f3e4024917289338bfefdaa3702f5d25fdef1e4db4eb66a590",
   "status": "extracted",
   "device_count": 3,
-  "net_count": 6,
+  "net_count": 5,
   "pin_count": 4,
   "device_counts": {
     "nfet": 2,
@@ -17,14 +17,9 @@
   "dummy_devices_dropped": 0,
   "ignored_layers": [
     {
-      "layer": 5,
-      "datatype": 1,
-      "shapes": 2
-    },
-    {
       "layer": 8,
       "datatype": 1,
-      "shapes": 7
+      "shapes": 9
     },
     {
       "layer": 63,
@@ -57,6 +52,10 @@
   "device_classes": [
     "nfet",
     "pfet",
+    "cap_cmim",
+    "rfcmim",
+    "cap_cmomi",
+    "cap_cmomf",
     "resistor",
     "dantenna",
     "dpantenna"
@@ -67,9 +66,9 @@
       "class": "nfet",
       "nets": {
         "s": "vss",
-        "g": "\\$4",
+        "g": "sns1",
         "d": "det",
-        "b": "vsubs"
+        "b": "vss"
       },
       "params": {
         "l_um": 0.5,
@@ -87,7 +86,7 @@
         "s": "vss",
         "g": "det",
         "d": "fb",
-        "b": "vsubs"
+        "b": "vss"
       },
       "params": {
         "l_um": 0.5,
@@ -104,7 +103,7 @@
       "nets": {
         "a": "\\$5",
         "b": "det",
-        "w": "vsubs"
+        "w": "vss"
       },
       "params": {
         "r_ohm": 1919368.0,
@@ -116,11 +115,6 @@
     }
   ],
   "nets": [
-    {
-      "name": "\\$4",
-      "pin": false,
-      "device_count": 1
-    },
     {
       "name": "\\$5",
       "pin": false,
@@ -137,20 +131,19 @@
       "device_count": 1
     },
     {
-      "name": "vss",
+      "name": "sns1",
       "pin": true,
-      "device_count": 2
+      "device_count": 1
     },
     {
-      "name": "vsubs",
+      "name": "vss",
       "pin": true,
-      "device_count": 3
+      "device_count": 5
     }
   ],
   "warnings": [
-    "1 net connect to exactly one device terminal -- a MOS gate -- and are not a declared pin: these gates have no DC path from anywhere else in the netlist, so they are almost certainly unconnected inputs rather than legitimate floating nodes; resimulating this netlist directly will hit a singular matrix on these nets -- see single_terminal_nets[] for the full list.",
     "1 net connect to exactly one device terminal -- source/drain/body/resistor-equivalent, not a gate -- and are not a declared pin; this can be a legitimate single-terminal tie (e.g. an intentionally unterminated dummy's diffusion tie), but confirm these nets have no other intended connectivity -- see single_terminal_nets[] for the full list.",
-    "4 layers (5/1, 8/1, 63/0, 128/1) carrying 13 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
+    "3 layers (8/1, 63/0, 128/1) carrying 13 shapes are outside 'sg13g2' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
   ],
   "black_box_regions": [],
   "abstracted_cells": [],
@@ -159,12 +152,6 @@
   "voltage_domain_warnings": [],
   "unbiased_pmos_body_nets": [],
   "single_terminal_nets": [
-    {
-      "net": "\\$4",
-      "device": "$1",
-      "terminal": "g",
-      "terminal_kind": "gate"
-    },
     {
       "net": "\\$5",
       "device": "$3",
@@ -177,24 +164,24 @@
   "pdk": null,
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.11",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:72c12aadf165e17090871284ebf8688f2066e6d11967f30723945c3efc12bf59",
-      "released": true
+      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "released": false
     },
     "input": {
-      "content_hash": "sha256:60d038f30372252076cf0c2c6a97f029bed8a2a16868d1078e362db1e992268c"
+      "content_hash": "sha256:3f9194417c0f87c1075d8a97bb6f31abf4332cfb5e687847ca6c1d5e822485ba"
     }
   },
   "parasitics": {
-    "r_count": 7,
+    "r_count": 10,
     "c_count": 4,
     "cc_count": 0,
     "l_count": 0,
-    "total_resistance_ohm": 545.3231,
-    "total_capacitance_ff": 133.446036,
+    "total_resistance_ohm": 546.0177,
+    "total_capacitance_ff": 133.573221,
     "total_coupling_capacitance_ff": 0.0,
     "total_inductance_nh": 0.0,
     "nets": [
@@ -269,9 +256,9 @@
       },
       {
         "net": "vss",
-        "net_id": 1,
-        "resistance_ohm": 10.8142,
-        "capacitance_ff": 2.34311,
+        "net_id": 8,
+        "resistance_ohm": 11.5088,
+        "capacitance_ff": 2.470295,
         "inductance_nh": 0.0,
         "hub_net": "vss",
         "rc_model": "lumped",
@@ -280,13 +267,31 @@
             "device": "$1",
             "terminal": "S",
             "leg_net": "vss__t0",
-            "resistance_ohm": 5.4071
+            "resistance_ohm": 1.5419
           },
           {
             "device": "$2",
             "terminal": "S",
             "leg_net": "vss__t1",
-            "resistance_ohm": 5.4071
+            "resistance_ohm": 1.3353
+          },
+          {
+            "device": "$3",
+            "terminal": "W",
+            "leg_net": "vss__t2",
+            "resistance_ohm": 5.7544
+          },
+          {
+            "device": "$1",
+            "terminal": "B",
+            "leg_net": "vss__t3",
+            "resistance_ohm": 1.5419
+          },
+          {
+            "device": "$2",
+            "terminal": "B",
+            "leg_net": "vss__t4",
+            "resistance_ohm": 1.3353
           }
         ],
         "segments": [],
