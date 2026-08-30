@@ -38,32 +38,36 @@
       "matched": 0
     },
     "pins": {
-      "layout": 4,
+      "layout": 5,
       "reference": 0,
-      "matched": 4
+      "matched": 5
     }
   },
   "device_classes": [
     "nfet",
     "pfet",
+    "cap_cmim",
+    "rfcmim",
+    "cap_cmomi",
+    "cap_cmomf",
     "resistor",
     "dantenna",
     "dpantenna"
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.10",
+    "engine_version": "0.30.12",
     "layout_sha256": "60d038f30372252076cf0c2c6a97f029bed8a2a16868d1078e362db1e992268c",
     "reference_sha256": "583ce6ff76c4b0f843de90dab4532f66076069e554be1f21af2cd3a4e24551c6",
     "extracted_netlist": null
   },
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.10",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:72c12aadf165e17090871284ebf8688f2066e6d11967f30723945c3efc12bf59",
+      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
       "released": false
     },
     "input": null
@@ -143,22 +147,6 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "\\$4",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "layout net has no reference counterpart",
-      "side": "layout",
-      "net": {
         "layout": "\\$5",
         "reference": null
       },
@@ -192,6 +180,22 @@
       "side": "layout",
       "net": {
         "layout": "fb",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "error",
+      "description": "layout net has no reference counterpart",
+      "side": "layout",
+      "net": {
+        "layout": "sns1",
         "reference": null
       },
       "device": null,
