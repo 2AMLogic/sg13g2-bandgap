@@ -1,0 +1,10 @@
+point_corner,vos_tag,corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,vos_v,status,fb_seed_v,fb_op_v,sns1_op_v,sns1_amp_op_v,sns2_op_v,vref_op_v,loop_err_v
+typ,0,typ_vos0,hbt_typ,mos_tt,res_typ,27,3.30,10u,0.000,PASS,2.49452e+00,2.496820e+00,7.081423e-01,7.081423e-01,7.077483e-01,1.047338e+00,0.000394
+typ,pos,typ_vospos,hbt_typ,mos_tt,res_typ,27,3.30,10u,0.005,PASS,2.49452e+00,2.487415e+00,7.104836e-01,7.154836e-01,7.150675e-01,1.080621e+00,0.0004161
+typ,neg,typ_vosneg,hbt_typ,mos_tt,res_typ,27,3.30,10u,-0.005,PASS,2.49452e+00,2.506766e+00,7.055768e-01,7.005768e-01,7.002056e-01,1.013820e+00,0.0003712
+wcs,0,wcs_vos0,hbt_wcs,mos_ss,res_wcs,-40,2.97,10u,0.000,PASS,2.08649e+00,2.088393e+00,7.887945e-01,7.887945e-01,7.884957e-01,1.049604e+00,0.0002988
+wcs,pos,wcs_vospos,hbt_wcs,mos_ss,res_wcs,-40,2.97,10u,0.005,PASS,2.08649e+00,2.079069e+00,7.911072e-01,7.961072e-01,7.957873e-01,1.082916e+00,0.0003199
+wcs,neg,wcs_vosneg,hbt_wcs,mos_ss,res_wcs,-40,2.97,10u,-0.005,PASS,2.08649e+00,2.098425e+00,7.861896e-01,7.811896e-01,7.809126e-01,1.015989e+00,0.000277
+bcs,0,bcs_vos0,hbt_bcs,mos_ff,res_bcs,125,3.63,10u,0.000,PASS,2.92451e+00,2.927114e+00,5.853180e-01,5.853180e-01,5.846720e-01,1.041080e+00,0.000646
+bcs,pos,bcs_vospos,hbt_bcs,mos_ff,res_bcs,125,3.63,10u,0.005,PASS,2.92451e+00,2.917368e+00,5.876841e-01,5.926841e-01,5.920108e-01,1.074275e+00,0.0006733
+bcs,neg,bcs_vosneg,hbt_bcs,mos_ff,res_bcs,125,3.63,10u,-0.005,PASS,2.92451e+00,2.937268e+00,5.827861e-01,5.777861e-01,5.771680e-01,1.007711e+00,0.0006181
