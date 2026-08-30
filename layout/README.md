@@ -311,7 +311,7 @@ source, not a runtime dependency of running it.
 | Cell | Report | Status | Deck (content hash) |
 | --- | --- | --- | --- |
 | `bandgap_core` | `layout/bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:72c12aad...` |
-| `bandgap_startup` | `layout/bandgap_startup/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:72c12aad...` |
+| `bandgap_startup` | `layout/bandgap_startup/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:894326a4...` (refreshed, issue #152 — `bandgap_core` not re-run, still on the prior deck build) |
 
 The 26 `cont.width.1` violations this issue's own informational run
 originally found (see "What this layout is / is not" above) were fixed by
@@ -547,13 +547,16 @@ silently downgraded to warnings — per `CLAUDE.md`, "Verification is the
 product": this repo's DRC result is a genuine pass; its LVS result is a
 genuine, fully-explained fail, not fabricated evidence either way.
 
-### Permanent blockers (issue #20 rescope, 2026-08-23)
+### Permanent blockers (issue #20 rescope, 2026-08-23; cause 3 resolved upstream, issue #152, 2026-08-30)
 
-Three causes are now understood, from this issue's and #27's own recorded
-evidence, to be **permanently unreachable through routing, marker-layer
+Two causes remain **permanently unreachable through routing, marker-layer
 geometry, or `klt lvs` hints alone** — a future pass should not
-re-investigate any of these from scratch without a new upstream capability
-or a schematic-level circuit change:
+re-investigate either from scratch without a new upstream capability or a
+schematic-level circuit change. A third cause, originally recorded here as
+permanent, has since been resolved upstream (see cause 3 below) — kept in
+this list for its own record, and because `bandgap_startup` still does not
+reach a clean `match` even with it resolved, for the separate,
+already-documented reason cause 3 itself now explains:
 
 1. **Bipolar (SiGe HBT) device recognition is permanently declined
    upstream** (`klayout-tools#1242`, closed; `klayout-tools#1232`'s own
@@ -575,18 +578,45 @@ or a schematic-level circuit change:
    experiment to check is itself the automorphism-resolution work this
    issue's scope explicitly excludes. Listed here as a blocker this issue
    did not resolve, not as a settled-permanent fact independent of #20.
-3. **`bandgap_startup`'s `MSENSE.gate` net extracts as an anonymous net**,
-   independent of resistor recognition, because the curated deck declares
-   no `poly_label` layer at all (`EXTRACTION_DECK.poly_label=None`) — GDS
-   text placed on a `GatPoly`-adjacent label layer is simply not a signal
-   this deck's net-naming pass reads for a gate terminal (unlike
-   `Metal1.text`/`Metal2.text`, see this file's own module-level comment on
-   `L_METAL1_TEXT`/`L_METAL2_TEXT` in `layout/common.py`). Re-verified
-   directly for this issue: `klt extract` reports `MSENSE`'s gate net as
-   `$4` (`MSENSE`'s own schematic net is `sns1`), never `sns1` by name —
-   a structural, permanent deck limitation (no drawn or derivable poly-label
-   geometry can produce a name from a layer the deck's connectivity graph
-   never reads at all), not a routing or layout-marker gap.
+3. **Resolved upstream** (`bandgap_startup`'s `MSENSE.gate` net /
+   `poly_label`). This previously extracted as an anonymous net because the
+   curated deck declared no `poly_label` layer at all
+   (`EXTRACTION_DECK.poly_label=None`) — GDS text placed on a
+   `GatPoly`-adjacent label layer was simply not a signal this deck's
+   net-naming pass read for a gate terminal (unlike `Metal1.text`/
+   `Metal2.text`, see this file's own module-level comment on
+   `L_METAL1_TEXT`/`L_METAL2_TEXT` in `layout/common.py`). Filed as
+   [klayout-tools#1476](https://github.com/2AMLogic/klayout-tools/issues/1476)
+   and closed via
+   [klayout-tools#1481](https://github.com/2AMLogic/klayout-tools/pull/1481),
+   merged 2026-08-30 ("decks: set poly_label on sg13g2/sg13cmos5l so
+   labeled poly gates extract named") — the curated `sg13g2` deck now
+   declares a `poly_label` layer. Re-verified directly for this issue
+   (issue #152), from a fresh `klt` build against the merged commit
+   (`2AMLogic/klayout-tools@7066037`, deck `content_hash:
+   sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda`,
+   vs. the previously-committed report's
+   `sha256:72c12aadf165e17090871284ebf8688f2066e6d11967f30723945c3efc12bf59`):
+   `klt lvs` now extracts `MSENSE`'s gate net as named **`sns1`** —
+   matching the schematic net name exactly — where it previously extracted
+   anonymous `$4`. See the refreshed
+   `layout/bandgap_startup/lvs_report.json` (and `drc_report.json`, whose
+   content hash moved with the deck but whose verdict stayed `clean`, 0
+   violations). **This does not get `bandgap_startup` to a clean `match`**:
+   the fresh run still reports `status: "mismatch"`, the same 16
+   findings/14 error-severity as before this fix (only the previously
+   anonymous net's own name changed, plus a knock-on pin-count shift from
+   4 to 5) — because the separate, already-documented well/substrate-tap
+   gap (cause 2 under "Net effect" above:
+   [klayout-tools#1273](https://github.com/2AMLogic/klayout-tools/issues/1273)
+   resolved the deck side, but this repo's own `draw_hv_mos`
+   (`layout/common.py`) still draws no tap-ring geometry, so both `nfet`
+   body terminals fall back to the deck-synthesized `vsubs` net) remains
+   unresolved and independently keeps every net on this cell from reaching
+   `net.matched`. Fixing that gap — adding tap-ring geometry to
+   `draw_hv_mos` — is a separate, unfiled, bigger-scope future issue
+   (affecting every `draw_hv_mos` caller, not just `bandgap_startup`), not
+   attempted here.
 
 ## Evidence freshness, enforced in CI
 
