@@ -77,6 +77,49 @@ L_SALBLOCK = (28, 0)
 L_METAL1_TEXT = (8, 25)
 L_METAL2_TEXT = (10, 25)
 
+# Issue #157: the *real* net-naming layers above (`L_METAL1_TEXT`/
+# `L_METAL2_TEXT`, `klt`'s `EXTRACTION_DECK.metal_labels`) and
+# `L_GATPOLY_LABEL` (`EXTRACTION_DECK.poly_label=(5, 1)`, issue #152 --
+# note this is a *different* purpose than its own name's "informational"
+# framing above for `L_METAL1_LABEL`/`L_METAL2_LABEL`: for `GatPoly`,
+# datatype 1 *is* the deck's real gate-net-naming layer, there being no
+# separate `GatPoly.text` the deck reads instead) get their label text
+# upper-cased before being drawn, here, centrally -- not at each call
+# site -- to match `klayout.db.NetlistSpiceReader`'s own net-naming
+# convention on the reference-conversion side (`layout/lvs_reference.py`).
+#
+# Root cause, confirmed interactively (not assumed) against the pip
+# `klayout` package this repo already depends on: `NetlistSpiceReader`
+# upper-cases *every* net name it reads, unconditionally, regardless of
+# the input SPICE text's own case --
+#
+#   >>> nl = kdb.Netlist()
+#   >>> nl.read("bandgap_startup.lvs_reference.spice", kdb.NetlistSpiceReader())
+#   >>> [n.name for n in nl.top_circuit().each_net()]
+#   ['VDD', 'DET', 'SNS1', 'VSS', 'FB']  # the file itself spells them
+#                                        # "vdd"/"det"/"sns1"/"vss"/"fb"
+#
+# -- so a case fix applied to `layout/lvs_reference.py`'s *text* (the
+# curation comment's Option 3) is a no-op: whatever case that script
+# writes, the reference side always resolves to upper-case once read.
+# The only side whose net-name case is actually a free variable is this
+# one -- `klt extract`'s net-naming pass reads a GDS text label's case
+# back *verbatim* (confirmed the same way: an un-fixed `bandgap_startup`
+# `klt lvs --format json` run reports `net: {"layout": "det", "reference":
+# "DET"}`, the layout side preserving this module's own lower-case
+# schematic-net-name spelling). This is issue #157's own Option 1 (match
+# the reader's convention at the label-drawing boundary), applied once,
+# centrally, in `Builder.label()` -- not repeated as a literal-case edit
+# at every `draw_npn13g2`/`draw_hv_mos`/`draw_poly_res`/`draw_gate_tab`
+# net-name argument -- so it generalises to any current or future net
+# with no per-net enumeration, unlike a `hints.same_nets` entry (Option 2).
+#
+# `klt lvs`'s own `NetlistComparer` pairs devices/nets by *structure*, not
+# by name (that is the entire point of an LVS compare) -- so this is a
+# cosmetic-to-the-compare, case-only change: it does not, and must not,
+# alter which physical devices or nets pair against which schematic ones.
+_NET_NAME_LAYERS = frozenset({L_METAL1_TEXT, L_METAL2_TEXT, L_GATPOLY_LABEL})
+
 LAYER_NAMES: dict[tuple[int, int], str] = {
     L_ACTIV: "Activ.drawing",
     L_GATPOLY: "GatPoly.drawing",
@@ -136,6 +179,13 @@ class Builder(BuilderBase):
 
     def label(self, layer: tuple[int, int], text: str, x: float, y: float) -> None:
         idx = self._layers[layer]
+        # Issue #157: fold to upper-case on the deck's real net-naming
+        # layers only (see `_NET_NAME_LAYERS`'s own module-level comment) --
+        # every other layer (`L_TEXT`, `L_METAL1_LABEL`/`L_METAL2_LABEL`/
+        # `L_POLYRES_LABEL`'s purely-informational duplicates, instance-name
+        # annotations) is left exactly as each call site spells it.
+        if layer in _NET_NAME_LAYERS:
+            text = text.upper()
         self.cell.shapes(idx).insert(kdb.Text(text, self._u(x), self._u(y)))
 
 

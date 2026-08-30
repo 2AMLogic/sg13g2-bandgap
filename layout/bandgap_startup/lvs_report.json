@@ -14,15 +14,15 @@
     "parameter_tolerance": null
   },
   "status": "mismatch",
-  "mismatch_count": 5,
-  "error_count": 4,
+  "mismatch_count": 3,
+  "error_count": 2,
   "category_counts": {
     "device.unmatched": 1,
-    "topology": 4
+    "topology": 2
   },
   "category_error_counts": {
     "device.unmatched": 1,
-    "topology": 3
+    "topology": 1
   },
   "counts": {
     "nets": {
@@ -55,7 +55,7 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "3f9194417c0f87c1075d8a97bb6f31abf4332cfb5e687847ca6c1d5e822485ba",
+    "layout_sha256": "274e83ccceaeccd23a7c8c140d40ae6b30212e8341f798190e58c96cb62e525d",
     "reference_sha256": "583ce6ff76c4b0f843de90dab4532f66076069e554be1f21af2cd3a4e24551c6",
     "extracted_netlist": null
   },
@@ -106,38 +106,6 @@
     },
     {
       "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "det",
-        "reference": "DET"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "vss",
-        "reference": "VSS"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
       "severity": "warning",
       "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
       "side": "layout",
@@ -152,12 +120,12 @@
   ],
   "net_correspondence": [
     {
-      "layout": "fb",
+      "layout": "FB",
       "reference": "FB",
       "pin": true
     },
     {
-      "layout": "sns1",
+      "layout": "SNS1",
       "reference": "SNS1",
       "pin": true
     }

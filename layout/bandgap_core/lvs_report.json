@@ -18,14 +18,12 @@
   "error_count": 9,
   "category_counts": {
     "device.unmatched": 5,
-    "net.merged": 1,
-    "net.split": 2,
+    "net.unmatched": 3,
     "topology": 2
   },
   "category_error_counts": {
     "device.unmatched": 5,
-    "net.merged": 1,
-    "net.split": 2,
+    "net.unmatched": 3,
     "topology": 1
   },
   "counts": {
@@ -59,7 +57,7 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "78491a97117e8fb707b793c4194b7da8b883636a26dfa3c78225e56740c29f78",
+    "layout_sha256": "3f3ee1e5043ebb6cb9d34c7e96dbeae4b5274cd9c4318ec7dea26e6fa1e0659d",
     "reference_sha256": "658ec5eb4581f11833af9311222c25ef237ebaf38c40a18c7b0d2e5512afa464",
     "extracted_netlist": null
   },
@@ -161,28 +159,12 @@
       "subcircuit": null
     },
     {
-      "category": "net.merged",
+      "category": "net.unmatched",
       "severity": "error",
-      "description": "multiple reference nets were collapsed into one layout net",
-      "side": "reference",
-      "net": {
-        "layout": null,
-        "reference": "VSS"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.split",
-      "severity": "error",
-      "description": "a reference net's role is divided across multiple layout nets",
+      "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "vss",
+        "layout": "VSS",
         "reference": null
       },
       "device": null,
@@ -193,13 +175,29 @@
       "subcircuit": null
     },
     {
-      "category": "net.split",
+      "category": "net.unmatched",
       "severity": "error",
-      "description": "a reference net's role is divided across multiple layout nets",
+      "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
         "layout": "vsubs",
         "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "error",
+      "description": "reference net has no layout counterpart",
+      "side": "reference",
+      "net": {
+        "layout": null,
+        "reference": "VSS"
       },
       "device": null,
       "property": null,
@@ -237,12 +235,12 @@
   ],
   "net_correspondence": [
     {
-      "layout": "fb",
+      "layout": "FB",
       "reference": "FB",
       "pin": true
     },
     {
-      "layout": "vdd",
+      "layout": "VDD",
       "reference": "VDD",
       "pin": true
     }
