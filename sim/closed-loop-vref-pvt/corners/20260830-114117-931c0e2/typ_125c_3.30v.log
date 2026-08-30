@@ -1,0 +1,66 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+sns1                                         0
+fb                                           0
+xq1.s1                                       0
+xq1.t                                        0
+sns2                                         0
+cb2                                          0
+xr2.dt                                       0
+xq2.s1                                       0
+xq2.t                                        0
+vref                                         0
+cb3                                          0
+xr1.dt                                       0
+xq3.s1                                       0
+xq3.t                                        0
+tail                                         0
+d1                                           0
+d2                                           0
+pn                                           0
+det                                          0
+xrpu.dt                                      0
+fbx                                          0
+vmkfb#branch                                 0
+vsub#branch                                  0
+vvss#branch                                  0
+vvdd#branch                                  0
+
+ Reference value :  0.00000e+00 Reference value :  2.51140e-05 Reference value :  4.95640e-05 Reference value :  7.63640e-05 Reference value :  1.02514e-04 Reference value :  1.28964e-04 Reference value :  1.55764e-04 Reference value :  1.81764e-04 Reference value :  2.08575e-04 Reference value :  2.34375e-04 Reference value :  2.62275e-04 Reference value :  2.88675e-04 Reference value :  3.14375e-04 Reference value :  3.41725e-04 Reference value :  3.68625e-04 Reference value :  3.95175e-04 Reference value :  4.21025e-04 Reference value :  4.46875e-04 Reference value :  4.73725e-04 Reference value :  5.00075e-04 Reference value :  5.25975e-04 Reference value :  5.52475e-04 Reference value :  5.78975e-04 Reference value :  6.05425e-04 Reference value :  6.31775e-04 Reference value :  6.58075e-04 Reference value :  6.84575e-04 Reference value :  7.10925e-04 Reference value :  7.37175e-04 Reference value :  7.63525e-04 Reference value :  7.90375e-04 Reference value :  8.16425e-04 Reference value :  8.43125e-04 Reference value :  8.69775e-04 Reference value :  8.96225e-04 Reference value :  9.22225e-04 Reference value :  9.48425e-04 Reference value :  9.74775e-04 Reference value :  1.00108e-03 Reference value :  1.02688e-03 Reference value :  1.05268e-03 Reference value :  1.07942e-03 Reference value :  1.10607e-03 Reference value :  1.13202e-03 Reference value :  1.15897e-03 Reference value :  1.18597e-03 Reference value :  1.21232e-03 Reference value :  1.23822e-03 Reference value :  1.26467e-03 Reference value :  1.29232e-03 Reference value :  1.31847e-03 Reference value :  1.34547e-03 Reference value :  1.37187e-03 Reference value :  1.39782e-03 Reference value :  1.42397e-03 Reference value :  1.45012e-03 Reference value :  1.47607e-03 Reference value :  1.50227e-03 Reference value :  1.52887e-03 Reference value :  1.55512e-03 Reference value :  1.58217e-03 Reference value :  1.60917e-03 Reference value :  1.63582e-03 Reference value :  1.66212e-03 Reference value :  1.68972e-03 Reference value :  1.71582e-03 Reference value :  1.74242e-03 Reference value :  1.76837e-03 Reference value :  1.79632e-03 Reference value :  1.82237e-03 Reference value :  1.84897e-03 Reference value :  1.87702e-03 Reference value :  1.90487e-03 Reference value :  1.93217e-03 Reference value :  1.96037e-03 Reference value :  1.98812e-03 Reference value :  2.01762e-03 Reference value :  2.04437e-03 Reference value :  2.07022e-03 Reference value :  2.09552e-03 Reference value :  2.12232e-03 Reference value :  2.14822e-03 Reference value :  2.17427e-03 Reference value :  2.20052e-03 Reference value :  2.22692e-03 Reference value :  2.25287e-03 Reference value :  2.27972e-03 Reference value :  2.30582e-03 Reference value :  2.33367e-03 Reference value :  2.35967e-03 Reference value :  2.38737e-03 Reference value :  2.41447e-03 Reference value :  2.44217e-03 Reference value :  2.46872e-03 Reference value :  2.49548e-03 Reference value :  2.52188e-03 Reference value :  2.54938e-03 Reference value :  2.57583e-03 Reference value :  2.60398e-03 Reference value :  2.63093e-03 Reference value :  2.65713e-03 Reference value :  2.68338e-03 Reference value :  2.70943e-03 Reference value :  2.73618e-03 Reference value :  2.76243e-03 Reference value :  2.78838e-03 Reference value :  2.81458e-03 Reference value :  2.84123e-03 Reference value :  2.86748e-03 Reference value :  2.89383e-03 Reference value :  2.91978e-03 Reference value :  2.94633e-03 Reference value :  2.97243e-03 Reference value :  2.99988e-03
+No. of Data Rows : 60011
+v_fb_v              =  2.55520e+00
+v_sns1_v            =  5.90077e-01
+v_sns2_v            =  5.89802e-01
+v_det_v             =  2.59927e-02
+i_mkfb_v            =  2.60720e-09
+v_vref_2ms          =  1.04790e+00
+v_vref_3ms          =  1.04790e+00
+v_vbeq3_2ms         =  5.90559e-01
+v_vbeq3_3ms         =  5.90559e-01
+Note: Simulation executed from .control section 

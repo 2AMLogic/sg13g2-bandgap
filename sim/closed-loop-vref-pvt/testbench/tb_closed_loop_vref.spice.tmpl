@@ -45,7 +45,41 @@
 * exact pair of values. This testbench drives the same three DUTs through
 * the same kind of ramp, so it inherits the same numerical stiffness at the
 * same early instant and needs the same aids.
-.options temp=@@TEMP_C@@ tnom=27 rshunt=1e9 gmin=1e-9
+*
+* reltol=5e-3 + a smaller suggested initial .tran step (below, 50n vs the
+* prior 2u) -- issue #149: bandgap_core's M2/M3 mirror legs are now
+* unit-device-decomposed (M2: 2 parallel fingers, one w=9u dominant + one
+* w=1u trim; M3: 3 parallel fingers, one w=8u dominant + two w=1u trim --
+* breaks the LVS M1/M2/M3 graph automorphism, see layout/README.md
+* "M1/M2/M3 automorphism resolved"). This is NOT electrically exact --
+* IHP-SG13G2's real sg13_hv_pmos PSP103 compact model is not scale-
+* invariant in W, see design/bandgap_core.sch's own header "NOT
+* electrically exact" section for the quantified isolated-device and
+* closed-loop deltas this decomposition measurably introduces (small --
+* ~0.3% on vref, TC essentially unchanged -- but non-zero). Separately
+* from that accuracy question, decomposing into extra parallel devices
+* also adds extra simultaneously-degenerate nonlinear elements to the
+* SAME near-singular startup instant described above -- confirmed by
+* direct isolation against this issue's own first-implemented, deeper
+* {1,2,4}-count draft (10 of 45 corners, all -40C or close to it, failed
+* with ngspice's "Timestep too small ... trouble with xq3:npn13g2
+* vbic-instance" specifically when TWO of the three legs are
+* simultaneously decomposed; splitting only one leg, or the pre-#149
+* single-device legs, never failed at any corner -- reproduced by
+* selectively reverting each combination). Neither aid alone cleared every
+* failing corner there (reltol=5e-3 alone left 7 of 45 failing; the
+* initial .tran step alone needed successively smaller values at the
+* worst corners -- 200n cleared 9 of the original 10 failures but left
+* one corner still hitting the same "Timestep too small" failure; 50n
+* cleared that one too) -- both aids together (reltol=5e-3 + tran 50n)
+* clear all 45/45, confirmed again against the shallower {1,2,3}-count
+* geometry actually landed here (which converges at least as easily,
+* being a smaller perturbation). Both were verified to change NOTHING at
+* 6 significant figures on an already-passing corner (typ/27C/3.30V:
+* vref_2ms/vref_3ms/vbeq3_2ms/vbeq3_3ms identical at 200n vs 50n) -- a
+* solver-robustness relaxation for a known-stiff instant, not a claim
+* changed by applying it.
+.options temp=@@TEMP_C@@ tnom=27 rshunt=1e9 gmin=1e-9 reltol=5e-3
 
 * FIXTURE -- transient supply ramp: vdd ramps 0 -> VDD over 200 us (same
 * rise sim/closed-loop-startup and sim/startup-core-handover use) and holds
@@ -60,13 +94,24 @@ Vvss vss 0 dc 0
 * the same convention every testbench in this tree uses.
 Vsub sub! vss dc 0
 
-* DUT -- design/netlist/bandgap_core.spice, verbatim.
+* DUT -- design/netlist/bandgap_core.spice, verbatim. M2/M3 decomposed into
+* per-leg-distinct counts (1/2/3) of dominant-plus-trim-finger sg13_hv_pmos
+* instances (issue #149, T1 tracker #4 item 4 cause (d) -- breaks the
+* M1/M2/M3 LVS graph automorphism at the schematic level; each branch's
+* total mirror W/L stays 10u/1u nominally, though NOT exactly electrically
+* unchanged -- see design/bandgap_core.sch's own header "NOT electrically
+* exact" section for the quantified real-compact-model mismatch this
+* introduces and why {1,2,3} + dominant/trim fingers was chosen to
+* minimize it).
 XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
 XQ1 sns1 sns1 vss vss npn13G2 Nx=1
-XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XM2A sns2 fb vdd vdd sg13_hv_pmos w=9u l=1u ng=1 m=1
+XM2B sns2 fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
 XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
 XQ2 cb2 cb2 vss vss npn13G2 Nx=8
-XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XM3A vref fb vdd vdd sg13_hv_pmos w=8u l=1u ng=1 m=1
+XM3B vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XM3C vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
 XR1 vref cb3 sub! rppd w=2u l=511u m=1 b=0
 XQ3 cb3 cb3 vss vss npn13G2 Nx=1
 
@@ -102,7 +147,7 @@ pre_osdi @@OSDI_DIR@@/psp103.osdi
 pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
 pre_osdi @@OSDI_DIR@@/mosvar.osdi
 pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
-tran 2u 3m
+tran 50n 3m
 * Loop-closure / startup-release sanity (same criteria/sense as
 * sim/closed-loop-startup, evaluated here at t=3ms instead of 2ms) --
 * prerequisite for trusting the vref reading below as a real closed-loop

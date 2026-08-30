@@ -1,4 +1,61 @@
 {
   "_comment": "Known-stale sim/ evidence, waived explicitly rather than silently. .github/scripts/check_evidence_formats.py compares each experiment's NEWEST record's committed per-point netlist snapshots against the design/ netlist that record names as its own provenance; a record produced against a superseded DUT is stale evidence, and stale evidence fails ('staleness is failure', klayout-tools docs/design-evidence-tiers.md). An entry here downgrades exactly one such failure to a loud note: it names the exact record, the exact DUT netlist, and the exact stale device signature digest. It SELF-EXPIRES two ways -- if the record is re-run the digest no longer matches, and if a NEWER record is appended to the experiment this entry stops matching any check the checker runs. Either way CI fails until the entry is deleted. Every entry must name a tracking issue; waiving without one is a schema error, not a judgement call. This is the sim/ counterpart of layout/evidence-freshness-waivers.json.",
-  "waivers": []
+  "waivers": [
+    {
+      "report": "sim/closed-loop-iq/records/20260829-103403-1d98d88.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:57c43efa58d295ee34354e69a25212cd50aa418dc7633fa0cca6c3203dde17ce",
+      "issue": "#151",
+      "reason": "Issue #149's bandgap_core M1/M2/M3 unit-device decomposition (behavior-preserving within ~0.35% on vref, TC essentially unchanged -- see design/bandgap_core.sch, header comment, NOT electrically exact -- closed-loop-vref-pvt re-run 45/45 PASS) makes every other sim/ experiment simulating bandgap_core stale too -- #149's own acceptance bar scoped verification to closed-loop-vref-pvt only. #151 tracks refreshing this and the other 7 stale experiments (same precedent as #134/PR #136 -> #145)."
+    },
+    {
+      "report": "sim/closed-loop-offset/records/20260829-102757-1d98d88.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:57c43efa58d295ee34354e69a25212cd50aa418dc7633fa0cca6c3203dde17ce",
+      "issue": "#151",
+      "reason": "Issue #149's bandgap_core M1/M2/M3 unit-device decomposition (behavior-preserving within ~0.35% on vref, TC essentially unchanged -- see design/bandgap_core.sch, header comment, NOT electrically exact -- closed-loop-vref-pvt re-run 45/45 PASS) makes every other sim/ experiment simulating bandgap_core stale too -- #149's own acceptance bar scoped verification to closed-loop-vref-pvt only. #151 tracks refreshing this and the other 7 stale experiments (same precedent as #134/PR #136 -> #145)."
+    },
+    {
+      "report": "sim/closed-loop-psrr/records/20260829-102837-1d98d88.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:57c43efa58d295ee34354e69a25212cd50aa418dc7633fa0cca6c3203dde17ce",
+      "issue": "#151",
+      "reason": "Issue #149's bandgap_core M1/M2/M3 unit-device decomposition (behavior-preserving within ~0.35% on vref, TC essentially unchanged -- see design/bandgap_core.sch, header comment, NOT electrically exact -- closed-loop-vref-pvt re-run 45/45 PASS) makes every other sim/ experiment simulating bandgap_core stale too -- #149's own acceptance bar scoped verification to closed-loop-vref-pvt only. #151 tracks refreshing this and the other 7 stale experiments (same precedent as #134/PR #136 -> #145)."
+    },
+    {
+      "report": "sim/closed-loop-startup/records/20260829-102626-1d98d88.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:57c43efa58d295ee34354e69a25212cd50aa418dc7633fa0cca6c3203dde17ce",
+      "issue": "#151",
+      "reason": "Issue #149's bandgap_core M1/M2/M3 unit-device decomposition (behavior-preserving within ~0.35% on vref, TC essentially unchanged -- see design/bandgap_core.sch, header comment, NOT electrically exact -- closed-loop-vref-pvt re-run 45/45 PASS) makes every other sim/ experiment simulating bandgap_core stale too -- #149's own acceptance bar scoped verification to closed-loop-vref-pvt only. #151 tracks refreshing this and the other 7 stale experiments (same precedent as #134/PR #136 -> #145)."
+    },
+    {
+      "report": "sim/core-open-loop-bias/records/20260829-102110-1d98d88.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:57c43efa58d295ee34354e69a25212cd50aa418dc7633fa0cca6c3203dde17ce",
+      "issue": "#151",
+      "reason": "Issue #149's bandgap_core M1/M2/M3 unit-device decomposition (behavior-preserving within ~0.35% on vref, TC essentially unchanged -- see design/bandgap_core.sch, header comment, NOT electrically exact -- closed-loop-vref-pvt re-run 45/45 PASS) makes every other sim/ experiment simulating bandgap_core stale too -- #149's own acceptance bar scoped verification to closed-loop-vref-pvt only. #151 tracks refreshing this and the other 7 stale experiments (same precedent as #134/PR #136 -> #145)."
+    },
+    {
+      "report": "sim/core-open-loop-bias-pex/records/20260829-103823-1d98d88.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:57c43efa58d295ee34354e69a25212cd50aa418dc7633fa0cca6c3203dde17ce",
+      "issue": "#151",
+      "reason": "Issue #149's bandgap_core M1/M2/M3 unit-device decomposition (behavior-preserving within ~0.35% on vref, TC essentially unchanged -- see design/bandgap_core.sch, header comment, NOT electrically exact -- closed-loop-vref-pvt re-run 45/45 PASS) makes every other sim/ experiment simulating bandgap_core stale too -- #149's own acceptance bar scoped verification to closed-loop-vref-pvt only. #151 tracks refreshing this (including a fresh PEX re-extraction against #149's regenerated bandgap_core.gds) and the other 7 stale experiments (same precedent as #134/PR #136 -> #145)."
+    },
+    {
+      "report": "sim/loop-gain-phase-margin/records/20260829-115938-6fa92b5.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:57c43efa58d295ee34354e69a25212cd50aa418dc7633fa0cca6c3203dde17ce",
+      "issue": "#151",
+      "reason": "Issue #149's bandgap_core M1/M2/M3 unit-device decomposition (behavior-preserving within ~0.35% on vref, TC essentially unchanged -- see design/bandgap_core.sch, header comment, NOT electrically exact -- closed-loop-vref-pvt re-run 45/45 PASS) makes every other sim/ experiment simulating bandgap_core stale too -- #149's own acceptance bar scoped verification to closed-loop-vref-pvt only. #151 tracks refreshing this and the other 7 stale experiments (same precedent as #134/PR #136 -> #145)."
+    },
+    {
+      "report": "sim/startup-core-handover/records/20260829-103548-1d98d88.md",
+      "check": "design/netlist/bandgap_core.spice",
+      "recorded_hash": "sha256:57c43efa58d295ee34354e69a25212cd50aa418dc7633fa0cca6c3203dde17ce",
+      "issue": "#151",
+      "reason": "Issue #149's bandgap_core M1/M2/M3 unit-device decomposition (behavior-preserving within ~0.35% on vref, TC essentially unchanged -- see design/bandgap_core.sch, header comment, NOT electrically exact -- closed-loop-vref-pvt re-run 45/45 PASS) makes every other sim/ experiment simulating bandgap_core stale too -- #149's own acceptance bar scoped verification to closed-loop-vref-pvt only. #151 tracks refreshing this and the other 7 stale experiments (same precedent as #134/PR #136 -> #145)."
+    }
+  ]
 }

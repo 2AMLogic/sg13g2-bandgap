@@ -17,16 +17,45 @@ Output is byte-for-byte deterministic (GDSII header timestamps disabled via
 ``git diff`` empty.
 
 Devices instantiated, one-to-one against ``design/netlist/bandgap_core.spice``
-(``XM1``/``XQ1``/``XM2``/``XR2``/``XQ2``/``XM3``/``XR1``/``XQ3``):
+(``XM1``/``XQ1``/``XM2A``/``XM2B``/``XR2``/``XQ2``/``XM3A``-``XM3C``/``XR1``/
+``XQ3``):
 
-    M1 sg13_hv_pmos w=10u l=1u   -- branch 1 mirror leg (vdd/fb -> sns1)
-    Q1 npn13G2 Nx=1              -- branch 1, diode-connected (sns1 -> vss)
-    M2 sg13_hv_pmos w=10u l=1u   -- branch 2 mirror leg (vdd/fb -> sns2)
-    R2 rppd w=2u l=82.7u         -- PTAT resistor (sns2 -> cb2)
-    Q2 npn13G2 Nx=8              -- branch 2, diode-connected (cb2 -> vss)
-    M3 sg13_hv_pmos w=10u l=1u   -- output branch mirror leg (vdd/fb -> vref)
-    R1 rppd w=2u l=511u          -- summing resistor (vref -> cb3)
-    Q3 npn13G2 Nx=1              -- output branch, diode-connected (cb3 -> vss)
+    M1  sg13_hv_pmos w=10u l=1u        -- branch 1 mirror leg (vdd/fb -> sns1)
+    Q1  npn13G2 Nx=1                   -- branch 1, diode-connected (sns1 -> vss)
+    M2A/M2B sg13_hv_pmos w=9u/1u       -- branch 2 mirror leg, 2x parallel
+                                           dominant+trim unit fingers
+                                           (vdd/fb -> sns2)
+    R2  rppd w=2u l=82.7u              -- PTAT resistor (sns2 -> cb2)
+    Q2  npn13G2 Nx=8                   -- branch 2, diode-connected (cb2 -> vss)
+    M3A-M3C sg13_hv_pmos w=8u/1u/1u    -- output branch mirror leg, 3x
+                                           parallel dominant+trim unit
+                                           fingers (vdd/fb -> vref)
+    R1  rppd w=2u l=511u               -- summing resistor (vref -> cb3)
+    Q3  npn13G2 Nx=1                   -- output branch, diode-connected
+                                           (cb3 -> vss)
+
+**Unit-device decomposition (issue #149, T1 tracker #4 item 4 cause d).**
+M1/M2/M3 previously drew as ONE ``sg13_hv_pmos w=10u l=1u`` footprint each --
+identical at the recognised-device level, a genuine graph automorphism the
+sg13g2 `klt lvs` deck could not resolve (see "LVS" below and
+``layout/README.md`` "Permanent blockers" #2). Each leg's *total* mirror
+width is unchanged (W/L=10u/1u -- the ratio mirror accuracy depends on),
+but M2/M3 are now decomposed into a per-leg-distinct COUNT of parallel
+unit fingers -- the minimum pairwise-distinct count set, {1,2,3} (M1
+stays a single w=10u unit; M2: 2x, one w=9u dominant + one w=1u trim
+finger; M3: 3x, one w=8u dominant + two w=1u trim fingers), each drawn as
+its own separate ``draw_hv_mos`` footprint (non-touching, non-merging) and
+tied together at every terminal. **This decomposition is NOT electrically
+exact** -- see ``design/bandgap_core.sch``'s own header "NOT electrically
+exact" section for the quantified real-compact-model mismatch a device-
+count-driven (not just width-driven) split like this introduces in
+IHP-SG13G2's `sg13_hv_pmos` PSP103 model, why a smaller {1,2,3}
+count-spread with dominant+trim fingers (rather than the deeper {1,2,4}
+equal-width split this issue's own first draft used) was chosen to
+minimize it, and where the closed-loop PVT evidence quantifying the
+resulting behavioural delta lives. See ``_route``'s ``_tie_drains`` helper
+below for how the drain pads within one branch are physically joined into
+a single net before routing on to the branch's resistor/HBT.
 
 **Routing (issue #20).** After placing all 8 devices, this script wires up
 every schematic net (``vdd``, ``fb``, ``sns1``, ``sns2``, ``vref``, ``cb2``,
@@ -63,16 +92,19 @@ fully-attributed causes"): the curated ``sg13g2`` extraction deck models no
 well/substrate-tap layer at all (every MOS body terminal is therefore
 either anonymous (PMOS) or tied to a deck-synthesized global net that does
 not match the schematic's real `vdd`/`vss` body tie (NMOS) -- structurally
-unfixable by routing), and, specific to this cell, `M1`/`M2`/`M3` are
+unfixable by routing), and -- **before issue #149** -- `M1`/`M2`/`M3` were
 perfectly symmetric at the recognized-device level (identical `w`/`l`,
 distinguished in the real schematic only by the downstream bipolar/
-resistor devices this deck cannot see) -- a graph automorphism no amount of
-routing or `klt lvs`'s own `hints.same_nets` can resolve (verified: explicit
-hints were tried and rejected by the comparer, see the README). The
-routing itself is complete and verified correct (every schematic net is now
-a single physically-connected shape, confirmed via `klt extract`'s own
-net/device breakdown) -- the remaining ``device.unmatched``/``net.unmatched``
-findings are attributed to these two deck-level facts, not a routing gap.
+resistor devices this deck cannot see), a graph automorphism no amount of
+routing or `klt lvs`'s own `hints.same_nets` could resolve (verified:
+explicit hints were tried and rejected by the comparer, see the README).
+Issue #149 addressed that third cause structurally (unit-device
+decomposition above, not routing) -- the well/substrate-tap gap and the
+declined bipolar recognition remain, tracked separately. The routing itself
+is complete and verified correct (every schematic net is a single
+physically-connected shape, confirmed via `klt extract`'s own net/device
+breakdown) -- the remaining ``device.unmatched``/``net.unmatched`` findings
+are attributed to the two deck-level facts above, not a routing gap.
 """
 
 from __future__ import annotations
@@ -130,60 +162,112 @@ def build() -> Builder:
     res_y = 40.0
 
     # Branch 1: M1 -> Q1, no series resistor (Q1 sensed directly at sns1).
+    # Left as a single w=10u unit -- issue #149's decomposition only needs
+    # to make M1/M2/M3 structurally distinct from EACH OTHER, and M2 (2x)
+    # vs M3 (3x) already differ from each other and from M1's single unit.
     x1 = 0.0
     m1 = draw_hv_mos(b, "M1", "pmos", 10.0, 1.0, x1, mos_y, gate_net="fb", source_net="vdd", drain_net="sns1")
     q1 = draw_npn13g2(b, "Q1", 1, x1, hbt_y, collector_net="sns1", base_net="sns1", emitter_net="vss")
 
-    # Branch 2: M2 -> R2 -> Q2 (Nx=8, sets the PTAT delta-VBE leg).
-    x2 = 45.0
-    m2 = draw_hv_mos(b, "M2", "pmos", 10.0, 1.0, x2, mos_y, gate_net="fb", source_net="vdd", drain_net="sns2")
-    q2 = draw_npn13g2(b, "Q2", 8, x2, hbt_y, collector_net="cb2", base_net="cb2", emitter_net="vss")
+    # Branch 2: M2A/M2B (issue #149 -- 2x parallel unit fingers, one
+    # dominant (w=9u) + one trim (w=1u), total W/L unchanged at 10u/1u --
+    # see design/bandgap_core.sch's own header "NOT electrically exact"
+    # section for why a dominant+trim split, not an equal-width one, was
+    # chosen) -> R2 -> Q2 (Nx=8, sets the PTAT delta-VBE leg). Pitch (12u)
+    # comfortably clears both units' own NWell margins (w/2 + 0.4um per
+    # side, <=4.9um for the w=9u dominant finger) so neighbouring wells do
+    # not overlap.
+    x2_pitch = 12.0
+    x2a, x2b = 45.0, 45.0 + x2_pitch
+    m2a = draw_hv_mos(b, "M2A", "pmos", 9.0, 1.0, x2a, mos_y, gate_net="fb", source_net="vdd", drain_net="sns2")
+    m2b = draw_hv_mos(b, "M2B", "pmos", 1.0, 1.0, x2b, mos_y, gate_net="fb", source_net="vdd", drain_net="sns2")
+    q2 = draw_npn13g2(b, "Q2", 8, (x2a + x2b) / 2, hbt_y, collector_net="cb2", base_net="cb2", emitter_net="vss")
     r2 = draw_poly_res(b, "R2", "rppd", 2.0, 82.7, 0.0, res_y, end_a_net="sns2", end_b_net="cb2")
 
-    # Output branch: M3 -> R1 -> Q3, vref is the mirror node directly.
-    x3 = 110.0
-    m3 = draw_hv_mos(b, "M3", "pmos", 10.0, 1.0, x3, mos_y, gate_net="fb", source_net="vdd", drain_net="vref")
-    q3 = draw_npn13g2(b, "Q3", 1, x3, hbt_y, collector_net="cb3", base_net="cb3", emitter_net="vss")
+    # Output branch: M3A-M3C (issue #149 -- 3x parallel unit fingers, one
+    # dominant (w=8u) + two trim (w=1u each), total W/L unchanged at
+    # 10u/1u) -> R1 -> Q3, vref is the mirror node directly. Pitch (12u,
+    # matching branch 2's) clears every unit's own NWell margin (<=4.4um
+    # per side for the w=8u dominant finger) with room to spare.
+    x3_pitch = 12.0
+    x3_names = ("M3A", "M3B", "M3C")
+    x3_widths = (8.0, 1.0, 1.0)
+    x3_xs = [110.0 + i * x3_pitch for i in range(3)]
+    m3_legs = [
+        draw_hv_mos(b, name, "pmos", w, 1.0, x, mos_y, gate_net="fb", source_net="vdd", drain_net="vref")
+        for name, w, x in zip(x3_names, x3_widths, x3_xs)
+    ]
+    q3 = draw_npn13g2(b, "Q3", 1, sum(x3_xs) / len(x3_xs), hbt_y, collector_net="cb3", base_net="cb3", emitter_net="vss")
     # R1 is drawn as a long straight bar (l=511u, see draw_poly_res's own
     # docstring -- resized from 694.5u to match design/bandgap_core.sch's
     # own R1/R2 retune, issue #134/PR #136, per issue #137) on its own row
     # so it does not overlap the compact devices above.
     r1 = draw_poly_res(b, "R1", "rppd", 2.0, 511.0, 0.0, res_y + 20.0, end_a_net="vref", end_b_net="cb3")
 
-    _route(b, m1, q1, m2, q2, r2, m3, q3, r1)
+    _route(b, m1, q1, [m2a, m2b], q2, r2, m3_legs, q3, r1)
 
     return b
 
 
-def _route(b: Builder, m1: dict, q1: dict, m2: dict, q2: dict, r2: dict, m3: dict, q3: dict, r1: dict) -> None:
+def _tie_drains(b: Builder, legs: list[dict]) -> tuple[float, float, float, float]:
+    """Join every leg's own drain pad (all at the same Y-band, one per
+    parallel unit-device finger -- issue #149's decomposition) into a
+    single Metal1 strip spanning the leftmost-to-rightmost pad, returning a
+    combined "drain_pad"-shaped box the same routing helpers
+    (``_riser``/``_tie_and_riser``) already use for a single-device branch.
+    A single leg (M1's un-decomposed branch) is returned unchanged, no new
+    geometry drawn."""
+    if len(legs) == 1:
+        return legs[0]["drain_pad"]
+    y_lo = min(leg["drain_pad"][1] for leg in legs)
+    y_hi = max(leg["drain_pad"][3] for leg in legs)
+    x_lo = min(leg["drain_pad"][0] for leg in legs)
+    x_hi = max(leg["drain_pad"][2] for leg in legs)
+    b.box(L_METAL1, x_lo, y_lo, x_hi, y_hi)
+    return (x_lo, y_lo, x_hi, y_hi)
+
+
+def _route(
+    b: Builder,
+    m1: dict,
+    q1: dict,
+    m2_legs: list[dict],
+    q2: dict,
+    r2: dict,
+    m3_legs: list[dict],
+    q3: dict,
+    r1: dict,
+) -> None:
     """Wire every schematic net -- see this module's own docstring for the
     routing strategy. Each block below names the net it wires."""
 
-    # -- vdd: M1.source, M2.source, M3.source (all on the MOS source band) --
-    vdd_y_lo = min(m1["source_pad"][1], m2["source_pad"][1], m3["source_pad"][1])
-    vdd_y_hi = max(m1["source_pad"][3], m2["source_pad"][3], m3["source_pad"][3])
-    vdd_x_lo = min(m1["source_pad"][0], m2["source_pad"][0], m3["source_pad"][0])
-    vdd_x_hi = max(m1["source_pad"][2], m2["source_pad"][2], m3["source_pad"][2])
-    b.box(L_METAL1, vdd_x_lo, vdd_y_lo, vdd_x_hi, vdd_y_hi)
-    # No new net-name label needed here: M1/M2/M3's own draw_hv_mos calls
-    # already labeled their source pads "vdd" on Metal1.text (issue #20's
-    # draw_hv_mos change) -- this box just merges those three pads (plus
-    # the space between them) into one physically-connected net; the
-    # existing labels ride along automatically once merged.
+    all_mos = [m1, *m2_legs, *m3_legs]
 
-    # -- fb: M1.gate, M2.gate, M3.gate -- one continuous GatPoly bar spanning
-    # all three gate boxes (each already at the same Y-band; a bar merges
-    # with each gate's own drawn poly, no contacts needed -- poly-to-poly
-    # routing between recognised MOS gates is a supported connectivity
-    # pattern, see layout/common.py's draw_gate_tab docstring and
-    # klayout_tools.extract's own "ordinary poly routing between two
-    # recognised gates" comment).
-    fb_y_lo = min(m1["gate_y_lo"], m2["gate_y_lo"], m3["gate_y_lo"])
-    fb_y_hi = max(m1["gate_y_hi"], m2["gate_y_hi"], m3["gate_y_hi"])
+    # -- vdd: every leg's source pad, across all three branches (M1 plus
+    # M2's/M3's decomposed unit fingers -- issue #149) --
+    vdd_y_lo = min(m["source_pad"][1] for m in all_mos)
+    vdd_y_hi = max(m["source_pad"][3] for m in all_mos)
+    vdd_x_lo = min(m["source_pad"][0] for m in all_mos)
+    vdd_x_hi = max(m["source_pad"][2] for m in all_mos)
+    b.box(L_METAL1, vdd_x_lo, vdd_y_lo, vdd_x_hi, vdd_y_hi)
+    # No new net-name label needed here: every draw_hv_mos call already
+    # labeled its source pad "vdd" on Metal1.text (issue #20's draw_hv_mos
+    # change) -- this box just merges those pads (plus the space between
+    # them) into one physically-connected net; the existing labels ride
+    # along automatically once merged.
+
+    # -- fb: every leg's gate -- one continuous GatPoly bar spanning every
+    # gate box (each already at the same Y-band; a bar merges with each
+    # gate's own drawn poly, no contacts needed -- poly-to-poly routing
+    # between recognised MOS gates is a supported connectivity pattern, see
+    # layout/common.py's draw_gate_tab docstring and klayout_tools.extract's
+    # own "ordinary poly routing between two recognised gates" comment).
+    fb_y_lo = min(m["gate_y_lo"] for m in all_mos)
+    fb_y_hi = max(m["gate_y_hi"] for m in all_mos)
     fb_y_center = (fb_y_lo + fb_y_hi) / 2
     fb_height = 0.3
-    fb_x_lo = min(m1["gate_box"][0], m2["gate_box"][0], m3["gate_box"][0])
-    fb_x_hi = max(m1["gate_box"][2], m2["gate_box"][2], m3["gate_box"][2])
+    fb_x_lo = min(m["gate_box"][0] for m in all_mos)
+    fb_x_hi = max(m["gate_box"][2] for m in all_mos)
     route_h(b, L_GATPOLY, fb_y_center, fb_x_lo, fb_x_hi, width=fb_height)
 
     # -- sns1: M1.drain, Q1.collector, Q1.base -- Q1 is diode-connected
@@ -202,18 +286,22 @@ def _route(b: Builder, m1: dict, q1: dict, m2: dict, q2: dict, r2: dict, m3: dic
     vss_x_hi = max(q1["emitter_pad"][2], q2["emitter_pad"][2], q3["emitter_pad"][2])
     b.box(L_METAL2, vss_x_lo, vss_y_lo, vss_x_hi, vss_y_hi)
 
-    # -- sns2: M2.drain, R2.end_a -- crosses the vdd/fb MOS-row bars, so the
-    # vertical riser is Metal2 (a different layer cannot short against
-    # either Metal1/GatPoly bar), landing on Metal1 at each end via Via1.
-    _riser(b, m2["drain_pad"], r2["end_a_pad"], jog_y=r2["end_a_pad"][1] + 1.15)
+    # -- sns2: M2A/M2B.drain (tied together, issue #149), R2.end_a --
+    # crosses the vdd/fb MOS-row bars, so the vertical riser is Metal2 (a
+    # different layer cannot short against either Metal1/GatPoly bar),
+    # landing on Metal1 at each end via Via1.
+    sns2_drain = _tie_drains(b, m2_legs)
+    _riser(b, sns2_drain, r2["end_a_pad"], jog_y=r2["end_a_pad"][1] + 1.15)
 
     # -- cb2: R2.end_b, Q2.collector, Q2.base -- Q2's own collector/base tie
     # (mirrors sns1's Q1 tie) plus a riser up to R2's far end.
     cb2_x = (q2["collector_pad"][0] + q2["collector_pad"][2]) / 2 + 6.0
     _tie_and_riser(b, q2, cb2_x, r2["end_b_pad"], jog_y=r2["end_b_pad"][1] + 1.15)
 
-    # -- vref: M3.drain, R1.end_a -- mirrors sns2's design, on R1's row.
-    _riser(b, m3["drain_pad"], r1["end_a_pad"], jog_y=r1["end_a_pad"][1] + 1.15)
+    # -- vref: M3A-M3D.drain (tied together, issue #149), R1.end_a --
+    # mirrors sns2's design, on R1's row.
+    vref_drain = _tie_drains(b, m3_legs)
+    _riser(b, vref_drain, r1["end_a_pad"], jog_y=r1["end_a_pad"][1] + 1.15)
 
     # -- cb3: R1.end_b, Q3.collector, Q3.base -- mirrors cb2's design.
     cb3_x = (q3["collector_pad"][0] + q3["collector_pad"][2]) / 2 + 3.0
