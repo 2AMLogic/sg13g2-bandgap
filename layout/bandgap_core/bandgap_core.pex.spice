@@ -18,49 +18,67 @@
 * device instance $1 r0 *1 0,22 pfet
 M$1 vdd__t0 \$9 sns1__t0 \$11 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 45,22 pfet
-M$2 vdd__t2 \$9 sns2__t1 \$13 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
-* device instance $3 r0 *1 110,22 pfet
-M$3 vdd__t1 \$9 vref__t1 \$12 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
-* device instance $4 r0 *1 41.35,40 rppd
-R$4 sns2__t0 cb2__t0 vsubs 10751 rppd
-* device instance $5 r0 *1 255.5,60 rppd
-R$5 vref__t0 cb3__t0 vsubs 66430 rppd
+M$2 vdd__t1 \$9 sns2__t1 \$14 pfet L=1U W=9U AS=3.6P AD=3.6P PS=18.8U PD=18.8U
+* device instance $3 r0 *1 57,22 pfet
+M$3 vdd__t2 \$9 sns2__t2 \$15 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
+* device instance $4 r0 *1 110,22 pfet
+M$4 vdd__t3 \$9 vref__t1 \$17 pfet L=1U W=8U AS=3.2P AD=3.2P PS=16.8U PD=16.8U
+* device instance $5 r0 *1 122,22 pfet
+M$5 vdd__t5 \$9 vref__t3 \$18 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
+* device instance $6 r0 *1 134,22 pfet
+M$6 vdd__t4 \$9 vref__t2 \$19 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
+* device instance $7 r0 *1 41.35,40 rppd
+R$7 sns2__t0 cb2__t0 vsubs 10751 rppd
+* device instance $8 r0 *1 255.5,60 rppd
+R$8 vref__t0 cb3__t0 vsubs 66430 rppd
 * device instance cb2_t0 r0 *1 0,0 
-Rcb2_t0 cb2__t0 cb2 29.0653
+Rcb2_t0 cb2__t0 cb2 27.5568
 * device instance cb2 r0 *1 0,0 
-Ccb2 cb2 vsubs 9.160686e-15
+Ccb2 cb2 vsubs 8.704932e-15
 * device instance cb3_t0 r0 *1 0,0 
-Rcb3_t0 cb3__t0 cb3 120.7173
+Rcb3_t0 cb3__t0 cb3 117.7002
 * device instance cb3 r0 *1 0,0 
-Ccb3 cb3 vsubs 3.6585249e-14
+Ccb3 cb3 vsubs 3.5673741e-14
 * device instance sns1_t0 r0 *1 0,0 
 Rsns1_t0 sns1__t0 sns1 15.1283
 * device instance sns1 r0 *1 0,0 
 Csns1 sns1 vsubs 4.244144e-15
 * device instance sns2_t0 r0 *1 0,0 
-Rsns2_t0 sns2__t0 sns2 10.00665
+Rsns2_t0 sns2__t0 sns2 10.1243713303
 * device instance sns2_t1 r0 *1 0,0 
-Rsns2_t1 sns2__t1 sns2 10.00665
+Rsns2_t1 sns2__t1 sns2 4.91814556153
+* device instance sns2_t2 r0 *1 0,0 
+Rsns2_t2 sns2__t2 sns2 8.17758310814
 * device instance sns2 r0 *1 0,0 
-Csns2 sns2 vsubs 6.09238e-15
+Csns2 sns2 vsubs 7.036193e-15
 * device instance vdd_t0 r0 *1 0,0 
-Rvdd_t0 vdd__t0 vdd 16.7020471429
+Rvdd_t0 vdd__t0 vdd 12.9535840909
 * device instance vdd_t1 r0 *1 0,0 
-Rvdd_t1 vdd__t1 vdd 18.85715
+Rvdd_t1 vdd__t1 vdd 5.4803625
 * device instance vdd_t2 r0 *1 0,0 
-Rvdd_t2 vdd__t2 vdd 2.15510285714
+Rvdd_t2 vdd__t2 vdd 3.48750340909
+* device instance vdd_t3 r0 *1 0,0 
+Rvdd_t3 vdd__t3 vdd 5.31429090909
+* device instance vdd_t4 r0 *1 0,0 
+Rvdd_t4 vdd__t4 vdd 9.30000909091
+* device instance vdd_t5 r0 *1 0,0 
+Rvdd_t5 vdd__t5 vdd 7.30715
 * device instance vdd r0 *1 0,0 
-Cvdd vdd vsubs 1.0981582e-14
+Cvdd vdd vsubs 1.2764375e-14
 * device instance vref_t0 r0 *1 0,0 
-Rvref_t0 vref__t0 vref 20.6923
+Rvref_t0 vref__t0 vref 24.8473212291
 * device instance vref_t1 r0 *1 0,0 
-Rvref_t1 vref__t1 vref 20.6923
+Rvref_t1 vref__t1 vref 11.065018194
+* device instance vref_t2 r0 *1 0,0 
+Rvref_t2 vref__t2 vref 5.58302016718
+* device instance vref_t3 r0 *1 0,0 
+Rvref_t3 vref__t3 vref 8.2824404097
 * device instance vref r0 *1 0,0 
-Cvref vref vsubs 1.2544606e-14
+Cvref vref vsubs 1.5014553e-14
 * device instance vss r0 *1 0,0 
-Rvss vss vss__par 6.8112
+Rvss vss vss__par 7.5152
 * device instance vss r0 *1 0,0 
-Cvss vss__par vsubs 1.1328721e-14
+Cvss vss__par vsubs 1.2491113e-14
 * device instance cc_cb2_vdd r0 *1 0,0 
 Ccc_cb2_vdd cb2 vdd 8.235e-18
 * device instance cc_cb2_vss r0 *1 0,0 

@@ -337,7 +337,7 @@ still clean from before).
 
 | Cell | Report | Status | Engine |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (30 findings, 29 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (36 findings, 35 error-severity — issue #149's `M1`/`M2`/`M3` unit-device decomposition raises the raw finding count since there are now 6 recognised pfets instead of 3, but resolves the automorphism itself; see "`M1`/`M2`/`M3` automorphism resolved" below) | `klayout` (`klayout.db.NetlistComparer`) |
 | `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | `mismatch` (16 findings, 14 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
 
 Reproduce: `klt lvs layout/bandgap_core/lvs_request.json` (run from
@@ -521,16 +521,24 @@ confirmed by direct experiment, not inferred:
    independent of this symmetry issue. Not filed against `klayout-tools` —
    this is a consequence of cause 1 (already filed, out of scope) combined
    with this specific circuit's own topology, not a `klt` capability gap.
-   **Not independently re-tested under issue #20's resistor recognition**:
-   `R1`/`R2` are no longer invisible to the layout-side extraction (unlike
-   when this experiment ran), and `R1`/`R2` differ in length (`l=511u`
-   vs `l=82.7u`) — in principle this *could* now distinguish `M2`
-   (`→R2→Q2`) from `M3` (`→R1→Q3`) structurally, narrowing the automorphism
-   to a smaller ambiguity (or none). Re-running the same `hints.same_nets`
-   experiment to check is exactly the automorphism-resolution work this
-   issue's own scope explicitly excludes ("do not attempt... via routing or
-   LVS hints") — left untested here deliberately, not because the outcome
-   is assumed unchanged.
+   **Re-tested under issue #20's resistor recognition (issue #149's own
+   pre-implementation step, 2026-08-30):** with `R1`/`R2` now recognised
+   and genuinely differing in length, re-declaring the *same*
+   `hints.same_nets` pairing (`sns2`↔`SNS2`) against the (still symmetric,
+   pre-#149) `M1`/`M2`/`M3` still produced `hints.rejected` plus the same
+   full `net.merged`/`net.split` cascade this bullet originally found —
+   resistor recognition alone does **not** narrow the automorphism (the
+   comparer's canonicalisation pass apparently does not use
+   recognised-but-still-identical-`w`/`l` MOS parameters to disambiguate on
+   its own — confirmed a second way, see "`M1`/`M2`/`M3` automorphism
+   resolved" below: a *tiny*, non-decomposed `w` perturbation alone
+   (`M1=10.00u`/`M2=10.02u`/`M3=10.04u`, still 1 device per branch) also
+   left the same cascade fully intact). **RESOLVED by issue #149's
+   schematic-level fix** (unit-device decomposition, not routing/hints,
+   and not a parameter-value nudge either — see below for why only a real
+   device-*count* difference actually works against this deck) — see
+   "`M1`/`M2`/`M3` automorphism resolved (issue #149)" below for the fix
+   and the direct `klt extract` evidence that the ambiguity is gone.
 
 Net effect: even the devices the deck *does* recognise on both sides
 (`pfet` `M1`/`M2`/`M3` in `bandgap_core`; `nfet` `MSENSE`/`MKFB` and
@@ -547,38 +555,49 @@ silently downgraded to warnings — per `CLAUDE.md`, "Verification is the
 product": this repo's DRC result is a genuine pass; its LVS result is a
 genuine, fully-explained fail, not fabricated evidence either way.
 
-### Permanent blockers (issue #20 rescope, 2026-08-23; cause 3 resolved upstream, issue #152, 2026-08-30)
+### Permanent blockers (issue #20 rescope, 2026-08-23; cause 2 resolved in-repo via issue #149 and cause 3 resolved upstream via issue #152, both 2026-08-30)
 
-Two causes remain **permanently unreachable through routing, marker-layer
+One cause remains **permanently unreachable through routing, marker-layer
 geometry, or `klt lvs` hints alone** — a future pass should not
-re-investigate either from scratch without a new upstream capability or a
-schematic-level circuit change. A third cause, originally recorded here as
-permanent, has since been resolved upstream (see cause 3 below) — kept in
-this list for its own record, and because `bandgap_startup` still does not
-reach a clean `match` even with it resolved, for the separate,
-already-documented reason cause 3 itself now explains:
+re-investigate it from scratch without a new upstream capability or a
+schematic-level circuit change. The other two, both originally recorded
+here as permanent, have since been resolved — each by exactly one of the
+two escape hatches this list's own caveat named, and neither by routing,
+marker geometry or hints:
+
+- **cause 2** by a schematic-level circuit change in this repo (issue #149's
+  `M1`/`M2`/`M3` unit-device decomposition, see below), and
+- **cause 3** by a new upstream capability (`klayout-tools#1481`, re-verified
+  for issue #152, see below).
+
+Both are kept in this list for their own record, and because neither cell
+reaches a clean `match` even with them resolved: `bandgap_core` still blocks
+on cause 1 below plus the unexercised well/substrate-tap gap, and
+`bandgap_startup` on that same tap gap — the separate, already-documented
+reason cause 3's own entry now spells out.
 
 1. **Bipolar (SiGe HBT) device recognition is permanently declined
    upstream** (`klayout-tools#1242`, closed; `klayout-tools#1232`'s own
    `completed` docs-only PR, no code change to wait on). Every
    `Q1`–`Q3` (`bandgap_core`) instance stays `device.unmatched`,
    class `NPN13G2`, indefinitely.
-2. **`bandgap_core`'s `M1`/`M2`/`M3` were a genuine graph automorphism**
-   at the recognised-device level when bipolar *and* resistor devices were
-   both excluded from the comparison (cause 3 above, PR #27's own
-   experiment, before issue #20's resistor recognition) — confirmed by
-   direct experiment at the time: explicit `hints.same_nets` pairings were
-   rejected by the comparer, with conflicting `net.merged`/`net.split`
-   findings as evidence a different, equally-valid correspondence exists
-   under the layout's own more symmetric graph structure. **Not
-   independently re-tested since resistor recognition landed** (see cause
-   3 above's own caveat) — `R1`/`R2` now genuinely differ in length and
-   are no longer invisible to the layout side, which could in principle
-   narrow or resolve this specific ambiguity; re-running the hints
-   experiment to check is itself the automorphism-resolution work this
-   issue's scope explicitly excludes. Listed here as a blocker this issue
-   did not resolve, not as a settled-permanent fact independent of #20.
-3. **Resolved upstream** (`bandgap_startup`'s `MSENSE.gate` net /
+2. **RESOLVED in-repo (issue #149): `bandgap_core`'s `M1`/`M2`/`M3` were a
+   genuine graph automorphism** at the recognised-device level when bipolar
+   *and* resistor devices were both excluded from the comparison (cause 3
+   above, PR #27's own experiment, before issue #20's resistor recognition)
+   — confirmed by direct experiment at the time: explicit `hints.same_nets`
+   pairings were rejected by the comparer, with conflicting
+   `net.merged`/`net.split` findings as evidence a different, equally-valid
+   correspondence exists under the layout's own more symmetric graph
+   structure. Issue #149 broke the automorphism at the schematic level
+   (unit-device decomposition, not routing or hints) — see "`M1`/`M2`/`M3`
+   automorphism resolved (issue #149)" below for the fix and the direct
+   before/after evidence that the ambiguity is gone. As with cause 3, this
+   does **not** get `bandgap_core` to a clean `match`: cause 1 above and the
+   well/substrate-tap gap (cause 2 under "Net effect" above, described in
+   cause 3's entry below) are unaffected and independently keep every net on
+   this cell from reaching `net.matched`.
+3. **RESOLVED upstream (issue #152)** (`bandgap_startup`'s `MSENSE.gate` net /
    `poly_label`). This previously extracted as an anonymous net because the
    curated deck declared no `poly_label` layer at all
    (`EXTRACTION_DECK.poly_label=None`) — GDS text placed on a
@@ -617,6 +636,116 @@ already-documented reason cause 3 itself now explains:
    `draw_hv_mos` — is a separate, unfiled, bigger-scope future issue
    (affecting every `draw_hv_mos` caller, not just `bandgap_startup`), not
    attempted here.
+
+### `M1`/`M2`/`M3` automorphism resolved (issue #149)
+
+Cause (d) of T1 tracker #4 item 4 (permanent blocker #2 above) is now
+resolved at the schematic level — **not** by routing or `klt lvs` hints,
+both of which #27's and this issue's own pre-implementation re-check
+confirmed cannot touch it (see permanent blocker #2 and the "New finding"
+bullet above).
+
+**Fix — unit-device decomposition (Option 1 from issue #149).**
+`design/bandgap_core.sch` (and the netlist it generates,
+`design/netlist/bandgap_core.spice`) now draws `M1` as a single
+`w=10u l=1u` `sg13_hv_pmos`, `M2` as two parallel fingers, one dominant
+(`w=9u`) plus one trim (`w=1u`) (`M2A`/`M2B`), and `M3` as three parallel
+fingers, one dominant (`w=8u`) plus two trim (`w=1u` each) (`M3A`–`M3C`)
+— each branch's *total* mirror width stays nominally `W/L=10u/1u`, but
+the three branches now have structurally distinct device counts (1 vs 2
+vs 3 — the minimum pairwise-distinct set), so no graph automorphism
+exists among them regardless of whether a comparer's canonicaliser
+weighs device parameters at all. `layout/bandgap_core/generate.py` draws
+each unit finger as its own separate, non-touching `draw_hv_mos`
+footprint (confirmed by `klt extract` — see below — that the deck's own
+extraction does **not** silently re-merge adjacent parallel MOS instances
+into one device) and ties each branch's finger drains together with a
+Metal1 strip before routing on to that branch's resistor.
+
+**This decomposition is NOT electrically exact — quantified, not
+assumed.** Unlike an idealised SPICE parallel-device sum, IHP-SG13G2's
+real `sg13_hv_pmos` PSP103 compact model is not scale-invariant in `W`:
+an isolated fixed-bias DC op-point check (same `Vgs`/`Vds` on `M1` vs
+`M2A+M2B` vs `M3A+M3B+M3C`, no other circuitry) measures `M2`'s total
+current ~1.0% above `M1`'s and `M3`'s ~2.0% above `M1`'s — a real,
+device-count-driven deviation, not width-narrowing alone (it persists,
+nearly unchanged, whether the trim finger is `1u` or `0.5u`, and roughly
+doubles between a 2-count and 3-count branch). A first-implemented,
+shallower draft of this fix ({1,2,4}-count, equal-width fingers: `M2`
+2×`5u`, `M3` 4×`2.5u`) measured a **~1% closed-loop vref shift at every
+PVT corner** from this effect against a same-day pre-#149 baseline. The
+`{1,2,3}`-count, dominant+trim-finger geometry actually landed here was
+chosen specifically to minimize this: device-count spread is the minimum
+pairwise-distinct set possible (`{1,2,3}`, not `{1,2,4}`), and each
+branch keeps one dominant, near-original-width finger plus the smallest
+number of small trim fingers needed to reach its target count. **Measured
+result (full 45-corner closed-loop PVT re-run, `sim/closed-loop-vref-pvt`,
+vs a same-day pre-#149 baseline on this exact post-#134-retune netlist,
+same tooling)**: max `vref(3ms)` delta 3.81 mV (0.366%, `bcs`/`-40C`/
+`3.63V`), 45-corner average 3.28 mV (~0.31%) — smaller than the ~15 mV
+process-corner-to-corner spread this design already has at any fixed PVT
+point — and the TC (ppm/C) this repo actually tracks against
+`spec/porting-plan.md` Sec 6's draft target moved by <=1.3 ppm/C at every
+corner/supply group (worst-case box TC stays ~18 ppm/C, inside the draft
+`<50 ppm/C` row both before and after). Full per-corner data:
+`sim/closed-loop-vref-pvt/records/`.
+
+**Verified: `klt extract` now recognises 6 distinct pfet devices** (not
+3), each in its correct, one-to-one branch correspondence
+(`klt extract layout/bandgap_core/bandgap_core.gds --deck sg13g2 --top
+bandgap_core`, re-run against this PR's own `bandgap_core.gds`):
+
+```
+M$1 vdd $9 sns1 $11 pfet L=1U W=10U   <- M1
+M$2 vdd $9 sns2 $14 pfet L=1U W=9U    <- M2A
+M$3 vdd $9 sns2 $15 pfet L=1U W=1U    <- M2B
+M$4 vdd $9 vref $17 pfet L=1U W=8U    <- M3A
+M$5 vdd $9 vref $18 pfet L=1U W=1U    <- M3B
+M$6 vdd $9 vref $19 pfet L=1U W=1U    <- M3C
+```
+
+Branch `sns1` (M1) now has exactly 1 recognised pfet, branch `sns2` (M2)
+exactly 2, branch `vref` (M3) exactly 3 — this device-*count* asymmetry,
+directly readable from `klt extract`'s own output independent of any
+`hints`/comparer configuration, is the structural fact that breaks the
+automorphism. It is **not**, on its own, name- or connectivity-resolved
+(that would need a full `match`, explicitly not this issue's bar — see
+below) — it is the same kind of node-degree/multiplicity distinguishing
+signal a graph-isomorphism search needs to rule out `M1`↔`M2`↔`M3`
+swaps, which the pre-#149 layout (three structurally-identical 1-device
+branches) categorically could not provide.
+
+**Re-tried, and dropped: the deliberately-wrong cross-branch
+`hints.same_nets` pairing this issue's own pre-implementation re-check
+used (`sns2`↔`VREF`) as a second, independent confirmation.** Directly
+re-run against this PR's own layout/reference: `hints.rejected` fires (as
+expected — a 2-device branch cannot topologically satisfy a hint
+asserting equality with a 3-device branch), but the run **still**
+reports a `net.merged`/`net.split` cascade, not the clean single-entry
+rejection an isolated cause-(d) fix would ideally produce — confirmed
+this is **not** specific to the {1,2,3} decomposition (the same test
+against the {1,2,4}-count first draft, and even against a trivial
+same-count-but-different-`w` control, produces an equivalent cascade).
+The reason: `counts.nets.matched` is already `0` for **every** top-level
+net on this cell with *no* hints declared at all (permanent blockers #1
+and the well/tap gap below leave essentially nothing else in this graph
+uniquely pinned down), so *any* declared hint — right or wrong — collides
+with that pre-existing, unrelated ambiguity and produces some cascade
+regardless of whether cause (d) itself is fixed. This specific
+hints-based check is **confounded** by `bandgap_core`'s other,
+already-tracked LVS gaps and does not cleanly isolate cause (d) either
+way; the `klt extract` device-count evidence above is the reliable,
+unconfounded signal, and is what this issue's own resolution rests on.
+
+**A full `match` is still not the acceptance bar** (per issue #149's own
+text): `bandgap_core`'s remaining `mismatch` status is fully attributed
+to permanent blockers #1 (bipolar declined upstream) and the unexercised
+well/tap-layer gap (the "two further causes" list's item 2 above) — both
+pre-existing, both out of this issue's scope, both already tracked.
+`layout/bandgap_core/lvs_report.json` is regenerated fresh against the
+decomposed layout (`36` findings, `35` error-severity — the raw count
+rises only because there are now 6 recognised pfets to individually
+report `device.unmatched` instead of 3, not because anything regressed).
 
 ## Evidence freshness, enforced in CI
 

@@ -1,4 +1,4 @@
-** sch_path: /home/ubuntu/GitHub/sg13g2-bandgap/.loom/worktrees/issue-134/design/bandgap_top.sch
+** sch_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-149/design/bandgap_top.sch
 **.subckt bandgap_top vdd vss vref
 *.iopin vdd
 *.iopin vss
@@ -9,8 +9,8 @@ Xx3 vdd vss sns1 fb bandgap_startup
 **.ends
 
 * expanding   symbol:  bandgap_core.sym # of pins=6
-** sym_path: /home/ubuntu/GitHub/sg13g2-bandgap/.loom/worktrees/issue-134/design/bandgap_core.sym
-** sch_path: /home/ubuntu/GitHub/sg13g2-bandgap/.loom/worktrees/issue-134/design/bandgap_core.sch
+** sym_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-149/design/bandgap_core.sym
+** sch_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-149/design/bandgap_core.sch
 .subckt bandgap_core vdd vss fb sns1 sns2 vref
 
 
@@ -22,18 +22,21 @@ Xx3 vdd vss sns1 fb bandgap_startup
 *.iopin vref
 XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
 XQ1 sns1 sns1 vss vss npn13G2 Nx=1
-XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XM2A sns2 fb vdd vdd sg13_hv_pmos w=9u l=1u ng=1 m=1
+XM2B sns2 fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
 XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
 XQ2 cb2 cb2 vss vss npn13G2 Nx=8
-XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XM3A vref fb vdd vdd sg13_hv_pmos w=8u l=1u ng=1 m=1
+XM3B vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XM3C vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
 XR1 vref cb3 sub! rppd w=2u l=511u m=1 b=0
 XQ3 cb3 cb3 vss vss npn13G2 Nx=1
 .ends
 
 
 * expanding   symbol:  bandgap_amp.sym # of pins=5
-** sym_path: /home/ubuntu/GitHub/sg13g2-bandgap/.loom/worktrees/issue-134/design/bandgap_amp.sym
-** sch_path: /home/ubuntu/GitHub/sg13g2-bandgap/.loom/worktrees/issue-134/design/bandgap_amp.sch
+** sym_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-149/design/bandgap_amp.sym
+** sch_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-149/design/bandgap_amp.sch
 .subckt bandgap_amp in_p in_n vss out vdd
 
 
@@ -55,8 +58,8 @@ XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
 
 
 * expanding   symbol:  bandgap_startup.sym # of pins=4
-** sym_path: /home/ubuntu/GitHub/sg13g2-bandgap/.loom/worktrees/issue-134/design/bandgap_startup.sym
-** sch_path: /home/ubuntu/GitHub/sg13g2-bandgap/.loom/worktrees/issue-134/design/bandgap_startup.sch
+** sym_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-149/design/bandgap_startup.sym
+** sch_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-149/design/bandgap_startup.sch
 .subckt bandgap_startup vdd vss sns1 fb
 
 
