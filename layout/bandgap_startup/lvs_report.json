@@ -13,27 +13,24 @@
     "netgen_setup": null,
     "parameter_tolerance": null
   },
-  "status": "mismatch",
-  "mismatch_count": 3,
-  "error_count": 2,
+  "status": "match",
+  "mismatch_count": 2,
+  "error_count": 0,
   "category_counts": {
-    "device.unmatched": 1,
-    "topology": 2
-  },
-  "category_error_counts": {
-    "device.unmatched": 1,
+    "device.bulk_reconciled": 1,
     "topology": 1
   },
+  "category_error_counts": {},
   "counts": {
     "nets": {
       "layout": 5,
       "reference": 5,
-      "matched": 2
+      "matched": 5
     },
     "devices": {
       "layout": 3,
       "reference": 3,
-      "matched": 2
+      "matched": 3
     },
     "pins": {
       "layout": 4,
@@ -72,34 +69,32 @@
   },
   "mismatches": [
     {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
+      "category": "device.bulk_reconciled",
+      "severity": "warning",
+      "description": "request.reference.device_bulk reconciled reference device class 'RHIGH' with the layout side: a 'W' terminal was added to the reference class (layout: ['A', 'B', 'W'], reference was: ['A', 'B']) and tied to reference net 'VSS' on 1 device instance(s), an existing reference net -- that terminal's connectivity was asserted by the request, not read from the reference netlist, so this dimension of the compare is not independently verified (see docs/cli/lvs.md, 'device.bulk_reconciled')",
       "side": "reference",
       "net": null,
       "device": {
-        "layout": "\\$3",
-        "reference": "PU",
-        "class": "rhigh"
+        "layout": null,
+        "reference": null,
+        "class": "RHIGH"
       },
       "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "\\$5",
-        "reference": "VDD"
+      "details": {
+        "terminal": "W",
+        "reference_net": "VSS",
+        "reference_net_created": false,
+        "devices": 1,
+        "layout_terminals": [
+          "A",
+          "B",
+          "W"
+        ],
+        "reference_terminals": [
+          "A",
+          "B"
+        ]
       },
-      "device": null,
-      "property": null,
-      "details": null,
       "circuit": null,
       "instance": null,
       "subcircuit": null
@@ -120,6 +115,11 @@
   ],
   "net_correspondence": [
     {
+      "layout": "DET",
+      "reference": "DET",
+      "pin": true
+    },
+    {
       "layout": "FB",
       "reference": "FB",
       "pin": true
@@ -127,6 +127,16 @@
     {
       "layout": "SNS1",
       "reference": "SNS1",
+      "pin": true
+    },
+    {
+      "layout": "\\$5",
+      "reference": "VDD",
+      "pin": false
+    },
+    {
+      "layout": "VSS",
+      "reference": "VSS",
       "pin": true
     }
   ]

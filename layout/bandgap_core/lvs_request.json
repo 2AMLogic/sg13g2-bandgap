@@ -7,6 +7,9 @@
     "top": "bandgap_core"
   },
   "reference": {
-    "netlist": "bandgap_core.lvs_reference.spice"
+    "netlist": "bandgap_core.lvs_reference.spice",
+    "device_bulk": {
+      "rppd": "vsubs"
+    }
   }
 }

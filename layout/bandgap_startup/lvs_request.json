@@ -7,6 +7,9 @@
     "top": "bandgap_startup"
   },
   "reference": {
-    "netlist": "bandgap_startup.lvs_reference.spice"
+    "netlist": "bandgap_startup.lvs_reference.spice",
+    "device_bulk": {
+      "rhigh": "VSS"
+    }
   }
 }
