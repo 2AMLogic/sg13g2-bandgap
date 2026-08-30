@@ -99,13 +99,23 @@ Vvss vss 0 dc 0
 Vsub sub! vss dc 0
 
 * DUT -- design/netlist/bandgap_core.spice, verbatim, EXCEPT gates tied to
-* fb_load instead of fb (see "loop-break method" above).
+* fb_load instead of fb (see "loop-break method" above). M2/M3 decomposed
+* into per-leg-distinct counts (1/2/3) of dominant-plus-trim-finger
+* sg13_hv_pmos instances (issue #149, T1 tracker #4 item 4 cause (d) --
+* breaks the M1/M2/M3 LVS graph automorphism at the schematic level; each
+* branch's total mirror W/L stays 10u/1u nominally -- see
+* sim/closed-loop-vref-pvt/testbench/tb_closed_loop_vref.spice.tmpl's own
+* header for the fuller rationale and the {1,2,3} split's not-quite-exact
+* electrical caveat, not repeated here).
 XM1 sns1 fb_load vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
 XQ1 sns1 sns1 vss vss npn13G2 Nx=1
-XM2 sns2 fb_load vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XM2A sns2 fb_load vdd vdd sg13_hv_pmos w=9u l=1u ng=1 m=1
+XM2B sns2 fb_load vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
 XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
 XQ2 cb2 cb2 vss vss npn13G2 Nx=8
-XM3 vref fb_load vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XM3A vref fb_load vdd vdd sg13_hv_pmos w=8u l=1u ng=1 m=1
+XM3B vref fb_load vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XM3C vref fb_load vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
 XR1 vref cb3 sub! rppd w=2u l=511u m=1 b=0
 XQ3 cb3 cb3 vss vss npn13G2 Nx=1
 

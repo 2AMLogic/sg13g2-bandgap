@@ -49,7 +49,20 @@
 * is what cleared all 45 corners in this issue's own full sweep. Does not
 * relax any pass/fail criterion below; it only helps the solver step
 * through a numerically stiff instant it would otherwise stall on.
-.options temp=@@TEMP_C@@ tnom=27 rshunt=1e9 gmin=1e-9
+*
+* reltol=5e-3 + a smaller initial .tran step (below, 50n vs the prior 2u):
+* issue #151 -- once bandgap_core's M2/M3 mirror legs are decomposed
+* (issue #149), directly re-confirmed here that this testbench hits the
+* identical "Timestep too small ... trouble with xq3:npn13g2 vbic-instance"
+* failure sim/closed-loop-vref-pvt's own header describes (4 of 5 process
+* corners at -40C: bcs/wcs/sf/fs, all 3 supplies -- reproduced directly
+* against this file before applying either aid, on top of the #58 aids
+* above which alone no longer suffice once the extra parallel devices are
+* present). Same root cause and the same fix -- see
+* sim/closed-loop-vref-pvt/testbench/tb_closed_loop_vref.spice.tmpl's own
+* header for the full whack-a-mole derivation of this exact pair of values,
+* not repeated here.
+.options temp=@@TEMP_C@@ tnom=27 rshunt=1e9 gmin=1e-9 reltol=5e-3
 
 * FIXTURE -- transient supply ramp, the same shape
 * sim/startup-core-handover uses: vdd itself ramps 0 -> VDD over 200 us
@@ -64,13 +77,23 @@ Vvss vss 0 dc 0
 * the same convention every testbench in this tree uses.
 Vsub sub! vss dc 0
 
-* DUT -- design/netlist/bandgap_core.spice, verbatim.
+* DUT -- design/netlist/bandgap_core.spice, verbatim. M2/M3 decomposed into
+* per-leg-distinct counts (1/2/3) of dominant-plus-trim-finger sg13_hv_pmos
+* instances (issue #149, T1 tracker #4 item 4 cause (d) -- breaks the
+* M1/M2/M3 LVS graph automorphism at the schematic level; each branch's
+* total mirror W/L stays 10u/1u nominally -- see
+* sim/closed-loop-vref-pvt/testbench/tb_closed_loop_vref.spice.tmpl's own
+* header for the fuller rationale and the {1,2,3} split's not-quite-exact
+* electrical caveat, not repeated here).
 XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
 XQ1 sns1 sns1 vss vss npn13G2 Nx=1
-XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XM2A sns2 fb vdd vdd sg13_hv_pmos w=9u l=1u ng=1 m=1
+XM2B sns2 fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
 XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
 XQ2 cb2 cb2 vss vss npn13G2 Nx=8
-XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XM3A vref fb vdd vdd sg13_hv_pmos w=8u l=1u ng=1 m=1
+XM3B vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XM3C vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
 XR1 vref cb3 sub! rppd w=2u l=511u m=1 b=0
 XQ3 cb3 cb3 vss vss npn13G2 Nx=1
 
@@ -106,7 +129,7 @@ pre_osdi @@OSDI_DIR@@/psp103.osdi
 pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
 pre_osdi @@OSDI_DIR@@/mosvar.osdi
 pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
-tran 2u 2m
+tran 50n 2m
 * Early-ramp check (t=20us, vdd ~10% of final value, core+amp still
 * degenerate/starting): the startup circuit should still be actively
 * engaged (det high, fb low).

@@ -1,0 +1,237 @@
+* sg13g2-bandgap -- bandgap_core PEX (post-layout) open-loop PVT testbench
+* (issue #14). Generated from
+* sim/core-open-loop-bias-pex/testbench/tb_core_open_loop_bias_pex.spice.tmpl
+* by sim/core-open-loop-bias-pex/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full rationale is in sim/core-open-loop-bias-pex/README.md;
+* this header is a short pointer, not a restatement.
+*
+* Generated for: corner=fs temp=-40C vdd=2.97V
+* DUT git sha (design/netlist/bandgap_core.spice, for the spliced-in
+* bipolar devices -- resistors are extracted as of issue #59, see below):
+*   d83f7c4
+* Layout git sha (layout/bandgap_core/bandgap_core.gds, extraction input):
+*   d83f7c4
+* PDK: ihp-sg13g2 /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh -- see
+*   sim/README.md "OSDI device models" for provenance)
+*
+* THIS IS A HYBRID PEX NETLIST, NOT A PURE LAYOUT EXTRACTION -- read
+* sim/core-open-loop-bias-pex/README.md "What this does and does not
+* model" before trusting a result here. Short version:
+*   - XM1/XM2A/XM2B/XM3A/XM3B/XM3C (the sg13_hv_pmos mirror legs) are
+*     re-encoded from `klt extract --deck sg13g2 --parasitics
+*     layout/bandgap_core/bandgap_core.gds` (layout/bandgap_core/
+*     bandgap_core.pex.spice, layout/bandgap_core/pex_extract_report.json):
+*     real drawn W/L and junction AS/AD/PS/PD from the routed layout,
+*     re-expressed as X-subckt calls to the real sg13_hv_pmos compact model
+*     (the extraction's own native `M...pfet` cards reference a generic
+*     placeholder model name, not the real PDK subckt -- see README.md).
+*     As of issue #149 (T1 tracker #4 item 4 cause (d)), M2/M3 are each
+*     decomposed into per-leg-distinct counts (1/2/3) of dominant-plus-trim
+*     fingers (M2: w=9u+w=1u; M3: w=8u+w=1u+w=1u) to break the M1/M2/M3 LVS
+*     graph automorphism -- `pex_extract_report.json`'s `device_counts` now
+*     reads `{"pfet": 6, "rppd": 2}` (was `{"pfet": 3, "rppd": 2}`); each
+*     finger keeps its own genuinely distinct extracted drawn geometry and
+*     wire-parasitic hub node (see FIXTURE 2 and "Wire parasitics" below --
+*     re-extracted and re-verified current against `bandgap_core.gds` as
+*     part of issue #151, confirming #149's own PR already committed the
+*     post-decomposition `bandgap_core.pex.spice`/`pex_extract_report.json`
+*     pair used here).
+*   - XQ1/XQ2/XQ3 (npn13G2) are NOT extracted from the layout at all --
+*     `klt`'s curated sg13g2 deck still does not recognise bipolar devices
+*     (klayout-tools, filed generically; see layout/README.md's LVS section
+*     for the fuller writeup). They are spliced in verbatim from
+*     design/netlist/bandgap_core.spice, wired to the SAME real layout net
+*     names (sns1/sns2/cb2/cb3/vref/vss) the extraction itself reports as
+*     real, physically-routed pins -- not invented nodes.
+*   - XR1/XR2 (rppd) are now instantiated from the extracted R$5/R$4
+*     devices (issue #59) instead of being spliced verbatim from
+*     design/netlist/bandgap_core.spice -- PR #45's resistor marker layers
+*     made the sg13g2 deck's `rppd` recognizer actually match both poly
+*     resistors in this layout (pex_extract_report.json's device_counts
+*     reads `{"pfet": 3, "rppd": 2}`). IMPORTANT caveat, confirmed by direct
+*     ngspice testing, not assumed from bandgap_core.pex.spice's own text:
+*     that file's native `R$4 sns2__t0 cb2__t0 vsubs 10751 rppd` card is
+*     NOT literal simulatable ngspice syntax (a 2-terminal `R` element
+*     cannot take a 3rd node before its value -- ngspice errors "unknown
+*     parameter (vsubs)") -- `rppd`/`rhigh` are PDK subckts (`1 2 bn`
+*     pins), the same situation the pfet/nfet M-cards above already needed
+*     X-subckt re-encoding for. XR1/XR2 below are therefore X-subckt calls
+*     to the real `rppd` subckt using pex_extract_report.json's own drawn
+*     `w_um`/`l_um` (which, for both resistors here, are numerically
+*     identical to the schematic's own nominal `w`/`l` -- these are
+*     fixed-geometry poly resistors, so this pass buys no *geometry*
+*     correction, only the bulk-node correction below and the newly-wired
+*     hub-terminal parasitics). Bulk lands on `vsubs` (the extraction's
+*     real reported bulk net for these devices), not the schematic's
+*     `sub!` -- the now-unused `Vsub sub! vss` fixture is removed below.
+*     Separately: `pex_extract_report.json`'s own `r_ohm` field (10751 /
+*     66430, current post-#134-retune extraction -- issue #141) is klt's
+*     own first-order `rsh * l_um / w_um` sheet-resistance estimate
+*     (confirmed exactly: `260 * 82.7 / 2 = 10751`,
+*     `260 * 511 / 2 = 66430`), not the full `r3_cmc` compact-model
+*     resistance -- simulating the X-subckt form above at the same drawn
+*     geometry computes ~10761 ohm / ~66257 ohm (res_typ, 27C, measured
+*     from this experiment's own record 20260829-103823-1d98d88), within
+*     ~0.3% of `r_ohm`, i.e. small and in the expected direction (the
+*     compact model adds contact/end-effect terms the sheet-resistance
+*     formula does not). Disclosed, not silently reconciled.
+*   - The extracted mirror legs' body terminals are genuinely floating in
+*     the layout (no drawn/derivable well tie -- klayout-tools, filed
+*     generically; see layout/README.md's LVS cause 2). FIXTURE 3 below
+*     reconnects each one to vdd, mirroring the schematic's own real
+*     body-tied-to-vdd intent, so the netlist has a well-defined DC
+*     operating point at all -- this is a testbench fixture bridging a
+*     known, disclosed deck gap, not a claim about the real layout's body
+*     connectivity.
+*   - klayout-tools#1280/#1282 (issue #37) populated the sg13g2 deck's
+*     PARASITICS.metals/metal_overlaps coefficient tables (Metal1/Metal2,
+*     later the full Metal1-TopMetal2 stack). Re-extracting against the
+*     current deck now yields non-zero r_count/c_count -- this run wires
+*     in those wire R/C cards verbatim (see "Wire parasitics" below),
+*     the first PEX record here to carry them. Gate net \$9 and the
+*     anonymous body nets get no wire model either way (poly=None in
+*     this deck -- see the module docstring in klayout_tools.decks.sg13g2 --
+*     and each body net has only one device terminal). See README.md.
+
+.lib "/private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+.lib "/private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_fs
+.lib "/private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_typ
+
+.options temp=-40 tnom=27
+
+Vvdd vdd 0 dc 2.97
+Vvss vss 0 dc 0
+* bandgap_core.spice's schematic-splice convention wired the rppd bulk
+* terminals to the global substrate net `sub!`, fixtured to vss via a 0 V
+* source (sim/core-open-loop-bias's own fixture). As of issue #59, XR1/XR2
+* below are the extracted R$5/R$4 devices instead, whose real bulk net is
+* `vsubs` -- already stabilized by `Rvsubs_dctie` in the "Wire parasitics"
+* block below -- so the `sub!`/`Vsub` fixture is no longer referenced by
+* anything in this file and is removed rather than left as dead code.
+
+* FIXTURE 1 -- open-loop mirror bias, same convention as
+* sim/core-open-loop-bias (no error amplifier exists yet -- issue #9's
+* scope cut): a diode-connected replica of the mirror device, carrying a
+* 5 uA reference, sets the shared gate net. `pex_fb` substitutes for the
+* extraction's own anonymous label ($9 in layout/bandgap_core/
+* bandgap_core.pex.spice) -- klt's own anonymous net numbering is
+* explicitly "not a stable contract" (klt extract --help), so this
+* testbench names it for readability rather than embedding the raw `$9`.
+XM0 pex_fb pex_fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Ibias pex_fb vss dc 5u
+
+* FIXTURE 2 -- per-leg ammeter. The extracted M-card's own D/S convention
+* is `nd=vdd ng=$9 ns=<leg>` (opposite the schematic's `d=<leg> g=fb
+* s=vdd`) -- inconsequential here since every leg's AS=AD and PS=PD
+* (confirmed in pex_extract_report.json), so PSP103's terminal formulation
+* is symmetric under this exchange; disclosed, not silently assumed. Each
+* extracted device's own source terminal reaches its own real
+* wire-parasitic hub node through a 0 V ammeter, mirroring
+* sim/core-open-loop-bias's own Vm1/Vm2/Vm3 fixture.
+* FIXTURE 3 -- body tie. See the file header above.
+*
+* As of issue #149/#151, M2 and M3 are each decomposed into 2/3 parallel
+* fingers (M$2/M$3 and M$4/M$5/M$6 in bandgap_core.pex.spice), and each
+* finger's extraction genuinely lands on its OWN distinct wire hub node
+* (sns2__t1 vs sns2__t2; vref__t1 vs vref__t2 vs vref__t3) with its own
+* series R back to the real sns2/vref net -- unlike sim/core-open-loop-bias's
+* schematic-level testbench, these are not interchangeable, so this
+* testbench keeps a SEPARATE ammeter per finger (Vm2a/Vm2b, Vm3a/Vm3b/Vm3c)
+* rather than merging them onto one shared probe node, which would lose the
+* real per-finger wire-resistance distinction the extraction reports.
+* run_pvt_sweep.sh sums each leg's per-finger ammeter readings
+* (i(vm2a)+i(vm2b), i(vm3a)+i(vm3b)+i(vm3c)) into that leg's total current,
+* matching the pre-#149 single-ammeter-per-leg convention at the CSV/record
+* level even though the netlist itself now measures each finger
+* individually. Each leg's drain/source pins below are wired to the exact
+* per-terminal wire-parasitic hub node names
+* layout/bandgap_core/bandgap_core.pex.spice's own M$1-M$6 cards use --
+* the "Wire parasitics" block below ties each hub back to its real net
+* (vdd/sns1/sns2/vref) through that file's own series R (+ ground/coupling
+* C, no DC effect but included for completeness). This makes the summed
+* ammeter readings the true per-leg device current, upstream of any wire IR
+* drop, and v(sns1)/v(sns2)/v(vref) the real post-parasitic net voltage the
+* downstream bipolar/resistor devices actually see.
+XM1 vdd__t0 pex_fb m1s vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+Vm1 m1s sns1__t0 dc 0
+XM2A vdd__t1 pex_fb m2as vdd sg13_hv_pmos w=9u l=1u ng=1 m=1 as=3.6p ad=3.6p ps=18.8u pd=18.8u
+Vm2a m2as sns2__t1 dc 0
+XM2B vdd__t2 pex_fb m2bs vdd sg13_hv_pmos w=1u l=1u ng=1 m=1 as=0.4p ad=0.4p ps=2.8u pd=2.8u
+Vm2b m2bs sns2__t2 dc 0
+XM3A vdd__t3 pex_fb m3as vdd sg13_hv_pmos w=8u l=1u ng=1 m=1 as=3.2p ad=3.2p ps=16.8u pd=16.8u
+Vm3a m3as vref__t1 dc 0
+XM3B vdd__t5 pex_fb m3bs vdd sg13_hv_pmos w=1u l=1u ng=1 m=1 as=0.4p ad=0.4p ps=2.8u pd=2.8u
+Vm3b m3bs vref__t3 dc 0
+XM3C vdd__t4 pex_fb m3cs vdd sg13_hv_pmos w=1u l=1u ng=1 m=1 as=0.4p ad=0.4p ps=2.8u pd=2.8u
+Vm3c m3cs vref__t2 dc 0
+
+* Wire parasitics (issue #37, refreshed issue #56, extended issue #59,
+* refreshed again issue #151 for #149's M2/M3 decomposition -- the extra
+* fingers add extra vdd_tN/sns2_tN/vref_tN hub legs) -- verbatim R/C cards
+* from layout/bandgap_core/bandgap_core.pex.spice's --parasitics output
+* (the file's M$1-M$6 cards are already re-encoded above as
+* XM1/XM2A/XM2B/XM3A/XM3B/XM3C; R$7/R$8 are re-encoded below as XR2/XR1 --
+* see file header). Regenerate this block together with the geometry above
+* if the layout or deck ever changes.
+Rcb2_t0 cb2__t0 cb2 27.5568
+Ccb2 cb2 vsubs 8.704932e-15
+Rcb3_t0 cb3__t0 cb3 117.7002
+Ccb3 cb3 vsubs 3.5673741e-14
+Rsns1_t0 sns1__t0 sns1 15.1283
+Csns1 sns1 vsubs 4.244144e-15
+Rsns2_t0 sns2__t0 sns2 10.1243713303
+Rsns2_t1 sns2__t1 sns2 4.91814556153
+Rsns2_t2 sns2__t2 sns2 8.17758310814
+Csns2 sns2 vsubs 7.036193e-15
+Rvdd_t0 vdd__t0 vdd 12.9535840909
+Rvdd_t1 vdd__t1 vdd 5.4803625
+Rvdd_t2 vdd__t2 vdd 3.48750340909
+Rvdd_t3 vdd__t3 vdd 5.31429090909
+Rvdd_t4 vdd__t4 vdd 9.30000909091
+Rvdd_t5 vdd__t5 vdd 7.30715
+Cvdd vdd vsubs 1.2764375e-14
+Rvref_t0 vref__t0 vref 24.8473212291
+Rvref_t1 vref__t1 vref 11.065018194
+Rvref_t2 vref__t2 vref 5.58302016718
+Rvref_t3 vref__t3 vref 8.2824404097
+Cvref vref vsubs 1.5014553e-14
+Rvss vss vss__par 7.5152
+Cvss vss__par vsubs 1.2491113e-14
+Ccc_cb2_vdd cb2 vdd 8.235e-18
+Ccc_cb2_vss cb2 vss__par 3.0251e-17
+Ccc_cb3_vdd cb3 vdd 8.235e-18
+Ccc_cb3_vref cb3 vref 8.235e-18
+Ccc_cb3_vss cb3 vss__par 2.0167e-17
+Ccc_sns1_vss sns1 vss__par 3.0251e-17
+Ccc_sns2_vdd sns2 vdd 8.235e-18
+Ccc_vdd_vref vdd vref 8.235e-18
+Rvsubs_dctie vsubs 0 1e+12
+
+* Bipolar devices -- schematic-sourced, see file header above (klt's sg13g2
+* deck still does not recognise npn13G2 as an extracted device class).
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+* Resistor devices -- extracted from the routed layout as of issue #59
+* (R$4/R$5 in layout/bandgap_core/bandgap_core.pex.spice), re-encoded as
+* X-subckt calls to the real rppd PDK subckt (see file header for why the
+* pex.spice file's own native R$4/R$5 cards are not directly simulatable,
+* and for the r_ohm-vs-simulated-resistance caveat). XR1/XR2 keep the
+* schematic's own instance names for continuity; the hub-terminal node
+* names below (sns2__t0/cb2__t0/vref__t0/cb3__t0) are the extraction's own.
+XR2 sns2__t0 cb2__t0 vsubs rppd w=2u l=82.7u m=1 b=0
+XR1 vref__t0 cb3__t0 vsubs rppd w=2u l=511u m=1 b=0
+
+.op
+.control
+pre_osdi /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+run
+print v(vref) v(pex_fb) v(sns1) v(sns2) v(cb2) v(cb3) i(vm1) i(vm2a) i(vm2b) i(vm3a) i(vm3b) i(vm3c)
+.endc
+.end

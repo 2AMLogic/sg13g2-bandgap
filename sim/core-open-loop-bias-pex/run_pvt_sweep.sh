@@ -72,8 +72,25 @@ for corner in "${CORNER_LABELS[@]}"; do
       vbe2=$(grep -E '^v\(cb2\)' "${log}" | awk '{print $3}')
       vbe3=$(grep -E '^v\(cb3\)' "${log}" | awk '{print $3}')
       i1=$(grep -E '^i\(vm1\)' "${log}" | awk '{print $3}')
-      i2=$(grep -E '^i\(vm2\)' "${log}" | awk '{print $3}')
-      i3=$(grep -E '^i\(vm3\)' "${log}" | awk '{print $3}')
+      # As of issue #149/#151, M2/M3 are each decomposed into 2/3 parallel
+      # fingers, each with its own ammeter (the testbench's own genuinely
+      # distinct per-finger wire-parasitic hub node -- see
+      # testbench/tb_core_open_loop_bias_pex.spice.tmpl's FIXTURE 2 comment);
+      # sum each leg's per-finger readings into that leg's total current, the
+      # same quantity the pre-#149 single-ammeter-per-leg i2/i3 reported.
+      i2a=$(grep -E '^i\(vm2a\)' "${log}" | awk '{print $3}')
+      i2b=$(grep -E '^i\(vm2b\)' "${log}" | awk '{print $3}')
+      i3a=$(grep -E '^i\(vm3a\)' "${log}" | awk '{print $3}')
+      i3b=$(grep -E '^i\(vm3b\)' "${log}" | awk '{print $3}')
+      i3c=$(grep -E '^i\(vm3c\)' "${log}" | awk '{print $3}')
+      i2=""
+      i3=""
+      if [[ -n "${i2a:-}" && -n "${i2b:-}" ]]; then
+        i2=$(awk -v a="${i2a}" -v b="${i2b}" 'BEGIN{printf "%.6e", a+b}')
+      fi
+      if [[ -n "${i3a:-}" && -n "${i3b:-}" && -n "${i3c:-}" ]]; then
+        i3=$(awk -v a="${i3a}" -v b="${i3b}" -v c="${i3c}" 'BEGIN{printf "%.6e", a+b+c}')
+      fi
 
       if [[ $rc -eq 0 && $model_error -eq 0 && -n "${vref:-}" && -n "${vbe1:-}" \
             && -n "${vbe2:-}" && -n "${i1:-}" && -n "${i2:-}" && -n "${i3:-}" ]]; then
@@ -107,14 +124,18 @@ done
   echo "  R/C are now modelled, issue #37; PMOS body is a"
   echo "  testbench fixture, not a real extracted tie). NOT a claim against"
   echo "  any ratified spec row (none is ratified yet -- see #13)."
-  echo "- **Devices**: XM1/XM2/XM3 -- sg13_hv_pmos, geometry (+ wire R/C,"
-  echo "  issue #37) from \`layout/bandgap_core/bandgap_core.pex.spice\`"
+  echo "- **Devices**: XM1/XM2A/XM2B/XM3A/XM3B/XM3C -- sg13_hv_pmos, geometry"
+  echo "  (+ wire R/C, issue #37) from"
+  echo "  \`layout/bandgap_core/bandgap_core.pex.spice\`"
   echo "  (\`klt extract --deck sg13g2 --parasitics\`, layout git sha"
-  echo "  \`${LAYOUT_GIT_SHA}\`). XQ1-XQ3 (npn13G2) still spliced verbatim"
+  echo "  \`${LAYOUT_GIT_SHA}\`) -- M2/M3 decomposed into per-leg-distinct"
+  echo "  finger counts (1/2/3) as of issue #149/#151 (T1 tracker #4 item 4"
+  echo "  cause (d)); \`pex_extract_report.json\`'s \`device_counts\` reads"
+  echo "  \`{\"pfet\": 6, \"rppd\": 2}\`. XQ1-XQ3 (npn13G2) still spliced verbatim"
   echo "  from \`design/netlist/bandgap_core.spice\` (schematic git sha"
   echo "  \`${DUT_GIT_SHA}\`) -- the sg13g2 extraction deck still does not"
   echo "  recognise bipolar devices (klayout-tools, filed generically)."
-  echo "  XR1/XR2 (rppd) are now instantiated from the extracted R\$5/R\$4"
+  echo "  XR1/XR2 (rppd) are now instantiated from the extracted R\$8/R\$7"
   echo "  devices (issue #59) instead of spliced from the schematic -- real"
   echo "  drawn geometry via an X-subckt call to the real rppd PDK subckt,"
   echo "  bulk on vsubs rather than the schematic's sub!. See README.md and"

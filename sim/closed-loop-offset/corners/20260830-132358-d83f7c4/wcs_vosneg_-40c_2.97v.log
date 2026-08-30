@@ -1,0 +1,19 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+v(fb) = 2.098425e+00
+v(sns1) = 7.861896e-01
+v(sns1_amp) = 7.811896e-01
+v(sns2) = 7.809126e-01
+v(vref) = 1.015989e+00
+Note: Simulation executed from .control section 

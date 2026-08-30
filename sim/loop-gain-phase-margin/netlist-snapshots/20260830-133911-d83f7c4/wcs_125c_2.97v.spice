@@ -1,0 +1,175 @@
+* sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+* closed-loop AC loop-gain / phase-margin testbench (issue #86, follow-on
+* to #58). Generated from
+* sim/loop-gain-phase-margin/testbench/tb_loop_gain.spice.tmpl
+* by sim/loop-gain-phase-margin/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full methodology rationale is in
+* sim/loop-gain-phase-margin/README.md.
+*
+* Generated for: corner=wcs temp=125C vdd=2.97V
+* DUT git sha (design/netlist/bandgap_core.spice,
+* design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice
+* this was copied from):
+*   core=d83f7c4 amp=397fe2d startup=66ac99d seeds=20260830-132425-d83f7c4.csv@
+* PDK: ihp-sg13g2 /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* --------------------------------------------------------- loop-break method
+* Same three DUTs as sim/closed-loop-startup/ and sim/closed-loop-vref-pvt/,
+* copied verbatim and wired exactly as design/bandgap_top.sch specifies,
+* EXCEPT the single shared "fb" node is split into TWO nodes for this
+* testbench only:
+*   fb_src  -- bandgap_amp's own output (MP4/MN3 drains -- what design/
+*              bandgap_amp.sch's header calls "out")
+*   fb_load -- everything fb_src normally drives directly: bandgap_core's
+*              three PMOS mirror gates (M1/M2/M3) and bandgap_startup's
+*              XMKFB drain (via the same Vmkfb 0V ammeter fixture
+*              sim/closed-loop-startup/ uses)
+* A large inductor (Lbreak, 1e9 H) connects fb_src to fb_load: at DC an
+* ideal inductor is a short circuit REGARDLESS of its inductance, so this
+* preserves the closed-loop DC operating point exactly (fb_src=fb_load, the
+* same constraint the real single "fb" node enforces) while presenting a
+* huge (>1e17 ohm at the lowest swept frequency) AC impedance, breaking the
+* loop for the .ac analysis without touching its DC bias. A small-signal AC
+* voltage source (Vtest, 1V/0deg, DC=0V) is injected in series with Lbreak
+* between fb_src and fb_load -- Middlebrook's classic single voltage-
+* injection loop-gain probe. This break point is deliberately chosen
+* because fb_load's OTHER connections are all MOS gates (M1/M2/M3's gates,
+* XMKFB's drain via a 0V ammeter) -- i.e. a high-impedance load looking
+* into the forward path from the injection point, and fb_src is a real,
+* comparatively low-impedance amplifier output -- exactly the impedance
+* asymmetry single voltage injection needs to be accurate (see README).
+*
+* Loop gain (this testbench's own sign convention, see README "Sign
+* convention"): T(s) = V(fb_src)/V(fb_load). Phase margin = phase(T(jwc))
+* at the frequency wc where |T(jwc)| = 1 (0 dB), given phase(T) starts near
+* +180 deg at DC (the negative-feedback loop's own sign, already baked into
+* this ratio -- verified empirically, not assumed, see README).
+*
+* ------------------------------------------------------- DC bias: nodeset
+* This circuit has (at least) two DC equilibria -- the intended closed-loop
+* operating point AND the degenerate all-off state design/bandgap_startup.sch
+* exists to kick it out of (see that schematic's own header and
+* sim/closed-loop-startup/README.md's account of why a plain vdd ramp is
+* even needed there). A bare `.op` on the loop-BROKEN topology below, with
+* no transient bring-up and no bias hint, has no guaranteed way to land in
+* the intended basin -- and this testbench genuinely cannot reuse
+* sim/closed-loop-startup's own vdd-ramp bring-up transient directly: doing
+* so with the loop already split at fb_src/fb_load starves fb_load's DC/
+* transient dynamics (its only other connections are MOS gates and one
+* ammeter -- effectively no fast current path except through Lbreak, whose
+* L/R time constant is enormous relative to the ramp), corrupting the
+* bring-up itself (confirmed empirically during this issue's own dev-time
+* prototyping -- every L tried, from 1H to 1e9H, either failed to converge
+* the transient or settled somewhere far from
+* sim/closed-loop-startup's own known-correct endpoint).
+*
+* The fix used here: seed a `.nodeset` (an initial-guess HINT for `.op`'s
+* Newton-Raphson iteration, not an enforced constraint -- unlike `.ic`) at
+* fb_load/fb_src/sns1/sns2/vref using the EXACT converged values
+* sim/closed-loop-startup's own vdd-ramp transient already found for this
+* same corner/temp/vdd point (read from its most recent committed record by
+* run_pvt_sweep.sh at generation time -- see that script and the README's
+* "Nodeset provenance" section). Since the seed IS (very nearly) the real
+* answer, `.op`'s Newton-Raphson converges back to it directly rather than
+* searching -- confirmed empirically across 6 spot-checked corners during
+* dev-time prototyping to reproduce sim/closed-loop-startup's own fb/sns1/
+* sns2/vref values to 3-4 significant figures despite only 5 of this
+* circuit's ~13 non-trivial nodes being seeded. run_pvt_sweep.sh itself
+* re-verifies this for every one of the 45 points in this sweep (not just
+* the dev-time spot check) via the "op landed near its seed" sanity check
+* documented in the README -- a point whose `.op` result strays far from
+* its own seed fails outright rather than silently reporting a bogus
+* loop-gain number from the wrong equilibrium.
+.nodeset v(fb_load)=2.18247e+00 v(fb_src)=2.18247e+00 v(sns1)=5.97498e-01 v(sns2)=5.97201e-01 v(vref)=1.05477e+00
+
+.lib "/private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_wcs
+.lib "/private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_ss
+.lib "/private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_wcs
+
+.options temp=125 tnom=27
+
+* FIXTURE -- vdd is a FIXED DC source here (not the transient ramp
+* sim/closed-loop-startup/sim/closed-loop-vref-pvt use): this testbench
+* measures a small-signal AC property of one already-settled DC operating
+* point (seeded via .nodeset above), not a startup transient.
+Vvdd vdd 0 dc 2.97
+Vvss vss 0 dc 0
+Vsub sub! vss dc 0
+
+* DUT -- design/netlist/bandgap_core.spice, verbatim, EXCEPT gates tied to
+* fb_load instead of fb (see "loop-break method" above). M2/M3 decomposed
+* into per-leg-distinct counts (1/2/3) of dominant-plus-trim-finger
+* sg13_hv_pmos instances (issue #149, T1 tracker #4 item 4 cause (d) --
+* breaks the M1/M2/M3 LVS graph automorphism at the schematic level; each
+* branch's total mirror W/L stays 10u/1u nominally -- see
+* sim/closed-loop-vref-pvt/testbench/tb_closed_loop_vref.spice.tmpl's own
+* header for the fuller rationale and the {1,2,3} split's not-quite-exact
+* electrical caveat, not repeated here).
+XM1 sns1 fb_load vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XM2A sns2 fb_load vdd vdd sg13_hv_pmos w=9u l=1u ng=1 m=1
+XM2B sns2 fb_load vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XM3A vref fb_load vdd vdd sg13_hv_pmos w=8u l=1u ng=1 m=1
+XM3B vref fb_load vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XM3C vref fb_load vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XR1 vref cb3 sub! rppd w=2u l=511u m=1 b=0
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+* DUT -- design/netlist/bandgap_amp.spice, verbatim, EXCEPT the output
+* devices (MP4 drain, MN3 drain) are tied to fb_src instead of fb/out (see
+* "loop-break method" above). in_p <- sns2 (non-inverting), in_n <- sns1
+* (inverting) -- unchanged from design/bandgap_amp.sch's own polarity.
+XMTAIL tail fb_src vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP2 d2 sns1 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP4 fb_src pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN3 fb_src d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+
+* DUT -- design/netlist/bandgap_startup.spice, verbatim, EXCEPT XMKFB's
+* drain is tied to fb_load instead of fb (via the same 0V Vmkfb ammeter
+* fixture sim/closed-loop-startup/ uses). At the settled bias this .nodeset
+* seeds, XMKFB is fully released (same as every PASS point in
+* sim/closed-loop-startup) and contributes ~0 current either way.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1
+Vmkfb fb_load fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+* LOOP BREAK -- see "loop-break method" above. Lbreak's DC impedance is
+* always 0 (ideal inductor), so it does not perturb the .nodeset-seeded DC
+* operating point at all; only its AC (jwL) reactance matters, and that is
+* confirmed >> this circuit's own node impedances at every frequency this
+* testbench sweeps (empirically verified L-invariant between 1e6 H and
+* 1e9 H during dev-time prototyping -- see README).
+Lbreak fb_src brk 1e9
+Vtest brk fb_load dc 0 ac 1 0
+
+.control
+pre_osdi /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /private/tmp/ihp-pdk-fetch/pdks/ihp-open-pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+op
+* Sanity check (see README "op landed near its seed"): if .op strayed into
+* the wrong equilibrium, fb_load here will read far from 2.18247e+00.
+* (ngspice has no ".meas op" analysis type -- "print" is the standard way
+* to pull a DC operating-point value out of a .control block; parsed by
+* run_pvt_sweep.sh from this exact "v(node) = value" line shape.)
+print v(fb_load)
+print v(sns1)
+print v(sns2)
+print v(vref)
+ac dec 30 1 1e9
+let loopgain_db = db(v(fb_src)/v(fb_load))
+let loopgain_ph = cph(v(fb_src)/v(fb_load))*180/PI
+wrdata /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-151/sim/loop-gain-phase-margin/corners/20260830-133911-d83f7c4/wcs_125c_2.97v.ac.txt loopgain_db loopgain_ph
+.endc
+.end
