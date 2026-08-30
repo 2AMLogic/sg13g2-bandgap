@@ -337,8 +337,8 @@ still clean from before).
 
 | Cell | Report | Status | Engine |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (10 findings, 9 error-severity — down from 36/35 after issue #155's tap-ring fix; see "Well/substrate-tap ring geometry added (issue #155)" below) | `klayout` (`klayout.db.NetlistComparer`) |
-| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | `mismatch` (5 findings, 4 error-severity — down from 16/14 after issue #155's tap-ring fix; see "Well/substrate-tap ring geometry added (issue #155)" below) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (10 findings, 9 error-severity — unchanged in count after issue #157's net-label case fix, same causes reclassified from `net.merged`/`net.split` to `net.unmatched`; see "Net-name case-identity conflict resolved (issue #157)" below) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | `mismatch` (3 findings, 2 error-severity — down from 5/4 after issue #157's net-label case fix; see "Net-name case-identity conflict resolved (issue #157)" below) | `klayout` (`klayout.db.NetlistComparer`) |
 
 Reproduce: `klt lvs layout/bandgap_core/lvs_request.json` (run from
 `layout/bandgap_core/`, since the request's relative paths resolve against
@@ -555,7 +555,7 @@ silently downgraded to warnings — per `CLAUDE.md`, "Verification is the
 product": this repo's DRC result is a genuine pass; its LVS result is a
 genuine, fully-explained fail, not fabricated evidence either way.
 
-### Permanent blockers (issue #20 rescope, 2026-08-23; cause 2 resolved in-repo via issue #149, cause 3 resolved upstream via issue #152, and the well/substrate-tap gap resolved in-repo via issue #155, all 2026-08-30)
+### Permanent blockers (issue #20 rescope, 2026-08-23; cause 2 resolved in-repo via issue #149, cause 3 resolved upstream via issue #152, the well/substrate-tap gap resolved in-repo via issue #155 (2026-08-30), and the net-name case-identity conflict issue #155 newly exposed resolved in-repo via issue #157, 2026-08-30)
 
 One cause remains **permanently unreachable through routing, marker-layer
 geometry, or `klt lvs` hints alone** — a future pass should not
@@ -577,13 +577,23 @@ tap ring geometry added (issue #155)" below) — every `nfet`/`pfet` body
 terminal on both cells now resolves to its real schematic net, not an
 anonymous or deck-synthesized `vsubs` net.
 
+The net-name case-identity conflict issue #155's own tap-ring fix newly
+exposed (`bandgap_startup`'s `det`/`vss` nets pairing correctly but
+tripping a `topology`/"name identity conflict" over case alone, `klt lvs`'s
+reference side always reading upper-case via `NetlistSpiceReader` against
+this repo's own lower-case `layout/common.py` labels) is **also since
+resolved in-repo** (issue #157, 2026-08-30 — see "Net-name case-identity
+conflict resolved (issue #157)" below): `Builder.label()`
+(`layout/common.py`) now upper-cases the text it draws on the deck's real
+net-naming layers, matching the reader's own convention.
+
 All are kept in this list for their own record, and because **neither cell
 reaches a clean `match` even with all of them resolved**: `bandgap_core`
 still blocks on cause 1 below (permanent) plus a pre-existing `rppd`
 bulk-terminal-count mismatch (see issue #155's own entry below);
-`bandgap_startup` on that same `rppd`/`rhigh` cause plus a newly-exposed
-net-name case-identity conflict, tracked at #157 (see issue #155's own
-entry below for both).
+`bandgap_startup` on that same `rppd`/`rhigh` cause alone now (issue #157
+cleared the case-identity conflict that used to sit alongside it — see
+"Net-name case-identity conflict resolved (issue #157)" below).
 
 1. **Bipolar (SiGe HBT) device recognition is permanently declined
    upstream** (`klayout-tools#1242`, closed; `klayout-tools#1232`'s own
@@ -735,6 +745,94 @@ in this section, against `layout/bandgap_core/bandgap_core.gds`/
 `layout/bandgap_startup/bandgap_startup.gds` regenerated via
 `python3 layout/bandgap_core/generate.py`/`layout/bandgap_startup/generate.py`
 (deterministic — a second run leaves `git diff` empty, verified).
+
+### Net-name case-identity conflict resolved (issue #157)
+
+The net-name case-identity conflict issue #155 newly exposed (bullet 2
+above) is now fixed. Root cause, traced directly rather than assumed:
+`klayout.db.NetlistSpiceReader` (the engine `klt lvs`'s reference side is
+read through) upper-cases **every** net name it reads, unconditionally,
+regardless of the input SPICE text's own case — confirmed interactively,
+independent of what case `layout/lvs_reference.py` writes:
+
+```python
+>>> nl = kdb.Netlist()
+>>> nl.read("bandgap_startup.lvs_reference.spice", kdb.NetlistSpiceReader())
+>>> [n.name for n in nl.top_circuit().each_net()]
+['VDD', 'DET', 'SNS1', 'VSS', 'FB']   # the file itself spells them lower-case
+```
+
+The curation comment on issue #157 recommended fixing this at
+`layout/lvs_reference.py` (the reference-conversion boundary, its own
+Option 3) — but the check above shows that boundary has no lever over the
+reference side's net-name case at all: whatever case that script writes,
+`NetlistSpiceReader` folds it to upper-case regardless. The layout side
+(`klt extract`'s net-naming pass) is the one side whose net-name case *is*
+a free variable — it reads a GDS text label's case back verbatim
+(confirmed the same way the pre-fix report showed: `net: {"layout": "det",
+"reference": "DET"}`, the layout side literally preserving
+`layout/common.py`'s own lower-case labels). **Fixed at that free variable
+instead** (issue #157's own Option 1, with the deviation from the curated
+Option 3 noted and justified here): `layout/common.py`'s `Builder.label()`
+now upper-cases the text it draws on exactly the deck's real net-naming
+layers (`L_METAL1_TEXT`/`L_METAL2_TEXT` — `EXTRACTION_DECK.metal_labels` —
+and `L_GATPOLY_LABEL`, which doubles as `EXTRACTION_DECK.poly_label`),
+centrally, in one place — not at each `draw_npn13g2`/`draw_hv_mos`/
+`draw_poly_res`/`draw_gate_tab` call site's own net-name string literal —
+so the fix generalizes to any current or future net with no per-net
+enumeration (unlike a `hints.same_nets` entry, issue #157's own Option 2).
+Every other label layer (`L_TEXT`, and `L_METAL1_LABEL`/`L_METAL2_LABEL`/
+`L_POLYRES_LABEL`'s purely-informational duplicates — not read by `klt
+extract`'s net-naming pass at all, see the module-level comment on
+`L_METAL1_TEXT` above) is left exactly as each call site spells it; this is
+a case-only change, cosmetic to the compare — `NetlistComparer` pairs
+devices/nets by structure, not by name, so it does not and must not alter
+which physical devices/nets pair against which schematic ones.
+
+**Verified**: `bandgap_startup`'s `det`/`vss` `topology`/"name identity
+conflict" findings are gone — `mismatch_count` 5 -> **3** (4 -> **2**
+error-severity). The `sns1`/`fb` nets, already `net.matched` before this
+fix, are unaffected (still matched, both sides now spelled upper-case).
+The 3 remaining findings are all the same, pre-existing, out-of-scope
+`RPU`/`rhigh` cause already documented above (bullet 1: a terminal-count
+mismatch, this deck's `rhigh` extracting a synthesized 3rd bulk terminal
+against the reference's plain 2-terminal card) — `device.unmatched` for
+`RPU`/`rhigh` itself, plus `RPU`'s own anonymous `vdd`-net end (`$5`/`VDD`)
+still failing the same name-identity check for the unrelated reason that
+it never got a real name at all (not a case issue). Not fixed here — out
+of #157's own scope, tracked separately (see bullet 1 above).
+
+`bandgap_core`'s `klt lvs` finding *count* is unchanged (10/9, same as
+after issue #155) — this cell reaches no `net.matched` pairing at all yet
+(permanent blocker #1, bipolar recognition, plus the `rppd` bulk-terminal
+cause below), so there was no case-identity-conflict finding for this fix
+to remove. Re-running after the fix does reclassify three findings from
+`net.merged`(1)/`net.split`(2) to `net.unmatched`(3) — a side effect of
+`klt lvs`'s own merge/split heuristic (which inspects whether a
+differently-*named* both-sided pairing co-occurs with a one-sided
+leftover) now seeing every net upper-cased consistently, not a new or
+regressed finding; the same `VSS`/`vsubs`/rppd-bulk-terminal root cause as
+before, confirmed by the finding count staying exactly 10/9 and no new
+device or net leaving `matched`.
+
+**GDS content changed, evidence chain updated accordingly.** Both cells'
+`.gds` files changed (label text only, no geometry) and were re-verified
+end to end: `klt drc` stays `clean`, 0 violations, on both (regenerated
+`drc_report.json`); both `lvs_report.json` regenerated as above. Both
+cells' `pex_extract_report.json`/`<cell>.pex.spice` — extracted from the
+pre-fix GDS — are now stale relative to the post-fix one (re-extracting
+both to check confirmed the change is case-only: no `R`/`C` device
+parameter differs, only net-name case in the emitted `.pex.spice`) and are
+**waived** rather than re-extracted here (`layout/evidence-freshness-
+waivers.json`, tracked at #159) — re-extracting and re-running both PVT
+sweeps needs `klt`/PDK/ngspice/OSDI models CI does not have, and is out of
+this "routine"-complexity issue's own scope.
+
+Reproduce: `klt lvs layout/bandgap_startup/lvs_request.json` /
+`klt lvs layout/bandgap_core/lvs_request.json`, against
+`bandgap_startup.gds`/`bandgap_core.gds` regenerated via each cell's own
+`generate.py` (same reproduction steps as above — deterministic, `git diff`
+empty on a second run).
 
 ### `M1`/`M2`/`M3` automorphism resolved (issue #149)
 
