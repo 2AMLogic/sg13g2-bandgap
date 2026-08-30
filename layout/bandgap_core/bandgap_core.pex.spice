@@ -6,108 +6,108 @@
 * - frequency: quasi-static -- one frequency-independent R and C per net; no skin effect, no distributed transmission-line behavior
 
 * cell bandgap_core
-* pin cb2
-* pin cb3
-* pin fb
-* pin sns1
-* pin sns2
-* pin vdd
-* pin vref
+* pin CB2
+* pin CB3
+* pin FB
+* pin SNS1
+* pin SNS2
+* pin VDD
+* pin VREF
 * pin vsubs
-* pin vss
-.SUBCKT bandgap_core cb2 cb3 fb sns1 sns2 vdd vref vsubs vss
+* pin VSS
+.SUBCKT bandgap_core CB2 CB3 FB SNS1 SNS2 VDD VREF vsubs VSS
 * device instance $1 r0 *1 0,22 pfet
-M$1 vdd__t0 fb sns1__t0 vdd__t1 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$1 VDD__t0 FB SNS1__t0 VDD__t1 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 45,22 pfet
-M$2 vdd__t2 fb sns2__t1 vdd__t3 pfet L=1U W=9U AS=3.6P AD=3.6P PS=18.8U PD=18.8U
+M$2 VDD__t2 FB SNS2__t1 VDD__t3 pfet L=1U W=9U AS=3.6P AD=3.6P PS=18.8U PD=18.8U
 * device instance $3 r0 *1 57,22 pfet
-M$3 vdd__t4 fb sns2__t2 vdd__t5 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
+M$3 VDD__t4 FB SNS2__t2 VDD__t5 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
 * device instance $4 r0 *1 110,22 pfet
-M$4 vdd__t6 fb vref__t1 vdd__t7 pfet L=1U W=8U AS=3.2P AD=3.2P PS=16.8U PD=16.8U
+M$4 VDD__t6 FB VREF__t1 VDD__t7 pfet L=1U W=8U AS=3.2P AD=3.2P PS=16.8U PD=16.8U
 * device instance $5 r0 *1 122,22 pfet
-M$5 vdd__t11 fb vref__t3 vdd__t9 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
+M$5 VDD__t11 FB VREF__t3 VDD__t9 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
 * device instance $6 r0 *1 134,22 pfet
-M$6 vdd__t10 fb vref__t2 vdd__t8 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
+M$6 VDD__t10 FB VREF__t2 VDD__t8 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
 * device instance $7 r0 *1 41.35,40 rppd
-R$7 sns2__t0 cb2__t0 vsubs 10751 rppd
+R$7 SNS2__t0 CB2__t0 vsubs 10751 rppd
 * device instance $8 r0 *1 255.5,60 rppd
-R$8 vref__t0 cb3__t0 vsubs 66430 rppd
-* device instance cb2_t0 r0 *1 0,0 
-Rcb2_t0 cb2__t0 cb2 27.5568
-* device instance cb2 r0 *1 0,0 
-Ccb2 cb2 vsubs 8.704932e-15
-* device instance cb3_t0 r0 *1 0,0 
-Rcb3_t0 cb3__t0 cb3 117.7002
-* device instance cb3 r0 *1 0,0 
-Ccb3 cb3 vsubs 3.5673741e-14
-* device instance sns1_t0 r0 *1 0,0 
-Rsns1_t0 sns1__t0 sns1 15.1283
-* device instance sns1 r0 *1 0,0 
-Csns1 sns1 vsubs 4.244144e-15
-* device instance sns2_t0 r0 *1 0,0 
-Rsns2_t0 sns2__t0 sns2 10.1243713303
-* device instance sns2_t1 r0 *1 0,0 
-Rsns2_t1 sns2__t1 sns2 4.91814556153
-* device instance sns2_t2 r0 *1 0,0 
-Rsns2_t2 sns2__t2 sns2 8.17758310814
-* device instance sns2 r0 *1 0,0 
-Csns2 sns2 vsubs 7.036193e-15
-* device instance vdd_t0 r0 *1 0,0 
-Rvdd_t0 vdd__t0 vdd 6.75282045455
-* device instance vdd_t1 r0 *1 0,0 
-Rvdd_t1 vdd__t1 vdd 6.75282045455
-* device instance vdd_t2 r0 *1 0,0 
-Rvdd_t2 vdd__t2 vdd 2.8569625
-* device instance vdd_t3 r0 *1 0,0 
-Rvdd_t3 vdd__t3 vdd 2.8569625
-* device instance vdd_t4 r0 *1 0,0 
-Rvdd_t4 vdd__t4 vdd 1.81806704545
-* device instance vdd_t5 r0 *1 0,0 
-Rvdd_t5 vdd__t5 vdd 1.81806704545
-* device instance vdd_t6 r0 *1 0,0 
-Rvdd_t6 vdd__t6 vdd 2.77038787879
-* device instance vdd_t7 r0 *1 0,0 
-Rvdd_t7 vdd__t7 vdd 2.77038787879
-* device instance vdd_t8 r0 *1 0,0 
-Rvdd_t8 vdd__t8 vdd 4.84817878788
-* device instance vdd_t9 r0 *1 0,0 
-Rvdd_t9 vdd__t9 vdd 3.80928333333
-* device instance vdd_t10 r0 *1 0,0 
-Rvdd_t10 vdd__t10 vdd 4.84817878788
-* device instance vdd_t11 r0 *1 0,0 
-Rvdd_t11 vdd__t11 vdd 3.80928333333
-* device instance vdd r0 *1 0,0 
-Cvdd vdd vsubs 1.314593e-14
-* device instance vref_t0 r0 *1 0,0 
-Rvref_t0 vref__t0 vref 24.8473212291
-* device instance vref_t1 r0 *1 0,0 
-Rvref_t1 vref__t1 vref 11.065018194
-* device instance vref_t2 r0 *1 0,0 
-Rvref_t2 vref__t2 vref 5.58302016718
-* device instance vref_t3 r0 *1 0,0 
-Rvref_t3 vref__t3 vref 8.2824404097
-* device instance vref r0 *1 0,0 
-Cvref vref vsubs 1.5014553e-14
-* device instance vss r0 *1 0,0 
-Rvss vss vss__par 7.5152
-* device instance vss r0 *1 0,0 
-Cvss vss__par vsubs 1.2491113e-14
-* device instance cc_cb2_vdd r0 *1 0,0 
-Ccc_cb2_vdd cb2 vdd 8.235e-18
-* device instance cc_cb2_vss r0 *1 0,0 
-Ccc_cb2_vss cb2 vss__par 3.0251e-17
-* device instance cc_cb3_vdd r0 *1 0,0 
-Ccc_cb3_vdd cb3 vdd 8.235e-18
-* device instance cc_cb3_vref r0 *1 0,0 
-Ccc_cb3_vref cb3 vref 8.235e-18
-* device instance cc_cb3_vss r0 *1 0,0 
-Ccc_cb3_vss cb3 vss__par 2.0167e-17
-* device instance cc_sns1_vss r0 *1 0,0 
-Ccc_sns1_vss sns1 vss__par 3.0251e-17
-* device instance cc_sns2_vdd r0 *1 0,0 
-Ccc_sns2_vdd sns2 vdd 8.235e-18
-* device instance cc_vdd_vref r0 *1 0,0 
-Ccc_vdd_vref vdd vref 8.235e-18
+R$8 VREF__t0 CB3__t0 vsubs 66430 rppd
+* device instance CB2_t0 r0 *1 0,0 
+RCB2_t0 CB2__t0 CB2 27.5568
+* device instance CB2 r0 *1 0,0 
+CCB2 CB2 vsubs 8.704932e-15
+* device instance CB3_t0 r0 *1 0,0 
+RCB3_t0 CB3__t0 CB3 117.7002
+* device instance CB3 r0 *1 0,0 
+CCB3 CB3 vsubs 3.5673741e-14
+* device instance SNS1_t0 r0 *1 0,0 
+RSNS1_t0 SNS1__t0 SNS1 15.1283
+* device instance SNS1 r0 *1 0,0 
+CSNS1 SNS1 vsubs 4.244144e-15
+* device instance SNS2_t0 r0 *1 0,0 
+RSNS2_t0 SNS2__t0 SNS2 10.1243713303
+* device instance SNS2_t1 r0 *1 0,0 
+RSNS2_t1 SNS2__t1 SNS2 4.91814556153
+* device instance SNS2_t2 r0 *1 0,0 
+RSNS2_t2 SNS2__t2 SNS2 8.17758310814
+* device instance SNS2 r0 *1 0,0 
+CSNS2 SNS2 vsubs 7.036193e-15
+* device instance VDD_t0 r0 *1 0,0 
+RVDD_t0 VDD__t0 VDD 6.75282045455
+* device instance VDD_t1 r0 *1 0,0 
+RVDD_t1 VDD__t1 VDD 6.75282045455
+* device instance VDD_t2 r0 *1 0,0 
+RVDD_t2 VDD__t2 VDD 2.8569625
+* device instance VDD_t3 r0 *1 0,0 
+RVDD_t3 VDD__t3 VDD 2.8569625
+* device instance VDD_t4 r0 *1 0,0 
+RVDD_t4 VDD__t4 VDD 1.81806704545
+* device instance VDD_t5 r0 *1 0,0 
+RVDD_t5 VDD__t5 VDD 1.81806704545
+* device instance VDD_t6 r0 *1 0,0 
+RVDD_t6 VDD__t6 VDD 2.77038787879
+* device instance VDD_t7 r0 *1 0,0 
+RVDD_t7 VDD__t7 VDD 2.77038787879
+* device instance VDD_t8 r0 *1 0,0 
+RVDD_t8 VDD__t8 VDD 4.84817878788
+* device instance VDD_t9 r0 *1 0,0 
+RVDD_t9 VDD__t9 VDD 3.80928333333
+* device instance VDD_t10 r0 *1 0,0 
+RVDD_t10 VDD__t10 VDD 4.84817878788
+* device instance VDD_t11 r0 *1 0,0 
+RVDD_t11 VDD__t11 VDD 3.80928333333
+* device instance VDD r0 *1 0,0 
+CVDD VDD vsubs 1.314593e-14
+* device instance VREF_t0 r0 *1 0,0 
+RVREF_t0 VREF__t0 VREF 24.8473212291
+* device instance VREF_t1 r0 *1 0,0 
+RVREF_t1 VREF__t1 VREF 11.065018194
+* device instance VREF_t2 r0 *1 0,0 
+RVREF_t2 VREF__t2 VREF 5.58302016718
+* device instance VREF_t3 r0 *1 0,0 
+RVREF_t3 VREF__t3 VREF 8.2824404097
+* device instance VREF r0 *1 0,0 
+CVREF VREF vsubs 1.5014553e-14
+* device instance VSS r0 *1 0,0 
+RVSS VSS VSS__par 7.5152
+* device instance VSS r0 *1 0,0 
+CVSS VSS__par vsubs 1.2491113e-14
+* device instance cc_CB2_VDD r0 *1 0,0 
+Ccc_CB2_VDD CB2 VDD 8.235e-18
+* device instance cc_CB2_VSS r0 *1 0,0 
+Ccc_CB2_VSS CB2 VSS__par 3.0251e-17
+* device instance cc_CB3_VDD r0 *1 0,0 
+Ccc_CB3_VDD CB3 VDD 8.235e-18
+* device instance cc_CB3_VREF r0 *1 0,0 
+Ccc_CB3_VREF CB3 VREF 8.235e-18
+* device instance cc_CB3_VSS r0 *1 0,0 
+Ccc_CB3_VSS CB3 VSS__par 2.0167e-17
+* device instance cc_SNS1_VSS r0 *1 0,0 
+Ccc_SNS1_VSS SNS1 VSS__par 3.0251e-17
+* device instance cc_SNS2_VDD r0 *1 0,0 
+Ccc_SNS2_VDD SNS2 VDD 8.235e-18
+* device instance cc_VDD_VREF r0 *1 0,0 
+Ccc_VDD_VREF VDD VREF 8.235e-18
 * device instance vsubs_dctie r0 *1 0,0 
 Rvsubs_dctie vsubs 0 1e+12
 .ENDS bandgap_core
