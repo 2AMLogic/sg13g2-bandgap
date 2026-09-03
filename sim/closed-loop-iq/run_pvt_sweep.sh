@@ -147,7 +147,7 @@ done
   echo "  sim/closed-loop-vref-pvt use, reapplied here at t=3ms as a"
   echo "  prerequisite for trusting the Iq reading). This does NOT compare"
   echo "  the measured Iq against spec/porting-plan.md Sec 6's draft"
-  echo "  (unratified, #13) '< 50 uA' Iq target as a pass/fail verdict --"
+  echo "  (unratified, #125) '< 50 uA' Iq target as a pass/fail verdict --"
   echo "  see the README's own disclaimer. Reported as evidence only."
   echo "- **XMSENSE width this run used**: w=${MSENSE_W} (read from the live"
   echo "  design/netlist/bandgap_startup.spice at run time, same convention"

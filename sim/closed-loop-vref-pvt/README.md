@@ -37,7 +37,7 @@ to convert an absolute V/°C slope into the relative ppm/°C figure
 `spec/porting-plan.md` §6's own draft target row uses.)
 
 **It does not claim conformance to any ratified spec row.**
-`spec/porting-plan.md` §6 is still a **draft, unratified** table (#13) — per
+`spec/porting-plan.md` §6 is still a **draft, unratified** table (#125) — per
 `klayout-tools`' `docs/design-evidence-tiers.md` T1 checklist (referenced
 from issue #4), no checklist item on #4 closes from this record alone, and
 this README does not compare

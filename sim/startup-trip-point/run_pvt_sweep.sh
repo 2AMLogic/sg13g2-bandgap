@@ -105,7 +105,7 @@ done
   echo "  point strictly inside (0, vdd), across the full temperature x supply"
   echo "  x MOS/resistor-process-corner grid. Infrastructure/plumbing evidence"
   echo "  for issue #22, NOT a claim against any ratified spec row (none is"
-  echo "  ratified yet -- see #13)."
+  echo "  ratified yet -- see #125)."
   echo "- **Devices**: all real PDK compact models -- sg13_hv_nmos (PSP103.6"
   echo "  via psp103.osdi) x2 and rhigh (r3_cmc via r3_cmc.osdi). Before"
   echo "  issue #22 built the OSDI models, this netlist could not be simulated"

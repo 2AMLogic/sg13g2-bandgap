@@ -126,7 +126,7 @@ done
   echo "  points -- see this directory's README.md 'Cross-bench observation'"
   echo "  for the numbers. Post-layout (PEX) evidence for issue #14/#32, NOT"
   echo "  a claim against any ratified spec row (none is ratified yet -- see"
-  echo "  #13)."
+  echo "  #125)."
   echo "- **Devices**: XMSENSE/XMKFB -- sg13_hv_nmos, geometry from"
   echo "  \`layout/bandgap_startup/bandgap_startup.pex.spice\`"
   echo "  (\`klt extract --deck sg13g2 --parasitics\`, layout git sha"

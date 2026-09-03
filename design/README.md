@@ -291,7 +291,7 @@ actually ran, in the sandbox it ran in — not a substitute for #10.
     (1.134-1.215 V, matching `sim/closed-loop-startup`'s own independently-
     measured band) and computes an **informal** temperature coefficient per
     process-corner/supply group (~349-376 ppm/°C, endpoint method) — well
-    above `spec/porting-plan.md` §6's draft (unratified, #13) `< 50 ppm/°C`
+    above `spec/porting-plan.md` §6's draft (unratified, #125) `< 50 ppm/°C`
     target, but expected and not itself a design defect: this design has no
     trim network yet (issue #9's explicit scope cut, "Explicitly out of
     scope" above), and an untrimmed VBE-based reference's TC is normally in
@@ -324,7 +324,7 @@ actually ran, in the sandbox it ran in — not a substitute for #10.
     unity-gain crossover falls in — two independent testbenches agreeing
     on where this design's regulation runs out of headroom. Not a claim
     against `spec/porting-plan.md` §6's still-unratified `PSRR @ DC > 60
-    dB` draft target (#13); see that README's own disclaimer.
+    dB` draft target (#125); see that README's own disclaimer.
   - [`sim/closed-loop-offset/README.md`](../sim/closed-loop-offset/README.md)
     is explicitly **not** a Monte Carlo/statistical mismatch claim (that
     infrastructure remains out of scope, #4 checklist item 6, N/A per #5).
@@ -352,11 +352,11 @@ actually ran, in the sandbox it ran in — not a substitute for #10.
     for `vref`. Result: settled Iq 19.98-42.37 µA across the 45-point grid,
     rising with temperature and supply as expected for a `VBE`-referenced
     bias network. Not a claim against `spec/porting-plan.md` §6's
-    still-unratified `Iq < 50 µA` draft target (#13); see that README's own
+    still-unratified `Iq < 50 µA` draft target (#125); see that README's own
     disclaimer.
 - **Still not attempted**: any claim against `spec/porting-plan.md` §6's
   draft target table as a pass/fail verdict — that table remains
-  unratified (#13), and per `klayout-tools`' `docs/design-evidence-tiers.md`
+  unratified (#125), and per `klayout-tools`' `docs/design-evidence-tiers.md`
   T1 checklist (referenced from issue #4), producing the capability to run
   that comparison is not the same as running it. Also still not attempted:
   Monte Carlo mismatch/yield analysis (#4 checklist item 6, N/A per #5) —

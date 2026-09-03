@@ -31,7 +31,7 @@ amplifier exists -- see "Important caveat" below for why this fixture is a
 pessimistic bound, not a tight prediction, of that future behavior. It is
 also still, in the same sense every experiment in this tree is,
 infrastructure/plumbing evidence rather than a claim against a ratified
-spec row: nothing under `spec/porting-plan.md` §6 is ratified yet (#13).
+spec row: nothing under `spec/porting-plan.md` §6 is ratified yet (#125).
 
 ## Fixtures (not device substitutions)
 

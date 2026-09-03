@@ -75,14 +75,25 @@ newly-recognised resistor was tracked as issue #59, now resolved above.
 
 ## Dependency on layout/README.md
 
-`layout/bandgap_startup/lvs_report.json` reads `status: "mismatch"` as of
-this writing (issue #20, still open, blocked on `klayout-tools`#1273). Same
-caveated-but-not-clean extraction-input situation as
-`core-open-loop-bias-pex/README.md` describes — see that file and
-`layout/README.md`'s "DRC/LVS verification" section for the full account.
-This mismatch reason is unchanged by issue #32's width fix (re-confirmed:
-same 16 findings / 14 error-severity, same category breakdown, before and
-after regenerating the layout).
+`layout/bandgap_startup/lvs_report.json` now reads `status: "match"`
+(`error_count: 0`; its two remaining findings are both `severity:
+"warning"` disclosures — the `device.bulk_reconciled` note and a benign
+no-op `topology` entry), so this experiment's extraction input is no longer
+a caveated-but-not-clean layout. See `layout/README.md`'s "DRC/LVS
+verification" section for the full account.
+
+**Historical note, because this record predates the fix:** when the records
+below were minted, this report read `status: "mismatch"` (16 findings, 14
+error-severity), which earlier revisions of this file attributed to issue
+#20 "still open, blocked on `klayout-tools`#1273". Both citations are now
+closed: `klayout-tools`#1273 (well/substrate-tap modelling) was fixed by
+`klayout-tools`#1278, #20 was closed `not planned` once its routing scope
+was exhausted, and the residual `rppd`/`rhigh` bulk-terminal mismatch was
+reconciled under issue #161. The `mismatch` -> `match` transition does not
+invalidate these records: it changed no geometry (`klt drc` stayed
+byte-identical), so the extracted netlist they ran against is unchanged.
+That was already true of issue #32's width fix, which left the finding
+count identical before and after regenerating the layout.
 
 ## What this does and does not model
 

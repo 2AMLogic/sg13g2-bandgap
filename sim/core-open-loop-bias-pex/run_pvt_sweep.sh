@@ -123,7 +123,7 @@ done
   echo "  rppd resistors ARE extracted as of issue #59; Metal1/Metal2 wire"
   echo "  R/C are now modelled, issue #37; PMOS body is a"
   echo "  testbench fixture, not a real extracted tie). NOT a claim against"
-  echo "  any ratified spec row (none is ratified yet -- see #13)."
+  echo "  any ratified spec row (none is ratified yet -- see #125)."
   echo "- **Devices**: XM1/XM2A/XM2B/XM3A/XM3B/XM3C -- sg13_hv_pmos, geometry"
   echo "  (+ wire R/C, issue #37) from"
   echo "  \`layout/bandgap_core/bandgap_core.pex.spice\`"

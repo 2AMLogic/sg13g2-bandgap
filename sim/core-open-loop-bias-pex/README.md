@@ -71,13 +71,24 @@ newly-recognised resistors was tracked as issue #59, now resolved above.
 
 ## Dependency on layout/README.md
 
-`layout/bandgap_core/lvs_report.json` reads `status: "mismatch"` as of this
-writing (issue #20, still open, blocked on `klayout-tools`#1273). Per issue
-#14's own scope text and its Curator Enhancement, a caveated-but-not-clean
-layout is an allowed extraction input — but every caveat that LVS mismatch
-carries also applies to the PEX evidence built from the same layout. This
-README restates the parts that matter for simulation; `layout/README.md`'s
+`layout/bandgap_core/lvs_report.json` still reads `status: "mismatch"`, but
+the reason has narrowed to a single permanent cause: three `device.unmatched`
+errors on `Q1`/`Q2`/`Q3` (`class: "NPN13G2"`) plus their class-level
+`topology` entry, because SiGe HBT recognition was investigated and
+**permanently declined upstream** (`klayout-tools`#1242) — the curated
+extraction deck cannot see bipolar devices at all. Every MOS and resistor
+device now matches (`counts.devices.matched: 8`, was `0`). Per issue #14's
+own scope text and its Curator Enhancement, a caveated-but-not-clean layout
+is an allowed extraction input — but every caveat that LVS mismatch carries
+also applies to the PEX evidence built from the same layout. This README
+restates the parts that matter for simulation; `layout/README.md`'s
 "DRC/LVS verification" section is the authoritative, fuller account.
+
+Earlier revisions of this file attributed the mismatch to issue #20 "still
+open, blocked on `klayout-tools`#1273". Both are now closed —
+`klayout-tools`#1273 (well/substrate-tap modelling) was fixed by
+`klayout-tools`#1278, and #20 was closed `not planned` once its routing
+scope was exhausted — so neither is the live cause any more.
 
 ## What this does and does not model
 

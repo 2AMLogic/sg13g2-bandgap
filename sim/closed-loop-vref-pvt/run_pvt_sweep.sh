@@ -118,7 +118,7 @@ done
 
 # Informal TC computation (issue #86's own claim, not a spec-conformance
 # check -- spec/porting-plan.md Sec 6's vref/TC row is a draft target, not
-# ratified, per #13). For each (corner_label, vdd) group that has all three
+# ratified, per #125). For each (corner_label, vdd) group that has all three
 # temperature points PASS, TC is the endpoint-method slope:
 #   TC_ppm_per_C = 1e6 * (vref(125C) - vref(-40C)) / (165 * vref(27C))
 # 165 = 125 - (-40), the temperature span; vref(27C) is the reference used
@@ -158,7 +158,7 @@ done
   echo "  per process-corner/supply group via the endpoint method"
   echo "  (records/${RECORD_ID}-tc.csv) -- see that file and the README's"
   echo "  own disclaimer: this is NOT a claim against"
-  echo "  spec/porting-plan.md Sec 6's draft (unratified, #13) vref/TC"
+  echo "  spec/porting-plan.md Sec 6's draft (unratified, #125) vref/TC"
   echo "  target row. Also measures VBE(Q3) (v(cb3), same settledness check"
   echo "  as vref above) at every point (issue #133) -- decision-support"
   echo "  evidence for the #128 Output-reference escalation, which traced"

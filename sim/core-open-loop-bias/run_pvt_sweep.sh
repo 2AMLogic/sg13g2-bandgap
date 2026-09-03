@@ -99,7 +99,7 @@ done
   echo "  mirror is biased open-loop from a diode-connected replica leg (no"
   echo "  error amplifier exists yet -- see README.md). This is"
   echo "  infrastructure/plumbing evidence for issues #10 and #22, NOT a claim"
-  echo "  against any ratified spec row (none is ratified yet -- see #13)."
+  echo "  against any ratified spec row (none is ratified yet -- see #125)."
   echo "- **Devices**: all real PDK compact models -- npn13G2 (VBIC level=9),"
   echo "  sg13_hv_pmos (PSP103.6 via psp103.osdi), rppd (r3_cmc via"
   echo "  r3_cmc.osdi). No ideal-primitive device substitutions remain (the"
