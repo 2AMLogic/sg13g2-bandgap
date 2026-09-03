@@ -31,7 +31,7 @@ unity-gain crossover **41.7-52.9 MHz** — see `records/<record-id>.csv` for the
 full 45-point table).
 
 **It does not claim conformance to any ratified spec row** — `spec/`
-carries no ratified loop-stability target for this design (#13 tracks
+carries no ratified loop-stability target for this design (#125 tracks
 ratification generally; no draft phase-margin number exists in
 `spec/porting-plan.md` §6 to compare against in the first place). It does
 not measure PSRR or offset/mismatch (both explicitly deferred — see

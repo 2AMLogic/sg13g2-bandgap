@@ -40,7 +40,7 @@ circuit with; this experiment simply reads the current it already carries
 reads a current without adding a new device to the circuit under test.
 
 **It does not claim conformance to any ratified spec row.**
-`spec/porting-plan.md` §6 is still a **draft, unratified** table (#13) —
+`spec/porting-plan.md` §6 is still a **draft, unratified** table (#125) —
 per `klayout-tools`' `docs/design-evidence-tiers.md` T1 checklist
 (referenced from issue #4), no checklist item on #4 closes from this record
 alone, and this README does not compare its own numbers against that draft

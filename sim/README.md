@@ -223,6 +223,24 @@ PDK, the OSDI models and ngspice — never by a CI robot. The self-test runs
 first in CI, because a format checker that cannot fail is indistinguishable
 from no checker at all.
 
+## Spec ratification: which issue tracks it
+
+No row of `spec/porting-plan.md` §6 is ratified, so **no record in this tree
+claims conformance to a ratified spec row** — every experiment's README and
+`run_pvt_sweep.sh` restates that disclaimer locally. The issue those
+disclaimers cite is **#125** ("cut the spec-ratification PR", whose PR #128
+is open and awaiting an operator ruling after two non-clean review-key
+verdicts).
+
+Earlier records and documents cite **#13** instead. #13 ("ratify the draft
+target-spec table now, or defer") was closed `not planned` on 2026-08-27:
+ratification no longer routes through a standalone operator-decision issue,
+it flows through the two-key ratification mechanism (`ratification/`), which
+#125 tracks. #13 is therefore a *closed, superseded* citation wherever it
+still appears — **`sim/*/records/**` are append-only and were deliberately
+left untouched**, so historical records still name #13; read those as
+"ratification was open at record time", which remains true.
+
 ## Testbenches landed so far
 
 - **[`core-open-loop-bias/`](core-open-loop-bias/README.md)** — the bandgap
@@ -345,7 +363,7 @@ from no checker at all.
   independently-measured band. Also computes an informal temperature
   coefficient per process-corner/supply group (~349-376 ppm/°C, endpoint
   method) — not a claim against `spec/porting-plan.md` §6's still-unratified
-  target row (#13); see that experiment's README for the full disclaimer
+  target row (#125); see that experiment's README for the full disclaimer
   and why that number is expected given this design has no trim network yet.
   Issue #133 added a `VBE(Q3)` probe to this same testbench (decision-support
   for the #128 Output-reference escalation): `VBE(Q3)` at the design's own
@@ -387,7 +405,7 @@ from no checker at all.
   41.5-53.3 MHz unity-gain crossover falls in — two independently-built
   testbenches corroborating where this design's regulation runs out of
   headroom. Not a claim against `spec/porting-plan.md` §6's still-
-  unratified `PSRR @ DC > 60 dB` draft target (#13).
+  unratified `PSRR @ DC > 60 dB` draft target (#125).
 - **[`closed-loop-offset/`](closed-loop-offset/README.md)** — a
   deterministic offset/mismatch sensitivity check (issue #88, follow-on
   to #86/#58), explicitly **not** a Monte Carlo/statistical claim (that
@@ -408,7 +426,7 @@ from no checker at all.
   points PASS; settled Iq ranges 19.98-42.37 µA, rising with temperature and
   supply as expected for a `VBE`-referenced bias network — not a claim
   against `spec/porting-plan.md` §6's still-unratified `Iq < 50 µA` draft
-  target (#13); see that experiment's README for the full disclaimer.
+  target (#125); see that experiment's README for the full disclaimer.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 

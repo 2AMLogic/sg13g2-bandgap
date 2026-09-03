@@ -57,7 +57,7 @@ echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,sta
 #      "op landed near its seed").
 #   2. The .ac sweep actually produced data (a PSRR curve to report).
 # This testbench does NOT gate PASS/FAIL on the PSRR *value* itself -- no
-# ratified spec target exists to compare against (#13 still open; see
+# ratified spec target exists to compare against (#125 still open; see
 # README "What this testbench claims, and what it does not"), so a point
 # "passing" here means "a trustworthy PSRR measurement was produced",
 # not "PSRR met some bar".

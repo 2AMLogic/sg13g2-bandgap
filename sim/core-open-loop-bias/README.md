@@ -14,7 +14,7 @@ core is supposed to. It is **infrastructure and plumbing evidence** — proof
 the corner-sweep mechanism actually runs, cold-start, against a real PDK —
 **not** a claim against any ratified spec row: no spec row is ratified yet
 (`spec/porting-plan.md` §6 is still a draft table; ratification is tracked
-separately, see #13). Do not cite this record's `vref` number as "the
+separately, see #125). Do not cite this record's `vref` number as "the
 bandgap's output voltage" in any spec/README claim without first checking
 whether the closed-loop, mirror-biased circuit (still unbuilt — see below)
 reproduces it.

@@ -28,7 +28,7 @@ corner PVT grid, with `vdd` ramped from 0 V to the corner's supply over
    landing at an interior equilibrium rather than railing to either supply.
 
 It does **not** claim conformance to any ratified spec row — `spec/porting-plan.md`
-§6 is still a draft table, and ratification is tracked separately (#13).
+§6 is still a draft table, and ratification is tracked separately (#125).
 It is, in the same sense every experiment in this tree is, closed-loop
 **infrastructure and plumbing evidence**: proof the assembled block actually
 starts and settles, not a measurement of untrimmed accuracy, PSRR, Iq, or

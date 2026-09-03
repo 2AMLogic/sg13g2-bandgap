@@ -35,7 +35,7 @@ All four are checked per point by `run_pvt_sweep.sh`; a point is only
 clean exit alone is not treated as a pass.
 
 This is **infrastructure/plumbing evidence**, not a claim against any
-ratified spec row (none is ratified — see #13). In particular it does **not**
+ratified spec row (none is ratified — see #125). In particular it does **not**
 claim the assembled bandgap starts: that needs the core and the startup
 circuit co-simulated with a transient supply ramp, and an error amplifier
 that does not exist yet (issue #9's scope cut).

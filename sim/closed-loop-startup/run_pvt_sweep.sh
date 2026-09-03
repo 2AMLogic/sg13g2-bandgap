@@ -130,7 +130,7 @@ done
   echo "  sim/startup-core-handover, and their -pex variants) substituted an"
   echo "  ideal diode-connected-replica current fixture for the not-yet-built"
   echo "  amplifier (design/README.md, issue #9's scope cut). No ratified"
-  echo "  spec row exists yet (#13); this record is closed-loop"
+  echo "  spec row exists yet (#125); this record is closed-loop"
   echo "  infrastructure/plumbing evidence -- the assembled block starts and"
   echo "  settles -- not a claim against any spec accuracy/PSRR/Iq target."
   echo "- **XMSENSE width this run used**: w=${MSENSE_W} (read from the live"

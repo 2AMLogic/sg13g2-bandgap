@@ -134,15 +134,20 @@ and `pnpMPA`'s pin count/naming).
   inline comments at each callsite). Both `bandgap_core.gds` and
   `bandgap_startup.gds` still report `status: "clean"`, `violation_count:
   0` after #20's routing shapes were added — see the committed reports.
-- **Is not** LVS-clean, still (#20 re-ran this fresh after routing — see
-  "DRC/LVS verification" below for the full, itemized finding: a real
-  `status: "mismatch"` persists on both cells, now attributed to *three*
-  independent, fully-diagnosed causes, none fixable from this repo's own
-  side: the curated deck's documented bipolar/resistor-recognition gap
-  (unchanged from #12), a newly-discovered lack of any well/substrate-tap
-  modelling in the same deck, and (`bandgap_core` only) a genuine
-  structural device-symmetry ambiguity the missing bipolar/resistor
-  devices expose).
+- **Is LVS-`match` on `bandgap_startup`, still `mismatch` on
+  `bandgap_core`** — see "DRC/LVS verification" below for the full, itemized
+  finding. The three independent causes this bullet used to list (the
+  curated deck's bipolar *and* resistor recognition gap, its lack of any
+  well/substrate-tap modelling, and `bandgap_core`'s `M1`/`M2`/`M3`
+  device-symmetry ambiguity) have since been reduced to **one**: resistor
+  recognition landed upstream and the marker-layer fix landed here (#20's
+  rescope / #45, then #149/#161); the well/substrate-tap gap was fixed
+  upstream (`klayout-tools`#1278) and drawn here (#155/#157/#158); and the
+  `M1`/`M2`/`M3` automorphism was broken by unit-device decomposition
+  (#154). What remains on `bandgap_core` is 3 `device.unmatched` errors on
+  `Q1`/`Q2`/`Q3` (`NPN13G2`) plus their class-level `topology` entry — SiGe
+  HBT recognition was investigated and **permanently declined** upstream
+  (`klayout-tools`#1242), so this one is not fixable from either side.
 - **Is not** a re-implementation of each device's real PCell. `Q1`/`Q2`/`Q3`
   (`draw_npn13g2` in `layout/common.py`) faithfully replicate the one
   geometric fact this issue's tooling-friction check turned on (the real,

@@ -6,18 +6,24 @@ open PDK — designed by AI agents driving
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
 open-source xschem + ngspice flow.
 
-**Status: schematic captured and simulated across PVT; layout DRC-clean, LVS
-not yet matched.** The `klt` resolver gap that once blocked this repo closed
-on 2026-08-05
+**Status: schematic captured and simulated across PVT; layout DRC-clean;
+LVS `match` on `bandgap_startup`, still `mismatch` on `bandgap_core`.** The
+`klt` resolver gap that once blocked this repo closed on 2026-08-05
 ([klayout-tools#522](https://github.com/2AMLogic/klayout-tools/issues/522)),
 and a curated SG13G2 DRC/LVS starter deck now ships with klayout-tools
 ([#905](https://github.com/2AMLogic/klayout-tools/issues/905) /
 [#911](https://github.com/2AMLogic/klayout-tools/pull/911)); design work has
 proceeded since. `spec/`, `design/`, `sim/`, and `layout/` are all populated,
 including pre- and post-layout (PEX) PVT sweeps and committed `klt drc` /
-`klt lvs` reports. The current open blockers are the not-yet-routed floorplan
-that keeps LVS from a device-level match (#20) and ratification of the draft
-target-spec table below (#13) — not the tooling.
+`klt lvs` reports. The current open blockers are `bandgap_core`'s three
+`NPN13G2` devices, which the curated extraction deck cannot recognise at all
+because SiGe HBT recognition was investigated and permanently declined
+upstream
+([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/pull/1242)),
+and ratification of the draft target-spec table below (#125) — not the
+tooling. The earlier "not-yet-routed floorplan" cause (#20) was retired by
+PR #27 and #20 is closed; the earlier ratification gate (#13) is closed and
+superseded by the two-key ratification mechanism.
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
@@ -47,7 +53,7 @@ SG13G2 being a **BiCMOS** process is a genuine bonus: it offers real bipolar
 devices rather than the parasitic PNPs the CMOS ports rely on, which is a
 different device class for extraction and LVS to handle.
 
-## Target specification (DRAFT — engineering to ratify, see issue #13)
+## Target specification (DRAFT — engineering to ratify, see issue #125)
 
 | Parameter | Target | Stretch |
 |---|---|---|
@@ -72,10 +78,12 @@ inappropriate rather than merely harder, change it and record why.
 Maturity ladder: tooling resolved → spec ratified → schematic simulated
 across PVT → layout DRC/LVS-clean → post-layout re-verification → shuttle
 seat → measured silicon. **Current position: tooling resolved; schematic
-simulated across PVT, pre- and post-layout (PEX); layout DRC-clean but LVS
-not yet device-matched (#20). Spec ratification is still open (#13), so the
-ladder's second rung is climbed out of order — the draft table above is what
-the sims are measured against.**
+simulated across PVT, pre- and post-layout (PEX); layout DRC-clean, with LVS
+`match` on `bandgap_startup` and `mismatch` on `bandgap_core` (three
+unrecognised `NPN13G2` devices, klayout-tools#1242, permanent). Spec
+ratification is still open (#125 / PR #128), so the ladder's second rung is
+climbed out of order — the draft table above is what the sims are measured
+against.**
 
 ## Chipalooza
 

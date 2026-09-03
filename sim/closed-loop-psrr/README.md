@@ -34,7 +34,7 @@ an assumption.
 
 **It does not claim conformance to any ratified spec row.**
 `spec/porting-plan.md` §6 carries a **draft, unratified** `PSRR @ DC | > 60
-dB` target row (#13 tracks ratification generally; that number has never
+dB` target row (#125 tracks ratification generally; that number has never
 been checked against real evidence before this testbench). This record's
 own DC-PSRR range (57.1-105.2 dB) straddles that draft number at some
 corners and clears it by a wide margin at others — **this is stated as
