@@ -29,7 +29,7 @@ Devices instantiated, one-to-one against ``design/netlist/bandgap_amp.spice``
     MN3   sg13_hv_nmos w=10u l=1u  -- 2nd-stage NMOS (gate=d1, out->vss)
     MN4   sg13_hv_nmos w=10u l=1u  -- 2nd-stage NMOS (gate=d2, pn->vss)
 
-**Body ties (documented simplification, LVS deferred -- issue #169).**
+**Body ties (documented simplification, LVS *resolution* deferred -- #169).**
 ``layout/common.py``'s ``draw_hv_mos`` bridges a device's tap island to
 whichever *pad* (source, for pmos; drain, for nmos) its own ``tap_at_source``
 convention selects -- a bridge that is only electrically correct when
@@ -47,10 +47,12 @@ as ``draw_hv_mos`` was designed for every other call site in this repo. For
 ``vdd`` body tie (tied to ``tail`` instead) -- a known, documented
 simplification, consistent with every other "what this layout is / is not"
 simplification already catalogued in ``layout/README.md``, and explicitly
-out of scope to resolve here since **LVS is not run for this cell in this
-issue** (see this file's own header comment and the issue's acceptance
-criteria) -- a follow-up LVS pass would need to address it, most likely by
-fixing the underlying assumption in ``draw_hv_mos`` itself.
+out of scope to *resolve* here (issue #169 scopes LVS fixing out; see this
+file's own header comment and the issue's acceptance criteria). ``klt lvs``
+*was* run once for this cell, and the two ``device.unmatched`` findings it
+reports on ``MP1``/``MP2`` are exactly this simplification showing up -- a
+follow-up LVS pass would need to address it, most likely by fixing the
+underlying assumption in ``draw_hv_mos`` itself.
 
 **Floorplan.** PMOS row (``y=30``, left to right): MP1, MP2, MTAIL, MP3, MP4
 -- ordered so ``vdd``-carrying source pads (MTAIL/MP3/MP4, all draw ``vdd``
@@ -91,8 +93,11 @@ still gets a ``draw_gate_tab`` bringing it out to a real Metal1 pad (a bare
 ``bandgap_top`` (issue #169) can route each one from outside this cell.
 
 DRC verification (``klt drc --deck sg13g2``) and LVS scope are tracked in
-``layout/README.md``. **LVS is explicitly deferred** (issue #169's own
-scope boundary) -- not run against this cell in this issue.
+``layout/README.md``. **Resolving LVS is explicitly deferred** (issue #169's
+own scope boundary), but ``klt lvs`` itself was run once against this cell --
+the repo's CI evidence-format gate requires a committed ``lvs_report.json`` --
+and its honest ``mismatch`` result (2 ``device.unmatched`` findings on
+``MP1``/``MP2``, the body-tie simplification above) is committed as-is.
 """
 
 from __future__ import annotations
