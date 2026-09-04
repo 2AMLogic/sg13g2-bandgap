@@ -427,6 +427,29 @@ left untouched**, so historical records still name #13; read those as
   supply as expected for a `VBE`-referenced bias network — not a claim
   against `spec/porting-plan.md` §6's still-unratified `Iq < 50 µA` draft
   target (#125); see that experiment's README for the full disclaimer.
+- **[`startup-time-to-release/`](startup-time-to-release/README.md)** — a
+  direct follow-up to `closed-loop-startup` (epic #4's T1 checklist item 5):
+  PR #128's EE-key review found no committed testbench reports an explicit
+  time-to-release figure to compare against the draft "Startup:
+  self-starting, < 1 ms" spec row. The same three-DUT closed-loop assembly
+  `closed-loop-startup` uses, but sampled at a fixed 100 us-resolution
+  checkpoint ladder (`100u`...`1000u`, plus `2000u` for cross-validation)
+  instead of one early/one final checkpoint, so the earliest checkpoint at
+  which the full closed-loop release criteria hold *and keep holding*
+  through the end of the simulated window can be read off directly (a
+  suffix-of-PASS rule, not "first PASS anywhere" — see that experiment's
+  README for why, including why a naive `WHEN`/`FALL=1` crossing-search
+  `.measure` was tried first and rejected: several corners, most visibly the
+  design's own `typ`/27C/3.30V nominal point, never drive `det`/`i(XMKFB)`
+  above the release threshold at all, so a crossing search finds nothing to
+  report). 45/45 PVT points PASS; every point releases by this experiment's
+  very first checkpoint (100 us) — comfortably inside the draft `< 1 ms`
+  target, with roughly 10x margin at this ladder's own resolution. The
+  `t=2000u` checkpoint's raw values reproduce `closed-loop-startup`'s own
+  independently-committed `t=2ms` record exactly, corner for corner. This is
+  data for a future spec-row comparison (once ratification lands, #125) or
+  the aggregated characterization report (#15), not a conformance claim
+  against an unratified target.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 

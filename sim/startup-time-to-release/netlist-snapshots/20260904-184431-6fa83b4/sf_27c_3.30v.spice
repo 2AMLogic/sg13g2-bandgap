@@ -1,0 +1,177 @@
+* sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+* co-simulated closed-loop testbench, TIME-TO-RELEASE checkpoint variant
+* (issue #4 T1 checklist item 5 follow-up: PR #128's EE-key review found no
+* committed testbench reports an explicit time-to-release figure to compare
+* against the draft "Startup: self-starting, < 1 ms" spec row -- see
+* sim/startup-time-to-release/README.md for the full account).
+* Generated from
+* sim/startup-time-to-release/testbench/tb_startup_time_to_release.spice.tmpl
+* by sim/startup-time-to-release/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep.
+*
+* Generated for: corner=sf temp=27C vdd=3.30V
+* DUT git sha (design/netlist/bandgap_core.spice,
+* design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice
+* this was copied from):
+*   core=d83f7c4 amp=397fe2d startup=66ac99d
+* PDK: ihp-sg13g2 /Users/rwalters/share/pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* DUT, fixtures, vdd ramp shape, and the rshunt/gmin/reltol convergence aids
+* below are copied verbatim from sim/closed-loop-startup's own template --
+* this is the SAME assembled circuit (design/bandgap_top.sch's wiring:
+* core.fb <- amp.out, core.sns1 -> amp.in_n, core.sns2 -> amp.in_p, startup
+* shares sns1 and fb with the core), same 0->VDD-over-200us ramp, same
+* convergence-aid values -- see that experiment's own README/template
+* header for the full derivation of both, not repeated here. The only
+* difference is the .control measurement block below: instead of one
+* early (t=20us) and one final (t=2ms) checkpoint, this template samples
+* the same three release-criteria signals (det, i_mkfb, fb, plus sns1/sns2
+* for the loop-closure residual) at a ladder of fixed times from 100us to
+* 2ms, so run_pvt_sweep.sh can report the earliest checkpoint at which the
+* full closed-loop release criteria hold and keep holding through the end
+* of the simulated window -- a genuine "time to release" measurement,
+* bucketed to this ladder's own 100us resolution below 1ms.
+
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_sf
+.lib "/Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_typ
+
+* rshunt=1e9 / gmin=1e-9 / reltol=5e-3: identical convergence aids to
+* sim/closed-loop-startup/testbench/tb_closed_loop_startup.spice.tmpl --
+* see that file's own header for the full whack-a-mole derivation (issue
+* #58, re-confirmed necessary post-#149 in issue #151). Neither aid relaxes
+* any pass/fail criterion measured below; both only help the solver step
+* through the numerically stiff sub-1V instant early in the vdd ramp.
+.options temp=27 tnom=27 rshunt=1e9 gmin=1e-9 reltol=5e-3
+
+* FIXTURE -- transient supply ramp, identical to sim/closed-loop-startup:
+* vdd ramps 0 -> VDD over 200 us and holds to 2 ms.
+Vvdd vdd 0 PWL(0 0 200u 3.30 2m 3.30)
+Vvss vss 0 dc 0
+Vsub sub! vss dc 0
+
+* DUT -- design/netlist/bandgap_core.spice, verbatim (see
+* sim/closed-loop-startup/testbench/tb_closed_loop_startup.spice.tmpl's own
+* header for the M2/M3 decomposition rationale, issue #149).
+XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XM2A sns2 fb vdd vdd sg13_hv_pmos w=9u l=1u ng=1 m=1
+XM2B sns2 fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XM3A vref fb vdd vdd sg13_hv_pmos w=8u l=1u ng=1 m=1
+XM3B vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XM3C vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XR1 vref cb3 sub! rppd w=2u l=511u m=1 b=0
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+* DUT -- design/netlist/bandgap_amp.spice, verbatim.
+XMTAIL tail fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP2 d2 sns1 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP4 fb pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN3 fb d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+
+* DUT -- design/netlist/bandgap_startup.spice, verbatim. Vmkfb is a 0V
+* ammeter in series with XMKFB's drain (see sim/closed-loop-startup's own
+* header) so the startup circuit's residual fb contribution can be measured
+* directly.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+.control
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /Users/rwalters/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+tran 50n 2m
+* Early-ramp check (t=20us), same as sim/closed-loop-startup: the startup
+* circuit should still be actively engaged (det high, fb low) this early.
+meas tran v_det_early find v(det) at=20u
+meas tran v_fb_early find v(fb) at=20u
+
+* Checkpoint ladder -- fixed-time samples (not a WHEN/crossing search: at
+* several PVT corners, most visibly the design's own typ/27C/3.30V nominal
+* point, det/i_mkfb never rise above the release threshold at all during
+* the ramp, so a FALL=1 threshold-crossing .measure finds no crossing and
+* reports "out of interval" -- confirmed by direct test, not assumed. AT=
+* sampling has no such failure mode.) 100us steps to 1ms (this
+* testbench's own resolution for comparing against the draft "< 1 ms"
+* startup spec row), then a coarser 2ms point matching
+* sim/closed-loop-startup's own final checkpoint, for cross-validation
+* against that experiment's independently-committed record.
+meas tran v_det_100u find v(det) at=100u
+meas tran i_mkfb_100u find i(Vmkfb) at=100u
+meas tran v_fb_100u find v(fb) at=100u
+meas tran v_sns1_100u find v(sns1) at=100u
+meas tran v_sns2_100u find v(sns2) at=100u
+
+meas tran v_det_200u find v(det) at=200u
+meas tran i_mkfb_200u find i(Vmkfb) at=200u
+meas tran v_fb_200u find v(fb) at=200u
+meas tran v_sns1_200u find v(sns1) at=200u
+meas tran v_sns2_200u find v(sns2) at=200u
+
+meas tran v_det_300u find v(det) at=300u
+meas tran i_mkfb_300u find i(Vmkfb) at=300u
+meas tran v_fb_300u find v(fb) at=300u
+meas tran v_sns1_300u find v(sns1) at=300u
+meas tran v_sns2_300u find v(sns2) at=300u
+
+meas tran v_det_400u find v(det) at=400u
+meas tran i_mkfb_400u find i(Vmkfb) at=400u
+meas tran v_fb_400u find v(fb) at=400u
+meas tran v_sns1_400u find v(sns1) at=400u
+meas tran v_sns2_400u find v(sns2) at=400u
+
+meas tran v_det_500u find v(det) at=500u
+meas tran i_mkfb_500u find i(Vmkfb) at=500u
+meas tran v_fb_500u find v(fb) at=500u
+meas tran v_sns1_500u find v(sns1) at=500u
+meas tran v_sns2_500u find v(sns2) at=500u
+
+meas tran v_det_600u find v(det) at=600u
+meas tran i_mkfb_600u find i(Vmkfb) at=600u
+meas tran v_fb_600u find v(fb) at=600u
+meas tran v_sns1_600u find v(sns1) at=600u
+meas tran v_sns2_600u find v(sns2) at=600u
+
+meas tran v_det_700u find v(det) at=700u
+meas tran i_mkfb_700u find i(Vmkfb) at=700u
+meas tran v_fb_700u find v(fb) at=700u
+meas tran v_sns1_700u find v(sns1) at=700u
+meas tran v_sns2_700u find v(sns2) at=700u
+
+meas tran v_det_800u find v(det) at=800u
+meas tran i_mkfb_800u find i(Vmkfb) at=800u
+meas tran v_fb_800u find v(fb) at=800u
+meas tran v_sns1_800u find v(sns1) at=800u
+meas tran v_sns2_800u find v(sns2) at=800u
+
+meas tran v_det_900u find v(det) at=900u
+meas tran i_mkfb_900u find i(Vmkfb) at=900u
+meas tran v_fb_900u find v(fb) at=900u
+meas tran v_sns1_900u find v(sns1) at=900u
+meas tran v_sns2_900u find v(sns2) at=900u
+
+meas tran v_det_1000u find v(det) at=1000u
+meas tran i_mkfb_1000u find i(Vmkfb) at=1000u
+meas tran v_fb_1000u find v(fb) at=1000u
+meas tran v_sns1_1000u find v(sns1) at=1000u
+meas tran v_sns2_1000u find v(sns2) at=1000u
+
+meas tran v_det_2000u find v(det) at=2000u
+meas tran i_mkfb_2000u find i(Vmkfb) at=2000u
+meas tran v_fb_2000u find v(fb) at=2000u
+meas tran v_sns1_2000u find v(sns1) at=2000u
+meas tran v_sns2_2000u find v(sns2) at=2000u
+.endc
+.end
