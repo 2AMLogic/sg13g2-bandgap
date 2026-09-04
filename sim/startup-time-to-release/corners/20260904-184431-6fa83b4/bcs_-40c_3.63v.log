@@ -1,0 +1,106 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+sns1                              -9.25763e-25
+fb                                           0
+xq1.s1                            -3.72803e-31
+xq1.t                              3.10567e-27
+sns2                               7.76387e-27
+cb2                                7.76313e-27
+xr2.dt                                       0
+xq2.s1                             8.20946e-33
+xq2.t                              7.22206e-39
+vref                               1.47032e-24
+cb3                                1.46946e-24
+xr1.dt                                       0
+xq3.s1                             5.88483e-31
+xq3.t                                3.237e-28
+tail                                         0
+d1                                           0
+d2                                           0
+pn                                           0
+det                                          0
+xrpu.dt                                      0
+fbx                                          0
+vmkfb#branch                                 0
+vsub#branch                                  0
+vvss#branch                        1.64572e-33
+vvdd#branch                       -7.54409e-33
+
+ Reference value :  1.86400e-06 Reference value :  4.92140e-05 Reference value :  9.70640e-05 Reference value :  1.43914e-04 Reference value :  1.94864e-04 Reference value :  2.43925e-04 Reference value :  2.93025e-04 Reference value :  3.40675e-04 Reference value :  3.89425e-04 Reference value :  4.38025e-04 Reference value :  4.86025e-04 Reference value :  5.33575e-04 Reference value :  5.81775e-04 Reference value :  6.33125e-04 Reference value :  6.81325e-04 Reference value :  7.28225e-04 Reference value :  7.77425e-04 Reference value :  8.23575e-04 Reference value :  8.70725e-04 Reference value :  9.17925e-04 Reference value :  9.66025e-04 Reference value :  1.01403e-03 Reference value :  1.06158e-03 Reference value :  1.11062e-03 Reference value :  1.16007e-03 Reference value :  1.20692e-03 Reference value :  1.25452e-03 Reference value :  1.30217e-03 Reference value :  1.35222e-03 Reference value :  1.39962e-03 Reference value :  1.44722e-03 Reference value :  1.49537e-03 Reference value :  1.54327e-03 Reference value :  1.59152e-03 Reference value :  1.63822e-03 Reference value :  1.68707e-03 Reference value :  1.73592e-03 Reference value :  1.78367e-03 Reference value :  1.83157e-03 Reference value :  1.87937e-03 Reference value :  1.92772e-03 Reference value :  1.97752e-03
+No. of Data Rows : 40011
+v_det_early         =  3.57492e-01
+v_fb_early          =  1.32461e-01
+v_det_100u          =  1.63289e-03
+i_mkfb_100u         =  1.05107e-09
+v_fb_100u           =  1.02876e+00
+v_sns1_100u         =  7.81768e-01
+v_sns2_100u         =  7.81448e-01
+v_det_200u          =  3.28650e-03
+i_mkfb_200u         =  2.86339e-09
+v_fb_200u           =  2.84469e+00
+v_sns1_200u         =  7.81944e-01
+v_sns2_200u         =  7.82018e-01
+v_det_300u          =  3.28652e-03
+i_mkfb_300u         =  2.84469e-09
+v_fb_300u           =  2.84468e+00
+v_sns1_300u         =  7.81942e-01
+v_sns2_300u         =  7.82014e-01
+v_det_400u          =  3.28652e-03
+i_mkfb_400u         =  2.84469e-09
+v_fb_400u           =  2.84468e+00
+v_sns1_400u         =  7.81942e-01
+v_sns2_400u         =  7.82014e-01
+v_det_500u          =  3.28652e-03
+i_mkfb_500u         =  2.84469e-09
+v_fb_500u           =  2.84468e+00
+v_sns1_500u         =  7.81942e-01
+v_sns2_500u         =  7.82014e-01
+v_det_600u          =  3.28652e-03
+i_mkfb_600u         =  2.84469e-09
+v_fb_600u           =  2.84468e+00
+v_sns1_600u         =  7.81942e-01
+v_sns2_600u         =  7.82014e-01
+v_det_700u          =  3.28652e-03
+i_mkfb_700u         =  2.84469e-09
+v_fb_700u           =  2.84468e+00
+v_sns1_700u         =  7.81942e-01
+v_sns2_700u         =  7.82014e-01
+v_det_800u          =  3.28652e-03
+i_mkfb_800u         =  2.84469e-09
+v_fb_800u           =  2.84468e+00
+v_sns1_800u         =  7.81942e-01
+v_sns2_800u         =  7.82014e-01
+v_det_900u          =  3.28652e-03
+i_mkfb_900u         =  2.84469e-09
+v_fb_900u           =  2.84468e+00
+v_sns1_900u         =  7.81942e-01
+v_sns2_900u         =  7.82014e-01
+v_det_1000u         =  3.28652e-03
+i_mkfb_1000u        =  2.84469e-09
+v_fb_1000u          =  2.84468e+00
+v_sns1_1000u        =  7.81942e-01
+v_sns2_1000u        =  7.82014e-01
+v_det_2000u         =  3.28652e-03
+i_mkfb_2000u        =  2.84469e-09
+v_fb_2000u          =  2.84468e+00
+v_sns1_2000u        =  7.81942e-01
+v_sns2_2000u        =  7.82014e-01
+Note: Simulation executed from .control section 
