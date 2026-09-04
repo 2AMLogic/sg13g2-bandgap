@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "engine": "klayout",
+  "layout": "bandgap_amp.gds",
+  "reference": "bandgap_amp.lvs_reference.spice",
+  "top": "bandgap_amp",
+  "reference_top": ".TOP",
+  "parameter_tolerance": null,
+  "options": {
+    "combine_devices": false,
+    "flatten_layout": false,
+    "flatten_reference": false,
+    "netgen_setup": null,
+    "parameter_tolerance": null
+  },
+  "status": "mismatch",
+  "mismatch_count": 2,
+  "error_count": 2,
+  "category_counts": {
+    "device.unmatched": 2
+  },
+  "category_error_counts": {
+    "device.unmatched": 2
+  },
+  "counts": {
+    "nets": {
+      "layout": 9,
+      "reference": 9,
+      "matched": 3
+    },
+    "devices": {
+      "layout": 9,
+      "reference": 9,
+      "matched": 7
+    },
+    "pins": {
+      "layout": 9,
+      "reference": 0,
+      "matched": 9
+    }
+  },
+  "device_classes": [
+    "nfet",
+    "pfet",
+    "cap_cmim",
+    "rfcmim",
+    "cap_cmomi",
+    "cap_cmomf",
+    "resistor",
+    "dantenna",
+    "dpantenna"
+  ],
+  "environment": {
+    "engine": "klayout",
+    "engine_version": "0.30.12",
+    "layout_sha256": "2f99c93961e42501d1745f246178357ca89c84c2178ce195eee3f67d9997b602",
+    "reference_sha256": "39b5d2a616d573457adf28c35b633ebb5daa0f66bcdf9fceacb8ecb126d9ebc9",
+    "extracted_netlist": null
+  },
+  "provenance": {
+    "klt_version": "0.3.0",
+    "klayout_version": "0.30.12",
+    "pdk": null,
+    "deck": {
+      "name": "sg13g2",
+      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "released": false
+    },
+    "input": null
+  },
+  "mismatches": [
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$5",
+        "reference": "P1",
+        "class": "pfet"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$6",
+        "reference": "P2",
+        "class": "pfet"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    }
+  ],
+  "net_correspondence": [
+    {
+      "layout": "OUT",
+      "reference": "OUT",
+      "pin": true
+    },
+    {
+      "layout": "PN",
+      "reference": "PN",
+      "pin": true
+    },
+    {
+      "layout": "VSS",
+      "reference": "VSS",
+      "pin": true
+    }
+  ]
+}

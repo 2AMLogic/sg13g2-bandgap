@@ -169,13 +169,21 @@ class Builder(BuilderBase):
     All coordinates taken by these methods are in microns (float); converted
     to the layout's integer database units (``dbu = 0.001``, i.e. 1 nm) by
     rounding, matching the fleet's existing ``layout/common/klayout_builder.py``
-    convention (gf180-bandgap). ``__init__``/``_u``/``box``/``write`` are
-    inherited from :class:`_klayout_builder_base.BuilderBase`; ``label`` is
-    SG13G2-specific.
+    convention (gf180-bandgap). ``_u``/``box``/``write`` are inherited from
+    :class:`_klayout_builder_base.BuilderBase`; ``label`` is SG13G2-specific.
+
+    ``layout``, when given (issue #169's ``bandgap_top/generate.py``), lets a
+    hierarchical-assembly script build this cell inside a ``kdb.Layout`` that
+    already has other cells read into it (e.g. via ``kdb.Layout.read()`` on
+    each leaf cell's own committed GDS) -- the same optional-parameter
+    pattern ``layout/common_sg13cmos5l.py``'s own ``Builder`` already
+    established for its sibling ``sg13cmos5l-bandgap_top`` assembly. Default
+    ``None`` preserves every existing call site's own behaviour exactly (a
+    fresh, empty ``kdb.Layout``).
     """
 
-    def __init__(self, top_cell: str) -> None:
-        super().__init__(top_cell, LAYER_NAMES)
+    def __init__(self, top_cell: str, layout: kdb.Layout | None = None) -> None:
+        super().__init__(top_cell, LAYER_NAMES, layout=layout)
 
     def label(self, layer: tuple[int, int], text: str, x: float, y: float) -> None:
         idx = self._layers[layer]

@@ -5,10 +5,11 @@ Physical layout for the two schematics landed in #9 (`design/bandgap_core.sch`,
 
 > **Two PDKs share this directory.** Everything from here down to the
 > `SG13CMOS5L port (issue #66)` heading at the end describes the **SG13G2**
-> block (`common.py`, `bandgap_core/`, `bandgap_startup/`). The SG13CMOS5L
-> port (`common_sg13cmos5l.py`, `sg13cmos5l-bandgap_core/`) has its own
-> layer table, its own primitives and its own DRC/LVS verdicts — jump
-> straight to that section rather than reading anything below across.
+> block (`common.py`, `bandgap_core/`, `bandgap_startup/`, `bandgap_amp/`,
+> `bandgap_top/`). The SG13CMOS5L port (`common_sg13cmos5l.py`,
+> `sg13cmos5l-bandgap_core/`) has its own layer table, its own primitives
+> and its own DRC/LVS verdicts — jump straight to that section rather than
+> reading anything below across.
 
 ```
 layout/
@@ -38,6 +39,20 @@ layout/
     lvs_report.json           committed klt lvs report
     bandgap_startup.pex.spice klt extract --parasitics output (issue #14)
     pex_extract_report.json   committed klt extract --format json report
+  bandgap_amp/
+    generate.py               draws + routes bandgap_amp.gds (issue #169)
+    bandgap_amp.gds           committed, deterministic layout
+    lvs_request.json          klt lvs request (issue #169)
+    lvs_reference.spice       generated reference netlist (issue #169)
+    drc_report.json           committed klt drc report
+    lvs_report.json           committed klt lvs report
+  bandgap_top/
+    generate.py               instances + routes bandgap_top.gds (issue #169)
+    bandgap_top.gds           committed, deterministic layout
+    lvs_request.json          klt lvs request (issue #169)
+    lvs_reference.spice       generated (flattened) reference netlist (issue #169)
+    drc_report.json           committed klt drc report
+    lvs_report.json           committed klt lvs report
 ```
 
 ## Provenance
@@ -1198,6 +1213,162 @@ above:
    (`wcs_125c_{2.97,3.30,3.63}v`, `sf_125c_3.63v`) — see
    `sim/startup-trip-point-pex/README.md`'s updated "Cross-bench
    observation" section for the before/after numbers.
+
+---
+
+## Cell: `bandgap_amp` (issue #169)
+
+One-to-one with `design/netlist/bandgap_amp.spice` (schematic from #58): a
+9-device, pure-CMOS 2-stage OTA -- `MTAIL`/`MP3`/`MP4` `sg13_hv_pmos`
+`w=10u l=1u`, `MP1`/`MP2` `sg13_hv_pmos` `w=20u l=1u`, `MN1`-`MN4`
+`sg13_hv_nmos` `w=10u l=1u`. No bipolar or resistor devices at all -- unlike
+`bandgap_core`/`bandgap_startup`, this cell needed no new drawing
+primitives, only `layout/common.py`'s existing `draw_hv_mos` plus its
+`route_h`/`route_v`/`via1_tap`/`draw_gate_tab` routing helpers (see
+`layout/common.py`'s own docstrings; no changes to that module's drawing
+functions). Top cell `bandgap_amp`, bbox `(-10.8, -1.59)`-`(205.1, 32.175)`
+µm, 164 polygons across 13 layer/datatype combinations.
+
+**Floorplan**: PMOS row (`y=30`) left to right MP1/MP2/MTAIL/MP3/MP4 --
+ordered so the `vdd`-carrying source pads (MTAIL/MP3/MP4) and the
+`tail`-carrying source pads (MP1/MP2) each form one contiguous group,
+routable as a single Metal1 bar with no vias. NMOS row (`y=0`): MN1 under
+MP1 (`d1`), MN2 under MP2 (`d2`), MN3 under MP4 (`out`), MN4 further right.
+`vdd`/`tail`/`vss` are each a single Metal1 bar across their own contiguous
+pad group; `d1`/`d2`/`out` are straight Metal1 trunks between the two rows;
+`MN3.gate`/`MN4.gate`/`MTAIL.gate`/the `pn` net's metal leg each cross to
+their own target trunk via a Metal2 riser/jog/riser at a distinct,
+strictly-ordered jog height (see `generate.py`'s own module docstring for
+the non-crossing argument). `in_p`/`in_n` (single-terminal within this
+cell) each get a `draw_gate_tab` bringing them out to a real Metal1 pad, so
+`bandgap_top` can route them from outside this cell.
+
+**Documented simplification**: `MP1`/`MP2`'s real schematic body tie is
+`vdd`, distinct from their own channel nets -- `draw_hv_mos`'s existing
+`body_net` default (ties a PMOS's tap to its own `source_net`) would short
+`tail` to `vdd` if passed explicitly here, so every call below leaves
+`body_net` unset, tying each device's tap to its own already-drawn channel
+pad instead. This makes `MP1`/`MP2`'s drawn body tie (`tail`) diverge from
+the schematic's real one (`vdd`) -- see `generate.py`'s own module
+docstring for the full reasoning.
+
+**DRC**: `klt drc --deck sg13g2` reports `status: "clean"`, 0 violations
+(`layout/bandgap_amp/drc_report.json`).
+
+**LVS**: issue #169 itself scoped LVS *fixing* out (mirroring #11's own
+floorplan-first sequencing before #12's LVS pass) -- but this repo's own
+CI evidence-format gate (`.github/scripts/check_evidence_formats.py`,
+landed after #11/#12 in #57) requires every committed `*.gds` cell to ship
+*some* `lvs_report.json`, `status` restricted to `"match"`/`"mismatch"`
+(no "not run" escape hatch). So `klt lvs` **was** run here, once, and its
+honest result committed as-is -- not chased to `"match"`, which remains a
+real follow-up (see "Explicitly out of scope" below).
+`layout/bandgap_amp/lvs_report.json`: `status: "mismatch"`, 2 findings, both
+`error`-severity `device.unmatched` on `MP1`/`MP2` -- exactly the two
+devices the body-tie simplification above predicts, no other cause. Engine:
+`klayout` (`klayout.db.NetlistComparer`), reference converted by
+`layout/lvs_reference.py` (this netlist has no bipolar/resistor devices, so
+no new conversion logic was needed there).
+
+**Determinism**: `python3 layout/bandgap_amp/generate.py` re-run leaves
+`git diff --stat` empty (byte-for-byte identical GDS).
+
+## Cell: `bandgap_top` (issue #169)
+
+Hierarchical assembly of the three SG13G2 leaf cells (`bandgap_core`,
+`bandgap_amp`, `bandgap_startup`) into `design/bandgap_top.sch`'s
+closed-loop block -- the same "instance the already-committed leaf GDS
+files, route only the inter-cell connections" pattern
+`layout/sg13cmos5l-bandgap_top/generate.py` already established for the
+SG13CMOS5L variant (issue #81). No leaf cell's own committed GDS is
+modified; `bandgap_top/generate.py` only reads them (`klayout.db.Layout.read`)
+and adds new top-level geometry. Top cell `bandgap_top`, bbox
+`(-16.5, -3.1)`-`(2211.8, 90.15)` µm, 449 polygons across the same 13
+layer/datatype combinations `bandgap_amp` uses (no new layers).
+
+**Connectivity**, one-to-one against `design/netlist/bandgap_top.spice`'s
+own `Xx1`/`Xx2`/`Xx3` subckt-instance lines and each sub-cell's own port
+order (verified against the netlist text directly, not assumed -- a
+swapped `sns1`/`sns2`/`fb` connection would be a silent functional bug DRC
+alone cannot catch):
+
+```
+Xx1 vdd vss fb sns1 sns2 vref bandgap_core   (vdd vss fb sns1 sns2 vref)
+Xx2 sns2 sns1 vss fb vdd     bandgap_amp     (in_p in_n vss out vdd)
+Xx3 vdd vss sns1 fb          bandgap_startup (vdd vss sns1 fb)
+```
+
+`bandgap_amp`'s own port names differ from the nets they connect to at this
+level (`in_p`->`sns2`, `in_n`->`sns1`, `out`->`fb`); `bandgap_core`'s and
+`bandgap_startup`'s own port names already match. `vdd`/`vss`/`vref` are
+brought out to `bandgap_top`'s own external pins; `fb`/`sns1`/`sns2` are
+internal-only.
+
+**Two new boundary pads, in `bandgap_top`'s own top cell only.**
+`bandgap_core`'s `fb` and `bandgap_startup`'s `sns1` are each a bare,
+single-terminal `GatPoly` gate in their own originating cell (no metal pad
+needed for that cell's own, already-verified DRC/LVS scope) -- `generate.py`
+draws one extra `draw_gate_tab` each, positioned against that leaf's own
+known (placement-adjusted) gate edge, rather than editing either leaf's own
+committed GDS. `bandgap_amp`'s own `in_p`/`in_n` needed the same treatment,
+but that tab was added directly in `bandgap_amp/generate.py` itself (a new
+cell with no prior committed geometry to disturb).
+
+**Routing**: every inter-cell bus is Metal1, every riser is Metal2
+(transitioning via `via1_tap`), so this module's own buses/risers never
+cross each other regardless of height order. A separate, real hazard this
+issue's own `klt extract` re-run found and fixed: each leaf cell's own
+*internal* routing (unmodified, already committed before this issue) also
+uses Metal2 in places (`bandgap_core`'s own `sns2`/`vref` jogs,
+`bandgap_amp`'s own `tail`/`pn` jogs), and a new top-level riser can
+physically merge with one of those if its column falls inside that leaf's
+own internal Metal2 footprint -- `klt drc` cannot catch this class of bug
+(the result is one clean merged polygon, not two shapes placed too close
+together). See `bandgap_top/generate.py`'s own `_riser_up` docstring and
+its `LANDING_UM` module comment for the full, itemized account of every
+crossing found and how each was fixed (routing around the leaf's own busy
+Y-band entirely, bridging through it on Metal1, or riding an
+already-same-net Metal1 conductor past it).
+
+**Verified with `klt extract` (device-free net extraction -- not a
+reference-comparison LVS run, still out of this issue's own LVS scope)**:
+after the fix above, `klt extract --deck sg13g2 bandgap_top.gds` reports
+exactly 13 nets -- one per `bandgap_top`'s own six external/internal-shared
+pins (`vdd`, `vss`, `fb`\|`out`, `sns1`\|`in_n`, `sns2`\|`in_p`, `vref`) plus
+seven genuinely-internal-to-one-leaf nets (`cb2`, `cb3`, `d1`, `d2`, `det`,
+`pn`, `tail`) -- matching the design's real topology, with no unexpected
+merges. This is a connectivity sanity check, not LVS (no reference netlist
+comparison is performed).
+
+**DRC**: `klt drc --deck sg13g2` reports `status: "clean"`, 0 violations
+(`layout/bandgap_top/drc_report.json`).
+
+**LVS**: run for the same CI-evidence-format-gate reason `bandgap_amp`'s own
+"LVS" section above explains -- committed as-is, not chased to `"match"`.
+`layout/bandgap_top/lvs_report.json`: `status: "mismatch"`, 17 findings (8
+`device.unmatched`, 9 `topology`), all attributable to two already-known,
+already-documented causes propagating through the hierarchy: `bandgap_core`'s
+own permanently-declined `npn13G2` (`Q1`/`Q2`/`Q3`) recognition gap (see
+"Permanent blockers" above) and `bandgap_amp`'s own `MP1`/`MP2` body-tie
+simplification (see `bandgap_amp`'s own "LVS" section above) -- no new,
+`bandgap_top`-specific cause. Reference netlist flattened by
+`layout/lvs_reference.py`'s `flatten()` (the same subckt-instantiation
+flattening `sg13cmos5l-bandgap_top`'s own reference already uses), engine
+`klayout`.
+
+**Determinism**: `python3 layout/bandgap_top/generate.py` re-run leaves
+`git diff --stat` empty, as long as the three leaf GDS files it reads are
+themselves unchanged.
+
+**Explicitly out of scope for issue #169** (mirrors `bandgap_core`'s/
+`bandgap_startup`'s own #11 -> #12/#14 sequencing): *fixing* either cell's
+`mismatch` LVS verdict toward `"match"`, and post-layout PEX simulation of
+the closed loop -- both left as separate follow-ups once this floorplan-level
+layout lands (see tracking issue #4, item 7). Running `klt lvs` itself, once,
+to produce the committed reports above was **not** optional (see "LVS"
+sections above) -- only the multi-issue effort of resolving what it finds
+is deferred, the same way #12's own findings took #20/#45/#149/#154/#161/#163
+to work through for `bandgap_core`/`bandgap_startup`.
 
 ---
 
