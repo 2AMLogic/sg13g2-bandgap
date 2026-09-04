@@ -222,12 +222,20 @@ klt stats layout/bandgap_core/bandgap_core.gds --format json
 klt layers layout/bandgap_core/bandgap_core.gds --format json
 ```
 
-`bandgap_core.gds`: 1 top cell (`bandgap_core`), 105 shapes/labels across 13
-layer/datatype/purpose combinations, bbox `(-5.4, -3.1)`–`(694.7, 61.4)` µm
+`bandgap_core.gds`: 1 top cell (`bandgap_core`), 241 shapes/labels across 20
+layer/datatype/purpose combinations, bbox `(-5.4, -3.1)`–`(511.5, 61.4)` µm
 (the `R1` long-bar resistor dominates the bounding box — see above). The
 `EmWind.drawing` (33/0) layer carries exactly 10 shapes — `Q1` (`Nx=1`) + `Q2`
 (`Nx=8`) + `Q3` (`Nx=1`) = 10, matching the schematic's `Nx` values exactly,
 confirming the per-stripe geometry described below.
+
+(Re-read from the committed GDS 2026-09-04 by
+[`measurements/2026-09-layout-area/`](../measurements/2026-09-layout-area/README.md).
+The three counts above previously cited the pre-retune geometry — `105`
+shapes / `13` layer combinations / a `694.7` µm right edge — which the
+`R1`: 694.5 µm -> 511 µm retune of #134/#139 superseded without this
+paragraph being refreshed. The `EmWind.drawing` claim was re-verified at the
+same time and was, and is, correct.)
 
 ## Tooling-friction findings (`spec/porting-plan.md` §7, items 2 and 3)
 
