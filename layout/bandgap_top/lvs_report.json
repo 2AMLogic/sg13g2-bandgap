@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "engine": "klayout",
+  "layout": "bandgap_top.gds",
+  "reference": "bandgap_top.lvs_reference.spice",
+  "top": "bandgap_top",
+  "reference_top": ".TOP",
+  "parameter_tolerance": null,
+  "options": {
+    "combine_devices": false,
+    "flatten_layout": false,
+    "flatten_reference": false,
+    "netgen_setup": null,
+    "parameter_tolerance": null
+  },
+  "status": "mismatch",
+  "mismatch_count": 17,
+  "error_count": 17,
+  "category_counts": {
+    "device.unmatched": 8,
+    "topology": 9
+  },
+  "category_error_counts": {
+    "device.unmatched": 8,
+    "topology": 9
+  },
+  "counts": {
+    "nets": {
+      "layout": 13,
+      "reference": 13,
+      "matched": 2
+    },
+    "devices": {
+      "layout": 20,
+      "reference": 23,
+      "matched": 15
+    },
+    "pins": {
+      "layout": 13,
+      "reference": 0,
+      "matched": 13
+    }
+  },
+  "device_classes": [
+    "nfet",
+    "pfet",
+    "cap_cmim",
+    "rfcmim",
+    "cap_cmomi",
+    "cap_cmomf",
+    "resistor",
+    "dantenna",
+    "dpantenna"
+  ],
+  "environment": {
+    "engine": "klayout",
+    "engine_version": "0.30.12",
+    "layout_sha256": "d8cfca442fefc5593d687c4a516e51765425c8ecda48dd10080de013d1313d42",
+    "reference_sha256": "fbbad51a55742c0bd4bbea0c5a9442e20652e19befe7738d19d500ee2a3144d3",
+    "extracted_netlist": null
+  },
+  "provenance": {
+    "klt_version": "0.3.0",
+    "klayout_version": "0.30.12",
+    "pdk": null,
+    "deck": {
+      "name": "sg13g2",
+      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "released": false
+    },
+    "input": null
+  },
+  "mismatches": [
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "X1_Q1",
+        "class": "NPN13G2"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "X1_Q2",
+        "class": "NPN13G2"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "X1_Q3",
+        "class": "NPN13G2"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$13",
+        "reference": "X2_MP1",
+        "class": "pfet"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$14",
+        "reference": "X2_MP2",
+        "class": "pfet"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$18",
+        "reference": "X1_R2",
+        "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$19",
+        "reference": "X1_R1",
+        "class": "rppd"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$20",
+        "reference": "X3_RPU",
+        "class": "rhigh"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "CB2",
+        "reference": "X1.CB2"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "CB3",
+        "reference": "X1.CB3"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "D1",
+        "reference": "X2.D1"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "D2",
+        "reference": "X2.D2"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "DET",
+        "reference": "X3.DET"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "IN_N|SNS1",
+        "reference": "SNS1"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "IN_P|SNS2",
+        "reference": "SNS2"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "TAIL",
+        "reference": "X2.TAIL"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "device class could not be mapped to a counterpart",
+      "side": "reference",
+      "net": null,
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    }
+  ],
+  "net_correspondence": [
+    {
+      "layout": "FB|OUT",
+      "reference": "FB",
+      "pin": true
+    },
+    {
+      "layout": "PN",
+      "reference": "X2.PN",
+      "pin": true
+    }
+  ]
+}

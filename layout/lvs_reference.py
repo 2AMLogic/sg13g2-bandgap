@@ -512,6 +512,23 @@ if __name__ == "__main__":
             REPO_ROOT, "layout/bandgap_startup/bandgap_startup.lvs_reference.spice"
         ),
     )
+    # bandgap_amp (issue #169) -- a pure-CMOS netlist (no bipolar/resistor
+    # devices at all), so convert()'s existing _MOS_CLASS dispatch is
+    # already everything this file needs.
+    _write(
+        os.path.join(REPO_ROOT, "design/netlist/bandgap_amp.spice"),
+        os.path.join(REPO_ROOT, "layout/bandgap_amp/bandgap_amp.lvs_reference.spice"),
+    )
+    # bandgap_top (issue #169) -- the SG13G2 hierarchical assembly netlist,
+    # whose own X-calls are subckt instantiations rather than devices (see
+    # flatten()'s own docstring), same shape as SG13CMOS5L's own
+    # bandgap_top.spice below -- just this PDK's device vocabulary
+    # (pdk="sg13g2", the default).
+    _write_flattened(
+        os.path.join(REPO_ROOT, "design/netlist/bandgap_top.spice"),
+        os.path.join(REPO_ROOT, "layout/bandgap_top/bandgap_top.lvs_reference.spice"),
+        pdk="sg13g2",
+    )
     # SG13CMOS5L port (issue #66) -- same conversion, that PDK's own device
     # vocabulary. Directory name mirrors sim/'s own `sg13cmos5l-<slug>`
     # per-PDK prefix convention (see layout/README.md "SG13CMOS5L port").
