@@ -17,6 +17,13 @@ from `vdd`, once settled, across the full PVT grid** — the last of the two
 startup — area is the only remaining gap, and is a layout-geometry metric,
 out of `sim/`-testbench scope) with no `sim/` testbench coverage at all.
 
+(That area gap is now covered outside `sim/`, exactly where this paragraph
+says it belongs: see
+[`measurements/2026-09-layout-area/`](../../measurements/2026-09-layout-area/README.md),
+a reproducible `klt stats` measurement of every committed
+`layout/<cell>/<cell>.gds`. It remains out of `sim/`-testbench scope — this
+sentence is unchanged in substance, only cross-referenced.)
+
 ## What this testbench claims, and what it does not
 
 It claims: across the full temperature x supply x
