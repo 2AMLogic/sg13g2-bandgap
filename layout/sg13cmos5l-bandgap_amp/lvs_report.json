@@ -14,10 +14,10 @@
     "parameter_tolerance": null
   },
   "status": "mismatch",
-  "mismatch_count": 25,
+  "mismatch_count": 24,
   "error_count": 23,
   "category_counts": {
-    "device.body_unverified": 2,
+    "device.body_unverified": 1,
     "device.unmatched": 9,
     "net.merged": 6,
     "net.split": 8
@@ -46,22 +46,25 @@
   },
   "device_classes": [
     "nfet",
-    "pfet"
+    "pfet",
+    "cap_cmomi",
+    "cap_cmomf",
+    "resistor"
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.11",
+    "engine_version": "0.30.12",
     "layout_sha256": "cc44856b8ddcd3c64df3a058569f552f2e9068ec275ee4e3d7fd5dea09ee51e2",
     "reference_sha256": "02e9e5336ae0dd26e9f9c875b07e0238d39d346ced112544f6748c969993c86c",
     "extracted_netlist": null
   },
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.11",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:9a4e18f2fd7a0d39d02abc220141dd5c300158e2540cd19f2f2ea9151f965b80",
+      "content_hash": "sha256:5b5309ecd586f527d6df271384f18e8f1fcd528a09935544b46aed563b66a92e",
       "released": false
     },
     "input": null
@@ -77,23 +80,6 @@
         "layout": null,
         "reference": null,
         "class": "nfet"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "device.body_unverified",
-      "severity": "warning",
-      "description": "5 PMOS device body terminal(s) were compared against an anonymous, deck-synthesized well net, not a real schematic net -- this deck has no distinct well-tap layer (see docs/cli/extract.md, \"Coverage\")",
-      "side": "layout",
-      "net": null,
-      "device": {
-        "layout": null,
-        "reference": null,
-        "class": "pfet"
       },
       "property": null,
       "details": null,
