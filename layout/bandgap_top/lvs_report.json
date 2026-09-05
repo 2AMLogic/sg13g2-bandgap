@@ -56,7 +56,7 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "80fad54f4aa3caf7602e7f1de8b1bda37cc8a91c540824bf73b6bd3e983436e3",
+    "layout_sha256": "f0db498a174920fd701a3db1902d44a5c1db5c3f03580cc8aea01991bc0c1b03",
     "reference_sha256": "a131977a7e583d2024caef49eeab6a5703e576ed8a0e3ec5c23cb751cf226b0b",
     "extracted_netlist": null
   },
@@ -192,7 +192,7 @@
       "side": "reference",
       "net": null,
       "device": {
-        "layout": "\\$13",
+        "layout": "\\$7",
         "reference": "X2_MP1",
         "class": "pfet"
       },
@@ -209,7 +209,7 @@
       "side": "reference",
       "net": null,
       "device": {
-        "layout": "\\$14",
+        "layout": "\\$8",
         "reference": "X2_MP2",
         "class": "pfet"
       },

@@ -5,7 +5,7 @@
   "top": "sg13cmos5l_bandgap_top",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_top.pex.spice",
-  "netlist_sha256": "3ca3980f922958978fa92143aec8dcc8f1eb86c770b11cc62196af6921ade106",
+  "netlist_sha256": "a6ffb4e439a0942c9eb7985333a7c8fb7d6094bf4a9724083ed94d5c9b942442",
   "status": "extracted",
   "device_count": 17,
   "net_count": 15,
@@ -76,43 +76,43 @@
       "name": "$10",
       "class": "pfet",
       "nets": {
-        "s": "fb|out",
-        "g": "pn",
-        "d": "vdd",
-        "b": "\\$34"
+        "s": "d1",
+        "g": "in_p|sns2",
+        "d": "tail",
+        "b": "\\$36"
       },
       "params": {
         "l_um": 1.0,
-        "w_um": 10.0,
-        "as_um2": 4.0,
-        "ad_um2": 4.0,
-        "ps_um": 20.8,
-        "pd_um": 20.8
+        "w_um": 20.0,
+        "as_um2": 8.0,
+        "ad_um2": 8.0,
+        "ps_um": 40.8,
+        "pd_um": 40.8
       }
     },
     {
       "name": "$11",
       "class": "pfet",
       "nets": {
-        "s": "pn",
-        "g": "pn",
-        "d": "vdd",
-        "b": "\\$34"
+        "s": "d2",
+        "g": "in_n|sns1",
+        "d": "tail",
+        "b": "\\$36"
       },
       "params": {
         "l_um": 1.0,
-        "w_um": 10.0,
-        "as_um2": 4.0,
-        "ad_um2": 4.0,
-        "ps_um": 20.8,
-        "pd_um": 20.8
+        "w_um": 20.0,
+        "as_um2": 8.0,
+        "ad_um2": 8.0,
+        "ps_um": 40.8,
+        "pd_um": 40.8
       }
     },
     {
       "name": "$12",
       "class": "pfet",
       "nets": {
-        "s": "in_n|sns1",
+        "s": "tail",
         "g": "fb|out",
         "d": "vdd",
         "b": "\\$36"
@@ -130,8 +130,8 @@
       "name": "$13",
       "class": "pfet",
       "nets": {
-        "s": "in_p|sns2",
-        "g": "fb|out",
+        "s": "fb|out",
+        "g": "pn",
         "d": "vdd",
         "b": "\\$36"
       },
@@ -148,8 +148,8 @@
       "name": "$14",
       "class": "pfet",
       "nets": {
-        "s": "vref",
-        "g": "fb|out",
+        "s": "pn",
+        "g": "pn",
         "d": "vdd",
         "b": "\\$36"
       },
@@ -304,46 +304,46 @@
       "name": "$7",
       "class": "pfet",
       "nets": {
-        "s": "d1",
-        "g": "in_p|sns2",
-        "d": "tail",
-        "b": "\\$34"
+        "s": "in_n|sns1",
+        "g": "fb|out",
+        "d": "vdd",
+        "b": "\\$29"
       },
       "params": {
         "l_um": 1.0,
-        "w_um": 20.0,
-        "as_um2": 8.0,
-        "ad_um2": 8.0,
-        "ps_um": 40.8,
-        "pd_um": 40.8
+        "w_um": 10.0,
+        "as_um2": 4.0,
+        "ad_um2": 4.0,
+        "ps_um": 20.8,
+        "pd_um": 20.8
       }
     },
     {
       "name": "$8",
       "class": "pfet",
       "nets": {
-        "s": "d2",
-        "g": "in_n|sns1",
-        "d": "tail",
-        "b": "\\$34"
+        "s": "in_p|sns2",
+        "g": "fb|out",
+        "d": "vdd",
+        "b": "\\$29"
       },
       "params": {
         "l_um": 1.0,
-        "w_um": 20.0,
-        "as_um2": 8.0,
-        "ad_um2": 8.0,
-        "ps_um": 40.8,
-        "pd_um": 40.8
+        "w_um": 10.0,
+        "as_um2": 4.0,
+        "ad_um2": 4.0,
+        "ps_um": 20.8,
+        "pd_um": 20.8
       }
     },
     {
       "name": "$9",
       "class": "pfet",
       "nets": {
-        "s": "tail",
+        "s": "vref",
         "g": "fb|out",
         "d": "vdd",
-        "b": "\\$34"
+        "b": "\\$29"
       },
       "params": {
         "l_um": 1.0,
@@ -357,14 +357,14 @@
   ],
   "nets": [
     {
-      "name": "\\$34",
+      "name": "\\$29",
       "pin": false,
-      "device_count": 5
+      "device_count": 3
     },
     {
       "name": "\\$36",
       "pin": false,
-      "device_count": 3
+      "device_count": 5
     },
     {
       "name": "d1",
@@ -433,7 +433,7 @@
     }
   ],
   "warnings": [
-    "16 poly-layer shapes not part of any recognised nfet/pfet gate touch contact at 2+ separate points (the resistor-body signature) and carry no resistor-marker layer at all; this deck may not model the device class drawn here, and its terminals have been absorbed into ordinary interconnect as an unintended short -- see docs/cli/extract.md's 'Known limitation: unmodelled device geometry'.",
+    "20 poly-layer shapes not part of any recognised nfet/pfet gate touch contact at 2+ separate points (the resistor-body signature) and carry no resistor-marker layer at all; this deck may not model the device class drawn here, and its terminals have been absorbed into ordinary interconnect as an unintended short -- see docs/cli/extract.md's 'Known limitation: unmodelled device geometry'.",
     "promoted 7 net(s) to top-level pins from label(s) found only below the top cell (inside instanced sub-cells): d1, d2, det, e2, e3, pn, tail -- these are internal nodes once instanced; pass top_cell_pins_only (--top-cell-pins) to keep them internal (issue #291)",
     "1 routing-stack cluster (17 shapes on 8/0) join no extracted net -- no via lands on this geometry and no same-layer wiring touches it, so it is invisible to the extracted netlist and to every downstream `klt lvs`/`klt sim` view; deliberate dead metal (artwork, fill) is expected here, unexplained dead metal usually means the connection you intended is missing -- see dead_metal[] for the per-cluster layer/bbox/shape count.",
     "net 'fb|out' merges 2 distinct labels (fb, out) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
@@ -447,10 +447,10 @@
   "unmodelled_poly": [
     {
       "bbox_um": {
-        "left": -20.35,
+        "left": -18.35,
         "bottom": 49.65,
-        "right": -19.65,
-        "top": 84.35
+        "right": -17.65,
+        "top": 72.85
       },
       "reason": "unmarked"
     },
@@ -459,7 +459,79 @@
         "left": -15.35,
         "bottom": 59.65,
         "right": -14.65,
-        "top": 78.35
+        "top": 70.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": -12.35,
+        "bottom": 74.65,
+        "right": -11.65,
+        "top": 100.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": -9.35,
+        "bottom": 69.65,
+        "right": -8.65,
+        "top": 81.12
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": -2.35,
+        "bottom": 99.65,
+        "right": 2.35,
+        "top": 100.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 15.65,
+        "bottom": 115.65,
+        "right": 24.35,
+        "top": 116.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 29.65,
+        "bottom": 67.15,
+        "right": 30.35,
+        "top": 77.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 62.65,
+        "bottom": 99.65,
+        "right": 67.35,
+        "top": 100.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 79.65,
+        "bottom": 64.65,
+        "right": 80.35,
+        "top": 121.12
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 84.65,
+        "bottom": 72.15,
+        "right": 85.35,
+        "top": 100.35
       },
       "reason": "unmarked"
     },
@@ -468,7 +540,34 @@
         "left": 89.65,
         "bottom": 62.65,
         "right": 90.35,
-        "top": 66.35
+        "top": 65.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 94.65,
+        "bottom": 64.65,
+        "right": 95.35,
+        "top": 88.1
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 147.65,
+        "bottom": 72.15,
+        "right": 148.35,
+        "top": 77.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 164.65,
+        "bottom": 67.15,
+        "right": 165.35,
+        "top": 77.35
       },
       "reason": "unmarked"
     },
@@ -483,109 +582,46 @@
     },
     {
       "bbox_um": {
-        "left": 221.65,
-        "bottom": -0.35,
-        "right": 222.35,
-        "top": 72.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 239.65,
-        "bottom": 0.42,
-        "right": 240.35,
-        "top": 78.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 245.65,
-        "bottom": -1.12,
-        "right": 246.35,
-        "top": 72.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 255.15,
-        "bottom": 19.65,
-        "right": 259.85,
-        "top": 20.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 273.15,
-        "bottom": 35.65,
-        "right": 281.85,
-        "top": 36.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 299.65,
-        "bottom": 42.65,
-        "right": 300.35,
-        "top": 66.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 320.15,
-        "bottom": 19.65,
-        "right": 324.85,
-        "top": 20.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 349.65,
-        "bottom": 19.65,
-        "right": 350.35,
+        "left": 179.65,
+        "bottom": 81.65,
+        "right": 180.35,
         "top": 84.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 359.65,
-        "bottom": 7.4,
-        "right": 360.35,
-        "top": 66.35
+        "left": 186.65,
+        "bottom": 69.65,
+        "right": 187.35,
+        "top": 86.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 429.65,
-        "bottom": -3.35,
-        "right": 430.35,
-        "top": 72.35
+        "left": 221.65,
+        "bottom": -0.35,
+        "right": 222.35,
+        "top": 67.85
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 444.65,
-        "bottom": 1.65,
-        "right": 445.35,
-        "top": 4.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 451.65,
-        "bottom": 5.65,
-        "right": 452.35,
+        "left": 224.65,
+        "bottom": 39.65,
+        "right": 225.35,
         "top": 78.35
+      },
+      "reason": "unmarked"
+    },
+    {
+      "bbox_um": {
+        "left": 228.65,
+        "bottom": 56.65,
+        "right": 229.35,
+        "top": 75.35
       },
       "reason": "unmarked"
     }
@@ -617,11 +653,11 @@
   "unbiased_pmos_body_nets": [
     {
       "device": "$10",
-      "net": "\\$34"
+      "net": "\\$36"
     },
     {
       "device": "$11",
-      "net": "\\$34"
+      "net": "\\$36"
     },
     {
       "device": "$12",
@@ -637,15 +673,15 @@
     },
     {
       "device": "$7",
-      "net": "\\$34"
+      "net": "\\$29"
     },
     {
       "device": "$8",
-      "net": "\\$34"
+      "net": "\\$29"
     },
     {
       "device": "$9",
-      "net": "\\$34"
+      "net": "\\$29"
     }
   ],
   "single_terminal_nets": [],
@@ -676,7 +712,7 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:cfd2a2698a4cb5f5fd4cdce37bff1ece4788f1f5958e77c2818774018ed15b58"
+      "content_hash": "sha256:3ee6f4a364751f695e9c23fbd99f167bad0f420a77920833581cb101816a0228"
     }
   },
   "parasitics": null,

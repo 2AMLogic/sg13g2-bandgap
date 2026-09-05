@@ -64,13 +64,85 @@ but that tab was added directly in ``bandgap_amp/generate.py`` itself
 (issue #169, a new cell with no prior committed geometry to disturb) rather
 than worked around here.
 
-**Floorplan.** The three leaf cells are placed side by side, left to right,
-translation only (no mirroring): ``bandgap_core`` at the origin (bbox
-``(-5.4,-3.1)``-``(511.5,61.4)``), ``bandgap_amp`` at ``dx=550``
-(``(539.2,-1.59)``-``(755.1,32.175)``), ``bandgap_startup`` at ``dx=800``
-(``(794.9,-1.34)``-``(2206.8,20.9)``) -- each gap comfortably larger than
-any DRC spacing floor this deck declares (>=28 um, vs. sub-micron floors),
-chosen only so neighbouring cells' bounding boxes cannot touch.
+**Floorplan: two rows around a shared routing channel (issue #177).**
+Translation only, no mirroring. The three leaf cells are placed in **two
+horizontal rows** with every inter-cell bus living in the channel between
+them::
+
+    row B (top, y = 49.9 .. 123.6)
+        bandgap_core     (-5.4, 49.9)-(137.5, 123.6)
+          | 17.4 um gap |
+        bandgap_startup  (154.9, 51.7)-(205.0, 102.2)
+
+    routing channel (y = 34 .. 46) -- five Metal1 buses, no leaf geometry
+
+    row A (bottom, y = -1.6 .. 32.2)
+        bandgap_amp      (-10.8, -1.59)-(205.1, 32.175)
+
+Issue #173 left this a single left-to-right row whose height was set by the
+tallest leaf (``bandgap_core``, 73.7 um) while the two shorter leaves left
+their share of that height empty, and whose five full-width buses sat above
+the whole 482 um-wide row. Two rows fix both at once: the assembly is now
+~224 x ~127 um rather than ~482 x ~97 um, and the bus channel -- the other
+named mechanism in ``measurements/2026-09-resistor-fold/`` -- is both
+shorter (the longest bus is now ~187 um where the row it used to cross was
+482) and tighter (3 um bus pitch rather than 5 um, still 15x
+``metal1.space.1``'s 0.18 um floor).
+
+Which leaf went where is not arbitrary: it follows each leaf's own **pad
+band**. ``bandgap_amp``'s ``vdd``/``sns1``/``sns2`` pads sit on its *top*
+edge (y ~= 30 of a 32.2 um-tall cell), so it wants a channel *above* it;
+``bandgap_core``'s and ``bandgap_startup``'s pads all sit at y <= 23 and
+y <= 5 respectively (both cells are much taller than that -- the space above
+is folded resistor), so they want a channel *below* them. One channel
+between an amp row and a core+startup row satisfies all three, and every
+riser gets *shorter* than it was in the single-row floorplan.
+
+**The routing invariant, re-derived (issue #177).** Through issue #173 this
+module's inter-cell routing rested on the three cells occupying **disjoint
+x-ranges**, so a vertical route drawn within one cell's x-span could only
+ever collide with that same cell's own geometry. Two rows break that
+premise -- ``bandgap_amp``'s x-span now covers both of the other two leaves'
+-- so it is replaced, not merely deleted, by a two-dimensional form of the
+same argument plus one new global rule:
+
+1. **Row disjointness.** The two rows occupy disjoint y-bands, separated by
+   the routing channel, which contains no leaf geometry at any x. Cells
+   *within* a row still occupy disjoint x-ranges (``bandgap_core`` and
+   ``bandgap_startup`` are 17.4 um apart).
+2. **Risers never leave their own row.** Every riser runs between its own
+   cell's pad and its own net's bus in the channel -- upward from row A,
+   downward from row B -- and stops there. So a riser's y-extent lies
+   entirely within its own cell's row band plus the channel, and by (1) the
+   only *leaf* geometry it can meet is its own cell's. That is exactly the
+   property the old disjoint-x invariant bought, re-derived on (row, x)
+   instead of x alone, and it is what keeps each leaf-internal crossing
+   checkable one net at a time (see the ``_riser_up``/``LANDING_UM``
+   comment below for those checks).
+3. **Globally distinct riser columns.** What (1) and (2) do *not* give for
+   free: risers from *both* rows coexist inside the channel, so two
+   different nets' risers may no longer share a column anywhere in the
+   assembly, not merely within one cell. Under the old invariant this was
+   automatic (different cells were at different x); now it is a real
+   obligation, so it is **checked rather than asserted** --
+   :func:`_assert_column_pitch` fails the generator if any two different
+   nets' riser columns come within :data:`MIN_COLUMN_PITCH_UM`.
+
+Rules (1)-(3) are what make the "rise/drop straight to the channel, then
+travel" routing below safe to reason about one net at a time. The
+layer-based half of the argument is unchanged and orthogonal: buses are
+Metal1 and risers are Metal2, so a riser crossing another net's bus cannot
+short regardless of geometry (see the next paragraph).
+
+One net does not fit (2) unaided and is called out because of it:
+``bandgap_core``'s ``sns2`` pad cannot reach the channel by dropping
+straight down -- ``bandgap_core``'s own ``vss`` bar is a Metal2 slab across
+y ``[-0.75, 0.75]``, x ``[-3.05, 125.05]`` in local coordinates, and every
+column inside that net's own pad is inside it. It instead rises the 13.7 um
+to ``CORE_SNS2_CROSS_DY`` (local y=35, 0.9 um clear of the *top* of every
+one of ``bandgap_core``'s own Metal2 shapes, the highest of which ends at
+33.925), crosses the cell there, and drops in the left corridor. That run
+stays inside row B's own band, so (2) still holds for it.
 
 **Routing: Metal1 buses + Metal2 risers, cleanly non-crossing by
 construction.** ``vdd``, ``vss``, ``fb``, and ``sns1`` each need multiple
@@ -162,23 +234,35 @@ CORE_GDS = os.path.join(HERE, "..", "bandgap_core", "bandgap_core.gds")
 AMP_GDS = os.path.join(HERE, "..", "bandgap_amp", "bandgap_amp.gds")
 STARTUP_GDS = os.path.join(HERE, "..", "bandgap_startup", "bandgap_startup.gds")
 
-# Floorplan offsets -- translation only, left to right (see docstring).
+# Floorplan offsets -- translation only, two rows (see docstring).
 #
-# Issue #173 re-packed these. Pre-fold the three leaves were 516.9 / 215.9 /
-# 1416.9 um wide, and these offsets (550 / 800) were set by `bandgap_core`'s
-# and `bandgap_startup`'s own 0.5 mm / 1.4 mm resistor bars. Folding those
-# bars leaves the leaves 142.9 / 215.9 / 50.1 um wide, so the same
-# left-to-right row packs into a quarter of the width at the same ~30 um
-# inter-cell gaps (the gaps themselves are unchanged -- they are routing
-# corridors, not slack).
+# Issue #173 re-packed a single left-to-right row (0 / 180 / 421, all at
+# dy=0); issue #177 folded that row in half. `bandgap_amp` stays at the
+# origin as row A; `bandgap_core` and `bandgap_startup` move up by
+# `ROW_B_DY` to form row B above the routing channel.
 #
-# Every riser column in `_route` below is now written as `<CELL>_DX + local`
-# rather than as a baked-in absolute, so re-packing moves the columns with
-# their cells. Pre-#173 they were absolutes (645.0, 799.7, ...) that silently
-# encoded AMP_DX=550 / STARTUP_DX=800.
-CORE_DX, CORE_DY = 0.0, 0.0
-AMP_DX, AMP_DY = 180.0, 0.0
-STARTUP_DX, STARTUP_DY = 421.0, 0.0
+# `ROW_B_DY` is derived, not guessed: the topmost bus bar's own upper edge is
+# `Y_BUS_SNS2 + TRUNK_W / 2` = 46.15, and row B's lowest leaf geometry is
+# `bandgap_core`'s own bbox bottom at local y=-3.1, so `ROW_B_DY = 53` leaves
+# 3.75 um of empty channel above the last bus -- ~20x `metal1.space.1`'s
+# 0.18 um floor, and more than the 2.36 um that already separates the lowest
+# bus from `bandgap_amp`'s own Metal1 top edge below it.
+#
+# STARTUP_DX puts `bandgap_startup`'s right edge (local 44.972) level with
+# `bandgap_amp`'s (205.1) so neither row overhangs the other, leaving a
+# 17.4 um gap to `bandgap_core`'s right edge. Nothing is routed through that
+# gap -- under the two-row invariant every riser drops into the channel
+# rather than travelling between same-row neighbours -- so it is sized only
+# so the two cells' bounding boxes cannot touch.
+#
+# Every riser column in `_route` below is written as `<CELL>_DX + local`
+# rather than as a baked-in absolute, so re-placing moves the columns with
+# their cells (issue #173; pre-#173 they were absolutes that silently
+# encoded AMP_DX=550 / STARTUP_DX=800).
+ROW_B_DY = 53.0
+CORE_DX, CORE_DY = 0.0, ROW_B_DY
+AMP_DX, AMP_DY = 0.0, 0.0
+STARTUP_DX, STARTUP_DY = 160.0, ROW_B_DY
 
 TRUNK_W = 0.3
 METAL2_W = 0.35
@@ -194,20 +278,42 @@ VIA = 0.25
 #: vs. ``VIA`` clearance).
 OVERSHOOT_UM = 0.15
 
-# Bus heights (Metal1) -- comfortably above every leaf cell's own bounding
-# box top (bandgap_core's own 61.4 um is the tallest of the three). Distinct
-# per net purely for visual/manufacturing separation -- correctness does
-# NOT depend on this ordering (see docstring: buses are Metal1, risers are
-# Metal2, so no two nets' shapes can ever cross regardless of height order).
-# (Issue #173: raised 4 um. `bandgap_core`'s own top edge moved from 61.4 to
-# 70.623 when its two folded resistor blocks replaced the two 2 um-tall
-# resistor rows above its MOS row -- the cell traded ~374 um of width for
-# ~9 um of height. 74 keeps the first bus >3 um above it.)
-Y_BUS_VDD = 74.0
-Y_BUS_VSS = 79.0
-Y_BUS_FB = 84.0
-Y_BUS_SNS1 = 89.0
-Y_BUS_SNS2 = 94.0
+# Bus heights (Metal1) -- the routing channel between the two rows (issue
+# #177). Distinct per net purely for visual/manufacturing separation --
+# correctness does NOT depend on this ordering (see docstring: buses are
+# Metal1, risers are Metal2, so no two nets' shapes can ever cross
+# regardless of height order).
+#
+# The floor is set by row A: `bandgap_amp`'s own Metal1 tops out at 31.49
+# (its vdd bar) and its Metal2 at 32.175 (its tail jog), so a Metal1 bus at
+# 34 clears the nearer, same-layer one by 2.36 um. The 3 um pitch (issue
+# #177 tightened it from #173's 5 um) leaves 2.7 um between adjacent bars,
+# 15x `metal1.space.1`'s 0.18 um floor; the whole five-bus stack is 12 um
+# tall where the single-row one was 20.
+Y_BUS_VDD = 34.0
+Y_BUS_VSS = 37.0
+Y_BUS_FB = 40.0
+Y_BUS_SNS1 = 43.0
+Y_BUS_SNS2 = 46.0
+
+#: ``bandgap_core``-local height at which that cell's own ``sns2`` riser
+#: crosses back to the left corridor -- see the module docstring's "One net
+#: does not fit (2) unaided" paragraph. 0.9 um above the top edge (33.925)
+#: of every one of `bandgap_core`'s own Metal2 shapes, and 35.6 um below its
+#: own bbox top, so the crossing run stays inside row B's band.
+CORE_SNS2_CROSS_DY = 35.0
+
+#: Minimum centre-to-centre spacing between two **different** nets' riser
+#: columns anywhere in the assembly -- the machine-checked half of the
+#: two-row routing invariant (docstring rule 3), enforced by
+#: :func:`_assert_column_pitch`. Risers are ``METAL2_W`` = 0.35 um wide, so
+#: 2.0 um leaves 1.65 um of edge-to-edge clearance, an order of magnitude
+#: above every same-layer spacing floor this deck declares (the tightest
+#: this module's own geometry meets is `metal1.space.1`'s 0.18 um). The
+#: value is a floorplan-review threshold, not a DRC floor -- `klt drc`
+#: still checks the real ones, and would not catch this failure anyway
+#: (two overlapping same-layer shapes merge into one clean polygon).
+MIN_COLUMN_PITCH_UM = 2.0
 
 #: Every port pad location below was read directly off each leaf's own
 #: committed GDS with ``klayout.db`` (``klt layers``-style shape dump,
@@ -445,128 +551,211 @@ def _bus(b: Builder, bus_y: float, riser_xs: list[float]) -> None:
         via1_tap(b, x, bus_y, size=VIA)
 
 
+def _assert_column_pitch(columns: list[tuple[str, float]]) -> None:
+    """Fail the generator if two **different** nets' riser columns come
+    within :data:`MIN_COLUMN_PITCH_UM` of each other.
+
+    This is the machine-checked half of the two-row routing invariant (rule
+    3 in this module's own docstring). Under the pre-#177 single-row
+    floorplan it was structurally impossible for two cells' risers to share
+    a column, because the three cells occupied disjoint x-ranges; with two
+    rows every riser passes through the *same* routing channel on its way to
+    its own bus, so column collisions between cells are now possible and
+    would be a real short that `klt drc` cannot see (two same-layer Metal2
+    shapes that overlap merge into one clean polygon -- the exact failure
+    mode the ``LANDING_UM`` comment above documents for leaf-internal
+    crossings).
+
+    Same-net entries are exempt: two risers of one net *may* share a column
+    (they would simply merge, which is what the bus does anyway)."""
+    for i, (net_a, x_a) in enumerate(columns):
+        for net_b, x_b in columns[i + 1 :]:
+            if net_a == net_b:
+                continue
+            if abs(x_a - x_b) < MIN_COLUMN_PITCH_UM:
+                raise AssertionError(
+                    f"riser columns for nets {net_a!r} (x={x_a}) and {net_b!r} "
+                    f"(x={x_b}) are {abs(x_a - x_b)}um apart, under this "
+                    f"module's own {MIN_COLUMN_PITCH_UM}um floor -- two "
+                    "different nets' Metal2 risers now share the routing "
+                    "channel and would merge (see _assert_column_pitch)"
+                )
+
+
 def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_sns1_pad: tuple[float, float, float, float]) -> None:
     """Wire every schematic net -- see this module's own docstring for the
-    "buses are Metal1, risers are Metal2" non-crossing argument, and the
-    ``_riser_up``/``LANDING_UM`` module comment above for the separate
-    ("leaf-internal Metal2 crossing") hazard this function's own column
-    choices below are chosen to avoid."""
+    two-row routing invariant (row disjointness / risers stay in their own
+    row / globally distinct columns) and the "buses are Metal1, risers are
+    Metal2" non-crossing argument, plus the ``_riser_up``/``LANDING_UM``
+    module comment above for the separate ("leaf-internal Metal2 crossing")
+    hazard this function's own column choices below are chosen to avoid.
+
+    Direction of travel is now per row (issue #177): row A
+    (``bandgap_amp``) rises into the channel, row B (``bandgap_core``,
+    ``bandgap_startup``) drops into it. ``_riser_up`` handles both -- its
+    ``route_v`` legs are order-independent -- so nothing but the sign of
+    ``bus_y - y_land`` changes for a row-B leg.
+
+    Every column chosen below is registered in ``columns`` and checked by
+    :func:`_assert_column_pitch` before this function returns."""
+    columns: list[tuple[str, float]] = []
 
     # -- vdd: core, amp, startup. `bandgap_core`'s own leg jogs sideways
-    # (still landed within its own vdd pad, x=-4.9) out to x=-10, clear of
-    # `bandgap_core`'s own bounding box (left edge -5.4) entirely -- nothing
-    # of that leaf's own geometry exists there to cross, at any height, by
-    # construction. amp/startup legs are unchanged (already verified clear:
-    # amp's own x=645 sits in the gap between MTAIL's and MP3's own tap
-    # rings and outside every one of amp's own Metal2 jogs' x-ranges since
-    # its own vdd pad's y-land, 30.7, sits above all four of them; startup
-    # has no internal Metal2 at all).
-    x_core = -10.0
+    # (still landed within its own vdd pad, x=-4.9) out to the left
+    # corridor, clear of `bandgap_core`'s own bounding box (left edge -5.4)
+    # entirely -- nothing of that leaf's own geometry exists there to cross,
+    # at any height, by construction. That jog is what lets the leg drop
+    # past `bandgap_core`'s own Metal2 vss slab (local y in [-0.75, 0.75],
+    # x in [-3.05, 125.05]) rather than through it. amp/startup legs keep
+    # their #173 columns and are now *shorter*, not rerouted: amp's own
+    # local x=95 sits in the gap between MTAIL's and MP3's own tap rings and
+    # outside every one of amp's own Metal2 jogs' x-ranges (its vdd pad's
+    # y-land, 30.7, is above all four of them); startup has no internal
+    # Metal2 at all.
+    x_core = -10.5
     x_amp = AMP_DX + 95.0
     x_startup = STARTUP_DX - 0.3
-    _riser_up(b, -4.9, CORE["vdd"], Y_BUS_VDD, jog_to=x_core)
+    columns += [("vdd", x_core), ("vdd", x_amp), ("vdd", x_startup)]
+    _riser_up(b, CORE_DX - 4.9, CORE["vdd"], Y_BUS_VDD, jog_to=x_core)
     _riser_up(b, x_amp, AMP["vdd"], Y_BUS_VDD)
     _riser_up(b, x_startup, STARTUP["vdd"], Y_BUS_VDD)
     _bus(b, Y_BUS_VDD, [x_core, x_amp, x_startup])
 
-    # -- vss: core (Metal2 pad -- no via at that end), amp, startup. core's
-    # own leg jogs (same-layer, Metal2) from x=-3.0 (still within its own
-    # vss pad, the wide vss bar itself) out to x=-13, the same
-    # clear-of-the-leaf's-own-bbox trick as vdd above, on its own distinct
-    # column. amp's own column moves from 575 to 547 -- outside the
-    # combined x-range ([550, 750]) of all four of amp's own internal
-    # Metal2 jogs (JOG_D1/D2/OUT/PN), still within amp's own vss pad
-    # (x in [545, 755]).
-    x_core = -13.0
+    # -- vss: core (Metal2 pad -- no via at that end), amp, startup.
+    #
+    # core's own leg drops **straight down out of its own vss bar**, with no
+    # sideways jog at all. Through #173 it jogged left (same-layer, Metal2)
+    # into the corridor first, which was harmless while every riser rose
+    # *away* from it; under the two-row floorplan that jog would be a
+    # horizontal Metal2 bar lying across the corridor at exactly the height
+    # (local y=0) every other row-B riser must pass through on its way down,
+    # shorting vdd/fb/sns2 into vss. (Not hypothetical: the first two-row
+    # draft of this module did exactly that and `klt extract` came back with
+    # those four nets merged into one -- rule 2's "risers stay in their own
+    # row" says nothing about a *horizontal* run, which is why the jog had
+    # to go rather than be re-columned.)
+    #
+    # The drop needs no jog because `bandgap_core`'s own vss bar *is* the
+    # lowest Metal2 that leaf owns (local y in [-0.75, 0.75]; nothing of
+    # that leaf's Metal2 exists below it at any x), so a Metal2 leg leaving
+    # its underside meets none of it. Local x=30 is clear of that leaf's own
+    # Metal1 blocks in the same band too (local x in [-5, 5], [47.65, 67.3]
+    # and [118.65, 125.35]) -- not that it would matter for a via-free
+    # Metal2 crossing, but it keeps the leg away from their edges.
+    #
+    # amp's own local x=-3 is outside the combined x-range (local [0, 200])
+    # of all four of amp's own internal Metal2 jogs (JOG_D1/D2/OUT/PN) and
+    # still within amp's own vss pad (local x in [-5, 205]).
+    x_core = CORE_DX + 30.0
     x_amp = AMP_DX - 3.0
     x_startup = STARTUP_DX + 10.0
-    _riser_up(b, -3.0, CORE["vss"], Y_BUS_VSS, pad_layer=L_METAL2, jog_to=x_core)
+    columns += [("vss", x_core), ("vss", x_amp), ("vss", x_startup)]
+    _riser_up(b, x_core, CORE["vss"], Y_BUS_VSS, pad_layer=L_METAL2)
     _riser_up(b, x_amp, AMP["vss"], Y_BUS_VSS)
     _riser_up(b, x_startup, STARTUP["vss"], Y_BUS_VSS)
     _bus(b, Y_BUS_VSS, [x_core, x_amp, x_startup])
 
     # -- fb: core (new tab pad, already clear -- see below), amp.out,
-    # startup. amp's own leg no longer lands at its "out" pad's own
-    # midpoint (y=15, which sits below amp's own JOG_PN at y~=17); instead
-    # it lands higher up the *same*, already-same-net "out" trunk (y=25,
-    # clear of every one of amp's own Metal2 jogs, the highest of which is
-    # JOG_PN at y~=17, and still within the trunk's own y in [0.9, 29.1]) --
-    # nothing left to cross once the transition itself is above every jog.
-    # core's own tab column (x~=-5.6) was already clear by construction (it
-    # sits left of `bandgap_core`'s own busy-jog x-ranges, both of which
-    # start at x=-0.25) -- unchanged.
+    # startup. amp's own leg does not land at its "out" pad's own midpoint
+    # (y=15, which sits below amp's own JOG_PN at y~=17); it lands higher up
+    # the *same*, already-same-net "out" trunk (y=25, clear of every one of
+    # amp's own Metal2 jogs, the highest of which is JOG_PN at y~=17, and
+    # still within the trunk's own y in [0.9, 29.1]) -- nothing left to
+    # cross once the transition itself is above every jog. core's own tab
+    # column (x~=-5.6) is clear by construction: `draw_gate_tab(side="left")`
+    # puts the pad entirely left of the gate edge it extends (-5.1), i.e.
+    # left of `bandgap_core`'s own leftmost Metal1 (-5.0) and Metal2
+    # (-3.05), so the drop meets none of it.
     x_core = (core_fb_pad[0] + core_fb_pad[2]) / 2
     x_amp = AMP_DX + 140.0
     x_startup = STARTUP_DX + 20.0
-    amp_fb_ride_pad = (AMP["fb"][0], 24.7, AMP["fb"][2], 25.3)
+    columns += [("fb", x_core), ("fb", x_amp), ("fb", x_startup)]
+    amp_fb_ride_pad = (AMP["fb"][0], AMP_DY + 24.7, AMP["fb"][2], AMP_DY + 25.3)
     _riser_up(b, x_core, core_fb_pad, Y_BUS_FB)
     _riser_up(b, x_amp, amp_fb_ride_pad, Y_BUS_FB)
     _riser_up(b, x_startup, STARTUP["fb"], Y_BUS_FB)
     _bus(b, Y_BUS_FB, [x_core, x_amp, x_startup])
 
     # -- sns1: core, amp.in_n, startup (new tab pad). core's own leg jogs
-    # (still landed within its own tiny, 0.3um-wide sns1 pad, x=0.0) out to
-    # x=-16, its own dedicated clear-of-the-bbox column (distinct from
-    # vdd's -10 and vss's -13). startup's own leg is unchanged (no internal
-    # Metal2 at all in that leaf). amp's own leg is NOT clear of every one
-    # of amp's own Metal2 jogs (a fact this issue's own first draft of this
-    # fix missed): amp's own "tail" net has its own riser jog at y~=32
-    # (`bandgap_amp/generate.py`'s own "tail (bottom band)" section,
-    # `tail_jog_y=32.0`, x in [570, 630] global) -- ABOVE amp's sns1 pad's
-    # own y-land (30.0), so a straight climb from that pad crosses it. amp's
-    # own sns1 pad is only 0.4um wide (x in [600.4, 600.8]) so it cannot
-    # jog sideways out of that jog's own x-range without a long detour
-    # across the PMOS row itself (risking new crossings); bridging through
-    # the narrow y~=32 band on Metal1 instead, at the same column, is
-    # simpler and verified clear there (this leaf's own Metal1 at this
-    # column tops out at y=30.9 -- both the "tail" bar and this net's own
-    # pad -- well below the bridge's own [31.0, 33.0] window).
-    x_core = -16.0
+    # (still landed within its own tiny, 0.3um-wide sns1 pad, local x=0.0)
+    # out to its own dedicated left-corridor column. startup's own leg is
+    # unchanged (no internal Metal2 at all in that leaf). amp's own leg is
+    # NOT clear of every one of amp's own Metal2 jogs: amp's own "tail" net
+    # has its own riser jog at local y~=32 (`bandgap_amp/generate.py`'s own
+    # "tail (bottom band)" section, `tail_jog_y=32.0`) which at this column
+    # occupies y in [31.825, 32.175] -- ABOVE amp's sns1 pad's own y-land
+    # (30.0), so a straight climb from that pad crosses it. amp's own sns1
+    # pad is only 0.4um wide (local x in [50.4, 50.8]) so it cannot jog
+    # sideways out of that jog's own x-range without a long detour across
+    # the PMOS row itself (risking new crossings); bridging through the
+    # narrow band on Metal1 instead, at the same column, is simpler and
+    # verified clear there (this leaf's own Metal1 at this column tops out
+    # at y=30.9 -- both the "tail" bar and this net's own pad -- well below
+    # the bridge's own [31.0, 33.0] window).
+    x_core = -15.5
     x_amp = AMP_DX + 50.6
     x_startup = (startup_sns1_pad[0] + startup_sns1_pad[2]) / 2
-    _riser_up(b, 0.0, CORE["sns1"], Y_BUS_SNS1, jog_to=x_core)
-    _riser_up(b, x_amp, AMP["sns1"], Y_BUS_SNS1, bridges=((31.0, 33.0),))
+    columns += [("sns1", x_core), ("sns1", x_amp), ("sns1", x_startup)]
+    _riser_up(b, CORE_DX + 0.0, CORE["sns1"], Y_BUS_SNS1, jog_to=x_core)
+    _riser_up(b, x_amp, AMP["sns1"], Y_BUS_SNS1, bridges=((AMP_DY + 31.0, AMP_DY + 33.0),))
     _riser_up(b, x_startup, startup_sns1_pad, Y_BUS_SNS1)
     _bus(b, Y_BUS_SNS1, [x_core, x_amp, x_startup])
 
-    # -- sns2: core, amp.in_p (two cells only). core's own leg cannot jog
-    # away from x=49 (its own sns2 pad only spans x in [40.5, 57.5]).
-    #
-    # Pre-#173 it therefore had to bridge on Metal1 through
-    # `bandgap_core`'s own vref/cb3 Metal2 jog band, which used to run at
-    # y~=60 across the whole cell (both resistors started at x=0 regardless
-    # of which branch they served, so every branch's jog ran the full width
-    # and crossed this column). That bridge is **gone**: folding put each
-    # resistor directly above its own branch, so the vref jog now spans only
-    # x in [105, 120.25] and the cb3 jog only x in [125, 136.278] -- neither
-    # comes near x=49. The one Metal2 this riser still meets on its way up
-    # is `bandgap_core`'s own *sns2* jog (now at y~=33.75), which is the
-    # same net: an intentional, correct merge, not a short. Verified by
-    # `klt lvs` re-run, which reports the identical 17/17 finding set the
-    # pre-fold assembly did (see layout/README.md).
-    x_core = 49.0
-    x_amp = AMP_DX - 10.6
-    _riser_up(b, x_core, CORE["sns2"], Y_BUS_SNS2)
-    _riser_up(b, x_amp, AMP["sns2"], Y_BUS_SNS2)
+    # -- sns2: core, amp.in_p (two cells only) -- the one net the two-row
+    # invariant's rule 2 does not give for free. See the module docstring's
+    # own "One net does not fit (2) unaided" paragraph: core's sns2 pad
+    # (local x in [40.5, 57.5]) is entirely inside the x-span of
+    # `bandgap_core`'s own Metal2 vss slab (local x in [-3.05, 125.05],
+    # y in [-0.75, 0.75]), so no column within that pad can drop to the
+    # channel. It goes *up* instead, on the same local x=49 column #173
+    # used -- which merges, intentionally and correctly, with
+    # `bandgap_core`'s own same-net sns2 jog (local x in [43, 49.175],
+    # y in [21.1, 33.925]) -- then crosses the cell at CORE_SNS2_CROSS_DY,
+    # 0.9um above the top edge of every Metal2 shape that leaf owns, and
+    # drops in the left corridor. amp's own in_p pad sits on that leaf's own
+    # left edge (local x in [-10.8, -10.4]), so its leg jogs left on Metal1
+    # to a corridor column of its own before rising -- the jog runs at
+    # y=30.0, 0.4um clear of amp's own vdd bar (local y in [30.55, 31.49]),
+    # the same clearance class the pre-existing LANDING_UM pad at that pad
+    # already holds.
+    x_core = -8.0
+    x_amp = AMP_DX - 18.0
+    y_cross = CORE_DY + CORE_SNS2_CROSS_DY
+    columns += [("sns2", x_core), ("sns2", x_amp)]
+    core_sns2_pad = CORE["sns2"]
+    y_land = (core_sns2_pad[1] + core_sns2_pad[3]) / 2
+    half = LANDING_UM / 2
+    b.box(L_METAL1, CORE_DX + 49.0 - half, y_land - half, CORE_DX + 49.0 + half, y_land + half)
+    via1_tap(b, CORE_DX + 49.0, y_land, size=VIA)
+    route_v(b, L_METAL2, CORE_DX + 49.0, y_land, y_cross, width=METAL2_W)
+    route_h(b, L_METAL2, y_cross, CORE_DX + 49.0, x_core, width=METAL2_W)
+    route_v(b, L_METAL2, x_core, y_cross, Y_BUS_SNS2, width=METAL2_W)
+    _riser_up(b, AMP_DX - 10.6, AMP["sns2"], Y_BUS_SNS2, jog_to=x_amp)
     _bus(b, Y_BUS_SNS2, [x_core, x_amp])
 
     # -- vref: core only, brought straight up to bandgap_top's own external
     # port and labeled there (single-terminal net at this level -- no bus
     # needed, mirrors bandgap_startup's own single-terminal-pin reasoning).
-    # x=120 crosses only `bandgap_core`'s own vref/cb3 jog band at its own
-    # vref column (same net, safe) -- it sits left of cb3's own jog leg
-    # (x in [125, 511.25]) and right of the sns2/cb2 jog band's own
-    # x-extent, so no other-net crossing needs a detour here.
-    x_vref = 120.0
-    vref_port_y = Y_BUS_VDD + 10.0
+    # Local x=120 crosses only `bandgap_core`'s own vref/cb3 jog band at its
+    # own vref column (same net, safe) -- it sits left of cb3's own jog leg
+    # and right of the sns2/cb2 jog band's own x-extent, so no other-net
+    # crossing needs a detour here. Issue #177 stops the stub 1.4um above
+    # `bandgap_core`'s own bbox top (local 70.623) instead of carrying it
+    # past a bus stack that is no longer up there; the whole path is a
+    # subset of the one #173 already proved DRC-clean.
+    x_vref = CORE_DX + 120.0
+    vref_port_y = CORE_DY + 72.0
+    columns.append(("vref", x_vref))
     _riser_up(b, x_vref, CORE["vref"], vref_port_y)
     b.label(L_METAL2, "VREF", x_vref, vref_port_y)
 
     # bandgap_top's own external vdd/vss ports -- labeled directly on their
     # own bus (a real, physically-connected point on each net), at the
-    # (moved) core-side riser columns above.
-    b.label(L_METAL1, "VDD", -10.0, Y_BUS_VDD)
-    b.label(L_METAL1, "VSS", -13.0, Y_BUS_VSS)
+    # core-side riser columns above.
+    b.label(L_METAL1, "VDD", -10.5, Y_BUS_VDD)
+    b.label(L_METAL1, "VSS", CORE_DX + 30.0, Y_BUS_VSS)
+
+    _assert_column_pitch(columns)
 
 
 if __name__ == "__main__":

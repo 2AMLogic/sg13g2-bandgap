@@ -288,6 +288,12 @@ at the same count and therefore the same geometry: it is the same device.
 | `sg13cmos5l_bandgap_startup` | 1424.9 x 9.8 | 84.6 x 53.5 | 145.4:1 -> 1.6:1 |
 | `sg13cmos5l_bandgap_top` | 2455.8 x 130.8 | 502.8 x 94.8 | 18.8:1 -> 5.3:1 |
 
+The two `*_top` rows record *#173's* result and are left as that issue
+measured them. Issue #177 subsequently re-placed both assemblies into two
+rows -- `bandgap_top` 223.6 x 126.6 (1.8:1), `sg13cmos5l_bandgap_top`
+248.0 x 135.5 (1.8:1); the six leaf rows are unaffected, since #177 changed
+placement and inter-cell routing only.
+
 Both assemblies stayed `klt drc` **clean, 0 violations**, and every touched
 cell's `klt lvs` verdict -- `mismatch_count`, `error_count` and the
 per-category breakdown -- is identical before and after (`bandgap_startup`
@@ -302,18 +308,30 @@ compared against their committed reports directly, and both come out
 unchanged (`bandgap_top` 8/6, `sg13cmos5l_bandgap_top` 22/22), so #171's own
 `bandgap_top` LVS improvement survives the fold and the re-pack intact.
 
-**Top-level placement was re-packed, not interleaved.** Both `generate.py`
-assemblies still place their three leaves in disjoint x-ranges, left to
-right, at the same ~30 um inter-cell gaps; what changed is that the leaves
-are a quarter as wide, the hard-coded riser columns are now written as
-`<CELL>_DX + local` (they previously baked in the old offsets), and each
-bus stack came down to sit just above the tallest leaf. Issue #173's own
-proposed step 2 -- genuinely interleaving the placement into two rows -- is
-deliberately **not** done: both assemblies' inter-cell routing is documented
-as resting on the disjoint-x-range invariant, which is what makes each net's
-crossings checkable one at a time under the single modelled routing metal the
-`sg13cmos5l` deck declares. Breaking it is a full re-verification of every
-riser column on both assemblies and is tracked as **#177**.
+**Top-level placement was re-packed by #173, then re-rowed by #177.** #173
+kept both assemblies' three leaves in disjoint x-ranges, left to right, at
+the same ~30 um inter-cell gaps -- what changed there was that the leaves
+became a quarter as wide, the hard-coded riser columns became
+`<CELL>_DX + local` (they previously baked in the old offsets), and each bus
+stack came down to sit just above the tallest leaf. #173's own proposed
+step 2 -- genuinely interleaving the placement into two rows -- was
+deliberately deferred, because both assemblies' inter-cell routing rested on
+the disjoint-x-range invariant, and breaking it is a full re-verification of
+every riser column on both assemblies.
+
+**Issue #177 did that step.** Both assemblies are now two rows around a
+shared routing channel (see each cell's own section below for its own
+floorplan and the re-derived invariant): `bandgap_top` 482.5 x 97.3 ->
+223.6 x 126.6 um (46,920 -> 28,305 um2, 1.66x) and `sg13cmos5l_bandgap_top`
+502.8 x 94.8 -> 248.0 x 135.5 (47,636 -> 33,608 um2, 1.42x). Whitespace
+against the sum of each assembly's own leaves fell from 56.6% to 28.1% and
+from 51.6% to 31.4%. Both stayed `klt drc` clean with 0 violations, both
+`lvs_report.json`s are unchanged field-for-field (8/6 and 22/22, same
+per-category breakdown), and `klt extract`'s net set on each is identical to
+the pre-change one -- the direct evidence that no riser merged into a
+neighbour. Full before/after, including the band-by-band decomposition of
+the whitespace that remains, is in
+`measurements/2026-09-two-row-placement/`.
 
 One thing the fold *simplified* rather than complicated, worth recording
 because it is the direct inverse of the problem: `sg13cmos5l-bandgap_top`
@@ -1440,8 +1458,8 @@ files, route only the inter-cell connections" pattern
 SG13CMOS5L variant (issue #81). No leaf cell's own committed GDS is
 modified; `bandgap_top/generate.py` only reads them (`klayout.db.Layout.read`)
 and adds new top-level geometry. Top cell `bandgap_top`, bbox
-`(-16.5, -3.1)`-`(2211.8, 90.15)` µm, 449 polygons across the same 13
-layer/datatype combinations `bandgap_amp` uses (no new layers).
+`(-18.5, -1.59)`-`(205.1, 125.0)` µm (223.60 × 126.59), across the same
+layer/datatype combinations the leaf cells use (no new layers).
 
 **Connectivity**, one-to-one against `design/netlist/bandgap_top.spice`'s
 own `Xx1`/`Xx2`/`Xx3` subckt-instance lines and each sub-cell's own port
@@ -1471,9 +1489,36 @@ committed GDS. `bandgap_amp`'s own `in_p`/`in_n` needed the same treatment,
 but that tab was added directly in `bandgap_amp/generate.py` itself (a new
 cell with no prior committed geometry to disturb).
 
+**Floorplan (issue #177): two rows around a shared routing channel.**
+`bandgap_amp` (215.9 × 33.8 µm) is row A at the origin; `bandgap_core`
+(142.9 × 73.7) and `bandgap_startup` (50.1 × 50.5) sit side by side in row B
+at `dy = 53`, 17.4 µm apart; the five Metal1 buses live in the empty channel
+at `y = 34…46` between them. Row A rises into the channel, row B drops into
+it. Which leaf went where follows each leaf's own pad band: `bandgap_amp`'s
+`vdd`/`sns1`/`sns2` pads are on its *top* edge, while `bandgap_core`'s and
+`bandgap_startup`'s all sit at local `y ≤ 23` and `y ≤ 5` of much taller
+cells, so one channel between them serves all three and every riser is
+*shorter* than the pre-#177 single-row floorplan's.
+
+**The routing invariant, re-derived (issue #177).** Through #173 the routing
+rested on the three cells occupying disjoint x-ranges, so a vertical route
+inside one cell's x-span could only meet that cell's own geometry. Two rows
+break that outright — `bandgap_amp` now spans both other leaves in x — so
+`bandgap_top/generate.py`'s docstring replaces it with (1) *row
+disjointness* (the two rows are y-disjoint across an empty channel; cells
+within a row are still x-disjoint), (2) *risers never leave their own row*
+(so the only leaf geometry a riser can meet is still its own cell's — the
+old argument, re-derived on (row, x) rather than x alone), and (3)
+*globally distinct riser columns*, which is new: risers from both rows now
+share the channel, so two nets may no longer share a column anywhere in the
+assembly. (3) is enforced, not asserted — `_assert_column_pitch()` fails the
+generator if two different nets' columns come within 2.0 µm.
+
 **Routing**: every inter-cell bus is Metal1, every riser is Metal2
 (transitioning via `via1_tap`), so this module's own buses/risers never
-cross each other regardless of height order. A separate, real hazard this
+cross each other regardless of height order. That layer-based argument is
+orthogonal to the invariant above and unchanged by the re-placement. A
+separate, real hazard this
 issue's own `klt extract` re-run found and fixed: each leaf cell's own
 *internal* routing (unmodified, already committed before this issue) also
 uses Metal2 in places (`bandgap_core`'s own `sns2`/`vref` jogs,
@@ -1486,6 +1531,21 @@ its `LANDING_UM` module comment for the full, itemized account of every
 crossing found and how each was fixed (routing around the leaf's own busy
 Y-band entirely, bridging through it on Metal1, or riding an
 already-same-net Metal1 conductor past it).
+
+Issue #177's re-placement added one more entry to that account, and one
+correction. The new entry: `bandgap_core`'s own `sns2` pad (local
+`x ∈ [40.5, 57.5]`) is entirely inside that leaf's own Metal2 `vss` slab
+(local `x ∈ [-3.05, 125.05]`, `y ∈ [-0.75, 0.75]`), so no column within the
+pad can drop to the channel below — that leg rises 13.7 µm to local `y = 35`
+(0.9 µm above the top edge of every Metal2 shape the leaf owns), crosses the
+cell there, and drops in the left corridor. The correction: `bandgap_core`'s
+`vss` leg used to jog sideways on Metal2 at local `y = 0` before rising,
+which was harmless while every riser rose *away* from it but, once row B
+drops instead, lies across the corridor at exactly the height every other
+row-B riser passes through. `klt drc` called that draft `clean, 0
+violations`; `klt extract` reported `vdd`/`vss`/`fb`/`sns2` merged into one
+net. It now drops straight out of the `vss` bar's underside with no jog —
+safe because that bar *is* the lowest Metal2 the leaf owns.
 
 **Verified with `klt extract` (device-free net extraction -- not a
 reference-comparison LVS run, still out of this issue's own LVS scope)**:
@@ -2061,18 +2121,45 @@ other `generate.py` in this repo, this one does **not** draw device geometry:
 leaf GDS files as `klayout.db` cell instances (`kdb.CellInstArray`) into one
 new layout, then draws only the inter-cell routing between each leaf's own
 `boundary_port()` pad (issue #76) — no leaf cell's own internal geometry is
-touched. Top cell `sg13cmos5l_bandgap_top`, bbox `(-50.25, -10.25)`–`(2405.5,
-120.5)` µm, assembled from `sg13cmos5l-bandgap_core.gds` (~840 µm),
-`sg13cmos5l-bandgap_amp.gds` (~84 µm) and `sg13cmos5l-bandgap_startup.gds`
-(~1425 µm).
+touched. Top cell `sg13cmos5l_bandgap_top`, bbox `(-18.5, -3.21)`–`(229.5,
+132.304)` µm (248.00 × 135.51), assembled from
+`sg13cmos5l-bandgap_core.gds` (~230 µm), `sg13cmos5l-bandgap_amp.gds`
+(~84 µm) and `sg13cmos5l-bandgap_startup.gds` (~85 µm).
 
-**Floorplan.** The three cells sit side by side, left to right (core, amp,
-startup), separated by 30 µm gaps that are empty at *every* height — no
-cell's own bounding box reaches into a neighbour's gap at any `y`, since the
-three occupy disjoint x-ranges (`core (-10, -3.21)-(830.5, 61.7)`, `amp
-(860.5, -1.24)-(944.5, 41.7)`, `startup (974.5, -1.2)-(2399.4, 8.6)`). No
-mirroring: every inter-cell connection is routed via a dedicated bus/column
-rather than relying on adjacent edges lining up.
+**Floorplan (issue #177): two rows around a shared routing channel.**
+`sg13cmos5l_bandgap_core` (230.1 × 64.9 µm) is row A at the origin;
+`sg13cmos5l_bandgap_amp` (84.0 × 42.9) and `sg13cmos5l_bandgap_startup`
+(84.6 × 53.5) sit side by side in row B at `dy = 80`, 22.8 µm apart; the
+five Metal1 buses live in the empty channel at `y = 65…75` between them.
+Row A rises into the channel, row B drops into it. No mirroring: every
+inter-cell connection is routed via a dedicated bus/column rather than
+relying on adjacent edges lining up.
+
+Row assignment follows each leaf's own pad band. `core`'s pads face up or
+sideways out of its own edges (`vdd` on its top edge, `fb`/`sns1` left,
+`vss`/`sns2`/`vref` right), so it wants a channel above it; `amp`'s and
+`startup`'s sit at or near their own bottom edges, so they want one below.
+Through #173 the three cells sat left to right in a single row at `dy = 0`
+(`core (-10, -3.21)-(220.07, 61.7)`, `amp (250.5, -1.24)-(334.5, 41.7)`,
+`startup (364.8, -1.2)-(449.4, 52.3)`), 502.75 × 94.75 µm overall.
+
+**The routing invariant, re-derived (issue #177).** Through #173 the routing
+rested on the three cells occupying **disjoint x-ranges**, so a vertical
+route inside one cell's x-span could only meet that cell's own geometry —
+the property that makes each crossing checkable one net at a time under this
+deck's single modelled routing metal. Two rows break it (`core` now spans
+both other leaves in x), so `generate.py`'s docstring replaces it with
+(1) *row disjointness*, (2) *risers never leave their own row* (so the only
+leaf geometry a riser can meet is still its own cell's — the same argument
+re-derived on (row, x) rather than x alone), and (3) *globally distinct
+riser columns*, which is new: risers from both rows share the channel now,
+so two different nets may not share a column anywhere in the assembly. (3)
+is enforced rather than asserted — `_assert_column_pitch()` fails the
+generator if two different nets' columns come within 2.0 µm. Two corollaries
+this module holds itself to: every riser starts *outside* its own cell's
+bounding box (so every `Cont` this module places is over field, never over a
+leaf's own `Activ`/`GatPoly`), and a riser may cross any number of buses but
+no horizontal `Metal1` run of its own row.
 
 **Routing: buses + poly risers.** `vdd`, `vss`, `fb` and `sns1` each need all
 three cells — a four-nets-deep channel-routing problem at this assembly's own
@@ -2083,14 +2170,26 @@ Four full-span nets cannot all avoid crossing each other purely by placement
 any *other* bus's riser must cross to reach a taller one), so this follows
 the same answer the leaf cells already established for their own internal
 crossings: cross on `GatPoly` instead. Each net gets one straight horizontal
-`Metal1` bus (`vdd`@75 µm, `vss`@90 µm, `fb`@105 µm, `sns1`@120 µm — all
-comfortably above every leaf cell's own bounding-box top, `core`'s 61.7 µm
-being the tallest) plus one `GatPoly` riser per contributing cell, each at
-its own dedicated column, transitioning `Metal1`↔`GatPoly` via `poly_tab()`
-at both ends — the same primitive every leaf cell's own `poly_underpass()`
-already uses. `sns2` (core+amp only) and `vref` (core + this assembly's own
-external port) are routed directly, entirely on `Metal1`, through a column
-chosen to clear every other net's own path.
+`Metal1` bus (issue #177: `vdd`@65 µm, `vss`@67.5, `fb`@70, `sns1`@72.5,
+`sns2`@75, all inside the inter-row channel, at a 2.5 µm pitch where #173
+used 6) plus one `GatPoly` riser per contributing cell, each at its own
+dedicated column, transitioning `Metal1`↔`GatPoly` via `poly_tab()` at both
+ends — the same primitive every leaf cell's own `poly_underpass()` already
+uses.
+
+`sns2` (core+amp only) got a bus of its own in #177: #81/#173 routed it as a
+direct three-segment `Metal1` dog-leg through the core-amp gap, which worked
+only because `amp` sat immediately right of `core` at the same height; with
+`amp` in the other row, a direct route would have to cross the whole channel
+on the one modelled metal. `vref` (core + this assembly's own external port)
+still needs no bus — one `GatPoly` riser carries it from `core`'s own
+right-edge pad up to a `poly_tab` port pad in the channel, passing under the
+`sns2` bus on the way. #177 also moved all three external ports onto
+geometry the assembly already draws: `vdd`/`vss` are labelled on their own
+bus at a column that bus already spans, and `vref`'s port is that riser's
+top pad — where #173 ran the two buses out to `x = -40`/`-45` and `vref`
+down to `y = -10` and ~275 µm left to `x = -50`, ~40 µm of assembly width
+and ~7 µm of height spent on three labels.
 
 **One real short found and fixed, not glossed over.** `bandgap_startup`'s own
 `RPU` (a deck-unrecognised `rhigh` resistor) draws its conductor body as one
@@ -2119,6 +2218,16 @@ alone, `fb|out`, `in_n|sns1`, `e2|in_p|sns2`, `e3|vref`), with no other
 accidental short. `device_counts`: `{"nfet": 6, "pfet": 8}` — the sum of each
 leaf's own MOS devices (core 3 pfet; amp 5 pfet + 4 nfet; startup 2 nfet),
 confirming no device was dropped or duplicated by the assembly.
+
+**Re-verified again after issue #177's two-row re-placement**, since that
+change is exactly the class of edit that can silently merge two nets: this
+cell's extracted net set is byte-identical to the pre-#177 one (the same 13
+`* pin` lines), and `extract_report.json`'s `device_count` (17),
+`net_count` (15), `pin_count` (13), `device_counts`, `dead_metal` cluster
+and eight warning classes are all unchanged. Its one moved field is the
+count in "*N* poly-layer shapes not part of any recognised device"
+(16 → 20), the four new `GatPoly` segments `sns2`'s new bus and `vref`'s
+re-routed riser add. See `measurements/2026-09-two-row-placement/` §5.
 
 ### DRC — clean
 
