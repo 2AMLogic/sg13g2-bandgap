@@ -1815,11 +1815,15 @@ what makes every internal node — `DET`, `PN`, `TAIL`, `D1`, `D2`, `CB2`,
   vs the committed `.gds`, `netlist_sha256` vs the committed `.pex.spice`)
   every other evidence artifact here carries. Neither needs a
   freshness waiver.
-- **Does not**: add any simulated result. No `sim/` record changes here, and
-  tracker #4's item 7 stays unchecked — its bar is a *spec-suite* re-run
-  against extracted netlists, and no spec row is ratified yet (#125). What
-  changes is that the closed-loop post-layout sweep is no longer blocked on
-  a missing artifact; building it is filed as **#186**.
+- **Does not**: add any simulated result on its own. No `sim/` record
+  changes in the PR that landed this section, and tracker #4's item 7 stays
+  unchecked — its bar is a *spec-suite* re-run against extracted netlists,
+  and no spec row is ratified yet (#125). What changed is that the
+  closed-loop post-layout sweep was no longer blocked on a missing
+  artifact; that sweep is now built —
+  [`sim/closed-loop-vref-pvt-pex/`](../sim/closed-loop-vref-pvt-pex/README.md)
+  (issue #186), 45/45 PVT points PASS — still not a checklist-item-7 claim
+  for the same ratification-gate reason.
 - **Parasitic model caveats** are unchanged from the `#14` section above and
   are restated verbatim in each `.pex.spice`'s own header: lumped
   single-R-per-net star (not a distributed RC ladder), quasi-static

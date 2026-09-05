@@ -1,0 +1,309 @@
+* sg13g2-bandgap -- closed-loop vref/TC PEX (post-layout) PVT testbench
+* (issue #186, T1 tracker #4 item 7). Generated from
+* sim/closed-loop-vref-pvt-pex/testbench/tb_closed_loop_vref_pex.spice.tmpl
+* by sim/closed-loop-vref-pvt-pex/run_pvt_sweep.sh -- do not edit a
+* generated netlist-snapshots/*.spice file directly, edit this template and
+* re-run the sweep. Full rationale is in
+* sim/closed-loop-vref-pvt-pex/README.md; this header is a pointer, not a
+* restatement.
+*
+* Generated for: corner=typ temp=-40C vdd=2.97V
+* DUT git sha (design/netlist/bandgap_core.spice, for XQ1/XQ2/XQ3, the
+* only devices this bench still splices from a schematic):
+*   core=d83f7c4 amp=397fe2d startup=66ac99d
+* Layout git sha (layout/bandgap_top/bandgap_top.gds /
+* bandgap_top.pex.spice, extraction input for every MOS/resistor device):
+*   8abe2aa
+* PDK: ihp-sg13g2 /home/ubuntu/share/pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* THIS IS A HYBRID PEX NETLIST, NOT A PURE LAYOUT EXTRACTION -- read
+* sim/closed-loop-vref-pvt-pex/README.md "What this does and does not
+* model" before trusting a result here. Short version, same shape as
+* sim/core-open-loop-bias-pex's own header, extended to the assembled
+* closed-loop topology:
+*   - Every sg13_hv_pmos/sg13_hv_nmos/rppd/rhigh device below is re-encoded
+*     from `klt extract --deck sg13g2 --parasitics
+*     layout/bandgap_top/bandgap_top.gds` (layout/bandgap_top/
+*     bandgap_top.pex.spice, pex_extract_report.json): real drawn
+*     W/L/AS/AD/PS/PD from the routed, ASSEMBLED layout (bandgap_core +
+*     bandgap_amp + bandgap_startup wired together, exactly as
+*     design/bandgap_top.sch specifies -- this is the first PEX experiment
+*     in this tree built from the top-level GDS rather than a leaf cell).
+*     Device instance names below match design/netlist/bandgap_core.spice,
+*     bandgap_amp.spice and bandgap_startup.spice one-for-one (XM1/XM2A/.../
+*     XMTAIL/XMP1-4/XMN1-4/XRPU/XMSENSE/XMKFB) -- confirmed by reading
+*     bandgap_top.pex.spice's own M$1-M$17/R$18-R$20 cards and matching each
+*     one's drawn geometry (w/l/as/ad/ps/pd) against the schematic device it
+*     replaces, not assumed from card order. This is also why
+*     .github/scripts/check_evidence_formats.py's DUT-freshness check
+*     (sim/README.md "DUT freshness") can compare this bench's snapshots
+*     against all three design/netlist/*.spice files directly: same
+*     instance names, same models, same nominal w/l/ng/m -- the extraction
+*     only ADDS as/ad/ps/pd (see that script's dut_signature() docstring).
+*   - XQ1/XQ2/XQ3 (npn13G2) are NOT extracted -- klt's curated sg13g2 deck
+*     still does not recognise bipolar devices (klayout-tools, filed
+*     generically; layout/README.md's LVS section has the full writeup;
+*     layout/bandgap_top/lvs_report.json's own `device.unmatched` count is
+*     exactly 3, all Q1/Q2/Q3). Spliced in verbatim from
+*     design/netlist/bandgap_core.spice, wired to the extraction's own real,
+*     physically-routed net names (sns1, cb2, cb3, vss) -- not invented
+*     nodes, same convention sim/core-open-loop-bias-pex established.
+*   - Merged-net labels: the extraction reports three top-level pins as
+*     merged labels -- `FB|OUT` (10 device terminals), `IN_N|SNS1` (3),
+*     `IN_P|SNS2` (4) -- because design/bandgap_top.sch ties bandgap_amp's
+*     `out`/`in_n`/`in_p` pins directly onto bandgap_core/bandgap_startup's
+*     `fb`/`sns1`/`sns2` (design/netlist/bandgap_top.spice's own
+*     `Xx2 sns2 sns1 vss fb vdd bandgap_amp` instance line), not shorts --
+*     layout/README.md documents the derivation. Named here as `fb`,
+*     `sns1`, `sns2` respectively (matching every schematic-level closed-loop
+*     testbench's own net names) rather than embedding the extraction's
+*     escaped `FB\x7cOUT` / `IN_N\x7cSNS1` / `IN_P\x7cSNS2` forms, per issue
+*     #186's own guidance.
+*   - Body/well ties are REAL here, not a testbench fixture: unlike
+*     sim/core-open-loop-bias-pex (whose leaf-cell layout left PMOS bodies
+*     on an anonymous single-terminal net, issue #158's well/substrate-tap
+*     ring not yet having landed on that cell at the time), bandgap_top's
+*     M$1-M$17 cards each report a genuine, distinct nb terminal on a real
+*     multi-terminal VDD (pfet) or VSS (nfet) net, each through its own
+*     wire-parasitic hub leg. This bench instantiates every device's body
+*     hub leg exactly as extracted -- no FIXTURE-style body override is
+*     needed or applied.
+*   - XMKFB's drain is the one device whose current this bench explicitly
+*     probes (i_mkfb, matching every schematic-level closed-loop testbench's
+*     own measurement): a 0V ammeter (Vmkfb) sits between XMKFB's own drain
+*     terminal and its extracted wire-parasitic hub node (fb__t1), so the
+*     measured current is upstream of that leg's own IR drop, same
+*     "ammeter measures the device, not a shared hub" rationale
+*     sim/core-open-loop-bias-pex's FIXTURE 2 documents.
+*   - Wire parasitics: every other net (d1, d2, det, pn, tail, vdd, vref,
+*     vss, cb2, cb3) gets its own real star-hub R (+ ground C to `vsubs`,
+*     + net-to-net coupling C) from `pex_extract_report.json`'s
+*     `parasitics` block (`r_count: 77, c_count: 13, cc_count: 22`,
+*     `total_resistance_ohm: 869.74`, `total_capacitance_ff: 261.13`) --
+*     the largest wire-parasitic set of any experiment in this tree, being
+*     the whole assembled block rather than one leaf cell.
+*     `sim/tools/dump_pex_wire_parasitics.py layout/bandgap_top/
+*     bandgap_top.pex.spice` emits this block mechanically (after the
+*     `FB|OUT`/`IN_N|SNS1`/`IN_P|SNS2` -> `fb`/`sns1`/`sns2` renames this
+*     file's header documents above) -- use it to regenerate/cross-check
+*     rather than hand-transcribing.
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_tt
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_typ
+
+* Same convergence aids sim/closed-loop-vref-pvt's own template needs at the
+* same near-singular early instant on the vdd ramp (see that template's
+* header for the full whack-a-mole derivation) -- this bench drives the
+* SAME three co-simulated DUTs through the SAME kind of ramp, so it
+* inherits the same numerical stiffness.
+.options temp=-40 tnom=27 rshunt=1e9 gmin=1e-9 reltol=5e-3
+
+* FIXTURE -- transient supply ramp: vdd ramps 0 -> VDD over 200 us and holds
+* to 3 ms, same shape sim/closed-loop-vref-pvt uses, so vref can be measured
+* at two separated time points (2 ms, 3 ms) and confirmed settled.
+Vvdd vdd 0 PWL(0 0 200u 2.97 3m 2.97)
+Vvss vss 0 dc 0
+* Ground reference for every net's own parasitic capacitance below
+* (pex_extract_report.json's own convention, matching
+* sim/core-open-loop-bias-pex's Rvsubs_dctie fixture) -- NOT the same net as
+* vss: vsubs is an isolated ~1 TOhm-tied node, used only as the "far plate"
+* for ground caps, with zero DC effect on the circuit.
+Rvsubs_dctie vsubs 0 1e12
+
+* DUT -- bandgap_core devices, extracted from layout/bandgap_top/
+* bandgap_top.pex.spice (M$12-M$17, R$18/R$19) except XQ1-XQ3 (spliced,
+* see file header). Each MOS/resistor keeps its extracted per-terminal
+* wire-parasitic hub node; ng=1/m=1/b=0 restored on each so this bench's
+* per-point netlist snapshot compares equal to design/netlist/
+* bandgap_core.spice's own device signature (extra as/ad/ps/pd tolerated,
+* see check_evidence_formats.py's dut_signature() docstring).
+XM1 vdd__t14 fb__t6 sns1__t2 vdd__t11 sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XM2A vdd__t7 fb__t5 sns2__t0 vdd__t8 sg13_hv_pmos w=9u l=1u ng=1 m=1 as=3.6p ad=3.6p ps=18.8u pd=18.8u
+XM2B vdd__t20 fb__t8 sns2__t1 vdd__t18 sg13_hv_pmos w=1u l=1u ng=1 m=1 as=0.4p ad=0.4p ps=2.8u pd=2.8u
+XR2 sns2__t2 cb2__t0 vss__t6 rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XM3A vdd__t5 fb__t3 vref__t1 vdd__t6 sg13_hv_pmos w=8u l=1u ng=1 m=1 as=3.2p ad=3.2p ps=16.8u pd=16.8u
+XM3B vdd__t1 fb__t7 vref__t3 vdd__t2 sg13_hv_pmos w=1u l=1u ng=1 m=1 as=0.4p ad=0.4p ps=2.8u pd=2.8u
+XM3C vdd__t19 fb__t2 vref__t2 vdd__t17 sg13_hv_pmos w=1u l=1u ng=1 m=1 as=0.4p ad=0.4p ps=2.8u pd=2.8u
+XR1 vref__t0 cb3__t0 vss__t7 rppd w=2u l=511u m=1 b=0
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+* DUT -- bandgap_amp devices, extracted (M$1-M$4, M$7-M$11). D/S terminal
+* roles read from the extraction as-is (nd/ng/ns/nb card order); harmless
+* where swapped relative to the schematic's own d/g/s/b convention, same
+* "symmetric AS=AD, PS=PD" argument sim/core-open-loop-bias-pex's header
+* makes for the core mirror legs.
+XMN1 d1__t1 d1__t3 vss__t5 vss__t9 sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN2 d2__t1 d2__t3 vss__t4 vss__t10 sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN3 fb__t9 d1__t0 vss__t0 vss__t11 sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN4 pn__t3 d2__t2 vss__t3 vss__t12 sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMP1 tail__t0 sns2__t3 d1__t2 vdd__t10 sg13_hv_pmos w=20u l=1u ng=1 m=1 as=8p ad=8p ps=40.8u pd=40.8u
+XMP2 tail__t1 sns1__t1 d2__t0 vdd__t9 sg13_hv_pmos w=20u l=1u ng=1 m=1 as=8p ad=8p ps=40.8u pd=40.8u
+XMP3 vdd__t15 pn__t1 pn__t2 vdd__t12 sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMP4 vdd__t3 pn__t0 fb__t0 vdd__t4 sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMTAIL vdd__t16 fb__t4 tail__t2 vdd__t13 sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+
+* DUT -- bandgap_startup devices, extracted (M$5, R$20), except XMKFB's
+* drain (see below). `sns1`/`fb` are the same shared merged-label nets the
+* core/amp devices above already use.
+XRPU vdd__t0 det__t2 vss__t8 rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det__t0 sns1__t0 vss__t1 vss__t13 sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+* FIXTURE -- Vmkfb is a 0V ammeter in series with XMKFB's own drain
+* terminal and its extracted fb__t1 wire-parasitic hub leg (see file
+* header) -- i(Vmkfb) is the same "startup circuit's own contribution to
+* the shared fb node" measurement sim/closed-loop-vref-pvt's own template
+* makes. Terminal order matters for sign parity with that template's own
+* `Vmkfb fb fbx dc 0` (+ on the fb/net side, - on the device-drain side,
+* so positive i(Vmkfb) means "current flowing from fb into the device",
+* the same physical sense both benches report) -- confirmed by direct
+* comparison, not assumed: the opposite order was tried first and measured
+* the correct magnitude with the sign flipped.
+XMKFB i_mkfb_probe det__t1 vss__t2 vss__t14 sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
+Vmkfb fb__t1 i_mkfb_probe dc 0
+
+* Wire parasitics -- verbatim from layout/bandgap_top/bandgap_top.pex.spice
+* (issue #186), after the FB|OUT/IN_N|SNS1/IN_P|SNS2 -> fb/sns1/sns2 net
+* renames the file header documents.
+* sim/tools/dump_pex_wire_parasitics.py --wires-only
+* layout/bandgap_top/bandgap_top.pex.spice emits this block mechanically
+* (still requires the fb/sns1/sns2 rename by hand).
+rcb2_t0 cb2__t0 cb2 23.2474
+ccb2 cb2 vsubs 7.410176e-15
+rcb3_t0 cb3__t0 cb3 16.8479
+ccb3 cb3 vsubs 5.212856e-15
+rd1_t0 d1__t0 d1 22.251200155
+rd1_t1 d1__t1 d1 7.56616839856
+rd1_t2 d1__t2 d1 8.79506304785
+rd1_t3 d1__t3 d1 7.56616839856
+cd1 d1 vsubs 1.6632756e-14
+rd2_t0 d2__t0 d2 9.68094774475
+rd2_t1 d2__t1 d2 8.5847146177
+rd2_t2 d2__t2 d2 25.3624230198
+rd2_t3 d2__t3 d2 8.5847146177
+cd2 d2 vsubs 1.8465821e-14
+rdet_t0 det__t0 det 7.2824560321
+rdet_t1 det__t1 det 4.66093626702
+rdet_t2 det__t2 det 8.58380770088
+cdet det vsubs 5.249053e-15
+rfb_t0 fb__t0 fb 10.0779438037
+rfb_t1 fb__t1 fb 16.9232599379
+rfb_t2 fb__t2 fb 8.13495243784
+rfb_t3 fb__t3 fb 4.44930412939
+rfb_t4 fb__t4 fb 7.15861618793
+rfb_t5 fb__t5 fb 12.5640343804
+rfb_t6 fb__t6 fb 21.8872074761
+rfb_t7 fb__t7 fb 6.03518929088
+rfb_t8 fb__t8 fb 10.1675460999
+rfb_t9 fb__t9 fb 14.6461462559
+cfb fb vsubs 3.208914e-14
+rsns1_t0 sns1__t0 sns1 45.1997691206
+rsns1_t1 sns1__t1 sns1 16.9490366062
+rsns1_t2 sns1__t2 sns1 34.0487942731
+csns1 sns1 vsubs 2.4554821e-14
+rsns2_t0 sns2__t0 sns2 4.15668326281
+rsns2_t1 sns2__t1 sns2 8.64200634581
+rsns2_t2 sns2__t2 sns2 11.7618532043
+rsns2_t3 sns2__t3 sns2 22.8884571871
+csns2 sns2 vsubs 1.3888551e-14
+rpn_t0 pn__t0 pn 1.86815055391
+rpn_t1 pn__t1 pn 7.70258205833
+rpn_t2 pn__t2 pn 7.70258205833
+rpn_t3 pn__t3 pn 15.9614853294
+cpn pn vsubs 1.131071e-14
+rtail_t0 tail__t0 tail 19.17885
+rtail_t1 tail__t1 tail 0.001
+rtail_t2 tail__t2 tail 19.17885
+ctail tail vsubs 1.1326208e-14
+rvdd_t0 vdd__t0 vdd 18.537690531
+rvdd_t1 vdd__t1 vdd 7.40498257743
+rvdd_t2 vdd__t2 vdd 7.40498257743
+rvdd_t3 vdd__t3 vdd 11.3874080082
+rvdd_t4 vdd__t4 vdd 11.3874080082
+rvdd_t5 vdd__t5 vdd 5.44971952132
+rvdd_t6 vdd__t6 vdd 5.44971952132
+rvdd_t7 vdd__t7 vdd 8.4721636541
+rvdd_t8 vdd__t8 vdd 8.4721636541
+rvdd_t9 vdd__t9 vdd 10.2657906969
+rvdd_t10 vdd__t10 vdd 17.1779353262
+rvdd_t11 vdd__t11 vdd 16.6484966651
+rvdd_t12 vdd__t12 vdd 6.89988867478
+rvdd_t13 vdd__t13 vdd 5.4442468209
+rvdd_t14 vdd__t14 vdd 16.6484966651
+rvdd_t15 vdd__t15 vdd 6.89988867478
+rvdd_t16 vdd__t16 vdd 5.4442468209
+rvdd_t17 vdd__t17 vdd 9.49860222484
+rvdd_t18 vdd__t18 vdd 6.43133357626
+rvdd_t19 vdd__t19 vdd 9.49860222484
+rvdd_t20 vdd__t20 vdd 6.43133357626
+cvdd vdd vsubs 5.1666163e-14
+rvref_t0 vref__t0 vref 9.41352863345
+rvref_t1 vref__t1 vref 5.78599551376
+rvref_t2 vref__t2 vref 6.02653297497
+rvref_t3 vref__t3 vref 3.13784287782
+cvref vref vsubs 8.002435e-15
+rvss_t0 vss__t0 vss 5.37858226607
+rvss_t1 vss__t1 vss 6.31278904894
+rvss_t2 vss__t2 vss 8.89142058204
+rvss_t3 vss__t3 vss 12.1056726523
+rvss_t4 vss__t4 vss 11.9685952562
+rvss_t5 vss__t5 vss 17.2509843632
+rvss_t6 vss__t6 vss 12.9820270411
+rvss_t7 vss__t7 vss 10.0779208618
+rvss_t8 vss__t8 vss 10.9495637595
+rvss_t9 vss__t9 vss 17.2509843632
+rvss_t10 vss__t10 vss 11.9685952562
+rvss_t11 vss__t11 vss 5.37858226607
+rvss_t12 vss__t12 vss 12.1056726523
+rvss_t13 vss__t13 vss 6.31278904894
+rvss_t14 vss__t14 vss 8.89142058204
+cvss vss vsubs 5.5318578e-14
+ccc_cb2_vdd cb2 vdd 8.235e-18
+ccc_cb2_vss cb2 vss 3.0251e-17
+ccc_cb3_vdd cb3 vdd 8.235e-18
+ccc_cb3_vref cb3 vref 8.235e-18
+ccc_cb3_vss cb3 vss 2.0167e-17
+ccc_d1_d2 d1 d2 1.4117e-17
+ccc_d1_vss d1 vss 3.3411e-17
+ccc_d2_fb d2 fb 1.4117e-17
+ccc_det_vdd det vdd 8.235e-18
+ccc_fb_sns1 fb sns1 2.1176e-17
+ccc_fb_pn fb pn 1.4117e-17
+ccc_fb_vdd fb vdd 3.3485e-17
+ccc_fb_vss fb vss 4.0543e-17
+ccc_sns1_sns2 sns1 sns2 1.4117e-17
+ccc_sns1_tail sns1 tail 7.059e-18
+ccc_sns1_vdd sns1 vdd 2.523e-17
+ccc_sns1_vss sns1 vss 4.4368e-17
+ccc_sns2_vdd sns2 vdd 2.2352e-17
+ccc_tail_vdd tail vdd 2.7367e-17
+ccc_tail_vss tail vss 8.235e-18
+ccc_vdd_vref vdd vref 1.4117e-17
+ccc_vdd_vss vdd vss 2.3381e-17
+
+.control
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+tran 50n 3m
+* Loop-closure / startup-release sanity, same criteria/sense as
+* sim/closed-loop-vref-pvt, evaluated at t=3ms.
+meas tran v_fb_v find v(fb) at=3m
+meas tran v_sns1_v find v(sns1) at=3m
+meas tran v_sns2_v find v(sns2) at=3m
+meas tran v_det_v find v(det) at=3m
+meas tran i_mkfb_v find i(Vmkfb) at=3m
+* The claim under test: vref at two separated time points, so
+* run_pvt_sweep.sh can confirm it has stopped moving before reporting it.
+meas tran v_vref_2ms find v(vref) at=2m
+meas tran v_vref_3ms find v(vref) at=3m
+* VBE(Q3) (decision-support parity with sim/closed-loop-vref-pvt's own
+* issue #133 probe): Q3 is diode-connected with its emitter tied to vss,
+* so v(cb3) IS VBE(Q3) directly.
+meas tran v_vbeq3_2ms find v(cb3) at=2m
+meas tran v_vbeq3_3ms find v(cb3) at=3m
+.endc
+.end
