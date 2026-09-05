@@ -857,413 +857,87 @@ two disclosure-only warnings `bandgap_startup` carries.
 
 ### Well/substrate-tap ring geometry added (issue #155)
 
-The well/substrate-tap gap cause 3's own entry named above is now fixed at
-the layout level: `draw_hv_mos` (`layout/common.py`) draws one tap ring per
-MOS instance — a small, separate `Activ` island (never touching the
-device's own source/drain `Activ`, clearing `activ.space.1`'s 0.21um floor
-with margin) on the *opposite*-doping implant marker from the device's own
-source/drain (`nSD`/(7,0) for a `pmos` tap inside its own `NWell`, `pSD`/
-(14,0) for an `nmos` tap outside every `NWell`) — exactly the geometry the
-deck's own `tap_nplus`/`tap_pplus` derivation
-([klayout-tools#1273](https://github.com/2AMLogic/klayout-tools/issues/1273))
-reads. Each ring is contacted and landed on `Metal1`, bridged (a short,
-overlapping `Metal1` strip) into whichever of the device's own source/drain
-pads carries its real body net — every existing call site in this repo ties
-a `pmos`'s body to its own `source_net` and an `nmos`'s body to its own
-`drain_net` (verified against every `XM*` instance line in
-`design/netlist/bandgap_core.spice`/`bandgap_startup.spice`), which is
-`draw_hv_mos`'s new `body_net` parameter's default, so no existing call site
-needed to change. `NWell` is widened on whichever side a `pmos` tap lands on
-to keep it inside the same well island the well-tie derivation requires.
-
-**Verified: every MOS body terminal now extracts to its real schematic net,
-not an anonymous or deck-synthesized `vsubs` net.** Fresh `klt extract`
-against both regenerated cells:
-
-```
-# bandgap_startup.gds (klt extract --deck sg13g2 --top bandgap_startup)
-M$1 det sns1 vss vss nfet L=0.5U W=10U   <- MSENSE (D=det G=sns1 S=vss B=vss, exact match)
-M$2 fb det vss vss nfet L=0.5U W=2U      <- MKFB   (D=fb G=det S=vss B=vss, exact match)
-
-# bandgap_core.gds (klt extract --deck sg13g2 --top bandgap_core)
-M$1 vdd fb sns1 vdd pfet L=1U W=10U   <- M1   (S=vdd B=vdd, exact match)
-M$2 vdd fb sns2 vdd pfet L=1U W=9U    <- M2A  (S=vdd B=vdd, exact match)
-M$3 vdd fb sns2 vdd pfet L=1U W=1U    <- M2B  (S=vdd B=vdd, exact match)
-M$4 vdd fb vref vdd pfet L=1U W=8U    <- M3A  (S=vdd B=vdd, exact match)
-M$5 vdd fb vref vdd pfet L=1U W=1U    <- M3B  (S=vdd B=vdd, exact match)
-M$6 vdd fb vref vdd pfet L=1U W=1U    <- M3C  (S=vdd B=vdd, exact match)
-```
-
-**DRC stays clean, 0 violations, on both cells** (`klt drc`, re-verified
-after the new tap-ring geometry) — no DRC rule in the curated deck's own
-`DECK` list constrains `NWell`/`nSD`/`pSD` directly, so the only floors the
-new geometry had to clear were the ordinary `Activ`/`Cont`/`Metal1` ones
-(all satisfied with real margin — see `layout/common.py`'s own `TAP_*`
-module constants and their comment for the exact numbers).
-
-**Fresh `klt lvs`, both cells, honest results — neither reaches `match`:**
-
-- **`bandgap_startup`**: `mismatch_count` 16 -> **5** (14 -> **4**
-  error-severity). Both `nfet` devices (`MSENSE`/`MKFB`) now report
-  `device.matched` with exactly-correct terminals (see the `klt extract`
-  dump above). The 5 remaining findings are **two independent causes,
-  neither the tap gap**:
-  1. `RPU`/`rhigh` stays `device.unmatched` — a pre-existing,
-     already-present-before-this-fix cause (the same baseline report
-     already listed it): this deck's `rhigh` resistor extracts with a
-     synthesized 3rd (`vsubs`-global) bulk terminal
-     (`DeviceExtractorResistorWithBulk`), while the reference's plain
-     `RPU vdd det … rhigh` card is 2-terminal — a terminal-count mismatch,
-     unrelated to well/substrate-tap geometry.
-  2. A **newly-exposed** net-name case-identity conflict: `klt lvs`'s
-     reference side is read via KLayout's own `NetlistSpiceReader`, which
-     uppercases every net name (`vss` -> `VSS`, `det` -> `DET`) — this
-     repo's own `layout/common.py` labels match `design/netlist/*.spice`'s
-     own lowercase spelling instead. `NetlistComparer` still correctly
-     pairs `det`/`vss` topologically (both devices' terminals match
-     exactly, confirmed above) but reports `topology`/"name identity
-     conflict" for each, since the two sides' net names now differ only in
-     case. This could not surface before this fix — with 0 devices
-     matching, no net correspondence existed to expose it. Filed at **#157**
-     for a future pass (case-folding options evaluated there, not decided
-     here — this issue's own scope is `draw_hv_mos`'s tap-ring geometry,
-     not the net-labeling/reference-conversion case convention).
-- **`bandgap_core`**: `mismatch_count` 36 -> **10** (35 -> **9**
-  error-severity); matched devices 0 -> **6** (every `pfet`), matched nets
-  0 -> **2**. Remaining causes: permanent blocker #1 above (bipolar, 3
-  `Q1`-`Q3` `device.unmatched`), the same pre-existing `rppd` bulk-terminal
-  3-vs-2 mismatch as `bandgap_startup`'s `RPU` above (`R1`/`R2`, 2
-  `device.unmatched`), and a `net.merged`/`net.split` finding on `VSS`
-  that traces to that same `rppd` bulk-terminal artifact (the resistors'
-  own synthesized `vsubs` bulk net does not merge with the real, routed
-  `vss` net in this cell the way the tap ring's bridge merges an `nfet`
-  body with its own drain pad in `bandgap_startup`) — **not** a
-  well/substrate-tap regression: `bandgap_core` has no `nmos` devices at
-  all, and this cell's own PMOS body ties are independently confirmed
-  exact-match above. As documented in permanent blocker #1, `bandgap_core`
-  cannot reach a clean `match` regardless (bipolar recognition is
-  permanently declined upstream) — this fix's job here was narrowing the
-  mismatch count and confirming every `pfet` body tie, both achieved.
-
-Reproduce: `klt extract`/`klt drc`/`klt lvs` exactly as documented earlier
-in this section, against `layout/bandgap_core/bandgap_core.gds`/
-`layout/bandgap_startup/bandgap_startup.gds` regenerated via
-`python3 layout/bandgap_core/generate.py`/`layout/bandgap_startup/generate.py`
-(deterministic — a second run leaves `git diff` empty, verified).
+`draw_hv_mos` (`layout/common.py`) now draws a small tap ring per MOS
+instance, bridged on `Metal1` into the device's own real body net, so
+every MOS body terminal extracts to its real schematic net instead of an
+anonymous or deck-synthesized `vsubs` net. DRC stayed clean (0 violations)
+on both cells after the change. LVS mismatch counts dropped sharply
+(`bandgap_startup` 16 -> 5, `bandgap_core` 36 -> 10) but neither reached a
+clean `match` yet — the remaining findings newly exposed a net-name
+case-identity conflict (resolved by issue #157, below) and the
+pre-existing `rppd`/`rhigh` bulk-terminal mismatch (resolved by issue
+#161, below). Full investigation, geometry details, and verification
+evidence: issue [#155](https://github.com/2AMLogic/sg13g2-bandgap/issues/155)
+(closed) and its closing PR
+[#158](https://github.com/2AMLogic/sg13g2-bandgap/pull/158).
 
 ### Net-name case-identity conflict resolved (issue #157)
 
-The net-name case-identity conflict issue #155 newly exposed (bullet 2
-above) is now fixed. Root cause, traced directly rather than assumed:
 `klayout.db.NetlistSpiceReader` (the engine `klt lvs`'s reference side is
-read through) upper-cases **every** net name it reads, unconditionally,
-regardless of the input SPICE text's own case — confirmed interactively,
-independent of what case `layout/lvs_reference.py` writes:
-
-```python
->>> nl = kdb.Netlist()
->>> nl.read("bandgap_startup.lvs_reference.spice", kdb.NetlistSpiceReader())
->>> [n.name for n in nl.top_circuit().each_net()]
-['VDD', 'DET', 'SNS1', 'VSS', 'FB']   # the file itself spells them lower-case
-```
-
-The curation comment on issue #157 recommended fixing this at
-`layout/lvs_reference.py` (the reference-conversion boundary, its own
-Option 3) — but the check above shows that boundary has no lever over the
-reference side's net-name case at all: whatever case that script writes,
-`NetlistSpiceReader` folds it to upper-case regardless. The layout side
-(`klt extract`'s net-naming pass) is the one side whose net-name case *is*
-a free variable — it reads a GDS text label's case back verbatim
-(confirmed the same way the pre-fix report showed: `net: {"layout": "det",
-"reference": "DET"}`, the layout side literally preserving
-`layout/common.py`'s own lower-case labels). **Fixed at that free variable
-instead** (issue #157's own Option 1, with the deviation from the curated
-Option 3 noted and justified here): `layout/common.py`'s `Builder.label()`
-now upper-cases the text it draws on exactly the deck's real net-naming
-layers (`L_METAL1_TEXT`/`L_METAL2_TEXT` — `EXTRACTION_DECK.metal_labels` —
-and `L_GATPOLY_LABEL`, which doubles as `EXTRACTION_DECK.poly_label`),
-centrally, in one place — not at each `draw_npn13g2`/`draw_hv_mos`/
-`draw_poly_res`/`draw_gate_tab` call site's own net-name string literal —
-so the fix generalizes to any current or future net with no per-net
-enumeration (unlike a `hints.same_nets` entry, issue #157's own Option 2).
-Every other label layer (`L_TEXT`, and `L_METAL1_LABEL`/`L_METAL2_LABEL`/
-`L_POLYRES_LABEL`'s purely-informational duplicates — not read by `klt
-extract`'s net-naming pass at all, see the module-level comment on
-`L_METAL1_TEXT` above) is left exactly as each call site spells it; this is
-a case-only change, cosmetic to the compare — `NetlistComparer` pairs
-devices/nets by structure, not by name, so it does not and must not alter
-which physical devices/nets pair against which schematic ones.
-
-**Verified**: `bandgap_startup`'s `det`/`vss` `topology`/"name identity
-conflict" findings are gone — `mismatch_count` 5 -> **3** (4 -> **2**
-error-severity). The `sns1`/`fb` nets, already `net.matched` before this
-fix, are unaffected (still matched, both sides now spelled upper-case).
-The 3 remaining findings are all the same, pre-existing, out-of-scope
-`RPU`/`rhigh` cause already documented above (bullet 1: a terminal-count
-mismatch, this deck's `rhigh` extracting a synthesized 3rd bulk terminal
-against the reference's plain 2-terminal card) — `device.unmatched` for
-`RPU`/`rhigh` itself, plus `RPU`'s own anonymous `vdd`-net end (`$5`/`VDD`)
-still failing the same name-identity check for the unrelated reason that
-it never got a real name at all (not a case issue). Not fixed here — out
-of #157's own scope, tracked separately (see bullet 1 above).
-
-`bandgap_core`'s `klt lvs` finding *count* is unchanged (10/9, same as
-after issue #155) — this cell reaches no `net.matched` pairing at all yet
-(permanent blocker #1, bipolar recognition, plus the `rppd` bulk-terminal
-cause below), so there was no case-identity-conflict finding for this fix
-to remove. Re-running after the fix does reclassify three findings from
-`net.merged`(1)/`net.split`(2) to `net.unmatched`(3) — a side effect of
-`klt lvs`'s own merge/split heuristic (which inspects whether a
-differently-*named* both-sided pairing co-occurs with a one-sided
-leftover) now seeing every net upper-cased consistently, not a new or
-regressed finding; the same `VSS`/`vsubs`/rppd-bulk-terminal root cause as
-before, confirmed by the finding count staying exactly 10/9 and no new
-device or net leaving `matched`.
-
-**GDS content changed, evidence chain updated accordingly.** Both cells'
-`.gds` files changed (label text only, no geometry) and were re-verified
-end to end: `klt drc` stays `clean`, 0 violations, on both (regenerated
-`drc_report.json`); both `lvs_report.json` regenerated as above. Both
-cells' `pex_extract_report.json`/`<cell>.pex.spice` — extracted from the
-pre-fix GDS — are now stale relative to the post-fix one (re-extracting
-both to check confirmed the change is case-only: no `R`/`C` device
-parameter differs, only net-name case in the emitted `.pex.spice`) and are
-**waived** rather than re-extracted here (`layout/evidence-freshness-
-waivers.json`, tracked at #159) — re-extracting and re-running both PVT
-sweeps needs `klt`/PDK/ngspice/OSDI models CI does not have, and is out of
-this "routine"-complexity issue's own scope.
-
-Reproduce: `klt lvs layout/bandgap_startup/lvs_request.json` /
-`klt lvs layout/bandgap_core/lvs_request.json`, against
-`bandgap_startup.gds`/`bandgap_core.gds` regenerated via each cell's own
-`generate.py` (same reproduction steps as above — deterministic, `git diff`
-empty on a second run).
+read through) upper-cases every net name unconditionally, while this
+repo's own GDS labels preserved the lower-case spelling `design/netlist/
+*.spice` uses — once issue #155's tap-ring fix let devices start pairing,
+`NetlistComparer` correctly matched nets like `det`/`vss` topologically but
+still reported a `topology`/"name identity conflict" over case alone.
+Fixed centrally in `Builder.label()` (`layout/common.py`), which now
+upper-cases the text it draws on the deck's real net-naming layers, rather
+than at the reference-conversion script (`layout/lvs_reference.py`) or via
+a `hints.same_nets` workaround. `bandgap_startup`'s `mismatch_count`
+dropped from 5 to 3 (all remaining findings were the then-still-open
+`rppd`/`rhigh` bulk-terminal cause, later resolved by issue #161).
+Full investigation and verification evidence: issue
+[#157](https://github.com/2AMLogic/sg13g2-bandgap/issues/157) (closed) and
+its closing PR [#160](https://github.com/2AMLogic/sg13g2-bandgap/pull/160).
 
 ### `M1`/`M2`/`M3` automorphism resolved (issue #149)
 
-Cause (d) of T1 tracker #4 item 4 (permanent blocker #2 above) is now
-resolved at the schematic level — **not** by routing or `klt lvs` hints,
-both of which #27's and this issue's own pre-implementation re-check
-confirmed cannot touch it (see permanent blocker #2 and the "New finding"
-bullet above).
-
-**Fix — unit-device decomposition (Option 1 from issue #149).**
-`design/bandgap_core.sch` (and the netlist it generates,
-`design/netlist/bandgap_core.spice`) now draws `M1` as a single
-`w=10u l=1u` `sg13_hv_pmos`, `M2` as two parallel fingers, one dominant
-(`w=9u`) plus one trim (`w=1u`) (`M2A`/`M2B`), and `M3` as three parallel
-fingers, one dominant (`w=8u`) plus two trim (`w=1u` each) (`M3A`–`M3C`)
-— each branch's *total* mirror width stays nominally `W/L=10u/1u`, but
-the three branches now have structurally distinct device counts (1 vs 2
-vs 3 — the minimum pairwise-distinct set), so no graph automorphism
-exists among them regardless of whether a comparer's canonicaliser
-weighs device parameters at all. `layout/bandgap_core/generate.py` draws
-each unit finger as its own separate, non-touching `draw_hv_mos`
-footprint (confirmed by `klt extract` — see below — that the deck's own
-extraction does **not** silently re-merge adjacent parallel MOS instances
-into one device) and ties each branch's finger drains together with a
-Metal1 strip before routing on to that branch's resistor.
-
-**This decomposition is NOT electrically exact — quantified, not
-assumed.** Unlike an idealised SPICE parallel-device sum, IHP-SG13G2's
-real `sg13_hv_pmos` PSP103 compact model is not scale-invariant in `W`:
-an isolated fixed-bias DC op-point check (same `Vgs`/`Vds` on `M1` vs
-`M2A+M2B` vs `M3A+M3B+M3C`, no other circuitry) measures `M2`'s total
-current ~1.0% above `M1`'s and `M3`'s ~2.0% above `M1`'s — a real,
-device-count-driven deviation, not width-narrowing alone (it persists,
-nearly unchanged, whether the trim finger is `1u` or `0.5u`, and roughly
-doubles between a 2-count and 3-count branch). A first-implemented,
-shallower draft of this fix ({1,2,4}-count, equal-width fingers: `M2`
-2×`5u`, `M3` 4×`2.5u`) measured a **~1% closed-loop vref shift at every
-PVT corner** from this effect against a same-day pre-#149 baseline. The
-`{1,2,3}`-count, dominant+trim-finger geometry actually landed here was
-chosen specifically to minimize this: device-count spread is the minimum
-pairwise-distinct set possible (`{1,2,3}`, not `{1,2,4}`), and each
-branch keeps one dominant, near-original-width finger plus the smallest
-number of small trim fingers needed to reach its target count. **Measured
-result (full 45-corner closed-loop PVT re-run, `sim/closed-loop-vref-pvt`,
-vs a same-day pre-#149 baseline on this exact post-#134-retune netlist,
-same tooling)**: max `vref(3ms)` delta 3.81 mV (0.366%, `bcs`/`-40C`/
-`3.63V`), 45-corner average 3.28 mV (~0.31%) — smaller than the ~15 mV
-process-corner-to-corner spread this design already has at any fixed PVT
-point — and the TC (ppm/C) this repo actually tracks against
-`spec/porting-plan.md` Sec 6's draft target moved by <=1.3 ppm/C at every
-corner/supply group (worst-case box TC stays ~18 ppm/C, inside the draft
-`<50 ppm/C` row both before and after). Full per-corner data:
-`sim/closed-loop-vref-pvt/records/`.
-
-**Verified: `klt extract` now recognises 6 distinct pfet devices** (not
-3), each in its correct, one-to-one branch correspondence
-(`klt extract layout/bandgap_core/bandgap_core.gds --deck sg13g2 --top
-bandgap_core`, re-run against this PR's own `bandgap_core.gds`):
-
-```
-M$1 vdd $9 sns1 $11 pfet L=1U W=10U   <- M1
-M$2 vdd $9 sns2 $14 pfet L=1U W=9U    <- M2A
-M$3 vdd $9 sns2 $15 pfet L=1U W=1U    <- M2B
-M$4 vdd $9 vref $17 pfet L=1U W=8U    <- M3A
-M$5 vdd $9 vref $18 pfet L=1U W=1U    <- M3B
-M$6 vdd $9 vref $19 pfet L=1U W=1U    <- M3C
-```
-
-Branch `sns1` (M1) now has exactly 1 recognised pfet, branch `sns2` (M2)
-exactly 2, branch `vref` (M3) exactly 3 — this device-*count* asymmetry,
-directly readable from `klt extract`'s own output independent of any
-`hints`/comparer configuration, is the structural fact that breaks the
-automorphism. It is **not**, on its own, name- or connectivity-resolved
-(that would need a full `match`, explicitly not this issue's bar — see
-below) — it is the same kind of node-degree/multiplicity distinguishing
-signal a graph-isomorphism search needs to rule out `M1`↔`M2`↔`M3`
-swaps, which the pre-#149 layout (three structurally-identical 1-device
-branches) categorically could not provide.
-
-**Re-tried, and dropped: the deliberately-wrong cross-branch
-`hints.same_nets` pairing this issue's own pre-implementation re-check
-used (`sns2`↔`VREF`) as a second, independent confirmation.** Directly
-re-run against this PR's own layout/reference: `hints.rejected` fires (as
-expected — a 2-device branch cannot topologically satisfy a hint
-asserting equality with a 3-device branch), but the run **still**
-reports a `net.merged`/`net.split` cascade, not the clean single-entry
-rejection an isolated cause-(d) fix would ideally produce — confirmed
-this is **not** specific to the {1,2,3} decomposition (the same test
-against the {1,2,4}-count first draft, and even against a trivial
-same-count-but-different-`w` control, produces an equivalent cascade).
-The reason: `counts.nets.matched` is already `0` for **every** top-level
-net on this cell with *no* hints declared at all (permanent blockers #1
-and the well/tap gap below leave essentially nothing else in this graph
-uniquely pinned down), so *any* declared hint — right or wrong — collides
-with that pre-existing, unrelated ambiguity and produces some cascade
-regardless of whether cause (d) itself is fixed. This specific
-hints-based check is **confounded** by `bandgap_core`'s other,
-already-tracked LVS gaps and does not cleanly isolate cause (d) either
-way; the `klt extract` device-count evidence above is the reliable,
-unconfounded signal, and is what this issue's own resolution rests on.
-
-**A full `match` is still not the acceptance bar** (per issue #149's own
-text): `bandgap_core`'s remaining `mismatch` status is fully attributed
-to permanent blockers #1 (bipolar declined upstream) and the unexercised
-well/tap-layer gap (the "two further causes" list's item 2 above) — both
-pre-existing, both out of this issue's scope, both already tracked.
-`layout/bandgap_core/lvs_report.json` is regenerated fresh against the
-decomposed layout (`36` findings, `35` error-severity — the raw count
-rises only because there are now 6 recognised pfets to individually
-report `device.unmatched` instead of 3, not because anything regressed).
+`bandgap_core`'s `M1`/`M2`/`M3` pfets were drawn with identical `W`/`L`
+and identical source/gate nets, producing a genuine graph automorphism
+that no routing or `klt lvs` hints could break (confirmed directly:
+`hints.same_nets` pairings were rejected, with `net.merged`/`net.split`
+findings as evidence a different, equally-valid correspondence exists).
+Resolved at the schematic level, not by routing or hints: each branch was
+decomposed into a structurally distinct device count — `M1` stays one
+`w=10u` finger, `M2` becomes two fingers (`w=9u`+`w=1u`), `M3` becomes
+three (`w=8u`+`w=1u`+`w=1u`) — so `klt extract` now recognises 6 distinct
+pfet devices instead of 3, breaking the ambiguity. The decomposition is
+not electrically exact (PSP103 is not scale-invariant in `W`); the
+`{1,2,3}`-count, dominant+trim-finger geometry landed here was chosen to
+minimize that effect, measured via a full 45-corner closed-loop PVT
+re-run at a max `vref(3ms)` delta of 0.366% vs. a pre-#149 baseline — well
+inside this design's own corner-to-corner spread, with TC moving by
+<=1.3 ppm/C at every corner/supply group. A full `match` was not the
+acceptance bar: `bandgap_core`'s remaining `mismatch` status is fully
+attributed to the permanent bipolar-recognition blocker and the (then
+still-open) well/tap gap. Full investigation, decomposition rationale, and
+verification evidence: issue
+[#149](https://github.com/2AMLogic/sg13g2-bandgap/issues/149) (closed) and
+its closing PR [#154](https://github.com/2AMLogic/sg13g2-bandgap/pull/154).
 
 ### `rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)
 
-**Root cause, confirmed directly** (not re-derived from prior write-ups):
-the installed `klt`'s curated `sg13g2` deck
-(`klayout_tools.decks.sg13g2.EXTRACTION_DECK.resistors`) declares every
-poly-resistor flavour this circuit uses — `rppd` and `rhigh` — with
-`bulk_to_substrate=True`. That selects `klayout.db
-.DeviceExtractorResistorWithBulk` over the plain two-terminal
-`DeviceExtractorResistor`, which extracts a *third* terminal (`W`,
-alongside the two-terminal `A`/`B` heads) tied to the deck's substrate/well
-connectivity — mirroring upstream's own real LVS deck, which ties
-`rppd_sub`/`rhigh_sub` to `pwell` (see that deck module's own inline
-citation of `res_extraction.lvs`). `layout/lvs_reference.py`'s converted
-`R`-cards, by contrast, are plain two-terminal SPICE (`R<n> <p1> <p2>
-<value> <model>`) — `klayout.db.NetlistSpiceReader`'s only resistor-element
-reading, with no third-terminal syntax to express. Every `rppd`/`rhigh`
-instance therefore compared a 3-terminal layout-side device against a
-2-terminal reference-side one — a `device.unmatched` on both cells, plus a
-`net.unmatched` on `bandgap_core`'s `vsubs` net (the synthesized bulk net
-the two `rppd` instances' third terminal lands on, with nothing on the
-reference side to pair it against).
-
-**Fix — direction 1, via `klt lvs`'s own built-in reconciliation hook**,
-not a hand-rolled workaround: `request.reference.device_bulk` (issue #506
-in `klayout-tools`, `klt lvs`'s own "issue #504's option 1") declares that
-a named reference-side device class is missing exactly the terminal the
-same-named layout-side class carries, and ties every reference instance's
-new terminal to a named net — reconciling the two classes to the same
-arity *before* `NetlistComparer.compare()` runs, so a real, honest
-`device.matched` pairing becomes possible instead of only diagnosable. This
-is a request-file option, not a code change to `layout/lvs_reference.py` or
-`layout/common.py` — no reference-conversion syntax could express a third
-SPICE-`R` terminal at all (confirmed above), so the fix lives entirely in
-each cell's `lvs_request.json`:
-
-```json
-"reference": {
-  "netlist": "bandgap_startup.lvs_reference.spice",
-  "device_bulk": { "rhigh": "VSS" }
-}
-```
-
-```json
-"reference": {
-  "netlist": "bandgap_core.lvs_reference.spice",
-  "device_bulk": { "rppd": "vsubs" }
-}
-```
-
-The two cells name **different** nets, each read directly off a fresh `klt
-extract` of that cell's own layout (not guessed or copy-pasted between
-cells) — `RPU`'s (`bandgap_startup`) synthesized bulk terminal already
-resolves to the real, routed `VSS` net (issue #155's tap-ring bridges the
-`nfet` body into the same net as `rhigh`'s bulk tie in this cell), while
-`R1`/`R2`'s (`bandgap_core`) synthesized bulk terminal stays on the deck's
-anonymous `vsubs` global (this cell has no `nfet` device at all — every
-device is `pfet`, whose body ties to `VDD`, not the substrate — so nothing
-in this cell's own layout merges `vsubs` into a real net, independent of
-and not regressed by issue #155's tap-ring work). Naming the net a request
-declares is an *assertion*, not an independently re-derived fact — `klt
-lvs` discloses every reconciled class as its own `severity: "warning"`,
-`category: "device.bulk_reconciled"` mismatch entry precisely so a
-`"match"` reached this way is never silently indistinguishable from a
-fully independent one (see `docs/cli/lvs.md`, "`device.bulk_reconciled`").
-
-**Verified with a fresh `klt lvs` re-run on both cells** (`klt
-0.3.0+gc6dbf66c53c6`, `klayout 0.30.12`, deck `content_hash:
-sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda` —
-the same deck build issue #152 last moved both cells to; re-verified
-`klt drc --check --rerun` stays byte-identical to the committed
-`drc_report.json` on both cells, `clean`, 0 violations, confirming no
-geometry changed and this fix's evidence refresh is LVS-only):
-
-- **`bandgap_startup` reaches `status: "match"`** — `mismatch_count: 2`,
-  `error_count: 0`. Both remaining entries are `severity: "warning"`: the
-  `device.bulk_reconciled` disclosure above, and the same pre-existing,
-  informational "device class has no counterpart on the other side, but no
-  devices of this class were extracted either" `topology` entry every prior
-  report on this cell has also carried. This is the first cell in this
-  repo's history to reach `status: "match"`.
-- **`bandgap_core` narrows to exactly the one permanent cause left**:
-  `mismatch_count: 6`, `error_count: 4`. The 4 errors are `Q1`–`Q3`
-  `device.unmatched` (`NPN13G2`, permanent blocker #1, bipolar recognition
-  permanently declined upstream) plus their own class-level `topology`
-  "device class could not be mapped to a counterpart" entry — the same
-  cause reported at two granularities, not a new or independent one. The
-  other 2 entries are the same `device.bulk_reconciled` disclosure and
-  benign no-op `topology` entry `bandgap_startup` also carries.
-  `counts.nets.matched` rose from 2 to 5 (`SNS2`, `VDD`, `VREF`, and the
-  reconciled `vsubs` all now pair; `FB`↔`\$9` already did) — every net this
-  cell's own `pfet`/`rppd` devices touch, which is everything except the
-  bipolar-only `VSS` net neither side's comparer can currently reach
-  (permanent blocker #1's own consequence, not a new gap).
-
-**Evidence-format checker bug found and fixed alongside this issue**
-(`.github/scripts/check_evidence_formats.py`): the checker asserted
+The curated `sg13g2` deck extracts `rppd`/`rhigh` poly resistors with a
+synthesized third bulk terminal (`DeviceExtractorResistorWithBulk`), while
+`layout/lvs_reference.py`'s converted reference `R`-cards are plain
+two-terminal SPICE — a terminal-count mismatch on every resistor instance,
+`device.unmatched` on both cells plus a `net.unmatched` on `bandgap_core`'s
+`vsubs` net. Fixed via `klt lvs`'s own `request.reference.device_bulk`
+reconciliation hook in each cell's `lvs_request.json` (not a layout or
+reference-script change), naming the real net each cell's synthesized bulk
+terminal should tie to (`VSS` for `bandgap_startup`'s `rhigh`, `vsubs` for
+`bandgap_core`'s `rppd`). `klt lvs` discloses every reconciled class as its
+own `severity: "warning"` `device.bulk_reconciled` entry, so a `"match"`
+reached this way is never silently indistinguishable from a fully
+independent one. Result: **`bandgap_startup` reaches `status: "match"`**
+(`error_count: 0`) — the first cell in this repo's history to do so —
+and `bandgap_core` narrows to exactly the one permanent cause left
+(`Q1`-`Q3` `device.unmatched`, bipolar recognition permanently declined
+upstream). Also fixed an evidence-format-checker bug this uncovered
+(`.github/scripts/check_evidence_formats.py` had wrongly asserted
 `(status == "match") == (mismatch_count == 0)`, an invariant `klt lvs`'s
-own documented contract does not make — "`mismatch_count` ... [c]an be
-nonzero even when `status` is `'match'`" for exactly this
-`device.bulk_reconciled`-disclosure case (`docs/cli/lvs.md`). No prior
-report in this repo had ever reached `status: "match"`, so this gap in the
-checker had never been exercised before `bandgap_startup`'s fresh report
-above tripped it. Fixed to check `error_count == 0` for a `"match"`
-verdict (the invariant `klt lvs`'s docs actually guarantee) and
-`mismatch_count == 0` implies `"match"` (the converse direction, still
-sound) instead — both directions covered by new self-test cases in
-`.github/scripts/test_check_evidence_formats.py`
-(`case_lvs_match_with_warning_only_disclosure`,
-`case_lvs_zero_mismatches_not_match`).
-
-Reproduce: `klt lvs layout/bandgap_startup/lvs_request.json` / `klt lvs
-layout/bandgap_core/lvs_request.json`, from each cell's own directory;
-`python3 .github/scripts/check_evidence_formats.py` and `python3
-.github/scripts/test_check_evidence_formats.py` for the evidence-format
-fix.
+own docs do not make). Full investigation and verification evidence: issue
+[#161](https://github.com/2AMLogic/sg13g2-bandgap/issues/161) (closed) and
+its closing PR [#163](https://github.com/2AMLogic/sg13g2-bandgap/pull/163).
 
 ## Evidence freshness, enforced in CI
 
