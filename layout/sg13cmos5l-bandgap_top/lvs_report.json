@@ -55,7 +55,7 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "cfd2a2698a4cb5f5fd4cdce37bff1ece4788f1f5958e77c2818774018ed15b58",
+    "layout_sha256": "3ee6f4a364751f695e9c23fbd99f167bad0f420a77920833581cb101816a0228",
     "reference_sha256": "14fdb4b4c8aefbc782d50123094eaaeec40214ab92fc1afec2445f2c811319ca",
     "extracted_netlist": null
   },
@@ -231,42 +231,8 @@
       "side": "reference",
       "net": null,
       "device": {
-        "layout": "\\$10",
-        "reference": "X2_MP4",
-        "class": "pfet"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "reference",
-      "net": null,
-      "device": {
-        "layout": "\\$11",
-        "reference": "X2_MP3",
-        "class": "pfet"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "reference",
-      "net": null,
-      "device": {
         "layout": "\\$12",
-        "reference": "X1_M1",
+        "reference": "X2_MTAIL",
         "class": "pfet"
       },
       "property": null,
@@ -283,7 +249,7 @@
       "net": null,
       "device": {
         "layout": "\\$13",
-        "reference": "X1_M2",
+        "reference": "X2_MP4",
         "class": "pfet"
       },
       "property": null,
@@ -300,7 +266,41 @@
       "net": null,
       "device": {
         "layout": "\\$14",
-        "reference": "X1_M3",
+        "reference": "X2_MP3",
+        "class": "pfet"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$7",
+        "reference": "X1_M1",
+        "class": "pfet"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$8",
+        "reference": "X1_M2",
         "class": "pfet"
       },
       "property": null,
@@ -317,7 +317,7 @@
       "net": null,
       "device": {
         "layout": "\\$9",
-        "reference": "X2_MTAIL",
+        "reference": "X1_M3",
         "class": "pfet"
       },
       "property": null,
@@ -364,7 +364,7 @@
       "description": "a reference net's role is divided across multiple layout nets",
       "side": "layout",
       "net": {
-        "layout": "\\$36",
+        "layout": "\\$29",
         "reference": null
       },
       "device": null,

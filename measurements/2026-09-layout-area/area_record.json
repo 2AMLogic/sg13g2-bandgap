@@ -17,7 +17,7 @@
   "verdict_note": "No pass/fail is recorded: spec/porting-plan.md Sec 6 is a draft, unratified table (#125, PR #128). These are measurements, not a conformance claim -- see README.md next to this record.",
   "provenance": {
     "klt_version": "klt 0.3.0+gc6dbf66c53c6",
-    "measured_at": "2026-09-05T01:31:38Z"
+    "measured_at": "2026-09-05T03:45:59Z"
   },
   "cells": [
     {
@@ -84,21 +84,21 @@
       "cell_dir": "layout/bandgap_top",
       "top_cell": "bandgap_top",
       "gds": "layout/bandgap_top/bandgap_top.gds",
-      "gds_sha256": "sha256:80fad54f4aa3caf7602e7f1de8b1bda37cc8a91c540824bf73b6bd3e983436e3",
+      "gds_sha256": "sha256:f0db498a174920fd701a3db1902d44a5c1db5c3f03580cc8aea01991bc0c1b03",
       "bbox_um": {
-        "left": -16.5,
-        "bottom": -3.1,
-        "right": 465.97200000000004,
-        "top": 94.15,
-        "width": 482.47200000000004,
-        "height": 97.25
+        "left": -18.5,
+        "bottom": -1.59,
+        "right": 205.1,
+        "top": 125.0,
+        "width": 223.6,
+        "height": 126.59
       },
-      "footprint_um2": 46920.402,
-      "footprint_mm2": 0.046920402,
-      "drawn_area_um2": 17460.7398,
-      "density": 0.372135341,
-      "aspect_ratio": 4.961152,
-      "polygon_count": 998
+      "footprint_um2": 28305.524,
+      "footprint_mm2": 0.028305524,
+      "drawn_area_um2": 16896.6073,
+      "density": 0.596936743,
+      "aspect_ratio": 1.766332,
+      "polygon_count": 1001
     },
     {
       "cell_dir": "layout/sg13cmos5l-bandgap_amp",
@@ -164,21 +164,21 @@
       "cell_dir": "layout/sg13cmos5l-bandgap_top",
       "top_cell": "sg13cmos5l_bandgap_top",
       "gds": "layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds",
-      "gds_sha256": "sha256:cfd2a2698a4cb5f5fd4cdce37bff1ece4788f1f5958e77c2818774018ed15b58",
+      "gds_sha256": "sha256:3ee6f4a364751f695e9c23fbd99f167bad0f420a77920833581cb101816a0228",
       "bbox_um": {
-        "left": -50.25,
-        "bottom": -10.25,
-        "right": 452.5,
-        "top": 84.5,
-        "width": 502.75,
-        "height": 94.75
+        "left": -18.5,
+        "bottom": -3.21,
+        "right": 229.5,
+        "top": 132.304,
+        "width": 248.0,
+        "height": 135.514
       },
-      "footprint_um2": 47635.5625,
-      "footprint_mm2": 0.047635562,
-      "drawn_area_um2": 22391.6214,
-      "density": 0.470061026,
-      "aspect_ratio": 5.306069,
-      "polygon_count": 2748
+      "footprint_um2": 33607.472,
+      "footprint_mm2": 0.033607472,
+      "drawn_area_um2": 21222.877,
+      "density": 0.631492812,
+      "aspect_ratio": 1.830069,
+      "polygon_count": 2766
     }
   ]
 }
