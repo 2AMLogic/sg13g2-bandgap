@@ -1,0 +1,226 @@
+* sg13g2-bandgap -- SG13CMOS5L bandgap_top PEX (post-layout) closed-loop
+* PVT testbench (issue #84). Generated from
+* sim/sg13cmos5l-closed-loop-startup-pex/testbench/tb_sg13cmos5l_closed_loop_startup_pex.spice.tmpl
+* by sim/sg13cmos5l-closed-loop-startup-pex/run_pvt_sweep.sh -- do not edit a
+* generated netlist-snapshots/*.spice file directly, edit this template and
+* re-run the sweep. Full rationale is in
+* sim/sg13cmos5l-closed-loop-startup-pex/README.md.
+*
+* Generated for: corner=wcs temp=-40C vdd=3.30V
+* DUT git sha (design/sg13cmos5l/netlist/{bandgap_core,bandgap_amp,
+*   bandgap_startup}.spice -- schematic-sourced bipolar/resistor devices,
+*   see below):
+*   core=a6dcd36 startup=8361d0d
+* Layout git sha (layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds,
+*   extraction input):
+*   7b4d0e1
+* PDK: ihp-sg13cmos5l /home/ubuntu/share/pdk (see sim/pdk-sg13cmos5l.json for the pinned
+*   revision)
+* OSDI models: /home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi (this PDK ships these prebuilt -- see
+*   sim/pdk-sg13cmos5l.json "osdi_toolchain")
+*
+* THIS IS A HYBRID PEX NETLIST, NOT A PURE LAYOUT EXTRACTION -- read
+* sim/sg13cmos5l-closed-loop-startup-pex/README.md "What this does and does
+* not model" before trusting a result here. Short version:
+*   - Every MOS device (XM1-3 in the core, XMTAIL/XMP1-4/XMN1-4 in the amp,
+*     XMSENSE/XMKFB in the startup circuit -- 14 devices total, matching
+*     the `"nfet": 6, "pfet": 8` entries of
+*     layout/sg13cmos5l-bandgap_top/pex_extract_report.json's own
+*     device_counts -- that dict also carries `"rhigh": 1, "rppd": 2` as
+*     of issue #176's refresh, see below) is re-encoded as an X-subckt
+*     call to the real sg13_hv_pmos/sg13_hv_nmos compact model (the
+*     extraction's own native `M...pfet`/`M...nfet` cards reference a
+*     generic placeholder model name, not the real PDK subckt -- same
+*     re-encoding sim/core-open-loop-bias-pex/README.md's own precedent
+*     documents for SG13G2), carrying the real drawn w/l AND the real
+*     drawn junction as/ad/ps/pd geometry from
+*     layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.pex.spice --
+*     every device's w/l numerically matches the schematic's own nominal
+*     value already (confirmed device-by-device below), so the actual new
+*     information this PEX pass adds is the junction geometry, which the
+*     schematic-level testbench omits (defaults to as=ad=ps=pd=0 per
+*     sg13_hv_pmos/nmos's own subckt default -- see
+*     libs.tech/ngspice/models/sg13g2_moshv_mod.lib).
+*   - Every extracted device's as_um2==ad_um2 and ps_um==pd_um (confirmed
+*     directly in pex_extract_report.json, symmetric drawn source/drain
+*     geometry throughout), so the extraction's own D/S-terminal-order
+*     divergence from the schematic (klayout-tools writes `nd=... ng=...
+*     ns=...` in whatever order KLayout's connectivity walk visits, not
+*     necessarily the schematic's d/g/s convention) is electrically
+*     inconsequential here -- disclosed, not silently assumed. This lets
+*     every device below keep the schematic's own d/g/s/b node order
+*     unchanged.
+*   - XQ1/XQ2/XQ3 (pnpMPA) are NOT extracted from the layout at all --
+*     klt's curated sg13cmos5l deck still does not recognise bipolar
+*     devices (klayout-tools#1242, already filed; confirmed still true as
+*     of issue #176's re-check: `pex_extract_report.json`'s
+*     `device_classes` lists `["nfet", "pfet", "cap_cmomi", "cap_cmomf",
+*     "resistor"]`, no bipolar entry). They are spliced in verbatim from
+*     design/sg13cmos5l/netlist/{bandgap_core,bandgap_startup}.spice,
+*     wired to the SAME real layout net names the extraction itself
+*     reports as real, physically-routed pins (sns1, sns2, vref, vdd, vss,
+*     fb, det) -- not invented nodes.
+*   - **Issue #176 update -- resistor recognition landed (klayout-tools
+*     #1415).** An earlier revision of this paragraph additionally claimed
+*     XR1/XR2 (rppd, core) and XRPU (rhigh, startup) were "NOT extracted
+*     from the layout at all" alongside the bipolar devices, citing
+*     klayout-tools#1415 as still open. That is no longer true: issue
+*     #173's poly-resistor serpentine fold re-routed this cell's resistors
+*     enough that they now recognise cleanly, and the current
+*     `sg13cmos5l-bandgap_top.pex.spice` carries three real resistor
+*     device cards (`R$15 in_p|sns2 e2 vss 11063 rppd`,
+*     `R$16 vref e3 vss 84110 rppd`, `R$17 vdd det vss 1919368 rhigh`) --
+*     `device_counts` now reads `{"nfet": 6, "pfet": 8, "rhigh": 1,
+*     "rppd": 2}` (was `{"nfet": 6, "pfet": 8}`, no resistor entry, before
+*     the fold). XR1/XR2/XRPU below are still spliced verbatim from the
+*     schematic rather than switched to X-subckt calls against these newly
+*     recognised devices, deliberately out of this issue's own scope:
+*     unlike SG13G2's rppd/rhigh conversion (issue #59), there is still no
+*     wire-parasitic geometry to hang a real hub-terminal connection off
+*     of here (`--parasitics` fails outright for this deck, see below), so
+*     switching device class would trade one schematic-sourced R value for
+*     an extracted one carrying the exact same w/l (no new information)
+*     while losing the schematic's own instance-name continuity -- a
+*     separate, deliberate follow-up if ever worth doing, not a
+*     freshness bug this refresh needs to fix.
+*   - NO WIRE (metal) PARASITICS ARE MODELLED HERE -- unlike the SG13G2
+*     precedent (which wires in real Metal1/Metal2 R/C, issue #37). Not a
+*     scope choice: `klt extract --deck sg13cmos5l --parasitics` fails
+*     outright ("unknown deck 'sg13cmos5l'") because the sg13cmos5l deck's
+*     module is registered in every OTHER per-deck lookup table in
+*     klayout_tools.decks.__init__ except `_parasitics_registry()` -- a
+*     wiring bug distinct from (and found on top of) the already-known
+*     device-class gaps above, filed generically as
+*     klayout-tools#1440. Even if that registry gap is fixed, the deck's
+*     own module comment documents it will report zero R/C for every net
+*     regardless (no curated sheet-resistance/capacitance table exists yet
+*     for this starter deck) -- so this pass extracts device geometry only,
+*     never attempts a wire-parasitic claim it cannot back, and every net
+*     below is the same idealized zero-impedance node the schematic-level
+*     testbench already uses.
+*   - The extracted PMOS legs' body terminals are genuinely floating in the
+*     layout (`unbiased_pmos_body_nets`, still 8 entries as of issue #176's
+*     re-check against the post-#173-fold extraction -- the anonymous net
+*     labels themselves renumbered from `\$30`/`\$32` to `\$34`/`\$36`
+*     (issue #173 re-routed the whole cell), but this testbench never
+*     references those labels directly, only `vdd`, so the renumbering is
+*     inert here; no drawn well/substrate-tap layer at all,
+*     klayout-tools#1414, already filed). This testbench ties each PMOS
+*     body to vdd directly (b=vdd below), mirroring the schematic's own
+*     real body-tied-to-vdd intent -- a testbench fixture bridging a
+*     known, disclosed deck gap, not a claim about the real layout's body
+*     connectivity.
+*   - **Issue #176 re-verification, no netlist change:** re-read every
+*     MOS device's own `l_um`/`w_um`/`as_um2`/`ad_um2`/`ps_um`/`pd_um` in
+*     the post-#173-fold `pex_extract_report.json` device-by-device against
+*     the values below -- all identical to the pre-fold extraction this
+*     file was written against (the fold conserves drawn resistor length
+*     exactly and moves no MOS/bipolar device, see issue #173's own PR
+*     description). This file also does not splice any per-terminal
+*     wire-parasitic hub node names (see "NO WIRE PARASITICS" above), so
+*     it has neither a numeric value nor a node name to refresh -- the
+*     fresh PVT record issue #176 mints for this suite exists to capture
+*     the new `7b4d0e1` as evidence, not because any number
+*     below changed.
+*   - XMSENSE's w=10u below is the routed layout's OWN drawn value (from
+*     pex_extract_report.json device $5), not read live from
+*     design/sg13cmos5l/netlist/bandgap_startup.spice the way the
+*     pre-layout sg13cmos5l-closed-loop-startup testbench does -- a
+*     post-layout claim must reflect the physical GDS, not whatever the
+*     schematic currently says. It happens to equal the schematic's
+*     current w=10u (post decision record 0003 / issue #32's SG13G2
+*     regeneration, and issue #74's matching CMOS5L layout draw) -- if a
+*     future schematic-only resize diverges from this without a layout
+*     regeneration, this PEX record will silently go stale exactly the way
+*     issue #37/#56 describe for the SG13G2 side; 7b4d0e1 above
+*     is the freshness anchor to check.
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/models/cornerPNP.lib" wcs
+.lib "/home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/models/cornerMOShv.lib" mos_ss
+.lib "/home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/models/cornerRES.lib" res_wcs
+
+* rshunt=1e9 / gmin=1e-9: convergence aids only, both far below any current
+* this testbench measures -- same values and same rationale
+* sim/sg13cmos5l-closed-loop-startup uses (see that experiment's own
+* template header for the full account).
+.options temp=-40 tnom=27 rshunt=1e9 gmin=1e-9
+
+* FIXTURE -- transient supply ramp, same shape
+* sim/sg13cmos5l-closed-loop-startup uses: vdd itself ramps 0 -> VDD over
+* 200 us and holds to 2 ms, so the assembled block's own
+* cold-start -> closed-loop-settled transition is what the simulator solves
+* for.
+Vvdd vdd 0 PWL(0 0 200u 3.30 2m 3.30)
+Vvss vss 0 dc 0
+* bandgap_core.spice wires its resistor bulk terminals (rppd inside the
+* core) to the global substrate net `sub!`, the same convention every
+* schematic-sourced testbench in this tree uses.
+Vsub sub! vss dc 0
+
+* DUT -- bandgap_core, extracted MOS geometry + schematic-sourced bipolar
+* and resistor devices. Grounded-collector pnpMPA legs (base+collector at
+* vss, emitter at the sense node) -- see
+* sim/sg13cmos5l-core-open-loop-bias/README.md for the full topology
+* account. Extraction provenance: XM1/XM2/XM3 <- pex_extract_report.json
+* devices $12/$13/$14.
+XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XQ1 vss vss sns1 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
+XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XR2 sns2 e2 sub! rppd w=2u l=85.1u m=1 b=0
+XQ2 vss vss e2 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=8
+XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XR1 vref e3 sub! rppd w=2u l=647.0u m=1 b=0
+XQ3 vss vss e3 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
+
+* DUT -- bandgap_amp, fully extracted MOS geometry (no bipolar/resistor
+* devices in this leaf). in_p <- sns2 (non-inverting), in_n <- sns1
+* (inverting), out -> fb -- same polarity design/sg13cmos5l/bandgap_amp.sch
+* specifies. Extraction provenance: XMTAIL <- $9, XMP1 <- $7, XMP2 <- $8,
+* XMP3 <- $11, XMP4 <- $10, XMN1 <- $2, XMN2 <- $3, XMN3 <- $1, XMN4 <- $4.
+XMTAIL tail fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1 as=8p ad=8p ps=40.8u pd=40.8u
+XMP2 d2 sns1 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1 as=8p ad=8p ps=40.8u pd=40.8u
+XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMP4 fb pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN3 fb d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+
+* DUT -- bandgap_startup, extracted MOS geometry (XMSENSE/XMKFB) +
+* schematic-sourced resistor (XRPU). `sns1` and `fb` are shared with the
+* core and amp DUTs above -- the nodes the assembled block actually
+* connects. No separate stimulus source drives either one.
+*
+* FIXTURE -- Vmkfb is a 0 V ammeter in series with XMKFB's drain, so the
+* startup circuit's own contribution to the shared fb node can be measured
+* directly (i_mkfb below) rather than inferred from fb's voltage alone. A
+* 0 V source is a DC/transient short and does not move the operating
+* point. Extraction provenance: XMSENSE <- $5, XMKFB <- $6.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
+
+.control
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13cmos5l/libs.tech/ngspice/osdi/r3_cmc.osdi
+tran 2u 2m
+* Early-ramp check (t=20us, vdd ~10% of final value, core+amp still
+* degenerate/starting): the startup circuit should still be actively
+* engaged (det high, fb low).
+meas tran v_det_early find v(det) at=20u
+meas tran v_fb_early find v(fb) at=20u
+* Final (fully ramped + settled) closed-loop state -- the actual claim
+* under test: did the real error amplifier close the loop and settle, with
+* the startup circuit fully released, using post-layout MOS geometry?
+meas tran v_fb_v find v(fb) at=2m
+meas tran v_sns1_v find v(sns1) at=2m
+meas tran v_sns2_v find v(sns2) at=2m
+meas tran v_vref_v find v(vref) at=2m
+meas tran v_det_v find v(det) at=2m
+meas tran i_mkfb_v find i(Vmkfb) at=2m
+.endc
+.end

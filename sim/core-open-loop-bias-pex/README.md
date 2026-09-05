@@ -1,20 +1,33 @@
 # core-open-loop-bias-pex
 
-> **Update (issue #173, 2026-09-05) — this experiment's spliced wire
-> parasitics are stale, and no new record has been minted yet.** #173 folded
-> the long poly-resistor bars in `layout/` into serpentines. No device moved:
-> every recognised resistor extracts to the same ohms before and after, and no
-> MOS/bipolar `w`/`l`/count changed
-> (`measurements/2026-09-resistor-fold/README.md` §4). But the routing got
-> much shorter, so the extracted **wire parasitics** in this testbench's own
-> input netlist fell substantially — and the template below carries a
-> hand-merged *copy* of that block rather than reading the file at run time,
-> so it still describes the pre-fold layout. The records here remain valid
-> evidence for the layout they were taken against; they are not evidence for
-> the layout on `main`. Refreshing the block and re-running is tracked in
-> **#176** (which also explains why #173 did not simply do it: the merge rule
-> the template uses is not written down anywhere, and the committed block
-> already did not reproduce from the committed `.pex.spice` before #173).
+> **Resolved (issue #176, `records/20260905-033431-fe97115.{md,csv}` —
+> the current record):** the stale-wire-parasitics warning this section
+> used to carry (from #173's poly-resistor serpentine fold) is fixed. The
+> template's "Wire parasitics" block and every `vdd`/`sns2`/`vref` hub-node
+> tag are refreshed against the current `bandgap_core.pex.spice`, under a
+> now-documented merge rule (per pfet leg, model only its drain-side hub;
+> drop the body-side hub-leg the fold's well/substrate-tap ring, issue
+> #158, also added, since FIXTURE 3 ties body directly to `vdd` — the
+> template header states this precisely, and
+> `sim/tools/dump_pex_wire_parasitics.py` mechanically separates a
+> `.pex.spice`'s device cards from its wire-parasitic cards so the split
+> does not need hand-transcribing next time).
+>
+> **Max `|Δvref|` across all 45 points vs. the immediately-preceding record
+> (`records/20260830-185048-600b683.csv`) is `0.583 mV`** (at
+> `bcs_125c_3.63v`) — small, and in the expected direction: at that same
+> point, `vref` moved from `0.889816 V` (pre-fold PEX) to `0.889233 V`
+> (post-fold PEX), *toward* `sim/core-open-loop-bias`'s schematic-level
+> result at the same corner (`0.889151 V`) — the gap to the schematic
+> value shrank from `0.665 mV` to `0.082 mV`. Checked at all 45 points, not
+> just the max: every single point's `vref` moved toward its own
+> schematic-level counterpart, none moved away. The two derived resistance
+> measurements (`r1_ohm`, `r2_ohm` — the `rppd` resistors' own effective
+> DC resistance, back-derived from measured voltage/current) also fell at
+> all 45 points (max `|Δr1_ohm|` = `119.4 Ω` at `fs_-40c_3.30v`, max
+> `|Δr2_ohm|` = `9.92 Ω` at `typ_125c_3.30v`), consistent with the smaller
+> IR drop the shorter post-fold routing predicts. No leg moved the other
+> way; no exception to call out.
 
 Post-layout (PEX) counterpart to [`sim/core-open-loop-bias/`](../core-open-loop-bias/README.md),
 issue #14. Same claim, same PVT grid, same open-loop bias/ammeter fixtures —
