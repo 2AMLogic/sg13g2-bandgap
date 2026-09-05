@@ -14,69 +14,71 @@
     "parameter_tolerance": null
   },
   "status": "mismatch",
-  "mismatch_count": 27,
-  "error_count": 25,
+  "mismatch_count": 29,
+  "error_count": 28,
   "category_counts": {
-    "device.body_unverified": 1,
-    "device.unmatched": 8,
-    "net.unmatched": 15,
-    "topology": 3
+    "device.unmatched": 10,
+    "net.unmatched": 17,
+    "topology": 2
   },
   "category_error_counts": {
-    "device.unmatched": 8,
-    "net.unmatched": 15,
-    "topology": 2
+    "device.unmatched": 10,
+    "net.unmatched": 17,
+    "topology": 1
   },
   "counts": {
     "nets": {
-      "layout": 7,
+      "layout": 9,
       "reference": 8,
       "matched": 0
     },
     "devices": {
-      "layout": 3,
+      "layout": 5,
       "reference": 8,
       "matched": 0
     },
     "pins": {
-      "layout": 6,
+      "layout": 8,
       "reference": 0,
-      "matched": 6
+      "matched": 8
     }
   },
   "device_classes": [
     "nfet",
-    "pfet"
+    "pfet",
+    "cap_cmomi",
+    "cap_cmomf",
+    "resistor"
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.11",
-    "layout_sha256": "e657aa4f5dab035562ca636abde1d4ef624dd2c227042b3f8921125d273330f0",
+    "engine_version": "0.30.12",
+    "layout_sha256": "01c99aff60f6a3e08f7cbb678d31ff795440648f33a7cd3885f7c9f08d0136a9",
     "reference_sha256": "b8968f3cbe82db0218bbac9db7d34ef911661b818a33273c6bb62ad56deb4f26",
     "extracted_netlist": null
   },
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.11",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:9a4e18f2fd7a0d39d02abc220141dd5c300158e2540cd19f2f2ea9151f965b80",
+      "content_hash": "sha256:5b5309ecd586f527d6df271384f18e8f1fcd528a09935544b46aed563b66a92e",
       "released": false
     },
     "input": null
   },
   "mismatches": [
     {
-      "category": "device.body_unverified",
-      "severity": "warning",
-      "description": "3 PMOS device body terminal(s) were compared against an anonymous, deck-synthesized well net, not a real schematic net -- this deck has no distinct well-tap layer (see docs/cli/extract.md, \"Coverage\")",
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
       "side": "layout",
       "net": null,
       "device": {
-        "layout": null,
+        "layout": "\\$4",
         "reference": null,
-        "class": "pfet"
+        "class": "rppd"
       },
       "property": null,
       "details": null,
@@ -88,12 +90,12 @@
       "category": "device.unmatched",
       "severity": "error",
       "description": "device has no counterpart on the other side",
-      "side": "reference",
+      "side": "layout",
       "net": null,
       "device": {
-        "layout": null,
-        "reference": "1",
-        "class": "PNPMPA"
+        "layout": "\\$5",
+        "reference": null,
+        "class": "rppd"
       },
       "property": null,
       "details": null,
@@ -126,7 +128,7 @@
       "net": null,
       "device": {
         "layout": null,
-        "reference": "2",
+        "reference": "1",
         "class": "PNPMPA"
       },
       "property": null,
@@ -145,6 +147,23 @@
         "layout": null,
         "reference": "2",
         "class": "RPPD"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "2",
+        "class": "PNPMPA"
       },
       "property": null,
       "details": null,
@@ -226,7 +245,7 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "\\$27",
+        "layout": "\\$30",
         "reference": null
       },
       "device": null,
@@ -242,7 +261,7 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "e2|sns2",
+        "layout": "e2",
         "reference": null
       },
       "device": null,
@@ -258,7 +277,7 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "e3|vref",
+        "layout": "e3",
         "reference": null
       },
       "device": null,
@@ -306,7 +325,39 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
+        "layout": "sns2",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "error",
+      "description": "layout net has no reference counterpart",
+      "side": "layout",
+      "net": {
         "layout": "vdd",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "error",
+      "description": "layout net has no reference counterpart",
+      "side": "layout",
+      "net": {
+        "layout": "vref",
         "reference": null
       },
       "device": null,
@@ -465,19 +516,6 @@
       "severity": "warning",
       "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
       "side": "layout",
-      "net": null,
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "device class could not be mapped to a counterpart",
-      "side": "reference",
       "net": null,
       "device": null,
       "property": null,

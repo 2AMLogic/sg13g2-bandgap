@@ -56,7 +56,7 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "3f3ee1e5043ebb6cb9d34c7e96dbeae4b5274cd9c4318ec7dea26e6fa1e0659d",
+    "layout_sha256": "cc4f3cd930c5386d361494fe2a68b42fd8534e8d9b975291b58ac934dfb5ef62",
     "reference_sha256": "658ec5eb4581f11833af9311222c25ef237ebaf38c40a18c7b0d2e5512afa464",
     "extracted_netlist": null
   },

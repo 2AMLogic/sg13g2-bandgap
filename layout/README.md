@@ -171,13 +171,159 @@ and `pnpMPA`'s pin count/naming).
   `M3`/`MSENSE`/`MKFB` (`draw_hv_mos`) are a generic single-finger MOS
   footprint, not read from `pmosHV_code.py`/`nmosHV_code.py` (out of this
   issue's scope — those two PyCells are not what the issue's tooling-
-  friction checks are about). `R1`/`R2`/`RPU` (`draw_poly_res`) are drawn
-  as straight, unfolded bars at the schematics' literal `w`/`l` — for `R1`
-  (`l=511u`) and `RPU` (`l=1411.3u`) this makes for a very long, thin
-  body (sub-mm to ~1.4 mm), an honest rendering of the netlist's own
-  provisional (not yet simulation-verified — see each schematic's header)
-  sizing, not a claim about how the resistor would actually be folded for
-  a compact final layout.
+  friction checks are about). `R1`/`R2`/`RPU` (`draw_poly_res`) are
+  drawn as **serpentines** at the schematics' literal `w`/`l` — see
+  "Folded (serpentine) resistors (issue #173)" below.
+
+  *(Superseded, kept for the record: through issue #172 these were drawn as
+  straight, unfolded bars, which for `R1` (`l=511u`) and `RPU`
+  (`l=1411.3u`) made for a very long, thin body — sub-mm to ~1.4 mm. That
+  was an honest rendering of the netlist's own sizing, and explicitly "not a
+  claim about how the resistor would actually be folded for a compact final
+  layout". `measurements/2026-09-layout-area/` then measured what it cost:
+  77.5% of the assembled footprint was aspect-ratio whitespace. Issue #173
+  folded them.)*
+
+## Folded (serpentine) resistors (issue #173)
+
+Every long poly resistor in this repo -- `R1`/`R2` in both variants'
+`bandgap_core`, `RPU` in both variants' `bandgap_startup` -- is drawn as a
+serpentine rather than a single straight bar. This section is the SG13G2
+account; the CMOS5L side draws the identical geometry through
+`common_sg13cmos5l.py`'s `draw_rppd`/`draw_rhigh` (same arithmetic, its own
+layer stack), and its own section below records its own floorplan
+consequences.
+
+**Why.** `measurements/2026-09-layout-area/` measured the cost of the
+straight bars directly: `sg13cmos5l_bandgap_top`, the only assembled
+top-level GDS at the time, occupied 0.3211 mm2 at density 0.092 -- 4.45x the
+sum of its own three leaf cells' footprints, i.e. **77.5% of the assembled
+footprint lay outside every leaf's own bounding box**, with inter-cell
+routing accounting for only 8,866 um2 of it. The cause was aspect ratio:
+`sg13cmos5l_bandgap_startup` was a **145:1** bar (1424.9 x 9.8 um) whose
+`RPU` alone set its bounding box, and the three leaves were placed in
+disjoint x-ranges so the assembly's width was the sum of three widths.
+
+**Geometry.** `legs` vertical bars of the schematic's own `w`, on a
+horizontal pitch of `w + gap`, joined end-to-end by `w`-thick links that
+alternate top/bottom. `(x0, y0)` is the marked core's **lower-left corner**
+(it was a bar centreline before the fold -- every call site was updated).
+For an even `legs` both free ends come out on the block's bottom row, which
+is what let each cell keep its existing escape topology; an odd `legs` leaves
+end B on top. Each free end carries the same wider un-marked `GatPoly`
+"dog-bone" head, `Cont` and `Metal1` pad the straight bar already used.
+
+**The fold conserves the drawn conductor length exactly.**
+`layout/_klayout_builder_base.py::fold_plan` is shared by both variants and
+derives the leg height and inter-leg gap **in whole nanometres** such that
+`legs*leg_len + (legs-1)*gap == l` exactly. It does that by searching the gap
+upward from the DRC-driven floor (`RES_FOLD_GAP_UM`, 0.4 um, against
+`gatpoly.space.1`'s 0.18 um) for the first value that divides evenly:
+incrementing the gap by 1 nm changes the numerator by `-(legs-1)` nm, i.e. by
+`+1` modulo `legs`, so a solution always exists within `legs` nanometres of
+the floor and the drawn gap is never *below* it. The docstring carries the
+full derivation, including why the marked core's drawn **area** (`l * w`) and
+**perimeter** (`2*(l + w)`) are also unchanged by the fold.
+
+That matters for more than tidiness. `klt`'s curated `sg13g2` deck extracts
+these as real `rppd`/`rhigh` devices and derives `R` from the marked core's
+own drawn geometry, so exact length conservation is what keeps the
+*extracted* value identical -- confirmed directly, not assumed:
+
+| device | cell | before | after |
+| --- | --- | --- | --- |
+| `R2` (`rppd`) | `bandgap_core` | `10751` | `10751` |
+| `R1` (`rppd`) | `bandgap_core` | `66430` | `66430` |
+| `RPU` (`rhigh`) | `bandgap_startup` | `1919368` | `1919368` |
+
+**One device, not a series chain.** The marker layers
+(`PolyRes`/`EXTBlock`/`pSD`/`SalBlock`, plus `nSD` for `rhigh`) are drawn on
+*exactly* the same box set as the `GatPoly` core, corners included, so the
+recognised segment is the whole serpentine and the only un-marked `GatPoly`
+left is the two end heads. `kdb.DeviceExtractorResistor` requires exactly two
+contact polygons per marked shape, and gets exactly two. Had the fold instead
+left the corners un-marked, each leg would have recognised as its own device
+and the layout would have carried `legs` resistors against the reference
+netlist's one -- a new `device.unmatched` class on a cell
+(`bandgap_startup`) that currently reaches `status: "match"`.
+
+**What the fold does change** is the device's parasitics and its matching --
+and both move in the favourable direction. A folded block sees a far smaller
+across-die process/temperature gradient than a 1.4 mm bar, so `R1`/`R2`
+matching improves rather than degrades; and the extracted *wire* parasitics
+fall sharply, because the routing that used to reach the far end of a
+millimetre-long bar no longer has to (`bandgap_startup`'s `det` trunk went
+from a ~1.4 mm horizontal run to a 4.5 um riser). The substrate-coupling term
+the PEX flow charges to the resistor body itself is unchanged, since the
+fold conserves the core's area and perimeter.
+
+**Fold counts** are chosen per call site, in each cell's own `generate.py`,
+not derived inside `draw_poly_res` -- a resistor's fold count is a floorplan
+decision. Each is picked to make its own block roughly square
+(`legs = sqrt(l / pitch)`) and rounded to an even number:
+
+| device | `w` / `l` | legs | block (um) | aspect |
+| --- | --- | --- | --- | --- |
+| `R2` (`bandgap_core`) | 2 / 82.7 | 6 | 14.0 x 13.45 | 1.04 |
+| `R1` (`bandgap_core`) | 2 / 511 | 14 | 33.278 x 36.123 | 1.09 |
+| `RPU` (`bandgap_startup`) | 1 / 1411.3 | 32 | 44.772 x 43.704 | 1.02 |
+| `R2` (`sg13cmos5l_bandgap_core`) | 2 / 85.1 | 6 | 14.0 x 13.85 | 1.01 |
+| `R1` (`sg13cmos5l_bandgap_core`) | 2 / 647 | 16 | 38.12 x 40.055 | 1.05 |
+| `RPU` (`sg13cmos5l_bandgap_startup`) | 1 / 1411.3 | 32 | 44.772 x 43.704 | 1.02 |
+
+A folded block's *footprint* is ~`l * pitch` for **any** leg count, so the
+count trades aspect ratio only -- the area the fold costs over the bare
+conductor is the inter-leg gap, which DRC requires. Both variants draw `RPU`
+at the same count and therefore the same geometry: it is the same device.
+
+**Result** (full before/after, all eight committed cells, in
+`measurements/2026-09-resistor-fold/`):
+
+| cell | before | after | aspect before -> after |
+| --- | --- | --- | --- |
+| `bandgap_core` | 516.9 x 64.5 | 142.9 x 73.7 | 8.0:1 -> 1.9:1 |
+| `bandgap_startup` | 1416.9 x 22.2 | 50.1 x 50.5 | 63.7:1 -> 1.0:1 |
+| `bandgap_top` | 2228.3 x 93.3 | 482.5 x 97.3 | 23.9:1 -> 5.0:1 |
+| `sg13cmos5l_bandgap_core` | 840.5 x 64.9 | 230.1 x 64.9 | 12.9:1 -> 3.5:1 |
+| `sg13cmos5l_bandgap_startup` | 1424.9 x 9.8 | 84.6 x 53.5 | 145.4:1 -> 1.6:1 |
+| `sg13cmos5l_bandgap_top` | 2455.8 x 130.8 | 502.8 x 94.8 | 18.8:1 -> 5.3:1 |
+
+Both assemblies stayed `klt drc` **clean, 0 violations**, and every touched
+cell's `klt lvs` verdict -- `mismatch_count`, `error_count` and the
+per-category breakdown -- is identical before and after (`bandgap_startup`
+still reaches `status: "match"`). See
+`measurements/2026-09-resistor-fold/README.md` section 5, which compares the
+four leaf cells against the *pre-fold GDS re-run through the same installed
+`klt`* rather than against their committed reports, because the three
+`sg13cmos5l-*` cells' committed reports predate a deck build that now
+recognises `rppd`/`rhigh` -- a deck drift that is visible in this branch's
+refreshed reports and is not a consequence of the fold. Both assemblies are
+compared against their committed reports directly, and both come out
+unchanged (`bandgap_top` 8/6, `sg13cmos5l_bandgap_top` 22/22), so #171's own
+`bandgap_top` LVS improvement survives the fold and the re-pack intact.
+
+**Top-level placement was re-packed, not interleaved.** Both `generate.py`
+assemblies still place their three leaves in disjoint x-ranges, left to
+right, at the same ~30 um inter-cell gaps; what changed is that the leaves
+are a quarter as wide, the hard-coded riser columns are now written as
+`<CELL>_DX + local` (they previously baked in the old offsets), and each
+bus stack came down to sit just above the tallest leaf. Issue #173's own
+proposed step 2 -- genuinely interleaving the placement into two rows -- is
+deliberately **not** done: both assemblies' inter-cell routing is documented
+as resting on the disjoint-x-range invariant, which is what makes each net's
+crossings checkable one at a time under the single modelled routing metal the
+`sg13cmos5l` deck declares. Breaking it is a full re-verification of every
+riser column on both assemblies and is tracked as **#177**.
+
+One thing the fold *simplified* rather than complicated, worth recording
+because it is the direct inverse of the problem: `sg13cmos5l-bandgap_top`
+used to need `Metal1` bridges on two of its `GatPoly` risers, because `RPU`'s
+unbroken 1.4 mm body spanned almost the whole `startup` leaf and both risers'
+natural columns fell inside it. The folded body ends at local `x=44.97`, so
+both columns are clear and both bridges are gone. The one riser that *would*
+now land inside the folded block (`vdd`, whose terminal is the block's
+bottom-left corner) escapes sideways into the empty amp-startup gap instead.
+
 
 ## Layer numbers
 
@@ -222,9 +368,12 @@ klt stats layout/bandgap_core/bandgap_core.gds --format json
 klt layers layout/bandgap_core/bandgap_core.gds --format json
 ```
 
-`bandgap_core.gds`: 1 top cell (`bandgap_core`), 241 shapes/labels across 20
-layer/datatype/purpose combinations, bbox `(-5.4, -3.1)`–`(511.5, 61.4)` µm
-(the `R1` long-bar resistor dominates the bounding box — see above). The
+`bandgap_core.gds`: 1 top cell (`bandgap_core`), bbox
+`(-5.4, -3.1)`–`(137.478, 70.623)` µm as of issue #173's fold (was
+`(511.5, 61.4)` when `R1` was a straight 511 µm bar that dominated the
+bounding box on its own; the cell traded 374 µm of width for 9 µm of
+height — see "Folded (serpentine) resistors" below and
+`measurements/2026-09-resistor-fold/`). The
 `EmWind.drawing` (33/0) layer carries exactly 10 shapes — `Q1` (`Nx=1`) + `Q2`
 (`Nx=8`) + `Q3` (`Nx=1`) = 10, matching the schematic's `Nx` values exactly,
 confirming the per-stripe geometry described below.
@@ -1633,8 +1782,21 @@ Top cell `sg13cmos5l_bandgap_core`, bbox `(-10.0, -3.21)`–`(830.5, 61.7)` µm
 for `sns1`/`sns2`/`vref`, issue #76 -- see "Boundary ports" below; before
 that, widened from `(800.2, 61.7)` for `X_M3`/`R1`/`Q3` shifting right,
 150 -> 180, to make room for Q2's 8-unit row), 1188 polygons across 12
-layer/datatype combinations (`R1`'s straight 647 µm bar still dominates the
-bounding box, exactly as `bandgap_core`'s does on the SG13G2 side).
+layer/datatype combinations.
+
+**Issue #173 folded `R1`/`R2`**, and the bbox is now
+`(-10.0, -3.21)`–`(220.07, 61.7)` µm: `R1`'s straight 647 µm bar used to set
+this cell's 840.5 µm width on its own, exactly as `bandgap_core`'s 511 µm
+bar did on the SG13G2 side. Folded, `R1` is a 38.12 x 40.055 µm block and
+`R2` a 14.0 x 13.85 µm one, both placed above their own mirror leg, and this
+cell's height is unchanged. Two floorplan constants moved with them and are
+worth naming because neither is arbitrary: `Y_R2` dropped 45 -> 44 so the
+folded block's top clears the mirror row's own NWell/ThickGateOx bottom edge
+(a resistor body inside the mirror's n-well would be physically wrong), and
+`Y_SNS2_PORT` rose 50 -> 57 because `sns2`'s `poly_underpass` crossing of
+`vref`'s trunk used to sit in field that `R1`'s folded body now occupies —
+left at 50 it would have merged into `R1`'s own conductor and shorted `sns2`
+to `vref`. See `measurements/2026-09-resistor-fold/`.
 
 ### Boundary ports for `bandgap_top` assembly (issue #76)
 
@@ -1811,12 +1973,19 @@ already triggers, not a new one.
 One-to-one with `design/sg13cmos5l/netlist/bandgap_startup.spice` (schematic
 from #70): `RPU` `rhigh` `w=1u l=1411.3u`, `MSENSE` `sg13_hv_nmos`
 `w=10u l=0.5u`, `MKFB` `sg13_hv_nmos` `w=2u l=0.5u`. Top cell
-`sg13cmos5l_bandgap_startup`, bbox `(-0.5, -1.2)`–`(1424.4, 8.6)` µm
-(widened from `(-0.5, -0.99)`–`(1423.85, 8.6)`: two new boundary port pads
-for `sns1`/`fb`, issue #76 -- see "Boundary ports" below), 122 polygons
-across 12 layer/datatype combinations — `RPU`'s straight 1411 µm bar
-sets the bounding box single-handedly, exactly as the same device does in
-`layout/bandgap_startup` on the SG13G2 side.
+`sg13cmos5l_bandgap_startup`, bbox `(-0.2, -1.2)`–`(84.4, 52.304)` µm as of
+issue #173's fold.
+
+This cell was the repo's most extreme rectangle: `RPU`'s straight 1411 µm
+bar set its `(-0.5, -1.2)`–`(1424.4, 8.6)` bbox single-handedly — a
+**145.4:1** aspect ratio, and the specific cell
+`measurements/2026-09-layout-area/` named as the direct cause of the
+assembled top's 77.5% whitespace. Folded into 32 serpentine legs, `RPU` is a
+44.772 x 43.704 µm block and the cell is 1.6:1. The `MSENSE`/`MKFB` cluster
+moved 1340 µm left with it, keeping every one of its own internal clearances
+unchanged (it used to sit under the bar's far end; it now sits just past the
+folded block's right edge, the same relative topology). See
+`measurements/2026-09-resistor-fold/`.
 
 **The `rhigh` flavour landed here.** `draw_rhigh` shares its construction with
 `draw_rppd` (CMOS5L's two poly resistors share one PCell base class,
@@ -2449,7 +2618,7 @@ to a rail, the gap takes an otherwise-perfect compare from 9/9 devices to
 
 Everything the SG13G2 section's "What this layout is / is not" says applies
 here too (simplified representative footprints, not PCell-exact stacks;
-straight rather than folded resistor bars; no guard rings, fill or seal ring;
+no guard rings, fill or seal ring;
 no analog matching structures — no common-centroid mirror interdigitation, no
 dummy devices). Two CMOS5L-specific additions:
 

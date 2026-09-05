@@ -28,7 +28,7 @@ SG13G2 KLayout technology's own layer-properties file
 from __future__ import annotations
 
 import klayout.db as kdb
-from _klayout_builder_base import BuilderBase, route_h, route_v  # noqa: F401
+from _klayout_builder_base import BuilderBase, fold_plan, route_h, route_v  # noqa: F401
 
 # --------------------------------------------------------------------------- #
 # SG13G2 GDS layer numbers, read from
@@ -544,6 +544,17 @@ RES_GATPOLY_Y_MARGIN_UM = 0.1
 RES_CONT_LEN_UM = 0.2
 RES_CONT_MARGIN_UM = 0.1
 
+#: Minimum drawn space between two adjacent serpentine legs (issue #173's
+#: fold). The notch between two legs of one folded resistor is an ordinary
+#: `GatPoly` space, whose floor is `gatpoly.space.1` = 0.18 um -- 0.4 um
+#: clears it by 0.22 um, and still leaves 0.3 um of clearance once a
+#: terminal head's `RES_GATPOLY_Y_MARGIN_UM` overhang eats into the gap next
+#: to its neighbouring leg. This is a *floor*, not the drawn value:
+#: :func:`~_klayout_builder_base.fold_plan` may return a gap up to `legs`
+#: nanometres larger, which is how it keeps the folded conductor's total
+#: length exactly equal to the schematic's own `l` (see its docstring).
+RES_FOLD_GAP_UM = 0.4
+
 
 def draw_poly_res(
     b: Builder,
@@ -555,24 +566,55 @@ def draw_poly_res(
     y0: float,
     end_a_net: str,
     end_b_net: str,
+    legs: int = 1,
 ) -> dict:
-    """Draw a straight (unfolded) ``rppd``/``rhigh`` resistor body.
+    """Draw a folded (serpentine) ``rppd``/``rhigh`` resistor body.
 
     Sized to the schematic's own committed ``w``/``l`` (``rppd`` R1/R2,
-    ``rhigh`` RPU) -- drawn as a single straight ``PolyRes`` bar, **not**
-    meandered/folded into a compact serpentine. For R1 (``l=511u``) and
-    RPU (``l=1411.3u``) this makes for a very long, thin body (sub-mm to
-    ~1.4 mm) -- an honest, literal rendering of the netlist's own
-    (provisional, not yet simulation-verified per
-    ``design/bandgap_core.sch``'s own header) sizing, not a claim that this
-    is how the resistor would actually be folded for a compact final
-    layout. See ``layout/README.md`` "What this layout is / is not".
+    ``rhigh`` RPU). ``legs`` is how many parallel vertical bars the ``l_um``
+    of conductor is folded into; ``legs=1`` is the degenerate straight bar.
 
-    **rppd/rhigh recognition (issue #20).** The ``[x0, x0 + l_um]`` core --
-    the same footprint this function always drew on ``PolyRes`` -- is now
-    also covered by ``GatPoly`` (the deck's real resistor *body* layer, see
-    the ``RES_*`` module constants' own docstring above) plus the marker
-    layers each flavour's own recognition requires
+    **Why this is folded (issue #173).** Drawn straight, ``R1``
+    (``l=511u``) and ``RPU`` (``l=1411.3u``) are sub-mm to ~1.4 mm bars that
+    single-handedly set their cells' bounding boxes:
+    ``measurements/2026-09-layout-area/`` measured ``bandgap_startup`` at
+    **63.7:1** and the ``sg13cmos5l`` assembly at 77.5% aspect-ratio
+    whitespace. Folding attacks exactly that: the same conductor, bent, so
+    the cell's footprint stops being set by one dimension of one device.
+    ``legs`` is chosen per call site (see each ``generate.py``) rather than
+    derived here -- a resistor's fold count is a floorplan decision, not a
+    property of the device.
+
+    **The fold conserves length exactly, so it conserves resistance.**
+    :func:`~_klayout_builder_base.fold_plan` derives the leg height and the
+    inter-leg gap in whole nanometres such that ``legs*h + (legs-1)*gap`` is
+    ``l_um`` exactly -- see its docstring for the derivation and for why the
+    gap it returns can exceed ``RES_FOLD_GAP_UM`` by a few nanometres. This
+    is a nominal-value-preserving transform, not a re-sizing: what folding
+    *does* change is the device's parasitics (a compact block couples
+    differently than a 1.4 mm bar) and its matching behaviour (a folded
+    block sees a far smaller across-die gradient than a bar 1.4 mm long, so
+    ``R1``/``R2`` matching improves rather than degrades). It also leaves the
+    drawn *area* and *perimeter* of the marked core unchanged from the
+    straight bar (``area == l_um * w_um`` either way -- ``fold_plan``), so
+    the substrate-coupling parasitic the PEX flow extracts from this device
+    is not systematically shifted by the fold either.
+
+    **Geometry.** ``legs`` vertical bars, leg ``i`` spanning
+    ``x in [x0 + i*pitch, x0 + i*pitch + w_um]`` and
+    ``y in [y0, y0 + leg_len]``, joined by ``w_um``-thick links that
+    alternate top (even ``i``) and bottom (odd ``i``). ``(x0, y0)`` is
+    therefore the **lower-left corner of the marked core**, not a bar
+    centreline as in the pre-fold signature. The two free ends are leg 0's
+    bottom and, for an even ``legs``, leg ``legs-1``'s bottom (so both
+    terminals sit on the same row, the way the straight bar's two ends
+    sat on the same row) -- or, for an odd ``legs``, leg ``legs-1``'s top.
+
+    **rppd/rhigh recognition (issue #20, preserved through the fold).** The
+    marked "core" -- the serpentine itself -- is drawn on ``GatPoly`` (the
+    deck's real resistor *body* layer, see the ``RES_*`` module constants'
+    own docstring above) plus the marker layers each flavour's own
+    recognition requires
     (``klayout_tools.decks.sg13g2.EXTRACTION_DECK.resistors``): ``rppd``
     needs ``EXTBlock`` (111,0), ``pSD`` (14,0), ``SalBlock`` (28,0);
     ``rhigh`` needs those same three **plus** ``nSD`` (7,0) over the same
@@ -580,92 +622,120 @@ def draw_poly_res(
     (whose own ``excludes`` drops any segment carrying ``nSD``, precisely so
     a segment carrying both implants can only ever match ``rhigh``, never
     ``rppd``). ``flavor="rhigh"`` (``RPU``) therefore additionally draws
-    ``nSD``; ``flavor="rppd"`` (``R1``/``R2``) does not.
+    ``nSD``; ``flavor="rppd"`` (``R1``/``R2``) does not. Every marker layer
+    is drawn on **exactly** the same box set as the ``GatPoly`` core, so the
+    recognised segment is the whole serpentine and no fold corner is left
+    un-marked (which would split one device into a series chain the
+    reference netlist's single R card could not pair against).
 
-    ``GatPoly`` extends ``RES_HEAD_UM`` microns past each end of that marked
-    core as a *wider* "dog-bone" head -- the recognised device's un-marked
-    terminal, which is where the end contacts now land (previously they sat
-    directly on the ``PolyRes`` core itself, with no ``GatPoly`` under them
-    at all). Each head is ``RES_GATPOLY_Y_MARGIN_UM`` microns taller than
-    the core's own ``w_um`` width (clearing ``gatpoly.enclosing.cont.1``'s
-    0.07um floor around the end contacts) -- but the core segment itself
-    stays exactly ``w_um`` tall, with **no** margin added there. This
-    matters beyond DRC: `klt`'s native resistor extractor
-    (``kdb.DeviceExtractorResistor``) requires the *un-marked* conductor
-    left after the marked core is cut out to split into exactly **two**
-    disjoint polygons (one per terminal) -- an earlier version of this
-    function widened the *whole* bar uniformly, which left a thin sliver of
-    un-marked ``GatPoly`` running along the top/bottom edge of the core
-    connecting both heads into one single polygon, and `klt extract` logged
-    ``"Expected two polygons on contacts interacting with one resistor
-    shape (found 1) - resistor shape ignored"`` and dropped the device
-    entirely (verified directly, not assumed -- see this issue's own PR).
-    Keeping the core segment's cross-section an exact match for the marker
-    boxes below (no margin) ensures cutting it out leaves the two wider
-    heads fully disjoint.
+    ``GatPoly`` extends ``RES_HEAD_UM`` microns past each of the two free
+    ends as a *wider* "dog-bone" head -- the recognised device's un-marked
+    terminal, which is where the end contacts land. Each head is
+    ``RES_GATPOLY_Y_MARGIN_UM`` microns wider than the leg's own ``w_um``
+    (clearing ``gatpoly.enclosing.cont.1``'s 0.07um floor around the end
+    contacts) -- but the legs and links themselves stay exactly ``w_um``
+    across, with **no** margin added. This matters beyond DRC: `klt`'s
+    native resistor extractor (``kdb.DeviceExtractorResistor``) requires the
+    *un-marked* conductor left after the marked core is cut out to split
+    into exactly **two** disjoint polygons (one per terminal), and the only
+    un-marked ``GatPoly`` this function draws is those two heads.
+    (Historically, an early uniform-width version of the straight bar left a
+    thin un-marked sliver along the core's edge joining both heads into one
+    polygon, and `klt extract` logged ``"Expected two polygons on contacts
+    interacting with one resistor shape (found 1) - resistor shape ignored"``
+    and dropped the device -- verified directly at the time, and the reason
+    the no-margin-on-the-core rule is stated as a rule here.)
+
+    The inter-leg gap ``fold_plan`` returns is a real DRC quantity: the notch
+    between two adjacent legs is a ``GatPoly`` space, floor 0.18um
+    (``gatpoly.space.1``). ``RES_FOLD_GAP_UM`` (0.4) clears it with 0.22um to
+    spare, which is also what keeps each head's ``RES_GATPOLY_Y_MARGIN_UM``
+    overhang clear of its neighbouring leg (0.3um of the 0.4um gap survives
+    the overhang).
 
     End-pad terminals are labeled twice, same convention as
-    ``draw_npn13g2``/``draw_hv_mos`` above (``PolyRes.label``/(8,1) plus the
+    ``draw_npn13g2``/``draw_hv_mos`` above (``Metal1.label``/(8,1) plus the
     real net-naming ``Metal1.text``/(8,25)).
 
-    Returns a dict of this device's terminal geometry (``"end_a_pad"``/
-    ``"end_b_pad"``, each a ``(x0, y0, x1, y1)`` Metal1 box in microns;
-    ``"length"`` in microns), for issue #20's routing pass.
+    Returns this device's terminal geometry (``"end_a_pad"``/``"end_b_pad"``,
+    each a ``(x0, y0, x1, y1)`` Metal1 box in microns), its ``"length"``, the
+    ``"plan"`` :func:`fold_plan` produced, and ``"bbox"`` -- the drawn
+    footprint including both heads' Metal1 pads, for a caller's own
+    floorplanning.
     """
-    x_hi = x0 + l_um
+    plan = fold_plan(w_um, l_um, legs, RES_FOLD_GAP_UM)
+    leg_len = plan["leg_len_um"]
+    pitch = plan["pitch_um"]
+    y_top = y0 + leg_len
 
-    # GatPoly resistor body (the deck's real recognised-device conductor):
-    # a wider head at each end (for the terminal contacts) plus the core
-    # strip in between, sized to exactly match the marker boxes below (see
-    # this function's own docstring for why the core must carry no extra
-    # margin).
-    b.box(
-        L_GATPOLY,
-        x0 - RES_HEAD_UM,
-        y0 - w_um / 2 - RES_GATPOLY_Y_MARGIN_UM,
-        x0,
-        y0 + w_um / 2 + RES_GATPOLY_Y_MARGIN_UM,
-    )
-    b.box(L_GATPOLY, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
-    b.box(
-        L_GATPOLY,
-        x_hi,
-        y0 - w_um / 2 - RES_GATPOLY_Y_MARGIN_UM,
-        x_hi + RES_HEAD_UM,
-        y0 + w_um / 2 + RES_GATPOLY_Y_MARGIN_UM,
-    )
+    def leg_x(i: int) -> float:
+        return x0 + i * pitch
 
-    # The marked "core" -- PolyRes plus the rppd requires-layers, all
-    # exactly coincident with each other and with the schematic's own w/l.
-    b.box(L_POLYRES, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
-    b.box(L_EXTBLOCK, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
-    b.box(L_PSD, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
-    b.box(L_SALBLOCK, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
+    # -- the marked core: `legs` vertical bars plus the alternating links.
+    core: list[tuple[float, float, float, float]] = [
+        (leg_x(i), y0, leg_x(i) + w_um, y_top) for i in range(legs)
+    ]
+    for i in range(legs - 1):
+        if i % 2 == 0:  # link at the top of legs i / i+1
+            core.append((leg_x(i) + w_um, y_top - w_um, leg_x(i + 1), y_top))
+        else:  # link at the bottom
+            core.append((leg_x(i) + w_um, y0, leg_x(i + 1), y0 + w_um))
+
+    core_layers = [L_GATPOLY, L_POLYRES, L_EXTBLOCK, L_PSD, L_SALBLOCK]
     if flavor == "rhigh":
-        b.box(L_NSD, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
-    b.label(L_POLYRES_LABEL, f"{name}", (x0 + x_hi) / 2, y0)
+        core_layers.append(L_NSD)
+    for layer in core_layers:
+        for box in core:
+            b.box(layer, *box)
+    b.label(L_POLYRES_LABEL, f"{name}", x0 + plan["width_um"] / 2, (y0 + y_top) / 2)
 
-    # End_a terminal head: GatPoly's own left head, contacted
-    # RES_CONT_MARGIN_UM microns clear of the bar's real left edge.
-    cont_a_x0 = x0 - RES_HEAD_UM + RES_CONT_MARGIN_UM
-    cont_a_x1 = cont_a_x0 + RES_CONT_LEN_UM
-    b.box(L_CONT, cont_a_x0, y0 - w_um / 2, cont_a_x1, y0 + w_um / 2)
-    end_a_pad = (x0 - RES_HEAD_UM - 0.1, y0 - w_um / 2 - 0.1, x0, y0 + w_um / 2 + 0.1)
-    b.box(L_METAL1, *end_a_pad)
-    b.label(L_METAL1_LABEL, end_a_net, x0, y0 + w_um / 2 + 0.4)
-    b.label(L_METAL1_TEXT, end_a_net, x0, y0 + w_um / 2 + 0.4)
+    def _terminal(index: int, at_top: bool, net: str) -> tuple[float, float, float, float]:
+        """Draw one free end's dog-bone head + Cont + Metal1 pad; return the pad."""
+        head_x0 = leg_x(index) - RES_GATPOLY_Y_MARGIN_UM
+        head_x1 = leg_x(index) + w_um + RES_GATPOLY_Y_MARGIN_UM
+        if at_top:
+            head_y0, head_y1 = y_top, y_top + RES_HEAD_UM
+            cont_y1 = head_y1 - RES_CONT_MARGIN_UM
+            cont_y0 = cont_y1 - RES_CONT_LEN_UM
+            pad = (head_x0 - 0.1, head_y0, head_x1 + 0.1, head_y1 + 0.1)
+        else:
+            head_y0, head_y1 = y0 - RES_HEAD_UM, y0
+            cont_y0 = head_y0 + RES_CONT_MARGIN_UM
+            cont_y1 = cont_y0 + RES_CONT_LEN_UM
+            pad = (head_x0 - 0.1, head_y0 - 0.1, head_x1 + 0.1, head_y1)
+        b.box(L_GATPOLY, head_x0, head_y0, head_x1, head_y1)
+        b.box(L_CONT, leg_x(index), cont_y0, leg_x(index) + w_um, cont_y1)
+        b.box(L_METAL1, *pad)
+        pad_cx, pad_cy = (pad[0] + pad[2]) / 2, (pad[1] + pad[3]) / 2
+        b.label(L_METAL1_LABEL, net, pad_cx, pad_cy)
+        b.label(L_METAL1_TEXT, net, pad_cx, pad_cy)
+        return pad
 
-    # End_b terminal head: GatPoly's own right head, mirrored.
-    cont_b_x1 = x_hi + RES_HEAD_UM - RES_CONT_MARGIN_UM
-    cont_b_x0 = cont_b_x1 - RES_CONT_LEN_UM
-    b.box(L_CONT, cont_b_x0, y0 - w_um / 2, cont_b_x1, y0 + w_um / 2)
-    end_b_pad = (x_hi, y0 - w_um / 2 - 0.1, x_hi + RES_HEAD_UM + 0.1, y0 + w_um / 2 + 0.1)
-    b.box(L_METAL1, *end_b_pad)
-    b.label(L_METAL1_LABEL, end_b_net, x_hi, y0 + w_um / 2 + 0.4)
-    b.label(L_METAL1_TEXT, end_b_net, x_hi, y0 + w_um / 2 + 0.4)
+    # End A is always leg 0's bottom. End B is the last leg's *free* end:
+    # bottom for an even leg count (both terminals on the same row), top for
+    # an odd one -- the links alternate, so the parity fixes which it is.
+    end_a_pad = _terminal(0, at_top=False, net=end_a_net)
+    end_b_pad = _terminal(legs - 1, at_top=(legs % 2 == 1), net=end_b_net)
 
-    b.label(L_TEXT, f"{name}({flavor} w={w_um}u l={l_um}u)", (x0 + x_hi) / 2, y0 - w_um / 2 - 0.8)
-    return {"length": l_um, "end_a_pad": end_a_pad, "end_b_pad": end_b_pad}
+    b.label(
+        L_TEXT,
+        f"{name}({flavor} w={w_um}u l={l_um}u x{legs})",
+        x0 + plan["width_um"] / 2,
+        y_top + RES_HEAD_UM + 0.5 if legs % 2 == 1 else y_top + 0.5,
+    )
+    bbox = (
+        min(end_a_pad[0], end_b_pad[0], x0),
+        min(end_a_pad[1], end_b_pad[1], y0),
+        max(end_a_pad[2], end_b_pad[2], x0 + plan["width_um"]),
+        max(end_a_pad[3], end_b_pad[3], y_top),
+    )
+    return {
+        "length": l_um,
+        "end_a_pad": end_a_pad,
+        "end_b_pad": end_b_pad,
+        "plan": plan,
+        "bbox": bbox,
+    }
 
 
 # --------------------------------------------------------------------------- #

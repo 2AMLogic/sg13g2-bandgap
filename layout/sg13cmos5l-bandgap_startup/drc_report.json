@@ -11,7 +11,15 @@
     "deck_layers": [
       "1/0",
       "5/0",
-      "8/0"
+      "8/0",
+      "10/0",
+      "19/0",
+      "29/0",
+      "30/0",
+      "49/0",
+      "50/0",
+      "125/0",
+      "126/0"
     ],
     "layers_checked": [
       "1/0",
@@ -29,30 +37,57 @@
       "111/0",
       "128/0"
     ],
-    "rules_skipped": [],
+    "rules_skipped": [
+      "metal1.enclosing.via1.1",
+      "metal2.enclosing.via2.1",
+      "metal2.space.1",
+      "metal2.width.1",
+      "metal3.enclosing.via3.1",
+      "metal3.space.1",
+      "metal3.width.1",
+      "metal4.enclosing.topvia1.1",
+      "metal4.space.1",
+      "metal4.width.1",
+      "topmetal1.enclosing.topvia1.1",
+      "topmetal1.space.1",
+      "topmetal1.width.1",
+      "topvia1.space.1",
+      "topvia1.width.1",
+      "via1.space.1",
+      "via1.width.1",
+      "via2.space.1",
+      "via2.width.1",
+      "via3.space.1",
+      "via3.width.1"
+    ],
     "voltage_domain_warnings": [
       {
         "marker": "44/0",
-        "description": "ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). This MOS-only starter models neither side of that split yet: EXTRACTION_DECK recognises only the LV (thin-gate-oxide) NMOS/PMOS pair (mirroring sg13g2.py's own #905 starter scope; the HV pair is left for a follow-on issue, the sg13cmos5l sibling of sg13g2.py's issue #1231), and this curated deck's DRC rules apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note)."
+        "description": "ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). Issue #1416 added the HV MOSFlavour entry to EXTRACTION_DECK.mos_flavours, so a transistor drawn inside this marker now recognises and binds correctly (mirroring sg13g2.py's own #1231 follow-on) -- what remains unmodelled is this curated deck's DRC rules, which still apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note)."
       }
     ],
     "deck_scope": [
       "5.16 Metal1",
+      "5.17 Metaln",
+      "5.19 Via1",
+      "5.20 Vian",
+      "5.21 TopVia1",
+      "5.22 TopMetal1",
       "5.5 Activ",
       "5.8 GatPoly"
     ]
   },
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.11",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:9a4e18f2fd7a0d39d02abc220141dd5c300158e2540cd19f2f2ea9151f965b80",
+      "content_hash": "sha256:5b5309ecd586f527d6df271384f18e8f1fcd528a09935544b46aed563b66a92e",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:03c46e76773192b2b8c4d7f175a9fb110b9381eb777a33932475e8e277a96051"
+      "content_hash": "sha256:a18f8c052af3d66f9e988cd874d92e0379d034f25cf9ce187dc351ad19c368fa"
     }
   }
 }

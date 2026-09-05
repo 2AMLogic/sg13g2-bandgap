@@ -5,31 +5,30 @@
   "top": "sg13cmos5l_bandgap_top",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_top.extracted.spice",
-  "netlist_sha256": "826a0734ce64d09dee61cbae48c075936d0d25a552bc1f5a611fc351841087f9",
+  "netlist_sha256": "3ca3980f922958978fa92143aec8dcc8f1eb86c770b11cc62196af6921ade106",
   "status": "extracted",
-  "device_count": 14,
-  "net_count": 13,
-  "pin_count": 11,
+  "device_count": 17,
+  "net_count": 15,
+  "pin_count": 13,
   "device_counts": {
     "nfet": 6,
-    "pfet": 8
+    "pfet": 8,
+    "rhigh": 1,
+    "rppd": 2
   },
   "dummy_devices_dropped": 0,
   "ignored_layers": [
     {
-      "layer": 7,
+      "layer": 63,
       "datatype": 0,
-      "shapes": 1
-    },
-    {
-      "layer": 14,
-      "datatype": 0,
-      "shapes": 61
-    },
+      "shapes": 27
+    }
+  ],
+  "device_recognition_only_layers": [
     {
       "layer": 28,
       "datatype": 0,
-      "shapes": 3
+      "shapes": 105
     },
     {
       "layer": 44,
@@ -37,25 +36,22 @@
       "shapes": 14
     },
     {
-      "layer": 63,
-      "datatype": 0,
-      "shapes": 27
-    },
-    {
       "layer": 111,
       "datatype": 0,
-      "shapes": 3
+      "shapes": 105
     },
     {
       "layer": 128,
       "datatype": 0,
-      "shapes": 3
+      "shapes": 105
     }
   ],
-  "device_recognition_only_layers": [],
   "device_classes": [
     "nfet",
-    "pfet"
+    "pfet",
+    "cap_cmomi",
+    "cap_cmomf",
+    "resistor"
   ],
   "devices": [
     {
@@ -65,7 +61,7 @@
         "s": "vss",
         "g": "d1",
         "d": "fb|out",
-        "b": "vsubs"
+        "b": "vss"
       },
       "params": {
         "l_um": 1.0,
@@ -82,8 +78,8 @@
       "nets": {
         "s": "fb|out",
         "g": "pn",
-        "d": "det|vdd",
-        "b": "\\$30"
+        "d": "vdd",
+        "b": "\\$34"
       },
       "params": {
         "l_um": 1.0,
@@ -100,8 +96,8 @@
       "nets": {
         "s": "pn",
         "g": "pn",
-        "d": "det|vdd",
-        "b": "\\$30"
+        "d": "vdd",
+        "b": "\\$34"
       },
       "params": {
         "l_um": 1.0,
@@ -118,8 +114,8 @@
       "nets": {
         "s": "in_n|sns1",
         "g": "fb|out",
-        "d": "det|vdd",
-        "b": "\\$32"
+        "d": "vdd",
+        "b": "\\$36"
       },
       "params": {
         "l_um": 1.0,
@@ -134,10 +130,10 @@
       "name": "$13",
       "class": "pfet",
       "nets": {
-        "s": "e2|in_p|sns2",
+        "s": "in_p|sns2",
         "g": "fb|out",
-        "d": "det|vdd",
-        "b": "\\$32"
+        "d": "vdd",
+        "b": "\\$36"
       },
       "params": {
         "l_um": 1.0,
@@ -152,10 +148,10 @@
       "name": "$14",
       "class": "pfet",
       "nets": {
-        "s": "e3|vref",
+        "s": "vref",
         "g": "fb|out",
-        "d": "det|vdd",
-        "b": "\\$32"
+        "d": "vdd",
+        "b": "\\$36"
       },
       "params": {
         "l_um": 1.0,
@@ -167,13 +163,61 @@
       }
     },
     {
+      "name": "$15",
+      "class": "rppd",
+      "nets": {
+        "a": "in_p|sns2",
+        "b": "e2",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 11063.0,
+        "l_um": 85.1,
+        "w_um": 2.0,
+        "area_um2": 170.2,
+        "perimeter_um": 174.2
+      }
+    },
+    {
+      "name": "$16",
+      "class": "rppd",
+      "nets": {
+        "a": "vref",
+        "b": "e3",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 84110.0,
+        "l_um": 647.0,
+        "w_um": 2.0,
+        "area_um2": 1294.0,
+        "perimeter_um": 1298.0
+      }
+    },
+    {
+      "name": "$17",
+      "class": "rhigh",
+      "nets": {
+        "a": "vdd",
+        "b": "det",
+        "w": "vss"
+      },
+      "params": {
+        "r_ohm": 1919368.0,
+        "l_um": 1411.3,
+        "w_um": 1.0,
+        "area_um2": 1411.3,
+        "perimeter_um": 2824.6
+      }
+    },
+    {
       "name": "$2",
       "class": "nfet",
       "nets": {
         "s": "vss",
         "g": "d1",
         "d": "d1",
-        "b": "vsubs"
+        "b": "vss"
       },
       "params": {
         "l_um": 1.0,
@@ -191,7 +235,7 @@
         "s": "vss",
         "g": "d2",
         "d": "d2",
-        "b": "vsubs"
+        "b": "vss"
       },
       "params": {
         "l_um": 1.0,
@@ -209,7 +253,7 @@
         "s": "vss",
         "g": "d2",
         "d": "pn",
-        "b": "vsubs"
+        "b": "vss"
       },
       "params": {
         "l_um": 1.0,
@@ -226,8 +270,8 @@
       "nets": {
         "s": "vss",
         "g": "in_n|sns1",
-        "d": "det|vdd",
-        "b": "vsubs"
+        "d": "det",
+        "b": "vss"
       },
       "params": {
         "l_um": 0.5,
@@ -243,9 +287,9 @@
       "class": "nfet",
       "nets": {
         "s": "vss",
-        "g": "det|vdd",
+        "g": "det",
         "d": "fb|out",
-        "b": "vsubs"
+        "b": "vss"
       },
       "params": {
         "l_um": 0.5,
@@ -261,9 +305,9 @@
       "class": "pfet",
       "nets": {
         "s": "d1",
-        "g": "e2|in_p|sns2",
+        "g": "in_p|sns2",
         "d": "tail",
-        "b": "\\$30"
+        "b": "\\$34"
       },
       "params": {
         "l_um": 1.0,
@@ -281,7 +325,7 @@
         "s": "d2",
         "g": "in_n|sns1",
         "d": "tail",
-        "b": "\\$30"
+        "b": "\\$34"
       },
       "params": {
         "l_um": 1.0,
@@ -298,8 +342,8 @@
       "nets": {
         "s": "tail",
         "g": "fb|out",
-        "d": "det|vdd",
-        "b": "\\$30"
+        "d": "vdd",
+        "b": "\\$34"
       },
       "params": {
         "l_um": 1.0,
@@ -313,12 +357,12 @@
   ],
   "nets": [
     {
-      "name": "\\$30",
+      "name": "\\$34",
       "pin": false,
       "device_count": 5
     },
     {
-      "name": "\\$32",
+      "name": "\\$36",
       "pin": false,
       "device_count": 3
     },
@@ -333,17 +377,17 @@
       "device_count": 4
     },
     {
-      "name": "det|vdd",
+      "name": "det",
       "pin": true,
-      "device_count": 8
+      "device_count": 3
     },
     {
-      "name": "e2|in_p|sns2",
+      "name": "e2",
       "pin": true,
-      "device_count": 2
+      "device_count": 1
     },
     {
-      "name": "e3|vref",
+      "name": "e3",
       "pin": true,
       "device_count": 1
     },
@@ -358,6 +402,11 @@
       "device_count": 3
     },
     {
+      "name": "in_p|sns2",
+      "pin": true,
+      "device_count": 3
+    },
+    {
       "name": "pn",
       "pin": true,
       "device_count": 4
@@ -368,27 +417,30 @@
       "device_count": 3
     },
     {
-      "name": "vss",
+      "name": "vdd",
       "pin": true,
-      "device_count": 6
+      "device_count": 7
     },
     {
-      "name": "vsubs",
+      "name": "vref",
       "pin": true,
-      "device_count": 6
+      "device_count": 2
+    },
+    {
+      "name": "vss",
+      "pin": true,
+      "device_count": 15
     }
   ],
   "warnings": [
-    "21 poly-layer shapes not part of any recognised nfet/pfet gate touch contact at 2+ separate points (the resistor-body signature) and carry no resistor-marker layer at all; this deck may not model the device class drawn here, and its terminals have been absorbed into ordinary interconnect as an unintended short -- see docs/cli/extract.md's 'Known limitation: unmodelled device geometry'.",
-    "promoted 4 net(s) to top-level pins from label(s) found only below the top cell (inside instanced sub-cells): d1, d2, pn, tail -- these are internal nodes once instanced; pass top_cell_pins_only (--top-cell-pins) to keep them internal (issue #291)",
-    "MOS device geometry overlaps the '44/0' voltage-domain marker: ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). This MOS-only starter models neither side of that split yet: EXTRACTION_DECK recognises only the LV (thin-gate-oxide) NMOS/PMOS pair (mirroring sg13g2.py's own #905 starter scope; the HV pair is left for a follow-on issue, the sg13cmos5l sibling of sg13g2.py's issue #1231), and this curated deck's DRC rules apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note).",
-    "net 'det|vdd' merges 2 distinct labels (det, vdd) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
-    "net 'e2|in_p|sns2' merges 3 distinct labels (e2, in_p, sns2) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
-    "net 'e3|vref' merges 2 distinct labels (e3, vref) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
+    "16 poly-layer shapes not part of any recognised nfet/pfet gate touch contact at 2+ separate points (the resistor-body signature) and carry no resistor-marker layer at all; this deck may not model the device class drawn here, and its terminals have been absorbed into ordinary interconnect as an unintended short -- see docs/cli/extract.md's 'Known limitation: unmodelled device geometry'.",
+    "promoted 7 net(s) to top-level pins from label(s) found only below the top cell (inside instanced sub-cells): d1, d2, det, e2, e3, pn, tail -- these are internal nodes once instanced; pass top_cell_pins_only (--top-cell-pins) to keep them internal (issue #291)",
+    "1 routing-stack cluster (17 shapes on 8/0) join no extracted net -- no via lands on this geometry and no same-layer wiring touches it, so it is invisible to the extracted netlist and to every downstream `klt lvs`/`klt sim` view; deliberate dead metal (artwork, fill) is expected here, unexplained dead metal usually means the connection you intended is missing -- see dead_metal[] for the per-cluster layer/bbox/shape count.",
     "net 'fb|out' merges 2 distinct labels (fb, out) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
     "net 'in_n|sns1' merges 2 distinct labels (in_n, sns1) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
+    "net 'in_p|sns2' merges 2 distinct labels (in_p, sns2) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
     "8 PMOS devices tie their body to an anonymous net with no DC bias path -- no drawn (or derivable) well tie connects this PMOS body to a real supply rail on this layout, so it is left floating rather than tied to a real supply rail; resimulating this netlist directly will not reproduce the schematic-level PMOS body bias -- see unbiased_pmos_body_nets[] for the full list. See docs/cli/extract.md's 'Parasitic (RC) extraction' section.",
-    "7 layers (7/0, 14/0, 28/0, 44/0, 63/0, 111/0, 128/0) carrying 112 shapes are outside 'sg13cmos5l' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
+    "1 layer (63/0) carrying 27 shapes is outside 'sg13cmos5l' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
   ],
   "black_box_regions": [],
   "abstracted_cells": [],
@@ -398,7 +450,7 @@
         "left": -20.35,
         "bottom": 49.65,
         "right": -19.65,
-        "top": 120.35
+        "top": 84.35
       },
       "reason": "unmarked"
     },
@@ -407,16 +459,7 @@
         "left": -15.35,
         "bottom": 59.65,
         "right": -14.65,
-        "top": 105.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 44.6,
-        "bottom": 43.9,
-        "right": 130.5,
-        "top": 46.1
+        "top": 78.35
       },
       "reason": "unmarked"
     },
@@ -425,187 +468,129 @@
         "left": 89.65,
         "bottom": 62.65,
         "right": 90.35,
-        "top": 75.35
+        "top": 66.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 175.65,
-        "bottom": 49.65,
-        "right": 184.85,
-        "top": 50.35
+        "left": 176.4,
+        "bottom": 56.65,
+        "right": 185.6,
+        "top": 57.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 179.6,
-        "bottom": 13.9,
-        "right": 827.4,
-        "top": 16.1
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 831.65,
+        "left": 221.65,
         "bottom": -0.35,
-        "right": 832.35,
-        "top": 90.35
+        "right": 222.35,
+        "top": 72.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 854.65,
+        "left": 239.65,
         "bottom": 0.42,
-        "right": 855.35,
-        "top": 105.35
+        "right": 240.35,
+        "top": 78.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 857.65,
+        "left": 245.65,
         "bottom": -1.12,
-        "right": 858.35,
-        "top": 90.35
+        "right": 246.35,
+        "top": 72.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 865.15,
+        "left": 255.15,
         "bottom": 19.65,
-        "right": 869.85,
+        "right": 259.85,
         "top": 20.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 883.15,
+        "left": 273.15,
         "bottom": 35.65,
-        "right": 891.85,
+        "right": 281.85,
         "top": 36.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 909.65,
+        "left": 299.65,
         "bottom": 42.65,
-        "right": 910.35,
-        "top": 75.35
+        "right": 300.35,
+        "top": 66.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 930.15,
+        "left": 320.15,
         "bottom": 19.65,
-        "right": 934.85,
+        "right": 324.85,
         "top": 20.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 959.65,
+        "left": 349.65,
         "bottom": 19.65,
-        "right": 960.35,
-        "top": 120.35
+        "right": 350.35,
+        "top": 84.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 974.4,
-        "bottom": 9.65,
-        "right": 975.1,
-        "top": 75.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 974.6,
+        "left": 359.65,
         "bottom": 7.4,
-        "right": 2386.7,
-        "top": 8.6
+        "right": 360.35,
+        "top": 66.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 2362.65,
-        "bottom": 8.85,
-        "right": 2363.35,
-        "top": 120.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 2379.65,
+        "left": 429.65,
         "bottom": -3.35,
-        "right": 2380.35,
-        "top": 7.15
+        "right": 430.35,
+        "top": 72.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 2379.65,
-        "bottom": 8.85,
-        "right": 2380.35,
-        "top": 90.35
-      },
-      "reason": "unmarked"
-    },
-    {
-      "bbox_um": {
-        "left": 2394.65,
+        "left": 444.65,
         "bottom": 1.65,
-        "right": 2395.35,
+        "right": 445.35,
         "top": 4.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 2404.65,
+        "left": 451.65,
         "bottom": 5.65,
-        "right": 2405.35,
-        "top": 105.35
+        "right": 452.35,
+        "top": 78.35
       },
       "reason": "unmarked"
     }
   ],
   "merged_net_labels": [
-    {
-      "net": "det|vdd",
-      "labels": [
-        "det",
-        "vdd"
-      ]
-    },
-    {
-      "net": "e2|in_p|sns2",
-      "labels": [
-        "e2",
-        "in_p",
-        "sns2"
-      ]
-    },
-    {
-      "net": "e3|vref",
-      "labels": [
-        "e3",
-        "vref"
-      ]
-    },
     {
       "net": "fb|out",
       "labels": [
@@ -619,63 +604,79 @@
         "in_n",
         "sns1"
       ]
-    }
-  ],
-  "voltage_domain_warnings": [
+    },
     {
-      "marker": "44/0",
-      "description": "ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). This MOS-only starter models neither side of that split yet: EXTRACTION_DECK recognises only the LV (thin-gate-oxide) NMOS/PMOS pair (mirroring sg13g2.py's own #905 starter scope; the HV pair is left for a follow-on issue, the sg13cmos5l sibling of sg13g2.py's issue #1231), and this curated deck's DRC rules apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note)."
+      "net": "in_p|sns2",
+      "labels": [
+        "in_p",
+        "sns2"
+      ]
     }
   ],
+  "voltage_domain_warnings": [],
   "unbiased_pmos_body_nets": [
     {
       "device": "$10",
-      "net": "\\$30"
+      "net": "\\$34"
     },
     {
       "device": "$11",
-      "net": "\\$30"
+      "net": "\\$34"
     },
     {
       "device": "$12",
-      "net": "\\$32"
+      "net": "\\$36"
     },
     {
       "device": "$13",
-      "net": "\\$32"
+      "net": "\\$36"
     },
     {
       "device": "$14",
-      "net": "\\$32"
+      "net": "\\$36"
     },
     {
       "device": "$7",
-      "net": "\\$30"
+      "net": "\\$34"
     },
     {
       "device": "$8",
-      "net": "\\$30"
+      "net": "\\$34"
     },
     {
       "device": "$9",
-      "net": "\\$30"
+      "net": "\\$34"
     }
   ],
   "single_terminal_nets": [],
-  "dead_metal": [],
+  "dead_metal": [
+    {
+      "role": "metal0",
+      "layer": 8,
+      "datatype": 0,
+      "bbox_um": {
+        "left": 123.27,
+        "bottom": 29.02,
+        "right": 166.23,
+        "top": 34.15
+      },
+      "shapes": 17,
+      "area_um2": 34.5858
+    }
+  ],
   "matched_device_groups": [],
   "pdk": null,
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.11",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:9a4e18f2fd7a0d39d02abc220141dd5c300158e2540cd19f2f2ea9151f965b80",
+      "content_hash": "sha256:5b5309ecd586f527d6df271384f18e8f1fcd528a09935544b46aed563b66a92e",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:b179576cbc49f68577303b6e11d294d9e2a8d1ac10205c932e497a2ae5e49a64"
+      "content_hash": "sha256:cfd2a2698a4cb5f5fd4cdce37bff1ece4788f1f5958e77c2818774018ed15b58"
     }
   },
   "parasitics": null,

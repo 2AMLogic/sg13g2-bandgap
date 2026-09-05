@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "file": "layout/bandgap_core/bandgap_core.gds",
+  "file": "bandgap_core.gds",
   "deck": "sg13g2",
   "dbu_um": 0.001,
   "status": "clean",
@@ -109,7 +109,7 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:3f3ee1e5043ebb6cb9d34c7e96dbeae4b5274cd9c4318ec7dea26e6fa1e0659d"
+      "content_hash": "sha256:cc4f3cd930c5386d361494fe2a68b42fd8534e8d9b975291b58ac934dfb5ef62"
     }
   }
 }

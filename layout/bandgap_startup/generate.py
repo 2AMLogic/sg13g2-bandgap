@@ -86,12 +86,41 @@ OUTPUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bandgap_start
 
 TRUNK_W = 0.3
 
+#: How many serpentine legs ``RPU``'s 1411.3 um of ``rhigh`` conductor is
+#: folded into (issue #173). Chosen to make the folded block roughly square:
+#: with ``draw_poly_res``'s own ``RES_FOLD_GAP_UM`` (0.4) and ``w=1u`` the
+#: leg pitch is 1.4 um, so the block is ``(l/legs)`` tall by ``legs*1.4``
+#: wide and the two are equal at ``legs = sqrt(l / pitch) = sqrt(1411.3 /
+#: 1.4) = 31.7``. 32 rounds that to an **even** count, which is what puts
+#: both terminals on the block's bottom row (odd counts leave end B on top --
+#: see ``draw_poly_res``). Measured result: 44.4 um wide x 43.7 um tall,
+#: aspect 0.98, against the straight bar's 1411.3 x 1.
+#:
+#: The block's *footprint* is ~``l * pitch`` (1975 um2) for **any** leg
+#: count -- folding trades aspect ratio, not area, and the area it does cost
+#: over the bare conductor is the inter-leg gap, which DRC requires. So this
+#: number is purely an aspect-ratio choice and nothing downstream depends on
+#: its exact value.
+RPU_LEGS = 32
+
+#: Y of the bottom edge of ``RPU``'s folded core. Its two Metal1 terminal
+#: pads hang ``RES_HEAD_UM + 0.1`` (0.5 um) below this, i.e. down to y=4.5,
+#: and ``DET_TRUNK_Y`` runs below *that*; the MSENSE/MKFB row tops out around
+#: y=1.4. Every one of those clearances is checked by this cell's own `klt
+#: drc` run, not assumed.
+RES_Y = 5.0
+
+#: Y of the horizontal ``det`` trunk. Deliberately **below** RPU's terminal
+#: pads (which occupy y in [4.5, 5.0]) rather than on the resistor's own row:
+#: post-fold, RPU's `vdd`-net end A pad and its `det`-net end B pad sit on the
+#: *same* row 43.4 um apart, so a trunk run at pad height would short them.
+DET_TRUNK_Y = 3.0
+
 
 def build() -> Builder:
     b = Builder(TOP_CELL)
 
     mos_y = 0.0
-    res_y = 20.0
 
     msense = draw_hv_mos(
         b, "MSENSE", "nmos", 10.0, 0.5, 0.0, mos_y,
@@ -101,10 +130,14 @@ def build() -> Builder:
         b, "MKFB", "nmos", 2.0, 0.5, 20.0, mos_y,
         gate_net="det", source_net="fb", drain_net="vss",
     )
-    # RPU (l=1411.3u) is a very long straight bar (see draw_poly_res's own
-    # docstring) -- on its own row so it does not overlap the compact
-    # MSENSE/MKFB devices above.
-    rpu = draw_poly_res(b, "RPU", "rhigh", 1.0, 1411.3, 0.0, res_y, end_a_net="vdd", end_b_net="det")
+    # RPU (l=1411.3u) folded into RPU_LEGS serpentine legs (issue #173) --
+    # a ~44 x 44 um block instead of the 1.4 mm bar that used to
+    # single-handedly set this cell's bounding box. Placed above the compact
+    # MSENSE/MKFB row; both its terminals come out on its own bottom row.
+    rpu = draw_poly_res(
+        b, "RPU", "rhigh", 1.0, 1411.3, 0.0, RES_Y,
+        end_a_net="vdd", end_b_net="det", legs=RPU_LEGS,
+    )
 
     _route(b, msense, mkfb, rpu)
 
@@ -151,7 +184,11 @@ def _route(b: Builder, msense: dict, mkfb: dict, rpu: dict) -> None:
     tab_pad = draw_gate_tab(b, gate_edge_x, 0.0, "det", side="left")
     tab_x = (tab_pad[0] + tab_pad[2]) / 2
 
-    jog_y = (rpu["end_b_pad"][1] + rpu["end_b_pad"][3]) / 2  # RPU's own row centerline
+    # Issue #173: RPU is folded, so its two terminal pads share one row --
+    # the trunk cannot run *at* pad height any more without shorting `vdd`
+    # (end A) to `det` (end B). It runs below both pads instead and rises
+    # into end B at that pad's own x.
+    jog_y = DET_TRUNK_Y
 
     # MSENSE.source -> a riser column clear of MKFB's own footprint -> the
     # det trunk at RPU's row. `riser_x` is the midpoint between MSENSE's own
@@ -168,12 +205,15 @@ def _route(b: Builder, msense: dict, mkfb: dict, rpu: dict) -> None:
     # MKFB's gate tab -> the same det trunk.
     route_v(b, L_METAL1, tab_x, tab_pad[1], jog_y, width=TRUNK_W)
 
-    # The det trunk itself, from the MSENSE riser across to RPU.end_b --
-    # deliberately starts at riser_x (clear of x=0), never reaching RPU's
-    # own `vdd`-net end_a pad near x=0 (a different net, would otherwise
-    # short against it).
+    # The det trunk itself, from the MSENSE riser across to below RPU.end_b,
+    # then a short riser up into that pad. The trunk's own row
+    # (`DET_TRUNK_Y`) clears RPU's `vdd`-net end_a pad -- which post-fold
+    # sits on the same row as end_b, not 1.4 mm away -- by 1.5 um in y,
+    # so the two nets never come close; verified by this cell's own `klt
+    # drc` run (0 violations, `metal1.space.1` floor 0.18 um).
     target_x = (rpu["end_b_pad"][0] + rpu["end_b_pad"][2]) / 2
     route_h(b, L_METAL1, jog_y, riser_x, target_x, width=TRUNK_W)
+    route_v(b, L_METAL1, target_x, jog_y, rpu["end_b_pad"][1] + 0.1, width=TRUNK_W)
 
 
 if __name__ == "__main__":

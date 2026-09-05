@@ -16,49 +16,89 @@
   "verdict": null,
   "verdict_note": "No pass/fail is recorded: spec/porting-plan.md Sec 6 is a draft, unratified table (#125, PR #128). These are measurements, not a conformance claim -- see README.md next to this record.",
   "provenance": {
-    "klt_version": "klt 0.3.0+gc6dbf66c53c6.dirty",
-    "measured_at": "2026-09-04T23:17:04Z"
+    "klt_version": "klt 0.3.0+gc6dbf66c53c6",
+    "measured_at": "2026-09-05T01:31:38Z"
   },
   "cells": [
+    {
+      "cell_dir": "layout/bandgap_amp",
+      "top_cell": "bandgap_amp",
+      "gds": "layout/bandgap_amp/bandgap_amp.gds",
+      "gds_sha256": "sha256:2f99c93961e42501d1745f246178357ca89c84c2178ce195eee3f67d9997b602",
+      "bbox_um": {
+        "left": -10.8,
+        "bottom": -1.59,
+        "right": 205.1,
+        "top": 32.175,
+        "width": 215.9,
+        "height": 33.765
+      },
+      "footprint_um2": 7289.8635,
+      "footprint_mm2": 0.007289864,
+      "drawn_area_um2": 1169.6759,
+      "density": 0.160452373,
+      "aspect_ratio": 6.394195,
+      "polygon_count": 164
+    },
     {
       "cell_dir": "layout/bandgap_core",
       "top_cell": "bandgap_core",
       "gds": "layout/bandgap_core/bandgap_core.gds",
-      "gds_sha256": "sha256:3f3ee1e5043ebb6cb9d34c7e96dbeae4b5274cd9c4318ec7dea26e6fa1e0659d",
+      "gds_sha256": "sha256:cc4f3cd930c5386d361494fe2a68b42fd8534e8d9b975291b58ac934dfb5ef62",
       "bbox_um": {
         "left": -5.4,
         "bottom": -3.1,
-        "right": 511.5,
-        "top": 61.4,
-        "width": 516.9,
-        "height": 64.5
+        "right": 137.478,
+        "top": 70.623,
+        "width": 142.87800000000001,
+        "height": 73.723
       },
-      "footprint_um2": 33340.05,
-      "footprint_mm2": 0.03334005,
-      "drawn_area_um2": 7011.75065,
-      "density": 0.210310142,
-      "aspect_ratio": 8.013953,
-      "polygon_count": 160
+      "footprint_um2": 10533.394794,
+      "footprint_mm2": 0.010533395,
+      "drawn_area_um2": 6802.26545,
+      "density": 0.645780927,
+      "aspect_ratio": 1.938038,
+      "polygon_count": 340
     },
     {
       "cell_dir": "layout/bandgap_startup",
       "top_cell": "bandgap_startup",
       "gds": "layout/bandgap_startup/bandgap_startup.gds",
-      "gds_sha256": "sha256:274e83ccceaeccd23a7c8c140d40ae6b30212e8341f798190e58c96cb62e525d",
+      "gds_sha256": "sha256:e8d576056a1685de8b437099cedf05a1259892e4cee144378cf9467270f84f7c",
       "bbox_um": {
         "left": -5.1000000000000005,
         "bottom": -1.34,
-        "right": 1411.8,
-        "top": 20.900000000000002,
-        "width": 1416.9,
-        "height": 22.240000000000002
+        "right": 44.972,
+        "top": 49.204,
+        "width": 50.072,
+        "height": 50.544000000000004
       },
-      "footprint_um2": 31511.856,
-      "footprint_mm2": 0.031511856,
-      "drawn_area_um2": 8966.9539,
-      "density": 0.284558101,
-      "aspect_ratio": 63.709532,
-      "polygon_count": 44
+      "footprint_um2": 2530.839168,
+      "footprint_mm2": 0.002530839,
+      "drawn_area_um2": 8547.2505,
+      "density": 3.377239695,
+      "aspect_ratio": 1.009426,
+      "polygon_count": 417
+    },
+    {
+      "cell_dir": "layout/bandgap_top",
+      "top_cell": "bandgap_top",
+      "gds": "layout/bandgap_top/bandgap_top.gds",
+      "gds_sha256": "sha256:80fad54f4aa3caf7602e7f1de8b1bda37cc8a91c540824bf73b6bd3e983436e3",
+      "bbox_um": {
+        "left": -16.5,
+        "bottom": -3.1,
+        "right": 465.97200000000004,
+        "top": 94.15,
+        "width": 482.47200000000004,
+        "height": 97.25
+      },
+      "footprint_um2": 46920.402,
+      "footprint_mm2": 0.046920402,
+      "drawn_area_um2": 17460.7398,
+      "density": 0.372135341,
+      "aspect_ratio": 4.961152,
+      "polygon_count": 998
     },
     {
       "cell_dir": "layout/sg13cmos5l-bandgap_amp",
@@ -84,61 +124,61 @@
       "cell_dir": "layout/sg13cmos5l-bandgap_core",
       "top_cell": "sg13cmos5l_bandgap_core",
       "gds": "layout/sg13cmos5l-bandgap_core/sg13cmos5l-bandgap_core.gds",
-      "gds_sha256": "sha256:e657aa4f5dab035562ca636abde1d4ef624dd2c227042b3f8921125d273330f0",
+      "gds_sha256": "sha256:01c99aff60f6a3e08f7cbb678d31ff795440648f33a7cd3885f7c9f08d0136a9",
       "bbox_um": {
         "left": -10.0,
         "bottom": -3.21,
-        "right": 830.5,
+        "right": 220.07,
         "top": 61.7,
-        "width": 840.5,
+        "width": 230.07,
         "height": 64.91
       },
-      "footprint_um2": 54556.855,
-      "footprint_mm2": 0.054556855,
-      "drawn_area_um2": 9658.3558,
-      "density": 0.177032855,
-      "aspect_ratio": 12.948698,
-      "polygon_count": 1188
+      "footprint_um2": 14933.8437,
+      "footprint_mm2": 0.014933844,
+      "drawn_area_um2": 9109.6868,
+      "density": 0.610002822,
+      "aspect_ratio": 3.544446,
+      "polygon_count": 1388
     },
     {
       "cell_dir": "layout/sg13cmos5l-bandgap_startup",
       "top_cell": "sg13cmos5l_bandgap_startup",
       "gds": "layout/sg13cmos5l-bandgap_startup/sg13cmos5l-bandgap_startup.gds",
-      "gds_sha256": "sha256:03c46e76773192b2b8c4d7f175a9fb110b9381eb777a33932475e8e277a96051",
+      "gds_sha256": "sha256:a18f8c052af3d66f9e988cd874d92e0379d034f25cf9ce187dc351ad19c368fa",
       "bbox_um": {
-        "left": -0.5,
+        "left": -0.2,
         "bottom": -1.2,
-        "right": 1424.4,
-        "top": 8.6,
-        "width": 1424.9,
-        "height": 9.8
+        "right": 84.4,
+        "top": 52.304,
+        "width": 84.60000000000001,
+        "height": 53.504
       },
-      "footprint_um2": 13964.02,
-      "footprint_mm2": 0.01396402,
-      "drawn_area_um2": 8553.2534,
-      "density": 0.61252085,
-      "aspect_ratio": 145.397959,
-      "polygon_count": 122
+      "footprint_um2": 4526.4384,
+      "footprint_mm2": 0.004526438,
+      "drawn_area_um2": 8556.7018,
+      "density": 1.890382911,
+      "aspect_ratio": 1.58119,
+      "polygon_count": 494
     },
     {
       "cell_dir": "layout/sg13cmos5l-bandgap_top",
       "top_cell": "sg13cmos5l_bandgap_top",
       "gds": "layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds",
-      "gds_sha256": "sha256:b179576cbc49f68577303b6e11d294d9e2a8d1ac10205c932e497a2ae5e49a64",
+      "gds_sha256": "sha256:cfd2a2698a4cb5f5fd4cdce37bff1ece4788f1f5958e77c2818774018ed15b58",
       "bbox_um": {
         "left": -50.25,
         "bottom": -10.25,
-        "right": 2405.5,
-        "top": 120.5,
-        "width": 2455.75,
-        "height": 130.75
+        "right": 452.5,
+        "top": 84.5,
+        "width": 502.75,
+        "height": 94.75
       },
-      "footprint_um2": 321089.3125,
-      "footprint_mm2": 0.321089313,
-      "drawn_area_um2": 29667.5204,
-      "density": 0.092396474,
-      "aspect_ratio": 18.782027,
-      "polygon_count": 2192
+      "footprint_um2": 47635.5625,
+      "footprint_mm2": 0.047635562,
+      "drawn_area_um2": 22391.6214,
+      "density": 0.470061026,
+      "aspect_ratio": 5.306069,
+      "polygon_count": 2748
     }
   ]
 }

@@ -55,7 +55,7 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "b179576cbc49f68577303b6e11d294d9e2a8d1ac10205c932e497a2ae5e49a64",
+    "layout_sha256": "cfd2a2698a4cb5f5fd4cdce37bff1ece4788f1f5958e77c2818774018ed15b58",
     "reference_sha256": "14fdb4b4c8aefbc782d50123094eaaeec40214ab92fc1afec2445f2c811319ca",
     "extracted_netlist": null
   },
@@ -364,7 +364,7 @@
       "description": "a reference net's role is divided across multiple layout nets",
       "side": "layout",
       "net": {
-        "layout": "\\$35",
+        "layout": "\\$36",
         "reference": null
       },
       "device": null,

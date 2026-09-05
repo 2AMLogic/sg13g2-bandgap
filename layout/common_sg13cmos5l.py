@@ -49,7 +49,7 @@ own packing loop). See ``layout/README.md`` "What this layout is / is not".
 from __future__ import annotations
 
 import klayout.db as kdb
-from _klayout_builder_base import BuilderBase, route_h, route_v  # noqa: F401
+from _klayout_builder_base import BuilderBase, fold_plan, route_h, route_v  # noqa: F401
 
 # --------------------------------------------------------------------------- #
 # SG13CMOS5L GDS layer numbers, read from
@@ -558,6 +558,18 @@ RES_HEAD_UM = 0.4
 RES_GATPOLY_Y_MARGIN_UM = 0.1
 RES_CONT_MARGIN_UM = 0.1
 
+#: Minimum drawn space between two adjacent serpentine legs (issue #173's
+#: fold), identical in value and in reasoning to ``layout/common.py``'s
+#: SG13G2 constant of the same name: the notch between two legs of one folded
+#: resistor is an ordinary ``GatPoly`` space, and this deck's
+#: ``gatpoly.space.1`` floor is the same 0.18 um -- 0.4 um clears it by
+#: 0.22 um and still leaves 0.3 um once a terminal head's
+#: ``RES_GATPOLY_Y_MARGIN_UM`` overhang eats into the gap beside its
+#: neighbouring leg. A floor, not the drawn value:
+#: :func:`~_klayout_builder_base.fold_plan` may widen it by a few nanometres
+#: to keep the folded conductor's length exactly the schematic's own ``l``.
+RES_FOLD_GAP_UM = 0.4
+
 
 def draw_rppd(
     b: Builder,
@@ -568,18 +580,16 @@ def draw_rppd(
     y0: float,
     end_a_net: str,
     end_b_net: str,
+    legs: int = 1,
 ) -> dict:
-    """Draw a straight (unfolded) ``rppd`` poly resistor body -- see
+    """Draw a folded (serpentine) ``rppd`` poly resistor body -- see
     :func:`_draw_poly_res`, of which this is the ``flavor="rppd"`` case.
 
     Kept as its own named entry point (rather than callers passing a flavour
     string) because ``rppd`` is the only resistor ``bandgap_core`` uses and
-    that cell's ``generate.py`` predates the ``rhigh`` flavour; the drawn
-    geometry is byte-identical to what this function drew before
-    :func:`draw_rhigh` was factored out of it (verified: regenerating
-    ``sg13cmos5l-bandgap_core.gds`` leaves ``git diff`` empty).
+    that cell's ``generate.py`` predates the ``rhigh`` flavour.
     """
-    return _draw_poly_res(b, name, "rppd", w_um, l_um, x0, y0, end_a_net, end_b_net)
+    return _draw_poly_res(b, name, "rppd", w_um, l_um, x0, y0, end_a_net, end_b_net, legs)
 
 
 def draw_rhigh(
@@ -591,8 +601,9 @@ def draw_rhigh(
     y0: float,
     end_a_net: str,
     end_b_net: str,
+    legs: int = 1,
 ) -> dict:
-    """Draw a straight (unfolded) ``rhigh`` poly resistor body (issue #74).
+    """Draw a folded (serpentine) ``rhigh`` poly resistor body (issue #74).
 
     Same construction as :func:`draw_rppd` -- CMOS5L's ``rhigh`` and ``rppd``
     are both ``GatPoly``-bodied poly resistors sharing one PCell base class
@@ -609,15 +620,11 @@ def draw_rhigh(
     drawn for fidelity to the PCell, not to satisfy an extractor -- and, as
     ``layout/README.md`` records for ``bandgap_core``, the unmodelled body
     is absorbed into interconnect and *shorts* its own two terminals
-    (klayout-tools#1415).
-
-    ``bandgap_startup``'s ``RPU`` is ``w=1u l=1411.3u``: drawn straight, that
-    is a ~1.4 mm bar which single-handedly sets the cell's bounding box --
-    the same honest-rendering-of-the-netlist choice ``draw_rppd`` documents
-    for ``R1``'s 647 um bar, and the same one ``layout/bandgap_startup`` made
-    for this identical device on the SG13G2 side.
+    (klayout-tools#1415). Folding does not change that: a serpentine is
+    still one connected ``GatPoly`` region, so the same short is extracted
+    before and after, and the deck gap stays exactly as visible as it was.
     """
-    return _draw_poly_res(b, name, "rhigh", w_um, l_um, x0, y0, end_a_net, end_b_net)
+    return _draw_poly_res(b, name, "rhigh", w_um, l_um, x0, y0, end_a_net, end_b_net, legs)
 
 
 def _draw_poly_res(
@@ -630,8 +637,9 @@ def _draw_poly_res(
     y0: float,
     end_a_net: str,
     end_b_net: str,
+    legs: int = 1,
 ) -> dict:
-    """Draw a straight (unfolded) ``rppd``/``rhigh`` poly resistor body.
+    """Draw a folded (serpentine) ``rppd``/``rhigh`` poly resistor body.
 
     Layer stack read from CMOS5L's own ``rppd_code.py``: ``GatPoly`` (5/0)
     is the physical conductor (its ``contpolylayer``), ``PolyRes`` (128/0)
@@ -640,56 +648,114 @@ def _draw_poly_res(
     block/extraction markers over that body -- the same five layers, at the
     same GDS numbers, SG13G2's ``rppd`` uses.
 
-    Drawn as one straight bar at the schematic's own ``w``/``l``, **not**
-    meandered: for ``R1`` (``l=647.0u``) that is a ~0.65 mm bar dominating
-    the cell's bounding box. That is an honest rendering of the netlist's
-    own sizing, not a claim about how a real compact layout would fold it --
-    identical to the choice ``layout/common.py``'s ``draw_poly_res`` already
-    documents for SG13G2. See ``layout/README.md`` "What this layout is /
-    is not".
+    **Folded (issue #173).** ``legs`` is how many parallel vertical bars the
+    ``l_um`` of conductor is bent into; ``legs=1`` is the degenerate straight
+    bar. Drawn straight, ``R1`` (``l=647u``) and ``RPU`` (``l=1411.3u``) are
+    0.65 mm / 1.4 mm bars that single-handedly set their cells' bounding
+    boxes -- ``measurements/2026-09-layout-area/`` measured
+    ``sg13cmos5l_bandgap_startup`` at **145:1** and the assembled
+    ``sg13cmos5l_bandgap_top`` as 77.5% aspect-ratio whitespace.
 
-    Returns ``end_a_pad``/``end_b_pad`` (Metal1 boxes) and ``length``.
+    The fold conserves the drawn conductor length **exactly** (see
+    :func:`~_klayout_builder_base.fold_plan` for the derivation and for why
+    the gap it returns can exceed ``RES_FOLD_GAP_UM`` by a few nanometres),
+    so it does not re-size the device: it changes the resistor's parasitics
+    and its matching (a compact block sees a far smaller across-die gradient
+    than a 1.4 mm bar) but not its nominal value. This is the same
+    construction, with the same arithmetic, ``layout/common.py``'s SG13G2
+    ``draw_poly_res`` uses -- kept identical on purpose so the two ports'
+    resistor footprints stay comparable.
+
+    Geometry: ``legs`` vertical bars, leg ``i`` spanning
+    ``x in [x0 + i*pitch, x0 + i*pitch + w_um]`` and
+    ``y in [y0, y0 + leg_len]``, joined by ``w_um``-thick links alternating
+    top (even ``i``) / bottom (odd ``i``). ``(x0, y0)`` is the **lower-left
+    corner of the marked core**, not a bar centreline as in the pre-fold
+    signature. Both free ends come out on the block's bottom row for an even
+    ``legs``; an odd ``legs`` leaves end B on top.
+
+    The un-marked ``GatPoly`` "head" at each free end -- wider than the leg
+    by ``RES_GATPOLY_Y_MARGIN_UM``, ``RES_HEAD_UM`` long, carrying the
+    contact array and the Metal1 pad -- is drawn for fidelity to
+    ``rppd_code.py``'s own head/body split, not (as on the SG13G2 side) to
+    satisfy an extractor's two-terminal-polygon requirement.
+
+    Returns ``end_a_pad``/``end_b_pad`` (Metal1 boxes), ``length``, the
+    ``plan`` :func:`fold_plan` produced, and the drawn ``bbox``.
     """
-    x_hi = x0 + l_um
+    plan = fold_plan(w_um, l_um, legs, RES_FOLD_GAP_UM)
+    leg_len = plan["leg_len_um"]
+    pitch = plan["pitch_um"]
+    y_top = y0 + leg_len
 
-    # GatPoly conductor: narrow core (exactly w tall, coincident with the
-    # markers below) plus a wider head at each end for the contacts.
-    b.box(
-        L_GATPOLY,
-        x0 - RES_HEAD_UM, y0 - w_um / 2 - RES_GATPOLY_Y_MARGIN_UM,
-        x0, y0 + w_um / 2 + RES_GATPOLY_Y_MARGIN_UM,
-    )
-    b.box(L_GATPOLY, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
-    b.box(
-        L_GATPOLY,
-        x_hi, y0 - w_um / 2 - RES_GATPOLY_Y_MARGIN_UM,
-        x_hi + RES_HEAD_UM, y0 + w_um / 2 + RES_GATPOLY_Y_MARGIN_UM,
-    )
+    def leg_x(i: int) -> float:
+        return x0 + i * pitch
 
-    for layer in (L_POLYRES, L_EXTBLOCK, L_PSD, L_SALBLOCK):
-        b.box(layer, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
+    # -- the marked core: `legs` vertical bars plus the alternating links.
+    core: list[tuple[float, float, float, float]] = [
+        (leg_x(i), y0, leg_x(i) + w_um, y_top) for i in range(legs)
+    ]
+    for i in range(legs - 1):
+        if i % 2 == 0:  # link at the top of legs i / i+1
+            core.append((leg_x(i) + w_um, y_top - w_um, leg_x(i + 1), y_top))
+        else:  # link at the bottom
+            core.append((leg_x(i) + w_um, y0, leg_x(i + 1), y0 + w_um))
+
+    core_layers = [L_GATPOLY, L_POLYRES, L_EXTBLOCK, L_PSD, L_SALBLOCK]
     if flavor == "rhigh":
         # The one layer that distinguishes the two flavours -- rhigh_code.py
         # declares `nsdlayer = 'nSD'` and encloses the body by `Rhi_c`;
         # rppd_code.py declares no nSD at all. Same discriminator
         # layout/common.py's SG13G2 draw_poly_res draws.
-        b.box(L_NSD, x0, y0 - w_um / 2, x_hi, y0 + w_um / 2)
+        core_layers.append(L_NSD)
+    for layer in core_layers:
+        for box in core:
+            b.box(layer, *box)
 
-    # End A / end B: contacts on the un-marked heads + Metal1 pads.
-    cont_a_x0 = x0 - RES_HEAD_UM + RES_CONT_MARGIN_UM
-    cont_array(b, cont_a_x0, y0 - w_um / 2 + CNT_C, cont_a_x0 + CNT_A, y0 + w_um / 2 - CNT_C)
-    end_a_pad = (x0 - RES_HEAD_UM - 0.1, y0 - w_um / 2 - 0.1, x0, y0 + w_um / 2 + 0.1)
-    b.box(L_METAL1, *end_a_pad)
-    b.net_label(end_a_net, (end_a_pad[0] + end_a_pad[2]) / 2, y0)
+    def _terminal(index: int, at_top: bool, net: str) -> tuple[float, float, float, float]:
+        """Draw one free end's head + contact array + Metal1 pad; return the pad."""
+        head_x0 = leg_x(index) - RES_GATPOLY_Y_MARGIN_UM
+        head_x1 = leg_x(index) + w_um + RES_GATPOLY_Y_MARGIN_UM
+        if at_top:
+            head_y0, head_y1 = y_top, y_top + RES_HEAD_UM
+            pad = (head_x0 - 0.1, head_y0, head_x1 + 0.1, head_y1 + 0.1)
+        else:
+            head_y0, head_y1 = y0 - RES_HEAD_UM, y0
+            pad = (head_x0 - 0.1, head_y0 - 0.1, head_x1 + 0.1, head_y1)
+        b.box(L_GATPOLY, head_x0, head_y0, head_x1, head_y1)
+        cont_array(
+            b,
+            leg_x(index) + CNT_C, head_y0 + RES_CONT_MARGIN_UM,
+            leg_x(index) + w_um - CNT_C, head_y1 - RES_CONT_MARGIN_UM,
+        )
+        b.box(L_METAL1, *pad)
+        b.net_label(net, (pad[0] + pad[2]) / 2, (pad[1] + pad[3]) / 2)
+        return pad
 
-    cont_b_x1 = x_hi + RES_HEAD_UM - RES_CONT_MARGIN_UM
-    cont_array(b, cont_b_x1 - CNT_A, y0 - w_um / 2 + CNT_C, cont_b_x1, y0 + w_um / 2 - CNT_C)
-    end_b_pad = (x_hi, y0 - w_um / 2 - 0.1, x_hi + RES_HEAD_UM + 0.1, y0 + w_um / 2 + 0.1)
-    b.box(L_METAL1, *end_b_pad)
-    b.net_label(end_b_net, (end_b_pad[0] + end_b_pad[2]) / 2, y0)
+    # End A is always leg 0's bottom. End B is the last leg's *free* end:
+    # bottom for an even leg count (both terminals on the same row), top for
+    # an odd one -- the links alternate, so the parity fixes which it is.
+    end_a_pad = _terminal(0, at_top=False, net=end_a_net)
+    end_b_pad = _terminal(legs - 1, at_top=(legs % 2 == 1), net=end_b_net)
 
-    b.annotate(f"{name}({flavor} w={w_um}u l={l_um}u)", (x0 + x_hi) / 2, y0 - w_um / 2 - 0.9)
-    return {"length": l_um, "end_a_pad": end_a_pad, "end_b_pad": end_b_pad}
+    b.annotate(
+        f"{name}({flavor} w={w_um}u l={l_um}u x{legs})",
+        x0 + plan["width_um"] / 2,
+        (y_top + RES_HEAD_UM + 0.6) if legs % 2 == 1 else (y_top + 0.6),
+    )
+    bbox = (
+        min(end_a_pad[0], end_b_pad[0], x0),
+        min(end_a_pad[1], end_b_pad[1], y0),
+        max(end_a_pad[2], end_b_pad[2], x0 + plan["width_um"]),
+        max(end_a_pad[3], end_b_pad[3], y_top),
+    )
+    return {
+        "length": l_um,
+        "end_a_pad": end_a_pad,
+        "end_b_pad": end_b_pad,
+        "plan": plan,
+        "bbox": bbox,
+    }
 
 
 # --------------------------------------------------------------------------- #

@@ -15,3 +15,10 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   every committed `layout/<cell>/<cell>.gds` (footprint, drawn area, density,
   aspect ratio) plus the dominant-cost-regime analysis — whitespace from
   unfolded resistor bars, not device count.
+- `2026-09-resistor-fold/` — issue #173: the before/after for acting on that
+  analysis. Every long poly-resistor bar is now drawn as a serpentine and
+  both top-level assemblies were re-packed; this entry records the resulting
+  footprint/aspect-ratio move on all eight committed cells, the exact
+  conservation of every resistor's extracted value across the fold, the
+  unchanged DRC/LVS verdicts, and a named account of the whitespace that
+  remains (inter-cell routing channel + single-row placement).

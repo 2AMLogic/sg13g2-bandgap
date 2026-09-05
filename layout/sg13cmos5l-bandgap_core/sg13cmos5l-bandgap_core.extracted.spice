@@ -1,17 +1,23 @@
 * extracted by klt extract --deck sg13cmos5l
 
 * cell sg13cmos5l_bandgap_core
-* pin e2,sns2
-* pin e3,vref
+* pin e2
+* pin e3
 * pin fb
 * pin sns1
+* pin sns2
 * pin vdd
+* pin vref
 * pin vss
-.SUBCKT sg13cmos5l_bandgap_core e2|sns2 e3|vref fb sns1 vdd vss
+.SUBCKT sg13cmos5l_bandgap_core e2 e3 fb sns1 sns2 vdd vref vss
 * device instance $1 r0 *1 0,60 pfet
-M$1 vdd fb sns1 \$27 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$1 vdd fb sns1 \$30 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 45,60 pfet
-M$2 vdd fb e2|sns2 \$27 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$2 vdd fb sns2 \$30 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $3 r0 *1 180,60 pfet
-M$3 vdd fb e3|vref \$27 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$3 vdd fb vref \$30 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $4 r0 *1 52,50.925 rppd
+R$4 sns2 e2 vss 11063 rppd
+* device instance $5 r0 *1 199.06,35.027 rppd
+R$5 vref e3 vss 84110 rppd
 .ENDS sg13cmos5l_bandgap_core

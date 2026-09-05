@@ -202,11 +202,34 @@ OUTPUT = os.path.join(
 TRUNK_W = 0.30
 
 # Row centres (see the floorplan table in this module's docstring).
+# Issue #173: Y_R1/Y_R2 are now the *bottom edge* of each folded resistor
+# block's marked core (draw_rppd's (x0, y0) is its lower-left corner
+# post-fold), not a straight bar's centreline. Both were lowered so each
+# block's top clears the mirror row's own NWell/ThickGateOx bottom edge
+# (y=58.48, from draw_hv_pmos's NW_c1 enclosure at Y_MOS=60): a resistor
+# body drawn inside the mirror's n-well would be physically wrong and would
+# add a fresh `voltage_domain_warnings` entry to this cell's own
+# extract_report.json.
 Y_MOS = 60.0
-Y_R2 = 45.0
+Y_R2 = 44.0
 Y_Q12 = 30.0
 Y_R1 = 15.0
 Y_Q3 = 0.0
+
+#: Serpentine fold counts (issue #173). Pre-fold, `R1` was a single 647 um
+#: straight bar that alone set this cell's 840.5 um width against a 64.9 um
+#: height (12.9:1). Each count is chosen to make its own folded block
+#: roughly square -- with `RES_FOLD_GAP_UM` (0.4) and w=2u the leg pitch is
+#: ~2.4 um, and a block is square at `legs = sqrt(l / pitch)`:
+#: sqrt(647/2.4) = 16.4 and sqrt(85.1/2.4) = 6.0. Both rounded to an
+#: **even** count so each resistor's two terminals come out on its own
+#: bottom row (odd counts leave end B on top -- see `_draw_poly_res`), which
+#: is what keeps `e2`/`e3`'s drops into the PNP rows below unchanged in
+#: kind. Folding conserves the drawn conductor length exactly
+#: (`_klayout_builder_base.fold_plan`), so neither nominal value moves.
+#: Measured: R1 38.12 x 40.055 um, R2 14.0 x 13.85 um.
+R1_LEGS = 16
+R2_LEGS = 6
 
 # Column origins. X_M3 shifted 150 -> 180 (issue #73/DR-0005) to make room
 # for Q2's 8-unit row -- see this module's own docstring.
@@ -254,14 +277,24 @@ X_VSS_AISLE = 87.0
 # each of these heights/edges was chosen.
 Y_SNS1_PORT = 50.0
 X_SNS1_PORT = -10.0
-Y_SNS2_PORT = 50.0
-X_SNS2_PORT = 830.5
-#: sns2's crossing of vref's own trunk (x=179.75, spanning y=16.1..59.1) --
+#: Issue #173: raised from 50.0 to clear `R1`'s **folded** body. Pre-fold,
+#: R1 was a 2 um-tall bar on the y=15 row and the whole y=16..58 band at
+#: x=176..184.5 was empty field, so sns2's poly underpass could cross vref's
+#: trunk anywhere up there. Folded, R1's body occupies x=179.8..218.3 for
+#: the entire y=15..55.06 band -- a GatPoly underpass at y=50 would merge
+#: straight into R1's own conductor and short `sns2` to `vref`. 57.0 clears
+#: R1's top (55.055) by ~1.6 um once poly_tab's own 0.7 um-tall landing pad
+#: is accounted for, and still sits 1.1 um below the mirror row's own
+#: NWell/ThickGateOx bottom (58.48).
+Y_SNS2_PORT = 57.0
+X_SNS2_PORT = 220.0
+#: sns2's crossing of vref's own trunk (x=181.0, spanning y=15..59.36) --
 #: centred on that trunk with 4 um clearance either side of its own 0.3 um
-#: width, at a field-only location (well above every device row).
-X_SNS2_UNDERPASS = (176.0, 184.5)
+#: width, at a field-only location (above every device row and above R1's
+#: own folded block -- see Y_SNS2_PORT).
+X_SNS2_UNDERPASS = (176.75, 185.25)
 Y_VREF_PORT = 40.0
-X_VREF_PORT = 830.5
+X_VREF_PORT = 220.0
 
 
 def build() -> Builder:
@@ -292,8 +325,10 @@ def build() -> Builder:
     # attributed", cause 4.
 
     # -- series resistors, each starting at its own mirror leg's column ----
-    r2 = draw_rppd(b, "R2", R2_W, R2_L, X_M2, Y_R2, end_a_net="sns2", end_b_net="e2")
-    r1 = draw_rppd(b, "R1", R1_W, R1_L, X_M3, Y_R1, end_a_net="vref", end_b_net="e3")
+    r2 = draw_rppd(b, "R2", R2_W, R2_L, X_M2, Y_R2, end_a_net="sns2", end_b_net="e2",
+                   legs=R2_LEGS)
+    r1 = draw_rppd(b, "R1", R1_W, R1_L, X_M3, Y_R1, end_a_net="vref", end_b_net="e3",
+                   legs=R1_LEGS)
 
     # -- the grounded-collector PNPs, each under its own branch -------------
     x_q3 = pad_center_x(r1["end_b_pad"])
