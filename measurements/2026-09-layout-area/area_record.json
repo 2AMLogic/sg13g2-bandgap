@@ -17,7 +17,7 @@
   "verdict_note": "No pass/fail is recorded: spec/porting-plan.md Sec 6 is a draft, unratified table (#125, PR #128). These are measurements, not a conformance claim -- see README.md next to this record.",
   "provenance": {
     "klt_version": "klt 0.3.0+gc6dbf66c53c6",
-    "measured_at": "2026-09-05T01:20:01Z"
+    "measured_at": "2026-09-05T01:31:38Z"
   },
   "cells": [
     {

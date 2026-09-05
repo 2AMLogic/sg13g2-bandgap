@@ -14,26 +14,27 @@
     "parameter_tolerance": null
   },
   "status": "mismatch",
-  "mismatch_count": 17,
-  "error_count": 17,
+  "mismatch_count": 8,
+  "error_count": 6,
   "category_counts": {
-    "device.unmatched": 8,
-    "topology": 9
+    "device.bulk_reconciled": 2,
+    "device.unmatched": 5,
+    "topology": 1
   },
   "category_error_counts": {
-    "device.unmatched": 8,
-    "topology": 9
+    "device.unmatched": 5,
+    "topology": 1
   },
   "counts": {
     "nets": {
       "layout": 13,
       "reference": 13,
-      "matched": 2
+      "matched": 4
     },
     "devices": {
       "layout": 20,
       "reference": 23,
-      "matched": 15
+      "matched": 18
     },
     "pins": {
       "layout": 13,
@@ -56,7 +57,7 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "layout_sha256": "80fad54f4aa3caf7602e7f1de8b1bda37cc8a91c540824bf73b6bd3e983436e3",
-    "reference_sha256": "fbbad51a55742c0bd4bbea0c5a9442e20652e19befe7738d19d500ee2a3144d3",
+    "reference_sha256": "a131977a7e583d2024caef49eeab6a5703e576ed8a0e3ec5c23cb751cf226b0b",
     "extracted_netlist": null
   },
   "provenance": {
@@ -71,6 +72,68 @@
     "input": null
   },
   "mismatches": [
+    {
+      "category": "device.bulk_reconciled",
+      "severity": "warning",
+      "description": "request.reference.device_bulk reconciled reference device class 'RPPD' with the layout side: a 'W' terminal was added to the reference class (layout: ['A', 'B', 'W'], reference was: ['A', 'B']) and tied to reference net 'VSS' on 2 device instance(s), an existing reference net -- that terminal's connectivity was asserted by the request, not read from the reference netlist, so this dimension of the compare is not independently verified (see docs/cli/lvs.md, 'device.bulk_reconciled')",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "RPPD"
+      },
+      "property": null,
+      "details": {
+        "terminal": "W",
+        "reference_net": "VSS",
+        "reference_net_created": false,
+        "devices": 2,
+        "layout_terminals": [
+          "A",
+          "B",
+          "W"
+        ],
+        "reference_terminals": [
+          "A",
+          "B"
+        ]
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.bulk_reconciled",
+      "severity": "warning",
+      "description": "request.reference.device_bulk reconciled reference device class 'RHIGH' with the layout side: a 'W' terminal was added to the reference class (layout: ['A', 'B', 'W'], reference was: ['A', 'B']) and tied to reference net 'VSS' on 1 device instance(s), an existing reference net -- that terminal's connectivity was asserted by the request, not read from the reference netlist, so this dimension of the compare is not independently verified (see docs/cli/lvs.md, 'device.bulk_reconciled')",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "RHIGH"
+      },
+      "property": null,
+      "details": {
+        "terminal": "W",
+        "reference_net": "VSS",
+        "reference_net_created": false,
+        "devices": 1,
+        "layout_terminals": [
+          "A",
+          "B",
+          "W"
+        ],
+        "reference_terminals": [
+          "A",
+          "B"
+        ]
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
     {
       "category": "device.unmatched",
       "severity": "error",
@@ -157,185 +220,6 @@
       "subcircuit": null
     },
     {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "reference",
-      "net": null,
-      "device": {
-        "layout": "\\$18",
-        "reference": "X1_R2",
-        "class": "rppd"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "reference",
-      "net": null,
-      "device": {
-        "layout": "\\$19",
-        "reference": "X1_R1",
-        "class": "rppd"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "reference",
-      "net": null,
-      "device": {
-        "layout": "\\$20",
-        "reference": "X3_RPU",
-        "class": "rhigh"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "CB2",
-        "reference": "X1.CB2"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "CB3",
-        "reference": "X1.CB3"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "D1",
-        "reference": "X2.D1"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "D2",
-        "reference": "X2.D2"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "DET",
-        "reference": "X3.DET"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "IN_N|SNS1",
-        "reference": "SNS1"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "IN_P|SNS2",
-        "reference": "SNS2"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "nets were paired despite a name/identity conflict",
-      "side": "both",
-      "net": {
-        "layout": "TAIL",
-        "reference": "X2.TAIL"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
       "category": "topology",
       "severity": "error",
       "description": "device class could not be mapped to a counterpart",
@@ -351,13 +235,23 @@
   ],
   "net_correspondence": [
     {
+      "layout": "DET",
+      "reference": "DET",
+      "pin": true
+    },
+    {
       "layout": "FB|OUT",
-      "reference": "FB",
+      "reference": "FB|OUT",
       "pin": true
     },
     {
       "layout": "PN",
-      "reference": "X2.PN",
+      "reference": "PN",
+      "pin": true
+    },
+    {
+      "layout": "VREF",
+      "reference": "VREF",
       "pin": true
     }
   ]

@@ -116,13 +116,20 @@ reference-comparison LVS run) are tracked in ``layout/README.md``.
 **LVS**: *resolving* the LVS verdict is deferred (issue #169's own scope
 boundary), but ``klt lvs`` itself was run once against this cell -- the
 repo's CI evidence-format gate requires a committed ``lvs_report.json`` --
-and its honest ``mismatch`` result is committed as-is. Only 5 of its 17
-findings trace to the two already-known leaf-level causes; the other 11 come
-from two causes new at this composed level (an un-propagated resistor
-``device_bulk`` reconciliation, and reference-flatten hierarchy-prefix
-net-identity conflicts), both unresolved and tracked in issue #171. See
-``layout/README.md``'s ``bandgap_top`` "LVS" section for the itemised
-breakdown. Post-layout PEX is deferred and was not run.
+and its honest ``mismatch`` result is committed as-is. Issue #169's own run
+found 17 findings, only 5 of which traced to the two already-known
+leaf-level causes; the other 11 came from two causes new at this composed
+level (an un-propagated resistor ``device_bulk`` reconciliation, and
+reference-flatten hierarchy-prefix net-identity conflicts). Issue #171
+resolved both of those composed-level causes (a corrected ``device_bulk``
+entry pointing at the real, already-existing ``VSS`` net rather than a
+per-leaf-private synthetic one, and a `layout/lvs_reference.py` `flatten()`
+fix that reconciles both the bare-vs-prefixed and the merged-pin-alias
+naming conventions) -- ``lvs_report.json`` now carries 8 findings, all
+tracing to the two already-known, permanently-declined leaf-level causes
+(plus one inferred instance of the first). See ``layout/README.md``'s
+``bandgap_top`` "LVS" section for the itemised breakdown. Post-layout PEX is
+deferred and was not run.
 """
 
 from __future__ import annotations

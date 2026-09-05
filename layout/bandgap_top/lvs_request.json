@@ -7,6 +7,10 @@
     "top": "bandgap_top"
   },
   "reference": {
-    "netlist": "bandgap_top.lvs_reference.spice"
+    "netlist": "bandgap_top.lvs_reference.spice",
+    "device_bulk": {
+      "rppd": "VSS",
+      "rhigh": "VSS"
+    }
   }
 }

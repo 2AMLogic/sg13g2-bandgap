@@ -3,27 +3,27 @@
 * Plain-element form for `klt lvs`, expanded from a hierarchical
 * top-level netlist whose own X-calls are subckt instantiations,
 * not devices -- see flatten()'s own docstring.
-Mx1_M1 sns1 fb vdd vdd pfet L=1U W=10U
-Qx1_Q1 sns1 sns1 vss vss npn13g2
-Mx1_M2A sns2 fb vdd vdd pfet L=1U W=9U
-Mx1_M2B sns2 fb vdd vdd pfet L=1U W=1U
-Rx1_R2 sns2 x1.cb2 10751.0 rppd L=82.7U W=2U
-Qx1_Q2 x1.cb2 x1.cb2 vss vss npn13g2
-Mx1_M3A vref fb vdd vdd pfet L=1U W=8U
-Mx1_M3B vref fb vdd vdd pfet L=1U W=1U
-Mx1_M3C vref fb vdd vdd pfet L=1U W=1U
-Rx1_R1 vref x1.cb3 66430.0 rppd L=511U W=2U
-Qx1_Q3 x1.cb3 x1.cb3 vss vss npn13g2
-Mx2_MTAIL x2.tail fb vdd vdd pfet L=1U W=10U
-Mx2_MP1 x2.d1 sns2 x2.tail vdd pfet L=1U W=20U
-Mx2_MP2 x2.d2 sns1 x2.tail vdd pfet L=1U W=20U
-Mx2_MP3 x2.pn x2.pn vdd vdd pfet L=1U W=10U
-Mx2_MP4 fb x2.pn vdd vdd pfet L=1U W=10U
-Mx2_MN1 x2.d1 x2.d1 vss vss nfet L=1U W=10U
-Mx2_MN2 x2.d2 x2.d2 vss vss nfet L=1U W=10U
-Mx2_MN3 fb x2.d1 vss vss nfet L=1U W=10U
-Mx2_MN4 x2.pn x2.d2 vss vss nfet L=1U W=10U
-Rx3_RPU vdd x3.det 1919368.0 rhigh L=1411.3U W=1U
-Mx3_MSENSE x3.det sns1 vss vss nfet L=0.5U W=10U
-Mx3_MKFB fb x3.det vss vss nfet L=0.5U W=2U
+Mx1_M1 IN_N,SNS1 FB,OUT vdd vdd pfet L=1U W=10U
+Qx1_Q1 IN_N,SNS1 IN_N,SNS1 vss vss npn13g2
+Mx1_M2A IN_P,SNS2 FB,OUT vdd vdd pfet L=1U W=9U
+Mx1_M2B IN_P,SNS2 FB,OUT vdd vdd pfet L=1U W=1U
+Rx1_R2 IN_P,SNS2 cb2 10751.0 rppd L=82.7U W=2U
+Qx1_Q2 cb2 cb2 vss vss npn13g2
+Mx1_M3A vref FB,OUT vdd vdd pfet L=1U W=8U
+Mx1_M3B vref FB,OUT vdd vdd pfet L=1U W=1U
+Mx1_M3C vref FB,OUT vdd vdd pfet L=1U W=1U
+Rx1_R1 vref cb3 66430.0 rppd L=511U W=2U
+Qx1_Q3 cb3 cb3 vss vss npn13g2
+Mx2_MTAIL tail FB,OUT vdd vdd pfet L=1U W=10U
+Mx2_MP1 d1 IN_P,SNS2 tail vdd pfet L=1U W=20U
+Mx2_MP2 d2 IN_N,SNS1 tail vdd pfet L=1U W=20U
+Mx2_MP3 pn pn vdd vdd pfet L=1U W=10U
+Mx2_MP4 FB,OUT pn vdd vdd pfet L=1U W=10U
+Mx2_MN1 d1 d1 vss vss nfet L=1U W=10U
+Mx2_MN2 d2 d2 vss vss nfet L=1U W=10U
+Mx2_MN3 FB,OUT d1 vss vss nfet L=1U W=10U
+Mx2_MN4 pn d2 vss vss nfet L=1U W=10U
+Rx3_RPU vdd det 1919368.0 rhigh L=1411.3U W=1U
+Mx3_MSENSE det IN_N,SNS1 vss vss nfet L=0.5U W=10U
+Mx3_MKFB FB,OUT det vss vss nfet L=0.5U W=2U
 .end
