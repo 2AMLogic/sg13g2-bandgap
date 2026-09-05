@@ -1,14 +1,17 @@
 * extracted by klt extract --deck sg13cmos5l
 
 * cell sg13cmos5l_bandgap_startup
-* pin det,vdd
+* pin det
 * pin fb
 * pin sns1
+* pin vdd
 * pin vss
 * pin vsubs
-.SUBCKT sg13cmos5l_bandgap_startup det|vdd fb sns1 vss vsubs
-* device instance $1 r0 *1 1395,0 nfet
-M$1 det|vdd sns1 vss vsubs nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
-* device instance $2 r0 *1 1420,0 nfet
-M$2 fb det|vdd vss vsubs nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U PD=4.8U
+.SUBCKT sg13cmos5l_bandgap_startup det fb sns1 vdd vss vsubs
+* device instance $1 r0 *1 55,0 nfet
+M$1 det sns1 vss vsubs nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $2 r0 *1 80,0 nfet
+M$2 fb det vss vsubs nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U PD=4.8U
+* device instance $3 r0 *1 22.386,29.852 rhigh
+R$3 vdd det vsubs 1919368 rhigh
 .ENDS sg13cmos5l_bandgap_startup

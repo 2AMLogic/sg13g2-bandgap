@@ -39,17 +39,28 @@ Floorplan
 ---------
 
 The three leaf cells are placed side by side, left to right, in a single
-row -- ``bandgap_core`` (~840 um wide) leftmost, ``bandgap_amp`` (~84 um)
-in the middle, ``bandgap_startup`` (~1425 um) rightmost -- separated by
+row -- ``bandgap_core`` (~230 um wide) leftmost, ``bandgap_amp`` (~84 um)
+in the middle, ``bandgap_startup`` (~85 um) rightmost -- separated by
 30 um gaps that are otherwise **empty at every height** (no cell's own
 bounding box reaches into a neighbour's gap at any y), the same property
 every leaf cell's own single-metal floorplan already exploits internally::
 
-    core (-10, -3.21)-(830.5, 61.7)
-      | 30 um gap (830.5 .. 860.5) |
-    amp (860.5, -1.24)-(944.5, 41.7)
-      | 30 um gap (944.5 .. 975.0) |
-    startup (974.5, -1.2)-(2399.4, 8.6)
+    core (-10, -3.21)-(220.07, 61.7)
+      | 30 um gap (220.07 .. 250.5) |
+    amp (250.5, -1.24)-(334.5, 41.7)
+      | 30 um gap (334.5 .. 364.8) |
+    startup (364.8, -1.2)-(449.4, 52.3)
+
+**Issue #173 re-packed this row.** ``core`` and ``startup`` used to be 840
+and 1425 um wide because each contained one straight poly-resistor bar
+(647 um and 1411.3 um) whose length alone set the cell's width; folding
+those bars into serpentines leaves the row a quarter as wide at the same
+30 um gaps. The gaps themselves are unchanged -- they are routing
+corridors, not slack. The bus stack above the row was also brought down
+from 75..120 to 66..84, since the tallest leaf (``core``, 61.7 um) did not
+grow: pre-fold the stack sat 13 um clear of it purely by convention, and
+that clearance is now 4 um with 6 um between buses, which is >30x
+``metal1.space.1``'s 0.18 um floor.
 
 Since the three cells occupy **disjoint x-ranges**, a vertical route drawn
 anywhere within one cell's own x-span can only ever collide with that same
@@ -149,20 +160,26 @@ TRUNK_W = 0.30
 # corridors -- see this module's own docstring.
 # --------------------------------------------------------------------------- #
 CORE_DX, CORE_DY = 0.0, 0.0
-AMP_DX, AMP_DY = 867.5, 0.0
-STARTUP_DX, STARTUP_DY = 975.0, 0.0
+AMP_DX, AMP_DY = 257.5, 0.0
+STARTUP_DX, STARTUP_DY = 365.0, 0.0
 
 # Each leaf's own boundary-port map (issue #76), in **its own local
 # coordinates** -- reproduced here from that cell's own generate.py `build()`
 # printout rather than re-run at generate time, since this module instances
 # the already-committed GDS, not the leaf's Python `build()` function.
+# Issue #173: ``core``'s ``vss``/``sns2``/``vref`` pads moved with that
+# cell's own right edge (830.5 -> 220.0) when its 647 um ``R1`` bar was
+# folded, and ``sns2``'s port height rose 50 -> 57 to clear the folded R1
+# block (see that cell's own ``Y_SNS2_PORT`` comment). ``vdd``/``fb``/
+# ``sns1`` are unchanged -- they sit on the mirror row and the cell's left
+# edge, neither of which the fold touched.
 _CORE_PORTS_LOCAL = {
     "vdd": (-5.0, 60.64, 185.0, 60.9),
-    "vss": (824.52, -2.99, 829.98, 2.99),
+    "vss": (214.39, -2.99, 219.85, 2.99),
     "fb": (-8.38, 59.9, -7.98, 60.1),
     "sns1": (-10.0, 49.75, -9.5, 50.25),
-    "sns2": (830.0, 49.75, 830.5, 50.25),
-    "vref": (830.0, 39.75, 830.5, 40.25),
+    "sns2": (219.5, 56.75, 220.0, 57.25),
+    "vref": (219.5, 39.75, 220.0, 40.25),
 }
 _AMP_PORTS_LOCAL = {
     "vdd": (15.0, 40.64, 75.0, 40.9),
@@ -171,11 +188,16 @@ _AMP_PORTS_LOCAL = {
     "in_p": (-7.0, 19.75, -6.5, 20.25),
     "in_n": (76.5, 19.75, 77.0, 20.25),
 }
+# Issue #173: every ``startup`` port moved. ``vdd`` is ``RPU``'s own end-A
+# terminal, which folding turned from the left end of a 1.4 mm bar into the
+# bottom-left terminal of a 45 x 44 um block; the other three moved with the
+# MSENSE/MKFB cluster, which shifted 1340 um left to sit just past the
+# folded block's right edge instead of under the old bar's far end.
 _STARTUP_PORTS_LOCAL = {
-    "vdd": (-0.5, 7.4, 0.0, 8.6),
-    "vss": (1390.0, -0.65, 1421.0, -0.39),
-    "sns1": (1387.75, -1.2, 1388.25, -0.7),
-    "fb": (1423.9, 5.75, 1424.4, 6.25),
+    "vdd": (-0.2, 7.5, 1.2, 8.0),
+    "vss": (50.0, -0.65, 81.0, -0.39),
+    "sns1": (47.75, -1.2, 48.25, -0.7),
+    "fb": (83.9, 5.75, 84.4, 6.25),
 }
 
 
@@ -190,10 +212,10 @@ STARTUP = {k: _shift(v, STARTUP_DX, STARTUP_DY) for k, v in _STARTUP_PORTS_LOCAL
 
 # Bus heights (Metal1, horizontal), all comfortably above every leaf cell's
 # own bounding-box top (core's own 61.7 um is the tallest of the three).
-Y_BUS_VDD = 75.0
-Y_BUS_VSS = 90.0
-Y_BUS_FB = 105.0
-Y_BUS_SNS1 = 120.0
+Y_BUS_VDD = 66.0
+Y_BUS_VSS = 72.0
+Y_BUS_FB = 78.0
+Y_BUS_SNS1 = 84.0
 BUS_HEIGHT = 1.0
 
 #: bandgap_top's own external port pads (vdd/vss/vref -- the only three
@@ -235,31 +257,31 @@ def build() -> Builder:
     return b
 
 
-#: ``bandgap_startup``'s own ``RPU`` (a deck-unrecognised ``rhigh`` resistor,
-#: see ``layout/README.md`` "LVS -- ``mismatch``, fully attributed", cause 2)
-#: draws its conductor *body* as one long, unbroken ``GatPoly`` bar spanning
-#: almost the entire cell's own width (``draw_rhigh``'s main span, local
-#: ``x=0..1411.3``, ``y=Y_RPU-w/2..Y_RPU+w/2`` = ``7.5..8.5`` at this
-#: assembly's own ``STARTUP_DY=0``). Both ``sns1``'s and ``vss``'s own
-#: natural riser columns (chosen to reuse each cell's own existing tap/pad
-#: locations, see :func:`_route_vss`/:func:`_route_sns1`) fall within that
-#: x-span -- a plain ``GatPoly`` riser through it would physically merge
-#: with ``RPU``'s own body and, transitively, with every other net that
-#: body's own already-documented deck-gap short already pulls in (``vdd``,
-#: via its unmodelled-resistor short into ``det`` -- a real, pre-existing
-#: gap this assembly inherits, not introduced here).
+#: ``bandgap_startup``'s own ``RPU`` (a deck-unrecognised ``rhigh``
+#: resistor, see ``layout/README.md`` "LVS -- ``mismatch``, fully
+#: attributed", cause 2) draws its conductor *body* on ``GatPoly``, so any
+#: ``GatPoly`` riser that shares a column with it merges into it -- and,
+#: transitively, into every other net that body's already-documented deck-gap
+#: short pulls in (``vdd``, via ``det``).
 #:
-#: ``(6.8, 9.2)`` -- **not** a bare 0.2 um past the body's own ``7.5..8.5``
-#: -- because :func:`poly_tab`'s own ``GatPoly`` landing pad is itself
-#: ``TAB_PAD_UM + 2*TAB_POLY_MARGIN_UM`` = 0.70 um tall (0.35 um each side
-#: of the transition point), so a transition placed only 0.2 um clear of
-#: the body would still have its *own pad* overlap it. 6.8/9.2 keep that
-#: 0.35 um pad half-height, plus a further ~0.15 um of clearance, entirely
-#: outside 7.5..8.5 (found by direct `klt extract` re-verification after
-#: the first, too-tight attempt (7.3, 8.7) still merged sns1/vss into
-#: RPU's own already-shorted vdd|det net -- see this issue's own PR
-#: description for that failed attempt).
-STARTUP_RPU_BODY_Y = (6.8, 9.2)
+#: Before issue #173 that body was one unbroken 1411.3 um bar spanning
+#: local ``x=0..1411.3``, i.e. **almost the entire cell**, so both
+#: ``sns1``'s and ``vss``'s natural riser columns fell inside it and each
+#: needed a ``Metal1`` bridge across the ``(6.8, 9.2)`` band the bar
+#: occupied. Folded, the body occupies local ``x=-0.2..44.97`` only, and
+#: both of those columns (local 48.0 and 65.0) sit clear of it -- so the
+#: bridges are gone rather than merely retuned. The one riser that *would*
+#: now land inside the folded block is ``vdd``'s (``RPU``'s own end-A
+#: terminal is the block's bottom-left corner, and a straight climb from it
+#: goes up leg 0); that one escapes sideways into the amp-startup gap first
+#: instead of bridging -- see :func:`_route_vdd`.
+#:
+#: Kept as a named constant recording the folded block's own local x-span,
+#: so a future riser-column choice can be checked against it by name rather
+#: than by rediscovering the same short. Verified against the regenerated
+#: leaf GDS, not asserted: `klt extract` on this assembly reports the same
+#: net set as the pre-fold one.
+STARTUP_RPU_BODY_X_LOCAL = (-0.2, 44.972)
 
 
 def _riser(
@@ -343,18 +365,26 @@ def _route_vdd(b: Builder) -> None:
     route_v(b, L_METAL1, x_core, core_pad[3], 63.0, width=TRUNK_W)
 
     amp_pad = AMP["vdd"]
-    x_amp = 910.0  # within (882.5, 942.5); clear of MTAIL/MP4/MP3 (887.5/912.5/937.5)
+    x_amp = AMP_DX + 42.5  # within amp's own vdd pad; clear of MTAIL/MP4/MP3
     route_v(b, L_METAL1, x_amp, amp_pad[3], 43.0, width=TRUNK_W)
 
+    # startup: issue #173. Pre-fold this rose straight up from RPU's own
+    # end-A pad, which sat at the left end of a 1 um-tall bar with nothing
+    # above it. Folded, that same terminal is the *bottom-left corner of the
+    # block*, and leg 0 of the serpentine runs straight up from it -- a poly
+    # riser on that column would merge into RPU's own body (see
+    # STARTUP_RPU_BODY_X_LOCAL). It escapes sideways on Metal1 into the
+    # empty amp-startup gap first, then rises there.
     startup_pad = STARTUP["vdd"]
-    x_startup = (startup_pad[0] + startup_pad[2]) / 2  # 974.75, mid of a 0.5 um pad
-    route_v(b, L_METAL1, x_startup, startup_pad[3], 10.0, width=TRUNK_W)
+    y_startup = (startup_pad[1] + startup_pad[3]) / 2  # 7.75, mid of the pad
+    x_startup = STARTUP_DX - 5.0  # in the amp-startup gap, left of the block
+    route_h(b, L_METAL1, y_startup, startup_pad[0], x_startup, width=TRUNK_W)
 
     _route_bus_net(
         b,
         "vdd",
         Y_BUS_VDD,
-        [(x_core, 63.0, None), (x_amp, 43.0, None), (x_startup, 10.0, None)],
+        [(x_core, 63.0, None), (x_amp, 43.0, None), (x_startup, y_startup, None)],
         port_x=X_PORT_VDD,
     )
 
@@ -368,20 +398,21 @@ def _route_vss(b: Builder) -> None:
     approach into that gap before rising independently (no need to meet at
     a shared point first: the bus itself is what merges them)."""
     core_pad = CORE["vss"]
-    x_core = 832.0  # barely into the core-amp gap
+    x_core = 222.0  # barely into the core-amp gap
     route_h(b, L_METAL1, 0.0, core_pad[2], x_core, width=TRUNK_W)
 
     amp_pad = AMP["vss"]
-    x_amp = 858.0  # also within the core-amp gap, distinct column
+    x_amp = 246.0  # also within the core-amp gap, distinct column
     y_amp = (amp_pad[1] + amp_pad[3]) / 2  # -0.77, mid of amp's own vss pad
     route_h(b, L_METAL1, y_amp, amp_pad[0], x_amp, width=TRUNK_W)
 
     startup_pad = STARTUP["vss"]
-    x_startup = 2380.0  # within (2365, 2396); also within RPU's own body span
+    # Issue #173: local x=65, between MSENSE (50..60) and MKFB (77.5..82.5)
+    # and -- unlike the pre-fold column -- entirely clear of RPU's own
+    # GatPoly body (STARTUP_RPU_BODY_X_LOCAL), so no Metal1 bridge is needed.
+    x_startup = STARTUP_DX + 65.0
     # Approach: a vertical stub from the pad's own bottom edge (y0), dropping
     # further down past startup's own bbox bottom (-1.2) before the riser.
-    # This column crosses RPU's own unmodelled GatPoly resistor body (see
-    # STARTUP_RPU_BODY_Y) -- the riser below bridges over it on Metal1.
     route_v(b, L_METAL1, x_startup, startup_pad[1], -3.0, width=TRUNK_W)
 
     _route_bus_net(
@@ -391,7 +422,7 @@ def _route_vss(b: Builder) -> None:
         [
             (x_core, 0.0, None),
             (x_amp, y_amp, None),
-            (x_startup, -3.0, STARTUP_RPU_BODY_Y),
+            (x_startup, -3.0, None),
         ],
         port_x=X_PORT_VSS,
     )
@@ -406,12 +437,12 @@ def _route_fb(b: Builder) -> None:
 
     amp_pad = AMP["out"]
     y_amp = (amp_pad[1] + amp_pad[3]) / 2  # 0.77
-    x_amp = 855.0  # within the core-amp gap, distinct from vss's own 832/858
+    x_amp = 240.0  # within the core-amp gap, distinct from vss's own 222/246
     route_h(b, L_METAL1, y_amp, amp_pad[0], x_amp, width=TRUNK_W)
 
     startup_pad = STARTUP["fb"]
     y_startup = (startup_pad[1] + startup_pad[3]) / 2  # 6.0
-    x_startup = 2405.0  # in the open corridor right of startup's own right edge
+    x_startup = STARTUP_DX + 87.0  # open corridor right of startup's right edge
     route_h(b, L_METAL1, y_startup, startup_pad[2], x_startup, width=TRUNK_W)
 
     _route_bus_net(
@@ -431,15 +462,17 @@ def _route_sns1(b: Builder) -> None:
 
     amp_pad = AMP["in_n"]
     y_amp = (amp_pad[1] + amp_pad[3]) / 2  # 20.0
-    x_amp = 960.0  # in the amp-startup gap (944.5 .. 975.0)
+    x_amp = 350.0  # in the amp-startup gap (334.5 .. 364.8)
     route_h(b, L_METAL1, y_amp, amp_pad[2], x_amp, width=TRUNK_W)
 
     startup_pad = STARTUP["sns1"]
-    x_startup = (startup_pad[0] + startup_pad[2]) / 2  # 2363.0 -- the leaf
-    # cell's own sns1 poly tab sits at this exact x (X_SNS1_TAB=1388 local),
+    x_startup = (startup_pad[0] + startup_pad[2]) / 2  # 413.0 -- the leaf
+    # cell's own sns1 poly tab sits at this exact x (X_SNS1_TAB=48 local),
     # so this riser lands directly on top of that cell's own existing sns1
-    # tap -- same net, intentional, not a coincidence. This column is also
-    # within RPU's own body span (see STARTUP_RPU_BODY_Y) -- bridged below.
+    # tap -- same net, intentional, not a coincidence. Issue #173: this
+    # column used to fall *inside* RPU's own 1.4 mm GatPoly body and needed a
+    # Metal1 bridge across it; the folded body ends at local x=44.97, so the
+    # column is clear and the bridge is gone.
     route_v(b, L_METAL1, x_startup, startup_pad[1], -3.0, width=TRUNK_W)
 
     _route_bus_net(
@@ -449,21 +482,27 @@ def _route_sns1(b: Builder) -> None:
         [
             (x_core, y_core, None),
             (x_amp, y_amp, None),
-            (x_startup, -3.0, STARTUP_RPU_BODY_Y),
+            (x_startup, -3.0, None),
         ],
     )
 
 
 def _route_sns2(b: Builder) -> None:
     """``sns2``: core + amp only. Routed directly through the core-amp gap
-    -- no bus needed for a 2-cell net. Uses x=845 (distinct from vss's own
-    832/858 and fb's own 855 in the same gap) and y=50/20 (distinct from
-    vref's own y=40 turn below), entirely on Metal1."""
+    -- no bus needed for a 2-cell net. Uses x=232 (distinct from vss's own
+    222/246, fb's own 240 and vref's own 226 in the same gap) and y=57/20
+    (distinct from vref's own y=40 turn below), entirely on Metal1.
+
+    Issue #173: ``y_core`` follows ``core``'s own ``sns2`` port, which rose
+    from 50 to 57 when that cell's folded ``R1`` block took over the y=15..55
+    band its poly underpass used to cross at y=50. ``x_mid`` must stay
+    **right** of :func:`_route_vref`'s own drop column, or vref's y=40 run
+    would cross this net's vertical leg."""
     core_pad = CORE["sns2"]
     amp_pad = AMP["in_p"]
     y_core = (core_pad[1] + core_pad[3]) / 2  # 50.0
     y_amp = (amp_pad[1] + amp_pad[3]) / 2  # 20.0
-    x_mid = 845.0
+    x_mid = 232.0
 
     route_h(b, L_METAL1, y_core, core_pad[2], x_mid, width=TRUNK_W)
     route_v(b, L_METAL1, x_mid, y_core, y_amp, width=TRUNK_W)
@@ -473,8 +512,8 @@ def _route_sns2(b: Builder) -> None:
 def _route_vref(b: Builder) -> None:
     """``vref``: core only, brought out to bandgap_top's own external port.
 
-    Routed entirely on Metal1: down from core's own pad (x=838, distinct
-    from sns2's own x=845) to y=-10 -- a height below every leaf cell's own
+    Routed entirely on Metal1: down from core's own pad (x=226, distinct
+    from -- and deliberately left of -- sns2's own x=232) to y=-10 -- a height below every leaf cell's own
     bounding-box bottom (core's own -3.21 is the lowest) *and* below every
     other net's own riser column range drawn above (vdd/vss's risers start
     at y=0 or higher; sns1/fb's core-side columns don't reach below their
@@ -484,7 +523,7 @@ def _route_vref(b: Builder) -> None:
     docstring for the specific columns checked."""
     core_pad = CORE["vref"]
     y_pad = (core_pad[1] + core_pad[3]) / 2  # 40.0
-    x_drop = 838.0
+    x_drop = 226.0
     y_safe = -10.0
 
     route_h(b, L_METAL1, y_pad, core_pad[2], x_drop, width=TRUNK_W)

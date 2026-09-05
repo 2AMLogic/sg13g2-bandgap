@@ -153,13 +153,37 @@ METAL2_W = 0.35
 # the via's edge (zero enclosure) violated this rule (`klt drc` re-run).
 VIA_ENCLOSE = 0.05
 
+# Serpentine fold counts (issue #173). Both resistors used to be drawn as
+# single straight bars whose length alone set this cell's bounding box --
+# `R1` at l=511u made the cell 516.9um wide against a 64.5um height (8.0:1),
+# and `measurements/2026-09-layout-area/` measured the resulting assembly as
+# 77.5% aspect-ratio whitespace. Each count is chosen to make its own folded
+# block roughly square: with `draw_poly_res`'s `RES_FOLD_GAP_UM` (0.4) and
+# w=2u the leg pitch is ~2.4um, and a block is square at
+# `legs = sqrt(l / pitch)` -- sqrt(511/2.4) = 14.6 and sqrt(82.7/2.4) = 5.9.
+# Both are rounded to an **even** count so each resistor's two terminals come
+# out on its own bottom row (an odd count leaves end B on top -- see
+# `draw_poly_res`), which is what lets `_riser`/`_tie_and_riser` keep landing
+# on both pads from the same Metal2 row.
+#
+# Folding conserves the drawn conductor length exactly (see
+# `_klayout_builder_base.fold_plan`), so neither resistor's nominal value
+# moves: `klt extract` reports R1/R2 at the same ohms before and after.
+R1_LEGS = 14
+R2_LEGS = 6
+
 
 def build() -> Builder:
     b = Builder(TOP_CELL)
 
     mos_y = 22.0
     hbt_y = 0.0
-    res_y = 40.0
+    # Both folded resistor blocks share one row above the MOS row (issue
+    # #173). Pre-fold they needed a row each, stacked 20um apart, because
+    # each was a >80um-long bar starting at x=0 regardless of which branch it
+    # belonged to; folded, each block is small enough to sit directly above
+    # its own branch, so they share a row and the second one disappears.
+    res_y = 34.0
 
     # Branch 1: M1 -> Q1, no series resistor (Q1 sensed directly at sns1).
     # Left as a single w=10u unit -- issue #149's decomposition only needs
@@ -182,7 +206,13 @@ def build() -> Builder:
     m2a = draw_hv_mos(b, "M2A", "pmos", 9.0, 1.0, x2a, mos_y, gate_net="fb", source_net="vdd", drain_net="sns2")
     m2b = draw_hv_mos(b, "M2B", "pmos", 1.0, 1.0, x2b, mos_y, gate_net="fb", source_net="vdd", drain_net="sns2")
     q2 = draw_npn13g2(b, "Q2", 8, (x2a + x2b) / 2, hbt_y, collector_net="cb2", base_net="cb2", emitter_net="vss")
-    r2 = draw_poly_res(b, "R2", "rppd", 2.0, 82.7, 0.0, res_y, end_a_net="sns2", end_b_net="cb2")
+    # R2 folded into R2_LEGS legs (issue #173) and placed directly above its
+    # own branch (x0=42, i.e. spanning the M2A/M2B pair below it) instead of
+    # starting at x=0 the way an 82.7um bar had to. 14.0 x 13.45 um.
+    r2 = draw_poly_res(
+        b, "R2", "rppd", 2.0, 82.7, 42.0, res_y,
+        end_a_net="sns2", end_b_net="cb2", legs=R2_LEGS,
+    )
 
     # Output branch: M3A-M3C (issue #149 -- 3x parallel unit fingers, one
     # dominant (w=8u) + two trim (w=1u each), total W/L unchanged at
@@ -198,11 +228,16 @@ def build() -> Builder:
         for name, w, x in zip(x3_names, x3_widths, x3_xs)
     ]
     q3 = draw_npn13g2(b, "Q3", 1, sum(x3_xs) / len(x3_xs), hbt_y, collector_net="cb3", base_net="cb3", emitter_net="vss")
-    # R1 is drawn as a long straight bar (l=511u, see draw_poly_res's own
-    # docstring -- resized from 694.5u to match design/bandgap_core.sch's
-    # own R1/R2 retune, issue #134/PR #136, per issue #137) on its own row
-    # so it does not overlap the compact devices above.
-    r1 = draw_poly_res(b, "R1", "rppd", 2.0, 511.0, 0.0, res_y + 20.0, end_a_net="vref", end_b_net="cb3")
+    # R1 folded into R1_LEGS legs (issue #173; l=511u, resized from 694.5u to
+    # match design/bandgap_core.sch's own R1/R2 retune, issue #134/PR #136,
+    # per issue #137). 33.278 x 36.123 um, placed directly above its own
+    # M3A-M3C branch on the same row as R2 -- pre-fold this was a 511um bar
+    # starting at x=0 on a row 20um above R2's, and it alone set the cell's
+    # 516.9um width.
+    r1 = draw_poly_res(
+        b, "R1", "rppd", 2.0, 511.0, 104.0, res_y,
+        end_a_net="vref", end_b_net="cb3", legs=R1_LEGS,
+    )
 
     _route(b, m1, q1, [m2a, m2b], q2, r2, m3_legs, q3, r1)
 
@@ -291,21 +326,40 @@ def _route(
     # different layer cannot short against either Metal1/GatPoly bar),
     # landing on Metal1 at each end via Via1.
     sns2_drain = _tie_drains(b, m2_legs)
-    _riser(b, sns2_drain, r2["end_a_pad"], jog_y=r2["end_a_pad"][1] + 1.15)
+    _riser(b, sns2_drain, r2["end_a_pad"], jog_y=_pad_row(r2["end_a_pad"]))
 
     # -- cb2: R2.end_b, Q2.collector, Q2.base -- Q2's own collector/base tie
     # (mirrors sns1's Q1 tie) plus a riser up to R2's far end.
     cb2_x = (q2["collector_pad"][0] + q2["collector_pad"][2]) / 2 + 6.0
-    _tie_and_riser(b, q2, cb2_x, r2["end_b_pad"], jog_y=r2["end_b_pad"][1] + 1.15)
+    _tie_and_riser(b, q2, cb2_x, r2["end_b_pad"], jog_y=_pad_row(r2["end_b_pad"]))
 
     # -- vref: M3A-M3D.drain (tied together, issue #149), R1.end_a --
     # mirrors sns2's design, on R1's row.
     vref_drain = _tie_drains(b, m3_legs)
-    _riser(b, vref_drain, r1["end_a_pad"], jog_y=r1["end_a_pad"][1] + 1.15)
+    _riser(b, vref_drain, r1["end_a_pad"], jog_y=_pad_row(r1["end_a_pad"]))
 
     # -- cb3: R1.end_b, Q3.collector, Q3.base -- mirrors cb2's design.
     cb3_x = (q3["collector_pad"][0] + q3["collector_pad"][2]) / 2 + 3.0
-    _tie_and_riser(b, q3, cb3_x, r1["end_b_pad"], jog_y=r1["end_b_pad"][1] + 1.15)
+    _tie_and_riser(b, q3, cb3_x, r1["end_b_pad"], jog_y=_pad_row(r1["end_b_pad"]))
+
+
+def _pad_row(pad: tuple[float, float, float, float]) -> float:
+    """Y at which a Metal2 jog meets a folded resistor's terminal pad.
+
+    Post-fold (issue #173) both of a resistor's Metal1 terminal pads hang
+    *below* the block's own bottom edge, in the band
+    ``[y0 - RES_HEAD_UM - 0.1, y0]``, rather than sitting on the bar's
+    centreline at each end of a long horizontal body. So the Via1 that drops
+    a Metal2 jog onto a pad has to land inside that band -- this returns its
+    mid-line, which leaves ~0.125um of Metal1 enclosure above and below the
+    ``VIA``-sized cut (floor: ``metal1.enclosing.via1.1``, 0.01um) and keeps
+    the jog itself clear of the resistor core's own bottom edge.
+
+    The pre-fold code passed ``pad[1] + 1.15`` here, a literal derived from
+    the old straight bar's ``w=2u`` end pad; that expression now lands
+    *above* the pad, inside the folded core.
+    """
+    return (pad[1] + pad[3]) / 2
 
 
 def _riser(b: Builder, drain_pad: tuple[float, float, float, float], target_pad: tuple[float, float, float, float], jog_y: float) -> None:

@@ -9,41 +9,42 @@
 * pin DET
 * pin FB
 * pin SNS1
+* pin VDD
 * pin VSS
-.SUBCKT bandgap_startup DET FB SNS1 VSS
+.SUBCKT bandgap_startup DET FB SNS1 VDD VSS
 * device instance $1 r0 *1 0,0 nfet
-M$1 DET__t1 SNS1 VSS__t0 VSS__t3 nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$1 DET__t0 SNS1 VSS__t0 VSS__t3 nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 20,0 nfet
-M$2 FB__t0 DET__t2 VSS__t1 VSS__t4 nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U
+M$2 FB__t0 DET__t1 VSS__t1 VSS__t4 nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U
 + PD=4.8U
-* device instance $3 r0 *1 705.65,20 rhigh
-R$3 \$5__t0 DET__t0 VSS__t2 1919368 rhigh
-* device instance _5_t0 r0 *1 0,0 
-R_5_t0 \$5__t0 \$5 0.264
-* device instance _5 r0 *1 0,0 
-C_5 \$5 vsubs 1.55598e-16
+* device instance $3 r0 *1 22.386,26.852 rhigh
+R$3 VDD__t0 DET__t2 VSS__t2 1919368 rhigh
 * device instance DET_t0 r0 *1 0,0 
-RDET_t0 DET__t0 DET 266.808047442
+RDET_t0 DET__t0 DET 7.2824560321
 * device instance DET_t1 r0 *1 0,0 
-RDET_t1 DET__t1 DET 139.15243699
+RDET_t1 DET__t1 DET 4.66093626702
 * device instance DET_t2 r0 *1 0,0 
-RDET_t2 DET__t2 DET 127.655815568
+RDET_t2 DET__t2 DET 8.58380770088
 * device instance DET r0 *1 0,0 
-CDET DET vsubs 1.30736768e-13
+CDET DET vsubs 5.253342e-15
 * device instance FB_t0 r0 *1 0,0 
 RFB_t0 FB__t0 FB 0.6286
 * device instance FB r0 *1 0,0 
 CFB FB vsubs 2.1056e-16
+* device instance VDD_t0 r0 *1 0,0 
+RVDD_t0 VDD__t0 VDD 0.308
+* device instance VDD r0 *1 0,0 
+CVDD VDD vsubs 1.74934e-16
 * device instance VSS_t0 r0 *1 0,0 
-RVSS_t0 VSS__t0 VSS 1.54191551097
+RVSS_t0 VSS__t0 VSS 2.25555831061
 * device instance VSS_t1 r0 *1 0,0 
-RVSS_t1 VSS__t1 VSS 1.33528757132
+RVSS_t1 VSS__t1 VSS 1.53477587844
 * device instance VSS_t2 r0 *1 0,0 
-RVSS_t2 VSS__t2 VSS 5.75439383541
+RVSS_t2 VSS__t2 VSS 3.9281316219
 * device instance VSS_t3 r0 *1 0,0 
-RVSS_t3 VSS__t3 VSS 1.54191551097
+RVSS_t3 VSS__t3 VSS 2.25555831061
 * device instance VSS_t4 r0 *1 0,0 
-RVSS_t4 VSS__t4 VSS 1.33528757132
+RVSS_t4 VSS__t4 VSS 1.53477587844
 * device instance VSS r0 *1 0,0 
 CVSS VSS vsubs 2.470295e-15
 * device instance vsubs_dctie r0 *1 0,0 

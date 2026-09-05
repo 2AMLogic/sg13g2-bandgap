@@ -14,54 +14,56 @@
     "parameter_tolerance": null
   },
   "status": "mismatch",
-  "mismatch_count": 16,
-  "error_count": 14,
+  "mismatch_count": 17,
+  "error_count": 15,
   "category_counts": {
     "device.body_unverified": 1,
-    "device.unmatched": 3,
-    "net.unmatched": 10,
-    "topology": 2
+    "device.unmatched": 4,
+    "net.unmatched": 11,
+    "topology": 1
   },
   "category_error_counts": {
-    "device.unmatched": 3,
-    "net.unmatched": 10,
-    "topology": 1
+    "device.unmatched": 4,
+    "net.unmatched": 11
   },
   "counts": {
     "nets": {
-      "layout": 5,
+      "layout": 6,
       "reference": 5,
       "matched": 0
     },
     "devices": {
-      "layout": 2,
+      "layout": 3,
       "reference": 3,
       "matched": 0
     },
     "pins": {
-      "layout": 5,
+      "layout": 6,
       "reference": 0,
-      "matched": 5
+      "matched": 6
     }
   },
   "device_classes": [
     "nfet",
-    "pfet"
+    "pfet",
+    "cap_cmomi",
+    "cap_cmomf",
+    "resistor"
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.11",
-    "layout_sha256": "03c46e76773192b2b8c4d7f175a9fb110b9381eb777a33932475e8e277a96051",
+    "engine_version": "0.30.12",
+    "layout_sha256": "a18f8c052af3d66f9e988cd874d92e0379d034f25cf9ce187dc351ad19c368fa",
     "reference_sha256": "7f95fdc494ecbd440ea1d2ef113dd7a43bc1ee468ee8c11af07737ea8007cda5",
     "extracted_netlist": null
   },
   "provenance": {
     "klt_version": "0.3.0",
-    "klayout_version": "0.30.11",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:9a4e18f2fd7a0d39d02abc220141dd5c300158e2540cd19f2f2ea9151f965b80",
+      "content_hash": "sha256:5b5309ecd586f527d6df271384f18e8f1fcd528a09935544b46aed563b66a92e",
       "released": false
     },
     "input": null
@@ -77,6 +79,23 @@
         "layout": null,
         "reference": null,
         "class": "nfet"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$3",
+        "reference": null,
+        "class": "rhigh"
       },
       "property": null,
       "details": null,
@@ -141,7 +160,7 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "det|vdd",
+        "layout": "det",
         "reference": null
       },
       "device": null,
@@ -174,6 +193,22 @@
       "side": "layout",
       "net": {
         "layout": "sns1",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "error",
+      "description": "layout net has no reference counterpart",
+      "side": "layout",
+      "net": {
+        "layout": "vdd",
         "reference": null
       },
       "device": null,
@@ -300,19 +335,6 @@
       "severity": "warning",
       "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
       "side": "layout",
-      "net": null,
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "topology",
-      "severity": "error",
-      "description": "device class could not be mapped to a counterpart",
-      "side": "reference",
       "net": null,
       "device": null,
       "property": null,

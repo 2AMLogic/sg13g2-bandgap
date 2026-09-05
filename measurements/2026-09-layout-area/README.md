@@ -1,5 +1,23 @@
 # Layout-area measurement (T1 item 5 — the `Area` spec row)
 
+> **Update (issue #173, 2026-09-05) — the numbers in this file's own tables
+> are the *pre-fold* geometry, and `area_record.json` next to it is not.**
+> This analysis's conclusion (aspect ratio from unfolded resistor bars, not
+> device count, accounts for 77.5% of the assembled footprint) was acted on
+> in issue #173: every long poly-resistor bar in `layout/` is now drawn as a
+> serpentine, and both assemblies were re-packed. `area_record.json` is a
+> *derived* artifact — `measure_area.py --check` re-derives it from whatever
+> GDS is committed and fails on drift — so it was refreshed to today's
+> geometry rather than left contradicting the tree. **The prose tables below
+> were not rewritten**: they are this analysis's own findings and stand as
+> the recorded "before". The before/after comparison, and the mechanism
+> analysis for the residual whitespace, live in
+> [`../2026-09-resistor-fold/README.md`](../2026-09-resistor-fold/README.md).
+> Headline: `sg13cmos5l_bandgap_top` 0.3211 mm² -> 0.0476 mm² (6.74x),
+> `bandgap_startup` 63.7:1 -> 1.0:1, `sg13cmos5l_bandgap_startup`
+> 145.4:1 -> 1.6:1, with no resistor's extracted value and no cell's
+> DRC/LVS verdict changed.
+
 First evidence of any kind for the one row of `spec/porting-plan.md` §6 that
 had **none**: `Area | < 0.05 mm²`. Every other row of that seven-row draft
 table already has a committed `sim/` testbench and an append-only evidence

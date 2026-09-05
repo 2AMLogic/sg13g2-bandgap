@@ -5,7 +5,7 @@
   "top": "bandgap_core",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_core.pex.spice",
-  "netlist_sha256": "b8ec90c56b19ff984cb6045c8374d7748dea58bbd073238da180302a4fc2a399",
+  "netlist_sha256": "3aebe5de1644569d74b82a6a3fa5db44ab21ffb284b1f886a2cc80c5a9a0b43c",
   "status": "extracted",
   "device_count": 8,
   "net_count": 9,
@@ -46,17 +46,17 @@
     {
       "layer": 28,
       "datatype": 0,
-      "shapes": 2
+      "shapes": 38
     },
     {
       "layer": 111,
       "datatype": 0,
-      "shapes": 2
+      "shapes": 38
     },
     {
       "layer": 128,
       "datatype": 0,
-      "shapes": 2
+      "shapes": 38
     }
   ],
   "device_classes": [
@@ -282,7 +282,7 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:3f3ee1e5043ebb6cb9d34c7e96dbeae4b5274cd9c4318ec7dea26e6fa1e0659d"
+      "content_hash": "sha256:cc4f3cd930c5386d361494fe2a68b42fd8534e8d9b975291b58ac934dfb5ef62"
     }
   },
   "parasitics": {
@@ -290,16 +290,16 @@
     "c_count": 7,
     "cc_count": 8,
     "l_count": 0,
-    "total_resistance_ohm": 286.6098,
-    "total_capacitance_ff": 96.310606,
+    "total_resistance_ohm": 135.988,
+    "total_capacitance_ff": 50.837461,
     "total_coupling_capacitance_ff": 0.121844,
     "total_inductance_nh": 0.0,
     "nets": [
       {
         "net": "CB2",
         "net_id": 1,
-        "resistance_ohm": 27.5568,
-        "capacitance_ff": 8.704932,
+        "resistance_ohm": 23.2474,
+        "capacitance_ff": 7.410176,
         "inductance_nh": 0.0,
         "hub_net": "CB2",
         "rc_model": "lumped",
@@ -308,7 +308,7 @@
             "device": "$7",
             "terminal": "B",
             "leg_net": "CB2__t0",
-            "resistance_ohm": 27.5568
+            "resistance_ohm": 23.2474
           }
         ],
         "segments": [],
@@ -340,8 +340,8 @@
       {
         "net": "CB3",
         "net_id": 2,
-        "resistance_ohm": 117.7002,
-        "capacitance_ff": 35.673741,
+        "resistance_ohm": 16.8479,
+        "capacitance_ff": 5.212856,
         "inductance_nh": 0.0,
         "hub_net": "CB3",
         "rc_model": "lumped",
@@ -350,7 +350,7 @@
             "device": "$8",
             "terminal": "B",
             "leg_net": "CB3__t0",
-            "resistance_ohm": 117.7002
+            "resistance_ohm": 16.8479
           }
         ],
         "segments": [],
@@ -424,29 +424,29 @@
       {
         "net": "SNS2",
         "net_id": 7,
-        "resistance_ohm": 23.2201,
-        "capacitance_ff": 7.036193,
+        "resistance_ohm": 10.7988,
+        "capacitance_ff": 3.29176,
         "inductance_nh": 0.0,
         "hub_net": "SNS2",
         "rc_model": "lumped",
         "terminals": [
           {
-            "device": "$7",
-            "terminal": "A",
-            "leg_net": "SNS2__t0",
-            "resistance_ohm": 10.1244
-          },
-          {
             "device": "$2",
             "terminal": "S",
-            "leg_net": "SNS2__t1",
-            "resistance_ohm": 4.9181
+            "leg_net": "SNS2__t0",
+            "resistance_ohm": 2.9654
           },
           {
             "device": "$3",
             "terminal": "S",
+            "leg_net": "SNS2__t1",
+            "resistance_ohm": 3.2987
+          },
+          {
+            "device": "$7",
+            "terminal": "A",
             "leg_net": "SNS2__t2",
-            "resistance_ohm": 8.1776
+            "resistance_ohm": 4.5347
           }
         ],
         "segments": [],
@@ -597,8 +597,8 @@
       {
         "net": "VREF",
         "net_id": 8,
-        "resistance_ohm": 49.7778,
-        "capacitance_ff": 15.014553,
+        "resistance_ohm": 16.739,
+        "capacitance_ff": 5.041482,
         "inductance_nh": 0.0,
         "hub_net": "VREF",
         "rc_model": "lumped",
@@ -607,25 +607,25 @@
             "device": "$8",
             "terminal": "A",
             "leg_net": "VREF__t0",
-            "resistance_ohm": 24.8473
+            "resistance_ohm": 6.4675
           },
           {
             "device": "$4",
             "terminal": "S",
             "leg_net": "VREF__t1",
-            "resistance_ohm": 11.065
+            "resistance_ohm": 3.9752
           },
           {
             "device": "$6",
             "terminal": "S",
             "leg_net": "VREF__t2",
-            "resistance_ohm": 5.583
+            "resistance_ohm": 4.1405
           },
           {
             "device": "$5",
             "terminal": "S",
             "leg_net": "VREF__t3",
-            "resistance_ohm": 8.2824
+            "resistance_ohm": 2.1558
           }
         ],
         "segments": [],

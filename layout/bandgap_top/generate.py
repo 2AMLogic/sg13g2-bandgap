@@ -156,9 +156,22 @@ AMP_GDS = os.path.join(HERE, "..", "bandgap_amp", "bandgap_amp.gds")
 STARTUP_GDS = os.path.join(HERE, "..", "bandgap_startup", "bandgap_startup.gds")
 
 # Floorplan offsets -- translation only, left to right (see docstring).
+#
+# Issue #173 re-packed these. Pre-fold the three leaves were 516.9 / 215.9 /
+# 1416.9 um wide, and these offsets (550 / 800) were set by `bandgap_core`'s
+# and `bandgap_startup`'s own 0.5 mm / 1.4 mm resistor bars. Folding those
+# bars leaves the leaves 142.9 / 215.9 / 50.1 um wide, so the same
+# left-to-right row packs into a quarter of the width at the same ~30 um
+# inter-cell gaps (the gaps themselves are unchanged -- they are routing
+# corridors, not slack).
+#
+# Every riser column in `_route` below is now written as `<CELL>_DX + local`
+# rather than as a baked-in absolute, so re-packing moves the columns with
+# their cells. Pre-#173 they were absolutes (645.0, 799.7, ...) that silently
+# encoded AMP_DX=550 / STARTUP_DX=800.
 CORE_DX, CORE_DY = 0.0, 0.0
-AMP_DX, AMP_DY = 550.0, 0.0
-STARTUP_DX, STARTUP_DY = 800.0, 0.0
+AMP_DX, AMP_DY = 180.0, 0.0
+STARTUP_DX, STARTUP_DY = 421.0, 0.0
 
 TRUNK_W = 0.3
 METAL2_W = 0.35
@@ -179,11 +192,15 @@ OVERSHOOT_UM = 0.15
 # per net purely for visual/manufacturing separation -- correctness does
 # NOT depend on this ordering (see docstring: buses are Metal1, risers are
 # Metal2, so no two nets' shapes can ever cross regardless of height order).
-Y_BUS_VDD = 70.0
-Y_BUS_VSS = 75.0
-Y_BUS_FB = 80.0
-Y_BUS_SNS1 = 85.0
-Y_BUS_SNS2 = 90.0
+# (Issue #173: raised 4 um. `bandgap_core`'s own top edge moved from 61.4 to
+# 70.623 when its two folded resistor blocks replaced the two 2 um-tall
+# resistor rows above its MOS row -- the cell traded ~374 um of width for
+# ~9 um of height. 74 keeps the first bus >3 um above it.)
+Y_BUS_VDD = 74.0
+Y_BUS_VSS = 79.0
+Y_BUS_FB = 84.0
+Y_BUS_SNS1 = 89.0
+Y_BUS_SNS2 = 94.0
 
 #: Every port pad location below was read directly off each leaf's own
 #: committed GDS with ``klayout.db`` (``klt layers``-style shape dump,
@@ -214,7 +231,12 @@ _AMP_PORTS_LOCAL = {
 }
 
 _STARTUP_PORTS_LOCAL = {
-    "vdd": (-0.5, 19.4, 0.0, 20.6),
+    # Issue #173: RPU's `vdd` end-A pad moved when RPU was folded -- it is
+    # now the folded block's bottom-left terminal (a 1.4 x 0.5 um pad hanging
+    # below the core's own bottom edge at y=5) instead of the straight bar's
+    # left end pad at y=20. Re-read off the regenerated leaf GDS, same way
+    # every other entry in these maps was.
+    "vdd": (-0.2, 4.5, 1.2, 5.0),
     "vss": (-5.0, -0.6, 21.0, -0.4),
     "fb": (19.0, 0.3, 21.0, 0.65),
 }
@@ -433,8 +455,8 @@ def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_s
     # its own vdd pad's y-land, 30.7, sits above all four of them; startup
     # has no internal Metal2 at all).
     x_core = -10.0
-    x_amp = 645.0
-    x_startup = 799.7
+    x_amp = AMP_DX + 95.0
+    x_startup = STARTUP_DX - 0.3
     _riser_up(b, -4.9, CORE["vdd"], Y_BUS_VDD, jog_to=x_core)
     _riser_up(b, x_amp, AMP["vdd"], Y_BUS_VDD)
     _riser_up(b, x_startup, STARTUP["vdd"], Y_BUS_VDD)
@@ -449,8 +471,8 @@ def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_s
     # Metal2 jogs (JOG_D1/D2/OUT/PN), still within amp's own vss pad
     # (x in [545, 755]).
     x_core = -13.0
-    x_amp = 547.0
-    x_startup = 810.0
+    x_amp = AMP_DX - 3.0
+    x_startup = STARTUP_DX + 10.0
     _riser_up(b, -3.0, CORE["vss"], Y_BUS_VSS, pad_layer=L_METAL2, jog_to=x_core)
     _riser_up(b, x_amp, AMP["vss"], Y_BUS_VSS)
     _riser_up(b, x_startup, STARTUP["vss"], Y_BUS_VSS)
@@ -467,8 +489,8 @@ def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_s
     # sits left of `bandgap_core`'s own busy-jog x-ranges, both of which
     # start at x=-0.25) -- unchanged.
     x_core = (core_fb_pad[0] + core_fb_pad[2]) / 2
-    x_amp = 690.0
-    x_startup = 820.0
+    x_amp = AMP_DX + 140.0
+    x_startup = STARTUP_DX + 20.0
     amp_fb_ride_pad = (AMP["fb"][0], 24.7, AMP["fb"][2], 25.3)
     _riser_up(b, x_core, core_fb_pad, Y_BUS_FB)
     _riser_up(b, x_amp, amp_fb_ride_pad, Y_BUS_FB)
@@ -493,7 +515,7 @@ def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_s
     # column tops out at y=30.9 -- both the "tail" bar and this net's own
     # pad -- well below the bridge's own [31.0, 33.0] window).
     x_core = -16.0
-    x_amp = 600.6
+    x_amp = AMP_DX + 50.6
     x_startup = (startup_sns1_pad[0] + startup_sns1_pad[2]) / 2
     _riser_up(b, 0.0, CORE["sns1"], Y_BUS_SNS1, jog_to=x_core)
     _riser_up(b, x_amp, AMP["sns1"], Y_BUS_SNS1, bridges=((31.0, 33.0),))
@@ -501,21 +523,23 @@ def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_s
     _bus(b, Y_BUS_SNS1, [x_core, x_amp, x_startup])
 
     # -- sns2: core, amp.in_p (two cells only). core's own leg cannot jog
-    # away from x=49 (its own sns2 pad only spans x in [40.5, 57.5]) --
-    # instead it bridges through `bandgap_core`'s own vref/cb3 jog band
-    # (y in [59.875, 60.225]) on Metal1 for one narrow window, verified
-    # clear there (that band's only Metal1 at this column-adjacent region
-    # is two small resistor end-pads at x<=0 and x>=82.7, both well clear
-    # of x=49). The window's own upper edge (60.75, not 60.5) is chosen so
-    # the Metal2 resuming above it (at ``60.75 - OVERSHOOT_UM = 60.6``)
-    # clears the jog's own top edge (60.225) by >=0.21um --
-    # `metal2.space.1`'s real floor, caught by this issue's own `klt drc`
-    # re-run when a tighter window left only ~0.175um there. Crossing
-    # `bandgap_core`'s own *sns2* jog at y~=40 needs no such detour -- same
-    # net, an intentional, correct merge, not a short.
+    # away from x=49 (its own sns2 pad only spans x in [40.5, 57.5]).
+    #
+    # Pre-#173 it therefore had to bridge on Metal1 through
+    # `bandgap_core`'s own vref/cb3 Metal2 jog band, which used to run at
+    # y~=60 across the whole cell (both resistors started at x=0 regardless
+    # of which branch they served, so every branch's jog ran the full width
+    # and crossed this column). That bridge is **gone**: folding put each
+    # resistor directly above its own branch, so the vref jog now spans only
+    # x in [105, 120.25] and the cb3 jog only x in [125, 136.278] -- neither
+    # comes near x=49. The one Metal2 this riser still meets on its way up
+    # is `bandgap_core`'s own *sns2* jog (now at y~=33.75), which is the
+    # same net: an intentional, correct merge, not a short. Verified by
+    # `klt lvs` re-run, which reports the identical 17/17 finding set the
+    # pre-fold assembly did (see layout/README.md).
     x_core = 49.0
-    x_amp = 539.4
-    _riser_up(b, x_core, CORE["sns2"], Y_BUS_SNS2, bridges=((59.5, 60.75),))
+    x_amp = AMP_DX - 10.6
+    _riser_up(b, x_core, CORE["sns2"], Y_BUS_SNS2)
     _riser_up(b, x_amp, AMP["sns2"], Y_BUS_SNS2)
     _bus(b, Y_BUS_SNS2, [x_core, x_amp])
 

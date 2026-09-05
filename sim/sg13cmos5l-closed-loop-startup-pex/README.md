@@ -1,5 +1,21 @@
 # sg13cmos5l-closed-loop-startup-pex
 
+> **Update (issue #173, 2026-09-05) — this experiment's spliced wire
+> parasitics are stale, and no new record has been minted yet.** #173 folded
+> the long poly-resistor bars in `layout/` into serpentines. No device moved:
+> every recognised resistor extracts to the same ohms before and after, and no
+> MOS/bipolar `w`/`l`/count changed
+> (`measurements/2026-09-resistor-fold/README.md` §4). But the routing got
+> much shorter, so the extracted **wire parasitics** in this testbench's own
+> input netlist fell substantially — and the template below carries a
+> hand-merged *copy* of that block rather than reading the file at run time,
+> so it still describes the pre-fold layout. The records here remain valid
+> evidence for the layout they were taken against; they are not evidence for
+> the layout on `main`. Refreshing the block and re-running is tracked in
+> **#176** (which also explains why #173 did not simply do it: the merge rule
+> the template uses is not written down anywhere, and the committed block
+> already did not reproduce from the committed `.pex.spice` before #173).
+
 Post-layout (PEX) counterpart to
 [`sim/sg13cmos5l-closed-loop-startup/`](../sg13cmos5l-closed-loop-startup/README.md),
 issue #84 (the SG13CMOS5L port's own post-layout PVT gap, the last item
