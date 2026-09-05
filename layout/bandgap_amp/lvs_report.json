@@ -13,25 +13,21 @@
     "netgen_setup": null,
     "parameter_tolerance": null
   },
-  "status": "mismatch",
-  "mismatch_count": 2,
-  "error_count": 2,
-  "category_counts": {
-    "device.unmatched": 2
-  },
-  "category_error_counts": {
-    "device.unmatched": 2
-  },
+  "status": "match",
+  "mismatch_count": 0,
+  "error_count": 0,
+  "category_counts": {},
+  "category_error_counts": {},
   "counts": {
     "nets": {
       "layout": 9,
       "reference": 9,
-      "matched": 3
+      "matched": 9
     },
     "devices": {
       "layout": 9,
       "reference": 9,
-      "matched": 7
+      "matched": 9
     },
     "pins": {
       "layout": 9,
@@ -53,7 +49,7 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "2f99c93961e42501d1745f246178357ca89c84c2178ce195eee3f67d9997b602",
+    "layout_sha256": "e04cfbda7a5d1a9c905b99726538b367827dfa4340794ea3f4393424c0dedb25",
     "reference_sha256": "39b5d2a616d573457adf28c35b633ebb5daa0f66bcdf9fceacb8ecb126d9ebc9",
     "extracted_netlist": null
   },
@@ -68,43 +64,28 @@
     },
     "input": null
   },
-  "mismatches": [
+  "mismatches": [],
+  "net_correspondence": [
     {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "reference",
-      "net": null,
-      "device": {
-        "layout": "\\$5",
-        "reference": "P1",
-        "class": "pfet"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
+      "layout": "D1",
+      "reference": "D1",
+      "pin": true
     },
     {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "reference",
-      "net": null,
-      "device": {
-        "layout": "\\$6",
-        "reference": "P2",
-        "class": "pfet"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    }
-  ],
-  "net_correspondence": [
+      "layout": "D2",
+      "reference": "D2",
+      "pin": true
+    },
+    {
+      "layout": "IN_N",
+      "reference": "IN_N",
+      "pin": true
+    },
+    {
+      "layout": "IN_P",
+      "reference": "IN_P",
+      "pin": true
+    },
     {
       "layout": "OUT",
       "reference": "OUT",
@@ -113,6 +94,16 @@
     {
       "layout": "PN",
       "reference": "PN",
+      "pin": true
+    },
+    {
+      "layout": "TAIL",
+      "reference": "TAIL",
+      "pin": true
+    },
+    {
+      "layout": "VDD",
+      "reference": "VDD",
       "pin": true
     },
     {

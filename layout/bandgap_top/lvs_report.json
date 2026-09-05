@@ -14,27 +14,27 @@
     "parameter_tolerance": null
   },
   "status": "mismatch",
-  "mismatch_count": 8,
-  "error_count": 6,
+  "mismatch_count": 6,
+  "error_count": 4,
   "category_counts": {
     "device.bulk_reconciled": 2,
-    "device.unmatched": 5,
+    "device.unmatched": 3,
     "topology": 1
   },
   "category_error_counts": {
-    "device.unmatched": 5,
+    "device.unmatched": 3,
     "topology": 1
   },
   "counts": {
     "nets": {
       "layout": 13,
       "reference": 13,
-      "matched": 4
+      "matched": 9
     },
     "devices": {
       "layout": 20,
       "reference": 23,
-      "matched": 18
+      "matched": 20
     },
     "pins": {
       "layout": 13,
@@ -56,7 +56,7 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "f0db498a174920fd701a3db1902d44a5c1db5c3f03580cc8aea01991bc0c1b03",
+    "layout_sha256": "b4f68dd262064d373f66cdcf65947bf8fda564b3d5a1b4016b3d9c09a5463189",
     "reference_sha256": "a131977a7e583d2024caef49eeab6a5703e576ed8a0e3ec5c23cb751cf226b0b",
     "extracted_netlist": null
   },
@@ -186,40 +186,6 @@
       "subcircuit": null
     },
     {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "reference",
-      "net": null,
-      "device": {
-        "layout": "\\$7",
-        "reference": "X2_MP1",
-        "class": "pfet"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "reference",
-      "net": null,
-      "device": {
-        "layout": "\\$8",
-        "reference": "X2_MP2",
-        "class": "pfet"
-      },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
       "category": "topology",
       "severity": "error",
       "description": "device class could not be mapped to a counterpart",
@@ -235,6 +201,16 @@
   ],
   "net_correspondence": [
     {
+      "layout": "D1",
+      "reference": "D1",
+      "pin": true
+    },
+    {
+      "layout": "D2",
+      "reference": "D2",
+      "pin": true
+    },
+    {
       "layout": "DET",
       "reference": "DET",
       "pin": true
@@ -245,8 +221,23 @@
       "pin": true
     },
     {
+      "layout": "IN_P|SNS2",
+      "reference": "IN_P|SNS2",
+      "pin": true
+    },
+    {
       "layout": "PN",
       "reference": "PN",
+      "pin": true
+    },
+    {
+      "layout": "TAIL",
+      "reference": "TAIL",
+      "pin": true
+    },
+    {
+      "layout": "VDD",
+      "reference": "VDD",
       "pin": true
     },
     {

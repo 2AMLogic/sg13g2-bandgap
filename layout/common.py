@@ -333,6 +333,15 @@ def draw_npn13g2(
 # ... net VSS, not vsubs" -- the identical mechanism, confirmed against the
 # installed `klayout-tools` source for this issue, not merely assumed).
 #
+# Issue #184: the bridge above is only drawn when `body_net` actually equals
+# the terminal pad it would overlap (`source_net` on the `+y` side,
+# `drain_net` on the `-y` side) -- an instance whose body ties to neither
+# (`draw_hv_mos`'s own "External-body mode" docstring paragraph) still gets
+# this same tap island, drawn and labeled identically, but left physically
+# isolated: bridging it unconditionally would short `body_net` into a
+# channel net it does not belong to. The caller's own routing pass wires
+# the isolated tap to the real `body_net` elsewhere instead.
+#
 # No DRC rule in this curated deck's own `DECK` list constrains `NWell`,
 # `nSD`, or `pSD` directly (only `Activ`/`GatPoly`/`Cont`/`Metal1`+ carry
 # checks) -- so the only floors this geometry must clear are the ordinary
@@ -397,8 +406,23 @@ def draw_hv_mos(
     sns1/fb/vdd/vdd -- and ``XMSENSE det sns1 vss vss sg13_hv_nmos`` --
     drain/gate/source/body = det/sns1/vss/vss), so that pairing is this
     parameter's default when the caller leaves it unset, keeping every
-    existing call site unchanged. Pass it explicitly for a future instance
-    whose body ties to neither of its own ``source_net``/``drain_net``.
+    existing call site unchanged.
+
+    **External-body mode (issue #184).** Pass ``body_net`` explicitly for an
+    instance whose body ties to *neither* of its own ``source_net``/
+    ``drain_net`` (``design/netlist/bandgap_amp.spice``'s ``MP1``/``MP2``:
+    body tied to ``vdd``, channel nets ``tail``/``d1`` and ``tail``/``d2``).
+    In that case this function still draws and labels the tap pad (on
+    whichever side -- source or drain -- the flavor's own convention below
+    selects) but skips the ``Metal1`` bridge that would otherwise connect it
+    to that side's own channel pad: the bridge is only electrically correct
+    when ``body_net`` actually equals that pad's own net, and drawing it
+    unconditionally for a ``body_net`` that matches neither would physically
+    short the channel net (here, ``tail``) to the body net (here, ``vdd``).
+    The returned ``"tap_pad"`` is left for the caller's own routing pass to
+    wire to the real ``body_net`` elsewhere (e.g. a cell's own ``vdd``
+    trunk) -- see ``bandgap_amp/generate.py``'s own ``_route()`` for the
+    concrete example.
 
     Returns a dict of this device's terminal geometry (each a ``(x0, y0,
     x1, y1)`` box in microns; ``"gate_box"`` is the drawn ``GatPoly``
@@ -499,12 +523,22 @@ def draw_hv_mos(
     b.label(L_METAL1_LABEL, body_net, x0, tap_y_center)
     b.label(L_METAL1_TEXT, body_net, x0, tap_y_center)
 
-    bridge_x_lo, bridge_x_hi = x0 - TAP_BRIDGE_W_UM / 2, x0 + TAP_BRIDGE_W_UM / 2
-    if tap_at_source:
-        bridge_y_lo, bridge_y_hi = y_hi - TAP_BRIDGE_OVERLAP_UM, tap_y_lo
-    else:
-        bridge_y_lo, bridge_y_hi = tap_y_hi, y_lo + TAP_BRIDGE_OVERLAP_UM
-    b.box(L_METAL1, bridge_x_lo, bridge_y_lo, bridge_x_hi, bridge_y_hi)
+    # Issue #184: only draw the bridge when body_net actually matches the
+    # terminal pad tap_at_source/tap_at_drain selected -- every existing
+    # call site satisfies this (body_net defaults to that same terminal, see
+    # this function's own docstring), so this is a no-op there. When it does
+    # not match (external-body mode), the tap pad above is still drawn and
+    # labeled, but left physically isolated for the caller's own routing
+    # pass -- bridging it here would short body_net into a channel net it
+    # does not actually belong to.
+    bridge_target_net = source_net if tap_at_source else drain_net
+    if body_net == bridge_target_net:
+        bridge_x_lo, bridge_x_hi = x0 - TAP_BRIDGE_W_UM / 2, x0 + TAP_BRIDGE_W_UM / 2
+        if tap_at_source:
+            bridge_y_lo, bridge_y_hi = y_hi - TAP_BRIDGE_OVERLAP_UM, tap_y_lo
+        else:
+            bridge_y_lo, bridge_y_hi = tap_y_hi, y_lo + TAP_BRIDGE_OVERLAP_UM
+        b.box(L_METAL1, bridge_x_lo, bridge_y_lo, bridge_x_hi, bridge_y_hi)
 
     b.label(L_TEXT, f"{name}({flavor} w={w_um}u l={l_um}u)", x0, y_hi + 0.6)
     return {

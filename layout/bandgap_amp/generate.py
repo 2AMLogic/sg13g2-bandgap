@@ -29,30 +29,19 @@ Devices instantiated, one-to-one against ``design/netlist/bandgap_amp.spice``
     MN3   sg13_hv_nmos w=10u l=1u  -- 2nd-stage NMOS (gate=d1, out->vss)
     MN4   sg13_hv_nmos w=10u l=1u  -- 2nd-stage NMOS (gate=d2, pn->vss)
 
-**Body ties (documented simplification, LVS *resolution* deferred -- #169).**
-``layout/common.py``'s ``draw_hv_mos`` bridges a device's tap island to
-whichever *pad* (source, for pmos; drain, for nmos) its own ``tap_at_source``
-convention selects -- a bridge that is only electrically correct when
-``body_net`` equals that same pad's own net (every existing caller in this
-repo, ``bandgap_core``/``bandgap_startup``, satisfies this by construction).
-``MP1``/``MP2``'s *real* schematic body tie is ``vdd`` -- distinct from
-either of their own channel nets (``tail``/``d1`` or ``tail``/``d2``) -- so
-passing ``body_net="vdd"`` explicitly would make ``draw_hv_mos`` bridge its
-tap (correctly labeled ``vdd``) directly into the ``tail``-net source pad,
-physically *shorting* ``tail`` to ``vdd``. Every call below instead leaves
-``body_net`` at its default (source_net for pmos, drain_net for nmos) --
-i.e. every device's tap ties to its own already-drawn channel pad, exactly
-as ``draw_hv_mos`` was designed for every other call site in this repo. For
-``MP1``/``MP2`` this means the drawn tap differs from the schematic's real
-``vdd`` body tie (tied to ``tail`` instead) -- a known, documented
-simplification, consistent with every other "what this layout is / is not"
-simplification already catalogued in ``layout/README.md``, and explicitly
-out of scope to *resolve* here (issue #169 scopes LVS fixing out; see this
-file's own header comment and the issue's acceptance criteria). ``klt lvs``
-*was* run once for this cell, and the two ``device.unmatched`` findings it
-reports on ``MP1``/``MP2`` are exactly this simplification showing up -- a
-follow-up LVS pass would need to address it, most likely by fixing the
-underlying assumption in ``draw_hv_mos`` itself.
+**Body ties (issue #184, resolved).** ``MP1``/``MP2``'s *real* schematic
+body tie is ``vdd`` -- distinct from either of their own channel nets
+(``tail``/``d1`` or ``tail``/``d2``). Both instances below now pass
+``body_net="vdd"`` explicitly, using ``layout/common.py``'s ``draw_hv_mos``
+"external-body" mode (issue #184): the tap island is drawn and labeled
+``vdd`` as usual, but the internal ``Metal1`` bridge that would otherwise
+connect it to the ``tail``-net source pad is skipped (drawing it
+unconditionally, as issue #169's original simplification did by instead
+leaving ``body_net`` unset, would have shorted ``tail`` to ``vdd``).
+``_route()``'s own "vdd tap ring" section below wires each now-isolated tap
+into the real ``vdd`` node with a dedicated Metal1/Metal2 route -- see that
+section's own comment for the exact path and why it needs to dodge two
+other nets' routing at the same column range.
 
 **Floorplan.** PMOS row (``y=30``, left to right): MP1, MP2, MTAIL, MP3, MP4
 -- ordered so ``vdd``-carrying source pads (MTAIL/MP3/MP4, all draw ``vdd``
@@ -82,7 +71,13 @@ comment for the exact non-crossing argument). ``pn`` (``MP3``'s own tie
 point, ``MP4``'s poly-connected gate, and ``MN4``'s source pad) is routed
 the same way, plus a continuous ``GatPoly`` bar tying ``MP3``'s and ``MP4``'s
 gates together directly (poly-to-poly, same idiom as ``bandgap_core``'s
-``fb`` net).
+``fb`` net). ``MP1``/``MP2``'s own well/substrate taps (issue #184, body
+tied to ``vdd``, not either device's own channel net) are merged into one
+Metal1 bar first, then a Metal1/Metal2/Metal1 hop -- via1_tap up, a short
+Metal2 jog through the one Y-window clear of both amp's own ``tail`` riser
+and `bandgap_top`'s own composed-level ``sns1`` riser, via1_tap back down --
+lands them directly in the ``vdd`` source-pad bar (see ``_route``'s own "vdd
+tap ring" comment for the exact column/window derivation).
 
 ``in_p``/``in_n`` (``MP1``/``MP2``'s own gates) are each a single-terminal
 net within this cell -- no *internal* routing needed (a single-terminal net
@@ -93,11 +88,11 @@ still gets a ``draw_gate_tab`` bringing it out to a real Metal1 pad (a bare
 ``bandgap_top`` (issue #169) can route each one from outside this cell.
 
 DRC verification (``klt drc --deck sg13g2``) and LVS scope are tracked in
-``layout/README.md``. **Resolving LVS is explicitly deferred** (issue #169's
-own scope boundary), but ``klt lvs`` itself was run once against this cell --
-the repo's CI evidence-format gate requires a committed ``lvs_report.json`` --
-and its honest ``mismatch`` result (2 ``device.unmatched`` findings on
-``MP1``/``MP2``, the body-tie simplification above) is committed as-is.
+``layout/README.md``. Issue #184's ``vdd`` tap-ring route above closes the
+``MP1``/``MP2`` ``device.unmatched`` findings issue #169's original
+body-tie simplification left in ``klt lvs``'s report -- see
+``layout/README.md``'s own "Cell: ``bandgap_amp``" section for the current
+verdict.
 """
 
 from __future__ import annotations
@@ -149,6 +144,50 @@ JOG_D2 = 9.0
 JOG_OUT = 13.0
 JOG_PN = 17.0
 
+# -- vdd tap-ring hop (issue #184) -- see _route()'s own "vdd tap ring"
+# comment for the full derivation. This crossing has to clear two other
+# nets' routing at the very same column range, at heights derived from
+# amp's own already-committed "tail" riser and bandgap_top/generate.py's
+# own already-committed "sns1" riser (neither of which this file may
+# change):
+#
+#   - amp's own "tail" riser (this file's own "tail (bottom band)" section
+#     above) runs Metal2 at column x=80 (MTAIL_X) from y~=29.275 up through
+#     TAIL_JOG_Y +/- METAL2_W/2 = 32.175 -- blocked the whole way at that
+#     column, and blocked for y in [TAIL_JOG_Y - METAL2_W/2, TAIL_JOG_Y +
+#     METAL2_W/2] = [31.825, 32.175] at every column in [20, 80] (its own
+#     horizontal jog).
+#   - bandgap_top's own composed-level "sns1" riser (bandgap_top/
+#     generate.py's own _route(), "amp's own leg is NOT clear of..." comment)
+#     runs Metal2 at column x=50.6 from y=30.0 up to y=31.15, switches to a
+#     Metal1-only detour through y in [30.85, 33.15] (clearing amp's own
+#     "tail" jog on a different layer instead), then resumes Metal2 from
+#     y=32.85 upward. It does not exist in amp's own leaf GDS -- it is only
+#     added when bandgap_top/generate.py composes amp's cell into its own
+#     top cell -- so nothing here can see it directly; this hop dodges it by
+#     construction (verified by regenerating and re-checking bandgap_top,
+#     not merely reasoned through -- see this issue's own PR description).
+#
+# (32.175, 32.85) is clear of both, at every X: above the "tail" jog's own
+# ceiling (so free to cross column 80, not just the [20, 80] jog band) and
+# below where "sns1" resumes Metal2 (crossing its own column 50.6 only on
+# the Metal1-only layer, which this hop's own Metal2 does not touch). This
+# hop's Metal2 box is centered in that window with TAP_HOP_CLEARANCE_UM
+# (0.22, > metal2.space.1's 0.21um floor) to spare on both sides, at
+# TAP_HOP_W_UM (0.20, == metal2.width.1's own floor -- the narrowest this
+# deck allows, needed since the clear window is only 0.675um tall).
+#
+# Both of the hop's own Metal1<->Metal2 transitions instead land in
+# comfortable, already-verified-clear locations: TAP_HOP_X_START (=0, MP1's
+# own tap column -- outside the "tail" jog's [20, 80] column range for its
+# entire vertical run) and TAP_HOP_X_END (=90, inside the vdd source-pad
+# bar's own x-range [75, 145] but clear of every tap/riser column any
+# device or bandgap_top's own routing uses).
+TAP_HOP_X_START = 0.0
+TAP_HOP_X_END = 90.0
+TAP_HOP_Y = 32.5125
+TAP_HOP_W_UM = 0.20
+
 
 def build() -> Builder:
     b = Builder(TOP_CELL)
@@ -157,8 +196,8 @@ def build() -> Builder:
     # vdd-carrying source pads (MTAIL/MP3/MP4) are contiguous, and the
     # tail-carrying source pads (MP1/MP2) are contiguous in their own group
     # (see this module's own docstring "Floorplan").
-    mp1 = draw_hv_mos(b, "MP1", "pmos", 20.0, 1.0, 0.0, PMOS_Y, gate_net="in_p", source_net="tail", drain_net="d1")
-    mp2 = draw_hv_mos(b, "MP2", "pmos", 20.0, 1.0, 40.0, PMOS_Y, gate_net="in_n", source_net="tail", drain_net="d2")
+    mp1 = draw_hv_mos(b, "MP1", "pmos", 20.0, 1.0, 0.0, PMOS_Y, gate_net="in_p", source_net="tail", drain_net="d1", body_net="vdd")
+    mp2 = draw_hv_mos(b, "MP2", "pmos", 20.0, 1.0, 40.0, PMOS_Y, gate_net="in_n", source_net="tail", drain_net="d2", body_net="vdd")
     mtail = draw_hv_mos(b, "MTAIL", "pmos", 10.0, 1.0, 80.0, PMOS_Y, gate_net="out", source_net="vdd", drain_net="tail")
     mp3 = draw_hv_mos(b, "MP3", "pmos", 10.0, 1.0, 110.0, PMOS_Y, gate_net="pn", source_net="vdd", drain_net="pn")
     mp4 = draw_hv_mos(b, "MP4", "pmos", 10.0, 1.0, 140.0, PMOS_Y, gate_net="pn", source_net="vdd", drain_net="out")
@@ -247,6 +286,39 @@ def _route(
     vdd_y_lo = min(m["source_pad"][1] for m in [mtail, mp3, mp4])
     vdd_y_hi = max(m["source_pad"][3] for m in [mtail, mp3, mp4])
     b.box(L_METAL1, vdd_x_lo, vdd_y_lo, vdd_x_hi, vdd_y_hi)
+
+    # -- vdd tap ring (issue #184): MP1/MP2's own body ties. draw_hv_mos no
+    # longer draws the internal Metal1 bridge for a tap whose body_net
+    # differs from the terminal it would otherwise reach (see its own
+    # docstring) -- MP1/MP2 (body_net="vdd", tied to neither their own
+    # source_net="tail" nor drain_net) are drawn and labeled "vdd" but left
+    # physically isolated, so this wires them into the real vdd node.
+    #
+    # First, MP1's and MP2's own taps merge directly into one Metal1 bar --
+    # both sit well clear (x <= 40.17) of amp's own "in_n"/sns1 gate-tab pad
+    # at x=[50.4, 50.8], the column bandgap_top's own composed-level sns1
+    # riser later climbs through this same Y band (see TAP_HOP_Y's own
+    # module comment).
+    tap_y_lo = mp1["tap_pad"][1]
+    tap_y_hi = mp1["tap_pad"][3]
+    assert (mp2["tap_pad"][1], mp2["tap_pad"][3]) == (tap_y_lo, tap_y_hi), (
+        "MP1/MP2 taps must share a Y-band for a single Metal1 bar to join them"
+    )
+    tap_y_center = (tap_y_lo + tap_y_hi) / 2
+    b.box(L_METAL1, mp1["tap_pad"][0], tap_y_lo, mp2["tap_pad"][2], tap_y_hi)
+
+    # Then hop over to the vdd source-pad bar directly: via1 up from the
+    # merged tap bar at TAP_HOP_X_START (MP1's own tap column), a narrow
+    # Metal2 jog at TAP_HOP_Y clearing both amp's own "tail" riser and
+    # bandgap_top's own composed-level "sns1" riser (see TAP_HOP_Y's own
+    # module comment for the full derivation), then back down via1 at
+    # TAP_HOP_X_END, landing inside the vdd bar drawn just above.
+    via1_tap(b, TAP_HOP_X_START, tap_y_center, size=VIA)
+    route_v(b, L_METAL2, TAP_HOP_X_START, tap_y_center, TAP_HOP_Y, width=METAL2_W)
+    route_h(b, L_METAL2, TAP_HOP_Y, TAP_HOP_X_START, TAP_HOP_X_END, width=TAP_HOP_W_UM)
+    vdd_landing_y = (vdd_y_lo + vdd_y_hi) / 2
+    route_v(b, L_METAL2, TAP_HOP_X_END, TAP_HOP_Y, vdd_landing_y, width=METAL2_W)
+    via1_tap(b, TAP_HOP_X_END, vdd_landing_y, size=VIA)
 
     # -- tail (top band): MP1/MP2's own source pads -- contiguous, one
     # Metal1 bar, disjoint in X from the vdd bar above. --
