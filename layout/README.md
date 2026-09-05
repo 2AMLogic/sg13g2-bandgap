@@ -1353,42 +1353,125 @@ comparison is performed).
 
 **LVS**: run for the same CI-evidence-format-gate reason `bandgap_amp`'s own
 "LVS" section above explains -- committed as-is, not chased to `"match"`.
-`layout/bandgap_top/lvs_report.json`: `status: "mismatch"`, 17 findings (8
-`device.unmatched`, 9 `topology`), **all `error` severity**. Reference netlist
-flattened by `layout/lvs_reference.py`'s `flatten()` (the same
-subckt-instantiation flattening `sg13cmos5l-bandgap_top`'s own reference
-already uses), engine `klayout`.
+`layout/bandgap_top/lvs_report.json`: `status: "mismatch"`, **8 findings**
+(2 `device.bulk_reconciled` warnings, 5 `device.unmatched` errors, 1
+`topology` error) -- down from the 17 findings issue #169 originally
+committed, after issue #171 resolved both of that report's two
+composed-level-specific causes (rows 3 and 4 of the table that issue itself
+recounted). Reference netlist flattened by `layout/lvs_reference.py`'s
+`flatten()` (the same subckt-instantiation flattening
+`sg13cmos5l-bandgap_top`'s own reference already uses), engine `klayout`.
 
-Itemised, finding by finding, against the committed JSON -- **the two
-already-known leaf-level causes account for a minority of them**
-(this is a correction: PR #170 originally claimed all 17 were attributable to
-those two causes and that there was "no new `bandgap_top`-specific cause",
-which the evidence does not support):
+**Cause A (issue #171) -- resistor `device_bulk` propagation, resolved.**
+`layout/bandgap_top/lvs_request.json` now carries
+`"reference.device_bulk": {"rppd": "VSS", "rhigh": "VSS"}`. The naive fix
+issue #171 itself recorded as tried-and-failed (copying `bandgap_core`'s own
+leaf-level `{"rppd": "vsubs"}` verbatim into the composed request) really
+does fail exactly as documented: it clears the `rhigh` finding but not
+`rppd`, and creates a new `net.merged`/`net.split` pair, because a
+`device_bulk`-created net is scoped **per reconciled circuit**, and this
+composed reference has exactly one (flat, no subckt boundaries) -- so a
+single created `vsubs` net gets shared by *both* `rppd` instances (`X1_R1`
+and `X1_R2`) at once, and the layout side has no `vsubs`-named net at all to
+pair it against (confirmed by direct experiment, not just re-asserted).
+**The actual fix is `"VSS"`, not `"vsubs"`, for both classes** -- verified
+directly against `klt extract`'s own output for `bandgap_top.gds`
+(`layout/bandgap_top/bandgap_top.lvs_reference.spice`'s device lines aside,
+a raw `klt extract --deck sg13g2 bandgap_top.gds` run shows every resistor's
+own third terminal already resolving to the real, existing `VSS` net --
+`R$18 IN_P|SNS2 CB2 VSS ...`, not an isolated/anonymous one). This is a real
+difference from each leaf's own *standalone* extraction (where `bandgap_core`
+alone has no nearby substrate tap reaching an actual `VSS`-labelled pin, so
+the deck synthesizes a private `vsubs` placeholder for it) -- once composed,
+the whole layout's substrate is one physically-continuous node that some
+*other* leaf's own tap (e.g. `bandgap_startup`'s, whose own leaf-level
+request already points `rhigh` at a real `VSS`) ties to the real rail, so
+`klt extract` resolves every resistor's own bulk terminal to that same real
+`VSS` net at this composed level. Pointing `device_bulk` at the net the
+layout side *actually* reports (rather than a name copied from a different
+cell's own, differently-connected standalone extraction) is what makes this
+reconciliation land without any `vsubs` collision -- both entries reconcile
+against an *existing* reference net (`reference_net_created: false` in the
+report's own `device.bulk_reconciled` disclosures), never a freshly-created
+one, so there is nothing left to collide. All three previously-`device.
+unmatched` resistors (`X1_R1`, `X1_R2`, `X3_RPU`) now pair cleanly; the two
+`severity: "warning"` `device.bulk_reconciled` entries disclose that the
+match rests on this caller-supplied reconciliation, per `klt lvs`'s own
+convention (see `docs/cli/lvs.md` in `klayout-tools`).
+
+**Cause B (issue #171) -- reference-flatten hierarchy-prefix net-identity
+conflicts, resolved.** `layout/lvs_reference.py`'s `flatten()` now
+canonicalises node names through two reconciliation passes instead of
+unconditionally prefixing every child-internal net with `<instance>.`:
+
+- A child's own purely-internal net (`bandgap_core`'s `cb2`/`cb3`,
+  `bandgap_amp`'s `tail`/`d1`/`d2`/`pn`, `bandgap_startup`'s `det`) is now
+  emitted **bare** -- matching `bandgap_top.gds`'s own genuinely flat
+  physical net names (`CB2`, not `X1.CB2`) -- unless two or more instances'
+  own internal nets actually share a raw name, in which case the original
+  `<instance>.`-prefixed disambiguation still applies (a real safety margin
+  this design has never needed, kept for a design that might).
+- A top-level connecting net reached through **more than one distinct local
+  port name** across the children that use it (`bandgap_top.spice`'s `fb`,
+  reached as `bandgap_core`'s and `bandgap_startup`'s own `fb` port *and*
+  `bandgap_amp`'s own `out` port) is now aliased to the sorted, comma-joined
+  union of those local names -- `"FB,OUT"` -- reproducing `klt extract`'s own
+  merged-pin-alias spelling for the *same* physical net (`FB|OUT` in every
+  user-facing string) **from the schematic netlist alone**, no GDS/layout
+  data involved. Verified against all three real merged nets this
+  composition produces: `fb`/`out` -> `FB,OUT`, `sns1`/`in_n` -> `IN_N,SNS1`,
+  `sns2`/`in_p` -> `IN_P,SNS2` -- each matching `klt extract`'s own
+  `merged_net_labels[]` exactly.
+
+Both reconciliations are driven entirely by `bandgap_top.spice`'s own
+hierarchy (subckt port lists + the top-level connection line) -- neither
+needed a GDS-derived alias map or a request-side `hints.same_nets` entry (see
+below for why that hook does not actually apply here). All 8 of the original
+report's `topology`/"name-identity conflict" findings (`CB2`, `CB3`, `D1`,
+`D2`, `DET`, `TAIL`, `IN_N|SNS1`, `IN_P|SNS2`) are gone. **Confirmed
+pdk-agnostic and shared-code-safe**: `flatten()` serves both PDK ports, and
+`sg13cmos5l-bandgap_top`'s own `lvs_report.json` was re-run and re-committed
+alongside this fix (see its own "LVS" section below for what changed there
+and why).
+
+**`hints.same_nets` was investigated for Cause B and does not work here --
+not a design gap, a real `klt` interaction worth knowing about.** Before
+settling on the reconciliation above, `request.hints.same_nets` (which
+`docs/cli/lvs.md` explicitly recommends pairing with `device_bulk`, and
+which a comparer log more generally can resolve *ambiguous* net pairings
+through) was tried directly against the un-fixed reference for the two
+merged-alias findings (`IN_N|SNS1`/`SNS1`, `IN_P|SNS2`/`SNS2`). It does not
+help: `NetlistComparer` had *already* paired those two nets on its own
+(structurally, despite the differing names) before the hint is even
+declared, and a `hints.same_nets` pairing is only tracked as "confirmed" via
+the comparer's own `match_nets`/`match_ambiguous_nets` events -- not via the
+`net_mismatch` event that already-paired-but-differently-named nets go
+through. The result of declaring the hint anyway was strictly *worse*: the
+original `topology` finding stayed, **and** a new `hints.rejected` finding
+appeared alongside it (the comparer's own record shows the pairing was never
+confirmed through the hint's own tracked path, even though the pairing is,
+in fact, correct). This is a real, generic `klt` interaction gap -- filed
+upstream per `CLAUDE.md`'s friction protocol, no design-specific detail:
+[`klayout-tools#1484`](https://github.com/2AMLogic/klayout-tools/issues/1484).
+
+**What's left, and why it is out of scope here.** `layout/bandgap_top/
+lvs_report.json` still reports `status: "mismatch"`, 8 findings -- issue
+#171 was scoped to Causes A and B only, not to `bandgap_top` reaching
+`"match"`:
 
 | # | Findings | Cause | Status |
 |---|---|---|---|
 | 1 | 3 `device.unmatched`, class `NPN13G2` (`X1_Q1`/`X1_Q2`/`X1_Q3`) | `bandgap_core`'s permanently-declined `npn13G2` recognition gap (see "Permanent blockers" above) | already known, permanent |
 | 2 | 2 `device.unmatched`, class `pfet` (`X2_MP1`/`X2_MP2`) | `bandgap_amp`'s `MP1`/`MP2` body-tie simplification (see `bandgap_amp`'s own "LVS" section above) | already known, documented |
-| 3 | 3 `device.unmatched`, classes `rppd` (`X1_R1`/`X1_R2`) and `rhigh` (`X3_RPU`) | **New, and specific to this composed top level**: `layout/bandgap_top/lvs_request.json` carries no `reference.device_bulk` block, so the resistor-body reconciliation that `bandgap_core`'s (`{"rppd": "vsubs"}`) and `bandgap_startup`'s (`{"rhigh": "VSS"}`) own leaf-level requests already apply was never propagated into the top-level request | **unresolved**, tracked in issue #171 |
-| 4 | 8 `topology`, "nets were paired despite a name/identity conflict" (`CB2` vs `X1.CB2`, `CB3` vs `X1.CB3`, `D1`/`D2`/`TAIL` vs `X2.*`, `DET` vs `X3.DET`, `IN_N\|SNS1` vs `SNS1`, `IN_P\|SNS2` vs `SNS2`) | **New, and specific to this composed top level**: `layout/lvs_reference.py`'s `flatten()` leaves `X1.`/`X2.`/`X3.` subckt-instance prefixes on the reference-side net names, which the layout side (extracted from a real hierarchical GDS) does not carry, so every leaf-internal net pairs under a name conflict | **unresolved**, tracked in issue #171 |
-| 5 | 1 `topology`, "device class could not be mapped to a counterpart" | The report does not name the class, so this one is **inferred, not verified**: `bandgap_core`'s own leaf report shows the identical finding alongside its `NPN13G2` gap and nothing else unmapped, so cause 1 is the most plausible attribution here too | inferred |
-
-So **5 of 17** findings are verified as the two already-known leaf-level
-causes (6 if row 5's inference holds), and **11 of 17** come from two
-distinct causes that are new at this level, were not previously documented
-anywhere in this repo, and are **not resolved by this issue**. They are not
-"already-understood non-issues" -- they are real LVS-flow gaps, filed as
-issue #171 so they are not lost. A naive fix for row 3 (just adding the two
-missing `device_bulk` entries to `bandgap_top/lvs_request.json`) was tried
-and does **not** work: it clears the `rhigh` finding but not the `rppd` one,
-and introduces new `net.merged`/`net.split` findings as the synthetic
-`vsubs` net collides once composed hierarchically -- which is why this is a
-follow-up issue rather than a one-line change here.
+| 3 | 1 `topology`, "device class could not be mapped to a counterpart" | The report does not name the class, so this one is **inferred, not verified**: `bandgap_core`'s own leaf report shows the identical finding alongside its `NPN13G2` gap and nothing else unmapped, so cause 1 is the most plausible attribution here too | inferred |
+| -- | 2 `device.bulk_reconciled` (`severity: "warning"`, never affects `status`) | Cause A's own disclosure that the `rppd`/`rhigh` match rests on this request's `device_bulk` reconciliation (see above) | disclosure, not a defect |
 
 Consistent with the rest of this file, none of the above is a reason to treat
-the `mismatch` as benign: `bandgap_top` is **not** LVS-clean, and this cell's
-LVS verdict should be read as "run, honestly reported, four distinct causes
-open" -- not as "explained away".
+the `mismatch` as benign: `bandgap_top` is **not** LVS-clean. Its remaining
+`mismatch` verdict now rests entirely on the two permanently-declined,
+already-documented leaf-level causes (plus one inferred instance of the
+first) -- exactly what issue #169's own LVS run should have been able to say
+from the start, before issue #171 corrected it.
 
 **Determinism**: `python3 layout/bandgap_top/generate.py` re-run leaves
 `git diff --stat` empty, as long as the three leaf GDS files it reads are
@@ -1402,11 +1485,11 @@ layout lands (see tracking issue #4, item 7). Running `klt lvs` itself, once,
 to produce the committed reports above was **not** optional (see "LVS"
 sections above) -- only the multi-issue effort of resolving what it finds
 is deferred, the same way #12's own findings took #20/#45/#149/#154/#161/#163
-to work through for `bandgap_core`/`bandgap_startup`. The two causes that
-issue #169's own LVS run newly surfaced (rows 3 and 4 of the table above --
-the un-propagated resistor `device_bulk` and the reference-flatten
-hierarchy-prefix net-identity conflicts) are tracked in **issue #171**;
-deferring them is not the same as having explained them away.
+to work through for `bandgap_core`/`bandgap_startup`. The two causes issue
+#169's own LVS run newly surfaced (the un-propagated resistor `device_bulk`
+and the reference-flatten hierarchy-prefix net-identity conflicts) were
+resolved by issue #171 (above); the two permanently-declined leaf-level
+causes remain deferred, same as ever.
 
 ---
 
@@ -1872,7 +1955,7 @@ Reproduce: `klt drc --check layout/sg13cmos5l-bandgap_top/drc_report.json`
 
 | Report | Status | Engine | nets | devices | pins |
 | --- | --- | --- | --- | --- | --- |
-| `layout/sg13cmos5l-bandgap_top/lvs_report.json` | `mismatch` (51 findings, 49 error-severity) | `klayout` | layout=13, reference=13, matched=0 | layout=14, reference=20, matched=0 | layout=11, reference=0, matched=11 |
+| `layout/sg13cmos5l-bandgap_top/lvs_report.json` | `mismatch` (22 findings, all error-severity) | `klayout` | layout=15, reference=13, matched=2 | layout=17, reference=20, matched=8 | layout=13, reference=0, matched=13 |
 
 Reproduce: `klt lvs lvs_request.json` from `layout/sg13cmos5l-bandgap_top/`
 (run against `lvs_reference.flatten()`'s own output — `python3
@@ -1882,8 +1965,39 @@ layout/lvs_reference.py` regenerates
 assembled GDS); `klt lvs --check lvs_report.json` verifies the committed
 report against the current inputs without re-running the compare.
 
-The same four causes each leaf cell already hits, re-verified against this
-assembly's own report rather than assumed to carry over unchanged:
+**Re-run and re-committed by issue #171, numbers changed for two separate
+reasons -- neither is a regression, but the itemised four-cause list right
+below this paragraph is now stale and due for its own re-audit.** Issue
+#171 fixed `layout/lvs_reference.py`'s `flatten()` (shared by this cell and
+the SG13G2 `bandgap_top` above -- see that cell's own "LVS" section for the
+fix itself), which regenerated this cell's `.lvs_reference.spice` too and,
+per this repo's own evidence-freshness gate, requires this report to be
+re-run and re-committed alongside it (`environment.reference_sha256` must
+match the file that now exists). Comparing the *old* reference file's own
+`.spice` text against the version of `klt`/the `sg13cmos5l` deck installed
+while fixing #171 (before applying any of that issue's own code changes)
+already shows drift from what is committed above (`51` findings recorded ->
+`52` findings reproduced, with `device.body_unverified` no longer appearing
+at all) -- i.e. **some** of the count/category change between the numbers
+above and what is itemised below traces to an upstream `klayout-tools`
+deck/engine version bump (`provenance.deck.content_hash` and
+`klayout_version` both differ from what the previously-committed report
+recorded), entirely independent of issue #171's own `flatten()` fix, and the
+rest traces to that fix itself (the same net-naming reconciliation that
+removed the SG13G2 `bandgap_top`'s own 8 `topology` name-conflict findings
+lets more of this cell's own nets and devices pair too). Disentangling
+which finding below comes from which of those two causes -- and refreshing
+the itemised list to match -- needs its own dedicated pass; issue #171's own
+scope was the SG13G2 `bandgap_top` causes, and it is not stretched here to
+also re-audit this cell's four-cause narrative. Filed as **issue #174**
+(see that issue for the fresher itemisation) rather than silently
+left stale or expanded into out-of-scope work in the same PR.
+
+The same four causes each leaf cell already hits, as re-verified against
+this assembly's own report **before** issue #171 (numbers below predate
+both the `flatten()` fix and the upstream deck/engine bump described above
+-- see the paragraph immediately above for why they no longer match the
+freshly-committed report's own top-line numbers):
 
 1. **No bipolar device class** (`klayout-tools#1242`, permanently declined) —
    all 10 `pnpMPA` instances inside `bandgap_core` (`Q1`, 8×`Q2` unit, `Q3`)
