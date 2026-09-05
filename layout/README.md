@@ -46,6 +46,9 @@ layout/
     lvs_reference.spice       generated reference netlist (issue #169)
     drc_report.json           committed klt drc report
     lvs_report.json           committed klt lvs report
+    bandgap_amp.pex.spice     klt extract --parasitics output (tracker #4
+                               item 7)
+    pex_extract_report.json   committed klt extract --format json report
   bandgap_top/
     generate.py               instances + routes bandgap_top.gds (issue #169)
     bandgap_top.gds           committed, deterministic layout
@@ -53,6 +56,9 @@ layout/
     lvs_reference.spice       generated (flattened) reference netlist (issue #169)
     drc_report.json           committed klt drc report
     lvs_report.json           committed klt lvs report
+    bandgap_top.pex.spice     klt extract --parasitics output (tracker #4
+                               item 7)
+    pex_extract_report.json   committed klt extract --format json report
 ```
 
 ## Provenance
@@ -1718,6 +1724,114 @@ by issue #184 (see `bandgap_amp`'s own "LVS" section above and the table
 above) -- only `bandgap_core`'s permanently-declined `npn13G2` recognition
 gap remains deferred, and it stays deferred permanently (upstream-gated, not
 a scope choice).
+
+---
+
+## Post-layout parasitic extraction: `bandgap_amp` and `bandgap_top` (tracker #4 item 7)
+
+`bandgap_core` and `bandgap_startup` have carried committed PEX artifacts
+since issue #14 (see "Post-layout parasitic extraction (issue #14)" above).
+`bandgap_amp` and `bandgap_top` landed later (#169, #181, #184) and had
+**none** — so the only post-layout simulation evidence this block owned
+(`sim/core-open-loop-bias-pex/`, `sim/startup-trip-point-pex/`) covered two
+leaf sub-blocks and could not, even in principle, cover the closed loop:
+the composed top-level had no extracted netlist to simulate. This section
+closes that artifact gap. It does **not** itself add a simulation — see
+"What this does and does not establish" below.
+
+**Extraction succeeded, cleanly, for both cells** (same command shape the
+`#14` section above documents):
+
+```bash
+cd layout/bandgap_amp
+klt extract --deck sg13g2 --parasitics bandgap_amp.gds \
+  -o bandgap_amp.pex.spice --format json > pex_extract_report.json
+cd ../bandgap_top
+klt extract --deck sg13g2 --parasitics bandgap_top.gds \
+  -o bandgap_top.pex.spice --format json > pex_extract_report.json
+```
+
+`klt 0.3.0` / `klayout 0.30.12`, deck `content_hash
+sha256:894326a4…` — the same tool and deck fingerprint every currently
+committed DRC/LVS report on these two cells carries. Both runs are
+**deterministic**: re-running each command writes a byte-identical
+`.pex.spice` and a byte-identical report (modulo the `-o` path recorded in
+`netlist_path`), verified by diffing a second run against the committed
+artifacts.
+
+| | `bandgap_amp` | `bandgap_top` |
+|---|---|---|
+| `status` | `extracted` | `extracted` |
+| devices | 9 (`nfet` 4, `pfet` 5) | 20 (`nfet` 6, `pfet` 11, `rppd` 2, `rhigh` 1) |
+| nets / pins | 9 / 9 | 13 / 13 |
+| wire R / C / coupling-C cards | 36 / 9 / 4 | 77 / 13 / 22 |
+| total wire R | 342.40 Ω | 869.74 Ω |
+| total wire C | 104.67 fF | 261.13 fF |
+| total coupling C | 0.0697 fF | 0.4406 fF |
+| `metals_without_coefficient` | empty | empty |
+| `single_terminal_nets` / `unbiased_pmos_body_nets` / `dead_metal` | all empty | all empty |
+
+**Device count cross-checks against the committed LVS reports**, rather than
+being taken on the extractor's word: `bandgap_amp`'s `lvs_report.json` reads
+`devices.layout: 9, devices.matched: 9` (`status: "match"`), and
+`bandgap_top`'s reads `devices.layout: 20, devices.matched: 20` against
+`devices.reference: 23`. The extraction's own device counts are identical to
+the layout-side counts LVS independently derived. The 3-device shortfall on
+`bandgap_top` is `Q1`/`Q2`/`Q3` (`npn13G2`), the permanently-declined
+bipolar-recognition gap documented under "Permanent blockers" above
+([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/issues/1242))
+— the same cause, unchanged, that keeps `bandgap_core`/`bandgap_top` off a
+clean LVS `match`. Any post-layout testbench built on
+`bandgap_top.pex.spice` must therefore splice the three HBTs in from
+`design/netlist/bandgap_core.spice`, exactly as
+`sim/core-open-loop-bias-pex/` already does at the leaf level.
+
+**The three `merged_net_labels` entries on `bandgap_top` are intended
+connections, not shorts.** The report flags `FB|OUT`, `IN_N|SNS1` and
+`IN_P|SNS2` — each one net carrying two labels. Read against
+`design/netlist/bandgap_top.spice`'s own instance lines
+(`Xx1 vdd vss fb sns1 sns2 vref bandgap_core`,
+`Xx2 sns2 sns1 vss fb vdd bandgap_amp`, i.e. `in_p<-sns2`, `in_n<-sns1`,
+`out<-fb`), all three are exactly the top-level ties the schematic
+specifies: the amp's output *is* the core's `fb` node, and its two inputs
+*are* the core's two sense nodes. KLayout joins co-located labels on one
+electrical net with `|`; this is the flattened top-level seeing both the
+leaf-internal name and the top-level name on the same wire. The same three
+pairs are why `nets.matched` is 9 of 13 in the LVS report while every device
+matches. A downstream testbench should name these nodes itself rather than
+embedding the escaped `FB\x7cOUT` form the `.pex.spice` writes.
+
+Ten of `bandgap_top`'s thirteen nets are promoted to top-level pins from
+labels found only inside the instanced sub-cells (the extractor warns about
+this explicitly). That is expected for a flattened composed cell and is
+what makes every internal node — `DET`, `PN`, `TAIL`, `D1`, `D2`, `CB2`,
+`CB3` — probeable from a testbench.
+
+### What this does and does not establish
+
+- **Does**: `bandgap_amp` and `bandgap_top` now have committed, fresh,
+  reproducible extracted netlists with real wire parasitics, under the same
+  `check_evidence_formats.py` freshness enforcement (`provenance.input.content_hash`
+  vs the committed `.gds`, `netlist_sha256` vs the committed `.pex.spice`)
+  every other evidence artifact here carries. Neither needs a
+  freshness waiver.
+- **Does not**: add any simulated result. No `sim/` record changes here, and
+  tracker #4's item 7 stays unchecked — its bar is a *spec-suite* re-run
+  against extracted netlists, and no spec row is ratified yet (#125). What
+  changes is that the closed-loop post-layout sweep is no longer blocked on
+  a missing artifact; building it is filed as **#186**.
+- **Parasitic model caveats** are unchanged from the `#14` section above and
+  are restated verbatim in each `.pex.spice`'s own header: lumped
+  single-R-per-net star (not a distributed RC ladder), quasi-static
+  frequency behaviour, vertical-overlap coupling only (no lateral coupling
+  without `--critical-net`), and a 1 TΩ `Rvsubs_dctie` DC tie on the
+  substrate net. Poly gets no wire model in this deck (`poly=None`).
+- **The `.pex.spice` device cards are not directly simulatable** as written
+  (native `M`/`R` element cards against deck class names, not the PDK's
+  `sg13_hv_pmos`/`rppd` subckt calls) — the same re-encoding step
+  `sim/core-open-loop-bias-pex/testbench/` documents applies here.
+  `sim/tools/dump_pex_wire_parasitics.py` mechanically separates a
+  `.pex.spice`'s device cards from its wire-parasitic cards for that purpose.
 
 ---
 

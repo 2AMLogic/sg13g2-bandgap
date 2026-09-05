@@ -292,7 +292,15 @@ left untouched**, so historical records still name #13; read those as
   #32 regenerated the layout with `XMSENSE` at the matching `w=10u`; the
   same cross-bench comparison against the corrected layout now clears at
   all 45 points — see that experiment's README for the full before/after
-  writeup.
+  writeup. **Both are leaf-cell, open-loop benches**: as of today the
+  block's post-layout evidence covers `bandgap_core` and `bandgap_startup`
+  individually and nothing closed-loop. `layout/bandgap_amp/` and
+  `layout/bandgap_top/` now carry their own committed
+  `*.pex.spice`/`pex_extract_report.json` (see `layout/README.md` →
+  "Post-layout parasitic extraction: `bandgap_amp` and `bandgap_top`"), so
+  a closed-loop PEX counterpart is no longer blocked on a missing extracted
+  netlist — it is filed as **#186** and does not exist yet. Do not read the
+  two experiments above as post-layout evidence for the assembled block.
 - **[`closed-loop-startup/`](closed-loop-startup/README.md)** — the first
   genuinely closed-loop testbench in this tree (issue #58): co-simulates
   `bandgap_core` + `bandgap_amp` + `bandgap_startup` in one netlist, wired
