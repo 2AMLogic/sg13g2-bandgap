@@ -1391,7 +1391,7 @@ above:
 
 ---
 
-## Cell: `bandgap_amp` (issue #169)
+## Cell: `bandgap_amp` (issue #169, body-tie LVS fix #184)
 
 One-to-one with `design/netlist/bandgap_amp.spice` (schematic from #58): a
 9-device, pure-CMOS 2-stage OTA -- `MTAIL`/`MP3`/`MP4` `sg13_hv_pmos`
@@ -1399,10 +1399,12 @@ One-to-one with `design/netlist/bandgap_amp.spice` (schematic from #58): a
 `sg13_hv_nmos` `w=10u l=1u`. No bipolar or resistor devices at all -- unlike
 `bandgap_core`/`bandgap_startup`, this cell needed no new drawing
 primitives, only `layout/common.py`'s existing `draw_hv_mos` plus its
-`route_h`/`route_v`/`via1_tap`/`draw_gate_tab` routing helpers (see
-`layout/common.py`'s own docstrings; no changes to that module's drawing
-functions). Top cell `bandgap_amp`, bbox `(-10.8, -1.59)`-`(205.1, 32.175)`
-µm, 164 polygons across 13 layer/datatype combinations.
+`route_h`/`route_v`/`via1_tap`/`draw_gate_tab` routing helpers. Issue #184
+added one small, additive capability to `draw_hv_mos` itself (an
+"external-body" tap mode -- see its own docstring) plus a new `vdd`
+tap-ring route in this cell's own `generate.py`; no other drawing function
+changed. Top cell `bandgap_amp`, bbox `(-10.8, -1.59)`-`(205.1, 32.613)`
+µm, 168 polygons across 13 layer/datatype combinations.
 
 **Floorplan**: PMOS row (`y=30`) left to right MP1/MP2/MTAIL/MP3/MP4 --
 ordered so the `vdd`-carrying source pads (MTAIL/MP3/MP4) and the
@@ -1418,14 +1420,23 @@ the non-crossing argument). `in_p`/`in_n` (single-terminal within this
 cell) each get a `draw_gate_tab` bringing them out to a real Metal1 pad, so
 `bandgap_top` can route them from outside this cell.
 
-**Documented simplification**: `MP1`/`MP2`'s real schematic body tie is
-`vdd`, distinct from their own channel nets -- `draw_hv_mos`'s existing
-`body_net` default (ties a PMOS's tap to its own `source_net`) would short
-`tail` to `vdd` if passed explicitly here, so every call below leaves
-`body_net` unset, tying each device's tap to its own already-drawn channel
-pad instead. This makes `MP1`/`MP2`'s drawn body tie (`tail`) diverge from
-the schematic's real one (`vdd`) -- see `generate.py`'s own module
-docstring for the full reasoning.
+**Body ties (issue #184, resolved)**: `MP1`/`MP2`'s real schematic body tie
+is `vdd`, distinct from their own channel nets (`tail`/`d1` and `tail`/`d2`)
+-- `draw_hv_mos`'s existing `body_net` default (ties a PMOS's tap to its own
+`source_net`) would have shorted `tail` to `vdd` if passed explicitly, which
+is why issue #169's original layout left `body_net` unset instead (a
+documented simplification, since removed). `draw_hv_mos` now supports an
+"external-body" tap mode (issue #184): when `body_net` differs from both of
+an instance's own channel nets, the tap island is still drawn and labeled
+with the real body net, but the internal `Metal1` bridge that would
+otherwise short it into the wrong channel pad is skipped. `MP1`/`MP2` now
+pass `body_net="vdd"` explicitly, and this cell's own `generate.py` routes
+each now-isolated tap into the real `vdd` node with a dedicated Metal1/
+Metal2 hop (via1 up, a narrow Metal2 jog through the one Y-window clear of
+both this cell's own `tail` riser and `bandgap_top`'s own composed-level
+`sns1` riser, via1 back down into the `vdd` source-pad bar) -- see
+`generate.py`'s own `_route()` "vdd tap ring" comment for the full
+column/window derivation.
 
 **DRC**: `klt drc --deck sg13g2` reports `status: "clean"`, 0 violations
 (`layout/bandgap_amp/drc_report.json`).
@@ -1435,20 +1446,20 @@ floorplan-first sequencing before #12's LVS pass) -- but this repo's own
 CI evidence-format gate (`.github/scripts/check_evidence_formats.py`,
 landed after #11/#12 in #57) requires every committed `*.gds` cell to ship
 *some* `lvs_report.json`, `status` restricted to `"match"`/`"mismatch"`
-(no "not run" escape hatch). So `klt lvs` **was** run here, once, and its
-honest result committed as-is -- not chased to `"match"`, which remains a
-real follow-up (see "Explicitly out of scope" below).
-`layout/bandgap_amp/lvs_report.json`: `status: "mismatch"`, 2 findings, both
-`error`-severity `device.unmatched` on `MP1`/`MP2` -- exactly the two
-devices the body-tie simplification above predicts, no other cause. Engine:
-`klayout` (`klayout.db.NetlistComparer`), reference converted by
+(no "not run" escape hatch). So `klt lvs` was run here, and its result
+committed as-is. Issue #184's body-tie fix above closes what was the only
+actionable finding: `layout/bandgap_amp/lvs_report.json` now reads
+`status: "match"`, 0 findings (9/9 nets and 9/9 devices matched) -- up from
+the 2 `error`-severity `device.unmatched` findings on `MP1`/`MP2` issue
+#169's original body-tie simplification left. Engine: `klayout`
+(`klayout.db.NetlistComparer`), reference converted by
 `layout/lvs_reference.py` (this netlist has no bipolar/resistor devices, so
 no new conversion logic was needed there).
 
 **Determinism**: `python3 layout/bandgap_amp/generate.py` re-run leaves
 `git diff --stat` empty (byte-for-byte identical GDS).
 
-## Cell: `bandgap_top` (issue #169)
+## Cell: `bandgap_top` (issue #169, LVS count updated by #184's cascade)
 
 Hierarchical assembly of the three SG13G2 leaf cells (`bandgap_core`,
 `bandgap_amp`, `bandgap_startup`) into `design/bandgap_top.sch`'s
@@ -1562,14 +1573,16 @@ comparison is performed).
 
 **LVS**: run for the same CI-evidence-format-gate reason `bandgap_amp`'s own
 "LVS" section above explains -- committed as-is, not chased to `"match"`.
-`layout/bandgap_top/lvs_report.json`: `status: "mismatch"`, **8 findings**
-(2 `device.bulk_reconciled` warnings, 5 `device.unmatched` errors, 1
-`topology` error) -- down from the 17 findings issue #169 originally
-committed, after issue #171 resolved both of that report's two
-composed-level-specific causes (rows 3 and 4 of the table that issue itself
-recounted). Reference netlist flattened by `layout/lvs_reference.py`'s
-`flatten()` (the same subckt-instantiation flattening
-`sg13cmos5l-bandgap_top`'s own reference already uses), engine `klayout`.
+`layout/bandgap_top/lvs_report.json`: `status: "mismatch"`, **6 findings**
+(2 `device.bulk_reconciled` warnings, 3 `device.unmatched` errors, 1
+`topology` error) -- down from the 8 findings issue #171 last committed
+(itself down from the 17 findings issue #169 originally committed), after
+issue #184 resolved `bandgap_amp`'s own `MP1`/`MP2` body-tie cause (which
+cascaded into this composed level as 2 of the 5 `device.unmatched` errors --
+see `bandgap_amp`'s own "LVS" section above). Reference netlist flattened by
+`layout/lvs_reference.py`'s `flatten()` (the same subckt-instantiation
+flattening `sg13cmos5l-bandgap_top`'s own reference already uses), engine
+`klayout`.
 
 **Cause A (issue #171) -- resistor `device_bulk` propagation, resolved.**
 `layout/bandgap_top/lvs_request.json` now carries
@@ -1664,23 +1677,25 @@ upstream per `CLAUDE.md`'s friction protocol, no design-specific detail:
 [`klayout-tools#1484`](https://github.com/2AMLogic/klayout-tools/issues/1484).
 
 **What's left, and why it is out of scope here.** `layout/bandgap_top/
-lvs_report.json` still reports `status: "mismatch"`, 8 findings -- issue
-#171 was scoped to Causes A and B only, not to `bandgap_top` reaching
-`"match"`:
+lvs_report.json` still reports `status: "mismatch"`, 6 findings -- issue
+#184 resolved the one non-permanent, non-upstream-gated cause left
+(`bandgap_amp`'s own `MP1`/`MP2` body-tie simplification -- previously 2
+`device.unmatched`, class `pfet`, `X2_MP1`/`X2_MP2`, now gone entirely; see
+`bandgap_amp`'s own "LVS" section above for the leaf-level fix). What
+remains is entirely the permanently-declined bipolar-recognition gap:
 
 | # | Findings | Cause | Status |
 |---|---|---|---|
 | 1 | 3 `device.unmatched`, class `NPN13G2` (`X1_Q1`/`X1_Q2`/`X1_Q3`) | `bandgap_core`'s permanently-declined `npn13G2` recognition gap (see "Permanent blockers" above) | already known, permanent |
-| 2 | 2 `device.unmatched`, class `pfet` (`X2_MP1`/`X2_MP2`) | `bandgap_amp`'s `MP1`/`MP2` body-tie simplification (see `bandgap_amp`'s own "LVS" section above) | already known, documented |
-| 3 | 1 `topology`, "device class could not be mapped to a counterpart" | The report does not name the class, so this one is **inferred, not verified**: `bandgap_core`'s own leaf report shows the identical finding alongside its `NPN13G2` gap and nothing else unmapped, so cause 1 is the most plausible attribution here too | inferred |
+| 2 | 1 `topology`, "device class could not be mapped to a counterpart" | The report does not name the class, so this one is **inferred, not verified**: `bandgap_core`'s own leaf report shows the identical finding alongside its `NPN13G2` gap and nothing else unmapped, so cause 1 is the most plausible attribution here too | inferred |
 | -- | 2 `device.bulk_reconciled` (`severity: "warning"`, never affects `status`) | Cause A's own disclosure that the `rppd`/`rhigh` match rests on this request's `device_bulk` reconciliation (see above) | disclosure, not a defect |
 
 Consistent with the rest of this file, none of the above is a reason to treat
 the `mismatch` as benign: `bandgap_top` is **not** LVS-clean. Its remaining
-`mismatch` verdict now rests entirely on the two permanently-declined,
-already-documented leaf-level causes (plus one inferred instance of the
-first) -- exactly what issue #169's own LVS run should have been able to say
-from the start, before issue #171 corrected it.
+`mismatch` verdict now rests entirely on the one permanently-declined,
+already-documented leaf-level cause (`bandgap_core`'s `npn13G2` recognition
+gap, plus one inferred instance of it) -- as close to `bandgap_startup`'s
+own already-clean bar as this deck allows.
 
 **Determinism**: `python3 layout/bandgap_top/generate.py` re-run leaves
 `git diff --stat` empty, as long as the three leaf GDS files it reads are
@@ -1697,8 +1712,12 @@ is deferred, the same way #12's own findings took #20/#45/#149/#154/#161/#163
 to work through for `bandgap_core`/`bandgap_startup`. The two causes issue
 #169's own LVS run newly surfaced (the un-propagated resistor `device_bulk`
 and the reference-flatten hierarchy-prefix net-identity conflicts) were
-resolved by issue #171 (above); the two permanently-declined leaf-level
-causes remain deferred, same as ever.
+resolved by issue #171 (above); of the two originally-deferred leaf-level
+causes, `bandgap_amp`'s own `MP1`/`MP2` body-tie simplification was resolved
+by issue #184 (see `bandgap_amp`'s own "LVS" section above and the table
+above) -- only `bandgap_core`'s permanently-declined `npn13G2` recognition
+gap remains deferred, and it stays deferred permanently (upstream-gated, not
+a scope choice).
 
 ---
 
