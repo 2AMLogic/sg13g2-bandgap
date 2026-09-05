@@ -1,20 +1,35 @@
 # sg13cmos5l-closed-loop-startup-pex
 
-> **Update (issue #173, 2026-09-05) — this experiment's spliced wire
-> parasitics are stale, and no new record has been minted yet.** #173 folded
-> the long poly-resistor bars in `layout/` into serpentines. No device moved:
-> every recognised resistor extracts to the same ohms before and after, and no
-> MOS/bipolar `w`/`l`/count changed
-> (`measurements/2026-09-resistor-fold/README.md` §4). But the routing got
-> much shorter, so the extracted **wire parasitics** in this testbench's own
-> input netlist fell substantially — and the template below carries a
-> hand-merged *copy* of that block rather than reading the file at run time,
-> so it still describes the pre-fold layout. The records here remain valid
-> evidence for the layout they were taken against; they are not evidence for
-> the layout on `main`. Refreshing the block and re-running is tracked in
-> **#176** (which also explains why #173 did not simply do it: the merge rule
-> the template uses is not written down anywhere, and the committed block
-> already did not reproduce from the committed `.pex.spice` before #173).
+> **Resolved (issue #176, `records/20260905-033836-fe97115.{md,csv}` —
+> the current record):** unlike its two SG13G2 siblings, this experiment
+> never spliced a wire-parasitic block at all (`klt extract --deck
+> sg13cmos5l --parasitics` fails outright, klayout-tools#1440 — see below),
+> so #173's routing changes could not go stale here the same way. Two
+> things #176 checked and confirmed instead: (1) every MOS device's own
+> `l_um`/`w_um`/`as_um2`/`ad_um2`/`ps_um`/`pd_um`, read device-by-device
+> from the post-fold `pex_extract_report.json`, is bit-for-bit identical
+> to what this template already carried (the fold conserves resistor
+> length and moves no MOS/bipolar device — confirmed independently here,
+> not just asserted from #173's own PR description); (2) the fold
+> incidentally fixed a *separate*, larger pre-existing gap: the pre-fold
+> extraction had `det`/`vdd`, `e2`/`in_p`/`sns2`, and `e3`/`vref` shorted
+> together as aliased pins (a net-connectivity artifact of the old, much
+> longer routing) and recognised no resistor devices at all; the post-fold
+> extraction separates all of those pins cleanly and, for the first time,
+> recognises `R$15`/`R$16`/`R$17` as real `rppd`/`rhigh` devices
+> (klayout-tools#1415, previously the last open half of the resistor-class
+> gap this template's header used to cite as fully open). This template's
+> own topology never depended on the aliasing (it already wired `det` and
+> `vdd` as separate nodes, matching post-fold reality), so no netlist line
+> changed — only the header prose describing what the deck can and cannot
+> recognise.
+>
+> **Delta**: the CSV is **byte-identical** to the immediately-preceding
+> record (`records/20260829-085121-94869af.csv`, 45/45 PASS, every
+> measured value unchanged) — expected, since nothing this template reads
+> (device geometry) or writes (no wire parasitics exist to write) changed.
+> This record exists to pin fresh evidence to the current
+> `@@LAYOUT_GIT_SHA@@` (the post-fold GDS), not because any number moved.
 
 Post-layout (PEX) counterpart to
 [`sim/sg13cmos5l-closed-loop-startup/`](../sg13cmos5l-closed-loop-startup/README.md),

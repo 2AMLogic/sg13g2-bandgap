@@ -1,0 +1,22 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-bandgap -- bandgap_startup pex (post-layout) pvt testbench
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+v(det) = 3.300000e+00
+v(fb) = 2.141282e-04
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  6.10000e-01 Reference value :  2.35000e+00
+No. of Data Rows : 661
+vtrip               =  6.42699e-01
+det_off             =  1.84676e-04
+fb_off              =  3.30000e+00
+Note: Simulation executed from .control section 

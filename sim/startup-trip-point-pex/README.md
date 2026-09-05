@@ -1,20 +1,32 @@
 # startup-trip-point-pex
 
-> **Update (issue #173, 2026-09-05) — this experiment's spliced wire
-> parasitics are stale, and no new record has been minted yet.** #173 folded
-> the long poly-resistor bars in `layout/` into serpentines. No device moved:
-> every recognised resistor extracts to the same ohms before and after, and no
-> MOS/bipolar `w`/`l`/count changed
-> (`measurements/2026-09-resistor-fold/README.md` §4). But the routing got
-> much shorter, so the extracted **wire parasitics** in this testbench's own
-> input netlist fell substantially — and the template below carries a
-> hand-merged *copy* of that block rather than reading the file at run time,
-> so it still describes the pre-fold layout. The records here remain valid
-> evidence for the layout they were taken against; they are not evidence for
-> the layout on `main`. Refreshing the block and re-running is tracked in
-> **#176** (which also explains why #173 did not simply do it: the merge rule
-> the template uses is not written down anywhere, and the committed block
-> already did not reproduce from the committed `.pex.spice` before #173).
+> **Resolved (issue #176, `records/20260905-033740-fe97115.{md,csv}` —
+> the current record):** the stale-wire-parasitics warning this section
+> used to carry (from #173's poly-resistor serpentine fold) is fixed, and
+> a second, larger drift the same refresh uncovered is fixed too: issue
+> #158's well/substrate-tap ring (which predates #173 and this file's own
+> last refresh, issue #61) had already given this layout a real `vdd` pin
+> and a real per-terminal VSS body/bulk hub on every device — this
+> template still modelled the pre-#158 layout, where `vdd` did not exist
+> as a pin at all (FIXTURE 3's `\$5`-net workaround) and body/bulk landed
+> on the deck's synthesized `vsubs` fallback. Both are gone now: FIXTURE 3
+> and `Vtie5` are deleted (XRPU's "a" terminal wires straight to the real
+> `vdd__t0` hub), and body/bulk still tie directly to the ideal `vss` net
+> (a documented simplification, not an unverifiable fixture anymore) under
+> the same drop-the-body/bulk-hub merge rule
+> `sim/core-open-loop-bias-pex/README.md` above documents.
+>
+> **Max `|Δvtrip|` across all 45 points vs. the immediately-preceding
+> record (`records/20260830-185808-600b683.csv`) is `3 µV`** (at
+> `sf_125c_2.97v`) — noise at the CSV's own printed precision, not a real
+> move (`vtrip` is set by the `rhigh`/nfet resistive divider's trip
+> threshold, not materially by wire IR drop). The wire-sensitive
+> `det_off_v` measurement (`det`'s leakage-driven voltage once the startup
+> circuit is fully disengaged) is the one that moves: max `|Δdet_off_v|`
+> across all 45 points is `0.394 mV` (at `bcs_125c_3.63v`, `0.973 mV` ->
+> `0.579 mV`), and it fell at every single one of the 45 points — the
+> expected direction (less hub-leg wire resistance, less leakage-current
+> IR drop). No leg moved the other way; no exception to call out.
 
 Post-layout (PEX) counterpart to
 [`sim/startup-trip-point/`](../startup-trip-point/README.md), issue #14.

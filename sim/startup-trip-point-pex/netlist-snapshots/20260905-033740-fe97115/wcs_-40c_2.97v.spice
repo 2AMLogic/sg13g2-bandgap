@@ -1,0 +1,255 @@
+* sg13g2-bandgap -- bandgap_startup PEX (post-layout) PVT testbench
+* (issue #14). Generated from
+* sim/startup-trip-point-pex/testbench/tb_startup_trip_point_pex.spice.tmpl
+* by sim/startup-trip-point-pex/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full rationale is in sim/startup-trip-point-pex/README.md.
+*
+* Generated for: corner=wcs temp=-40C vdd=2.97V
+* DUT git sha (design/netlist/bandgap_startup.spice -- as of issue #59,
+* nothing in this testbench is spliced in verbatim from that file anymore
+* (XMSENSE/XMKFB since issue #14/#32, XRPU's resistor since issue #59, are
+* all re-encoded from the layout extraction); still recorded for
+* traceability against the schematic's own nominal geometry -- see below):
+*   66ac99d
+* Layout git sha (layout/bandgap_startup/bandgap_startup.gds, extraction
+* input):
+*   7b4d0e1
+* PDK: ihp-sg13g2 /home/ubuntu/share/pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* THIS IS A HYBRID PEX NETLIST, NOT A PURE LAYOUT EXTRACTION -- read
+* sim/startup-trip-point-pex/README.md "What this does and does not
+* model" before trusting a result here. Short version:
+*   - XMSENSE/XMKFB (both sg13_hv_nmos) are re-encoded from `klt extract
+*     --deck sg13g2 --parasitics layout/bandgap_startup/
+*     bandgap_startup.gds` (layout/bandgap_startup/bandgap_startup.pex.spice,
+*     pex_extract_report.json): real drawn W/L and junction AS/AD/PS/PD
+*     from the routed layout, re-expressed as X-subckt calls to the real
+*     sg13_hv_nmos compact model. Their D/G/S node roles match the
+*     schematic's own convention exactly (no swap, unlike
+*     core-open-loop-bias-pex) -- only the body terminal differs (see
+*     below).
+*   - **XMSENSE's extracted width is now w=10u, matching the schematic
+*     (issue #32).** The committed layout
+*     (layout/bandgap_startup/generate.py, issue #11/PR #19) originally
+*     drew XMSENSE at w=2u, before decision record 0003 (issue #24/PR #29)
+*     widened it to w=10u in design/netlist/bandgap_startup.spice to fix a
+*     real 125C startup-release margin bug -- the layout was not
+*     regenerated to match until issue #32. This testbench is
+*     as-drawn (w=10u): PEX evidence now reflects the corrected, in-sync
+*     layout. See sim/startup-trip-point-pex/README.md for the full
+*     before/after account.
+*   - This direct sns1-sweep methodology (0 -> vdd) does NOT, by itself,
+*     reveal decision record 0003's original margin bug either way (at
+*     w=2u or w=10u) -- it always reaches full release by the time sns1
+*     hits vdd, same limitation sim/startup-trip-point's own (pre-PEX)
+*     records already note. Whether the margin bug is present only shows
+*     up by comparing this record's `vtrip_v` against
+*     sim/core-open-loop-bias-pex's own real `sns1` operating point at the
+*     same corner -- see sim/startup-trip-point-pex/README.md
+*     "Cross-bench observation" for that comparison, which at the
+*     corrected w=10u width now clears at all 45 points (the 4 points that
+*     failed at the stale w=2u width -- wcs_125c_{2.97,3.30,3.63}v,
+*     sf_125c_3.63v -- now pass).
+*   - XRPU (rhigh) is now instantiated from the extracted R$3 device
+*     (issue #59) instead of being spliced verbatim from
+*     design/netlist/bandgap_startup.spice -- PR #45's resistor marker
+*     layers made the sg13g2 deck's `rhigh` recognizer actually match this
+*     layout's poly resistor (pex_extract_report.json's device_counts reads
+*     `{"nfet": 2, "rhigh": 1}`, unchanged as of issue #176's refresh
+*     below). IMPORTANT caveat, confirmed by direct ngspice testing, not
+*     assumed from bandgap_startup.pex.spice's own text: that file's
+*     native `R$3 VDD__t0 DET__t2 VSS__t2 1919368 rhigh` card is NOT
+*     literal simulatable ngspice syntax (a 2-terminal `R` element cannot
+*     take a 3rd node before its value -- ngspice errors "unknown
+*     parameter") -- `rhigh`/`rppd` are PDK subckts (`1 2 bn` pins), the
+*     same situation the nfet M-cards above already needed X-subckt
+*     re-encoding for. XRPU below is therefore an X-subckt call to the
+*     real `rhigh` subckt using pex_extract_report.json's own drawn
+*     `w_um`/`l_um` (numerically identical to the schematic's own nominal
+*     `w`/`l` -- this is a fixed-geometry poly resistor, so this pass buys
+*     no *geometry* correction, only the bulk-node correction below and the
+*     newly-wired hub-terminal parasitics).
+*     **Issue #176 update -- the isolated \$5 net is GONE.** An earlier
+*     revision of this paragraph described R$3's "a" terminal landing on
+*     an isolated, unlabeled two-node net (`\$5`/`\$5__t0`) because this
+*     layout never exposed `vdd` as a declared pin (`.SUBCKT
+*     bandgap_startup det fb vss vsubs`, no `vdd`), and FIXTURE 3 tied
+*     that isolated net to `vdd` directly as a testbench-side fix for the
+*     gap. Issue #158's well/substrate-tap ring closed that gap in the
+*     layout itself: `bandgap_startup.pex.spice` now declares
+*     `.SUBCKT bandgap_startup DET FB SNS1 VDD VSS` -- `vdd` (and `sns1`)
+*     are REAL, physically-routed pins today, and R$3's "a" terminal lands
+*     on the real per-terminal hub `VDD__t0` (see "Wire parasitics"
+*     below), not an invented node. FIXTURE 3 and its `Vtie5` fixture are
+*     therefore deleted below, not just re-pointed -- there is nothing
+*     left for them to bridge.
+*     Separately: `pex_extract_report.json`'s own `r_ohm` field (1919368,
+*     unchanged) is klt's own first-order `rsh * l_um / w_um`
+*     sheet-resistance estimate (confirmed exactly:
+*     `1360 * 1411.3 / 1 = 1919368`), not the full `r3_cmc` compact-model
+*     resistance -- simulating the X-subckt form above at the same drawn
+*     geometry computes ~2.086 Mohm (res_typ, 27C), ~8.7% above `r_ohm`
+*     (larger than the two rppd resistors' ~0.5% gap in
+*     core-open-loop-bias-pex -- the compact model's contact/end-effect
+*     terms scale differently for this much narrower/longer device).
+*     Disclosed, not silently reconciled.
+*   - **Issue #176 update -- body/bulk terminals are no longer on the
+*     deck's synthesized fallback net.** An earlier revision of this
+*     paragraph reported both extracted nfet devices' body terminals (and
+*     R$3's own bulk terminal) landing on the deck's synthesized global
+*     fallback net (`vsubs`), not a real tie. Issue #158's
+*     well/substrate-tap ring gave every one of those terminals a REAL
+*     hub leg on `VSS` instead (M$1's body -> VSS__t3, M$2's body ->
+*     VSS__t4, R$3's bulk -> VSS__t2 -- confirmed directly in the current
+*     `bandgap_startup.pex.spice`, current as of this refresh). This
+*     testbench still ties body/bulk directly to the ideal `vss` net
+*     rather than routing through those hub legs -- same simplification
+*     core-open-loop-bias-pex's own header documents for its PMOS body
+*     legs (the device's own modeled current path never runs through the
+*     body/bulk terminal, so a hub leg there carries no current this
+*     testbench measures) -- not because the tie is unverifiable anymore.
+*     The merge rule this produces, applied uniformly across "Wire
+*     parasitics" below: model ONLY the functional (drain/gate/"a"/"b")
+*     hub leg of each device; drop the body/bulk hub leg entirely (not
+*     series, not parallel-merged -- simply not instantiated), and tie
+*     that terminal straight to the ideal supply rail instead. See below
+*     for exactly which tag survives per device.
+*   - klayout-tools#1280/#1282 (issue #37) populated the sg13g2 deck's
+*     PARASITICS.metals/metal_overlaps coefficient tables (Metal1/Metal2,
+*     later the full Metal1-TopMetal2 stack). Re-extracting against the
+*     current deck now yields non-zero r_count/c_count -- this run wires
+*     in those wire R/C cards verbatim (see "Wire parasitics" below), the
+*     first PEX record here to carry them. `sns1` (XMSENSE's gate) is now
+*     a real, single-terminal pin with no wire model of its own (same
+*     no-wire-model convention every single-terminal net in this tree
+*     gets); the testbench's own `sns1` drive below still supplies it, now
+*     wired to the pin's own real name rather than a fixture bridging a
+*     labeling gap.
+*   - **Issue #176 refreshed every numeric value and hub-terminal node
+*     name in "Wire parasitics" below** against `bandgap_startup.pex.spice`
+*     as re-extracted post issue #173 (poly-resistor serpentine fold) and
+*     post issue #158 (well/substrate-tap ring, which this file's last
+*     refresh, issue #61, predates) -- routing got substantially shorter,
+*     `vdd`/`sns1` became real pins (see above), AND `det`'s three hub
+*     tags are permuted relative to the extraction this file was last
+*     written against: `det__t0` is now XMSENSE's own drain hub (was R$3's
+*     "b" terminal pre-#158), `det__t1` is now XMKFB's own gate hub (was
+*     XMSENSE's drain pre-#158), `det__t2` is now R$3's own "b" terminal
+*     hub (was XMKFB's gate pre-#158) -- confirmed by reading each
+*     device's own card in the current `bandgap_startup.pex.spice`, not
+*     assumed from the tag number, the same discipline
+*     core-open-loop-bias-pex's own SNS2 permutation note applies.
+*     `sim/tools/dump_pex_wire_parasitics.py <pex.spice>` mechanically
+*     separates a `.pex.spice`'s device cards from its wire-parasitic
+*     cards and lower-cases the latter to this file's own convention --
+*     use it to regenerate the values below and cross-check the tags
+*     rather than hand-transcribing either.
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_ss
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_wcs
+
+.options temp=-40 tnom=27
+
+Vvdd vdd 0 dc 2.97
+Vvss vss 0 dc 0
+* bandgap_startup.spice's schematic-splice convention wired the rhigh bulk
+* terminal to the global substrate net `sub!`, fixtured to vss via a 0 V
+* source (sim/startup-trip-point's own fixture). As of issue #59, XRPU
+* below is the extracted R$3 device instead; as of issue #176, its real
+* bulk net is a hub leg on `VSS` (see file header) rather than the
+* deck's `vsubs` fallback -- this testbench ties bulk directly to the
+* ideal `vss` net (see the merge rule in the file header), so the
+* `sub!`/`Vsub` fixture remains unneeded and is not reintroduced.
+
+* FIXTURE 1 -- sns1 stimulus, same convention as sim/startup-trip-point:
+* sns1 is bandgap_core's own sense node in the assembled block; here it is
+* driven directly so the startup circuit's response can be swept from
+* "core is dead" (sns1 = 0) to "core is up" (sns1 = vdd) in one analysis.
+* `sns1` is now a real, declared pin of this layout (issue #158; see file
+* header) -- this fixture drives it directly, the same as it always did,
+* but no longer bridges a labeling gap in doing so.
+Vsns1 sns1 vss dc 0
+
+* FIXTURE 2 -- fb load, same convention as sim/startup-trip-point: nothing
+* drives fb high in the design yet (no error amplifier -- issue #9's scope
+* cut), so this weak pull-up stands in for whatever eventually holds fb
+* high once XMKFB turns off.
+Rfbpu vdd fb 10meg
+
+* Resistor -- extracted from the routed layout as of issue #59 (R$3 in
+* layout/bandgap_startup/bandgap_startup.pex.spice), re-encoded as an
+* X-subckt call to the real rhigh PDK subckt (see file header for why the
+* pex.spice file's own native R$3 card is not directly simulatable, and
+* for the r_ohm-vs-simulated-resistance caveat). XRPU keeps the
+* schematic's own instance name for continuity. Issue #176: "a" now wires
+* to the real vdd__t0 hub (was the isolated \$5 net, now removed -- no
+* FIXTURE 3, no Vtie5); "b" is det__t2 (permuted from det__t1 pre-#158,
+* see file header); bulk ties directly to vss (dropped VSS__t2 hub leg,
+* per the merge rule).
+XRPU vdd__t0 det__t2 vss rhigh w=1u l=1411.3u m=1 b=0
+
+* Extracted NMOS switches -- see file header above for the body-net
+* substitution; XMSENSE's w/as/ad/ps/pd below match the corrected,
+* regenerated layout (issue #32; layout/bandgap_startup/pex_extract_report.json).
+* Drain/source pins (and XMKFB's gate) are wired to the exact per-terminal
+* wire-parasitic hub node names layout/bandgap_startup/bandgap_startup.pex.spice's
+* own M$1/M$2 cards use for their functional (non-body) terminals (M$1 =
+* XMSENSE: drain det__t0, source vss__t0; M$2 = XMKFB: drain fb__t0, gate
+* det__t1 -- issue #176 permuted det's tags relative to the extraction
+* this file was last written against, see file header) -- the "Wire
+* parasitics" block below ties each hub back to its real net (det/fb/vss)
+* through that file's own series R (+ ground C, no DC effect but included
+* for completeness). Body stays vss directly (testbench fixture; dropped
+* body-hub legs VSS__t3/VSS__t4 per the merge rule, see file header).
+XMSENSE det__t0 sns1 vss__t0 vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMKFB fb__t0 det__t1 vss__t1 vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
+
+* Wire parasitics (issue #37, refreshed issue #56, extended issue #59,
+* refreshed again issue #176 for #173's poly-resistor serpentine fold +
+* #158's well/substrate-tap ring, which this file's last refresh, issue
+* #61, predates -- see file header for the merge rule and the `det`
+* permutation) -- verbatim R/C cards from
+* layout/bandgap_startup/bandgap_startup.pex.spice's --parasitics output
+* (that file's M$1/M$2 cards are already re-encoded above as
+* XMSENSE/XMKFB, functional hub leg only; R$3 is re-encoded above as
+* XRPU). The isolated \$5/\$5__t0 net's own leg (R_5_t0/C_5) is GONE --
+* that net no longer exists post-#158 (see file header) -- and
+* Rvss_t2/t3/t4 (the body/bulk-hub legs the merge rule drops) are omitted
+* on purpose, not missed. Regenerate this block together with the
+* geometry above if the layout or deck ever changes --
+* `sim/tools/dump_pex_wire_parasitics.py --wires-only
+* layout/bandgap_startup/bandgap_startup.pex.spice` emits it mechanically
+* (still requires the header's merge rule to pick out only the
+* functional-hub VSS legs from the full 5-leg set that command also
+* prints).
+Rdet_t0 det__t0 det 7.2824560321
+Rdet_t1 det__t1 det 4.66093626702
+Rdet_t2 det__t2 det 8.58380770088
+Cdet det vsubs 5.253342e-15
+Rfb_t0 fb__t0 fb 0.6286
+Cfb fb vsubs 2.1056e-16
+Rvdd_t0 vdd__t0 vdd 0.308
+Cvdd vdd vsubs 1.74934e-16
+Rvss_t0 vss__t0 vss 2.25555831061
+Rvss_t1 vss__t1 vss 1.53477587844
+Cvss vss vsubs 2.470295e-15
+Rvsubs_dctie vsubs 0 1e+12
+
+.control
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+* 1) cold-start state: core dead (sns1 = 0), startup must be engaged.
+op
+print v(det) v(fb)
+* 2) disengage behaviour: sweep the core's sense node up and find where the
+*    detect node releases, plus the fully-running-core end state.
+dc Vsns1 0 2.97 0.005
+meas dc vtrip when v(det)=1.4850 cross=1
+meas dc det_off find v(det) at=2.9200
+meas dc fb_off find v(fb) at=2.9200
+.endc
+.end

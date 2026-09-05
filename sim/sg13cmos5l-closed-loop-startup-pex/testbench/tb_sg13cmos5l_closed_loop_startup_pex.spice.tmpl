@@ -24,8 +24,10 @@
 * not model" before trusting a result here. Short version:
 *   - Every MOS device (XM1-3 in the core, XMTAIL/XMP1-4/XMN1-4 in the amp,
 *     XMSENSE/XMKFB in the startup circuit -- 14 devices total, matching
+*     the `"nfet": 6, "pfet": 8` entries of
 *     layout/sg13cmos5l-bandgap_top/pex_extract_report.json's own
-*     device_counts {"nfet": 6, "pfet": 8}) is re-encoded as an X-subckt
+*     device_counts -- that dict also carries `"rhigh": 1, "rppd": 2` as
+*     of issue #176's refresh, see below) is re-encoded as an X-subckt
 *     call to the real sg13_hv_pmos/sg13_hv_nmos compact model (the
 *     extraction's own native `M...pfet`/`M...nfet` cards reference a
 *     generic placeholder model name, not the real PDK subckt -- same
@@ -48,14 +50,39 @@
 *     inconsequential here -- disclosed, not silently assumed. This lets
 *     every device below keep the schematic's own d/g/s/b node order
 *     unchanged.
-*   - XQ1/XQ2/XQ3 (pnpMPA) and XR1/XR2 (rppd, core) and XRPU (rhigh,
-*     startup) are NOT extracted from the layout at all -- klt's curated
-*     sg13cmos5l deck still does not recognise bipolar or resistor device
-*     classes (klayout-tools#1242, #1415, already filed). They are spliced
-*     in verbatim from design/sg13cmos5l/netlist/{bandgap_core,
-*     bandgap_startup}.spice, wired to the SAME real layout net names the
-*     extraction itself reports as real, physically-routed pins (sns1,
-*     sns2, vref, vdd, vss, fb, det) -- not invented nodes.
+*   - XQ1/XQ2/XQ3 (pnpMPA) are NOT extracted from the layout at all --
+*     klt's curated sg13cmos5l deck still does not recognise bipolar
+*     devices (klayout-tools#1242, already filed; confirmed still true as
+*     of issue #176's re-check: `pex_extract_report.json`'s
+*     `device_classes` lists `["nfet", "pfet", "cap_cmomi", "cap_cmomf",
+*     "resistor"]`, no bipolar entry). They are spliced in verbatim from
+*     design/sg13cmos5l/netlist/{bandgap_core,bandgap_startup}.spice,
+*     wired to the SAME real layout net names the extraction itself
+*     reports as real, physically-routed pins (sns1, sns2, vref, vdd, vss,
+*     fb, det) -- not invented nodes.
+*   - **Issue #176 update -- resistor recognition landed (klayout-tools
+*     #1415).** An earlier revision of this paragraph additionally claimed
+*     XR1/XR2 (rppd, core) and XRPU (rhigh, startup) were "NOT extracted
+*     from the layout at all" alongside the bipolar devices, citing
+*     klayout-tools#1415 as still open. That is no longer true: issue
+*     #173's poly-resistor serpentine fold re-routed this cell's resistors
+*     enough that they now recognise cleanly, and the current
+*     `sg13cmos5l-bandgap_top.pex.spice` carries three real resistor
+*     device cards (`R$15 in_p|sns2 e2 vss 11063 rppd`,
+*     `R$16 vref e3 vss 84110 rppd`, `R$17 vdd det vss 1919368 rhigh`) --
+*     `device_counts` now reads `{"nfet": 6, "pfet": 8, "rhigh": 1,
+*     "rppd": 2}` (was `{"nfet": 6, "pfet": 8}`, no resistor entry, before
+*     the fold). XR1/XR2/XRPU below are still spliced verbatim from the
+*     schematic rather than switched to X-subckt calls against these newly
+*     recognised devices, deliberately out of this issue's own scope:
+*     unlike SG13G2's rppd/rhigh conversion (issue #59), there is still no
+*     wire-parasitic geometry to hang a real hub-terminal connection off
+*     of here (`--parasitics` fails outright for this deck, see below), so
+*     switching device class would trade one schematic-sourced R value for
+*     an extracted one carrying the exact same w/l (no new information)
+*     while losing the schematic's own instance-name continuity -- a
+*     separate, deliberate follow-up if ever worth doing, not a
+*     freshness bug this refresh needs to fix.
 *   - NO WIRE (metal) PARASITICS ARE MODELLED HERE -- unlike the SG13G2
 *     precedent (which wires in real Metal1/Metal2 R/C, issue #37). Not a
 *     scope choice: `klt extract --deck sg13cmos5l --parasitics` fails
@@ -72,12 +99,29 @@
 *     below is the same idealized zero-impedance node the schematic-level
 *     testbench already uses.
 *   - The extracted PMOS legs' body terminals are genuinely floating in the
-*     layout (`unbiased_pmos_body_nets`, 8 entries -- no drawn well/
-*     substrate-tap layer at all, klayout-tools#1414, already filed). This
-*     testbench ties each PMOS body to vdd directly (b=vdd below),
-*     mirroring the schematic's own real body-tied-to-vdd intent -- a
-*     testbench fixture bridging a known, disclosed deck gap, not a claim
-*     about the real layout's body connectivity.
+*     layout (`unbiased_pmos_body_nets`, still 8 entries as of issue #176's
+*     re-check against the post-#173-fold extraction -- the anonymous net
+*     labels themselves renumbered from `\$30`/`\$32` to `\$34`/`\$36`
+*     (issue #173 re-routed the whole cell), but this testbench never
+*     references those labels directly, only `vdd`, so the renumbering is
+*     inert here; no drawn well/substrate-tap layer at all,
+*     klayout-tools#1414, already filed). This testbench ties each PMOS
+*     body to vdd directly (b=vdd below), mirroring the schematic's own
+*     real body-tied-to-vdd intent -- a testbench fixture bridging a
+*     known, disclosed deck gap, not a claim about the real layout's body
+*     connectivity.
+*   - **Issue #176 re-verification, no netlist change:** re-read every
+*     MOS device's own `l_um`/`w_um`/`as_um2`/`ad_um2`/`ps_um`/`pd_um` in
+*     the post-#173-fold `pex_extract_report.json` device-by-device against
+*     the values below -- all identical to the pre-fold extraction this
+*     file was written against (the fold conserves drawn resistor length
+*     exactly and moves no MOS/bipolar device, see issue #173's own PR
+*     description). This file also does not splice any per-terminal
+*     wire-parasitic hub node names (see "NO WIRE PARASITICS" above), so
+*     it has neither a numeric value nor a node name to refresh -- the
+*     fresh PVT record issue #176 mints for this suite exists to capture
+*     the new `@@LAYOUT_GIT_SHA@@` as evidence, not because any number
+*     below changed.
 *   - XMSENSE's w=10u below is the routed layout's OWN drawn value (from
 *     pex_extract_report.json device $5), not read live from
 *     design/sg13cmos5l/netlist/bandgap_startup.spice the way the
