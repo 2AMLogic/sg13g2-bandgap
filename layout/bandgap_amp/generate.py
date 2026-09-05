@@ -233,8 +233,6 @@ def _route(
     horizontal X-range (verified for this exact floorplan below, column by
     column), keeps every horizontal clear of every other net's vertical.
     """
-    all_pmos = [mp1, mp2, mtail, mp3, mp4]
-
     # -- vss: all four NMOS drain pads, one Metal1 bar. --
     vss_x_lo = min(m["drain_pad"][0] for m in [mn1, mn2, mn3, mn4])
     vss_x_hi = max(m["drain_pad"][2] for m in [mn1, mn2, mn3, mn4])
