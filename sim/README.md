@@ -292,15 +292,10 @@ left untouched**, so historical records still name #13; read those as
   #32 regenerated the layout with `XMSENSE` at the matching `w=10u`; the
   same cross-bench comparison against the corrected layout now clears at
   all 45 points — see that experiment's README for the full before/after
-  writeup. **Both are leaf-cell, open-loop benches**: as of today the
-  block's post-layout evidence covers `bandgap_core` and `bandgap_startup`
-  individually and nothing closed-loop. `layout/bandgap_amp/` and
-  `layout/bandgap_top/` now carry their own committed
-  `*.pex.spice`/`pex_extract_report.json` (see `layout/README.md` →
-  "Post-layout parasitic extraction: `bandgap_amp` and `bandgap_top`"), so
-  a closed-loop PEX counterpart is no longer blocked on a missing extracted
-  netlist — it is filed as **#186** and does not exist yet. Do not read the
-  two experiments above as post-layout evidence for the assembled block.
+  writeup. **Both are leaf-cell, open-loop benches**: they cover
+  `bandgap_core` and `bandgap_startup` individually, nothing closed-loop —
+  see **[`closed-loop-vref-pvt-pex/`](closed-loop-vref-pvt-pex/README.md)**
+  below for the assembled block's own post-layout evidence.
 - **[`closed-loop-startup/`](closed-loop-startup/README.md)** — the first
   genuinely closed-loop testbench in this tree (issue #58): co-simulates
   `bandgap_core` + `bandgap_amp` + `bandgap_startup` in one netlist, wired
@@ -379,6 +374,23 @@ left untouched**, so historical records still name #13; read those as
   0.75 V sizing assumption `design/bandgap_core.sch`'s header derived R1
   from — see `sim/closed-loop-vref-pvt/133-vbe-q3-r1-rederivation.md` for the re-derived
   R1 and untrimmed-accuracy-band finding this measurement feeds.
+- **[`closed-loop-vref-pvt-pex/`](closed-loop-vref-pvt-pex/README.md)** —
+  the first **closed-loop** post-layout (PEX) experiment in this tree
+  (issue #186, follow-on to #187): the same co-simulated
+  `bandgap_core` + `bandgap_amp` + `bandgap_startup` topology
+  `closed-loop-vref-pvt` uses, but with all 17 MOS + 3 resistor devices'
+  geometry and real wire parasitics taken from
+  `klt extract --deck sg13g2 --parasitics` against the routed, ASSEMBLED
+  `layout/bandgap_top/bandgap_top.gds` instead of the schematic's as-drawn
+  defaults (bipolar devices remain schematic-sourced — the sg13g2 deck
+  still does not recognise them). 45/45 PVT points PASS; max `|Δvref|`
+  across all 45 points vs. `closed-loop-vref-pvt`'s own current record is
+  `1.67 mV` (out of ~1.05 V), every point moving in the same direction
+  (up), consistent with the series-R IR-drop effect the leaf-level PEX
+  pair above already shows — not a regression. Not a claim against
+  `spec/porting-plan.md` §6's still-unratified target row (#125); see that
+  experiment's own README for the full cross-bench writeup and what the
+  extraction does and does not model.
 - **[`loop-gain-phase-margin/`](loop-gain-phase-margin/README.md)** — the
   first small-signal AC stability testbench in this tree (issue #86,
   follow-on to #58): the loop is broken at the shared `fb` node with a
