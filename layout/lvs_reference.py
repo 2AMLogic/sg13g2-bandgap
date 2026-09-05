@@ -418,6 +418,113 @@ def _parse_subckt_blocks(path: str) -> tuple[list[str], dict[str, dict]]:
     return top_lines, subckts
 
 
+def _shared_connection_aliases(
+    calls: list[tuple[str, list[str], str]], subckts: dict[str, dict]
+) -> dict[str, str]:
+    """Canonical reference-side name for every top-level connecting net,
+    reconciling issue #171's Cause B (the merged-pin-alias half of it).
+
+    A top-level connecting net (e.g. ``bandgap_top.spice``'s ``fb``) is
+    reached through *each* subckt call's own, positionally-matched port
+    name -- ``bandgap_core``'s and ``bandgap_startup``'s own port at that
+    position is itself named ``fb``, but ``bandgap_amp``'s is named ``out``
+    (see this design's own port-order docstring in
+    ``layout/bandgap_top/generate.py``). That is exactly the schematic-level
+    fact ``layout/bandgap_top/generate.py`` draws as two *different* pin-name
+    labels (``FB``, ``OUT``) landing on one physical net -- `klt extract`
+    then reports that net under its own merged-alias convention (comma-
+    joined internally, ``FB|OUT`` in every user-facing string --
+    ``docs/cli/lvs.md``, ``mismatches[].net.layout``). Before this function,
+    :func:`flatten` always emitted the bare top-level connecting name
+    (``fb``) instead, so a net reached under two *different* local port
+    names read back as a same-net, different-name pairing --
+    `klayout.db.NetlistComparer`'s own ``net_mismatch`` callback, reported as
+    a `topology`/``error`` "name/identity conflict" finding even though the
+    pairing itself is correct (empirically confirmed against
+    ``layout/bandgap_top/lvs_report.json`` -- see issue #171).
+
+    This reproduces `klt extract`'s own merged-alias spelling from the
+    schematic netlist alone (no GDS/layout data involved): for each
+    connecting net, collect every subckt call's own *local* port name at the
+    position that connects to it (upper-cased, since `NetlistSpiceReader`
+    upper-cases every node name -- see this module's docstring), and alias
+    it to the sorted, comma-joined union of those local names whenever more
+    than one distinct spelling was used (matching every real merged-net
+    example this design produces -- ``FB``/``OUT`` -> ``"FB,OUT"``,
+    ``IN_N``/``SNS1`` -> ``"IN_N,SNS1"``, ``IN_P``/``SNS2`` ->
+    ``"IN_P,SNS2"``, all three alphabetical here only because that is what
+    each pair's own spelling happens to sort to, not because sort order was
+    picked to match -- verified directly against a real `klt extract` run,
+    not assumed). A net reached under exactly one local name across every
+    call (``vdd``, ``vss``, ``vref``) is aliased to itself -- unchanged from
+    :func:`flatten`'s prior behaviour.
+    """
+    local_names: dict[str, set[str]] = {}
+    for _instance, call_nodes, subckt_name in calls:
+        ports = subckts[subckt_name]["ports"]
+        for port, node in zip(ports, call_nodes, strict=True):
+            local_names.setdefault(node, set()).add(port.upper())
+    return {
+        node: node if len(names) <= 1 else ",".join(sorted(names))
+        for node, names in local_names.items()
+    }
+
+
+def _internal_net_scopes(
+    calls: list[tuple[str, list[str], str]], subckts: dict[str, dict]
+) -> dict[tuple[str, str], str]:
+    """``(instance, child-local net name) -> reference-side name`` for every
+    net that is **not** one of its own subckt's declared ports (issue #171's
+    Cause B, the instance-prefix half of it).
+
+    A child's own internal net (e.g. ``bandgap_amp``'s ``tail``/``d1``/
+    ``d2``/``pn``) has no top-level connecting name to inherit at all -- it
+    only exists inside that one instance. `flatten()` used to scope *every*
+    such net with an ``<instance>.`` prefix unconditionally, "so two
+    children's identically-named internal nets... can never be merged by
+    name" (this function's own prior docstring) -- a safety margin against a
+    collision that has never actually happened in either PDK port this
+    module serves (verified below, not assumed), at the cost of a
+    hierarchy-prefix name/identity conflict against `klt extract`'s own
+    genuinely-flat physical net names (``bandgap_top.gds`` is drawn as one
+    flat composition -- see ``layout/bandgap_top/generate.py`` -- so its own
+    internal nets carry no prefix at all: ``CB2``, not ``X1.CB2``).
+
+    This keeps the safety margin but only where it is actually load-bearing:
+    an internal net name is scoped bare (matching the layout's own physical
+    naming) when exactly one instance in this composition owns it, and kept
+    ``<instance>.``-prefixed -- the original, collision-safe behaviour --
+    the moment two or more instances' own internal nets share a raw name
+    (never observed in this design, but this function does not assume it
+    can't happen elsewhere).
+    """
+    owners: dict[str, set[str]] = {}
+    for instance, _call_nodes, subckt_name in calls:
+        child = subckts[subckt_name]
+        ports = set(child["ports"])
+        for device_line in child["lines"]:
+            if not device_line.startswith("X"):
+                continue
+            _d_instance, d_nodes, _d_model, _d_params = _parse_device_line(device_line)
+            for node in d_nodes:
+                if node not in ports:
+                    owners.setdefault(node, set()).add(instance)
+    scopes: dict[tuple[str, str], str] = {}
+    for instance, _call_nodes, subckt_name in calls:
+        child = subckts[subckt_name]
+        ports = set(child["ports"])
+        for device_line in child["lines"]:
+            if not device_line.startswith("X"):
+                continue
+            _d_instance, d_nodes, _d_model, _d_params = _parse_device_line(device_line)
+            for node in d_nodes:
+                if node not in ports and (instance, node) not in scopes:
+                    scopes[(instance, node)] = (
+                        node if len(owners[node]) <= 1 else f"{instance}.{node}"
+                    )
+    return scopes
+
+
 def flatten(top_path: str, pdk: str = "sg13cmos5l") -> list[str]:
     """Flatten a hierarchical top-level netlist (issue #76) to the same
     plain-element form :func:`convert` produces for a flat one.
@@ -437,13 +544,14 @@ def flatten(top_path: str, pdk: str = "sg13cmos5l") -> list[str]:
     model dispatch :func:`convert` uses, so a flattened and a flat netlist
     are converted identically device-line-by-device-line.
 
-    A child net that is **not** one of its subckt's own ports (e.g.
-    ``bandgap_core``'s ``e2``/``e3``, ``bandgap_amp``'s ``d1``/``d2``/``pn``/
-    ``tail``, ``bandgap_startup``'s ``det``) is scoped to that instance with
-    an ``<instance>.`` prefix, matching the standard SPICE flattening
-    convention for a subcircuit's own internal nodes, so two children's
-    identically-named internal nets (none happen to collide in this design,
-    but a flattener should not rely on that) can never be merged by name.
+    Node names are canonicalised through two reconciliation passes (issue
+    #171's Cause B) before substitution: :func:`_shared_connection_aliases`
+    for a top-level connecting net reached under more than one local port
+    name (reproducing `klt extract`'s own merged-pin-alias spelling), and
+    :func:`_internal_net_scopes` for a child's own internal net (bare when
+    no other instance's own internal net shares its raw name, ``<instance>.``-
+    prefixed the moment one does -- see that function's own docstring for
+    why the prior unconditional-prefix behaviour is not needed here).
     """
     top_lines, subckts = _parse_subckt_blocks(top_path)
     out: list[str] = [
@@ -455,6 +563,8 @@ def flatten(top_path: str, pdk: str = "sg13cmos5l") -> list[str]:
     ]
     if pdk != "sg13g2":
         out.append(f"* PDK: {pdk}")
+
+    calls: list[tuple[str, list[str], str]] = []
     for line in top_lines:
         if not line.startswith("X"):
             continue
@@ -466,12 +576,25 @@ def flatten(top_path: str, pdk: str = "sg13cmos5l") -> list[str]:
                 f"{subckt_name}: call {instance!r} connects {len(call_nodes)} "
                 f"node(s) but the subckt declares {len(ports)} port(s)"
             )
-        node_map = dict(zip(ports, call_nodes))
+        calls.append((instance, call_nodes, subckt_name))
+
+    connection_aliases = _shared_connection_aliases(calls, subckts)
+    internal_scopes = _internal_net_scopes(calls, subckts)
+
+    for instance, call_nodes, subckt_name in calls:
+        child = subckts[subckt_name]
+        ports = child["ports"]
+        node_map = {
+            port: connection_aliases[node] for port, node in zip(ports, call_nodes, strict=True)
+        }
         for device_line in child["lines"]:
             if not device_line.startswith("X"):
                 continue
             d_instance, d_nodes, d_model, d_params = _parse_device_line(device_line)
-            renamed_nodes = [node_map.get(n, f"{instance}.{n}") for n in d_nodes]
+            renamed_nodes = [
+                node_map.get(n, internal_scopes.get((instance, n), f"{instance}.{n}"))
+                for n in d_nodes
+            ]
             # Scope the device's own instance name too (not just its
             # internal nets): none of this design's three children happen
             # to reuse an instance name, but a flattener should not depend
