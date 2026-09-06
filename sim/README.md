@@ -426,6 +426,32 @@ left untouched**, so historical records still name #13; read those as
   testbenches corroborating where this design's regulation runs out of
   headroom. Not a claim against `spec/porting-plan.md` §6's still-
   unratified `PSRR @ DC > 60 dB` draft target (#125).
+- **[`closed-loop-psrr-pex/`](closed-loop-psrr-pex/README.md)** — the
+  post-layout (PEX) counterpart to `closed-loop-psrr` above, and the first
+  **frequency-domain** post-layout experiment in this tree (T1 tracker #4
+  item 7): the same closed-loop AC injection and PSRR sign convention, but
+  with all 17 MOS + 3 resistor devices' geometry and the whole block's wire
+  parasitics taken from `klt extract --deck sg13g2 --parasitics` against the
+  routed, assembled `layout/bandgap_top/bandgap_top.gds` (the same extraction
+  `closed-loop-vref-pvt-pex` uses). 45/45 PVT points PASS. **At DC the layout
+  costs under 2 dB** (`ΔPSRR(DC)` `−1.94 … +0.54 dB` at the 37 points outside
+  the near-cancellation peaks; post-layout DC band 60.20-72.00 dB, every point
+  still above 60 dB) — the 8 remaining points are the bias-point-specific
+  near-cancellation peaks that experiment's README already documents, and they
+  move by up to ±18.8 dB in both directions while staying ≥ 74.4 dB.
+  **Above ~10 kHz it costs real rejection**: `−5.1 … −18.9 dB` at 100 kHz,
+  `−15.8 … −19.2 dB` at 1 MHz, and the worst-case dip degrades by
+  `−4.7 … −5.2 dB` at every point while moving down from 31.6-39.8 MHz to
+  27.1-31.6 MHz — enough that all 45 post-layout points dip 0.8-2.1 dB
+  *below* 0 dB near 30 MHz where the pre-layout netlist still rejected by
+  2.5-4.3 dB. Same decade as `loop-gain-phase-margin`'s independently
+  measured unity-gain crossover. Also quantifies (rather than assumes) its
+  one new modelling choice — returning the extracted ground capacitances to
+  `vss` instead of the transient benches' 1 TΩ DC tie, worth ~5-6 dB at
+  100 kHz-1 MHz — in
+  [`closed-loop-psrr-pex/vsubs-tie-sensitivity.md`](closed-loop-psrr-pex/vsubs-tie-sensitivity.md).
+  Not a claim against any spec row (#125 still open); the sub-0 dB
+  worst-case finding is tracked for follow-up as #191.
 - **[`closed-loop-offset/`](closed-loop-offset/README.md)** — a
   deterministic offset/mismatch sensitivity check (issue #88, follow-on
   to #86/#58), explicitly **not** a Monte Carlo/statistical claim (that
