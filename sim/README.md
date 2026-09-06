@@ -452,6 +452,25 @@ left untouched**, so historical records still name #13; read those as
   [`closed-loop-psrr-pex/vsubs-tie-sensitivity.md`](closed-loop-psrr-pex/vsubs-tie-sensitivity.md).
   Not a claim against any spec row (#125 still open); the sub-0 dB
   worst-case finding is tracked for follow-up as #191.
+- **[`closed-loop-zout-pex/`](closed-loop-zout-pex/README.md)** — issue
+  #191's independent confirmation testbench for `closed-loop-psrr-pex`'s
+  own 27.1-31.6 MHz worst-case-PSRR dip above: the SAME closed-loop PEX
+  netlist, stimulated at a different port (a 1A/0deg AC test current
+  injected directly at `vref`, `vdd` left as a plain DC source) to measure
+  closed-loop output impedance `Zout(f)` instead of PSRR. 45/45 PVT points
+  PASS. **Clean null result for the loop-resonance hypothesis**: `Zout(f)`
+  is strictly monotonically decreasing across the entire 1 Hz-1 GHz sweep
+  at every one of the 45 points — no peaking anywhere near 27-31 MHz (or
+  anywhere at all), including the 8 near-cancellation points. Since PSRR
+  and Zout share the same closed-loop poles (differing only in injection
+  port/numerator), this rules out a shared-pole loop resonance as the
+  mechanism and points instead at a transmission-zero/feedthrough effect
+  specific to the `vdd`-to-`vref` path (PSRR's own curve dips to a local
+  minimum then recovers — a notch, not a monotonic rolloff). See
+  `spec/decision-records/0006-post-layout-psrr-hf-resonance.md` for the
+  full mechanism finding and the resulting design-response (accept as-is;
+  no compensation capacitor warranted) and spec-row (deferred to the
+  eventual ratification pass, #125) decisions.
 - **[`closed-loop-offset/`](closed-loop-offset/README.md)** — a
   deterministic offset/mismatch sensitivity check (issue #88, follow-on
   to #86/#58), explicitly **not** a Monte Carlo/statistical claim (that

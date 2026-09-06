@@ -180,17 +180,35 @@ and moves **down** in frequency, from `31.6–39.8 MHz` (schematic,
   independently-measured 41.6–53.4 MHz unity-gain crossover (read from that
   experiment's own current record, `20260830-133911-d83f7c4.csv`, 44 of 45
   points reporting a crossing) and the thin
-  gain-margin story issue #146 records for that experiment — three
-  separately-built testbenches pointing at the same region as where this
-  design's regulation runs out of headroom. No spec row addresses PSRR away
-  from DC, so this violates nothing; it is recorded because it is a real
-  post-layout behaviour change that pre-layout evidence alone would have
-  missed, and it is the kind of thing a later ratification pass or an
-  output-capacitor decision needs to know. Tracked separately rather than
-  silently absorbed here: **#191** ("Post-layout PSRR dips below 0 dB near
-  30 MHz at all 45 PVT points"), which carries the follow-up questions
-  (independent confirmation, whether a design response is warranted, and
-  whether a ratified PSRR row should bound anything away from DC).
+  gain-margin story issue #146 records for that experiment — a circumstantial
+  case (three separately-built testbenches pointing at the same region) this
+  README originally read as suggesting a shared loop-resonance mechanism.
+  No spec row addresses PSRR away from DC, so this violates nothing; it is
+  recorded because it is a real post-layout behaviour change that
+  pre-layout evidence alone would have missed.
+
+  **Update (issue #191, corrected):** the loop-resonance hypothesis above
+  was explicitly flagged as circumstantial and unconfirmed, and issue #191's
+  independent confirmation testbench,
+  [`sim/closed-loop-zout-pex/`](../closed-loop-zout-pex/README.md), **does
+  not corroborate it.** That experiment probes the same closed-loop network
+  on the same PEX netlist from a different port (a current injected
+  directly at `vref` rather than a voltage on `vdd`) and finds `Zout(f)`
+  strictly monotonically decreasing across the *entire* 1 Hz–1 GHz sweep at
+  all 45 points — no peaking anywhere near 27–31 MHz, or anywhere at all.
+  Since PSRR and Zout share the same closed-loop poles (differing only in
+  which port is stimulated), a genuine loop resonance would be expected to
+  show up in both; its total absence in Zout, combined with PSRR's own
+  curve showing a local minimum that *recovers* a few MHz higher rather
+  than a monotonic crossing, points instead at a **transmission zero /
+  feedthrough effect specific to the `vdd`→`vref` path** (most plausibly
+  the extracted `vdd`-adjacent wire coupling into the `M3A/B/C` mirror legs
+  that drive `vref`), not a shared-pole loop resonance. See
+  `spec/decision-records/0006-post-layout-psrr-hf-resonance.md` for the
+  full mechanism finding, the resulting design-response decision (accept
+  as-is; no compensation capacitor warranted, since no instability was
+  found), and the spec-row decision (deferred to the eventual ratification
+  pass, #125).
 
 ## What this experiment does not do
 
