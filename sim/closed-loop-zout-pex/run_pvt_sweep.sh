@@ -44,6 +44,7 @@ source "${SIM_DIR}/lib/pvt_verdict_common.sh"
 
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_closed_loop_zout_pex.spice.tmpl"
 SUMMARY_AWK="${EXPERIMENT_DIR}/tools/zout_summary.awk"
+COMMON_AWK="${SIM_DIR}/lib/db_summary_common.awk"
 
 # This bench's every MOS/resistor device carries geometry baked in from the
 # extraction at template-authoring time (matching every other *-pex
@@ -131,7 +132,7 @@ for corner in "${CORNER_LABELS[@]}"; do
       else
         op_delta=$(awk -v a="${fb_op}" -v b="${fb_seed}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
         op_ok=$(awk -v d="${op_delta}" -v tol="${OP_MATCH_TOL_V}" 'BEGIN{print (d<=tol)?1:0}')
-        read -r zout_dc zout_peak zout_peak_freq zout_1khz zout_100khz zout_1mhz < <(awk -f "${SUMMARY_AWK}" "${ac_out}")
+        read -r zout_dc zout_peak zout_peak_freq zout_1khz zout_100khz zout_1mhz < <(awk -v extremum=max -f "${COMMON_AWK}" -f "${SUMMARY_AWK}" "${ac_out}")
         if [[ "${op_ok}" != "1" ]]; then
           verdict=FAIL
         fi

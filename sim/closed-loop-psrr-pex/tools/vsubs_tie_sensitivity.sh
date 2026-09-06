@@ -26,6 +26,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXPERIMENT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SIM_DIR="$(cd "${EXPERIMENT_DIR}/.." && pwd)"
 SUMMARY_AWK="${SIM_DIR}/closed-loop-psrr/tools/psrr_summary.awk"
+COMMON_AWK="${SIM_DIR}/lib/db_summary_common.awk"
 
 if ! command -v ngspice >/dev/null 2>&1; then
   echo "vsubs_tie_sensitivity.sh: ngspice not found on PATH." >&2
@@ -70,7 +71,7 @@ for point in "${POINTS[@]}"; do
           -e "s|^wrdata .*|wrdata ${ac_out} psrr_db vref_phase_deg|" "${snap}" > "${netlist}"
     fi
     ngspice -b "${netlist}" > "${WORK}/${point}.${tie}.log" 2>&1
-    read -r dc mn mnf k1 k100 m1 < <(awk -f "${SUMMARY_AWK}" "${ac_out}")
+    read -r dc mn mnf k1 k100 m1 < <(awk -v extremum=min -f "${COMMON_AWK}" -f "${SUMMARY_AWK}" "${ac_out}")
     echo "${point},${tie},${dc},${mn},${mnf},${k1},${k100},${m1}"
   done
 done

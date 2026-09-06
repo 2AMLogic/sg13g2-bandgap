@@ -32,6 +32,7 @@ source "${SIM_DIR}/lib/pvt_verdict_common.sh"
 
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_closed_loop_psrr.spice.tmpl"
 SUMMARY_AWK="${EXPERIMENT_DIR}/tools/psrr_summary.awk"
+COMMON_AWK="${SIM_DIR}/lib/db_summary_common.awk"
 
 # XMSENSE's W is read from the live design/netlist/bandgap_startup.spice,
 # same convention every closed-loop experiment in this tree uses.
@@ -125,7 +126,7 @@ for corner in "${CORNER_LABELS[@]}"; do
       else
         op_delta=$(awk -v a="${fb_op}" -v b="${fb_seed}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
         op_ok=$(awk -v d="${op_delta}" -v tol="${OP_MATCH_TOL_V}" 'BEGIN{print (d<=tol)?1:0}')
-        read -r psrr_dc psrr_min psrr_min_freq psrr_1khz psrr_100khz psrr_1mhz < <(awk -f "${SUMMARY_AWK}" "${ac_out}")
+        read -r psrr_dc psrr_min psrr_min_freq psrr_1khz psrr_100khz psrr_1mhz < <(awk -v extremum=min -f "${COMMON_AWK}" -f "${SUMMARY_AWK}" "${ac_out}")
         if [[ "${op_ok}" != "1" ]]; then
           verdict=FAIL
         fi
