@@ -82,13 +82,13 @@ for corner in "${CORNER_LABELS[@]}"; do
 
       run_pvt_point "${netlist}" "${log}"
 
-      det_early=$(grep -E '^v_det_early' "${log}" | head -1 | awk '{print $3}')
-      fb_early=$(grep -E '^v_fb_early' "${log}" | head -1 | awk '{print $3}')
-      det_final=$(grep -E '^v_det_v' "${log}" | head -1 | awk '{print $3}')
-      fb_final=$(grep -E '^v_fb_v' "${log}" | head -1 | awk '{print $3}')
-      sns1_final=$(grep -E '^v_sns1_v' "${log}" | head -1 | awk '{print $3}')
-      vref_final=$(grep -E '^v_vref_v' "${log}" | head -1 | awk '{print $3}')
-      i_mkfb_final=$(grep -E '^i_mkfb_v' "${log}" | head -1 | awk '{print $3}')
+      det_early=$(extract_measure '^v_det_early' "${log}")
+      fb_early=$(extract_measure '^v_fb_early' "${log}")
+      det_final=$(extract_measure '^v_det_v' "${log}")
+      fb_final=$(extract_measure '^v_fb_v' "${log}")
+      sns1_final=$(extract_measure '^v_sns1_v' "${log}")
+      vref_final=$(extract_measure '^v_vref_v' "${log}")
+      i_mkfb_final=$(extract_measure '^i_mkfb_v' "${log}")
 
       verdict=PASS
       if [[ $rc -ne 0 || $model_error -ne 0 ]]; then

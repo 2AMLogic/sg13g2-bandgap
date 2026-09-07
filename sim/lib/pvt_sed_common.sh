@@ -26,6 +26,7 @@
 # Provides on return:
 #   common_pvt_sed_args() function -- see its own header comment below
 #   next_corner_id() function      -- see its own header comment below
+#   extract_measure() function     -- see its own header comment below
 #
 # Callers still own the rest of their `sed` call (their own script-specific
 # tokens like @@HBT_SECTION@@, @@MSENSE_W@@, @@LAYOUT_GIT_SHA@@, seed
@@ -82,4 +83,38 @@ next_corner_id() {
   corner_id="${corner}_${temp_c}c_${vdd}v"
   netlist="${SNAPSHOTS_OUT}/${corner_id}.spice"
   log="${CORNERS_OUT}/${corner_id}.log"
+}
+
+# extract_measure NAME LOGFILE
+#   Prints the value ngspice's `.measure` directive NAME wrote to LOGFILE --
+#   the first matching line's third whitespace-delimited field (ngspice's own
+#   `.measure` output format: `<name> = <value>` or `<name> = <value> at=...`,
+#   so field 3 is always the value regardless of which form printed). Extracted
+#   in issue #196 because this exact
+#   `grep -E "^${1}" "${2}" | head -1 | awk '{print $3}' || true` one-liner
+#   was duplicated 66 times across 10 run_pvt_sweep.sh scripts under sim/*/ --
+#   same shape of duplication next_corner_id() above (#122) and every other
+#   sim/lib/*.sh helper this file's own header comment lists was extracted to
+#   fix.
+#
+#   The trailing `|| true` is the one behavioral subtlety worth stating once,
+#   here, instead of re-explaining it at each of the 66 call sites (as roughly
+#   a third of them used to, with drifting wording): a PVT corner that fails
+#   to converge (a marginal corner hitting a near-singular instant on the vdd
+#   ramp, for example) leaves ngspice's `.measure` line for NAME unprinted, so
+#   `grep` finds no match and exits 1. Under the caller's own
+#   `set -euo pipefail`, an unguarded `grep` failure inside a bare
+#   `x=$(...)` assignment would abort the ENTIRE sweep script on the first
+#   non-convergent corner, silently losing every other point's evidence --
+#   worse than recording that one corner as FAIL and continuing. `|| true`
+#   lets the pipeline report success regardless, so a non-match simply
+#   resolves to an empty string; every caller's own downstream `-z` check
+#   already treats that empty value as this point's verdict going to FAIL.
+#
+#   NAME is spliced into a `grep -E` pattern unquoted-anchored (`^${1}`), so
+#   pass a literal `.measure` name (e.g. `v_fb_v`), not caller-controlled or
+#   regex-metacharacter-bearing input.
+extract_measure() {
+  local name="$1" logfile="$2"
+  grep -E "^${name}" "${logfile}" | head -1 | awk '{print $3}' || true
 }

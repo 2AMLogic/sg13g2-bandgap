@@ -77,20 +77,17 @@ for corner in "${CORNER_LABELS[@]}"; do
 
       run_pvt_point "${netlist}" "${log}"
 
-      # `|| true` on each: same rationale as sim/closed-loop-vref-pvt's own
-      # run_pvt_sweep.sh -- a marginal PVT corner can genuinely fail to
-      # converge at the near-singular early instant on the vdd ramp, in
-      # which case ngspice's .measure lines never print and grep finds no
-      # match. Under `set -euo pipefail`, letting that grep failure abort
-      # the script would lose every other point's evidence.
-      fb_v=$(grep -E '^v_fb_v' "${log}" | head -1 | awk '{print $3}' || true)
-      sns1_v=$(grep -E '^v_sns1_v' "${log}" | head -1 | awk '{print $3}' || true)
-      sns2_v=$(grep -E '^v_sns2_v' "${log}" | head -1 | awk '{print $3}' || true)
-      det_v=$(grep -E '^v_det_v' "${log}" | head -1 | awk '{print $3}' || true)
-      i_mkfb_a=$(grep -E '^i_mkfb_v' "${log}" | head -1 | awk '{print $3}' || true)
-      iq_2ms=$(grep -E '^i_vdd_2ms' "${log}" | head -1 | awk '{print $3}' || true)
-      iq_3ms=$(grep -E '^i_vdd_3ms' "${log}" | head -1 | awk '{print $3}' || true)
-      iq_avg=$(grep -E '^i_vdd_avg' "${log}" | head -1 | awk '{print $3}' || true)
+      # extract_measure() (sim/lib/pvt_sed_common.sh) already handles the
+      # non-convergent-corner fallback -- see that function's own header
+      # comment for the rationale.
+      fb_v=$(extract_measure '^v_fb_v' "${log}")
+      sns1_v=$(extract_measure '^v_sns1_v' "${log}")
+      sns2_v=$(extract_measure '^v_sns2_v' "${log}")
+      det_v=$(extract_measure '^v_det_v' "${log}")
+      i_mkfb_a=$(extract_measure '^i_mkfb_v' "${log}")
+      iq_2ms=$(extract_measure '^i_vdd_2ms' "${log}")
+      iq_3ms=$(extract_measure '^i_vdd_3ms' "${log}")
+      iq_avg=$(extract_measure '^i_vdd_avg' "${log}")
 
       verdict=PASS
       dvsns_v=""

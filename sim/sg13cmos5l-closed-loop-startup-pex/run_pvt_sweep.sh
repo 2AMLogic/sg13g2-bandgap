@@ -87,14 +87,14 @@ for corner in "${CORNER_LABELS[@]}"; do
       # the vdd ramp at a marginal PVT corner (see the template's own
       # rshunt/gmin comment). Same guard sim/sg13cmos5l-closed-loop-startup
       # uses.
-      det_early=$(grep -E '^v_det_early' "${log}" | head -1 | awk '{print $3}' || true)
-      fb_early=$(grep -E '^v_fb_early' "${log}" | head -1 | awk '{print $3}' || true)
-      fb_final=$(grep -E '^v_fb_v' "${log}" | head -1 | awk '{print $3}' || true)
-      sns1_final=$(grep -E '^v_sns1_v' "${log}" | head -1 | awk '{print $3}' || true)
-      sns2_final=$(grep -E '^v_sns2_v' "${log}" | head -1 | awk '{print $3}' || true)
-      vref_final=$(grep -E '^v_vref_v' "${log}" | head -1 | awk '{print $3}' || true)
-      det_final=$(grep -E '^v_det_v' "${log}" | head -1 | awk '{print $3}' || true)
-      i_mkfb_final=$(grep -E '^i_mkfb_v' "${log}" | head -1 | awk '{print $3}' || true)
+      det_early=$(extract_measure '^v_det_early' "${log}")
+      fb_early=$(extract_measure '^v_fb_early' "${log}")
+      fb_final=$(extract_measure '^v_fb_v' "${log}")
+      sns1_final=$(extract_measure '^v_sns1_v' "${log}")
+      sns2_final=$(extract_measure '^v_sns2_v' "${log}")
+      vref_final=$(extract_measure '^v_vref_v' "${log}")
+      det_final=$(extract_measure '^v_det_v' "${log}")
+      i_mkfb_final=$(extract_measure '^i_mkfb_v' "${log}")
 
       verdict=PASS
       dvsns_final=""

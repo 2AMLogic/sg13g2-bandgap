@@ -74,28 +74,25 @@ for corner in "${CORNER_LABELS[@]}"; do
 
       run_pvt_point "${netlist}" "${log}"
 
-      # `|| true` on each: same rationale as sim/closed-loop-startup's own
-      # run_pvt_sweep.sh -- a marginal PVT corner can genuinely fail to
-      # converge at the near-singular early instant on the vdd ramp, in
-      # which case ngspice's .measure lines never print and grep finds no
-      # match. Under `set -euo pipefail`, letting that grep failure abort
-      # the script would lose every other point's evidence.
-      fb_v=$(grep -E '^v_fb_v' "${log}" | head -1 | awk '{print $3}' || true)
-      sns1_v=$(grep -E '^v_sns1_v' "${log}" | head -1 | awk '{print $3}' || true)
-      sns2_v=$(grep -E '^v_sns2_v' "${log}" | head -1 | awk '{print $3}' || true)
-      det_v=$(grep -E '^v_det_v' "${log}" | head -1 | awk '{print $3}' || true)
-      i_mkfb_a=$(grep -E '^i_mkfb_v' "${log}" | head -1 | awk '{print $3}' || true)
-      vref_2ms=$(grep -E '^v_vref_2ms' "${log}" | head -1 | awk '{print $3}' || true)
-      vref_3ms=$(grep -E '^v_vref_3ms' "${log}" | head -1 | awk '{print $3}' || true)
+      # extract_measure() (sim/lib/pvt_sed_common.sh) already handles the
+      # non-convergent-corner fallback -- see that function's own header
+      # comment for the rationale.
+      fb_v=$(extract_measure '^v_fb_v' "${log}")
+      sns1_v=$(extract_measure '^v_sns1_v' "${log}")
+      sns2_v=$(extract_measure '^v_sns2_v' "${log}")
+      det_v=$(extract_measure '^v_det_v' "${log}")
+      i_mkfb_a=$(extract_measure '^i_mkfb_v' "${log}")
+      vref_2ms=$(extract_measure '^v_vref_2ms' "${log}")
+      vref_3ms=$(extract_measure '^v_vref_3ms' "${log}")
       # VBE(Q3) (issue #133): v(cb3), Q3's diode-connected base/collector
       # node -- see the template's own header comment for why v(cb3) IS
       # VBE(Q3) directly (Q3's emitter is tied to vss, the 0V reference).
-      # Recorded for evidence/decision-support only, same `|| true`
+      # Recorded for evidence/decision-support only, same extract_measure()
       # convergence-fallback convention as every other measure above -- not
       # part of the pass/fail verdict (pvt_closed_loop_verdict's signature
       # is unchanged; this is a new recorded quantity, not a new gate).
-      vbeq3_2ms=$(grep -E '^v_vbeq3_2ms' "${log}" | head -1 | awk '{print $3}' || true)
-      vbeq3_3ms=$(grep -E '^v_vbeq3_3ms' "${log}" | head -1 | awk '{print $3}' || true)
+      vbeq3_2ms=$(extract_measure '^v_vbeq3_2ms' "${log}")
+      vbeq3_3ms=$(extract_measure '^v_vbeq3_3ms' "${log}")
 
       verdict=PASS
       dvsns_v=""
