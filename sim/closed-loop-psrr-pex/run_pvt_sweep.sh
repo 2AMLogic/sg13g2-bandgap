@@ -128,7 +128,7 @@ for corner in "${CORNER_LABELS[@]}"; do
       elif [[ -z "${fb_op}" || ! -s "${ac_out}" ]]; then
         verdict=FAIL
       else
-        op_delta=$(awk -v a="${fb_op}" -v b="${fb_seed}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
+        op_delta=$(abs_diff "${fb_op}" "${fb_seed}")
         op_ok=$(awk -v d="${op_delta}" -v tol="${OP_MATCH_TOL_V}" 'BEGIN{print (d<=tol)?1:0}')
         read -r psrr_dc psrr_min psrr_min_freq psrr_1khz psrr_100khz psrr_1mhz < <(awk -v extremum=min -f "${COMMON_AWK}" -f "${SUMMARY_AWK}" "${ac_out}")
         if [[ "${op_ok}" != "1" ]]; then
@@ -147,7 +147,7 @@ done
 # record below can report it directly rather than requiring a follow-up
 # manual pass (same convention sim/closed-loop-vref-pvt-pex established).
 SCHEMATIC_RECORDS_DIR="${SIM_DIR}/closed-loop-psrr/records"
-SCHEMATIC_CSV="$(find "${SCHEMATIC_RECORDS_DIR}" -maxdepth 1 -name '*.csv' 2>/dev/null | sort | tail -1 || true)"
+SCHEMATIC_CSV="$(latest_records_csv "${SCHEMATIC_RECORDS_DIR}")"
 DELTA_OUT="${RECORDS_DIR}/${RECORD_ID}-vs-schematic.csv"
 echo "corner_label,temp_c,vdd_v,psrr_dc_schematic_db,psrr_dc_pex_db,delta_psrr_dc_db,psrr_min_schematic_db,psrr_min_pex_db,delta_psrr_min_db,verdict_schematic,verdict_pex" > "${DELTA_OUT}"
 max_abs_dc_delta="0"
@@ -166,13 +166,13 @@ if [[ -n "${SCHEMATIC_CSV}" ]]; then
       ddc=$(awk -v a="${sdc}" -v b="${pdc}" 'BEGIN{printf "%.4f", b-a}')
       dmin=$(awk -v a="${smin}" -v b="${pmin}" 'BEGIN{printf "%.4f", b-a}')
       echo "${corner},${temp},${vdd},${sdc},${pdc},${ddc},${smin},${pmin},${dmin},${sverdict},${pverdict}" >> "${DELTA_OUT}"
-      absdc=$(awk -v d="${ddc}" 'BEGIN{print (d<0)?-d:d}')
-      absmin=$(awk -v d="${dmin}" 'BEGIN{print (d<0)?-d:d}')
-      if [[ "$(awk -v a="${absdc}" -v b="${max_abs_dc_delta}" 'BEGIN{print (a>b)?1:0}')" == "1" ]]; then
+      absdc=$(abs_diff "${ddc}" 0)
+      absmin=$(abs_diff "${dmin}" 0)
+      if [[ "$(is_new_max "${absdc}" "${max_abs_dc_delta}")" == "1" ]]; then
         max_abs_dc_delta="${absdc}"
         max_abs_dc_delta_point="${corner}_${temp}c_${vdd}v"
       fi
-      if [[ "$(awk -v a="${absmin}" -v b="${max_abs_min_delta}" 'BEGIN{print (a>b)?1:0}')" == "1" ]]; then
+      if [[ "$(is_new_max "${absmin}" "${max_abs_min_delta}")" == "1" ]]; then
         max_abs_min_delta="${absmin}"
         max_abs_min_delta_point="${corner}_${temp}c_${vdd}v"
       fi

@@ -28,6 +28,9 @@
 #   next_corner_id() function       -- see its own header comment below
 #   extract_measure() function      -- see its own header comment below
 #   extract_op_voltage() function   -- see its own header comment below
+#   abs_diff() function             -- see its own header comment below
+#   is_new_max() function           -- see its own header comment below
+#   latest_records_csv() function   -- see its own header comment below
 #
 # Callers still own the rest of their `sed` call (their own script-specific
 # tokens like @@HBT_SECTION@@, @@MSENSE_W@@, @@LAYOUT_GIT_SHA@@, seed
@@ -156,4 +159,53 @@ extract_measure() {
 extract_op_voltage() {
   local node="$1" logfile="$2"
   grep -E "^v\(${node}\)" "${logfile}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true
+}
+
+# abs_diff A B
+#   Prints |A - B|. Extracted in issue #200 because this exact
+#   `awk -v a="$a" -v b="$b" 'BEGIN{d=a-b; print (d<0)?-d:d}'` idiom was
+#   duplicated across the three `*-pex` PVT-sweep scripts' cross-bench
+#   "-vs-*.csv" comparison blocks -- both as a diff of two raw measurements
+#   (e.g. `dvsns_v`/`settle_delta` in closed-loop-vref-pvt-pex, `op_delta` in
+#   closed-loop-psrr-pex/closed-loop-zout-pex) and, via `abs_diff d 0`, as
+#   the plain-absolute-value form (`awk -v d="$d" 'BEGIN{print
+#   (d<0)?-d:d}'`) those same scripts used on an already-computed delta
+#   (`absd`/`absdc`/`absmin`) -- one function covers both call shapes rather
+#   than shipping a second single-argument `abs()` helper.
+abs_diff() {
+  local a="$1" b="$2"
+  awk -v a="${a}" -v b="${b}" 'BEGIN{d=a-b; print (d<0)?-d:d}'
+}
+
+# is_new_max CANDIDATE CURRENT
+#   Prints `1` if CANDIDATE > CURRENT, else `0`. Extracted in issue #200
+#   alongside abs_diff() because this exact `awk -v a="$a" -v b="$b"
+#   'BEGIN{print (a>b)?1:0}'` idiom was duplicated across the same three
+#   `*-pex` scripts' running-max tracking of their largest per-point
+#   cross-bench delta (`max_abs_delta`, `max_abs_dc_delta`,
+#   `max_abs_min_delta`).
+is_new_max() {
+  local candidate="$1" current="$2"
+  awk -v a="${candidate}" -v b="${current}" 'BEGIN{print (a>b)?1:0}'
+}
+
+# latest_records_csv DIR [EXCLUDE_GLOB]
+#   Prints the path of the newest `*.csv` file directly under DIR (not
+#   recursive -- `find -maxdepth 1`), or an empty string if DIR doesn't
+#   exist or contains none ("newest" by filename sort, matching every
+#   caller's own `RECORD_ID`-prefixed timestamp-sortable naming). When
+#   EXCLUDE_GLOB is given, files matching it are excluded first (used by
+#   closed-loop-vref-pvt-pex to skip its sibling `-tc.csv` summary file).
+#   Extracted in issue #200 because this exact `find "$dir" -maxdepth 1
+#   -name '*.csv' [! -name EXCLUDE] 2>/dev/null | sort | tail -1 || true`
+#   idiom -- used by each `*-pex` script to locate its own cross-bench
+#   comparison target (the schematic or sibling-PEX experiment's most
+#   recent record) -- was duplicated, `|| true` included, across all three.
+latest_records_csv() {
+  local dir="$1" exclude="${2:-}"
+  if [[ -n "${exclude}" ]]; then
+    find "${dir}" -maxdepth 1 -name '*.csv' ! -name "${exclude}" 2>/dev/null | sort | tail -1 || true
+  else
+    find "${dir}" -maxdepth 1 -name '*.csv' 2>/dev/null | sort | tail -1 || true
+  fi
 }
