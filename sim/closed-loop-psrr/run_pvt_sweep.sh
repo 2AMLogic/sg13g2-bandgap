@@ -104,13 +104,10 @@ for corner in "${CORNER_LABELS[@]}"; do
 
       run_pvt_point "${netlist}" "${log}"
 
-      # `|| true`: same rationale as every other run_pvt_sweep.sh in this
-      # tree -- a single non-convergent corner must not abort the sweep
-      # under `set -euo pipefail`.
-      fb_op=$(grep -E '^v\(fb\)' "${log}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
-      sns1_op=$(grep -E '^v\(sns1\)' "${log}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
-      sns2_op=$(grep -E '^v\(sns2\)' "${log}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
-      vref_op=$(grep -E '^v\(vref\)' "${log}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
+      fb_op=$(extract_op_voltage fb "${log}")
+      sns1_op=$(extract_op_voltage sns1 "${log}")
+      sns2_op=$(extract_op_voltage sns2 "${log}")
+      vref_op=$(extract_op_voltage vref "${log}")
 
       verdict=PASS
       psrr_dc=""

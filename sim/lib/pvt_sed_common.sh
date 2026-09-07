@@ -24,9 +24,10 @@
 #     all substitutions independently regardless of `-e` order.
 #
 # Provides on return:
-#   common_pvt_sed_args() function -- see its own header comment below
-#   next_corner_id() function      -- see its own header comment below
-#   extract_measure() function     -- see its own header comment below
+#   common_pvt_sed_args() function  -- see its own header comment below
+#   next_corner_id() function       -- see its own header comment below
+#   extract_measure() function      -- see its own header comment below
+#   extract_op_voltage() function   -- see its own header comment below
 #
 # Callers still own the rest of their `sed` call (their own script-specific
 # tokens like @@HBT_SECTION@@, @@MSENSE_W@@, @@LAYOUT_GIT_SHA@@, seed
@@ -117,4 +118,42 @@ next_corner_id() {
 extract_measure() {
   local name="$1" logfile="$2"
   grep -E "^${name}" "${logfile}" | head -1 | awk '{print $3}' || true
+}
+
+# extract_op_voltage NODE LOGFILE
+#   Prints the value ngspice's `.op` analysis wrote to LOGFILE for node
+#   NODE -- the first matching line's second `=`-delimited field, whitespace
+#   stripped (ngspice's own `.op` node-voltage output format:
+#   `v(node) = <value>`, so field 2 of an `awk -F'='` split is the value,
+#   with `tr -d ' '` needed because that field carries a leading space `.op`
+#   always emits before the value). Extracted in issue #198 because this
+#   exact `grep -E "^v\(${1}\)" "${2}" | head -1 | awk -F'=' '{print $2}' |
+#   tr -d ' ' || true` idiom was duplicated, comment included, across 4
+#   run_pvt_sweep.sh scripts under sim/*/ -- same shape of duplication
+#   extract_measure() above (#196/#197) was extracted to fix, but for `.op`
+#   node-voltage lines (`v(node)=...`) rather than `.measure` lines, a
+#   distinct output format needing its own parse (`awk -F'='` + `tr -d ' '`
+#   here vs. plain `awk '{print $3}'` there).
+#
+#   The trailing `|| true` carries the identical rationale extract_measure()
+#   documents above for the same construct: a PVT corner whose `.op` fails
+#   to converge leaves NODE's voltage line unprinted, so `grep` finds no
+#   match and exits 1, and under the caller's own `set -euo pipefail` an
+#   unguarded failure inside a bare `x=$(...)` assignment would abort the
+#   entire sweep on the first non-convergent corner. `|| true` lets the
+#   pipeline report success regardless, resolving a non-match to an empty
+#   string that every caller's own downstream `-z` check already treats as
+#   that point's verdict going to FAIL.
+#
+#   NODE is spliced into a `grep -E` pattern unquoted-anchored
+#   (`^v\(${1}\)`), so pass a literal node name (e.g. `fb`, `fb_load`), not
+#   caller-controlled or regex-metacharacter-bearing input. NODE need not
+#   match the caller's own variable name it assigns the result to -- e.g.
+#   `sim/loop-gain-phase-margin/run_pvt_sweep.sh` calls
+#   `fb_op=$(extract_op_voltage fb_load "${log}")`, extracting node
+#   `fb_load` into a variable still named `fb_op` to match its sibling
+#   scripts' own `fb_op` naming for the same CSV column.
+extract_op_voltage() {
+  local node="$1" logfile="$2"
+  grep -E "^v\(${node}\)" "${logfile}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true
 }
