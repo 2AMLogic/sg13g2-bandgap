@@ -65,9 +65,9 @@ for corner in "${CORNER_LABELS[@]}"; do
 
       det_on=$(grep -E '^v\(det\)' "${log}" | head -1 | awk '{print $3}')
       fb_on=$(grep -E '^v\(fb\)' "${log}" | head -1 | awk '{print $3}')
-      vtrip=$(grep -E '^vtrip' "${log}" | head -1 | awk '{print $3}')
-      det_off=$(grep -E '^det_off' "${log}" | head -1 | awk '{print $3}')
-      fb_off=$(grep -E '^fb_off' "${log}" | head -1 | awk '{print $3}')
+      vtrip=$(extract_measure '^vtrip' "${log}")
+      det_off=$(extract_measure '^det_off' "${log}")
+      fb_off=$(extract_measure '^fb_off' "${log}")
 
       # Same four pass criteria sim/startup-trip-point uses (see that
       # experiment's own script for the rationale):

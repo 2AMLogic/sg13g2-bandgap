@@ -71,26 +71,22 @@ for corner in "${CORNER_LABELS[@]}"; do
 
       run_pvt_point "${netlist}" "${log}"
 
-      # `|| true` on each: unlike every prior PVT sweep in this tree, this
-      # experiment's DUT (the real, not-yet-loop-gain-tuned error amplifier)
-      # can genuinely fail to converge at an early, near-singular instant on
-      # the vdd ramp at a marginal PVT corner (see the template's own
-      # rshunt/gmin comment) -- when that happens, ngspice's `.measure`
-      # lines below never print, so `grep` finds no match and exits 1. Under
-      # this script's `set -euo pipefail`, an unguarded `grep` failure here
-      # would abort the ENTIRE sweep on the first non-convergent corner,
-      # silently losing every other point's evidence -- worse than recording
-      # that one corner as FAIL and continuing. The `-z` checks below already
-      # treat an empty variable as FAIL; `|| true` just lets execution reach
-      # them instead of dying first.
-      det_early=$(grep -E '^v_det_early' "${log}" | head -1 | awk '{print $3}' || true)
-      fb_early=$(grep -E '^v_fb_early' "${log}" | head -1 | awk '{print $3}' || true)
-      fb_final=$(grep -E '^v_fb_v' "${log}" | head -1 | awk '{print $3}' || true)
-      sns1_final=$(grep -E '^v_sns1_v' "${log}" | head -1 | awk '{print $3}' || true)
-      sns2_final=$(grep -E '^v_sns2_v' "${log}" | head -1 | awk '{print $3}' || true)
-      vref_final=$(grep -E '^v_vref_v' "${log}" | head -1 | awk '{print $3}' || true)
-      det_final=$(grep -E '^v_det_v' "${log}" | head -1 | awk '{print $3}' || true)
-      i_mkfb_final=$(grep -E '^i_mkfb_v' "${log}" | head -1 | awk '{print $3}' || true)
+      # Unlike every prior PVT sweep in this tree, this experiment's DUT (the
+      # real, not-yet-loop-gain-tuned error amplifier) can genuinely fail to
+      # converge at an early, near-singular instant on the vdd ramp at a
+      # marginal PVT corner (see the template's own rshunt/gmin comment).
+      # extract_measure() (sim/lib/pvt_sed_common.sh) already returns an
+      # empty string rather than aborting the sweep when that happens -- see
+      # its own header comment for the full rationale; the `-z` checks below
+      # treat that empty value as FAIL.
+      det_early=$(extract_measure '^v_det_early' "${log}")
+      fb_early=$(extract_measure '^v_fb_early' "${log}")
+      fb_final=$(extract_measure '^v_fb_v' "${log}")
+      sns1_final=$(extract_measure '^v_sns1_v' "${log}")
+      sns2_final=$(extract_measure '^v_sns2_v' "${log}")
+      vref_final=$(extract_measure '^v_vref_v' "${log}")
+      det_final=$(extract_measure '^v_det_v' "${log}")
+      i_mkfb_final=$(extract_measure '^i_mkfb_v' "${log}")
 
       verdict=PASS
       dvsns_final=""

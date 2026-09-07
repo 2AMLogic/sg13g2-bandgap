@@ -70,20 +70,18 @@ for corner in "${CORNER_LABELS[@]}"; do
 
       run_pvt_point "${netlist}" "${log}"
 
-      # `|| true` on each: a marginal PVT corner can genuinely fail to
-      # converge at the near-singular early instant on the vdd ramp, in
-      # which case ngspice's .measure lines never print and grep finds no
-      # match -- same rationale as every other closed-loop run_pvt_sweep.sh
-      # in this tree.
-      fb_v=$(grep -E '^v_fb_v' "${log}" | head -1 | awk '{print $3}' || true)
-      sns1_v=$(grep -E '^v_sns1_v' "${log}" | head -1 | awk '{print $3}' || true)
-      sns2_v=$(grep -E '^v_sns2_v' "${log}" | head -1 | awk '{print $3}' || true)
-      det_v=$(grep -E '^v_det_v' "${log}" | head -1 | awk '{print $3}' || true)
-      i_mkfb_a=$(grep -E '^i_mkfb_v' "${log}" | head -1 | awk '{print $3}' || true)
-      vref_2ms=$(grep -E '^v_vref_2ms' "${log}" | head -1 | awk '{print $3}' || true)
-      vref_3ms=$(grep -E '^v_vref_3ms' "${log}" | head -1 | awk '{print $3}' || true)
-      vbeq3_2ms=$(grep -E '^v_vbeq3_2ms' "${log}" | head -1 | awk '{print $3}' || true)
-      vbeq3_3ms=$(grep -E '^v_vbeq3_3ms' "${log}" | head -1 | awk '{print $3}' || true)
+      # extract_measure() (sim/lib/pvt_sed_common.sh) already handles the
+      # non-convergent-corner fallback -- see that function's own header
+      # comment for the rationale.
+      fb_v=$(extract_measure '^v_fb_v' "${log}")
+      sns1_v=$(extract_measure '^v_sns1_v' "${log}")
+      sns2_v=$(extract_measure '^v_sns2_v' "${log}")
+      det_v=$(extract_measure '^v_det_v' "${log}")
+      i_mkfb_a=$(extract_measure '^i_mkfb_v' "${log}")
+      vref_2ms=$(extract_measure '^v_vref_2ms' "${log}")
+      vref_3ms=$(extract_measure '^v_vref_3ms' "${log}")
+      vbeq3_2ms=$(extract_measure '^v_vbeq3_2ms' "${log}")
+      vbeq3_3ms=$(extract_measure '^v_vbeq3_3ms' "${log}")
 
       verdict=PASS
       dvsns_v=""
