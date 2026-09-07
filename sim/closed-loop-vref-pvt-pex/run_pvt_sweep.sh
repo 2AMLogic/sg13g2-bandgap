@@ -91,8 +91,8 @@ for corner in "${CORNER_LABELS[@]}"; do
       elif [[ -z "${det_v}" || -z "${i_mkfb_a}" || -z "${sns1_v}" || -z "${sns2_v}" || -z "${fb_v}" || -z "${vref_2ms}" || -z "${vref_3ms}" ]]; then
         verdict=FAIL
       else
-        dvsns_v=$(awk -v a="${sns1_v}" -v b="${sns2_v}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
-        settle_delta=$(awk -v a="${vref_2ms}" -v b="${vref_3ms}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
+        dvsns_v=$(abs_diff "${sns1_v}" "${sns2_v}")
+        settle_delta=$(abs_diff "${vref_2ms}" "${vref_3ms}")
         verdict=$(pvt_closed_loop_verdict "${det_v}" "${i_mkfb_a}" "${fb_v}" "${dvsns_v}" "${vdd}" "${settle_delta}" "${SETTLE_TOL_V}")
       fi
 
@@ -123,7 +123,7 @@ done
 # report it directly rather than requiring a follow-up manual pass (issue
 # #186's own acceptance criteria).
 SCHEMATIC_RECORDS_DIR="${SIM_DIR}/closed-loop-vref-pvt/records"
-SCHEMATIC_CSV="$(find "${SCHEMATIC_RECORDS_DIR}" -maxdepth 1 -name '*.csv' ! -name '*-tc.csv' 2>/dev/null | sort | tail -1 || true)"
+SCHEMATIC_CSV="$(latest_records_csv "${SCHEMATIC_RECORDS_DIR}" '*-tc.csv')"
 DELTA_OUT="${RECORDS_DIR}/${RECORD_ID}-vs-schematic.csv"
 echo "corner_label,temp_c,vdd_v,vref_schematic_v,vref_pex_v,delta_vref_v,verdict_schematic,verdict_pex" > "${DELTA_OUT}"
 max_abs_delta="0"
@@ -137,9 +137,9 @@ if [[ -n "${SCHEMATIC_CSV}" ]]; then
     pvref=$(echo "${pex_row}" | awk -F, '{print $15}')
     if [[ -n "${svref_3}" && -n "${pvref}" ]]; then
       delta=$(awk -v a="${svref_3}" -v b="${pvref}" 'BEGIN{d=b-a; print d}')
-      absd=$(awk -v d="${delta}" 'BEGIN{print (d<0)?-d:d}')
+      absd=$(abs_diff "${delta}" 0)
       echo "${corner},${temp},${vdd},${svref_3},${pvref},${delta},${sverdict},${pverdict}" >> "${DELTA_OUT}"
-      is_max=$(awk -v a="${absd}" -v b="${max_abs_delta}" 'BEGIN{print (a>b)?1:0}')
+      is_max=$(is_new_max "${absd}" "${max_abs_delta}")
       if [[ "${is_max}" == "1" ]]; then
         max_abs_delta="${absd}"
         max_abs_delta_point="${corner}_${temp}c_${vdd}v"
