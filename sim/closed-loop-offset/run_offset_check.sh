@@ -142,7 +142,7 @@ for pi in "${!POINT_CORNERS[@]}"; do
     elif [[ -z "${sns2_op}" || -z "${sns1_amp_op}" || -z "${vref_op}" ]]; then
       verdict=FAIL
     else
-      loop_err=$(awk -v a="${sns2_op}" -v b="${sns1_amp_op}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
+      loop_err=$(abs_diff "${sns2_op}" "${sns1_amp_op}")
       loop_ok=$(awk -v d="${loop_err}" -v tol="${LOOP_ERR_TOL_V}" 'BEGIN{print (d<=tol)?1:0}')
       vref_ok=$(awk -v v="${vref_op}" -v vdd="${vdd}" -v vmin="${VREF_MIN_V}" 'BEGIN{print (v>=vmin && v<=vdd)?1:0}')
       if [[ "${loop_ok}" != "1" || "${vref_ok}" != "1" ]]; then
