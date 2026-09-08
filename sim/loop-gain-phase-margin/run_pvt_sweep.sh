@@ -144,7 +144,7 @@ for corner in "${CORNER_LABELS[@]}"; do
       elif [[ -z "${fb_op}" || ! -s "${ac_out}" ]]; then
         verdict=FAIL
       else
-        op_delta=$(awk -v a="${fb_op}" -v b="${fb_seed}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
+        op_delta=$(abs_diff "${fb_op}" "${fb_seed}")
         read -r status crossover_hz pm_deg dc_gain ncross notch_min_db notch_min_hz < <(awk -f "${CROSSOVER_AWK}" "${ac_out}")
         op_ok=$(awk -v d="${op_delta}" -v tol="${OP_MATCH_TOL_V}" 'BEGIN{print (d<=tol)?1:0}')
         # notch_margin_flag: "marginal" when the sweep's own resonant notch

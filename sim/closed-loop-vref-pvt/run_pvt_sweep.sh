@@ -102,8 +102,8 @@ for corner in "${CORNER_LABELS[@]}"; do
       elif [[ -z "${det_v}" || -z "${i_mkfb_a}" || -z "${sns1_v}" || -z "${sns2_v}" || -z "${fb_v}" || -z "${vref_2ms}" || -z "${vref_3ms}" ]]; then
         verdict=FAIL
       else
-        dvsns_v=$(awk -v a="${sns1_v}" -v b="${sns2_v}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
-        settle_delta=$(awk -v a="${vref_2ms}" -v b="${vref_3ms}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
+        dvsns_v=$(abs_diff "${sns1_v}" "${sns2_v}")
+        settle_delta=$(abs_diff "${vref_2ms}" "${vref_3ms}")
         verdict=$(pvt_closed_loop_verdict "${det_v}" "${i_mkfb_a}" "${fb_v}" "${dvsns_v}" "${vdd}" "${settle_delta}" "${SETTLE_TOL_V}")
       fi
 
