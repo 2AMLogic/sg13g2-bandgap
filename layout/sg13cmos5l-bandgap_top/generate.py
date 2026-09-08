@@ -183,6 +183,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import klayout.db as kdb  # noqa: E402
+from _klayout_builder_base import _assert_column_pitch, _shift  # noqa: E402
 from common_sg13cmos5l import (  # noqa: E402
     L_GATPOLY,
     L_METAL1,
@@ -286,11 +287,6 @@ _STARTUP_PORTS_LOCAL = {
     "sns1": (47.75, -1.2, 48.25, -0.7),
     "fb": (83.9, 5.75, 84.4, 6.25),
 }
-
-
-def _shift(box: tuple[float, float, float, float], dx: float, dy: float):
-    x0, y0, x1, y1 = box
-    return (x0 + dx, y0 + dy, x1 + dx, y1 + dy)
 
 
 CORE = {k: _shift(v, CORE_DX, CORE_DY) for k, v in _CORE_PORTS_LOCAL.items()}
@@ -472,38 +468,6 @@ def _route_bus_net(
         _riser(b, x, y_near, y_bus, bridge=bridge)
     if port_x is not None:
         b.net_label(net, port_x + 0.25, y_bus)
-
-
-def _assert_column_pitch(columns: list[tuple[str, float]]) -> None:
-    """Fail the generator if two **different** nets' riser columns come
-    within :data:`MIN_COLUMN_PITCH_UM` of each other.
-
-    This is the machine-checked half of the two-row routing invariant (rule
-    3 in this module's own docstring). Under the pre-#177 single-row
-    floorplan it was structurally impossible for two cells' risers to share
-    a column -- the three cells occupied disjoint x-ranges, so each cell's
-    natural pad positions were automatically disjoint from every other
-    cell's. With two rows every riser passes through the *same* routing
-    channel to reach its bus, so a collision between cells is now possible,
-    and it would be a real short that `klt drc` cannot see (two overlapping
-    same-layer GatPoly shapes merge into one clean polygon, violating no
-    width or space rule).
-
-    Same-net entries are exempt: two risers of one net *may* share a column
-    -- they would simply merge, which is what their shared bus does anyway.
-    """
-    for i, (net_a, x_a) in enumerate(columns):
-        for net_b, x_b in columns[i + 1 :]:
-            if net_a == net_b:
-                continue
-            if abs(x_a - x_b) < MIN_COLUMN_PITCH_UM:
-                raise AssertionError(
-                    f"riser columns for nets {net_a!r} (x={x_a}) and {net_b!r} "
-                    f"(x={x_b}) are {abs(x_a - x_b)}um apart, under this "
-                    f"module's own {MIN_COLUMN_PITCH_UM}um floor -- two "
-                    "different nets' GatPoly risers now share the routing "
-                    "channel and would merge (see _assert_column_pitch)"
-                )
 
 
 def _row_b_drop(b: Builder, x: float, y_pad_edge: float) -> float:
@@ -739,7 +703,7 @@ def _route(b: Builder) -> None:
     _route_sns1(b, columns)
     _route_sns2(b, columns)
     _route_vref(b, columns)
-    _assert_column_pitch(columns)
+    _assert_column_pitch(columns, MIN_COLUMN_PITCH_UM, "GatPoly")
 
 
 if __name__ == "__main__":

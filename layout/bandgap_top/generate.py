@@ -212,6 +212,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import klayout.db as kdb  # noqa: E402
+from _klayout_builder_base import _assert_column_pitch, _shift  # noqa: E402
 from common import (  # noqa: E402
     L_METAL1,
     L_METAL2,
@@ -358,11 +359,6 @@ _STARTUP_PORTS_LOCAL = {
 # MSENSE's own known gate box (-5.1..5.1, -0.25..0.25 -> y_center=0.0).
 _STARTUP_SNS1_GATE_EDGE_X = -5.1
 _STARTUP_SNS1_GATE_Y_CENTER = 0.0
-
-
-def _shift(box: tuple[float, float, float, float], dx: float, dy: float) -> tuple[float, float, float, float]:
-    x0, y0, x1, y1 = box
-    return (x0 + dx, y0 + dy, x1 + dx, y1 + dy)
 
 
 CORE = {k: _shift(v, CORE_DX, CORE_DY) for k, v in _CORE_PORTS_LOCAL.items()}
@@ -551,37 +547,6 @@ def _bus(b: Builder, bus_y: float, riser_xs: list[float]) -> None:
         via1_tap(b, x, bus_y, size=VIA)
 
 
-def _assert_column_pitch(columns: list[tuple[str, float]]) -> None:
-    """Fail the generator if two **different** nets' riser columns come
-    within :data:`MIN_COLUMN_PITCH_UM` of each other.
-
-    This is the machine-checked half of the two-row routing invariant (rule
-    3 in this module's own docstring). Under the pre-#177 single-row
-    floorplan it was structurally impossible for two cells' risers to share
-    a column, because the three cells occupied disjoint x-ranges; with two
-    rows every riser passes through the *same* routing channel on its way to
-    its own bus, so column collisions between cells are now possible and
-    would be a real short that `klt drc` cannot see (two same-layer Metal2
-    shapes that overlap merge into one clean polygon -- the exact failure
-    mode the ``LANDING_UM`` comment above documents for leaf-internal
-    crossings).
-
-    Same-net entries are exempt: two risers of one net *may* share a column
-    (they would simply merge, which is what the bus does anyway)."""
-    for i, (net_a, x_a) in enumerate(columns):
-        for net_b, x_b in columns[i + 1 :]:
-            if net_a == net_b:
-                continue
-            if abs(x_a - x_b) < MIN_COLUMN_PITCH_UM:
-                raise AssertionError(
-                    f"riser columns for nets {net_a!r} (x={x_a}) and {net_b!r} "
-                    f"(x={x_b}) are {abs(x_a - x_b)}um apart, under this "
-                    f"module's own {MIN_COLUMN_PITCH_UM}um floor -- two "
-                    "different nets' Metal2 risers now share the routing "
-                    "channel and would merge (see _assert_column_pitch)"
-                )
-
-
 def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_sns1_pad: tuple[float, float, float, float]) -> None:
     """Wire every schematic net -- see this module's own docstring for the
     two-row routing invariant (row disjointness / risers stay in their own
@@ -755,7 +720,7 @@ def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_s
     b.label(L_METAL1, "VDD", -10.5, Y_BUS_VDD)
     b.label(L_METAL1, "VSS", CORE_DX + 30.0, Y_BUS_VSS)
 
-    _assert_column_pitch(columns)
+    _assert_column_pitch(columns, MIN_COLUMN_PITCH_UM, "Metal2")
 
 
 if __name__ == "__main__":
