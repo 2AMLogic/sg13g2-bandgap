@@ -121,7 +121,7 @@ for corner in "${CORNER_LABELS[@]}"; do
       elif [[ -z "${fb_op}" || ! -s "${ac_out}" ]]; then
         verdict=FAIL
       else
-        op_delta=$(awk -v a="${fb_op}" -v b="${fb_seed}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
+        op_delta=$(abs_diff "${fb_op}" "${fb_seed}")
         op_ok=$(awk -v d="${op_delta}" -v tol="${OP_MATCH_TOL_V}" 'BEGIN{print (d<=tol)?1:0}')
         read -r psrr_dc psrr_min psrr_min_freq psrr_1khz psrr_100khz psrr_1mhz < <(awk -v extremum=min -f "${COMMON_AWK}" -f "${SUMMARY_AWK}" "${ac_out}")
         if [[ "${op_ok}" != "1" ]]; then

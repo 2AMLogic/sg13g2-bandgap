@@ -95,7 +95,7 @@ for corner in "${CORNER_LABELS[@]}"; do
       elif [[ -z "${det_final}" || -z "${i_mkfb_final}" || -z "${sns1_final}" || -z "${sns2_final}" || -z "${fb_final}" ]]; then
         verdict=FAIL
       else
-        dvsns_final=$(awk -v a="${sns1_final}" -v b="${sns2_final}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
+        dvsns_final=$(abs_diff "${sns1_final}" "${sns2_final}")
         verdict=$(pvt_closed_loop_verdict "${det_final}" "${i_mkfb_final}" "${fb_final}" "${dvsns_final}" "${vdd}")
       fi
 

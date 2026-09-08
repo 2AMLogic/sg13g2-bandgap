@@ -100,7 +100,7 @@ for corner in "${CORNER_LABELS[@]}"; do
           continue
         fi
 
-        dvsns_t=$(awk -v a="${sns1_t}" -v b="${sns2_t}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
+        dvsns_t=$(abs_diff "${sns1_t}" "${sns2_t}")
         v=$(pvt_closed_loop_verdict "${det_t}" "${i_mkfb_t}" "${fb_t}" "${dvsns_t}" "${vdd}")
         checkpoint_verdicts+=("${t}u:${v}")
         if [[ "${v}" == "PASS" ]]; then
