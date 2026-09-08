@@ -16,7 +16,13 @@
 # sim/sg13cmos5l-startup-trip-point, sim/startup-trip-point and
 # sim/startup-trip-point-pex -- purely for tally_verdict() (below); none of
 # those five compute a pvt_closed_loop_verdict()-shaped verdict, so they use
-# only that one function. Same shape of duplication sim/lib/pvt_preflight.sh
+# only that one function. Extended again in issue #202 to add
+# pvt_trip_point_verdict() (below), which the three trip-point scripts among
+# those five --sim/startup-trip-point, sim/startup-trip-point-pex and
+# sim/sg13cmos5l-startup-trip-point-- now call for their own byte-identical
+# 6-criteria formula (the two loop-gain/PSRR scripts among the five do not
+# compute a trip-point-shaped verdict either, so they keep using only
+# tally_verdict()). Same shape of duplication sim/lib/pvt_preflight.sh
 # (#28/#103), sim/lib/msense_width.sh (#105/#107) and
 # sim/lib/pvt_sed_common.sh (#108/#109) were extracted to fix.
 #
@@ -42,6 +48,9 @@
 #     additionally ANDs in an experiment-specific settledness bound
 #     (closed-loop-iq's Iq-settling check, closed-loop-vref-pvt's
 #     vref-settling check).
+#   - Call `pvt_trip_point_verdict det_on fb_on vtrip det_off fb_off vdd`
+#     once per PVT point, in place of pvt_closed_loop_verdict() above, for
+#     the three trip-point scripts -- see its own header comment below.
 #   - Call `tally_verdict "${verdict}" "${corner_id}"` once per PVT point,
 #     after `verdict` is fully computed (however that script computes it --
 #     via pvt_closed_loop_verdict() above or its own experiment-specific
@@ -51,8 +60,9 @@
 # Provides on return:
 #   DET_RELEASE_FRAC, I_MKFB_RELEASE_A, DVSNS_CLOSE_V, FB_RAIL_MARGIN_V --
 #     the four tolerance constants (see rationale below)
-#   pvt_closed_loop_verdict() function -- see its own header comment below
-#   tally_verdict() function           -- see its own header comment below
+#   pvt_closed_loop_verdict() function  -- see its own header comment below
+#   pvt_trip_point_verdict() function   -- see its own header comment below
+#   tally_verdict() function            -- see its own header comment below
 #
 # Callers still own everything else: their own signal-specific `.measure`
 # extraction (the `iq_*`/`vref_*` measurements, TC computation), the
@@ -121,6 +131,40 @@ pvt_closed_loop_verdict() {
        not_railed = (fb >= rail_margin) && (fb <= vdd - rail_margin);
        settled = (sdelta <= sdelta_thresh);
        ok = startup_released && loop_closed && not_railed && settled;
+       print ok ? "PASS" : "FAIL";
+     }'
+}
+
+# pvt_trip_point_verdict DET_ON FB_ON VTRIP DET_OFF FB_OFF VDD
+#   Prints PASS or FAIL (matching every caller's own pre-extraction verdict
+#   string) to stdout, for a single PVT point, given that point's own
+#   measured det_on/fb_on/vtrip/det_off/fb_off values and vdd. Extracted in
+#   issue #202 from the byte-identical 15-line inline block in
+#   sim/startup-trip-point, sim/startup-trip-point-pex and
+#   sim/sg13cmos5l-startup-trip-point's own run_pvt_sweep.sh scripts.
+#
+#   Six criteria, all required (matches sim/startup-trip-point/README.md's
+#   "What this testbench claims" section, which owns the full rationale for
+#   the constants below -- not repeated here to avoid the two drifting):
+#     1. det_on  >= 0.8*vdd  -- engages at cold start (XRPU pulls det high)
+#     2. fb_on   <= 0.1      -- ...and drives the mirror (fb held near 0 V)
+#     3. vtrip   >  0        -- has a well-defined trip point (lower bound)
+#     4. vtrip   <  vdd      -- has a well-defined trip point (upper bound)
+#     5. det_off <= 0.2*vdd  -- disengages when the core is up (det low)
+#     6. fb_off  >= 0.8*vdd  -- ...and releases the mirror (fb high)
+#
+#   Callers still compute rc/model_error/-z-emptiness FAIL checks themselves
+#   before calling this (those differ slightly per script in which signals
+#   they check for emptiness) -- this function only wraps the final awk
+#   formula, matching pvt_closed_loop_verdict()'s own caller contract above.
+pvt_trip_point_verdict() {
+  local det_on="$1" fb_on="$2" vtrip="$3" det_off="$4" fb_off="$5" vdd="$6"
+  awk -v det_on="${det_on}" -v fb_on="${fb_on}" -v vtrip="${vtrip}" \
+      -v det_off="${det_off}" -v fb_off="${fb_off}" -v vdd="${vdd}" \
+    'BEGIN{
+       ok = (det_on >= 0.8*vdd) && (fb_on <= 0.1) \
+            && (vtrip > 0) && (vtrip < vdd) \
+            && (det_off <= 0.2*vdd) && (fb_off >= 0.8*vdd);
        print ok ? "PASS" : "FAIL";
      }'
 }

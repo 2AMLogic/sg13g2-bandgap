@@ -77,14 +77,7 @@ for corner in "${CORNER_LABELS[@]}"; do
       elif [[ -z "${det_on}" || -z "${fb_on}" || -z "${vtrip}" || -z "${det_off}" || -z "${fb_off}" ]]; then
         verdict=FAIL
       else
-        verdict=$(awk -v det_on="${det_on}" -v fb_on="${fb_on}" -v vtrip="${vtrip}" \
-                      -v det_off="${det_off}" -v fb_off="${fb_off}" -v vdd="${vdd}" \
-          'BEGIN{
-             ok = (det_on >= 0.8*vdd) && (fb_on <= 0.1) \
-                  && (vtrip > 0) && (vtrip < vdd) \
-                  && (det_off <= 0.2*vdd) && (fb_off >= 0.8*vdd);
-             print ok ? "PASS" : "FAIL";
-           }')
+        verdict=$(pvt_trip_point_verdict "${det_on}" "${fb_on}" "${vtrip}" "${det_off}" "${fb_off}" "${vdd}")
       fi
 
       tally_verdict "${verdict}" "${corner_id}"
