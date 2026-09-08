@@ -46,6 +46,57 @@ class BuilderBase:
         self.layout.write(path, opts)
 
 
+def _shift(box: tuple[float, float, float, float], dx: float, dy: float) -> tuple[float, float, float, float]:
+    """Translate a ``(x0, y0, x1, y1)`` box by ``(dx, dy)`` -- pure, no PDK
+    dependency. Both ``layout/bandgap_top/generate.py`` (SG13G2) and
+    ``layout/sg13cmos5l-bandgap_top/generate.py`` (SG13CMOS5L) use this to
+    shift a leaf cell's locally-read port boxes into the top-level
+    assembly's shared coordinate system (issue #207)."""
+    x0, y0, x1, y1 = box
+    return (x0 + dx, y0 + dy, x1 + dx, y1 + dy)
+
+
+def _assert_column_pitch(
+    columns: list[tuple[str, float]],
+    min_pitch_um: float,
+    riser_layer_name: str,
+) -> None:
+    """Fail the generator if two **different** nets' riser columns come
+    within ``min_pitch_um`` of each other.
+
+    This is the machine-checked half of each ``bandgap_top`` assembly's own
+    two-row routing invariant (see each variant's own ``generate.py``
+    docstring, rule 3): under the pre-#177 single-row floorplan it was
+    structurally impossible for two cells' risers to share a column, because
+    the three cells occupied disjoint x-ranges; with two rows every riser
+    passes through the *same* routing channel on its way to its own bus, so
+    column collisions between cells are now possible and would be a real
+    short that `klt drc` cannot see (two overlapping same-layer shapes merge
+    into one clean polygon rather than violating a width/space rule).
+
+    Same-net entries are exempt: two risers of one net *may* share a column
+    (they would simply merge, which is what the bus does anyway).
+
+    ``min_pitch_um`` is each caller's own ``MIN_COLUMN_PITCH_UM`` (read from
+    that module's own docstring/rule table, so it stays defined locally
+    there rather than here). ``riser_layer_name`` is interpolated into the
+    error message only -- ``"Metal2"`` for SG13G2, ``"GatPoly"`` for
+    SG13CMOS5L, per each PDK's own riser-layer choice; the algorithm itself
+    has no layer dependency (issue #207)."""
+    for i, (net_a, x_a) in enumerate(columns):
+        for net_b, x_b in columns[i + 1 :]:
+            if net_a == net_b:
+                continue
+            if abs(x_a - x_b) < min_pitch_um:
+                raise AssertionError(
+                    f"riser columns for nets {net_a!r} (x={x_a}) and {net_b!r} "
+                    f"(x={x_b}) are {abs(x_a - x_b)}um apart, under this "
+                    f"module's own {min_pitch_um}um floor -- two "
+                    f"different nets' {riser_layer_name} risers now share the "
+                    "routing channel and would merge (see _assert_column_pitch)"
+                )
+
+
 def route_h(b: BuilderBase, layer: tuple[int, int], y_center: float, x0: float, x1: float, width: float = 0.3) -> None:
     """Horizontal routing bar on ``layer`` at ``y_center``, spanning
     ``[x0, x1]`` (order-independent), ``width`` microns tall."""
