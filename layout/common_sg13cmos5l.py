@@ -49,7 +49,13 @@ own packing loop). See ``layout/README.md`` "What this layout is / is not".
 from __future__ import annotations
 
 import klayout.db as kdb
-from _klayout_builder_base import BuilderBase, fold_plan, route_h, route_v  # noqa: F401
+from _klayout_builder_base import (  # noqa: F401
+    BuilderBase,
+    fold_plan,
+    poly_res_core_geometry,
+    route_h,
+    route_v,
+)
 
 # --------------------------------------------------------------------------- #
 # SG13CMOS5L GDS layer numbers, read from
@@ -661,10 +667,12 @@ def _draw_poly_res(
     the gap it returns can exceed ``RES_FOLD_GAP_UM`` by a few nanometres),
     so it does not re-size the device: it changes the resistor's parasitics
     and its matching (a compact block sees a far smaller across-die gradient
-    than a 1.4 mm bar) but not its nominal value. This is the same
-    construction, with the same arithmetic, ``layout/common.py``'s SG13G2
-    ``draw_poly_res`` uses -- kept identical on purpose so the two ports'
-    resistor footprints stay comparable.
+    than a 1.4 mm bar) but not its nominal value. The leg/link box arithmetic
+    is the same construction ``layout/common.py``'s SG13G2 ``draw_poly_res``
+    uses -- literally so, both now calling the shared
+    :func:`~_klayout_builder_base.poly_res_core_geometry` (issue #211), which
+    keeps the two ports' resistor footprints comparable by construction
+    rather than by convention.
 
     Geometry: ``legs`` vertical bars, leg ``i`` spanning
     ``x in [x0 + i*pitch, x0 + i*pitch + w_um]`` and
@@ -684,22 +692,10 @@ def _draw_poly_res(
     ``plan`` :func:`fold_plan` produced, and the drawn ``bbox``.
     """
     plan = fold_plan(w_um, l_um, legs, RES_FOLD_GAP_UM)
-    leg_len = plan["leg_len_um"]
-    pitch = plan["pitch_um"]
-    y_top = y0 + leg_len
-
-    def leg_x(i: int) -> float:
-        return x0 + i * pitch
-
-    # -- the marked core: `legs` vertical bars plus the alternating links.
-    core: list[tuple[float, float, float, float]] = [
-        (leg_x(i), y0, leg_x(i) + w_um, y_top) for i in range(legs)
-    ]
-    for i in range(legs - 1):
-        if i % 2 == 0:  # link at the top of legs i / i+1
-            core.append((leg_x(i) + w_um, y_top - w_um, leg_x(i + 1), y_top))
-        else:  # link at the bottom
-            core.append((leg_x(i) + w_um, y0, leg_x(i + 1), y0 + w_um))
+    geom = poly_res_core_geometry(x0, y0, w_um, legs, plan)
+    leg_x = geom["leg_x"]
+    core = geom["core"]
+    y_top = geom["y_top"]
 
     core_layers = [L_GATPOLY, L_POLYRES, L_EXTBLOCK, L_PSD, L_SALBLOCK]
     if flavor == "rhigh":
@@ -743,12 +739,7 @@ def _draw_poly_res(
         x0 + plan["width_um"] / 2,
         (y_top + RES_HEAD_UM + 0.6) if legs % 2 == 1 else (y_top + 0.6),
     )
-    bbox = (
-        min(end_a_pad[0], end_b_pad[0], x0),
-        min(end_a_pad[1], end_b_pad[1], y0),
-        max(end_a_pad[2], end_b_pad[2], x0 + plan["width_um"]),
-        max(end_a_pad[3], end_b_pad[3], y_top),
-    )
+    bbox = geom["bbox"](end_a_pad, end_b_pad)
     return {
         "length": l_um,
         "end_a_pad": end_a_pad,
