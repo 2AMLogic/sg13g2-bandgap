@@ -223,3 +223,69 @@ def fold_plan(
         "height_um": leg_nm / NM_PER_UM,
         "centerline_um": (legs * leg_nm + (legs - 1) * gap_nm) / NM_PER_UM,
     }
+
+
+def poly_res_core_geometry(
+    x0: float,
+    y0: float,
+    w_um: float,
+    legs: int,
+    plan: dict,
+) -> dict:
+    """Compute a folded poly resistor's marked-core geometry -- the leg/link
+    box arithmetic and bbox formula both ``layout/common.py``'s SG13G2
+    ``draw_poly_res`` and ``layout/common_sg13cmos5l.py``'s SG13CMOS5L
+    ``_draw_poly_res`` derive, byte-identically, from :func:`fold_plan`'s
+    output (issue #211). Each caller still draws its own layer stack over
+    ``"core"`` and its own terminal heads/contacts/labels -- only this pure
+    geometry, with no ``Builder``/layer knowledge, is shared here.
+
+    ``(x0, y0)`` is the lower-left corner of leg 0 -- the marked core's own
+    origin, not a device-wide reference. ``w_um`` is a leg's own width;
+    ``legs`` is the fold count; ``plan`` is whatever :func:`fold_plan`
+    returned for this resistor (this function reads its ``leg_len_um`` and
+    ``pitch_um`` only).
+
+    Returns a dict with:
+
+    * ``"leg_x"`` -- ``i -> x0 + i*pitch``, leg ``i``'s left edge (also each
+      leg's centreline x-position for a caller centering a contact on it).
+    * ``"core"`` -- the marked core's box list: ``legs`` vertical bars
+      followed by ``legs - 1`` alternating top/bottom links, in the same
+      order the two callers historically built it in.
+    * ``"y_top"`` -- ``y0 + leg_len_um``, the top of every leg (bottom-row
+      terminals sit at ``y0``, top-row terminals at this y).
+    * ``"bbox"`` -- ``(end_a_pad, end_b_pad) -> (x0, y0, x1, y1)``, the drawn
+      footprint's bounding box once a caller has drawn both terminal pads
+      (each its own ``(x0, y0, x1, y1)`` box) -- widened to include this
+      core's own ``x0``/``y0``/``x0 + plan["width_um"]``/``y_top`` in case a
+      terminal pad sits fully inside the core's own footprint.
+    """
+    leg_len = plan["leg_len_um"]
+    pitch = plan["pitch_um"]
+    y_top = y0 + leg_len
+
+    def leg_x(i: int) -> float:
+        return x0 + i * pitch
+
+    core: list[tuple[float, float, float, float]] = [
+        (leg_x(i), y0, leg_x(i) + w_um, y_top) for i in range(legs)
+    ]
+    for i in range(legs - 1):
+        if i % 2 == 0:  # link at the top of legs i / i+1
+            core.append((leg_x(i) + w_um, y_top - w_um, leg_x(i + 1), y_top))
+        else:  # link at the bottom
+            core.append((leg_x(i) + w_um, y0, leg_x(i + 1), y0 + w_um))
+
+    def bbox(
+        end_a_pad: tuple[float, float, float, float],
+        end_b_pad: tuple[float, float, float, float],
+    ) -> tuple[float, float, float, float]:
+        return (
+            min(end_a_pad[0], end_b_pad[0], x0),
+            min(end_a_pad[1], end_b_pad[1], y0),
+            max(end_a_pad[2], end_b_pad[2], x0 + plan["width_um"]),
+            max(end_a_pad[3], end_b_pad[3], y_top),
+        )
+
+    return {"leg_x": leg_x, "core": core, "y_top": y_top, "bbox": bbox}
