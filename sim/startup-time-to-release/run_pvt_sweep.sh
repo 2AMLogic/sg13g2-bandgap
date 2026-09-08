@@ -46,7 +46,29 @@ alias_dut_git_shas AMP=design/netlist/bandgap_amp.spice STARTUP=design/netlist/b
 # window, matching the draft "< 1 ms" startup spec row), plus a coarser 2ms
 # point matching sim/closed-loop-startup's own final checkpoint for
 # cross-validation.
-CHECKPOINTS_US=(100 200 300 400 500 600 700 800 900 1000 2000)
+#
+# Derived from TEMPLATE's own `meas tran v_det_<N>u ...` lines (the
+# checkpoint ladder block in the .control section below) rather than
+# hand-typed here, so the two can no longer drift out of lockstep the way
+# they did before issue #210 -- the template's 55-line `.meas` block (11
+# timepoints x 5 signals: v_det/i_mkfb/v_fb/v_sns1/v_sns2) is now the single
+# source of truth. Pulling only the v_det_<N>u lines is enough: all five
+# per-timepoint signals share the same <N>, and v_det_early (t=20u, out of
+# scope for this ladder -- see the template's own header) never matches
+# because "early" is not `[0-9]+`. Reads TEMPLATE the same way
+# sim/lib/msense_width.sh reads a live design file for its own value,
+# matching that convention. `read -r` (not mapfile/readarray, a bash-4+
+# builtin) for portability to bash 3.2 (macOS's default /bin/bash, per the
+# /Users/... paths in this experiment's own committed netlist-snapshots).
+CHECKPOINTS_US=()
+while IFS= read -r checkpoint_us; do
+  CHECKPOINTS_US+=("${checkpoint_us}")
+done < <(grep -oE '^meas tran v_det_[0-9]+u ' "${TEMPLATE}" | grep -oE '[0-9]+')
+
+if [[ ${#CHECKPOINTS_US[@]} -eq 0 ]]; then
+  echo "run_pvt_sweep.sh: no 'meas tran v_det_<N>u' checkpoint lines found in ${TEMPLATE}" >&2
+  exit 3
+fi
 release_times=()
 
 echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,release_time_us,det_2000u_v,i_mkfb_2000u_a,fb_2000u_v,dvsns_2000u_v,checkpoint_verdicts" > "${CSV_OUT}"
