@@ -326,8 +326,8 @@ actually ran, in the sandbox it ran in — not a substitute for #10.
     against `spec/porting-plan.md` §6's still-unratified `PSRR @ DC > 60
     dB` draft target (#125); see that README's own disclaimer.
   - [`sim/closed-loop-offset/README.md`](../sim/closed-loop-offset/README.md)
-    is explicitly **not** a Monte Carlo/statistical mismatch claim (that
-    infrastructure remains out of scope, #4 checklist item 6, N/A per #5).
+    is explicitly **not** a Monte Carlo/statistical mismatch claim itself
+    (that infrastructure landed separately — issue #215, see below).
     It injects a deterministic ±5 mV DC offset probe in series with
     `bandgap_amp`'s inverting input at three representative PVT points (not
     the full 45-point grid — a deliberate "single-point/sensitivity check"
@@ -354,14 +354,32 @@ actually ran, in the sandbox it ran in — not a substitute for #10.
     bias network. Not a claim against `spec/porting-plan.md` §6's
     still-unratified `Iq < 50 µA` draft target (#125); see that README's own
     disclaimer.
+- **Now attempted (issue #215)** — the device-mismatch Monte Carlo
+  campaign #4 checklist item 6 asks for, combined with (not instead of)
+  process corners, closing out the gap `sim/closed-loop-offset/` above
+  deliberately left open:
+  - [`sim/closed-loop-vref-mc/README.md`](../sim/closed-loop-vref-mc/README.md)
+    draws N≥300 seeded samples of `vref`'s closed-loop DC operating point
+    against SG13G2's own `agauss()`-based statistical device-mismatch
+    corner-lib sections (`hbt_typ_mismatch`/`mos_tt_mismatch`/
+    `res_typ_mismatch` and their `bcs`/`wcs` siblings) at the nominal point
+    and the four required process corners (`bcs`/`wcs` x -40°C/125°C,
+    3.30V), plus a deterministic negative control (the identical seed
+    sequence against the plain, non-mismatch sections) that the
+    experiment's own driver hard-fails on unless its spread is exactly
+    zero. See that README for the full per-point mean/sigma/
+    3sigma-over-mean%/min/max and `within ±1%`/`within ±0.5%` results —
+    reported as evidence **for** (not a ruling on) `spec/porting-plan.md`
+    §6's still-unratified Output-reference row and the #150/#128
+    ratification escalation it feeds; no target row is edited by this
+    issue.
 - **Still not attempted**: any claim against `spec/porting-plan.md` §6's
   draft target table as a pass/fail verdict — that table remains
   unratified (#125), and per `klayout-tools`' `docs/design-evidence-tiers.md`
   T1 checklist (referenced from issue #4), producing the capability to run
-  that comparison is not the same as running it. Also still not attempted:
-  Monte Carlo mismatch/yield analysis (#4 checklist item 6, N/A per #5) —
-  `sim/closed-loop-offset/` above is a deterministic sensitivity
-  substitute, not a replacement for it.
+  that comparison is not the same as running it. Trim-network design and a
+  post-layout (PEX) mismatch twin of `sim/closed-loop-vref-mc/` above also
+  remain out of scope (see that experiment's own README).
 
 ## Tooling/PDK friction encountered
 

@@ -473,8 +473,9 @@ left untouched**, so historical records still name #13; read those as
   eventual ratification pass, #125) decisions.
 - **[`closed-loop-offset/`](closed-loop-offset/README.md)** — a
   deterministic offset/mismatch sensitivity check (issue #88, follow-on
-  to #86/#58), explicitly **not** a Monte Carlo/statistical claim (that
-  infrastructure is out of scope, #4 checklist item 6, N/A per #5): a
+  to #86/#58), explicitly **not** a Monte Carlo/statistical claim itself
+  (that infrastructure landed separately, issue #215 — see
+  `closed-loop-vref-mc/` below): a
   ±5 mV DC probe in series with `bandgap_amp`'s inverting input, swept at
   three representative PVT points (not the full 45-point grid — a
   deliberate "single-point/sensitivity" scope). Result: `vref` sensitivity
@@ -515,6 +516,25 @@ left untouched**, so historical records still name #13; read those as
   data for a future spec-row comparison (once ratification lands, #125) or
   the aggregated characterization report (#15), not a conformance claim
   against an unratified target.
+- **[`closed-loop-vref-mc/`](closed-loop-vref-mc/README.md)** — the device
+  **mismatch Monte Carlo** campaign `closed-loop-offset/` above explicitly
+  deferred (issue #215, T1 tracker #4 checklist item 6): N≥300 seeded draws
+  of `vref`'s closed-loop DC operating point against SG13G2's own
+  `agauss()`-based statistical mismatch corner-lib sections
+  (`hbt_typ_mismatch`/`mos_tt_mismatch`/`res_typ_mismatch` and their
+  `bcs`/`wcs` siblings) at the nominal point plus the four required process
+  corners (`bcs`/`wcs` x -40°C/125°C, 3.30V), combined with a deterministic
+  **negative control** (the identical seed sequence replayed against the
+  plain, non-mismatch sections) that this experiment's own driver hard-fails
+  on if its spread is not exactly zero. Per-point mean/sigma/
+  3sigma-over-mean%/min/max and the fraction of draws within ±1%/±0.5% of
+  that point's own mean are reported as evidence **for** (not a ruling on)
+  `spec/porting-plan.md` §6's still-unratified Output-reference row and the
+  #150/#128 ratification escalation it feeds — no target row is edited by
+  this experiment. See that README's "Evidence volume" section for why its
+  `records/` carries one extra `-draws.csv` file beyond the
+  `<record-id>.md`/`.csv`/`netlist-snapshots/`/`corners/` shape every other
+  experiment here uses.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 
