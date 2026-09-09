@@ -1,0 +1,7 @@
+corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,n_draws,n_pass,mean_vref_v,sigma_vref_v,three_sigma_over_mean_pct,min_vref_v,max_vref_v,frac_within_1pct,frac_within_0p5pct
+typ_mismatch,hbt_typ_mismatch,mos_tt_mismatch,res_typ_mismatch,27,3.30,10u,PASS,300,300,1.046711,0.045486,13.0368,0.885840,1.152241,0.2067,0.1033
+typ_negctrl,hbt_typ,mos_tt,res_typ,27,3.30,10u,PASS,300,300,1.047339,0.000000,0.0000,1.047339,1.047339,1.0000,1.0000
+bcs_mismatch,hbt_bcs_mismatch,mos_ff_mismatch,res_bcs_mismatch,-40,3.30,10u,PASS,300,300,1.042605,0.042405,12.2017,0.892596,1.142710,0.2100,0.1033
+bcs_mismatch,hbt_bcs_mismatch,mos_ff_mismatch,res_bcs_mismatch,125,3.30,10u,PASS,300,300,1.041041,0.050651,14.5961,0.864700,1.159304,0.1767,0.0967
+wcs_mismatch,hbt_wcs_mismatch,mos_ss_mismatch,res_wcs_mismatch,-40,3.30,10u,PASS,300,300,1.048912,0.042258,12.0861,0.899613,1.150098,0.2000,0.1100
+wcs_mismatch,hbt_wcs_mismatch,mos_ss_mismatch,res_wcs_mismatch,125,3.30,10u,PASS,300,300,1.052766,0.050339,14.3447,0.887744,1.172178,0.1733,0.1000
