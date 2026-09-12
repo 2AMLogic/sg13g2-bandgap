@@ -452,6 +452,137 @@ assert_ne "$(field "$out_pr" CONCLUSION_HASH)" "$(field "$out_pr_conflicting" CO
 assert_eq "blocked" "$(field "$out_pr_conflicting" VERDICT)" \
     "T18b: CONFLICTING merge state alone (no superseding label) is still VERDICT=blocked"
 
+# --- T19: THE #217 REGRESSION - a REST-shaped merge-state document produces
+# the SAME CONCLUSION_HASH as the equivalent GraphQL-shaped document for the
+# identical real-world PR state, even though the two shapes use different
+# field types/names (REST: boolean `mergeable` + lowercase `mergeable_state`;
+# GraphQL: string-enum `mergeable` + uppercase `mergeStateStatus`). This is
+# the exact scenario behind issue #125's alternating CONCLUSION_HASH despite
+# PR #128's REST-visible state (`mergeable:false`, `mergeable_state:"dirty"`)
+# never moving for 2+ weeks: a caller building a --stdin document from REST
+# fields (per this repo's own "REST vs GraphQL for forge queries" fallback
+# guidance) must hash identically to a caller building it from `gh pr view`.
+F_GRAPHQL_DIRTY='{"prs":[{"number":128,"state":"OPEN","labels":["loom:blocked"],"mergeable":"CONFLICTING","mergeStateStatus":"DIRTY"}]}'
+F_REST_DIRTY='{"prs":[{"number":128,"state":"OPEN","labels":["loom:blocked"],"mergeable":false,"mergeable_state":"dirty"}]}'
+out_graphql_dirty="$(echo "$F_GRAPHQL_DIRTY" | "$TARGET_SCRIPT" dep-recheck --stdin)"
+out_rest_dirty="$(echo "$F_REST_DIRTY" | "$TARGET_SCRIPT" dep-recheck --stdin)"
+assert_eq "$(field "$out_graphql_dirty" CONCLUSION_HASH)" "$(field "$out_rest_dirty" CONCLUSION_HASH)" \
+    "T19a: a REST-shaped dirty/unmergeable PR hashes identically to the equivalent GraphQL-shaped document (#217)"
+assert_eq "$(field "$out_graphql_dirty" BLOCKERS)" "$(field "$out_rest_dirty" BLOCKERS)" \
+    "T19b: BLOCKERS renders the same conflicting bucket for both shapes"
+assert_eq "blocked" "$(field "$out_rest_dirty" VERDICT)" "T19c: a REST-shaped dirty PR with a block label is still VERDICT=blocked"
+
+# T19d: REST's `mergeable:null` (still computing) fails safe to conflicting,
+# exactly like GraphQL's `mergeable:"UNKNOWN"` — the #7281 fail-safe applied
+# to the REST shape.
+F_GRAPHQL_UNKNOWN='{"prs":[{"number":128,"state":"OPEN","labels":["loom:blocked"],"mergeable":"UNKNOWN","mergeStateStatus":"UNKNOWN"}]}'
+F_REST_UNKNOWN='{"prs":[{"number":128,"state":"OPEN","labels":["loom:blocked"],"mergeable":null,"mergeable_state":"unknown"}]}'
+out_graphql_unknown="$(echo "$F_GRAPHQL_UNKNOWN" | "$TARGET_SCRIPT" dep-recheck --stdin)"
+out_rest_unknown="$(echo "$F_REST_UNKNOWN" | "$TARGET_SCRIPT" dep-recheck --stdin)"
+assert_eq "$(field "$out_graphql_unknown" CONCLUSION_HASH)" "$(field "$out_rest_unknown" CONCLUSION_HASH)" \
+    "T19d: REST mergeable:null/mergeable_state:unknown hashes identically to GraphQL mergeable:UNKNOWN/mergeStateStatus:UNKNOWN"
+assert_eq "$(field "$out_graphql_dirty" CONCLUSION_HASH)" "$(field "$out_rest_unknown" CONCLUSION_HASH)" \
+    "T19e: a transient REST unknown read hashes the same as the settled REST dirty read (both fail safe to conflicting, #7281 parity)"
+
+# T19f: a REST document that omits `mergeable_state` entirely (only
+# `mergeable` was fetched) still fails safe to conflicting rather than
+# silently defaulting to "mergeable" — the exact latent gap that let a
+# partial REST-shaped fallback document diverge from a GraphQL-shaped one
+# for an unchanged PR state.
+F_REST_NO_STATE_KEY='{"prs":[{"number":128,"state":"OPEN","labels":["loom:blocked"],"mergeable":false}]}'
+out_rest_no_state_key="$(echo "$F_REST_NO_STATE_KEY" | "$TARGET_SCRIPT" dep-recheck --stdin)"
+assert_eq "$(field "$out_graphql_dirty" CONCLUSION_HASH)" "$(field "$out_rest_no_state_key" CONCLUSION_HASH)" \
+    "T19f: a REST document missing mergeable_state entirely still hashes as conflicting (fail-safe on missing data)"
+
+# T19g: a REST-shaped confirmed-mergeable/clean PR hashes identically to its
+# GraphQL-shaped equivalent too (the non-conflicting boundary, not just the
+# conflicting one).
+F_GRAPHQL_CLEAN='{"prs":[{"number":128,"state":"OPEN","labels":[],"mergeable":"MERGEABLE","mergeStateStatus":"CLEAN"}]}'
+F_REST_CLEAN='{"prs":[{"number":128,"state":"OPEN","labels":[],"mergeable":true,"mergeable_state":"clean"}]}'
+out_graphql_clean="$(echo "$F_GRAPHQL_CLEAN" | "$TARGET_SCRIPT" dep-recheck --stdin)"
+out_rest_clean="$(echo "$F_REST_CLEAN" | "$TARGET_SCRIPT" dep-recheck --stdin)"
+assert_eq "$(field "$out_graphql_clean" CONCLUSION_HASH)" "$(field "$out_rest_clean" CONCLUSION_HASH)" \
+    "T19g: a REST-shaped confirmed-mergeable/clean PR hashes identically to the equivalent GraphQL-shaped document"
+assert_eq "clear" "$(field "$out_rest_clean" VERDICT)" "T19h: a REST-shaped clean PR with no blocking label is VERDICT=clear"
+
+# --- T20: live --number mode falls back to the REST API when the GraphQL-
+# backed `gh pr view --json` read fails (e.g. GraphQL quota exhausted), and
+# the REST-shaped result hashes identically to what the same PR state would
+# have produced via the normal GraphQL path (#217) -------------------------
+cat >"$STUB_DIR/gh" <<'STUB'
+#!/usr/bin/env bash
+set -uo pipefail
+D="${LOOM_TEST_STUB_DIR:?stub gh: LOOM_TEST_STUB_DIR not set}"
+
+case "${1:-}" in
+  issue)
+    shift
+    sub="$1"; shift
+    num=""
+    jqexpr=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --json) shift 2 ;;
+        --jq) jqexpr="${2:-}"; shift 2 ;;
+        --repo) shift 2 ;;
+        *) [[ -z "$num" ]] && num="$1"; shift ;;
+      esac
+    done
+    if [[ "$sub" == "view" ]]; then
+      f="$D/issue-$num.json"
+      [[ -f "$f" ]] || { echo "stub gh: missing $f" >&2; exit 1; }
+      if [[ -n "$jqexpr" ]]; then jq -r "$jqexpr" "$f"; else cat "$f"; fi
+    else
+      echo "stub gh: unhandled issue sub '$sub'" >&2; exit 3
+    fi
+    ;;
+  pr)
+    shift
+    sub="$1"; shift
+    # Simulate GraphQL quota exhaustion: `gh pr view` always fails for this
+    # stub, forcing the script's REST fallback path.
+    if [[ "$sub" == "view" ]]; then
+      echo "stub gh: simulated GraphQL exhaustion" >&2
+      exit 1
+    else
+      echo "stub gh: unhandled pr sub '$sub'" >&2; exit 3
+    fi
+    ;;
+  api)
+    shift
+    # gh api repos/OWNER/REPO/pulls/NUMBER --jq '...'
+    path="${1:-}"; shift || true
+    jqexpr=""
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --jq) jqexpr="${2:-}"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
+    num="${path##*/}"
+    f="$D/rest-pr-$num.json"
+    [[ -f "$f" ]] || { echo "stub gh: missing $f" >&2; exit 1; }
+    if [[ -n "$jqexpr" ]]; then jq -r "$jqexpr" "$f"; else cat "$f"; fi
+    ;;
+  *) echo "stub gh: unhandled args: $*" >&2; exit 3 ;;
+esac
+STUB
+chmod +x "$STUB_DIR/gh"
+
+jq -n '{closedByPullRequestsReferences: [{number: 128}]}' >"$STUB_DIR/issue-125.json"
+# The REST shape as `gh api repos/OWNER/REPO/pulls/128` would actually return:
+# boolean `mergeable`, `mergeable_state` string, lowercase `state`, `merged`.
+jq -n '{number: 128, state: "open", merged: false, labels: [{id:"x", name:"loom:blocked", color:"ABCDEF"}], mergeable: false, mergeable_state: "dirty"}' \
+    >"$STUB_DIR/rest-pr-128.json"
+
+out_rest_fallback="$("$TARGET_SCRIPT" dep-recheck --number 125 --repo owner/repo)"
+assert_eq "blocked" "$(field "$out_rest_fallback" VERDICT)" \
+    "T20a: live --number mode falls back to the REST API when gh pr view fails, and still computes VERDICT correctly"
+assert_eq "128:OPEN:block-label:conflicting" "$(field "$out_rest_fallback" BLOCKERS)" \
+    "T20b: the REST-fallback-fetched BLOCKERS line matches the shape a GraphQL fetch of the same real PR state would produce"
+assert_eq "$(field "$out_graphql_dirty" CONCLUSION_HASH)" "$(field "$out_rest_fallback" CONCLUSION_HASH)" \
+    "T20c: live REST-fallback fetch of PR #128's real state hashes identically to the equivalent GraphQL-shaped --stdin fixture (#217, the exact issue #125 scenario)"
+
 # --- Summary ---
 echo ""
 echo "────────────────────────────────"
