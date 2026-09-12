@@ -143,23 +143,6 @@
 #                                         "state":"OPEN","labels":["..."],
 #                                         "mergeable":"CONFLICTING",
 #                                         "mergeStateStatus":"DIRTY"}, ...]}
-#                                         `dep-recheck`'s per-PR merge-state
-#                                         fields also accept the equivalent
-#                                         REST shape (#217) — a caller that
-#                                         built this document from `gh api
-#                                         repos/OWNER/REPO/pulls/N` under
-#                                         GraphQL rate-limit pressure may pass
-#                                         `"mergeable":true|false|null` (a
-#                                         JSON boolean, not the GraphQL
-#                                         string enum) and/or
-#                                         `"mergeable_state":"dirty"` (REST's
-#                                         name for the field GraphQL calls
-#                                         `mergeStateStatus`, lowercase). Both
-#                                         shapes normalize to the same
-#                                         canonical bucket before hashing, so
-#                                         an unchanged real PR state produces
-#                                         the same CONCLUSION_HASH regardless
-#                                         of which shape supplied it.
 #                                       operator-premise: {"refs": [{"number":N,
 #                                         "state":"OPEN"}, ...]}
 #                                       named-dependency: {"deps": [{"number":N,
@@ -309,68 +292,6 @@ _sha256() {
 
 # --- dep-recheck -------------------------------------------------------------
 
-# Shared jq `def`s for normalizing a PR's merge-state fields to one canonical
-# `pr_conflicting` boolean, regardless of which of two shapes produced them
-# (#217):
-#
-#   GraphQL shape (the live-fetch default below, and the --stdin shape this
-#   script has always documented): `mergeable` is a STRING enum
-#   (MERGEABLE|CONFLICTING|UNKNOWN), `mergeStateStatus` is a STRING enum
-#   (BEHIND|BLOCKED|CLEAN|DIRTY|DRAFT|HAS_HOOKS|UNKNOWN|UNSTABLE).
-#
-#   REST shape (what `gh api repos/OWNER/REPO/pulls/N` returns, and what a
-#   caller falling back to REST under GraphQL rate-limit pressure — per this
-#   repo's own ".loom/CLAUDE.md" "REST vs GraphQL for forge queries" guidance
-#   — would hand-build a --stdin document from): `mergeable` is a JSON
-#   BOOLEAN (true|false) or null, and the equivalent status lives under the
-#   differently-named `mergeable_state` key as a lowercase STRING (clean|
-#   dirty|unknown|blocked|unstable|behind|draft|has_hooks|sha_mismatch).
-#
-#   Before this fix, `_dep_recheck_blockers`/`_dep_recheck_verdict` compared
-#   `.mergeable`/`.mergeStateStatus` directly against uppercase GraphQL
-#   string literals. Fed a REST-shaped document for the SAME real-world PR
-#   state, `.mergeable == "CONFLICTING"` is false for a JSON boolean, and
-#   `.mergeStateStatus` is simply absent (the REST fallback used
-#   `mergeable_state` instead) — so the whole `$conflicting` computation
-#   silently read a REST-shaped "definitely not mergeable" PR as merge-clean,
-#   producing a different BLOCKERS line (and therefore a different
-#   CONCLUSION_HASH) than a GraphQL-shaped fetch of the identical PR state.
-#   That silent misread — not any real change in PR #128 — is what alternated
-#   the hash posted on issue #125 roughly 20 times over 16 days despite
-#   `updated_at` never moving.
-#
-#   `merge_bucket`/`state_bucket` below accept EITHER shape and fold both into
-#   the same canonical uppercase vocabulary before `pr_conflicting` compares
-#   them, so a fixed real-world PR state produces the same
-#   conflicting/mergeable bucket — and therefore the same CONCLUSION_HASH —
-#   no matter which shape supplied it. A field that is missing, null, or an
-#   unrecognized type buckets to "UNKNOWN" rather than silently comparing
-#   false against every known literal — preserving the existing #7281
-#   fail-safe (unknown reads the same as conflicting, never the same as
-#   clear) for the REST shape too.
-_PR_JQ_DEFS='
-def merge_bucket:
-    if (.mergeable | type) == "boolean" then
-        (if .mergeable == false then "CONFLICTING" else "MERGEABLE" end)
-    elif (.mergeable | type) == "string" and (.mergeable | length) > 0 then
-        (.mergeable | ascii_upcase)
-    else
-        "UNKNOWN"
-    end;
-def state_bucket:
-    (.mergeStateStatus // .mergeable_state) as $s
-    | if $s == null then
-        "UNKNOWN"
-      elif ($s | type) == "string" and ($s | length) > 0 then
-        ($s | ascii_upcase)
-      else
-        "UNKNOWN"
-      end;
-def pr_conflicting:
-    (merge_bucket == "CONFLICTING") or (merge_bucket == "UNKNOWN")
-    or (state_bucket == "DIRTY") or (state_bucket == "CONFLICTING") or (state_bucket == "UNKNOWN");
-'
-
 _fetch_dep_recheck_json() {
     local issue_json pr_nums pr_json pr
     issue_json="$(gh issue view "$NUMBER" "${REPO_FLAG[@]}" --json closedByPullRequestsReferences)" ||
@@ -383,34 +304,14 @@ _fetch_dep_recheck_json() {
         local first=true
         for pr in $pr_nums; do
             local one
-            one="$(gh pr view "$pr" "${REPO_FLAG[@]}" --json number,state,labels,mergeable,mergeStateStatus 2>/dev/null)" || one=""
-            if [[ -n "$one" ]]; then
-                # `gh pr view --json labels` returns an array of label OBJECTS
-                # ({"name": "loom:pr", ...}), not plain strings. Normalize to
-                # plain name strings here, once, so every downstream consumer
-                # (_dep_recheck_blockers, _dep_recheck_verdict) can keep
-                # assuming the same string-array shape the --stdin fixtures
-                # already use.
-                one="$(jq -c '{number, state, labels: [.labels[].name], mergeable, mergeStateStatus}' <<<"$one")"
-            else
-                # The GraphQL-backed `gh pr view --json` read failed (e.g.
-                # GraphQL quota exhausted — see ".loom/CLAUDE.md" "REST vs
-                # GraphQL for forge queries"). Fall back to the REST API
-                # directly rather than dying outright. The REST-shaped result
-                # normalizes through the same `pr_conflicting` jq defs above,
-                # so this fallback cannot itself produce a differently-hashed
-                # BLOCKERS line for an unchanged PR state (#217).
-                local repo_slug="$REPO_ARG"
-                if [[ -z "$repo_slug" ]]; then
-                    repo_slug="$(gh repo view --json nameWithOwner --jq '.nameWithOwner' 2>/dev/null)" || repo_slug=""
-                fi
-                [[ -n "$repo_slug" ]] ||
-                    _die "gh pr view $pr failed (GraphQL) and no --repo was given to resolve a REST fallback target — cannot compute a fingerprint from a failed read" 1
-                one="$(gh api "repos/$repo_slug/pulls/$pr" --jq \
-                    '{number, state: (if .merged then "MERGED" elif .state == "closed" then "CLOSED" else "OPEN" end), labels: [.labels[].name], mergeable, mergeable_state}' \
-                    2>/dev/null)" ||
-                    _die "gh pr view $pr failed (GraphQL) and the REST fallback (gh api repos/$repo_slug/pulls/$pr) also failed — cannot compute a fingerprint from a failed read" 1
-            fi
+            one="$(gh pr view "$pr" "${REPO_FLAG[@]}" --json number,state,labels,mergeable,mergeStateStatus)" ||
+                _die "gh pr view $pr failed — cannot compute a fingerprint from a failed read" 1
+            # `gh pr view --json labels` returns an array of label OBJECTS
+            # ({"name": "loom:pr", ...}), not plain strings. Normalize to
+            # plain name strings here, once, so every downstream consumer
+            # (_dep_recheck_blockers, _dep_recheck_verdict) can keep assuming
+            # the same string-array shape the --stdin fixtures already use.
+            one="$(jq -c '{number, state, labels: [.labels[].name], mergeable, mergeStateStatus}' <<<"$one")"
             [[ "$first" == true ]] && first=false || pr_json+=","
             pr_json+="$one"
         done
@@ -427,16 +328,18 @@ _fetch_dep_recheck_json() {
 # label flip among `loom:pr` / `loom:review-requested` / `loom:reviewing` /
 # `loom:treating` / `loom:operator` (none of which flips whether the PR
 # actually supersedes the blocked verdict) never changes this line, and
-# therefore never changes CONCLUSION_HASH. The merge-state component uses the
-# shared `pr_conflicting` def above (#217), so it buckets identically whether
-# fed GraphQL- or REST-shaped merge-state fields, and only flips at the same
+# therefore never changes CONCLUSION_HASH. The merge-state component reuses
+# the same CONFLICTING/DIRTY/UNKNOWN-fails-safe-to-conflicting rule as
+# `_dep_recheck_verdict` below, so it only flips at the same
 # mergeable/conflicting boundary VERDICT itself reacts to — not on every
-# `mergeable`/`mergeStateStatus`/`mergeable_state` string permutation.
+# `mergeable`/`mergeStateStatus` string permutation.
 _dep_recheck_blockers() {
-    jq -r "$_PR_JQ_DEFS"'
-        .prs | sort_by(.number) | .[]
+    jq -r '.prs | sort_by(.number) | .[]
         | (([.labels[] | select(. == "loom:changes-requested" or . == "loom:blocked")] | length) > 0) as $superseding
-        | pr_conflicting as $conflicting
+        | ((.mergeable == "CONFLICTING")
+            or (.mergeStateStatus == "DIRTY" or .mergeStateStatus == "CONFLICTING")
+            or (.mergeable == "UNKNOWN")
+            or (.mergeStateStatus == "UNKNOWN")) as $conflicting
         | "\(.number):\(.state):\(if $superseding then "block-label" else "no-block-label" end):\(if $conflicting then "conflicting" else "mergeable" end)"' <<<"$1" | sort
 }
 
@@ -444,14 +347,15 @@ _dep_recheck_blockers() {
 # merge state is CONFLICTING/DIRTY, or (#7281 fix) its merge state is
 # transiently UNKNOWN — fail-safe: treat "we don't know yet" the same as
 # "still conflicting" rather than as "clear", so a value flickering through
-# UNKNOWN and back does not flip VERDICT on its own. Uses the shared
-# `pr_conflicting` def above (#217) so this fail-safe applies identically to
-# GraphQL- and REST-shaped merge-state fields.
+# UNKNOWN and back does not flip VERDICT on its own.
 _dep_recheck_verdict() {
-    jq -r "$_PR_JQ_DEFS"'
+    jq -r '
       [.prs[] | select(.state == "OPEN") | select(
           ([.labels[] | select(. == "loom:changes-requested" or . == "loom:blocked")] | length) > 0
-          or pr_conflicting
+          or (.mergeable == "CONFLICTING")
+          or (.mergeStateStatus == "DIRTY" or .mergeStateStatus == "CONFLICTING")
+          or (.mergeable == "UNKNOWN")
+          or (.mergeStateStatus == "UNKNOWN")
       )] | length > 0
     ' <<<"$1" | grep -qx true && echo "blocked" || echo "clear"
 }
