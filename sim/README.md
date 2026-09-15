@@ -11,6 +11,9 @@ silently). Per `CLAUDE.md`: **verification is the product, no claim without
 a testbench**, and results here are **append-only evidence** — a re-run
 mints a new, timestamped record; nothing under `records/`,
 `netlist-snapshots/` or `corners/` is ever edited or deleted after it lands.
+Raw logs are also kept **verbatim and uncompressed**, full `.op` dump
+included — see "Append-only rule" below and
+[`spec/decision-records/0007-sim-evidence-log-retention.md`](../spec/decision-records/0007-sim-evidence-log-retention.md).
 
 ## PDK pin
 
@@ -168,6 +171,17 @@ This is now enforced mechanically, not just by PR review: the checker below
 diffs `sim/*/records/`, `sim/*/netlist-snapshots/` and `sim/*/corners/`
 against the merge base and fails on any modification or deletion. Adding a
 new `<record-id>` is always allowed; touching a landed one never is.
+
+**Log verbosity is settled policy, not per-experiment taste** (issue #26,
+[`spec/decision-records/0007-sim-evidence-log-retention.md`](../spec/decision-records/0007-sim-evidence-log-retention.md)):
+`corners/<record-id>/*.log` is retained **verbatim and uncompressed**,
+including the full `.op` operating-point + model-parameter dump. Do not drop
+the `.op` card to shrink logs, do not gzip logs in the tree, and do not trim
+selectively by corner — the dump is the only record of which resolved
+compact-model parameters were actually in force, and the storage argument for
+trimming does not survive measurement (the three `.op`-card experiments'
+~111M of working-tree logs cost ~3.2 MiB of packed git history). That record
+carries the measurements and two explicit thresholds for superseding it.
 
 ## DUT freshness ("staleness is failure")
 
