@@ -20,10 +20,13 @@ including pre- and post-layout (PEX) PVT sweeps and committed `klt drc` /
 because SiGe HBT recognition was investigated and permanently declined
 upstream
 ([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/pull/1242)),
-and ratification of the draft target-spec table below (#125) — not the
-tooling. The earlier "not-yet-routed floorplan" cause (#20) was retired by
-PR #27 and #20 is closed; the earlier ratification gate (#13) is closed and
-superseded by the two-key ratification mechanism.
+and closing the ratified Output-reference row's untrimmed-accuracy gap with a
+trim network (issue #9) — not further tooling work. The earlier
+"not-yet-routed floorplan" cause (#20) was retired by PR #27 and #20 is
+closed; the earlier ratification gate (#13) is closed and the target-spec
+table below is ratified against currently-committed evidence — see
+[`spec/decision-records/0007-target-spec-ratification.md`](spec/decision-records/0007-target-spec-ratification.md)
+(issue #125).
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
@@ -53,7 +56,7 @@ SG13G2 being a **BiCMOS** process is a genuine bonus: it offers real bipolar
 devices rather than the parasitic PNPs the CMOS ports rely on, which is a
 different device class for extraction and LVS to handle.
 
-## Target specification (DRAFT — engineering to ratify, see issue #125)
+## Target specification (RATIFIED, with one row explicitly unmet — see below)
 
 | Parameter | Target | Stretch |
 |---|---|---|
@@ -63,6 +66,22 @@ different device class for extraction and LVS to handle.
 | Supply | 3.3 V ±10% (HV flavor) | 1.2 V (LV flavor) |
 | Iq | < 50 µA | < 20 µA |
 | Startup | self-starting, < 1 ms | — |
+
+Ratified in
+[`spec/decision-records/0007-target-spec-ratification.md`](spec/decision-records/0007-target-spec-ratification.md)
+against the currently-committed `R1=511µm` retune (issue #134) and an N=300
+device-mismatch Monte Carlo (issue #215); that record supersedes the earlier
+`feature/issue-125` ratification draft (PR #128), whose cited evidence
+predated both. Ratifying the table locks in these target *numbers*, not a
+claim that every row is currently met — per `CLAUDE.md`/`spec/README.md`
+this repo does not relax a spec to make results pass, so the honest per-row
+status is: Temp coefficient, PSRR @ DC, Supply, Iq, and Startup all meet
+target on currently-committed evidence; **Output reference is explicitly
+flagged unmet** (~12.5–13% low untrimmed at nominal, vs. the pre-retune
+~2.8–3.1% miss), a known consequence of the R1 retune that fixed the Temp
+coefficient row, tracked as open follow-on trim-network work (issue #9). See
+the decision record for full per-row evidence and the Output-reference-vs-TC
+trade-off.
 
 Supply row confirmed against SG13G2's actual device menu (1.2 V LV core /
 3.3 V HV I/O — no 1.8 V-rated flavor exists in this PDK) — see
@@ -77,13 +96,13 @@ inappropriate rather than merely harder, change it and record why.
 
 Maturity ladder: tooling resolved → spec ratified → schematic simulated
 across PVT → layout DRC/LVS-clean → post-layout re-verification → shuttle
-seat → measured silicon. **Current position: tooling resolved; schematic
-simulated across PVT, pre- and post-layout (PEX); layout DRC-clean, with LVS
-`match` on `bandgap_startup` and `mismatch` on `bandgap_core` (three
-unrecognised `NPN13G2` devices, klayout-tools#1242, permanent). Spec
-ratification is still open (#125 / PR #128), so the ladder's second rung is
-climbed out of order — the draft table above is what the sims are measured
-against.**
+seat → measured silicon. **Current position: tooling resolved; spec
+ratified (see decision record above), with the Output-reference row's
+untrimmed-accuracy gap tracked as open follow-on work rather than blocking
+ratification; schematic simulated across PVT, pre- and post-layout (PEX);
+layout DRC-clean, with LVS `match` on `bandgap_startup` and `mismatch` on
+`bandgap_core` (three unrecognised `NPN13G2` devices, klayout-tools#1242,
+permanent).**
 
 ## Chipalooza
 
