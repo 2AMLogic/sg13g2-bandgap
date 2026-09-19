@@ -20,13 +20,16 @@ including pre- and post-layout (PEX) PVT sweeps and committed `klt drc` /
 because SiGe HBT recognition was investigated and permanently declined
 upstream
 ([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/pull/1242)),
-and closing the ratified Output-reference row's untrimmed-accuracy gap with a
-trim network (issue #9) — not further tooling work. The earlier
-"not-yet-routed floorplan" cause (#20) was retired by PR #27 and #20 is
-closed; the earlier ratification gate (#13) is closed and the target-spec
-table below is ratified against currently-committed evidence — see
-[`spec/decision-records/0007-target-spec-ratification.md`](spec/decision-records/0007-target-spec-ratification.md)
-(issue #125).
+and the Output-reference row's untrimmed-accuracy gap, whose disposition both
+ratification keys sent back for a deliberate decision (issue #221) — not
+further tooling work. The earlier "not-yet-routed floorplan" cause (#20) was
+retired by PR #27 and #20 is closed; the earlier ratification gate (#13) is
+closed and the target-spec table below is ratified against
+currently-committed evidence — see
+[`spec/decision-records/0007-target-spec-ratification.md`](spec/decision-records/0007-target-spec-ratification.md),
+and
+[`0008-two-key-ratification-review-outcome.md`](spec/decision-records/0008-two-key-ratification-review-outcome.md)
+for what the two-key review of that ratification found (issue #125).
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
@@ -56,7 +59,7 @@ SG13G2 being a **BiCMOS** process is a genuine bonus: it offers real bipolar
 devices rather than the parasitic PNPs the CMOS ports rely on, which is a
 different device class for extraction and LVS to handle.
 
-## Target specification (RATIFIED, with one row explicitly unmet — see below)
+## Target specification (RATIFIED; one row's disposition re-opened by the two-key review — see below)
 
 | Parameter | Target | Stretch |
 |---|---|---|
@@ -74,14 +77,40 @@ device-mismatch Monte Carlo (issue #215); that record supersedes the earlier
 `feature/issue-125` ratification draft (PR #128), whose cited evidence
 predated both. Ratifying the table locks in these target *numbers*, not a
 claim that every row is currently met — per `CLAUDE.md`/`spec/README.md`
-this repo does not relax a spec to make results pass, so the honest per-row
-status is: Temp coefficient, PSRR @ DC, Supply, Iq, and Startup all meet
-target on currently-committed evidence; **Output reference is explicitly
-flagged unmet** (~12.5–13% low untrimmed at nominal, vs. the pre-retune
-~2.8–3.1% miss), a known consequence of the R1 retune that fixed the Temp
-coefficient row, tracked as open follow-on trim-network work (issue #9). See
-the decision record for full per-row evidence and the Output-reference-vs-TC
-trade-off.
+this repo does not relax a spec to make results pass.
+
+**The two-key ratification review of that record ran on 2026-09-19** (EE key
+`request-changes`, market key `escalate`, `ratify-key.sh release` →
+NOT-ELIGIBLE; verdict links and full findings in
+[`0008-two-key-ratification-review-outcome.md`](spec/decision-records/0008-two-key-ratification-review-outcome.md)),
+so the honest per-row status is:
+
+- **Temp coefficient, Supply, Iq, Startup, PSRR @ DC** — target met on
+  currently-committed evidence, and found technically sound (EE key) and
+  `competitive`/`adequate-for-catalog` (market key). Two caveats the review
+  put on the record: the TC row meets its `< 50 ppm/°C` **target** by both the
+  endpoint and box methods, but the `< 20 ppm/°C` **stretch** is met only by
+  the endpoint method — `measurements/2026-08-tc-retune/README.md` §4b's
+  box-method scan reaches ~20.2 ppm/°C at the `wcs` corner (issue #222); and
+  the PSRR row's post-layout margin at its binding corner (`bcs`/125 °C/
+  3.63 V) is 0.20 dB, on a corner that reads 59.68 dB pre-layout.
+- **Output reference — unmet, and its disposition is re-opened.** Untrimmed
+  `vref` is 11.9–13.1% below the 1.2 V nominal across the 45-point
+  post-layout PVT grid (0/45 inside ±1%; ~12.5% low at the nominal point),
+  and the N=300 Monte Carlo puts untrimmed device-mismatch scatter at
+  ~13% 3σ/mean — so ±1% untrimmed is not reachable for this core even with
+  the systematic offset removed. Both keys declined to ratify the row as
+  written (the EE key on physics and on the gf180/sky130 precedent of
+  re-casting the row and adding a Trim row; the market key because no public
+  part in this class publishes an untrimmed accuracy line at all). Choosing
+  between re-targeting the row and defending ±1% untrimmed is
+  **issue #221**, which needs its own decision record and its own two-key
+  review. The trim network that would close the trimmed line remains out of
+  scope (`design/README.md`) and is tracked by #221, not by the closed
+  issue #9.
+
+See `0007` for full per-row evidence and the Output-reference-vs-TC trade-off,
+and `0008` for what the review changed about the status above.
 
 Supply row confirmed against SG13G2's actual device menu (1.2 V LV core /
 3.3 V HV I/O — no 1.8 V-rated flavor exists in this PDK) — see
@@ -97,9 +126,10 @@ inappropriate rather than merely harder, change it and record why.
 Maturity ladder: tooling resolved → spec ratified → schematic simulated
 across PVT → layout DRC/LVS-clean → post-layout re-verification → shuttle
 seat → measured silicon. **Current position: tooling resolved; spec
-ratified (see decision record above), with the Output-reference row's
-untrimmed-accuracy gap tracked as open follow-on work rather than blocking
-ratification; schematic simulated across PVT, pre- and post-layout (PEX);
+ratified (see decision records above), five of six rows two-key reviewed
+clean and the Output-reference row's disposition re-opened by that review
+(#221) rather than blocking the other five; schematic simulated across PVT,
+pre- and post-layout (PEX);
 layout DRC-clean, with LVS `match` on `bandgap_startup` and `mismatch` on
 `bandgap_core` (three unrecognised `NPN13G2` devices, klayout-tools#1242,
 permanent).**
