@@ -549,6 +549,44 @@ left untouched**, so historical records still name #13; read those as
   `records/` carries one extra `-draws.csv` file beyond the
   `<record-id>.md`/`.csv`/`netlist-snapshots/`/`corners/` shape every other
   experiment here uses.
+- **[`closed-loop-vref-pvt-boxtc/`](closed-loop-vref-pvt-boxtc/README.md)**
+  — the **box-method TC** measurement (issue #222) the two-key review of
+  the TC row demanded: the same co-simulated closed-loop topology and
+  byte-identical per-point netlist `closed-loop-vref-pvt` uses, swept on
+  the 8-temperature grid {-40,-20,0,27,50,75,100,125} °C (120 points)
+  instead of the official 3-point grid, so
+  `(vmax−vmin)/(vref(27 °C)·165 °C)` reads the interior extremum the
+  post-`R1=511 µm`-retune "frown" bows through — the extremum the endpoint
+  method averages away (§4b of `measurements/2026-08-tc-retune/README.md`
+  predicted exactly this from a scratch harness; this experiment makes it
+  a committed testbench and cross-checks consistent with that table,
+  every |Δ| < 1 ppm/°C at 3.30 V). 120/120 PASS — including the
+  `wcs/0 °C` point the scratch harness could not converge, so §4b's
+  bounding argument retires outright. Worst box corner
+  **19.765 ppm/°C (`wcs`/3.30 V)**, ≈19.88 after a parabolic-vertex peak
+  bound — the `< 20 ppm/°C` stretch's boundary, recorded in
+  [`spec/decision-records/0010-box-method-tc-evidence.md`](../spec/decision-records/0010-box-method-tc-evidence.md).
+  Ships the tree's second bounded-parallelism run knob (`JOBS=N`, default
+  1, wall-clock-only — same contract `closed-loop-vref-mc`'s `--parallel`
+  established) because the fine grid triples the official bench's point
+  count; deliberately a sibling experiment so the official 45-point
+  re-run cost is unchanged (see its README's "Why a sibling experiment").
+- **[`closed-loop-vref-pvt-pex-boxtc/`](closed-loop-vref-pvt-pex-boxtc/README.md)**
+  — the **post-layout (PEX) box-method TC** counterpart (issue #222's
+  second build item): the same layout-extracted closed-loop topology and
+  byte-identical per-point netlist `closed-loop-vref-pvt-pex` uses, on the
+  same 8-temperature grid (120 points) — the first box-method numbers at
+  the post-layout level (every prior box number was pre-layout and
+  scratch-harness). 120/120 PASS, every group complete. Worst box corner
+  **20.137 ppm/°C (`bcs`/3.63 V)** — just outside the `< 20 ppm/°C`
+  stretch, and a *different corner* than pre-layout: post-layout `wcs`
+  improves by −1.7…−2.0 ppm/°C while every other corner degrades by
+  +1.4…+2.5 (per-group deltas in each record's
+  `-vs-schematic-boxtc.csv`), flipping the binding corner from `wcs` to
+  `bcs`. Feeds the same decision record (`0010`) and `README.md`'s
+  TC-row status: stretch met by endpoint method at both levels; box
+  method at the boundary — pre-layout just inside, post-layout just
+  outside.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 

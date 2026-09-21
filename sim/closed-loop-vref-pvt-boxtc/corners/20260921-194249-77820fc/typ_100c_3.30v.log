@@ -1,0 +1,75 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+
+Doing analysis at TEMP = 100.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+sns1                                         0
+fb                                           0
+xq1.s1                                       0
+xq1.t                                        0
+sns2                                         0
+cb2                                          0
+xr2.dt                                       0
+xq2.s1                                       0
+xq2.t                                        0
+vref                                         0
+cb3                                          0
+xr1.dt                                       0
+xq3.s1                                       0
+xq3.t                                        0
+tail                                         0
+d1                                           0
+d2                                           0
+pn                                           0
+det                                          0
+xrpu.dt                                      0
+fbx                                          0
+vmkfb#branch                                 0
+vsub#branch                                  0
+vvss#branch                                  0
+vvdd#branch                                  0
+
+ Reference value :  0.00000e+00 Reference value :  2.79640e-05 Reference value :  5.16140e-05 Reference value :  8.07640e-05 Reference value :  1.11714e-04 Reference value :  1.44014e-04 Reference value :  1.75814e-04 Reference value :  2.05375e-04 Reference value :  2.36325e-04 Reference value :  2.65625e-04 Reference value :  2.94375e-04 Reference value :  3.20925e-04 Reference value :  3.46425e-04 Reference value :  3.85675e-04 Reference value :  4.15225e-04 Reference value :  4.44425e-04 Reference value :  4.72575e-04 Reference value :  5.03975e-04 Reference value :  5.31175e-04 Reference value :  5.58725e-04 Reference value :  5.85875e-04 Reference value :  6.14225e-04 Reference value :  6.41125e-04 Reference value :  6.71475e-04 Reference value :  7.03075e-04 Reference value :  7.36425e-04 Reference value :  7.65275e-04 Reference value :  7.99925e-04 Reference value :  8.32475e-04 Reference value :  8.63425e-04 Reference value :  8.93075e-04 Reference value :  9.22525e-04 Reference value :  9.51725e-04 Reference value :  9.80575e-04 Reference value :  1.00903e-03 Reference value :  1.03758e-03 Reference value :  1.06428e-03 Reference value :  1.09422e-03 Reference value :  1.12682e-03 Reference value :  1.15647e-03 Reference value :  1.18852e-03 Reference value :  1.22162e-03 Reference value :  1.25227e-03 Reference value :  1.28262e-03 Reference value :  1.31117e-03 Reference value :  1.34052e-03 Reference value :  1.37337e-03 Reference value :  1.40042e-03 Reference value :  1.42707e-03 Reference value :  1.45187e-03 Reference value :  1.47707e-03 Reference value :  1.50312e-03 Reference value :  1.52792e-03 Reference value :  1.55352e-03 Reference value :  1.57912e-03 Reference value :  1.60597e-03 Reference value :  1.63227e-03 Reference value :  1.65872e-03 Reference value :  1.68832e-03 Reference value :  1.72167e-03 Reference value :  1.75332e-03 Reference value :  1.77942e-03 Reference value :  1.80577e-03 Reference value :  1.83217e-03 Reference value :  1.85752e-03 Reference value :  1.88337e-03 Reference value :  1.90977e-03 Reference value :  1.93532e-03 Reference value :  1.96027e-03 Reference value :  1.98522e-03 Reference value :  2.01077e-03 Reference value :  2.03742e-03 Reference value :  2.06382e-03 Reference value :  2.09207e-03 Reference value :  2.11847e-03 Reference value :  2.14587e-03 Reference value :  2.17252e-03 Reference value :  2.19687e-03 Reference value :  2.22392e-03 Reference value :  2.25017e-03 Reference value :  2.27927e-03 Reference value :  2.30657e-03 Reference value :  2.33327e-03 Reference value :  2.35732e-03 Reference value :  2.38172e-03 Reference value :  2.40682e-03 Reference value :  2.43247e-03 Reference value :  2.45877e-03 Reference value :  2.48388e-03 Reference value :  2.50908e-03 Reference value :  2.53538e-03 Reference value :  2.56113e-03 Reference value :  2.58858e-03 Reference value :  2.61638e-03 Reference value :  2.64243e-03 Reference value :  2.66783e-03 Reference value :  2.69343e-03 Reference value :  2.71808e-03 Reference value :  2.74363e-03 Reference value :  2.76813e-03 Reference value :  2.79268e-03 Reference value :  2.81718e-03 Reference value :  2.84168e-03 Reference value :  2.86643e-03 Reference value :  2.89118e-03 Reference value :  2.91563e-03 Reference value :  2.94083e-03 Reference value :  2.96573e-03 Reference value :  2.99028e-03
+No. of Data Rows : 60011
+v_fb_v              =  2.53837e+00
+v_sns1_v            =  6.20937e-01
+v_sns2_v            =  6.20716e-01
+v_det_v             =  1.97688e-02
+i_mkfb_v            =  2.55115e-09
+v_vref_2ms          =  1.04868e+00
+v_vref_3ms          =  1.04868e+00
+v_vbeq3_2ms         =  6.21446e-01
+v_vbeq3_3ms         =  6.21446e-01
+Note: Simulation executed from .control section 

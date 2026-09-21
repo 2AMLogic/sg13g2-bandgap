@@ -1,0 +1,95 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+
+Doing analysis at TEMP = 75.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+sns1                              -2.26106e-54
+fb                                           0
+xq1.s1                            -1.78634e-61
+xq1.t                             2.12244e-111
+sns2                              -1.93681e-67
+cb2                               -1.93667e-67
+xr2.dt                                       0
+xq2.s1                             5.18089e-73
+xq2.t                              9.3894e-138
+vref                              -1.67189e-56
+cb3                               -1.67087e-56
+xr1.dt                                       0
+xq3.s1                            -1.11907e-63
+xq3.t                             1.24652e-115
+tail                                         0
+d1                                           0
+d2                                           0
+pn                                           0
+det                                          0
+xrpu.dt                                      0
+fbx                                          0
+vmkfb#branch                                 0
+vsub#branch                                  0
+vvss#branch                        -4.9868e-63
+vvdd#branch                        2.32256e-62
+
+ Reference value :  0.00000e+00 Reference value :  2.50640e-05 Reference value :  4.83140e-05 Reference value :  7.28140e-05 Reference value :  9.91640e-05 Reference value :  1.25464e-04 Reference value :  1.53514e-04 Reference value :  1.79964e-04 Reference value :  2.08725e-04 Reference value :  2.35325e-04 Reference value :  2.61975e-04 Reference value :  2.89625e-04 Reference value :  3.16925e-04 Reference value :  3.44175e-04 Reference value :  3.72275e-04 Reference value :  3.98975e-04 Reference value :  4.24875e-04 Reference value :  4.51325e-04 Reference value :  4.76975e-04 Reference value :  5.02525e-04 Reference value :  5.28925e-04 Reference value :  5.54775e-04 Reference value :  5.80075e-04 Reference value :  6.05425e-04 Reference value :  6.31725e-04 Reference value :  6.58125e-04 Reference value :  6.84375e-04 Reference value :  7.10125e-04 Reference value :  7.38725e-04 Reference value :  7.66325e-04 Reference value :  7.92925e-04 Reference value :  8.21825e-04 Reference value :  8.48825e-04 Reference value :  8.78875e-04 Reference value :  9.11675e-04 Reference value :  9.42875e-04 Reference value :  9.71675e-04 Reference value :  1.00183e-03 Reference value :  1.02983e-03 Reference value :  1.05803e-03 Reference value :  1.08837e-03 Reference value :  1.11837e-03 Reference value :  1.14562e-03 Reference value :  1.17652e-03 Reference value :  1.20807e-03 Reference value :  1.23997e-03 Reference value :  1.26897e-03 Reference value :  1.29887e-03 Reference value :  1.32842e-03 Reference value :  1.35562e-03 Reference value :  1.39072e-03 Reference value :  1.42372e-03 Reference value :  1.45912e-03 Reference value :  1.48917e-03 Reference value :  1.52177e-03 Reference value :  1.55392e-03 Reference value :  1.58902e-03 Reference value :  1.61892e-03 Reference value :  1.65222e-03 Reference value :  1.68167e-03 Reference value :  1.71267e-03 Reference value :  1.74297e-03 Reference value :  1.77432e-03 Reference value :  1.80467e-03 Reference value :  1.83177e-03 Reference value :  1.86077e-03 Reference value :  1.88727e-03 Reference value :  1.91547e-03 Reference value :  1.94192e-03 Reference value :  1.96922e-03 Reference value :  1.99757e-03 Reference value :  2.02422e-03 Reference value :  2.05047e-03 Reference value :  2.07667e-03 Reference value :  2.10282e-03 Reference value :  2.13017e-03 Reference value :  2.15557e-03 Reference value :  2.18157e-03 Reference value :  2.20782e-03 Reference value :  2.23547e-03 Reference value :  2.26162e-03 Reference value :  2.28887e-03 Reference value :  2.31552e-03 Reference value :  2.34107e-03 Reference value :  2.36927e-03 Reference value :  2.39677e-03 Reference value :  2.42497e-03 Reference value :  2.45062e-03 Reference value :  2.47673e-03 Reference value :  2.50273e-03 Reference value :  2.52853e-03 Reference value :  2.55938e-03 Reference value :  2.58623e-03 Reference value :  2.61508e-03 Reference value :  2.64173e-03 Reference value :  2.66923e-03 Reference value :  2.69638e-03 Reference value :  2.72413e-03 Reference value :  2.75103e-03 Reference value :  2.77808e-03 Reference value :  2.80348e-03 Reference value :  2.83018e-03 Reference value :  2.85668e-03 Reference value :  2.88298e-03 Reference value :  2.90938e-03 Reference value :  2.93553e-03 Reference value :  2.96333e-03 Reference value :  2.99143e-03
+No. of Data Rows : 60011
+v_fb_v              =  2.55078e+00
+v_sns1_v            =  6.51269e-01
+v_sns2_v            =  6.51109e-01
+v_det_v             =  2.56574e-02
+i_mkfb_v            =  2.55252e-09
+v_vref_2ms          =  1.04950e+00
+v_vref_3ms          =  1.04950e+00
+v_vbeq3_2ms         =  6.51870e-01
+v_vbeq3_3ms         =  6.51870e-01
+Note: Simulation executed from .control section 
