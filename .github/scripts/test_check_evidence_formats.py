@@ -185,6 +185,47 @@ def build_fixture(root: Path) -> None:
         encoding="utf-8",
     )
 
+    # erc_report.json (klt erc supply spec) — the shape of the committed
+    # sg13cmos5l-bandgap_top report: antenna `status` "not_checked" (no sg13
+    # antenna-ratio table exists, so --pdk is omitted), connectivity
+    # `erc_status` "clean" (the roll-up T1 item 11 grades), zero findings.
+    # No deck — provenance.spec.content_hash is the rule-source anchor.
+    erc_spec_bytes = json.dumps({
+        "stackup": [
+            {"name": "GatPoly", "layer": "5/0", "role": "gate", "active_layer": "1/0"},
+            {"name": "Metal1", "layer": "8/0", "label_layer": "8/2"},
+        ],
+        "vias": [{"name": "Cont", "layer": "6/0", "between": ["GatPoly", "Metal1"]}],
+        "nets": [{"name": "vdd", "kind": "supply"}, {"name": "vss", "kind": "supply"}],
+    }, indent=1).encode("utf-8")
+    (cell / "erc-supply-spec.json").write_bytes(erc_spec_bytes)
+    (cell / "erc_report.json").write_text(
+        json.dumps({
+            "schema_version": 1,
+            "file": "layout/synth_cell/synth_cell.gds",
+            "spec": "layout/synth_cell/erc-supply-spec.json",
+            "pdk": None,
+            "gate_role": "GatPoly",
+            "gate_count": 1,
+            "gates": [
+                {"gate_id": "gate0", "net": "vdd", "gate_area_um2": 2.0,
+                 "antenna_verdict": "unchecked",
+                 "levels": [
+                     {"layer": "GatPoly", "verdict": "unchecked"},
+                     {"layer": "Metal1", "verdict": "unchecked"},
+                 ]},
+            ],
+            "erc_findings": [],
+            "erc_finding_count": 0,
+            "erc_status": "clean",
+            "status": "not_checked",
+            "provenance": {"klt_version": "0.5.0", "deck": None,
+                           "input": {"content_hash": "sha256:" + sha256_bytes(gds_bytes)},
+                           "spec": {"content_hash": "sha256:" + sha256_bytes(erc_spec_bytes)}},
+        }, indent=1),
+        encoding="utf-8",
+    )
+
 
 def run_checker(root: Path, *extra: str) -> tuple[int, str]:
     proc = subprocess.run(
@@ -370,6 +411,49 @@ def case_pex_extract_report_stale_netlist(root: Path):
     return "pex_extract_report.json [extracted netlist]"
 
 
+def case_erc_finding_count_contradiction(root: Path):
+    edit_json(root / "layout/synth_cell/erc_report.json",
+              lambda d: d.update(erc_finding_count=3))
+    return "contradicts len(erc_findings)"
+
+
+def case_erc_status_contradiction(root: Path):
+    # A finding is present (erc_findings non-empty, count left consistent by
+    # editing both), so the connectivity roll-up must read "violations" —
+    # forging erc_status "clean" over a real finding must be caught.
+    edit_json(
+        root / "layout/synth_cell/erc_report.json",
+        lambda d: d.update(
+            erc_findings=[{"rule": "erc.supply_short", "description": "vdd x vss",
+                           "net": "vdd", "other_net": "vss", "gate_id": None,
+                           "layer": None, "bbox": None}],
+            erc_finding_count=1,
+            erc_status="clean",
+            status="violations",
+        ),
+    )
+    return "erc_status 'clean' contradicts erc_finding_count 1"
+
+
+def case_erc_antenna_status_contradiction(root: Path):
+    # The antenna roll-up: a violating antenna level with zero findings must
+    # still read status "violations", not a coverage token.
+    edit_json(root / "layout/synth_cell/erc_report.json",
+              lambda d: d["gates"][0]["levels"][1].update(verdict="violate"))
+    return "contradicts the finding/antenna signals"
+
+
+def case_erc_bad_status_token(root: Path):
+    edit_json(root / "layout/synth_cell/erc_report.json", lambda d: d.update(status="green"))
+    return "status 'green' not in"
+
+
+def case_erc_stale_spec(root: Path):
+    spec = root / "layout/synth_cell/erc-supply-spec.json"
+    spec.write_bytes(spec.read_bytes() + b"\n")
+    return "erc_report.json [spec]"
+
+
 def case_waiver_without_issue(root: Path):
     case_stale_drc_input(root)
     (root / "layout/evidence-freshness-waivers.json").write_text(
@@ -444,6 +528,7 @@ def case_valid_waiver_passes(root: Path):
         (root / "layout/synth_cell/extract_report.json").read_text(encoding="utf-8"))
     pex = json.loads(
         (root / "layout/synth_cell/pex_extract_report.json").read_text(encoding="utf-8"))
+    erc = json.loads((root / "layout/synth_cell/erc_report.json").read_text(encoding="utf-8"))
     case_stale_drc_input(root)
     (root / "layout/evidence-freshness-waivers.json").write_text(
         json.dumps({"waivers": [
@@ -472,6 +557,13 @@ def case_valid_waiver_passes(root: Path):
                 "report": "layout/synth_cell/pex_extract_report.json",
                 "check": "input gds",
                 "recorded_hash": pex["provenance"]["input"]["content_hash"],
+                "issue": "#56",
+                "reason": "tracked follow-up",
+            },
+            {
+                "report": "layout/synth_cell/erc_report.json",
+                "check": "input gds",
+                "recorded_hash": erc["provenance"]["input"]["content_hash"],
                 "issue": "#56",
                 "reason": "tracked follow-up",
             },
@@ -596,6 +688,14 @@ CASES = [
      case_pex_extract_report_missing_netlist_path),
     ("pex_extract_report.json rejects a netlist edited after extraction",
      case_pex_extract_report_stale_netlist),
+    ("erc_report.json rejects a finding count disagreeing with its findings",
+     case_erc_finding_count_contradiction),
+    ("erc_report.json rejects a clean erc_status over a real finding",
+     case_erc_status_contradiction),
+    ("erc_report.json rejects a non-violations status over a violating antenna level",
+     case_erc_antenna_status_contradiction),
+    ("erc_report.json rejects a status outside the vocabulary", case_erc_bad_status_token),
+    ("erc_report.json is stale after its supply spec is edited", case_erc_stale_spec),
     ("waiver without a tracking issue is rejected", case_waiver_without_issue),
     ("waiver silences only its own check", case_waiver_silences_only_its_own_check),
     ("obsolete waiver self-expires", case_obsolete_waiver_self_expires),

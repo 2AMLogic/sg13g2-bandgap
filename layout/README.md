@@ -2294,6 +2294,87 @@ unmodelled resistor body to this deck. Same already-filed
 [klayout-tools#1425](https://github.com/2AMLogic/klayout-tools/issues/1425),
 not a new gap.
 
+### ERC supply spec — structural power delivery (T1 item 11, issue #225)
+
+`erc-supply-spec.json` (this directory) declares `vdd` and `vss` as
+`nets[]` entries with `"kind": "supply"` over this cell's real routing
+stack — `GatPoly` (5/0, the `role: "gate"` stackup base with
+`active_layer` Activ 1/0 so the poly-resistor bodies stay out of `gates[]`)
+and `Metal1` (8/0, `label_layer` 8/2 — the curated `sg13cmos5l` deck's own
+net-name layer), bridged by `Cont` (6/0). Every layer number is read from
+the CMOS5L technology's own `.lyp` (see "SG13CMOS5L layer numbers" below),
+cross-checked against the curated deck — not copied from another PDK's
+spec. The spec's own `_comment` block justifies each field inline; the
+worked example it follows is `gf180-drone-fc`'s
+`layout/digital/erc-supply-spec.json`.
+
+Reproduce (from the repo root):
+
+```
+klt erc layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds \
+  layout/sg13cmos5l-bandgap_top/erc-supply-spec.json --format json
+```
+
+Committed verdict (`erc_report.json`, `klt 0.5.0+g2b1e55e51bb8.dirty`,
+`klayout 0.30.12`): **`erc_status: "clean"`** — zero `erc_findings`, with
+`erc_coverage.checked` naming `erc.net_connectivity:["vdd"]` and
+`["vss"]`: each supply resolves to **exactly one electrical island** (no
+`erc.unconnected_net`, no `erc.supply_short`). The report's overall
+`status` is `"not_checked"` (and `klt erc` exits 4) because the antenna
+half of the roll-up has no `sg13` ratio table to check against (`--pdk` is
+deliberately omitted; only `sky130` has one) — per the ladder's item 11
+text, an antenna verdict "is a real defect, but it is not this item's
+subject"; `erc_status` (klayout-tools#2179) is the connectivity roll-up
+the item does grade.
+
+**`erc.missing_tie` is not computed, and that is a disclosed gap, not a
+pass.** The spec deliberately declares no `ties[]`: on `klt` 0.5.0 a
+`ties[]` declaration collapses a real routed layout into one electrical
+island and reports a **false** `erc.supply_short`
+([klayout-tools#2169](https://github.com/2AMLogic/klayout-tools/issues/2169),
+independently reproduced on hand-drawn analog, not just standard cells).
+The committed report records the omission machine-readably
+(`erc_coverage.inapplicable: erc.missing_tie, reason "no_ties_declared"`),
+so the zero count for that rule is an **absence of evidence, not evidence
+of absence**. The well-tie evidence that does stand in for it:
+
+- **PG pin labels in the merged GDS** — all 8 `vdd` and all 27 `vss`
+  `Metal1.pin` (8/2) texts land on the single supply island this very run
+  verified, including every leaf cell's own boundary port.
+- **Device-aware extraction** — this cell's committed
+  `extract_report.json` (curated `sg13cmos5l` deck) extracts a net named
+  `vdd` (pin, 7 attached device terminals) and a net named `vss` (pin, 15
+  attached device terminals): the rails reach real device taps through
+  drawn `Activ`/`nSD`/`pSD` contact geometry, not just labels.
+- **No LVS `net_correspondence` evidence exists yet** — the ladder's
+  Analog column additionally requires item 4's own LVS report to have
+  carried the supply nets in its `net_correspondence`, and this cell's
+  `lvs_report.json` pairs only `d1`/`d2` (its 22 error-severity findings
+  are the four permanent/known causes itemised above). Item 11 therefore
+  stays **unchecked** on the tracker even with this artifact landed; the
+  LVS half is expected to arrive with the port's own LVS closure, not from
+  the ERC spec.
+
+Upstream has since moved: #2169 was closed 2026-09-20 by scoping `ties[]`
+well conduction to its taps (klayout-tools#2186) and adding tap-by-assertion
+/ unexpressible-tap disclosure (klayout-tools#2240, #2234) — all **after**
+the pinned `klt` 0.5.0 this report was produced with was built, and the
+current ladder text grades a no-`ties[]` spec `supply_spec_incomplete`
+rather than met. Declaring a checked tie on an upgraded `klt` is the
+follow-up filed as
+[#233](https://github.com/2AMLogic/sg13g2-bandgap/issues/233).
+
+One gate island in the report deserves a note so it is not misread as a
+short: `gates[]` contains an island whose expanded name is `det,vdd`. That
+is correct by design at this model's layer granularity — `XRPU vdd det`
+(the startup pull-up) is drawn as an `rhigh` poly resistor whose body is
+`GatPoly`, so the ERC wire model (no device recognition, per its Phase 1a
+posture) correctly sees the rail, the resistor body, and the `det` gates
+as one connected region. Electrically it is a 1.4 mm resistive poly run,
+not a short; the general false-short shape is already filed upstream as
+klayout-tools#2183 and the device-body carve-out (klayout-tools#2205)
+will express it properly on an upgraded `klt`.
+
 ## SG13CMOS5L layer numbers
 
 Read directly from `ihp-sg13cmos5l/libs.tech/klayout/tech/sg13cmos5l.lyp`'s
