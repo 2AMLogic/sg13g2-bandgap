@@ -565,7 +565,7 @@ left untouched**, so historical records still name #13; read those as
   bounding argument retires outright. Worst box corner
   **19.765 ppm/°C (`wcs`/3.30 V)**, ≈19.88 after a parabolic-vertex peak
   bound — the `< 20 ppm/°C` stretch's boundary, recorded in
-  [`spec/decision-records/0009-box-method-tc-evidence.md`](../spec/decision-records/0009-box-method-tc-evidence.md).
+  [`spec/decision-records/0010-box-method-tc-evidence.md`](../spec/decision-records/0010-box-method-tc-evidence.md).
   Ships the tree's second bounded-parallelism run knob (`JOBS=N`, default
   1, wall-clock-only — same contract `closed-loop-vref-mc`'s `--parallel`
   established) because the fine grid triples the official bench's point
@@ -583,7 +583,7 @@ left untouched**, so historical records still name #13; read those as
   improves by −1.7…−2.0 ppm/°C while every other corner degrades by
   +1.4…+2.5 (per-group deltas in each record's
   `-vs-schematic-boxtc.csv`), flipping the binding corner from `wcs` to
-  `bcs`. Feeds the same decision record (`0009`) and `README.md`'s
+  `bcs`. Feeds the same decision record (`0010`) and `README.md`'s
   TC-row status: stretch met by endpoint method at both levels; box
   method at the boundary — pre-layout just inside, post-layout just
   outside.

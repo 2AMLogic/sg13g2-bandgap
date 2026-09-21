@@ -65,7 +65,7 @@ data — the official 3-point endpoint TC computed from this run's own
 the box-method worst corner actually sits, whichever side of the stretch
 number it lands on. The metric choice matters for the stretch column's
 honest status and is recorded in
-[`spec/decision-records/0009-box-method-tc-evidence.md`](../../spec/decision-records/0009-box-method-tc-evidence.md).
+[`spec/decision-records/0010-box-method-tc-evidence.md`](../../spec/decision-records/0010-box-method-tc-evidence.md).
 
 It also does not claim anything the official bench does not already cover
 (startup, loop closure, `vref` DC accuracy, VBE(Q3)) — those columns are
@@ -164,7 +164,7 @@ outcome).
 
 The ratified-row reading this record feeds (target met with >2.4× margin;
 stretch at the boundary) is recorded in
-[`spec/decision-records/0009-box-method-tc-evidence.md`](../../spec/decision-records/0009-box-method-tc-evidence.md)
+[`spec/decision-records/0010-box-method-tc-evidence.md`](../../spec/decision-records/0010-box-method-tc-evidence.md)
 and reflected in `README.md`'s TC-row status.
 
 ## Cross-check against the §4b scratch table (issue #222 test plan)
@@ -176,7 +176,7 @@ be consistent with that table "at the points it covers — a material
 disagreement is itself a finding worth recording". The comparison (this
 experiment's committed `-boxtc.csv` at 3.30 V vs those constants) is
 recorded in the "Results summary" above and in
-[`spec/decision-records/0009-box-method-tc-evidence.md`](../../spec/decision-records/0009-box-method-tc-evidence.md);
+[`spec/decision-records/0010-box-method-tc-evidence.md`](../../spec/decision-records/0010-box-method-tc-evidence.md);
 any material disagreement (defined here as > 1 ppm/°C, comfortably above
 run-to-run solver noise observed at six significant figures on this bench)
 is a finding to record and investigate, not to tune away.

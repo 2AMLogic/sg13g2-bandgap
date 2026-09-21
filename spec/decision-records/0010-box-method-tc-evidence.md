@@ -1,4 +1,4 @@
-# 0009: Box-method TC on committed testbenches — the stretch column's honest boundary
+# 0010: Box-method TC on committed testbenches — the stretch column's honest boundary
 
 - **Status**: proposed (this record changes no target number — see "What
   this record does not do")

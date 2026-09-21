@@ -97,7 +97,7 @@ so the honest per-row status is:
   and
   [`sim/closed-loop-vref-pvt-pex-boxtc/`](sim/closed-loop-vref-pvt-pex-boxtc/README.md),
   decision record
-  [`0009`](spec/decision-records/0009-box-method-tc-evidence.md)): met by
+  [`0010`](spec/decision-records/0010-box-method-tc-evidence.md)): met by
   the endpoint method at both levels (worst |TC| 18.1 pre-layout / 17.6
   post-layout), box-method worst corner **19.8 ppm/°C** (`wcs`/3.30 V)
   pre-layout — just inside — and **20.1 ppm/°C** (`bcs`/3.63 V)

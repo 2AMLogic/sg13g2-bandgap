@@ -42,7 +42,7 @@ experiment measures, from committed records only.
 
 **It does not change any target** — same disclaimer as the schematic
 sibling; see that README and
-[`spec/decision-records/0009-box-method-tc-evidence.md`](../../spec/decision-records/0009-box-method-tc-evidence.md).
+[`spec/decision-records/0010-box-method-tc-evidence.md`](../../spec/decision-records/0010-box-method-tc-evidence.md).
 
 What the extraction does and does not model (bipolar devices
 schematic-sourced, the three merged-net-label pins, the `vsubs` far-plate
@@ -108,7 +108,7 @@ The ratified-row reading this record feeds (target met with >2.4× margin
 at both levels; stretch met by endpoint method at both levels, box method
 at the boundary — pre-layout just inside, post-layout just outside) is
 recorded in
-[`spec/decision-records/0009-box-method-tc-evidence.md`](../../spec/decision-records/0009-box-method-tc-evidence.md)
+[`spec/decision-records/0010-box-method-tc-evidence.md`](../../spec/decision-records/0010-box-method-tc-evidence.md)
 and reflected in `README.md`'s TC-row status.
 
 ## Running
