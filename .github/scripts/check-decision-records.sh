@@ -75,6 +75,28 @@ for f in "$DR_DIR"/*.md; do
   fi
 done
 
+# Duplicate record-number check (issue #223): no two records may share an
+# NNNN filename prefix. PR #219 and PR #220 both landed a 0007-* record on
+# 2026-09-15 because TEMPLATE.md's numbering rule ("re-check if another
+# record may have landed concurrently") had no CI enforcement — this check
+# is that enforcement, so the next concurrent pair fails CI instead of
+# merging. Deliberately prefix-granular (filenames), not title-granular:
+# the number is the citation key, and it lives in the filename.
+dup_prefixes="$(for f in "$DR_DIR"/*.md; do
+                  base="$(basename "$f")"
+                  [[ "$base" == [0-9][0-9][0-9][0-9]-* ]] || continue
+                  printf '%s\n' "${base:0:4}"
+                done | sort | uniq -d)"
+if [[ -n "$dup_prefixes" ]]; then
+  while IFS= read -r p; do
+    echo "::error file=$DR_DIR::duplicate record number '$p' — records sharing this prefix:"
+    for f in "$DR_DIR/${p}"-*.md; do
+      echo "  - $f"
+    done
+  done <<<"$dup_prefixes"
+  fail=1
+fi
+
 if (( checked == 0 )); then
   echo "OK: no decision records to check yet (only $TEMPLATE present)"
 fi

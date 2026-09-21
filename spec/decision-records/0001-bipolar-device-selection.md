@@ -1,8 +1,13 @@
 # 0001: Bipolar device selection — real HBT (`npn13G2`) over parasitic-style PNP (`pnpMPA`)
 
-- **Status**: proposed (input to a future spec-ratification issue; this
-  block has no ratified spec yet, unlike gf180/sky130 at the time their
-  analogous topology records were written)
+- **Status**: proposed (deliberately kept proposed by issue #223: the
+  target-spec table this record feeds is now ratified
+  (`0007-target-spec-ratification.md`), but the two-key review re-opened
+  the Output-reference row — issue #221, still open — and until its
+  disposition lands (defend ±1% untrimmed vs. re-cast with a trim row),
+  what a ratification of this device-selection decision would settle is
+  itself unsettled; flip to ratified, or supersede, only as a stated
+  consequence of #221's outcome record)
 - **Date**: 2026-08-05
 - **Decided by**: Builder agent, issue #2
 - **Related**: #1 (`klt` PDK resolver — blocks any work that would validate
