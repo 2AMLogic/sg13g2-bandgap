@@ -13,7 +13,7 @@ mints a new, timestamped record; nothing under `records/`,
 `netlist-snapshots/` or `corners/` is ever edited or deleted after it lands.
 Raw logs are also kept **verbatim and uncompressed**, full `.op` dump
 included — see "Append-only rule" below and
-[`spec/decision-records/0007-sim-evidence-log-retention.md`](../spec/decision-records/0007-sim-evidence-log-retention.md).
+[`spec/decision-records/0009-sim-evidence-log-retention.md`](../spec/decision-records/0009-sim-evidence-log-retention.md).
 
 ## PDK pin
 
@@ -173,7 +173,7 @@ against the merge base and fails on any modification or deletion. Adding a
 new `<record-id>` is always allowed; touching a landed one never is.
 
 **Log verbosity is settled policy, not per-experiment taste** (issue #26,
-[`spec/decision-records/0007-sim-evidence-log-retention.md`](../spec/decision-records/0007-sim-evidence-log-retention.md)):
+[`spec/decision-records/0009-sim-evidence-log-retention.md`](../spec/decision-records/0009-sim-evidence-log-retention.md)):
 `corners/<record-id>/*.log` is retained **verbatim and uncompressed**,
 including the full `.op` operating-point + model-parameter dump. Do not drop
 the `.op` card to shrink logs, do not gzip logs in the tree, and do not trim

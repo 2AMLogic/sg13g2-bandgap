@@ -1,6 +1,10 @@
 # 0002: Supply voltage scope — 3.3 V (HV flavor) primary, no native 1.8 V flavor exists
 
-- **Status**: proposed (input to a future spec-ratification issue)
+- **Status**: ratified (flipped from proposed by issue #223 as a stated
+  consequence of the target-spec ratification: the Supply row this record
+  scopes was found sound by the EE key and `competitive` by the market key
+  in the two-key review recorded in
+  `0008-two-key-ratification-review-outcome.md`)
 - **Date**: 2026-08-05
 - **Decided by**: Builder agent, issue #2
 - **Related**: #1 (`klt` PDK resolver), `0001-bipolar-device-selection.md`

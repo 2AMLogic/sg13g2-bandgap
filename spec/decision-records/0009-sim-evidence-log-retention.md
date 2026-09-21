@@ -1,10 +1,20 @@
-# 0007: sim/ evidence-log retention — keep the full `.op` dump, uncompressed
+# 0009: sim/ evidence-log retention — keep the full `.op` dump, uncompressed
 
 - **Status**: proposed
 - **Date**: 2026-09-15
 - **Decided by**: Loom Builder (agent), issue #26
 
 ## Context
+
+Renumbering note: this record was originally numbered `0007`. It was
+renumbered to `0009` on 2026-09-21 (issue #223) to resolve a numbering
+collision with the ratified `0007-target-spec-ratification.md` — both
+`0007` records landed 2026-09-15 (PRs #219 and #220) from branches cut
+before the other existed, and nothing in CI caught the duplicate prefix
+until this renumbering PR also added a collision check to
+`.github/scripts/check-decision-records.sh`. Any citation of "DR-0007" or
+`0007-sim-evidence-log-retention.md` predating 2026-09-21 refers to this
+record. The decision text below is unchanged by the renumbering.
 
 `sim/`'s evidence convention is append-only: every sweep mints a new
 `corners/<record-id>/` tree of raw ngspice logs that is never edited or
