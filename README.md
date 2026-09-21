@@ -59,7 +59,7 @@ SG13G2 being a **BiCMOS** process is a genuine bonus: it offers real bipolar
 devices rather than the parasitic PNPs the CMOS ports rely on, which is a
 different device class for extraction and LVS to handle.
 
-## Target specification (RATIFIED; Output-reference row re-cast by the two-key-gated decision record 0009 — see below)
+## Target specification (RATIFIED; Output-reference row re-cast by the two-key-gated decision record 0010 — see below)
 
 | Parameter | Target | Stretch |
 |---|---|---|
@@ -78,7 +78,7 @@ device-mismatch Monte Carlo (issue #215); that record supersedes the earlier
 `feature/issue-125` ratification draft (PR #128), whose cited evidence
 predated both. The Output-reference row is re-cast (nominal, untrimmed and
 trimmed lines, plus a Trim row) by
-[`spec/decision-records/0009-output-reference-row-disposition.md`](spec/decision-records/0009-output-reference-row-disposition.md)
+[`spec/decision-records/0010-output-reference-row-disposition.md`](spec/decision-records/0010-output-reference-row-disposition.md)
 (issue #221, two-key-gated). Ratifying the table locks in these target
 *numbers*, not a claim that every row is currently met — per
 `CLAUDE.md`/`spec/README.md` this repo does not relax a spec to make
@@ -100,7 +100,7 @@ so the honest per-row status is:
   the PSRR row's post-layout margin at its binding corner (`bcs`/125 °C/
   3.63 V) is 0.20 dB, on a corner that reads 59.68 dB pre-layout.
 - **Output reference — re-cast by decision record
-  [`0009`](spec/decision-records/0009-output-reference-row-disposition.md)
+  [`0010`](spec/decision-records/0010-output-reference-row-disposition.md)
   (issue #221).** The row both keys declined is disposed by re-cast, not
   defence: the nominal is re-targeted from ~1.2 V to **1.050 V**, this
   core's own TC-null operating point (the one R1/R2 knob that closed the TC
@@ -123,7 +123,7 @@ so the honest per-row status is:
   ±0.5% as a budgeted target.
 
 See `0007` for full per-row evidence and the Output-reference-vs-TC trade-off,
-`0008` for what the two-key review changed about the status above, and `0009`
+`0008` for what the two-key review changed about the status above, and `0010`
 for the Output-reference disposition and its derivations.
 
 Supply row confirmed against SG13G2's actual device menu (1.2 V LV core /
@@ -141,7 +141,7 @@ Maturity ladder: tooling resolved → spec ratified → schematic simulated
 across PVT → layout DRC/LVS-clean → post-layout re-verification → shuttle
 seat → measured silicon. **Current position: tooling resolved; spec
 ratified (see decision records above), five of six rows two-key reviewed
-clean and the Output-reference row re-cast by the two-key-gated record 0009
+clean and the Output-reference row re-cast by the two-key-gated record 0010
 (#221) rather than blocking the other five; schematic simulated across PVT,
 pre- and post-layout (PEX);
 layout DRC-clean, with LVS `match` on `bandgap_startup` and `mismatch` on

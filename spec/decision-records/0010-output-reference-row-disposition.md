@@ -1,4 +1,4 @@
-# 0009: Output-reference row disposition — re-cast to the core's TC-null operating point (1.050 V) with evidence-derived untrimmed/trimmed lines and a Trim row
+# 0010: Output-reference row disposition — re-cast to the core's TC-null operating point (1.050 V) with evidence-derived untrimmed/trimmed lines and a Trim row
 
 - **Status**: proposed — ratified by operation of the two-key release gating this
   record's PR (see Consequences); not ratified by this author's assertion
@@ -6,10 +6,12 @@
 - **Decided by**: Loom Builder agent, issue #221 (disposition A, numbers
   derived, not copied)
 
-Numbering note: this record is `0009` per `TEMPLATE.md`'s numbering rule —
-`0007` is currently used **twice** on `main` (`0007-sim-evidence-log-retention.md`
-and `0007-target-spec-ratification.md`, tracked by #223) and `0008` is taken
-(`0008-two-key-ratification-review-outcome.md`, PR #224).
+Numbering note: this record is `0010` per `TEMPLATE.md`'s numbering rule —
+`0008` is taken (`0008-two-key-ratification-review-outcome.md`, PR #224) and
+`0009` was taken on `main` by #228's rename of the former duplicate `0007`
+(`0009-sim-evidence-log-retention.md`) while this branch was in flight; an
+earlier draft of this record used `0009` and was renumbered after #228
+landed (the duplicate-number CI check #228 added caught it).
 
 ## Context
 
