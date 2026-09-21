@@ -688,7 +688,6 @@ def check_layout(root: Path, report: Report) -> None:
 
             elif path.name in ("extract_report.json", "pex_extract_report.json"):
                 # extract_report.json is a plain (non-parasitic) `klt extract`
-                # extract_report.json is a plain (non-parasitic) `klt extract`
                 # report, committed as the machine-readable evidence behind a
                 # cell's documented deck-coverage gaps — `warnings`/
                 # `ignored_layers`/`unmodelled_poly`/`voltage_domain_warnings`/
