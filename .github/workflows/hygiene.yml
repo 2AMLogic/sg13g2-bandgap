@@ -3,11 +3,17 @@ name: hygiene
 # Repo-hygiene checks — see .github/workflows/README.md for exactly what
 # this workflow does and does not validate.
 #
-# Everything here is headless and PDK-free: it runs on a bare ubuntu runner
+# The `hygiene` job is headless and PDK-free: it runs on a bare ubuntu runner
 # with nothing but bash and python3 (stdlib). CI checks the *shape* and the
-# *freshness* of the evidence a PR adds; it never runs klt, ngspice or the PDK,
+# *freshness* of the evidence a PR adds; it never runs ngspice or the PDK,
 # and it never mints evidence (per CLAUDE.md, sim/ results are deliberate,
 # append-only evidence produced by a human or agent on a real machine).
+#
+# The `signoff-manifest` job is the one exception to "never runs klt": it
+# installs a pinned klayout-tools build and runs `klt signoff --manifest` in
+# read-only grading mode over committed envelope JSON — no PDK, no klayout,
+# no evidence minting — so the block's T1 verdict of record
+# (manifests/*.signoff.json) is re-derived in CI and fails when it rots.
 
 on:
   push:
@@ -47,3 +53,38 @@ jobs:
         # --require-append-only: fail loudly rather than silently skipping if
         # the merge base stops resolving (a skipped check reads as a pass).
         run: python3 .github/scripts/check_evidence_formats.py --require-append-only
+
+  signoff-manifest:
+    # Re-derives the block's T1 verdict of record (issue #226): re-runs
+    # `klt signoff --manifest` over the committed block manifest and requires
+    # the committed manifests/*.signoff.json report to match, plus every
+    # pinned citation's content_hash to still match the committed artifact it
+    # names. Exit 3 from klt is a valid "graded, not yet T1" verdict, not a
+    # failure — only rot, staleness, or a grading crash fails this job.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install pinned klt
+        # Pinned to the exact upstream rev whose bundled design-evidence-tiers
+        # checklist the committed verdict was graded against (PyPI releases up
+        # to 0.5.0 predate T1 item 11). Bump the rev => re-run klt signoff and
+        # commit the new *.signoff.json in the same PR, or this job fails.
+        run: python3 -m pip install "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@2b1e55e51bb803c082e8857da44687f3e37ebfc0"
+
+      - name: Signoff checker self-test
+        # Runs first, same discipline as the evidence checker: a checker that
+        # cannot fail is indistinguishable from no checker at all. The
+        # self-test is hermetic (stub klt, fixture tree, no network).
+        run: python3 .github/scripts/test_check_signoff_manifest.py
+
+      - name: Signoff manifest freshness and verdict of record
+        run: python3 .github/scripts/check_signoff_manifest.py

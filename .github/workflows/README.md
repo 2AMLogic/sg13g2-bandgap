@@ -80,6 +80,38 @@ python3 .github/scripts/test_check_evidence_formats.py
 python3 .github/scripts/check_evidence_formats.py
 ```
 
+### The `signoff-manifest` job
+
+Added by #226. This is the one job that *does* run `klt` — in read-only
+grading mode over committed envelope JSON (no PDK, no klayout, no evidence
+minting). It installs a **pinned** upstream
+[`klayout-tools`](https://github.com/2AMLogic/klayout-tools) git rev (PyPI
+releases up to 0.5.0 predate T1 item 11, added 2026-09-17 by
+klayout-tools#2025, so a PyPI pin would silently grade a 10-item checklist)
+and then:
+
+- **`.github/scripts/test_check_signoff_manifest.py`** — the checker's own
+  self-test, hermetic (stub `klt`, fixture tree, no network): an undamaged
+  tree passes; a rotted committed report, a stale cited artifact, a pin that
+  disagrees with its envelope, a missing verdict-of-record file, and `klt`
+  crash/refused exits each fail.
+- **`.github/scripts/check_signoff_manifest.py`** — re-runs
+  `klt signoff --manifest manifests/sg13g2-bandgap.json --format json` and
+  requires the committed verdict of record
+  (`manifests/sg13g2-bandgap.signoff.json`, issue #4's replacement for its
+  hand-maintained checkbox list) to be structurally identical to the fresh
+  grade, and every pinned citation's `content_hash` to match both its
+  envelope's recorded provenance and the sha256 of the committed artifact
+  the envelope names. `klt`'s exit 3 ("graded, not yet T1") is a valid
+  verdict — the block is honestly not at T1, and this job's purpose is to
+  keep that statement fresh, not to force it green.
+
+Bumping the pinned rev changes the governing checklist hash, the fresh
+grade changes, and this job fails until the regenerated report is committed
+in the same PR — the "checklist moved, re-read everything" discipline the
+2026-09-17 item-11 incident made necessary fleet-wide. See
+`manifests/README.md` for the full convention.
+
 ### What it does NOT check (known gaps)
 
 This workflow validates hygiene of the artifacts that exist *today*. It
