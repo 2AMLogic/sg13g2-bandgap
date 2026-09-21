@@ -41,12 +41,16 @@ least one netlist or template.
   `status` column reads `PASS`. This is the anti-overclaim check — a record
   cannot say 45/45 while its own parsed data says otherwise.
 
-**C. `layout/<cell>/` DRC/LVS/extract/PEX reports** — each report parses, carries
+**C. `layout/<cell>/` DRC/LVS/extract/PEX/ERC reports** — each report parses, carries
 `schema_version` / `status` / `provenance.deck.content_hash` / `klt_version`,
 uses a known status vocabulary, is internally consistent (a `clean` DRC has zero
 violations; a `match` LVS has zero mismatches), and — for DRC — enumerates its
 deck coverage gaps, which the evidence ladder requires to travel with the
-verdict rather than be dropped from it.
+verdict rather than be dropped from it. ERC reports (`erc_report.json`, `klt
+erc` — which applies no deck and pins its rule source by the spec file's own
+content hash instead) swap the deck hash for a spec hash and are consistency
+checked on their own two status fields (`status`, the antenna roll-up, and
+`erc_status`, the connectivity roll-up T1 item 11 actually grades).
 
 **D. Freshness ("staleness is failure")** — every report records the sha256 of
 the input it was produced from. Those recorded hashes are re-derived from the
@@ -150,6 +154,13 @@ SHA256_RE = re.compile(r"^(?:sha256:)?(?P<hex>[0-9a-f]{64})$")
 DRC_STATUSES = frozenset({"clean", "violations"})
 LVS_STATUSES = frozenset({"match", "mismatch"})
 PEX_STATUSES = frozenset({"extracted"})
+
+#: `klt erc`'s roll-up vocabulary (klayout-tools `coverage.py`'s `rollup_status`:
+#: success/failure tokens are verb parameters; `not_checked` and
+#: `coverage_unknown` are the fixed non-verdict tokens, exit 4). Both of the
+#: command's own status fields — `status` (antenna roll-up) and `erc_status`
+#: (connectivity roll-up, the half T1 item 11 grades) — draw from it.
+ERC_STATUSES = frozenset({"clean", "violations", "clean_partial", "not_checked", "coverage_unknown"})
 
 WAIVER_FILE = "layout/evidence-freshness-waivers.json"
 WAIVER_REQUIRED_KEYS = ("report", "check", "recorded_hash", "issue", "reason")
@@ -549,7 +560,7 @@ def check_hash(
     )
 
 
-def _common_report_checks(report: Report, rel: str, data: dict) -> None:
+def _common_report_checks(report: Report, rel: str, data: dict, *, require_deck: bool = True) -> None:
     if not isinstance(data.get("schema_version"), int):
         report.fail(rel, "missing integer 'schema_version'")
     provenance = data.get("provenance")
@@ -558,6 +569,11 @@ def _common_report_checks(report: Report, rel: str, data: dict) -> None:
         return
     if not provenance.get("klt_version"):
         report.fail(rel, "missing 'provenance.klt_version' — the engine must be named")
+    if not require_deck:
+        # Deck-less verbs (`klt erc` applies no rule/model deck: its
+        # provenance.deck is null by contract) pin their rule source another
+        # way — the erc branch below requires the spec content hash instead.
+        return
     deck = provenance.get("deck")
     if not isinstance(deck, dict):
         report.fail(rel, "missing 'provenance.deck' object")
@@ -609,7 +625,9 @@ def check_layout(root: Path, report: Report) -> None:
             except json.JSONDecodeError as exc:
                 report.fail(rel, f"is not valid JSON: {exc}")
                 continue
-            _common_report_checks(report, rel, data)
+            _common_report_checks(
+                report, rel, data, require_deck=(path.name != "erc_report.json")
+            )
             status = data.get("status")
 
             if path.name == "drc_report.json":
@@ -670,6 +688,7 @@ def check_layout(root: Path, report: Report) -> None:
 
             elif path.name in ("extract_report.json", "pex_extract_report.json"):
                 # extract_report.json is a plain (non-parasitic) `klt extract`
+                # extract_report.json is a plain (non-parasitic) `klt extract`
                 # report, committed as the machine-readable evidence behind a
                 # cell's documented deck-coverage gaps — `warnings`/
                 # `ignored_layers`/`unmodelled_poly`/`voltage_domain_warnings`/
@@ -688,6 +707,69 @@ def check_layout(root: Path, report: Report) -> None:
                     check_hash(report, root, rel, "extracted netlist",
                                data.get("netlist_sha256"), cell_dir / str(netlist),
                                waivers, used_waivers)
+                check_hash(report, root, rel, "input gds", _provenance_input_hash(data),
+                           gds, waivers, used_waivers)
+
+            elif path.name == "erc_report.json":
+                # `klt erc` supply-spec run (T1 item 11's structural
+                # power-delivery artifact, issue #225). Two freshness anchors
+                # instead of a deck hash: the GDS it was run against, and the
+                # spec whose declarations it was graded by (provenance.spec,
+                # the deck-less verb's analogue of provenance.deck).
+                if status not in ERC_STATUSES:
+                    report.fail(rel, f"status {status!r} not in {sorted(ERC_STATUSES)}")
+                erc_status = data.get("erc_status")
+                if erc_status not in ERC_STATUSES:
+                    report.fail(rel, f"erc_status {erc_status!r} not in {sorted(ERC_STATUSES)}")
+                findings = data.get("erc_findings")
+                if not isinstance(findings, list):
+                    findings = []
+                    report.fail(rel, "missing 'erc_findings' array")
+                count = data.get("erc_finding_count")
+                if not isinstance(count, int):
+                    count = None
+                    report.fail(rel, "missing integer 'erc_finding_count'")
+                elif count != len(findings):
+                    report.fail(rel, f"erc_finding_count {count} contradicts "
+                                     f"len(erc_findings) {len(findings)}")
+                gates = data.get("gates") if isinstance(data.get("gates"), list) else []
+                any_antenna_violation = any(
+                    isinstance(level, dict) and level.get("verdict") == "violate"
+                    for gate in gates if isinstance(gate, dict)
+                    for level in (gate.get("levels") or [])
+                )
+                if count is not None:
+                    # erc_status rolls up erc_findings alone (klayout-tools
+                    # #2179): any finding must read "violations", and zero
+                    # findings must not. The antenna `status` additionally
+                    # rolls up any violating antenna level.
+                    if count > 0 and erc_status == "clean":
+                        report.fail(rel, f"erc_status {erc_status!r} contradicts "
+                                         f"erc_finding_count {count}")
+                    if count == 0 and erc_status == "violations":
+                        report.fail(rel, f"erc_status {erc_status!r} contradicts "
+                                         f"erc_finding_count {count}")
+                    failed = count > 0 or any_antenna_violation
+                    if failed != (status == "violations"):
+                        report.fail(rel, f"status {status!r} contradicts the finding/"
+                                         f"antenna signals ({count} findings, "
+                                         f"antenna_violation={any_antenna_violation})")
+                spec = data.get("spec")
+                if not spec:
+                    report.fail(rel, "missing 'spec' — the supply spec the run "
+                                     "was graded against")
+                else:
+                    # The spec path is recorded exactly as provided, so it may
+                    # be repo-root-relative (run from the repo root) or
+                    # cell-relative (run from the cell directory); resolve
+                    # both ways before failing.
+                    spec_path = root / str(spec)
+                    if not spec_path.is_file():
+                        spec_path = cell_dir / Path(str(spec)).name
+                    prov_spec = (data.get("provenance") or {}).get("spec")
+                    spec_hash = prov_spec.get("content_hash") if isinstance(prov_spec, dict) else None
+                    check_hash(report, root, rel, "spec", spec_hash,
+                               spec_path, waivers, used_waivers)
                 check_hash(report, root, rel, "input gds", _provenance_input_hash(data),
                            gds, waivers, used_waivers)
 
