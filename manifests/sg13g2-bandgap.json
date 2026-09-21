@@ -1,0 +1,19 @@
+{
+  "block": "sg13g2-bandgap",
+  "kind": "analog",
+  "evidence": {
+    "1": {
+      "file": "layout/bandgap_top/pex_extract_report.json",
+      "content_hash": "sha256:b4f68dd262064d373f66cdcf65947bf8fda564b3d5a1b4016b3d9c09a5463189"
+    },
+    "2": {
+      "file": "layout/bandgap_top/drc_report.json",
+      "content_hash": "sha256:b4f68dd262064d373f66cdcf65947bf8fda564b3d5a1b4016b3d9c09a5463189"
+    },
+    "3": {
+      "file": "layout/bandgap_top/drc_report.json",
+      "content_hash": "sha256:b4f68dd262064d373f66cdcf65947bf8fda564b3d5a1b4016b3d9c09a5463189"
+    },
+    "4": "layout/bandgap_top/lvs_report.json"
+  }
+}
