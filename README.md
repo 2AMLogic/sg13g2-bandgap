@@ -88,10 +88,21 @@ so the honest per-row status is:
 - **Temp coefficient, Supply, Iq, Startup, PSRR @ DC** — target met on
   currently-committed evidence, and found technically sound (EE key) and
   `competitive`/`adequate-for-catalog` (market key). Two caveats the review
-  put on the record: the TC row meets its `< 50 ppm/°C` **target** by both the
-  endpoint and box methods, but the `< 20 ppm/°C` **stretch** is met only by
-  the endpoint method — `measurements/2026-08-tc-retune/README.md` §4b's
-  box-method scan reaches ~20.2 ppm/°C at the `wcs` corner (issue #222); and
+  put on the record: the TC row meets its `< 50 ppm/°C` **target** by both
+  the endpoint and box methods at both levels (worst number anywhere:
+  box-method 20.1 ppm/°C — >2.4× inside the target), but the
+  `< 20 ppm/°C` **stretch** sits at the boundary once the box method is
+  measured on committed testbenches (issue #222,
+  [`sim/closed-loop-vref-pvt-boxtc/`](sim/closed-loop-vref-pvt-boxtc/README.md)
+  and
+  [`sim/closed-loop-vref-pvt-pex-boxtc/`](sim/closed-loop-vref-pvt-pex-boxtc/README.md),
+  decision record
+  [`0009`](spec/decision-records/0009-box-method-tc-evidence.md)): met by
+  the endpoint method at both levels (worst |TC| 18.1 pre-layout / 17.6
+  post-layout), box-method worst corner **19.8 ppm/°C** (`wcs`/3.30 V)
+  pre-layout — just inside — and **20.1 ppm/°C** (`bcs`/3.63 V)
+  post-layout — just outside by ~0.7% (the worst corner moves from `wcs`
+  to `bcs` post-layout); and
   the PSRR row's post-layout margin at its binding corner (`bcs`/125 °C/
   3.63 V) is 0.20 dB, on a corner that reads 59.68 dB pre-layout.
 - **Output reference — unmet, and its disposition is re-opened.** Untrimmed
