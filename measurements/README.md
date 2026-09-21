@@ -33,3 +33,11 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   DRC/LVS/extraction evidence — including the byte-identical net sets that
   are the direct proof no riser merged into a neighbour — and the one
   four-net short an intermediate draft produced that `klt drc` called clean.
+- `2026-09-characterization-report/` — issue #15 (T1 checklist item 8): the
+  aggregated per-spec-row characterization report #5's verdict table marked
+  missing. One honest verdict per ratified spec row (Output reference
+  unmet-and-unsettled per the two-key outcome, re-opened as #221; TC, PSRR
+  @ DC, Supply, Iq, Startup met with their caveats carried), each citing
+  its specific committed `sim/` evidence record — all nine citations
+  re-verified most-current at `main`@`77820fc` — with headline numbers
+  re-derived from the records' own CSVs.
