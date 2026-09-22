@@ -76,19 +76,27 @@ The binding used here:
   `layout/sg13cmos5l-bandgap_top/erc_report.json` (pinned) +
   `layout/bandgap_top/lvs_report.json` (item 4's own, unpinned):** grades
   `check_failed`, honestly — the first item-11 citation any fleet block has
-  registered (#234 closed #225). The ERC half is real, passing evidence:
-  `erc_status: clean`, `erc_finding_count: 0`, each declared supply
-  resolving to exactly one island, input hash pinned to the committed GDS.
-  Two halves keep the item unmet, both disclosed in
-  `layout/README.md`'s ERC section: (a) the pinned ladder grades a
-  no-`ties[]` spec `supply_spec_incomplete` — the well-tie declaration
-  upgrade is follow-up #233 (its upstream fix, klayout-tools#2186/#2240,
-  landed after the pinned `klt` build); (b) the LVS half — every declared
-  supply paired in the cited report's `net_correspondence` — is not met:
-  that report pairs only `d1`/`d2` (the standing NPN13G2 decline item 4
-  documents, klayout-tools#1242). `t1_met_count` is unchanged at 3; the
-  citation narrows item 11's gap from `no_evidence` to the precise,
-  machine-graded `check_failed` state.
+  registered (#234 closed #225; #239 registered the citation). Since #233
+  declared the spec's `ties[]` entry and regenerated the report under the
+  commit-pinned `klt 0.5.0+g32f69f811682`, the ERC half is **checked
+  evidence with findings on record**, not a passing envelope:
+  `erc_status: "violations"` with **12 `erc.missing_tie` findings** (one
+  per physically distinct `NWell` island — no nSD-covered `Activ` is drawn
+  inside any well; 2 floating MOS wells + 10 marker-less pnpMPA base
+  rings, filed as #240 and kept, not tuned away), while the supply-island
+  half stays clean (each declared supply resolves to exactly one island,
+  and `gates[]`/`nets[]` findings are byte-identical to the pre-tie
+  report — klayout-tools#2186's tie isolation). Both halves keep the item
+  unmet: (a) the ERC half's `erc.missing_tie` count is nonzero until #240
+  clears; (b) the LVS half — every declared supply paired in the cited
+  report's `net_correspondence` — is not met: that report pairs only
+  `d1`/`d2` (the standing NPN13G2 decline item 4 documents,
+  klayout-tools#1242). `t1_met_count` is unchanged at 3. The citation's
+  pin binds the ERC envelope's **input** hash (the committed GDS — the
+  same convention every pinned citation uses), so it is unchanged by a
+  report regeneration that does not touch the GDS; the report's own
+  spec/GDS freshness anchors are what `check_evidence_formats.py`
+  re-derives.
 
 Items deliberately left **uncited** (they render `unmet` / `no_evidence`,
 which is the honest machine-readable gap — repo evidence exists for several

@@ -3,6 +3,7 @@
   "file": "layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds",
   "spec": "layout/sg13cmos5l-bandgap_top/erc-supply-spec.json",
   "pdk": null,
+  "findings_only": false,
   "gate_role": "GatPoly",
   "gate_count": 7,
   "gates": [
@@ -203,10 +204,191 @@
       ]
     }
   ],
-  "erc_findings": [],
-  "erc_finding_count": 0,
-  "erc_status": "clean",
-  "status": "not_checked",
+  "erc_findings": [
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": 215420,
+        "bottom": -1960,
+        "right": 218820,
+        "top": 1960
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": -1700,
+        "bottom": 28040,
+        "right": 1700,
+        "top": 31960
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": 122050,
+        "bottom": 28040,
+        "right": 125450,
+        "top": 31960
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": 128050,
+        "bottom": 28040,
+        "right": 131450,
+        "top": 31960
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": 134050,
+        "bottom": 28040,
+        "right": 137450,
+        "top": 31960
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": 140050,
+        "bottom": 28040,
+        "right": 143450,
+        "top": 31960
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": 146050,
+        "bottom": 28040,
+        "right": 149450,
+        "top": 31960
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": 152050,
+        "bottom": 28040,
+        "right": 155450,
+        "top": 31960
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": 158050,
+        "bottom": 28040,
+        "right": 161450,
+        "top": 31960
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": 164050,
+        "bottom": 28040,
+        "right": 167450,
+        "top": 31960
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": -5620,
+        "bottom": 58480,
+        "right": 185620,
+        "top": 61520
+      },
+      "islands": null
+    },
+    {
+      "rule": "erc.missing_tie",
+      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "net": "vdd",
+      "other_net": null,
+      "gate_id": null,
+      "layer": "nwell_tap_vdd",
+      "bbox": {
+        "left": 9380,
+        "bottom": 98480,
+        "right": 75620,
+        "top": 121520
+      },
+      "islands": null
+    }
+  ],
+  "erc_finding_count": 12,
+  "erc_status": "violations",
+  "status": "violations",
   "coverage": {
     "scope": "antenna",
     "schema_version": 1,
@@ -291,22 +473,20 @@
       "erc.floating_gate:[\"gate4\"]",
       "erc.floating_gate:[\"gate5\"]",
       "erc.floating_gate:[\"gate6\"]",
+      "erc.missing_tie:[\"nwell_tap_vdd\"]",
       "erc.net_connectivity:[\"vdd\"]",
       "erc.net_connectivity:[\"vss\"]"
     ],
     "skipped": [],
-    "inapplicable": [
-      {
-        "id": "erc.missing_tie:[]",
-        "reason": "no_ties_declared"
-      }
-    ],
+    "inapplicable": [],
     "unknown": [],
     "nothing_checked": false,
-    "nothing_checked_reasons": []
+    "nothing_checked_reasons": [],
+    "checked_by_assertion": []
   },
+  "ties_disclosure": null,
   "provenance": {
-    "klt_version": "0.5.0+g2b1e55e51bb8.dirty",
+    "klt_version": "0.5.0+g32f69f811682",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": null,
@@ -315,7 +495,8 @@
       "role": "layout"
     },
     "spec": {
-      "content_hash": "sha256:396b8cf27283f719f6e72fd1bc09a260e53767cc2d8d8139bc6122934f9b3873"
-    }
+      "content_hash": "sha256:e5e6fd76be12a34d5a42f33b82b9049c47598bea6ed6d465f1802bec47320a67"
+    },
+    "devices": []
   }
 }
