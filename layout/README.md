@@ -2315,28 +2315,60 @@ klt erc layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds \
   layout/sg13cmos5l-bandgap_top/erc-supply-spec.json --format json
 ```
 
-Committed verdict (`erc_report.json`, `klt 0.5.0+g2b1e55e51bb8.dirty`,
-`klayout 0.30.12`): **`erc_status: "clean"`** — zero `erc_findings`, with
-`erc_coverage.checked` naming `erc.net_connectivity:["vdd"]` and
-`["vss"]`: each supply resolves to **exactly one electrical island** (no
-`erc.unconnected_net`, no `erc.supply_short`). The report's overall
-`status` is `"not_checked"` (and `klt erc` exits 4) because the antenna
-half of the roll-up has no `sg13` ratio table to check against (`--pdk` is
-deliberately omitted; only `sky130` has one) — per the ladder's item 11
-text, an antenna verdict "is a real defect, but it is not this item's
-subject"; `erc_status` (klayout-tools#2179) is the connectivity roll-up
-the item does grade.
+Committed verdict (`erc_report.json`, `klt 0.5.0+g32f69f811682` — pinned
+to the upstream `main` commit carrying the four tie fixes, since no
+numbered release past v0.5.0 was tagged when issue #233 ran; `klayout
+0.30.12`): the supply-island half of the verdict is unchanged and clean —
+`erc.net_connectivity:["vdd"]` and `["vss"]` are both in
+`erc_coverage.checked` with **zero** findings naming either supply (each
+resolves to exactly one electrical island: no `erc.unconnected_net`, no
+`erc.supply_short`), and `gates[]`/`coverage` are byte-identical to the
+pre-tie #234 report — `klt erc`'s tie extraction is isolated from the
+primary connectivity graph (klayout-tools#2186), so declaring `ties[]`
+cannot perturb anything but `erc.missing_tie`. What changed with #233's
+tie declaration is `erc.missing_tie` itself: it moved from
+`erc_coverage.inapplicable` (`no_ties_declared`) to
+`erc_coverage.checked`, and it now reports **12 findings** — one per
+physically distinct `NWell` island — so `erc_status` and the report's
+overall `status` read `"violations"` (`klt erc` exits 3). The antenna half
+of the roll-up is unchanged (`--pdk` deliberately omitted; only `sky130`
+has a ratio table) — per the ladder's item 11 text, an antenna verdict
+"is a real defect, but it is not this item's subject"; `erc_status`
+(klayout-tools#2179) is the connectivity roll-up the item does grade.
 
-**`erc.missing_tie` is not computed, and that is a disclosed gap, not a
-pass.** The spec deliberately declares no `ties[]`: on `klt` 0.5.0 a
-`ties[]` declaration collapses a real routed layout into one electrical
-island and reports a **false** `erc.supply_short`
-([klayout-tools#2169](https://github.com/2AMLogic/klayout-tools/issues/2169),
-independently reproduced on hand-drawn analog, not just standard cells).
-The committed report records the omission machine-readably
-(`erc_coverage.inapplicable: erc.missing_tie, reason "no_ties_declared"`),
-so the zero count for that rule is an **absence of evidence, not evidence
-of absence**. The well-tie evidence that does stand in for it:
+**`erc.missing_tie` is now checked, and its 12 findings are the verdict of
+record — kept, not tuned away (issue #233's own acceptance criterion).**
+The spec declares the n-well tie exactly the way klt's curated
+`sg13cmos5l` deck derives `tap_nplus` (klayout-tools#1273): `nSD`-covered
+(7/0) `Activ` (1/0) inside `NWell` (31/0), wired through `Cont` to
+`Metal1`, expected to reach `vdd` (`tap_layer` narrowed by
+`tap_requires`, the same boolean-implant shape the upstream docs use — a
+bare `tap_layer` is the unfalsifiable form the degenerate-tie rule
+(klayout-tools#2199) rejects). Every well fails with *no tap drawn at
+all*, because the assembly genuinely draws no nSD-covered Activ inside
+any well — verified geometrically: `Activ ∩ nSD ∩ NWell = ∅` on the
+committed GDS (the only 7/0 geometry anywhere in the assembly is
+startup's `rhigh` resistor body marker, and startup draws no NWell). The
+12 findings split into two causes, filed together as
+[#240](https://github.com/2AMLogic/sg13g2-bandgap/issues/240):
+
+- **2 floating MOS wells** (bandgap_core's shared mirror well,
+  bandgap_amp's shared well) — the already-documented floating-body gap
+  ("SG13CMOS5L: LVS — mismatch, fully attributed", cause 4 above); a real
+  layout gap awaiting drawn n+ tap islands.
+- **10 pnpMPA wells** — device bodies whose n+ base ring *is* a tie (to
+  `vss`, via its Metal1 ring) but is drawn marker-less per CMOS5L's own
+  idiom (pSD is the only implant mask its PCells draw; n+ is its
+  complement), invisible to the deck-derived tap expression.
+
+Item 11 therefore stays **unmet** (`erc.missing_tie` ≠ 0), now on the
+strength of checked findings rather than a disclosed omission. Its
+compound ERC+LVS citation (#239) stays registered in
+`manifests/sg13g2-bandgap.json` with the ERC envelope's input hash pinned
+(the committed GDS — the pin every `klt signoff` citation uses) — the
+signoff job derives precisely `check_failed` from it (ERC findings + the
+unmet LVS half), which is the honest machine-graded state. The remaining
+well-tie evidence on record:
 
 - **PG pin labels in the merged GDS** — all 8 `vdd` and all 27 `vss`
   `Metal1.pin` (8/2) texts land on the single supply island this very run
@@ -2346,23 +2378,31 @@ of absence**. The well-tie evidence that does stand in for it:
   `vdd` (pin, 7 attached device terminals) and a net named `vss` (pin, 15
   attached device terminals): the rails reach real device taps through
   drawn `Activ`/`nSD`/`pSD` contact geometry, not just labels.
+- **The substrate half is undeclarable, not forgotten** — this block sits
+  in native p-substrate with no drawn p-well/tub layer, and `klt erc`'s
+  `ties[]` requires drawn well-layer geometry, so a substrate tie cannot
+  be declared at all (open upstream as
+  [klayout-tools#2255](https://github.com/2AMLogic/klayout-tools/issues/2255)).
+  The real substrate ties on record, counted on the committed GDS: the
+  ten pnpMPA collector rings — pSD-covered `Activ` outside every `NWell`
+  (the deck's own `tap_pplus` shape), each contacted up to a
+  `vss`-labelled Metal1 ring (10 polygons, 75.74 um^2 total).
 - **No LVS `net_correspondence` evidence exists yet** — the ladder's
   Analog column additionally requires item 4's own LVS report to have
   carried the supply nets in its `net_correspondence`, and this cell's
   `lvs_report.json` pairs only `d1`/`d2` (its 22 error-severity findings
-  are the four permanent/known causes itemised above). Item 11 therefore
-  stays **unchecked** on the tracker even with this artifact landed; the
-  LVS half is expected to arrive with the port's own LVS closure, not from
-  the ERC spec.
+  are the four permanent/known causes itemised above). Item 11's LVS half
+  is expected to arrive with the port's own LVS closure, not from the ERC
+  spec.
 
-Upstream has since moved: #2169 was closed 2026-09-20 by scoping `ties[]`
-well conduction to its taps (klayout-tools#2186) and adding tap-by-assertion
-/ unexpressible-tap disclosure (klayout-tools#2240, #2234) — all **after**
-the pinned `klt` 0.5.0 this report was produced with was built, and the
-current ladder text grades a no-`ties[]` spec `supply_spec_incomplete`
-rather than met. Declaring a checked tie on an upgraded `klt` is the
-follow-up filed as
-[#233](https://github.com/2AMLogic/sg13g2-bandgap/issues/233).
+The tie-declaration path itself was unblocked upstream between #225 and
+#233: #2169 was closed 2026-09-20 by scoping `ties[]` well conduction to
+its taps (klayout-tools#2186), subtracting declared device bodies
+(klayout-tools#2205/#2236), and adding tap-by-assertion /
+unexpressible-tap disclosure (klayout-tools#2240, #2234, #2264's
+`ties_disclosure.kind`). The former false `erc.supply_short` that forced
+#225 to omit `ties[]` is gone — verified here by the byte-identical
+`gates[]`/nets findings above.
 
 One gate island in the report deserves a note so it is not misread as a
 short: `gates[]` contains an island whose expanded name is `det,vdd`. That
@@ -2387,7 +2427,7 @@ from the SG13G2 table above and not assumed identical to it:
 | `Activ.drawing` | 1/0 | MOS diffusion, PNP emitter/base/collector |
 | `GatPoly.drawing` | 5/0 | MOS gate, `fb` routing bar, `rppd` conductor |
 | `Cont.drawing` | 6/0 | every contact |
-| `nSD.drawing` | 7/0 | (declared, unused by this cell) |
+| `nSD.drawing` | 7/0 | `rhigh` body marker (startup); the tie declaration's `tap_requires` n+ implant |
 | `Metal1.drawing` | 8/0 | all routing |
 | `Metal1.pin` | 8/2 | **net names** (`EXTRACTION_DECK.metal_labels`) |
 | `pSD.drawing` | 14/0 | p+ implant (PMOS S/D, PNP emitter + collector ring, `rppd` body) |
