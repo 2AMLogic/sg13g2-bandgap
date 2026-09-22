@@ -72,6 +72,23 @@ The binding used here:
   `provenance.input` block (upstream JSON contract) — its freshness is
   enforced by `check_evidence_formats.py`'s layout-report staleness gate
   instead, which re-derives every committed report's input hashes.
+- **Item 11 (Power delivery, structural) — cited as the compound pair
+  `layout/sg13cmos5l-bandgap_top/erc_report.json` (pinned) +
+  `layout/bandgap_top/lvs_report.json` (item 4's own, unpinned):** grades
+  `check_failed`, honestly — the first item-11 citation any fleet block has
+  registered (#234 closed #225). The ERC half is real, passing evidence:
+  `erc_status: clean`, `erc_finding_count: 0`, each declared supply
+  resolving to exactly one island, input hash pinned to the committed GDS.
+  Two halves keep the item unmet, both disclosed in
+  `layout/README.md`'s ERC section: (a) the pinned ladder grades a
+  no-`ties[]` spec `supply_spec_incomplete` — the well-tie declaration
+  upgrade is follow-up #233 (its upstream fix, klayout-tools#2186/#2240,
+  landed after the pinned `klt` build); (b) the LVS half — every declared
+  supply paired in the cited report's `net_correspondence` — is not met:
+  that report pairs only `d1`/`d2` (the standing NPN13G2 decline item 4
+  documents, klayout-tools#1242). `t1_met_count` is unchanged at 3; the
+  citation narrows item 11's gap from `no_evidence` to the precise,
+  machine-graded `check_failed` state.
 
 Items deliberately left **uncited** (they render `unmet` / `no_evidence`,
 which is the honest machine-readable gap — repo evidence exists for several
@@ -79,22 +96,24 @@ of them, but no `klt` envelope grades it yet):
 
 - **5 (PVT corners):** the ratified spec exists
   (`spec/decision-records/0007`) and `sim/closed-loop-vref-pvt/` holds
-  append-only CSV/MD corner records — but no `klt sim` corner-matrix
-  envelope has ever been produced.
+  append-only CSV/MD corner records — joined since #236 by the box-method
+  TC grid on the same 8-point corner set
+  (`sim/closed-loop-vref-pvt-boxtc/`, schematic + PEX) — but no `klt sim`
+  corner-matrix envelope has ever been produced.
 - **6 (Monte Carlo):** `sim/closed-loop-vref-mc/` holds an N=300 seeded
   mismatch MC with negative control (issue #215) — but no `klt yield`
   envelope.
 - **7 (Post-layout):** PEX netlists and post-layout PEX sim records exist
   (`layout/*/*.pex.spice`, `sim/closed-loop-*-pex/`) — but no `klt pex`
   delta report; item 7 rejects every other evidence kind by construction.
-- **8 (Characterization report):** no single aggregated per-spec-row
-  characterization artifact exists yet.
+- **8 (Characterization report):** the aggregated per-spec-row report now
+  exists (`measurements/2026-09-characterization-report/`, #227 closing
+  #15) — but item 8 grades only the purpose-built `generic` envelope
+  (upstream issue #1152), which this repo has not produced.
 - **9 (Testbenches) / 10 (Repo hygiene):** the testbenches, cold-start docs,
   README, LICENSE and CI all exist — but no `klt` envelope can attest to
   them, and a token citation would be exactly the dishonest row the ladder
   forbids.
-- **11 (Power delivery, structural):** no `klt erc` supply-spec run exists;
-  tracked by #225.
 
 ## Freshness and CI
 

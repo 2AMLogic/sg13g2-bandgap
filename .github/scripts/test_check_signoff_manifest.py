@@ -183,6 +183,82 @@ def main() -> int:
             run_checker(t), passes=False, message_fragment="verdict-of-record",
         )
 
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        # Item 11's compound shape (klayout-tools#2025): a list of ordinary
+        # entries. Valid elements must pass the same per-entry checks.
+        build_fixture(t, manifest_evidence={
+            "3": {"file": "layout/fixture_cell/drc_report.json",
+                  "content_hash": GDS_HASH},
+            "4": "layout/fixture_cell/lvs_report.json",
+            "11": [
+                {"file": "layout/fixture_cell/drc_report.json",
+                 "content_hash": GDS_HASH},
+                "layout/fixture_cell/lvs_report.json",
+            ],
+        })
+        failures += not expect(
+            "case 7: compound (list) citation with valid elements passes",
+            run_checker(t), passes=True, message_fragment="1",
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        build_fixture(t, manifest_evidence={
+            "3": {"file": "layout/fixture_cell/drc_report.json",
+                  "content_hash": GDS_HASH},
+            "11": [
+                {"file": "layout/fixture_cell/drc_report.json",
+                 "content_hash": GDS_HASH},
+                42,
+            ],
+        })
+        failures += not expect(
+            "case 8: compound citation with a malformed element fails, "
+            "naming the element index",
+            run_checker(t), passes=False,
+            message_fragment="evidence['11'][1]: entry must be a path string",
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        build_fixture(t, manifest_evidence={
+            "3": {"file": "layout/fixture_cell/drc_report.json",
+                  "content_hash": GDS_HASH},
+            "11": [],
+        })
+        failures += not expect(
+            "case 9: empty citation list is rejected (cite nothing = uncited)",
+            run_checker(t), passes=False, message_fragment="empty citation list",
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        # `klt erc` envelopes name their input repo-rooted
+        # (`layout/<cell>/<cell>.gds`), not as a sibling of the envelope —
+        # the checker must resolve that reading too, not just parent-relative.
+        erc = {
+            "schema_version": 1,
+            "status": "not_checked",
+            "erc_status": "clean",
+            "erc_finding_count": 0,
+            "file": "layout/fixture_cell/fixture_cell.gds",
+            "provenance": {"input": {"content_hash": GDS_HASH}},
+        }
+        build_fixture(t, manifest_evidence={
+            "3": {"file": "layout/fixture_cell/drc_report.json",
+                  "content_hash": GDS_HASH},
+            "11": [{"file": "layout/fixture_cell/erc_report.json",
+                    "content_hash": GDS_HASH}],
+        })
+        (t / "layout" / "fixture_cell" / "erc_report.json").write_text(
+            json.dumps(erc)
+        )
+        failures += not expect(
+            "case 10: envelope input named repo-rooted resolves and passes",
+            run_checker(t), passes=True, message_fragment="1",
+        )
+
     if failures:
         print(f"\n{failures} case(s) failed", file=sys.stderr)
         return 1
