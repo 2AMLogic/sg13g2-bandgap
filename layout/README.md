@@ -2364,7 +2364,8 @@ startup's `rhigh` resistor body marker, and startup draws no NWell). The
 Item 11 therefore stays **unmet** (`erc.missing_tie` ≠ 0), now on the
 strength of checked findings rather than a disclosed omission. Its
 compound ERC+LVS citation (#239) stays registered in
-`manifests/sg13g2-bandgap.json` with this report's hash pinned — the
+`manifests/sg13g2-bandgap.json` with the ERC envelope's input hash pinned
+(the committed GDS — the pin every `klt signoff` citation uses) — the
 signoff job derives precisely `check_failed` from it (ERC findings + the
 unmet LVS half), which is the honest machine-graded state. The remaining
 well-tie evidence on record:
