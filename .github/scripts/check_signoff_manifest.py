@@ -101,68 +101,95 @@ def first_difference(fresh: Any, committed: Any, path: str = "$") -> str:
     return ""
 
 
+def _check_entry(root: Path, label: str, entry: Any, report: Report) -> None:
+    """Validate one evidence entry: a path string or {file, content_hash?}."""
+    if isinstance(entry, str):
+        file_rel, pin = entry, None
+    elif isinstance(entry, dict) and isinstance(entry.get("file"), str):
+        file_rel, pin = entry["file"], entry.get("content_hash")
+    else:
+        report.problem(f"{label}: entry must be a path string or {{file, content_hash?}}")
+        return
+    envelope_path = root / file_rel
+    if not envelope_path.is_file():
+        report.problem(f"{label}: cited envelope {file_rel} does not exist")
+        return
+    try:
+        envelope = json.loads(envelope_path.read_text())
+    except json.JSONDecodeError as exc:
+        report.problem(f"{label}: cited envelope {file_rel} is not valid JSON: {exc}")
+        return
+    if pin is None:
+        report.note(
+            f"{label}: cited without a content_hash pin (envelope status "
+            f"{envelope.get('status')!r}) — freshness enforced by "
+            "check_evidence_formats.py instead"
+        )
+        return
+    recorded = (envelope.get("provenance") or {}).get("input", {}) or {}
+    actual_pin = recorded.get("content_hash")
+    if actual_pin != pin:
+        report.problem(
+            f"{label}: pinned content_hash {pin} != envelope's recorded "
+            f"provenance.input.content_hash {actual_pin}"
+        )
+        return
+    named = envelope.get("file")
+    if not isinstance(named, str) or not named:
+        report.problem(
+            f"{label}: envelope {file_rel} names no input 'file' to freshness-check"
+        )
+        return
+    artifact = (envelope_path.parent / named).resolve()
+    if not artifact.is_file():
+        # Some verbs record the input as a repo-rooted path (e.g. `klt erc`
+        # names the GDS it graded as `layout/<cell>/<cell>.gds`), not a
+        # sibling of the envelope. Try that reading before declaring the
+        # pinned citation dangling.
+        rooted = (root / named).resolve()
+        if rooted.is_file():
+            artifact = rooted
+    try:
+        artifact_hash = sha256_file(artifact)
+    except (OSError, FileNotFoundError):
+        report.problem(
+            f"{label}: envelope's input artifact {artifact} does not exist — "
+            "the pinned citation has nothing fresh to point at"
+        )
+        return
+    if artifact_hash != pin:
+        report.problem(
+            f"{label}: STALE — artifact {artifact} now hashes to {artifact_hash}, "
+            f"but the citation (and its envelope) pin {pin}; re-run the check "
+            "that produces this envelope and update both, or the manifest is "
+            "citing an artifact revision that no longer exists"
+        )
+        return
+    report.checked += 1
+
+
 def check_citations(root: Path, manifest_path: Path, manifest: dict, report: Report) -> None:
     evidence = manifest.get("evidence", {})
     if not isinstance(evidence, dict):
         report.problem(f"manifest {manifest_path}: 'evidence' must be a JSON object")
         return
     for item_id, entry in sorted(evidence.items(), key=lambda kv: int(kv[0])):
-        label = f"manifest evidence['{item_id}']"
-        if isinstance(entry, str):
-            file_rel, pin = entry, None
-        elif isinstance(entry, dict) and isinstance(entry.get("file"), str):
-            file_rel, pin = entry["file"], entry.get("content_hash")
+        # Upstream `klt signoff` grades item 11 ("Power delivery
+        # (structural)", klayout-tools#2025) through a compound citation: a
+        # LIST of ordinary entries, each resolved by the same machinery a
+        # single entry uses. Accept that shape here so the freshness gate
+        # covers every element of the compound, not just single entries.
+        if isinstance(entry, list):
+            if not entry:
+                report.problem(
+                    f"manifest evidence['{item_id}']: empty citation list — "
+                    "citing nothing is the uncited case, not a compound citation"
+                )
+                continue
+            for i, element in enumerate(entry):
+                _check_entry(root, f"manifest evidence['{item_id}'][{i}]", element, report)
         else:
-            report.problem(f"{label}: entry must be a path string or {{file, content_hash?}}")
-            continue
-        envelope_path = root / file_rel
-        if not envelope_path.is_file():
-            report.problem(f"{label}: cited envelope {file_rel} does not exist")
-            continue
-        try:
-            envelope = json.loads(envelope_path.read_text())
-        except json.JSONDecodeError as exc:
-            report.problem(f"{label}: cited envelope {file_rel} is not valid JSON: {exc}")
-            continue
-        if pin is None:
-            report.note(
-                f"{label}: cited without a content_hash pin (envelope status "
-                f"{envelope.get('status')!r}) — freshness enforced by "
-                "check_evidence_formats.py instead"
-            )
-            continue
-        recorded = (envelope.get("provenance") or {}).get("input", {}) or {}
-        actual_pin = recorded.get("content_hash")
-        if actual_pin != pin:
-            report.problem(
-                f"{label}: pinned content_hash {pin} != envelope's recorded "
-                f"provenance.input.content_hash {actual_pin}"
-            )
-            continue
-        named = envelope.get("file")
-        if not isinstance(named, str) or not named:
-            report.problem(
-                f"{label}: envelope {file_rel} names no input 'file' to freshness-check"
-            )
-            continue
-        artifact = (envelope_path.parent / named).resolve()
-        try:
-            artifact_hash = sha256_file(artifact)
-        except (OSError, FileNotFoundError):
-            report.problem(
-                f"{label}: envelope's input artifact {artifact} does not exist — "
-                "the pinned citation has nothing fresh to point at"
-            )
-            continue
-        if artifact_hash != pin:
-            report.problem(
-                f"{label}: STALE — artifact {artifact} now hashes to {artifact_hash}, "
-                f"but the citation (and its envelope) pin {pin}; re-run the check "
-                "that produces this envelope and update both, or the manifest is "
-                "citing an artifact revision that no longer exists"
-            )
-            continue
-        report.checked += 1
+            _check_entry(root, f"manifest evidence['{item_id}']", entry, report)
 
 
 def main(argv: list[str] | None = None) -> int:

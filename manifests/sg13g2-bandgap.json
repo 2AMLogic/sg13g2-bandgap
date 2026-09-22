@@ -14,6 +14,13 @@
       "file": "layout/bandgap_top/drc_report.json",
       "content_hash": "sha256:b4f68dd262064d373f66cdcf65947bf8fda564b3d5a1b4016b3d9c09a5463189"
     },
-    "4": "layout/bandgap_top/lvs_report.json"
+    "4": "layout/bandgap_top/lvs_report.json",
+    "11": [
+      {
+        "file": "layout/sg13cmos5l-bandgap_top/erc_report.json",
+        "content_hash": "sha256:3ee6f4a364751f695e9c23fbd99f167bad0f420a77920833581cb101816a0228"
+      },
+      "layout/bandgap_top/lvs_report.json"
+    ]
   }
 }
