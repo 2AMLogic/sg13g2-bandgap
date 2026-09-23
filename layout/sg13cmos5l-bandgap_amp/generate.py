@@ -138,6 +138,7 @@ from common_sg13cmos5l import (  # noqa: E402
     boundary_port,
     draw_hv_nmos,
     draw_hv_pmos,
+    draw_well_tap,
     pad_center_x,
     poly_tab,
     poly_underpass,
@@ -204,6 +205,20 @@ X_IN_N_PORT = 77.0
 #: in_n's crossing of pn's own vertical stub at x=65 (spans y=0.64..36).
 X_IN_N_UNDERPASS = (63.0, 67.0)
 
+#: The shared well's n+ tap (issue #240), placed in the well's interior
+#: field between the two PMOS rows: x=52 sits in the MP4<->MP3 gap of the
+#: top row (MP4's own ``pSD``/``ThickGateOx`` end at 50.4/50.62, the pn
+#: gate link and its tapped landing pad start at 50.18 but carry their
+#: ``Cont`` only at x=57.5), y=39 keeps the 0.34 um island (plus its 0.1 um
+#: ``nSD`` margin) clear of the out lane (y 35.85..36.15), the pn gate bar
+#: (y 39.5..40.5) and MP3's own implant (x 64.42..), all while staying
+#: inside the well (which spans y 18.48..41.52 here). ``_route()`` wires
+#: the returned pad up into the vdd rail with a Metal1 stub that crosses
+#: the pn gate bar -- Metal1 over GatPoly with no ``Cont`` is no
+#: connection.
+X_WELL_TAP = 52.0
+Y_WELL_TAP = 39.0
+
 
 def build() -> Builder:
     b = Builder(TOP_CELL)
@@ -243,8 +258,19 @@ def build() -> Builder:
         min(w[0] for w in wells), min(w[1] for w in wells),
         max(w[2] for w in wells), max(w[3] for w in wells),
     )
+    # The well's own n+ tap (issue #240): an ``nSD``-covered ``Activ`` island
+    # inside this shared well, wired up into the vdd rail by ``_route()``
+    # below -- the deck-derived ``tap_nplus`` connection the curated
+    # ``sg13cmos5l`` deck has recognised since klayout-tools#1414. Until
+    # this issue the well was deliberately left floating, for the reason
+    # bandgap_core's own generate.py records at length (the 0.3.0-era deck
+    # declared no tap derivation, so a ``NWell.pin`` label could only *name*
+    # an isolated well and suppress ``klt extract``'s own "no DC bias path"
+    # warning -- layout/README.md cause 4). With the tap drawn the well is
+    # physically connected to vdd; no well label is needed and none is drawn.
+    well_tap = draw_well_tap(b, X_WELL_TAP, Y_WELL_TAP, "vdd")
 
-    ports = _route(b, mn3, mn1, mn2, mn4, mp1, mp2, mtail, mp4, mp3)
+    ports = _route(b, mn3, mn1, mn2, mn4, mp1, mp2, mtail, mp4, mp3, well_tap)
     return b, ports
 
 
@@ -253,6 +279,7 @@ def _route(
     mn3: dict, mn1: dict, mn2: dict, mn4: dict,
     mp1: dict, mp2: dict,
     mtail: dict, mp4: dict, mp3: dict,
+    well_tap: tuple[float, float, float, float],
 ) -> dict[str, tuple[float, float, float, float]]:
     """Wire every schematic net. Each block names the net it wires; see the
     module docstring for the floorplan and for the one crossing.
@@ -268,6 +295,12 @@ def _route(
     src = mtail["source_pad"]
     vdd_pad = (src[0], src[1], mp3["source_pad"][2], src[3])
     b.box(L_METAL1, *vdd_pad)
+
+    # -- the shared well's tap, rising into that same vdd rail (issue #240).
+    # One Metal1 stub from the tap pad's top edge, through the MP4<->MP3
+    # field gap (crossing the pn gate bar on the way -- Metal1 over GatPoly
+    # with no Cont is no connection), onto the rail.
+    route_v(b, L_METAL1, X_WELL_TAP, well_tap[3], vdd_pad[3], width=TRUNK_W)
 
     # -- vss: all four NMOS source pads (at the *bottom* of their own
     # footprints, draw_hv_nmos's mirrored orientation), same construction.

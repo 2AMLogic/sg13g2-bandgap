@@ -81,9 +81,9 @@
         },
         {
           "layer": "Metal1",
-          "step_area_um2": 103.9034,
-          "cumulative_area_um2": 1544.8904,
-          "antenna_ratio": 1544.8904,
+          "step_area_um2": 104.9716,
+          "cumulative_area_um2": 1545.9586,
+          "antenna_ratio": 1545.9586,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -207,7 +207,7 @@
   "erc_findings": [
     {
       "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "description": "well/tub tap is not connected to declared net 'vdd'",
       "net": "vdd",
       "other_net": null,
       "gate_id": null,
@@ -222,7 +222,7 @@
     },
     {
       "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "description": "well/tub tap is not connected to declared net 'vdd'",
       "net": "vdd",
       "other_net": null,
       "gate_id": null,
@@ -237,7 +237,7 @@
     },
     {
       "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "description": "well/tub tap is not connected to declared net 'vdd'",
       "net": "vdd",
       "other_net": null,
       "gate_id": null,
@@ -252,7 +252,7 @@
     },
     {
       "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "description": "well/tub tap is not connected to declared net 'vdd'",
       "net": "vdd",
       "other_net": null,
       "gate_id": null,
@@ -267,7 +267,7 @@
     },
     {
       "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "description": "well/tub tap is not connected to declared net 'vdd'",
       "net": "vdd",
       "other_net": null,
       "gate_id": null,
@@ -282,7 +282,7 @@
     },
     {
       "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "description": "well/tub tap is not connected to declared net 'vdd'",
       "net": "vdd",
       "other_net": null,
       "gate_id": null,
@@ -297,7 +297,7 @@
     },
     {
       "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "description": "well/tub tap is not connected to declared net 'vdd'",
       "net": "vdd",
       "other_net": null,
       "gate_id": null,
@@ -312,7 +312,7 @@
     },
     {
       "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "description": "well/tub tap is not connected to declared net 'vdd'",
       "net": "vdd",
       "other_net": null,
       "gate_id": null,
@@ -327,7 +327,7 @@
     },
     {
       "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "description": "well/tub tap is not connected to declared net 'vdd'",
       "net": "vdd",
       "other_net": null,
       "gate_id": null,
@@ -342,7 +342,7 @@
     },
     {
       "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
+      "description": "well/tub tap is not connected to declared net 'vdd'",
       "net": "vdd",
       "other_net": null,
       "gate_id": null,
@@ -354,39 +354,9 @@
         "top": 31960
       },
       "islands": null
-    },
-    {
-      "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
-      "net": "vdd",
-      "other_net": null,
-      "gate_id": null,
-      "layer": "nwell_tap_vdd",
-      "bbox": {
-        "left": -5620,
-        "bottom": 58480,
-        "right": 185620,
-        "top": 61520
-      },
-      "islands": null
-    },
-    {
-      "rule": "erc.missing_tie",
-      "description": "well/tub region has no 'nwell_tap_vdd' tap contact drawn inside it",
-      "net": "vdd",
-      "other_net": null,
-      "gate_id": null,
-      "layer": "nwell_tap_vdd",
-      "bbox": {
-        "left": 9380,
-        "bottom": 98480,
-        "right": 75620,
-        "top": 121520
-      },
-      "islands": null
     }
   ],
-  "erc_finding_count": 12,
+  "erc_finding_count": 10,
   "erc_status": "violations",
   "status": "violations",
   "coverage": {
@@ -491,11 +461,11 @@
     "pdk": null,
     "deck": null,
     "input": {
-      "content_hash": "sha256:3ee6f4a364751f695e9c23fbd99f167bad0f420a77920833581cb101816a0228",
+      "content_hash": "sha256:34e31ebeb7888fa3d025af0bf14530725f48dc9e757ea30c785c688184b16bd4",
       "role": "layout"
     },
     "spec": {
-      "content_hash": "sha256:e5e6fd76be12a34d5a42f33b82b9049c47598bea6ed6d465f1802bec47320a67"
+      "content_hash": "sha256:d01f01b8b87543fab5ad26e6100d03d744d6e3151a67149e97d0e27d5f2881bf"
     },
     "devices": []
   }

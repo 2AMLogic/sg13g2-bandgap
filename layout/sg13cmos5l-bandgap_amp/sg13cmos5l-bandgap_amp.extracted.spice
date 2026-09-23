@@ -21,13 +21,13 @@ M$3 d2 d2 vss vsubs nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $4 r0 *1 65,0 nfet
 M$4 pn d2 vss vsubs nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $5 r0 *1 20,20 pfet
-M$5 tail in_p d1 \$10 pfet L=1U W=20U AS=8P AD=8P PS=40.8U PD=40.8U
+M$5 tail in_p d1 vdd pfet L=1U W=20U AS=8P AD=8P PS=40.8U PD=40.8U
 * device instance $6 r0 *1 45,20 pfet
-M$6 tail in_n d2 \$10 pfet L=1U W=20U AS=8P AD=8P PS=40.8U PD=40.8U
+M$6 tail in_n d2 vdd pfet L=1U W=20U AS=8P AD=8P PS=40.8U PD=40.8U
 * device instance $7 r0 *1 20,40 pfet
-M$7 vdd out tail \$10 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$7 vdd out tail vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $8 r0 *1 45,40 pfet
-M$8 vdd pn out \$10 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$8 vdd pn out vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $9 r0 *1 70,40 pfet
-M$9 vdd pn pn \$10 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$9 vdd pn pn vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 .ENDS sg13cmos5l_bandgap_amp

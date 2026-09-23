@@ -208,6 +208,77 @@ def cont_array(b: Builder, x0: float, y0: float, x1: float, y1: float) -> None:
             b.box(L_CONT, cx, cy, cx + CNT_A, cy + CNT_A)
 
 
+# Well-tap geometry constants (issue #240). The CMOS5L counterpart of
+# ``layout/common.py``'s own ``TAP_*`` block (its issues #155/#184 comment,
+# q.v. for the SG13G2 per-device construction these values were proven on):
+# an n+ well tie is one small ``Activ`` island covered by ``nSD`` (the
+# deck-derived ``tap_nplus`` boolean klt's curated ``sg13cmos5l`` deck itself
+# uses, klayout-tools#1414 -- ``nSD``-covered ``Activ`` inside ``NWell``),
+# contacted through one ``Cont`` up to a ``Metal1`` pad the caller wires into
+# the well's supply rail. Every floor is the same value in both decks'
+# ``DECK`` lists (``activ.width.1`` 0.15 / ``activ.space.1`` 0.21 /
+# ``metal1.width.1`` 0.16 / ``cont.width.1`` 0.16 -- the cmos5l DRC scripts
+# are symlinks into the pinned sibling ``ihp-sg13g2`` checkout, see the deck
+# module's own docstring), so the proven SG13G2 sizing transfers unchanged.
+TAP_ACTIV_UM = 0.34  # tap island edge: >= activ.width.1/metal1.width.1 (0.15/0.16)
+TAP_IMPLANT_MARGIN_UM = 0.1  # nSD overhang past the Activ island on every side
+TAP_CONT_UM = 0.16  # the one contact: = CNT_A / cont.width.1 floor
+TAP_NWELL_MARGIN_UM = 0.1  # how far the shared NWell must extend past the nSD
+
+
+def draw_well_tap(
+    b: Builder,
+    x0: float,
+    y0: float,
+    net: str,
+) -> tuple[float, float, float, float]:
+    """Draw one n+ well-tap island (issue #240) -- the ``Activ`` + ``nSD`` +
+    ``Cont`` + ``Metal1``-pad construction ``klt``'s curated ``sg13cmos5l``
+    deck recognises as ``tap_nplus`` (``nSD``-covered ``Activ`` inside
+    ``NWell`` -- ``decks/sg13cmos5l.py``'s own derivation, klayout-tools
+    #1414), labelled ``net`` on ``Metal1.pin`` (8, 2), and return the tap's
+    own ``Metal1`` pad as an ``(x0, y0, x1, y1)`` box for the caller's
+    routing pass.
+
+    Why a standalone primitive rather than geometry inside
+    :func:`draw_hv_pmos` (the SG13G2 side embeds its tap in
+    ``draw_hv_mos``): every CMOS5L caller draws its PMOS row in one shared
+    ``NWell`` (``draw_nwell=False`` + one caller-drawn well box), and a
+    shared well needs one tap placed in the *floorplan's* field space --
+    between devices, clear of every leg's own ``Activ``/``GatPoly``/
+    ``ThickGateOx`` -- which a per-device drawing function cannot know. The
+    caller contracts instead:
+
+    * place the tap **inside** the shared ``NWell`` (the deck's tap
+      derivation clips to the well: an ``nSD`` island outside every well is
+      substrate doping, not a tap), with ``TAP_IMPLANT_MARGIN_UM`` +
+      ``TAP_NWELL_MARGIN_UM`` of well past the ``nSD`` on every side;
+    * keep it clear of every device's own geometry (``Activ`` by
+      ``activ.space.1`` 0.21 um, and off the legs' ``ThickGateOx`` boxes --
+      a tap is not a thick-oxide device, and keeping it off the marker
+      keeps ``klt extract``'s ``voltage_domain_warnings`` silent for it);
+    * wire the returned pad into the ``net`` supply rail with ordinary
+      ``Metal1`` routing (a ``Metal1`` crossing over a ``GatPoly`` route is
+      fine -- no ``Cont`` means no connection).
+    """
+    x_lo, x_hi = x0 - TAP_ACTIV_UM / 2, x0 + TAP_ACTIV_UM / 2
+    y_lo, y_hi = y0 - TAP_ACTIV_UM / 2, y0 + TAP_ACTIV_UM / 2
+    b.box(L_ACTIV, x_lo, y_lo, x_hi, y_hi)
+    b.box(
+        L_NSD,
+        x_lo - TAP_IMPLANT_MARGIN_UM,
+        y_lo - TAP_IMPLANT_MARGIN_UM,
+        x_hi + TAP_IMPLANT_MARGIN_UM,
+        y_hi + TAP_IMPLANT_MARGIN_UM,
+    )
+    half = TAP_CONT_UM / 2
+    b.box(L_CONT, x0 - half, y0 - half, x0 + half, y0 + half)
+    pad = (x_lo, y_lo, x_hi, y_hi)
+    b.box(L_METAL1, *pad)
+    b.net_label(net, x0, y0)
+    return pad
+
+
 def draw_hv_pmos(
     b: Builder,
     name: str,
@@ -450,7 +521,8 @@ def draw_pnpmpa(
     * **emitter** -- a ``w x l`` p+ ``Activ`` window (``pSD``-covered)
       inside the n-well, contacted to a Metal1 pad;
     * **base** -- an n+ ``Activ`` ring inside the *same* n-well (no ``pSD``
-      over it), contacted to a Metal1 ring: the well itself is the base;
+      over it; since issue #240 it carries an explicit ``nSD`` marker ring,
+      see below), contacted to a Metal1 ring: the well itself is the base;
     * **collector** -- a p+ ``Activ`` ring **outside** the n-well
       (``pSD``-covered), i.e. a substrate tie: the p-substrate is the
       collector. This is why the schematic wires collector and base
@@ -491,6 +563,21 @@ def draw_pnpmpa(
     br_x0, br_y0 = x0 - d["w2act"] - d["dw2act"], y0 - d["h2act"] - d["dh2act"]
     br_x1, br_y1 = x0 + d["w2act"] + d["dw2act"], y0 + d["h2act"] + d["dh2act"]
     b.ring(L_ACTIV, br_x0, br_y0, br_x1, br_y1, min(d["dw2act"], d["dh2act"]))
+    # Issue #240: an explicit ``nSD`` ring over the same four walls. The n+
+    # base ring has always been n+ *electrically* (the well is the PNP's
+    # base, and this ring is its contact), but CMOS5L's own PCell idiom
+    # draws n+ as pSD's complement -- no implant marker on the ring -- so
+    # any marker-keyed derivation (klt erc's ``ties[]`` boolean, the deck's
+    # ``tap_nplus``) was structurally blind to it. Drawing the marker makes
+    # the physically-real tie gradeable: same coordinates, same wall width
+    # as the ``Activ`` ring above, and strictly inside the well (``wnwell``
+    # clears the ring's outer edge by 0.31 um for every instantiated size,
+    # per :func:`pnpmpa_extent`'s own formulae). It does deviate from the
+    # PDK PCell's own mask set -- the documented trade issue #240 names for
+    # this cause -- and it must never reach the emitter's ``pSD`` (this
+    # ring's inner edge sits ``PSD_C`` outside it, the same implant spacing
+    # the PCell itself keeps between the two).
+    b.ring(L_NSD, br_x0, br_y0, br_x1, br_y1, min(d["dw2act"], d["dh2act"]))
     base_ring_m1 = (br_x0 + 0.02, br_y0 + 0.02, br_x1 - 0.02, br_y1 - 0.02)
     b.ring(
         L_METAL1, *base_ring_m1,
@@ -505,14 +592,17 @@ def draw_pnpmpa(
 
     # -- the well itself: the PNP's base region ----------------------------
     # Left deliberately unlabelled (no ``NWell.pin`` text): the well *is*
-    # the PNP's base, but the curated deck declares no tap layer
-    # (``tap``/``tap_nplus``/``tap_pplus`` all ``None``), so a well net can
-    # never be connected to the n+ base ring drawn inside it. A label here
-    # would assert an electrical identity the extraction cannot honour --
-    # verified concretely: with the label, `klt extract` reports the same
-    # net count and simply drops the isolated well region, and `klt lvs`'s
-    # finding count is unchanged. See ``layout/README.md`` "SG13CMOS5L: LVS
-    # -- ``mismatch``, fully attributed", cause 4.
+    # the PNP's base, and since issue #240's explicit ``nSD`` marker ring
+    # the deck's ``tap_nplus`` derivation (klayout-tools#1414, in klt
+    # builds from 0.5.0 on) connects it to the base ring's own net without
+    # any label -- the marker-keyed tap is the connection, which is the
+    # whole reason the marker is drawn. A ``NWell.pin`` text on top would
+    # name the same net a second way but change nothing else, so it stays
+    # off rather than doubling the label surface. (Pre-#240, against the
+    # 0.3.0-era deck that declared no tap derivation at all, this well
+    # extracted as an isolated region a label could not connect -- the
+    # floating-well evidence ``layout/README.md`` "SG13CMOS5L: LVS
+    # -- ``mismatch``, fully attributed", cause 4, documents.)
     b.box(L_NWELL, x0 - d["wnwell"], y0 - d["hnwell"], x0 + d["wnwell"], y0 + d["hnwell"])
 
     # -- collector: p+ substrate ring outside the well ---------------------
