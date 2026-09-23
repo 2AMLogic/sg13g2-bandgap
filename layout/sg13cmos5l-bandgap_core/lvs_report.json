@@ -8,29 +8,60 @@
   "parameter_tolerance": null,
   "options": {
     "combine_devices": false,
+    "combine_devices_per_circuit": null,
     "flatten_layout": false,
     "flatten_reference": false,
     "netgen_setup": null,
-    "parameter_tolerance": null
+    "parameter_tolerance": null,
+    "compare_parameters": null,
+    "power_connectivity": null,
+    "supply_nets": [
+      "GND",
+      "VCC",
+      "VDD",
+      "VGND",
+      "VPWR",
+      "VSS"
+    ]
   },
+  "hints_applied": null,
   "status": "mismatch",
-  "mismatch_count": 29,
-  "error_count": 28,
+  "power_connectivity": {
+    "status": "unchecked",
+    "reason": "reference.form is 'plain-element', whose reference netlist carries its own power/ground pins and nets -- they take part in the ordinary compare, so this check (which exists to cover the signal-only 'gate-level-verilog' form) does not apply",
+    "power_pins": [],
+    "power_pins_derivation": null,
+    "instance_count": 0,
+    "expected_nets": null,
+    "unchecked_expected_pins": [],
+    "findings": [],
+    "finding_count": 0
+  },
+  "body_verification": {
+    "status": "verified",
+    "reason": null,
+    "device_classes": [],
+    "device_count": 0,
+    "findings": [],
+    "finding_count": 0
+  },
+  "mismatch_count": 25,
+  "error_count": 24,
   "category_counts": {
     "device.unmatched": 10,
-    "net.unmatched": 17,
+    "net.unmatched": 13,
     "topology": 2
   },
   "category_error_counts": {
     "device.unmatched": 10,
-    "net.unmatched": 17,
+    "net.unmatched": 13,
     "topology": 1
   },
   "counts": {
     "nets": {
       "layout": 9,
       "reference": 8,
-      "matched": 0
+      "matched": 2
     },
     "devices": {
       "layout": 5,
@@ -38,9 +69,9 @@
       "matched": 0
     },
     "pins": {
-      "layout": 8,
+      "layout": 9,
       "reference": 0,
-      "matched": 8
+      "matched": 9
     }
   },
   "device_classes": [
@@ -53,20 +84,24 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "01c99aff60f6a3e08f7cbb678d31ff795440648f33a7cd3885f7c9f08d0136a9",
+    "layout_sha256": "ea10c798c37ee176b89fe9ce6fdab84d70ed871857a659a46e72cc7fcf615515",
     "reference_sha256": "b8968f3cbe82db0218bbac9db7d34ef911661b818a33273c6bb62ad56deb4f26",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.3.0",
+    "klt_version": "0.5.0+g32f69f811682",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:5b5309ecd586f527d6df271384f18e8f1fcd528a09935544b46aed563b66a92e",
+      "content_hash": "sha256:1912f17486e78de5259aab5d68533488ebbd239a05018f096217aa62ddee2909",
       "released": false
     },
-    "input": null
+    "input": {
+      "content_hash": "sha256:ea10c798c37ee176b89fe9ce6fdab84d70ed871857a659a46e72cc7fcf615515",
+      "role": "layout"
+    },
+    "klayout_version_mismatch": true
   },
   "mismatches": [
     {
@@ -245,7 +280,7 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "\\$30",
+        "layout": "e2",
         "reference": null
       },
       "device": null,
@@ -293,22 +328,6 @@
       "description": "layout net has no reference counterpart",
       "side": "layout",
       "net": {
-        "layout": "fb",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "layout net has no reference counterpart",
-      "side": "layout",
-      "net": {
         "layout": "sns1",
         "reference": null
       },
@@ -326,22 +345,6 @@
       "side": "layout",
       "net": {
         "layout": "sns2",
-        "reference": null
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "layout net has no reference counterpart",
-      "side": "layout",
-      "net": {
-        "layout": "vdd",
         "reference": null
       },
       "device": null,
@@ -422,22 +425,6 @@
       "side": "reference",
       "net": {
         "layout": null,
-        "reference": "FB"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "reference net has no layout counterpart",
-      "side": "reference",
-      "net": {
-        "layout": null,
         "reference": "SNS1"
       },
       "device": null,
@@ -455,22 +442,6 @@
       "net": {
         "layout": null,
         "reference": "SNS2"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "reference net has no layout counterpart",
-      "side": "reference",
-      "net": {
-        "layout": null,
-        "reference": "VDD"
       },
       "device": null,
       "property": null,
@@ -538,5 +509,16 @@
       "subcircuit": null
     }
   ],
-  "net_correspondence": []
+  "net_correspondence": [
+    {
+      "layout": "fb",
+      "reference": "FB",
+      "pin": true
+    },
+    {
+      "layout": "vdd",
+      "reference": "VDD",
+      "pin": true
+    }
+  ]
 }

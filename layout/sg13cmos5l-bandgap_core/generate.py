@@ -184,6 +184,7 @@ from common_sg13cmos5l import (  # noqa: E402
     draw_hv_pmos,
     draw_pnpmpa,
     draw_rppd,
+    draw_well_tap,
     pad_center_x,
     poly_underpass,
     route_h,
@@ -296,6 +297,19 @@ X_SNS2_UNDERPASS = (176.75, 185.25)
 Y_VREF_PORT = 40.0
 X_VREF_PORT = 220.0
 
+#: The shared mirror well's n+ tap (issue #240), placed in the well's own
+#: interior field between ``M1`` and ``M2``: x=22.5 sits ~17 um clear of
+#: either leg's own ``Activ``/``pSD`` (M1 ends at x=5.58, M2 starts at
+#: 39.42), y=59.15 keeps the 0.34 um tap island (plus its 0.1 um ``nSD``
+#: margin) below the ``fb`` gate bar (y 59.85..60.15), above the well's own
+#: bottom edge (58.48), and level with the drain-pad band it never overlaps
+#: in x -- and off every leg's ``ThickGateOx`` (each spans only +-5.27 um
+#: around its leg). ``_route()`` wires the returned pad up into the vdd rail
+#: with a Metal1 stub that crosses the ``fb`` bar -- Metal1 over GatPoly
+#: with no ``Cont`` is no connection.
+X_MIRROR_TAP = 22.5
+Y_MIRROR_TAP = 59.15
+
 
 def build() -> Builder:
     b = Builder(TOP_CELL)
@@ -311,18 +325,20 @@ def build() -> Builder:
         L_NWELL,
         m1["nwell"][0], m1["nwell"][1], m3["nwell"][2], m3["nwell"][3],
     )
-    # Deliberately **not** well-labelled. Tried both ways for this issue:
-    # a `NWell.pin` "vdd" text does name the well net, but the deck declares
-    # no tap layer at all (`tap`/`tap_nplus`/`tap_pplus` all None), so the
-    # well still cannot be *connected* to the vdd metal rail -- the netlist
-    # simply comes back with a second, disjoint net called `vdd$1`, and
-    # `klt lvs`'s finding count is unchanged (27 either way, re-run to
-    # confirm). Labelling it would only suppress `klt extract`'s own
-    # "PMOS devices tie their body to an anonymous net with no DC bias path"
-    # warning -- the most direct evidence of the tap gap this cell hits --
-    # in exchange for a net name that misrepresents a floating well as a
-    # supply tie. See layout/README.md "SG13CMOS5L: LVS -- mismatch, fully
-    # attributed", cause 4.
+    # The well's own n+ tap (issue #240): an ``nSD``-covered ``Activ`` island
+    # (``draw_well_tap``) inside this shared well, wired up into the vdd rail
+    # by ``_route()`` below -- the deck-derived ``tap_nplus`` connection the
+    # curated ``sg13cmos5l`` deck has recognised since klayout-tools#1414.
+    # Until this issue the well was deliberately left floating, and the
+    # comment here recorded why: the 0.3.0-era deck declared no tap
+    # derivation at all, so a ``NWell.pin`` "vdd" label could only *name* the
+    # isolated well (a second, disjoint ``vdd$1`` net) while suppressing
+    # ``klt extract``'s own "no DC bias path" warning -- the most direct
+    # evidence of the tap gap (layout/README.md "SG13CMOS5L: LVS --
+    # ``mismatch``, fully attributed", cause 4). With the tap drawn the well
+    # is physically connected to vdd, so no well label is needed to name it
+    # and none is drawn.
+    mirror_tap = draw_well_tap(b, X_MIRROR_TAP, Y_MIRROR_TAP, "vdd")
 
     # -- series resistors, each starting at its own mirror leg's column ----
     r2 = draw_rppd(b, "R2", R2_W, R2_L, X_M2, Y_R2, end_a_net="sns2", end_b_net="e2",
@@ -339,7 +355,7 @@ def build() -> Builder:
     ]
     q3 = draw_pnpmpa(b, "Q3", Q_UNIT_W, Q_L, x_q3, Y_Q3, "e3", "vss", "vss")
 
-    ports = _route(b, m1, m2, m3, r1, r2, q1, q2_units, q3)
+    ports = _route(b, m1, m2, m3, r1, r2, q1, q2_units, q3, mirror_tap)
     return b, ports
 
 
@@ -353,6 +369,7 @@ def _route(
     q1: dict,
     q2_units: list[dict],
     q3: dict,
+    mirror_tap: tuple[float, float, float, float],
 ) -> dict[str, tuple[float, float, float, float]]:
     """Wire every schematic net. Each block names the net it wires; see the
     module docstring for why all of it is single-metal and planar.
@@ -370,6 +387,11 @@ def _route(
     src = m1["source_pad"]
     vdd_pad = (m1["source_pad"][0], src[1], m3["source_pad"][2], src[3])
     b.box(L_METAL1, *vdd_pad)
+
+    # -- the shared well's tap, rising into that same vdd rail (issue #240).
+    # One Metal1 stub from the tap pad's top edge up through the fb bar
+    # (Metal1 over GatPoly with no Cont is no connection) onto the rail.
+    route_v(b, L_METAL1, X_MIRROR_TAP, mirror_tap[3], vdd_pad[3], width=TRUNK_W)
 
     # -- fb: M1/M2/M3 gates, one continuous GatPoly bar. Poly-to-poly routing
     # between recognised gates is ordinary connectivity for `klt extract`

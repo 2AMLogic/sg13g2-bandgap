@@ -2328,42 +2328,65 @@ primary connectivity graph (klayout-tools#2186), so declaring `ties[]`
 cannot perturb anything but `erc.missing_tie`. What changed with #233's
 tie declaration is `erc.missing_tie` itself: it moved from
 `erc_coverage.inapplicable` (`no_ties_declared`) to
-`erc_coverage.checked`, and it now reports **12 findings** — one per
-physically distinct `NWell` island — so `erc_status` and the report's
+`erc_coverage.checked`, and it now reports **10 findings** (issue #233's
+original declaration run reported 12 — one per physically distinct
+`NWell` island; issue #240's drawn taps since cleared the two MOS wells,
+leaving the ten pnpMPA wells below) — so `erc_status` and the report's
 overall `status` read `"violations"` (`klt erc` exits 3). The antenna half
 of the roll-up is unchanged (`--pdk` deliberately omitted; only `sky130`
 has a ratio table) — per the ladder's item 11 text, an antenna verdict
 "is a real defect, but it is not this item's subject"; `erc_status`
 (klayout-tools#2179) is the connectivity roll-up the item does grade.
 
-**`erc.missing_tie` is now checked, and its 12 findings are the verdict of
-record — kept, not tuned away (issue #233's own acceptance criterion).**
-The spec declares the n-well tie exactly the way klt's curated
-`sg13cmos5l` deck derives `tap_nplus` (klayout-tools#1273): `nSD`-covered
-(7/0) `Activ` (1/0) inside `NWell` (31/0), wired through `Cont` to
-`Metal1`, expected to reach `vdd` (`tap_layer` narrowed by
-`tap_requires`, the same boolean-implant shape the upstream docs use — a
-bare `tap_layer` is the unfalsifiable form the degenerate-tie rule
-(klayout-tools#2199) rejects). Every well fails with *no tap drawn at
-all*, because the assembly genuinely draws no nSD-covered Activ inside
-any well — verified geometrically: `Activ ∩ nSD ∩ NWell = ∅` on the
-committed GDS (the only 7/0 geometry anywhere in the assembly is
-startup's `rhigh` resistor body marker, and startup draws no NWell). The
-12 findings split into two causes, filed together as
-[#240](https://github.com/2AMLogic/sg13g2-bandgap/issues/240):
+**`erc.missing_tie` is checked, and its findings are the verdict of
+record — kept, not tuned away (issue #233's own acceptance criterion,
+carried through #240's resolution).** The spec declares the n-well tie
+exactly the way klt's curated `sg13cmos5l` deck derives `tap_nplus`
+(klayout-tools#1273): `nSD`-covered (7/0) `Activ` (1/0) inside `NWell`
+(31/0), wired through `Cont` to `Metal1`, expected to reach `vdd`
+(`tap_layer` narrowed by `tap_requires`, the same boolean-implant shape
+the upstream docs use — a bare `tap_layer` is the unfalsifiable form the
+degenerate-tie rule (klayout-tools#2199) rejects). Issue #233's original
+run reported 12 findings — every well failed with *no tap drawn at all*
+(`Activ ∩ nSD ∩ NWell = ∅` on the then-committed GDS). Issue #240
+resolved both of that run's causes geometrically, and the committed
+report now reads **10 findings**, all one class:
 
-- **2 floating MOS wells** (bandgap_core's shared mirror well,
-  bandgap_amp's shared well) — the already-documented floating-body gap
-  ("SG13CMOS5L: LVS — mismatch, fully attributed", cause 4 above); a real
-  layout gap awaiting drawn n+ tap islands.
-- **10 pnpMPA wells** — device bodies whose n+ base ring *is* a tie (to
-  `vss`, via its Metal1 ring) but is drawn marker-less per CMOS5L's own
-  idiom (pSD is the only implant mask its PCells draw; n+ is its
-  complement), invisible to the deck-derived tap expression.
+- **2 floating MOS wells — FIXED** (`draw_well_tap`,
+  `layout/common_sg13cmos5l.py`): each shared well now carries a real
+  nSD-covered `Activ` tap island contacted up to `Metal1` and wired into
+  the `vdd` rail (bandgap_core's between M1/M2, bandgap_amp's in the
+  MP4↔MP3 gap). Both wells pass the tie, and `klt extract`'s
+  `unbiased_pmos_body_nets` warning list is now empty on every cell —
+  the PMOS bodies extract to `vdd` through the drawn tap (the LVS
+  consequence is recorded in each cell's own section below: same four
+  documented causes, strictly smaller finding counts).
+- **10 pnpMPA wells — geometry drawn, findings structurally
+  unresolvable on this `klt`**: `draw_pnpmpa` now draws an explicit
+  `nSD` ring over each n+ base ring (the one deviation from the PDK
+  PCell's own mask set #240's issue text sanctions), so the tie that was
+  always physically there — to `vss`, via the base `Metal1` ring — is
+  visible to any marker-keyed derivation. The findings remain because a
+  `ties[]` declaration names ONE net and `klt erc` evaluates every
+  declared tie against **every** `well_layer` island: a well whose
+  correct tie is `vss` can never satisfy a `net: "vdd"` tie, and the
+  symmetric declarations all fail too (verified empirically on this
+  stream: 10 findings with the single honest tie, 12 with a second
+  `net: "vss"` tie added — each population fails the other's — and 11
+  with `tap_boxes` narrowing, which only changes the message). Each of
+  the ten residual findings is individually justified by its own bbox:
+  every one is a pnpMPA well whose drawn, nSD-marked base-ring tap
+  verifiably reaches `vss`, the net the schematic ties that well to.
+  Expressing "this well population ties to `vss`, that one to `vdd`"
+  needs an upstream capability — filed as
+  [klayout-tools#2354](https://github.com/2AMLogic/klayout-tools/issues/2354)
+  (the well-side, two-net analogue of the substrate-half gap #2255
+  already tracks).
 
-Item 11 therefore stays **unmet** (`erc.missing_tie` ≠ 0), now on the
-strength of checked findings rather than a disclosed omission. Its
-compound ERC+LVS citation (#239) stays registered in
+Item 11 therefore stays **unmet** (`erc.missing_tie` = 10 ≠ 0) — no
+longer because ties are missing from the layout, but because the
+mixed-net well population is inexpressible in `klt erc`'s declaration
+schema. Its compound ERC+LVS citation (#239) stays registered in
 `manifests/sg13g2-bandgap.json` with the ERC envelope's input hash pinned
 (the committed GDS — the pin every `klt signoff` citation uses) — the
 signoff job derives precisely `check_failed` from it (ERC findings + the
@@ -2427,7 +2450,7 @@ from the SG13G2 table above and not assumed identical to it:
 | `Activ.drawing` | 1/0 | MOS diffusion, PNP emitter/base/collector |
 | `GatPoly.drawing` | 5/0 | MOS gate, `fb` routing bar, `rppd` conductor |
 | `Cont.drawing` | 6/0 | every contact |
-| `nSD.drawing` | 7/0 | `rhigh` body marker (startup); the tie declaration's `tap_requires` n+ implant |
+| `nSD.drawing` | 7/0 | n+ implant: `rhigh` body marker (startup), the well taps' `Activ` cover (#240), the pnpMPA base-ring marker (#240), the tie declaration's `tap_requires` |
 | `Metal1.drawing` | 8/0 | all routing |
 | `Metal1.pin` | 8/2 | **net names** (`EXTRACTION_DECK.metal_labels`) |
 | `pSD.drawing` | 14/0 | p+ implant (PMOS S/D, PNP emitter + collector ring, `rppd` body) |
@@ -2500,19 +2523,19 @@ two gate rectangles merge into one plain rectangle with no junction at all.
 
 | Cell | Report | Status | Engine |
 | --- | --- | --- | --- |
-| `sg13cmos5l-bandgap_core` | `layout/sg13cmos5l-bandgap_core/lvs_report.json` | `mismatch` (29 findings, 28 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
-| `sg13cmos5l-bandgap_amp` | `layout/sg13cmos5l-bandgap_amp/lvs_report.json` | `mismatch` (24 findings, 23 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+| `sg13cmos5l-bandgap_core` | `layout/sg13cmos5l-bandgap_core/lvs_report.json` | `mismatch` (25 findings, 24 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+| `sg13cmos5l-bandgap_amp` | `layout/sg13cmos5l-bandgap_amp/lvs_report.json` | `mismatch` (8 findings, 7 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
 | `sg13cmos5l-bandgap_startup` | `layout/sg13cmos5l-bandgap_startup/lvs_report.json` | `mismatch` (17 findings, 15 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
 
 ```
-bandgap_core     nets: layout=9   reference=8  matched=0
+bandgap_core     nets: layout=9   reference=8  matched=2
                  devices: layout=5   reference=8  matched=0
-                 device.unmatched 10, net.unmatched 17, topology 2
+                 device.unmatched 10, net.unmatched 13, topology 2
 
-bandgap_amp      nets: layout=11  reference=9  matched=2
-                 devices: layout=9   reference=9  matched=0
-                 device.body_unverified 1, device.unmatched 9,
-                 net.merged 6, net.split 8
+bandgap_amp      nets: layout=10  reference=9  matched=4
+                 devices: layout=9   reference=9  matched=5
+                 device.body_unverified 1, device.unmatched 4,
+                 net.merged 1, net.split 2
 
 bandgap_startup  nets: layout=6   reference=5  matched=0
                  devices: layout=3   reference=3  matched=0
@@ -2557,6 +2580,44 @@ own extract/DRC reports are the only ones still on the pre-fix deck (see
 item 3). The one thing the fold *did* move is anonymous net/device
 numbering; every `$N` quoted below and in the composed cell's section above
 was re-read from the post-fold reports and re-runs, not carried over.
+
+**Then issue #240's well taps landed on top.** #240 drew the n+ taps this
+section's cause 4 had been documenting (one `draw_well_tap` island per
+shared MOS well, wired into `vdd`; one explicit `nSD` ring over every
+pnpMPA base ring — see "ERC supply spec" above), changed
+`bandgap_core`'s, `bandgap_amp`'s and the composed `bandgap_top`'s GDS,
+and re-minted every affected report against the current toolchain
+(`klt 0.5.0+g32f69f811682`, deck `sha256:1912f17486e78de…` — the deck
+drifted again since #174's re-commit, independently of any code change).
+`bandgap_startup` draws no well and was untouched. Because both a deck
+drift and a geometry change are in flight, the deltas were measured
+against a same-toolchain control (each cell's **pre-#240** GDS
+re-extracted/re-compared on the **current** klt) so the two effects are
+attributable separately:
+
+| Cell | old GDS, old committed report | old GDS, current klt (control) | new GDS, current klt (committed) |
+| --- | --- | --- | --- |
+| `bandgap_core` | 29 findings | 31 (incl. 1 `device.body_unverified`) | **25** |
+| `bandgap_amp` | 24 | 25 (incl. 2 `device.body_unverified`) | **8** |
+| `bandgap_top` | 22 | 24 (incl. 1 `device.body_unverified`) | **15** |
+
+The #240 geometry effect (column 3 → 4) is strictly an improvement and
+adds **no** new finding category: every `device.body_unverified`
+disclosure is gone (the PMOS bodies now extract to `vdd` through the
+drawn taps — `klt extract`'s `unbiased_pmos_body_nets` is empty on every
+cell), `bandgap_amp`'s five `pfet` now pair (devices matched 0 → 5 of 9,
+`device.unmatched` 9 → 4, all four remaining being the NMOS/substrate
+half cause 4 keeps), `bandgap_core`'s `vdd`/`fb` nets now match their
+references (nets matched 0 → 2; the anonymous `$30` well net is gone),
+and `bandgap_top`'s device matches rise 8 → 14. The residual counts stay
+inside the same four documented causes below. The current deck also
+newly surfaces one pre-existing layout defect the old deck had absorbed:
+`bandgap_core`'s `R2` `e2` drop lands in free field, disjoint from the
+Q2 emitter trunk, so the two `e2`-labelled islands extract as `e2` and
+`e2$1` — verified byte-identical on the pre-#240 GDS, i.e. **not**
+caused by #240's geometry, and filed as
+[#243](https://github.com/2AMLogic/sg13g2-bandgap/issues/243) rather
+than fixed in passing.
 
 **This is reported as `mismatch` deliberately.** Four independent causes
 were originally attributed below, each a property of the curated deck's

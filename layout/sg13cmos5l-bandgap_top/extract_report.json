@@ -5,11 +5,11 @@
   "top": "sg13cmos5l_bandgap_top",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_top.extracted.spice",
-  "netlist_sha256": "a6ffb4e439a0942c9eb7985333a7c8fb7d6094bf4a9724083ed94d5c9b942442",
+  "netlist_sha256": "e03707039b6b3998670138ffc6815520434cdfae72c86f11674d7f476a7912e7",
   "status": "extracted",
   "device_count": 17,
-  "net_count": 15,
-  "pin_count": 13,
+  "net_count": 14,
+  "pin_count": 14,
   "device_counts": {
     "nfet": 6,
     "pfet": 8,
@@ -70,7 +70,13 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_amp",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$10",
@@ -79,7 +85,7 @@
         "s": "d1",
         "g": "in_p|sns2",
         "d": "tail",
-        "b": "\\$36"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -88,7 +94,13 @@
         "ad_um2": 8.0,
         "ps_um": 40.8,
         "pd_um": 40.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_amp",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$11",
@@ -97,7 +109,7 @@
         "s": "d2",
         "g": "in_n|sns1",
         "d": "tail",
-        "b": "\\$36"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -106,7 +118,13 @@
         "ad_um2": 8.0,
         "ps_um": 40.8,
         "pd_um": 40.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_amp",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$12",
@@ -115,7 +133,7 @@
         "s": "tail",
         "g": "fb|out",
         "d": "vdd",
-        "b": "\\$36"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -124,7 +142,13 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_amp",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$13",
@@ -133,7 +157,7 @@
         "s": "fb|out",
         "g": "pn",
         "d": "vdd",
-        "b": "\\$36"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -142,7 +166,13 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_amp",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$14",
@@ -151,7 +181,7 @@
         "s": "pn",
         "g": "pn",
         "d": "vdd",
-        "b": "\\$36"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -160,7 +190,13 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_amp",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$15",
@@ -176,7 +212,13 @@
         "w_um": 2.0,
         "area_um2": 170.2,
         "perimeter_um": 174.2
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_core",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$16",
@@ -192,7 +234,13 @@
         "w_um": 2.0,
         "area_um2": 1294.0,
         "perimeter_um": 1298.0
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_core",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$17",
@@ -208,7 +256,13 @@
         "w_um": 1.0,
         "area_um2": 1411.3,
         "perimeter_um": 2824.6
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_startup",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$2",
@@ -226,7 +280,13 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_amp",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$3",
@@ -244,7 +304,13 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_amp",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$4",
@@ -262,7 +328,13 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_amp",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$5",
@@ -280,7 +352,13 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_startup",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$6",
@@ -298,7 +376,13 @@
         "ad_um2": 0.8,
         "ps_um": 4.8,
         "pd_um": 4.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_startup",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$7",
@@ -307,7 +391,7 @@
         "s": "in_n|sns1",
         "g": "fb|out",
         "d": "vdd",
-        "b": "\\$29"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -316,7 +400,13 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_core",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$8",
@@ -325,7 +415,7 @@
         "s": "in_p|sns2",
         "g": "fb|out",
         "d": "vdd",
-        "b": "\\$29"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -334,7 +424,13 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_core",
+          "array_index": null
+        }
+      ]
     },
     {
       "name": "$9",
@@ -343,7 +439,7 @@
         "s": "vref",
         "g": "fb|out",
         "d": "vdd",
-        "b": "\\$29"
+        "b": "vdd"
       },
       "params": {
         "l_um": 1.0,
@@ -352,94 +448,549 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": [
+        {
+          "cell": "sg13cmos5l_bandgap_core",
+          "array_index": null
+        }
+      ]
     }
   ],
   "nets": [
     {
-      "name": "\\$29",
-      "pin": false,
-      "device_count": 3
-    },
-    {
-      "name": "\\$36",
-      "pin": false,
-      "device_count": 5
-    },
-    {
       "name": "d1",
       "pin": true,
-      "device_count": 4
+      "device_count": 4,
+      "net_id": 22,
+      "pin_index": 0,
+      "label_positions_um": [
+        {
+          "text": "d1",
+          "x_um": 20.0,
+          "y_um": 80.77
+        },
+        {
+          "text": "d1",
+          "x_um": 20.0,
+          "y_um": 99.23
+        }
+      ]
     },
     {
       "name": "d2",
       "pin": true,
-      "device_count": 4
+      "device_count": 4,
+      "net_id": 23,
+      "pin_index": 1,
+      "label_positions_um": [
+        {
+          "text": "d2",
+          "x_um": 45.0,
+          "y_um": 80.77
+        },
+        {
+          "text": "d2",
+          "x_um": 45.0,
+          "y_um": 99.23
+        }
+      ]
     },
     {
       "name": "det",
       "pin": true,
-      "device_count": 3
+      "device_count": 3,
+      "net_id": 21,
+      "pin_index": 2,
+      "label_positions_um": [
+        {
+          "text": "det",
+          "x_um": 144.272,
+          "y_um": 87.75
+        },
+        {
+          "text": "det",
+          "x_um": 155.0,
+          "y_um": 80.52
+        }
+      ]
     },
     {
       "name": "e2",
       "pin": true,
-      "device_count": 1
+      "device_count": 1,
+      "net_id": 16,
+      "pin_index": 3,
+      "label_positions_um": [
+        {
+          "text": "e2",
+          "x_um": 58.0,
+          "y_um": 43.75
+        }
+      ]
+    },
+    {
+      "name": "e2",
+      "pin": true,
+      "device_count": 0,
+      "net_id": 7,
+      "pin_index": 13,
+      "label_positions_um": [
+        {
+          "text": "e2",
+          "x_um": 123.75,
+          "y_um": 30.0
+        },
+        {
+          "text": "e2",
+          "x_um": 129.75,
+          "y_um": 30.0
+        },
+        {
+          "text": "e2",
+          "x_um": 135.75,
+          "y_um": 30.0
+        },
+        {
+          "text": "e2",
+          "x_um": 141.75,
+          "y_um": 30.0
+        },
+        {
+          "text": "e2",
+          "x_um": 147.75,
+          "y_um": 30.0
+        },
+        {
+          "text": "e2",
+          "x_um": 153.75,
+          "y_um": 30.0
+        },
+        {
+          "text": "e2",
+          "x_um": 159.75,
+          "y_um": 30.0
+        },
+        {
+          "text": "e2",
+          "x_um": 165.75,
+          "y_um": 30.0
+        }
+      ]
     },
     {
       "name": "e3",
       "pin": true,
-      "device_count": 1
+      "device_count": 1,
+      "net_id": 3,
+      "pin_index": 4,
+      "label_positions_um": [
+        {
+          "text": "e3",
+          "x_um": 217.12,
+          "y_um": 0.0
+        },
+        {
+          "text": "e3",
+          "x_um": 217.12,
+          "y_um": 14.75
+        }
+      ]
     },
     {
       "name": "fb|out",
       "pin": true,
-      "device_count": 7
+      "device_count": 7,
+      "net_id": 19,
+      "pin_index": 5,
+      "label_positions_um": [
+        {
+          "text": "fb",
+          "x_um": -8.18,
+          "y_um": 60.0
+        },
+        {
+          "text": "fb",
+          "x_um": 180.0,
+          "y_um": 80.52
+        },
+        {
+          "text": "fb",
+          "x_um": 184.15,
+          "y_um": 86.0
+        },
+        {
+          "text": "out",
+          "x_um": 0.0,
+          "y_um": 80.77
+        },
+        {
+          "text": "out",
+          "x_um": 45.0,
+          "y_um": 119.23
+        }
+      ]
     },
     {
       "name": "in_n|sns1",
       "pin": true,
-      "device_count": 3
+      "device_count": 3,
+      "net_id": 5,
+      "pin_index": 6,
+      "label_positions_um": [
+        {
+          "text": "in_n",
+          "x_um": 58.0,
+          "y_um": 100.0
+        },
+        {
+          "text": "in_n",
+          "x_um": 76.75,
+          "y_um": 100.0
+        },
+        {
+          "text": "sns1",
+          "x_um": -9.75,
+          "y_um": 50.0
+        },
+        {
+          "text": "sns1",
+          "x_um": 0.0,
+          "y_um": 30.0
+        },
+        {
+          "text": "sns1",
+          "x_um": 0.0,
+          "y_um": 59.23
+        },
+        {
+          "text": "sns1",
+          "x_um": 148.0,
+          "y_um": 79.05
+        },
+        {
+          "text": "sns1",
+          "x_um": 148.0,
+          "y_um": 80.0
+        }
+      ]
     },
     {
       "name": "in_p|sns2",
       "pin": true,
-      "device_count": 3
+      "device_count": 3,
+      "net_id": 15,
+      "pin_index": 7,
+      "label_positions_um": [
+        {
+          "text": "in_p",
+          "x_um": -6.75,
+          "y_um": 100.0
+        },
+        {
+          "text": "in_p",
+          "x_um": 7.0,
+          "y_um": 100.0
+        },
+        {
+          "text": "sns2",
+          "x_um": 45.0,
+          "y_um": 59.23
+        },
+        {
+          "text": "sns2",
+          "x_um": 46.0,
+          "y_um": 43.75
+        },
+        {
+          "text": "sns2",
+          "x_um": 219.75,
+          "y_um": 57.0
+        }
+      ]
     },
     {
       "name": "pn",
       "pin": true,
-      "device_count": 4
+      "device_count": 4,
+      "net_id": 20,
+      "pin_index": 8,
+      "label_positions_um": [
+        {
+          "text": "pn",
+          "x_um": 65.0,
+          "y_um": 80.77
+        },
+        {
+          "text": "pn",
+          "x_um": 70.0,
+          "y_um": 119.23
+        }
+      ]
     },
     {
       "name": "tail",
       "pin": true,
-      "device_count": 3
+      "device_count": 3,
+      "net_id": 24,
+      "pin_index": 9,
+      "label_positions_um": [
+        {
+          "text": "tail",
+          "x_um": 20.0,
+          "y_um": 100.77
+        },
+        {
+          "text": "tail",
+          "x_um": 20.0,
+          "y_um": 119.23
+        },
+        {
+          "text": "tail",
+          "x_um": 45.0,
+          "y_um": 100.77
+        }
+      ]
     },
     {
       "name": "vdd",
       "pin": true,
-      "device_count": 7
+      "device_count": 15,
+      "net_id": 18,
+      "pin_index": 10,
+      "label_positions_um": [
+        {
+          "text": "vdd",
+          "x_um": 0.0,
+          "y_um": 60.77
+        },
+        {
+          "text": "vdd",
+          "x_um": 20.0,
+          "y_um": 120.77
+        },
+        {
+          "text": "vdd",
+          "x_um": 22.5,
+          "y_um": 59.15
+        },
+        {
+          "text": "vdd",
+          "x_um": 45.0,
+          "y_um": 60.77
+        },
+        {
+          "text": "vdd",
+          "x_um": 45.0,
+          "y_um": 120.77
+        },
+        {
+          "text": "vdd",
+          "x_um": 52.0,
+          "y_um": 119.0
+        },
+        {
+          "text": "vdd",
+          "x_um": 70.0,
+          "y_um": 120.77
+        },
+        {
+          "text": "vdd",
+          "x_um": 90.25,
+          "y_um": 65.0
+        },
+        {
+          "text": "vdd",
+          "x_um": 100.5,
+          "y_um": 87.75
+        },
+        {
+          "text": "vdd",
+          "x_um": 180.0,
+          "y_um": 60.77
+        }
+      ]
     },
     {
       "name": "vref",
       "pin": true,
-      "device_count": 2
+      "device_count": 2,
+      "net_id": 17,
+      "pin_index": 11,
+      "label_positions_um": [
+        {
+          "text": "vref",
+          "x_um": 180.0,
+          "y_um": 59.23
+        },
+        {
+          "text": "vref",
+          "x_um": 181.0,
+          "y_um": 14.75
+        },
+        {
+          "text": "vref",
+          "x_um": 219.75,
+          "y_um": 40.0
+        },
+        {
+          "text": "vref",
+          "x_um": 225.0,
+          "y_um": 78.0
+        }
+      ]
     },
     {
       "name": "vss",
       "pin": true,
-      "device_count": 15
+      "device_count": 15,
+      "net_id": 25,
+      "pin_index": 12,
+      "label_positions_um": [
+        {
+          "text": "vss",
+          "x_um": -2.575,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": -1.245,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 0.0,
+          "y_um": 79.23
+        },
+        {
+          "text": "vss",
+          "x_um": 20.0,
+          "y_um": 79.23
+        },
+        {
+          "text": "vss",
+          "x_um": 45.0,
+          "y_um": 79.23
+        },
+        {
+          "text": "vss",
+          "x_um": 65.0,
+          "y_um": 79.23
+        },
+        {
+          "text": "vss",
+          "x_um": 121.175,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 122.505,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 127.175,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 128.505,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 133.175,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 134.505,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 139.175,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 140.505,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 145.175,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 146.505,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 151.175,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 152.505,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 155.0,
+          "y_um": 79.48
+        },
+        {
+          "text": "vss",
+          "x_um": 157.175,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 158.505,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 163.175,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 164.505,
+          "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 165.25,
+          "y_um": 67.5
+        },
+        {
+          "text": "vss",
+          "x_um": 180.0,
+          "y_um": 79.48
+        },
+        {
+          "text": "vss",
+          "x_um": 214.545,
+          "y_um": 0.0
+        },
+        {
+          "text": "vss",
+          "x_um": 215.875,
+          "y_um": 0.0
+        }
+      ]
     }
   ],
   "warnings": [
     "20 poly-layer shapes not part of any recognised nfet/pfet gate touch contact at 2+ separate points (the resistor-body signature) and carry no resistor-marker layer at all; this deck may not model the device class drawn here, and its terminals have been absorbed into ordinary interconnect as an unintended short -- see docs/cli/extract.md's 'Known limitation: unmodelled device geometry'.",
     "promoted 7 net(s) to top-level pins from label(s) found only below the top cell (inside instanced sub-cells): d1, d2, det, e2, e3, pn, tail -- these are internal nodes once instanced; pass top_cell_pins_only (--top-cell-pins) to keep them internal (issue #291)",
-    "1 routing-stack cluster (17 shapes on 8/0) join no extracted net -- no via lands on this geometry and no same-layer wiring touches it, so it is invisible to the extracted netlist and to every downstream `klt lvs`/`klt sim` view; deliberate dead metal (artwork, fill) is expected here, unexplained dead metal usually means the connection you intended is missing -- see dead_metal[] for the per-cluster layer/bbox/shape count.",
     "net 'fb|out' merges 2 distinct labels (fb, out) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
     "net 'in_n|sns1' merges 2 distinct labels (in_n, sns1) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
     "net 'in_p|sns2' merges 2 distinct labels (in_p, sns2) onto one net -- KLayout joins multiple labels found on the same electrical net (as '|' here and in the written netlist, matching NetlistSpiceWriter's own node-name escaping); this usually means two differently-named nets were shorted together in the layout -- see docs/cli/extract.md's 'Merged net labels' section.",
-    "8 PMOS devices tie their body to an anonymous net with no DC bias path -- no drawn (or derivable) well tie connects this PMOS body to a real supply rail on this layout, so it is left floating rather than tied to a real supply rail; resimulating this netlist directly will not reproduce the schematic-level PMOS body bias -- see unbiased_pmos_body_nets[] for the full list. See docs/cli/extract.md's 'Parasitic (RC) extraction' section.",
     "1 layer (63/0) carrying 27 shapes is outside 'sg13cmos5l' deck's connectivity graph -- this geometry is invisible to extraction, so a net routed only through it extracts as multiple disconnected nets instead of one, which will silently mismatch a downstream `klt lvs` reference netlist -- see ignored_layers[] for the full per-layer shape counts. See docs/cli/extract.md's 'ignored_layers' field documentation."
   ],
   "black_box_regions": [],
@@ -650,71 +1201,30 @@
     }
   ],
   "voltage_domain_warnings": [],
-  "unbiased_pmos_body_nets": [
-    {
-      "device": "$10",
-      "net": "\\$36"
-    },
-    {
-      "device": "$11",
-      "net": "\\$36"
-    },
-    {
-      "device": "$12",
-      "net": "\\$36"
-    },
-    {
-      "device": "$13",
-      "net": "\\$36"
-    },
-    {
-      "device": "$14",
-      "net": "\\$36"
-    },
-    {
-      "device": "$7",
-      "net": "\\$29"
-    },
-    {
-      "device": "$8",
-      "net": "\\$29"
-    },
-    {
-      "device": "$9",
-      "net": "\\$29"
-    }
-  ],
+  "unbiased_pmos_body_nets": [],
   "single_terminal_nets": [],
-  "dead_metal": [
-    {
-      "role": "metal0",
-      "layer": 8,
-      "datatype": 0,
-      "bbox_um": {
-        "left": 123.27,
-        "bottom": 29.02,
-        "right": 166.23,
-        "top": 34.15
-      },
-      "shapes": 17,
-      "area_um2": 34.5858
-    }
-  ],
+  "dead_metal": [],
   "matched_device_groups": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.3.0",
+    "klt_version": "0.5.0+g32f69f811682",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:5b5309ecd586f527d6df271384f18e8f1fcd528a09935544b46aed563b66a92e",
+      "content_hash": "sha256:1912f17486e78de5259aab5d68533488ebbd239a05018f096217aa62ddee2909",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:3ee6f4a364751f695e9c23fbd99f167bad0f420a77920833581cb101816a0228"
+      "content_hash": "sha256:34e31ebeb7888fa3d025af0bf14530725f48dc9e757ea30c785c688184b16bd4",
+      "role": "layout"
     }
   },
   "parasitics": null,
-  "spef_path": null
+  "spef_path": null,
+  "metrics": {
+    "extract__device__count": 17,
+    "extract__net__count": 14,
+    "extract__pin__count": 14
+  }
 }

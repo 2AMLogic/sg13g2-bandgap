@@ -1,17 +1,28 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "file": "sg13cmos5l-bandgap_amp.gds",
   "deck": "sg13cmos5l",
   "dbu_um": 0.001,
   "status": "clean",
   "violation_count": 0,
   "rule_counts": {},
+  "metrics": {
+    "drc__error__count": 0
+  },
   "violations": [],
   "coverage": {
     "deck_layers": [
       "1/0",
       "5/0",
-      "8/0"
+      "8/0",
+      "10/0",
+      "19/0",
+      "29/0",
+      "30/0",
+      "49/0",
+      "50/0",
+      "125/0",
+      "126/0"
     ],
     "layers_checked": [
       "1/0",
@@ -20,36 +31,174 @@
     ],
     "layers_in_stream_without_rules": [
       "6/0",
+      "7/0",
       "8/2",
       "14/0",
       "31/0",
       "44/0",
       "63/0"
     ],
-    "rules_skipped": [],
+    "rules_checked": [
+      "activ.space.1",
+      "activ.width.1",
+      "gatpoly.space.1",
+      "gatpoly.width.1",
+      "metal1.space.1",
+      "metal1.width.1"
+    ],
+    "rules_skipped": [
+      "metal1.enclosing.via1.1",
+      "metal2.enclosing.via2.1",
+      "metal2.space.1",
+      "metal2.width.1",
+      "metal3.enclosing.via3.1",
+      "metal3.space.1",
+      "metal3.width.1",
+      "metal4.enclosing.topvia1.1",
+      "metal4.space.1",
+      "metal4.width.1",
+      "topmetal1.enclosing.topvia1.1",
+      "topmetal1.space.1",
+      "topmetal1.width.1",
+      "topvia1.space.1",
+      "topvia1.width.1",
+      "via1.space.1",
+      "via1.width.1",
+      "via2.space.1",
+      "via2.width.1",
+      "via3.space.1",
+      "via3.width.1"
+    ],
     "voltage_domain_warnings": [
       {
         "marker": "44/0",
-        "description": "ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). This MOS-only starter models neither side of that split yet: EXTRACTION_DECK recognises only the LV (thin-gate-oxide) NMOS/PMOS pair (mirroring sg13g2.py's own #905 starter scope; the HV pair is left for a follow-on issue, the sg13cmos5l sibling of sg13g2.py's issue #1231), and this curated deck's DRC rules apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note)."
+        "description": "ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). Issue #1416 added the HV MOSFlavour entry to EXTRACTION_DECK.mos_flavours, so a transistor drawn inside this marker now recognises and binds correctly (mirroring sg13g2.py's own #1231 follow-on) -- what remains unmodelled is this curated deck's DRC rules, which still apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note)."
       }
     ],
     "deck_scope": [
       "5.16 Metal1",
+      "5.17 Metaln",
+      "5.19 Via1",
+      "5.20 Vian",
+      "5.21 TopVia1",
+      "5.22 TopMetal1",
       "5.5 Activ",
       "5.8 GatPoly"
-    ]
+    ],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "activ.space.1",
+      "activ.width.1",
+      "gatpoly.space.1",
+      "gatpoly.width.1",
+      "metal1.space.1",
+      "metal1.width.1"
+    ],
+    "skipped": [],
+    "inapplicable": [
+      {
+        "id": "metal1.enclosing.via1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal2.enclosing.via2.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal2.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal2.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.enclosing.via3.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.enclosing.topvia1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal1.enclosing.topvia1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal1.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal1.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topvia1.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topvia1.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via1.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via1.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via2.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via2.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via3.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via3.width.1",
+        "reason": "no_applicable_geometry"
+      }
+    ],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
   },
   "provenance": {
-    "klt_version": "0.3.0",
-    "klayout_version": "0.30.11",
+    "klt_version": "0.5.0+g32f69f811682",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:9a4e18f2fd7a0d39d02abc220141dd5c300158e2540cd19f2f2ea9151f965b80",
+      "content_hash": "sha256:1912f17486e78de5259aab5d68533488ebbd239a05018f096217aa62ddee2909",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:cc44856b8ddcd3c64df3a058569f552f2e9068ec275ee4e3d7fd5dea09ee51e2"
-    }
+      "content_hash": "sha256:f277d98557728bb77e2a7332fa5052488a383fb90d233ef1cffd38071c22863a",
+      "role": "layout"
+    },
+    "klayout_version_mismatch": true
   }
 }
