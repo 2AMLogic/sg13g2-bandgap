@@ -45,21 +45,21 @@
     "findings": [],
     "finding_count": 0
   },
-  "mismatch_count": 25,
-  "error_count": 24,
+  "mismatch_count": 24,
+  "error_count": 23,
   "category_counts": {
     "device.unmatched": 10,
-    "net.unmatched": 13,
+    "net.unmatched": 12,
     "topology": 2
   },
   "category_error_counts": {
     "device.unmatched": 10,
-    "net.unmatched": 13,
+    "net.unmatched": 12,
     "topology": 1
   },
   "counts": {
     "nets": {
-      "layout": 9,
+      "layout": 8,
       "reference": 8,
       "matched": 2
     },
@@ -69,9 +69,9 @@
       "matched": 0
     },
     "pins": {
-      "layout": 9,
+      "layout": 8,
       "reference": 0,
-      "matched": 9
+      "matched": 8
     }
   },
   "device_classes": [
@@ -83,14 +83,14 @@
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.12",
-    "layout_sha256": "ea10c798c37ee176b89fe9ce6fdab84d70ed871857a659a46e72cc7fcf615515",
+    "engine_version": "0.30.10",
+    "layout_sha256": "832b570e7d109e0f1449271ee1aca27e1599a856fd15ffe4d999c4db8f1fc5d3",
     "reference_sha256": "b8968f3cbe82db0218bbac9db7d34ef911661b818a33273c6bb62ad56deb4f26",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.5.0+g32f69f811682",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.6.0",
+    "klayout_version": "0.30.10",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
@@ -98,10 +98,10 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:ea10c798c37ee176b89fe9ce6fdab84d70ed871857a659a46e72cc7fcf615515",
+      "content_hash": "sha256:832b570e7d109e0f1449271ee1aca27e1599a856fd15ffe4d999c4db8f1fc5d3",
       "role": "layout"
     },
-    "klayout_version_mismatch": true
+    "klayout_version_mismatch": false
   },
   "mismatches": [
     {
@@ -268,22 +268,6 @@
         "reference": "3",
         "class": "pfet"
       },
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.unmatched",
-      "severity": "error",
-      "description": "layout net has no reference counterpart",
-      "side": "layout",
-      "net": {
-        "layout": "e2",
-        "reference": null
-      },
-      "device": null,
       "property": null,
       "details": null,
       "circuit": null,

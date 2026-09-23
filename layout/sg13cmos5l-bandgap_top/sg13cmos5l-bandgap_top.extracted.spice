@@ -14,9 +14,8 @@
 * pin vdd
 * pin vref
 * pin vss
-* pin e2
 .SUBCKT sg13cmos5l_bandgap_top d1 d2 det e2 e3 fb|out in_n|sns1 in_p|sns2 pn
-+ tail vdd vref vss e2$1
++ tail vdd vref vss
 * device instance $1 r0 *1 0,80 nfet
 M$1 fb|out d1 vss vss nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 20,80 nfet

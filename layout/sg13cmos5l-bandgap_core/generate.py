@@ -152,8 +152,8 @@ rings or rails) to a cell edge that is otherwise clear at that height:
   different height from ``sns2``'s crossing, so the two new stubs never
   share a row), straight to the right edge -- clear because neither the
   ``vss`` aisle (``x=87``, which only exists for ``y`` in ``[0, 30]``) nor
-  the Q2 emitter bus (``y=34``, which only spans ``x=123.75..165.75``)
-  reaches ``y=40``.
+  the Q2 emitter bus (``y=34``, which spans ``x=58..165.75`` since issue
+  #243 extended it west to reach R2's own drop) reaches ``y=40``.
 
 ``build()`` now returns ``(Builder, ports)`` where ``ports`` is a
 ``{net: (x0, y0, x1, y1)}`` map covering all six of this cell's schematic
@@ -436,16 +436,26 @@ def _route(
     # -- e2: R2.end_b -> Q2's 8-unit array (issue #73/DR-0005). Each unit's
     # emitter escapes straight up through its own ring's open-top gap onto
     # the shared Q2_BUS_Y trunk (see this module's own docstring for why
-    # that height clears every ring's Metal1); R2's own end_b pad then drops
-    # straight down onto that trunk, landing inside its span (the trunk
-    # spans the full row, x=123.75..165.75, and R2's drop is at x=130.35).
+    # that height clears every ring's Metal1). R2's own end_b pad is at
+    # x=58.0 (R2's leg-5 head, `X_M2=45.0` plus 5 legs at a 2.4 um pitch),
+    # west of the Q2 unit row's own span (x=123.75..165.75) -- so, unlike
+    # every other trunk this cell drops a resistor pad straight onto, R2's
+    # drop does not land inside the unit row's own x-range by construction
+    # (issue #243: it used to be routed as an isolated stub at x=58, landing
+    # in free field and splitting `e2` into two disjoint islands). Fixed by
+    # extending the bus itself west to R2's drop x rather than moving the
+    # drop -- the bus is already one continuous Metal1 shape spanning every
+    # unit's landing x, so widening its own `route_h` span costs nothing
+    # else in the floorplan (x=58..123.75 at y=34 is clear field: R2's own
+    # body sits above, y=44..57.85, and the vss aisle at x=87 only exists
+    # for y in [0, 30] -- see this module's own docstring).
     for q in q2_units:
         route_v(b, L_METAL1, pad_center_x(q["emitter_pad"]), Q2_BUS_Y,
                 q["emitter_pad"][3], width=TRUNK_W)
-    x_bus_lo = pad_center_x(q2_units[0]["emitter_pad"])
+    x_e2 = pad_center_x(r2["end_b_pad"])
+    x_bus_lo = min(pad_center_x(q2_units[0]["emitter_pad"]), x_e2)
     x_bus_hi = pad_center_x(q2_units[-1]["emitter_pad"])
     route_h(b, L_METAL1, Q2_BUS_Y, x_bus_lo, x_bus_hi, width=TRUNK_W)
-    x_e2 = pad_center_x(r2["end_b_pad"])
     route_v(b, L_METAL1, x_e2, Q2_BUS_Y, r2["end_b_pad"][1], width=TRUNK_W)
 
     # -- vref: M3.drain -> R1.end_a, straight down column x=180 (same
@@ -458,11 +468,16 @@ def _route(
     # a different height from sns2's own crossing above, so the two new
     # stubs never share a row -- straight to the cell's right edge. Clear of
     # the vss aisle (x=87, only present for y in [0, 30]) and the Q2 emitter
-    # bus (y=34, only spans x=123.75..165.75); neither reaches y=40.
+    # bus (y=34, spans x=58..165.75 since issue #243); neither reaches y=40.
     vref_pad = boundary_port(b, "vref", "right", X_VREF_PORT, Y_VREF_PORT)
     route_h(b, L_METAL1, Y_VREF_PORT, x_vref, vref_pad[0], width=TRUNK_W)
 
-    # -- e3: R1.end_b -> Q3.emitter, same construction as e2.
+    # -- e3: R1.end_b -> Q3.emitter, same construction as e2 -- but, unlike
+    # e2, safe from the disjoint-drop class of defect issue #243 fixed above
+    # by construction rather than by extending anything: Q3's own x0 (below)
+    # is *read back from* r1["end_b_pad"], the same pad this drop uses, so
+    # the drop and Q3's emitter can never disagree on x -- there is only one
+    # Q3 unit, not a multi-unit row with its own independently-chosen span.
     x_e3 = pad_center_x(r1["end_b_pad"])
     route_v(b, L_METAL1, x_e3, q3["emitter_pad"][3], r1["end_b_pad"][1], width=TRUNK_W)
 

@@ -5,11 +5,11 @@
   "top": "sg13cmos5l_bandgap_core",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_core.extracted.spice",
-  "netlist_sha256": "78bbc500ea7da8515dc18e33e56527e9a0bcc3a60ea24d4fa4d9699f2b1a1881",
+  "netlist_sha256": "9465ffab8d5db610b3fc2073b5400e64d42d5d1ce1d27eb2a612dd5e231f3ff1",
   "status": "extracted",
   "device_count": 5,
-  "net_count": 9,
-  "pin_count": 9,
+  "net_count": 8,
+  "pin_count": 8,
   "device_counts": {
     "pfet": 3,
     "rppd": 2
@@ -149,23 +149,14 @@
       "name": "e2",
       "pin": true,
       "device_count": 1,
-      "net_id": 17,
+      "net_id": 8,
       "pin_index": 0,
       "label_positions_um": [
         {
           "text": "e2",
           "x_um": 58.0,
           "y_um": 43.75
-        }
-      ]
-    },
-    {
-      "name": "e2",
-      "pin": true,
-      "device_count": 0,
-      "net_id": 8,
-      "pin_index": 8,
-      "label_positions_um": [
+        },
         {
           "text": "e2",
           "x_um": 123.75,
@@ -231,7 +222,7 @@
       "name": "fb",
       "pin": true,
       "device_count": 3,
-      "net_id": 18,
+      "net_id": 17,
       "pin_index": 2,
       "label_positions_um": [
         {
@@ -293,7 +284,7 @@
       "name": "vdd",
       "pin": true,
       "device_count": 6,
-      "net_id": 19,
+      "net_id": 18,
       "pin_index": 5,
       "label_positions_um": [
         {
@@ -346,7 +337,7 @@
       "name": "vss",
       "pin": true,
       "device_count": 2,
-      "net_id": 20,
+      "net_id": 19,
       "pin_index": 7,
       "label_positions_um": [
         {
@@ -477,8 +468,8 @@
   "matched_device_groups": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.5.0+g32f69f811682",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.6.0",
+    "klayout_version": "0.30.10",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
@@ -486,15 +477,16 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:ea10c798c37ee176b89fe9ce6fdab84d70ed871857a659a46e72cc7fcf615515",
+      "content_hash": "sha256:832b570e7d109e0f1449271ee1aca27e1599a856fd15ffe4d999c4db8f1fc5d3",
       "role": "layout"
     }
   },
   "parasitics": null,
   "spef_path": null,
+  "subcircuit": null,
   "metrics": {
     "extract__device__count": 5,
-    "extract__net__count": 9,
-    "extract__pin__count": 9
+    "extract__net__count": 8,
+    "extract__pin__count": 8
   }
 }
