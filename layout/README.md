@@ -1702,7 +1702,8 @@ parent assembly to route against:
   from `sns2`'s crossing, so the two new stubs never share a row), straight
   to the right edge -- clear because neither the `vss` aisle (`x=87`, which
   only exists for `y` in `[0, 30]`) nor the Q2 emitter bus (`y=34`, which
-  only spans `x=123.75..165.75`) reaches `y=40`.
+  spans `x=58..165.75` since issue #243 extended it west -- see "`R2`'s `e2`
+  drop" below) reaches `y=40`.
 
 **Re-verified, not just re-drawn**: `klt drc` stays `clean` (0 violations)
 and `klt extract`'s device/net list is **byte-identical** to the
@@ -1716,6 +1717,52 @@ thing `extract_report.json` records is a third `unmodelled_poly` entry (the
 `sns2` crossing's own poly strip) -- the same already-filed
 klayout-tools#1425 gap (an intentional poly underpass reads as an
 unmodelled resistor body), not a new one.
+
+### `R2`'s `e2` drop: disjoint-net defect fixed (issue #243)
+
+`R2`'s `end_b` pad (net `e2`) sits at `x=58.0` (leg 5 of its 6-leg fold,
+`X_M2=45.0` plus five legs at a 2.4 µm pitch -- see `generate.py`'s own
+"issue #173" comment for the fold arithmetic), west of the Q2 unit row's own
+x-span (`Q2_X0=123.75` .. `165.75`). `_route()`'s `-- e2:` block used to drop
+straight down from that pad onto `Q2_BUS_Y` (the shared Metal1 trunk every
+Q2 unit's emitter escapes onto) at `x=58` without first checking that `x=58`
+actually lay inside the trunk's own drawn span -- it did not, so the drop
+landed in free field next to, not on, the trunk, and `e2` extracted as two
+disjoint electrical islands (`e2` and a second one KLayout numbers `e2$1` in
+the `.SUBCKT` pin list, confirmed on the pre-fix
+`sg13cmos5l-bandgap_core.extracted.spice`). This open-circuited the PTAT
+branch (`R2` -> `Q2`) as drawn -- a real electrical defect, not merely a
+cosmetic net-name split.
+
+**Fixed by extending the trunk, not by moving the drop.** The trunk is
+already one continuous Metal1 `route_h` shape spanning every Q2 unit's own
+landing x; widening that one call's own span to include `x_e2` (`x=58`)
+costs nothing else in the floorplan -- the field between `x=58` and
+`x=123.75` at `y=34` is clear (`R2`'s own folded body sits above, at
+`y=44..57.85`, and the `vss` aisle at `x=87` only exists for `y` in
+`[0, 30]`, well below the trunk's own row). Moving the drop instead would
+have needed a new dog-leg through the same clear field for no benefit.
+
+**Verified**: a fresh `klt extract --deck sg13cmos5l` on the regenerated
+`sg13cmos5l-bandgap_core.gds` now reports exactly one `e2` net (`net_count`
+9 -> 8, no `e2$1` pin in the `.SUBCKT` line), `klt drc` stays `clean` (0
+violations, unchanged), and `klt lvs`'s `net.unmatched` count drops 13 -> 12
+(`mismatch_count` 25 -> 24, `error_count` 24 -> 23) -- the electrical proof
+the two former islands are now one net. The assembled
+`sg13cmos5l-bandgap_top` (which instantiates this cell) was regenerated and
+re-verified the same way: `klt drc` stays clean, `klt extract`'s `net_count`
+drops 14 -> 13 (again exactly one `e2`), and `klt lvs`'s `net.split` count
+drops 3 -> 2 (`mismatch_count` 15 -> 14, `error_count` 15 -> 14). See
+"SG13CMOS5L: LVS -- `mismatch`, fully attributed" below for the updated
+per-cause table.
+
+**`e3` (`R1` -> `Q3`) checked for the same defect class and confirmed safe
+by construction, not just by inspection.** `Q3`'s own `x0` is *read back
+from* `r1["end_b_pad"]` (`x_q3 = pad_center_x(r1["end_b_pad"])`, the exact
+same pad `e3`'s drop uses) -- there is only one `Q3` unit, not a multi-unit
+row with its own independently-chosen span the way Q2's row is, so the drop
+and Q3's emitter can never disagree on x. No corresponding fix was needed
+there.
 
 ### Q2: 8 parallel unit devices (issue #73, DR-0005)
 
@@ -2315,10 +2362,13 @@ klt erc layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds \
   layout/sg13cmos5l-bandgap_top/erc-supply-spec.json --format json
 ```
 
-Committed verdict (`erc_report.json`, `klt 0.5.0+g32f69f811682` — pinned
-to the upstream `main` commit carrying the four tie fixes, since no
-numbered release past v0.5.0 was tagged when issue #233 ran; `klayout
-0.30.12`): the supply-island half of the verdict is unchanged and clean —
+Committed verdict (`erc_report.json`, re-run by issue #243 against a newer
+`klt 0.6.0`/`klayout 0.30.10` after that issue's `e2`-routing fix changed
+this cell's own GDS — same `--check` freshness gate every other regenerated
+report here follows; originally run by issue #233 on `klt
+0.5.0+g32f69f811682`/`klayout 0.30.12`, pinned to the upstream `main` commit
+carrying the four tie fixes since no numbered release past v0.5.0 was tagged
+at the time): the supply-island half of the verdict is unchanged and clean —
 `erc.net_connectivity:["vdd"]` and `["vss"]` are both in
 `erc_coverage.checked` with **zero** findings naming either supply (each
 resolves to exactly one electrical island: no `erc.unconnected_net`, no
@@ -2523,14 +2573,14 @@ two gate rectangles merge into one plain rectangle with no junction at all.
 
 | Cell | Report | Status | Engine |
 | --- | --- | --- | --- |
-| `sg13cmos5l-bandgap_core` | `layout/sg13cmos5l-bandgap_core/lvs_report.json` | `mismatch` (25 findings, 24 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
+| `sg13cmos5l-bandgap_core` | `layout/sg13cmos5l-bandgap_core/lvs_report.json` | `mismatch` (24 findings, 23 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
 | `sg13cmos5l-bandgap_amp` | `layout/sg13cmos5l-bandgap_amp/lvs_report.json` | `mismatch` (8 findings, 7 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
 | `sg13cmos5l-bandgap_startup` | `layout/sg13cmos5l-bandgap_startup/lvs_report.json` | `mismatch` (17 findings, 15 error-severity) | `klayout` (`klayout.db.NetlistComparer`) |
 
 ```
-bandgap_core     nets: layout=9   reference=8  matched=2
+bandgap_core     nets: layout=8   reference=8  matched=2
                  devices: layout=5   reference=8  matched=0
-                 device.unmatched 10, net.unmatched 13, topology 2
+                 device.unmatched 10, net.unmatched 12, topology 2
 
 bandgap_amp      nets: layout=10  reference=9  matched=4
                  devices: layout=9   reference=9  matched=5
@@ -2611,13 +2661,28 @@ half cause 4 keeps), `bandgap_core`'s `vdd`/`fb` nets now match their
 references (nets matched 0 → 2; the anonymous `$30` well net is gone),
 and `bandgap_top`'s device matches rise 8 → 14. The residual counts stay
 inside the same four documented causes below. The current deck also
-newly surfaces one pre-existing layout defect the old deck had absorbed:
-`bandgap_core`'s `R2` `e2` drop lands in free field, disjoint from the
-Q2 emitter trunk, so the two `e2`-labelled islands extract as `e2` and
+newly surfaced one pre-existing layout defect the old deck had absorbed:
+`bandgap_core`'s `R2` `e2` drop landed in free field, disjoint from the
+Q2 emitter trunk, so the two `e2`-labelled islands extracted as `e2` and
 `e2$1` — verified byte-identical on the pre-#240 GDS, i.e. **not**
 caused by #240's geometry, and filed as
 [#243](https://github.com/2AMLogic/sg13g2-bandgap/issues/243) rather
 than fixed in passing.
+
+**Then issue #243 fixed that layout defect.** `_route()`'s `-- e2:` block
+now extends the Q2 emitter trunk's own `route_h` span west to `R2`'s real
+drop x (`x=58`) instead of dropping onto a point outside it — see "`R2`'s
+`e2` drop: disjoint-net defect fixed" above for the full account. A fresh
+`klt extract` on the regenerated `bandgap_core.gds` now reports exactly one
+`e2` net (no `e2$1`), and `klt lvs`'s `net.unmatched` count drops one, 13 →
+**12** (`mismatch_count` 25 → **24**, `error_count` 24 → **23** — the
+updated table and code block above already reflect this). `bandgap_top`'s
+own composed evidence was regenerated the same way: `net_count` 14 → 13
+(again exactly one `e2`) and `net.split` 3 → 2 (`mismatch_count` 15 → 14,
+`error_count` 15 → 14) — the electrical proof the two former `e2` islands
+are now one physically-connected net. `bandgap_amp` and `bandgap_startup`
+draw no `e2` and were unaffected. `klt drc` stayed `clean` (0 violations) on
+both `bandgap_core` and `bandgap_top` before and after.
 
 **This is reported as `mismatch` deliberately.** Four independent causes
 were originally attributed below, each a property of the curated deck's

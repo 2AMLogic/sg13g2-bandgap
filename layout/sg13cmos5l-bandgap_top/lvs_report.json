@@ -45,23 +45,23 @@
     "findings": [],
     "finding_count": 0
   },
-  "mismatch_count": 15,
-  "error_count": 15,
+  "mismatch_count": 14,
+  "error_count": 14,
   "category_counts": {
     "device.unmatched": 9,
     "net.merged": 2,
-    "net.split": 3,
+    "net.split": 2,
     "topology": 1
   },
   "category_error_counts": {
     "device.unmatched": 9,
     "net.merged": 2,
-    "net.split": 3,
+    "net.split": 2,
     "topology": 1
   },
   "counts": {
     "nets": {
-      "layout": 14,
+      "layout": 13,
       "reference": 13,
       "matched": 5
     },
@@ -71,9 +71,9 @@
       "matched": 14
     },
     "pins": {
-      "layout": 14,
+      "layout": 13,
       "reference": 0,
-      "matched": 14
+      "matched": 13
     }
   },
   "device_classes": [
@@ -85,14 +85,14 @@
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.12",
-    "layout_sha256": "34e31ebeb7888fa3d025af0bf14530725f48dc9e757ea30c785c688184b16bd4",
+    "engine_version": "0.30.10",
+    "layout_sha256": "4e4e4f85fa0875651c294c95a1f65792fa1913dd20d027fbe6905f2d001cb330",
     "reference_sha256": "14fdb4b4c8aefbc782d50123094eaaeec40214ab92fc1afec2445f2c811319ca",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.5.0+g32f69f811682",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.6.0",
+    "klayout_version": "0.30.10",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
@@ -100,10 +100,10 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:34e31ebeb7888fa3d025af0bf14530725f48dc9e757ea30c785c688184b16bd4",
+      "content_hash": "sha256:4e4e4f85fa0875651c294c95a1f65792fa1913dd20d027fbe6905f2d001cb330",
       "role": "layout"
     },
-    "klayout_version_mismatch": true
+    "klayout_version_mismatch": false
   },
   "mismatches": [
     {
@@ -283,22 +283,6 @@
       "net": {
         "layout": null,
         "reference": "E3"
-      },
-      "device": null,
-      "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "net.split",
-      "severity": "error",
-      "description": "a reference net's role is divided across multiple layout nets",
-      "side": "layout",
-      "net": {
-        "layout": "e2",
-        "reference": null
       },
       "device": null,
       "property": null,
