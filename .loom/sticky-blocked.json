@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "Registry of issues in this repository that an operator has ruled must",
+    "PERMANENTLY carry `loom:blocked` — a state the ordinary Loom label",
+    "lifecycle has no concept of. Read by .loom/scripts/sticky-blocked.sh;",
+    "protocol and root-cause evidence in docs/tracker-4-settle-protocol.md.",
+    "",
+    "This file is repo-local (it is not part of the installed Loom payload",
+    "and is never rewritten by resync-installed.sh). Adding an entry here is",
+    "the ONLY thing that makes sticky-blocked.sh re-apply `loom:blocked` to an",
+    "issue — every issue absent from this list settles with the ordinary",
+    "`loom:building` -> `loom:issue` release and never gains `loom:blocked`.",
+    "",
+    "Schema:",
+    "  issues[].issue          int    issue number",
+    "  issues[].settle_labels  [str]  labels applied in ONE atomic edit when",
+    "                                 the claim is released (must include",
+    "                                 loom:blocked for a sticky-blocked entry)",
+    "  issues[].ruling         str    ISO-8601 timestamp of the operator ruling",
+    "  issues[].reason         str    why the operator ruled it permanently blocked"
+  ],
+  "issues": [
+    {
+      "issue": 4,
+      "settle_labels": ["loom:issue", "loom:curated", "loom:blocked"],
+      "ruling": "2026-09-18T22:32:09Z",
+      "reason": "Fleet-wide operator ruling: #4 is a tracking checklist by design and is blocked on its own child items; it must carry loom:blocked permanently rather than being treated as ready work."
+    }
+  ]
+}
