@@ -105,8 +105,10 @@ repo-committed registry `.loom/sticky-blocked.json`:
 # every label the issue must end up with. Replaces the old two-step sequence.
 ./.loom/scripts/sticky-blocked.sh settle 4
 
-# At the START of a pass on #4 (and any time you want to check), re-assert the
-# invariant the unblock probe may have stripped since the last settle.
+# Re-assert the invariant the unblock probe may have stripped since the last
+# settle. You do NOT have to remember this one — a scheduled workflow already
+# runs it every 10 minutes (see §5.1). Run it by hand only when you want an
+# immediate answer rather than waiting for the next tick.
 ./.loom/scripts/sticky-blocked.sh verify --repair
 ```
 
@@ -127,6 +129,58 @@ repo-committed registry `.loom/sticky-blocked.json`:
 
 Unit tests: `./.loom/scripts/tests/test-sticky-blocked.sh`.
 
+### 5.1 What actually enforces this — `.github/workflows/sticky-blocked.yml`
+
+`verify --repair` is only worth anything if something runs it on a cadence
+tighter than the probe that strips the label. **Documentation cannot be that
+something.** Per §4 the removal happens during the probe's *generic* periodic
+scan of every `loom:blocked` issue in the repo — it is not triggered by anyone
+working #4, so an instruction to "run `verify --repair` at the start of a pass on
+#4" leaves the label missing for however long it takes someone to next touch #4.
+That is the same "an agent has to remember a manual step" dependency #246 was
+opened to eliminate, merely relocated.
+
+So the repair runs from a repo-owned scheduled workflow instead:
+
+| | |
+|---|---|
+| **File** | `.github/workflows/sticky-blocked.yml` |
+| **Triggers** | `schedule: */10 * * * *`; `push` to `main` touching the registry, the script or the workflow; `workflow_dispatch` |
+| **Command** | `./.loom/scripts/sticky-blocked.sh verify --repair --repo <owner/name>` |
+| **Permissions** | `contents: read`, `issues: write` — the single scope `gh issue edit --add-label` needs; `GH_TOKEN` is the job's `GITHUB_TOKEN` |
+
+This bounds the drift window to **one cron tick (~10 min)** instead of "however
+long until someone happens to work #4 next", and 10 minutes is deliberately
+tighter than the probe's own documented 15–30 minute cadence, so a stripped label
+is normally restored before the next probe pass even sees it.
+
+Three properties that make running it this often safe:
+
+- **Idempotent and additive.** A tick that finds no drift performs no mutation at
+  all; a tick that finds drift issues exactly one `gh issue edit --add-label`
+  naming only the missing labels, and never removes anything.
+- **Registry-scoped.** Only issues listed in `.loom/sticky-blocked.json` are
+  touched — today, only #4.
+- **Cheap.** One REST label read per registered issue per tick.
+
+It is a **repo-owned** file on purpose. `guide.md` and `sweep.md` — where the
+probe procedure itself lives — are vendored Loom surfaces, overwritten by the
+recurring `chore: resync installed Loom surfaces` commits, so a patch to the
+probe would not survive in-repo. That is why the probe-side fix is filed
+upstream (§6) and this workflow is the local mitigation that works without it.
+
+The wiring is pinned by tests (`test-sticky-blocked.sh`, "the scheduled
+enforcement workflow actually invokes verify --repair"): the suite fails if the
+workflow is deleted, if its cron is loosened past the probe's cadence, if
+`issues: write` is dropped, or if the `verify --repair` step loses `GH_TOKEN`.
+
+**Known limits of the mechanism itself:** GitHub only runs `schedule:` workflows
+from the **default branch**, so this takes effect when the PR merges, not before;
+cron ticks can be delayed or dropped under Actions load (the 10-minute cadence
+has headroom for that); and GitHub disables scheduled workflows in repositories
+with 60 days of no activity, which does not apply to this repo today but would
+need a `workflow_dispatch` nudge if it ever did.
+
 ## 6. Honest limits of this fix
 
 **`settle` alone cannot keep `loom:blocked` on #4.** The loss happens minutes
@@ -135,8 +189,11 @@ after settle, in a pass this repository does not run. What is fixed here:
 - the settle can no longer *contribute* to the loss (it is atomic now), and the
   protocol is committed to the repo instead of living only in sweep-comment
   folklore;
-- drift is now *detectable and repairable* with one cheap idempotent command
-  instead of being noticed by accident on the next pass's pre-flight read.
+- drift is *detectable and repairable* with one cheap idempotent command, and
+  — crucially — that command is now run automatically every 10 minutes by
+  `.github/workflows/sticky-blocked.yml` (§5.1) rather than depending on an
+  agent remembering to check. The label can still be stripped by the probe; it
+  now comes back within a tick instead of staying gone.
 
 The real fix is upstream: `loom:blocked` needs a sticky/operator-ruled mode, or
 the unblock probe needs to refuse to strip a label it cannot attribute a
@@ -152,7 +209,22 @@ same phrasing is documented to mean "do not build" — which would suppress the
 machine-readable `Blocked by #221` line would work only until #221 closes, at
 which point the label would start disappearing again. Neither is a durable fix.
 
-**Verification status:** this protocol can only be confirmed by a live
-claim/settle cycle on #4 that uses `sticky-blocked.sh settle 4` and then finds
-`loom:blocked` still present on the next pass. That is out-of-band work, not
-something the unit tests establish.
+**Verification status:** the unit tests establish the *call shape* of settle and
+repair and the *wiring* of the scheduled workflow; they do not establish that
+`loom:blocked` survives in production. Confirming that needs the post-merge
+evidence, which anyone can read directly once this lands:
+
+```bash
+# The cron job is running, and each tick either found no drift or repaired it.
+gh run list --workflow sticky-blocked.yml --limit 20
+
+# The label has stopped disappearing for longer than a tick: no `unlabeled
+# loom:blocked` on #4 that is not followed by a `labeled` within ~10 minutes.
+for p in 1 2 3 4; do
+  gh api "repos/:owner/:repo/issues/events?per_page=100&page=$p" \
+    -q '.[] | "\(.created_at)\t\(.issue.number)\t\(.event)\t\(.label.name // "")"'
+done | awk -F'\t' '$2==4 && $4=="loom:blocked"'
+```
+
+Note that scheduled workflows only run from the default branch, so neither check
+produces data until the PR merges.

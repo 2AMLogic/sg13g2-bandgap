@@ -263,6 +263,98 @@ assert_not_contains "$registry_json" '"issue": 246' \
   "the registry does not accidentally list this issue itself"
 
 echo ""
+echo "=== the scheduled enforcement workflow actually invokes verify --repair ==="
+
+# `verify --repair` only helps if something runs it on a cadence tighter than the
+# unblock probe that strips the label (every 15-30 min per
+# .claude/commands/loom/guide.md). These assertions pin that wiring so a future
+# edit cannot quietly reduce the fix back to "an agent has to remember to run it"
+# — the exact failure mode #246 was opened about.
+
+WORKFLOW="$REPO_ROOT/.github/workflows/sticky-blocked.yml"
+
+TESTS_RUN=$((TESTS_RUN + 1))
+if [[ -f "$WORKFLOW" ]]; then
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+    echo -e "  ${GREEN}PASS${NC}: .github/workflows/sticky-blocked.yml exists"
+else
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+    echo -e "  ${RED}FAIL${NC}: .github/workflows/sticky-blocked.yml is missing — nothing runs verify --repair automatically"
+fi
+
+if [[ -f "$WORKFLOW" ]]; then
+    workflow_text="$(cat "$WORKFLOW")"
+
+    # Structural assertions that need no YAML library, so this check is never
+    # vacuous on a host without PyYAML.
+    assert_contains "$workflow_text" "sticky-blocked.sh verify --repair" \
+      "the workflow runs 'sticky-blocked.sh verify --repair'"
+    assert_contains "$workflow_text" "issues: write" \
+      "the workflow grants issues: write so gh issue edit can mutate labels"
+    assert_contains "$workflow_text" "GH_TOKEN:" \
+      "the workflow exports GH_TOKEN for the gh CLI"
+    assert_contains "$workflow_text" "cron:" \
+      "the workflow is scheduled, not only manually dispatchable"
+
+    # Semantic assertions (YAML parse + cron cadence). PyYAML is not in the
+    # python3 stdlib; when it is absent the structural assertions above still
+    # ran, and this block reports a visible SKIP rather than a silent pass.
+    if python3 -c "import yaml" 2>/dev/null; then
+        facts="$(python3 - "$WORKFLOW" <<'PY'
+import sys, yaml
+
+with open(sys.argv[1]) as fh:
+    doc = yaml.safe_load(fh)
+
+# `on:` is parsed as the boolean True under YAML 1.1 (PyYAML's default).
+triggers = doc.get("on", doc.get(True)) or {}
+
+print("parses=yes")
+
+perms = (doc.get("permissions") or {})
+print("permissions_issues=%s" % perms.get("issues", "MISSING"))
+
+schedules = triggers.get("schedule") or []
+crons = [s.get("cron") for s in schedules if isinstance(s, dict)]
+print("cron_count=%d" % len(crons))
+
+# Cadence, in minutes, of the tightest `*/N` minute-field schedule present.
+best = None
+for c in crons:
+    minute = (c or "").split()[0] if c else ""
+    if minute.startswith("*/") and minute[2:].isdigit():
+        n = int(minute[2:])
+        best = n if best is None else min(best, n)
+print("cadence_minutes=%s" % (best if best is not None else "UNKNOWN"))
+# The probe runs every 15-30 min; the repair must not be looser than that.
+print("cadence_beats_probe=%s" % ("yes" if best is not None and best <= 15 else "no"))
+
+steps = []
+for job in (doc.get("jobs") or {}).values():
+    steps.extend(job.get("steps") or [])
+repair_steps = [s for s in steps if "verify --repair" in (s.get("run") or "")]
+print("repair_steps=%d" % len(repair_steps))
+print("repair_step_has_token=%s" % (
+    "yes" if repair_steps and "GH_TOKEN" in (repair_steps[0].get("env") or {}) else "no"))
+PY
+)"
+        rc=$?
+        assert_eq "0" "$rc" "the workflow YAML parses"
+        assert_contains "$facts" "permissions_issues=write" \
+          "parsed workflow grants issues: write"
+        assert_contains "$facts" "cadence_beats_probe=yes" \
+          "parsed cron cadence is at least as tight as the probe's 15-30 min scan"
+        assert_contains "$facts" "repair_steps=1" \
+          "exactly one job step runs verify --repair"
+        assert_contains "$facts" "repair_step_has_token=yes" \
+          "the verify --repair step is given GH_TOKEN"
+    else
+        echo -e "  SKIP: PyYAML unavailable — semantic workflow checks not run"
+        echo "        (structural assertions above still ran)"
+    fi
+fi
+
+echo ""
 echo "────────────────────────────────"
 echo "Results: $TESTS_PASSED/$TESTS_RUN passed, $TESTS_FAILED failed"
 [[ $TESTS_FAILED -gt 0 ]] && exit 1

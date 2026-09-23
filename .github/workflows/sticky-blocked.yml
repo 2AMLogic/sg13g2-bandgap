@@ -1,0 +1,78 @@
+name: sticky-blocked
+
+# Re-asserts the operator-ruled `loom:blocked` invariant on the issues listed in
+# .loom/sticky-blocked.json (today: only #4) — see
+# docs/tracker-4-settle-protocol.md for the root-cause evidence.
+#
+# WHY A CRON JOB RATHER THAN A DOC BULLET
+# ---------------------------------------
+# The label is not lost at settle time. It is lost 9-15 minutes later, when the
+# generic `loom:blocked` unblock probe (`.claude/commands/loom/guide.md` ->
+# "Unblocking: Resolve Dependency Blocks", documented to run every 15-30 min)
+# scans EVERY `loom:blocked` issue in the repo and runs
+# `gh issue edit N --remove-label loom:blocked --add-label loom:issue`. On #4 the
+# `--add-label` half is a no-op (it already carries `loom:issue`), so the whole
+# operation reduces to a silent removal.
+#
+# That probe fires regardless of whether anyone is working #4, so an instruction
+# to "run verify --repair at the start of a pass on #4" cannot bound the drift
+# window — between two passes that happen to touch #4, the label simply sits
+# missing. This workflow bounds it to one cron tick instead.
+#
+# It is repo-owned on purpose: `guide.md` / `sweep.md` are vendored Loom surfaces
+# overwritten by the recurring "chore: resync installed Loom surfaces" commits, so
+# patching the probe in-repo would not survive. The durable probe-side fix is
+# filed upstream as rjwalters/loom#8742; this job is the local mitigation that
+# works without it.
+#
+# The repair is purely additive and idempotent: `verify --repair` re-applies only
+# the labels that went missing, with a single `gh issue edit --add-label`, and
+# never touches a label it does not own. A tick that finds no drift performs no
+# mutation at all.
+
+on:
+  schedule:
+    # Every 10 minutes — tighter than the probe's own 15-30 minute cadence, so a
+    # stripped label is normally restored before the next probe pass even sees
+    # it. GitHub's minimum interval is 5 minutes and scheduled runs can be
+    # delayed or dropped under load, which is why the cadence has headroom
+    # rather than matching the probe exactly.
+    - cron: '*/10 * * * *'
+  # Immediate re-assertion when the registry or the enforcing script changes,
+  # so a newly-registered issue does not wait up to a tick for its first check.
+  push:
+    branches: [main]
+    paths:
+      - '.loom/sticky-blocked.json'
+      - '.loom/scripts/sticky-blocked.sh'
+      - '.github/workflows/sticky-blocked.yml'
+  workflow_dispatch:
+
+# Only `issues: write` — the single scope `gh issue edit --add-label` needs.
+# `contents: read` is for the checkout. Nothing here writes to the repo.
+permissions:
+  contents: read
+  issues: write
+
+# A tick that overlaps the previous one would just re-run an idempotent check;
+# drop the older run rather than double-calling the forge.
+concurrency:
+  group: sticky-blocked
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Re-assert sticky loom:blocked labels
+        env:
+          # `gh` in Actions reads GH_TOKEN; the job's `permissions` block above
+          # is what gives this token label-write scope.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # --repo is passed explicitly rather than relying on `gh`'s repo
+        # inference from the checkout's git remote.
+        run: |
+          ./.loom/scripts/sticky-blocked.sh verify --repair --repo "${{ github.repository }}"
