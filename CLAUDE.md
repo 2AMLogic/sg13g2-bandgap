@@ -32,6 +32,17 @@ SiGe BiCMOS open PDK, designed and verified by AI agents.
   on every recorded result; `sim/` results are append-only evidence.
 - Spec changes go through `spec/` with a decision record; agents do not relax
   the ratified spec to make results pass.
+- **Issue #4 is permanently `loom:blocked`** (operator ruling,
+  2026-09-18T22:32:09Z). Keeping the label on is **automatic** — the scheduled
+  workflow `.github/workflows/sticky-blocked.yml` runs
+  `./.loom/scripts/sticky-blocked.sh verify --repair` every 10 minutes and
+  re-applies the label whenever the generic `loom:blocked` unblock probe strips
+  it. You do not need to remember to check. The one thing you **must** do is
+  release a claim on #4 with `./.loom/scripts/sticky-blocked.sh settle 4`, never
+  a hand-written `gh issue edit` (the same applies to any issue listed in
+  `.loom/sticky-blocked.json`). Why the label kept disappearing, and what is and
+  is not fixed:
+  [`docs/tracker-4-settle-protocol.md`](docs/tracker-4-settle-protocol.md).
 
 <!-- BEGIN LOOM ORCHESTRATION -->
 This repository uses [Loom](https://github.com/rjwalters/loom) for AI-powered development orchestration — see the Loom repository for the full guide (roles, labels, worktrees, configuration). When installed, Loom also writes a locally-substituted copy of that guide to `.loom/CLAUDE.md`.

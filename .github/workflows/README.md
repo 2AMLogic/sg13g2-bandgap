@@ -168,3 +168,37 @@ did the same on its first run, finding two defects that had been invisible:
   (`a={ 8u * 2u } m=1`) in their own netlist snapshots. Filed as **#142**.
 
 Both sets are waived by name until fresh records land.
+
+## `sticky-blocked.yml`
+
+A **label-maintenance** workflow, not a validation one — the only workflow here
+that mutates anything on the forge.
+
+Runs `./.loom/scripts/sticky-blocked.sh verify --repair` every 10 minutes (plus
+on `workflow_dispatch`, and on pushes to `main` that touch the registry, the
+script, or the workflow itself). It re-applies `loom:blocked` to the issues
+listed in `.loom/sticky-blocked.json` — today only **#4**, which an operator
+ruled must carry that label permanently — whenever the generic Loom unblock
+probe has stripped it.
+
+- **Why it needs to be scheduled**: the label is not lost at settle time. It is
+  lost 9–15 minutes later, when the probe's periodic scan of *every*
+  `loom:blocked` issue in the repo runs
+  `gh issue edit N --remove-label loom:blocked --add-label loom:issue` — and the
+  `--add-label` half is a no-op on #4, which already carries `loom:issue`. That
+  scan fires regardless of whether anyone is working #4, so nothing tied to "a
+  pass on #4" can bound the drift window. Full evidence:
+  [`docs/tracker-4-settle-protocol.md`](../../docs/tracker-4-settle-protocol.md).
+- **Permissions**: `contents: read` + `issues: write` — the one scope
+  `gh issue edit --add-label` needs. It is the only workflow in this repo with
+  any write scope.
+- **Blast radius**: purely additive and registry-scoped. A tick that finds no
+  drift performs no mutation at all; a tick that finds drift issues exactly one
+  `gh issue edit --add-label` naming only the missing labels. It never removes a
+  label, and never touches an issue absent from the registry.
+- **Tests**: the wiring (cron cadence, `issues: write`, `GH_TOKEN`, the
+  `verify --repair` invocation) is asserted by
+  `.loom/scripts/tests/test-sticky-blocked.sh`.
+
+Note that GitHub runs `schedule:` workflows only from the default branch, and
+disables them in repositories after 60 days of inactivity.
