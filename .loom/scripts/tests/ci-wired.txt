@@ -205,6 +205,7 @@ test-sweep-pr-mode.sh
 test-sweep-run-registry.sh
 test-sync-labels-check.sh
 test-token-cache-affinity.sh
+test-tracker-state-comment.sh
 test-sync-labels-repo-flag.sh
 test-urgent-flip-guard.sh
 test-verdict-staleness-guard.sh
