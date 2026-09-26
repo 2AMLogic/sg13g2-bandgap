@@ -228,3 +228,186 @@ done | awk -F'\t' '$2==4 && $4=="loom:blocked"'
 
 Note that scheduled workflows only run from the default branch, so neither check
 produces data until the PR merges.
+
+## 7. The `addComment` 2500-comment cap (#248) and the pinned-state-comment convention
+
+This section is unrelated to the `loom:blocked` label-drift bug above (§1-6) —
+it is a second, independent GitHub limit that hit #4 later, on 2026-09-26.
+It is documented here anyway because #4 is the one issue both limits share,
+and because the fix below reuses this file as its home per #248's own
+acceptance criteria.
+
+### 7.1 What broke
+
+`gh api graphql` against `repository(...).issue(4).comments.totalCount`
+returns exactly `2500`. Every `addComment` mutation on #4 — a plain `gh issue
+comment 4 ...`, or any `gh api --method POST
+repos/{owner}/{repo}/issues/4/comments` — now fails permanently with
+
+```
+GraphQL: Commenting is disabled on issues with more than 2500 comments (addComment)
+```
+
+This is GitHub's hard cap on the number of comments an issue may carry, not a
+rate limit: no retry, backoff, or credential escalation recovers it, and it
+will never clear on its own (deleting old comments is the only way to make
+room, and nothing in this repo's tooling does that). The maintenance-log
+convention this repo had been using — post a fresh "**Tracker re-check,
+`<timestamp>` (...)**" comment on every periodic `/loom:sweep 4 --claim-owned
+4` pass, summarizing what changed since the previous check — is built
+entirely on `addComment` and is therefore now permanently broken on #4. (This
+is a distinct GitHub limit from the ~256 KiB **body**-size cap covered in
+[`.loom/docs/graphql-body-size-cap.md`](../.loom/docs/graphql-body-size-cap.md)
+— that page's own remedy, "switch from editing the body to posting a
+comment," is exactly the escape hatch this **comment**-count cap now closes
+right back off for #4 specifically. #4 is affected by both caps at once: its
+body is long-since near the 256 KiB ceiling, which is why maintenance updates
+were comments in the first place, and now its comment count is at its own
+ceiling too.)
+
+### 7.2 What still works: PATCH is a different mutation, not subject to this cap
+
+`gh api --method PATCH repos/{owner}/{repo}/issues/comments/<id>` — editing an
+**existing** comment's body — is a different GitHub mutation
+(`updateIssueComment`) with no documented comment-count cap of its own. This
+is not just a theoretical distinction:
+
+- **`sweep-lease-publish.sh` already fails open on this exact failure mode.**
+  Its one `POST .../issues/${issue}/comments` call (the initial lease-record
+  write, ~line 503-506 as of this writing) catches a non-zero `gh` exit, logs
+  "Proceeding without a lease is safe but degrades reclaim evidence
+  (best-effort, mirrors #6179's fail-open dispatch write)", and exits `2`.
+  Per the sweep pre-flight contract (`.claude/commands/loom/sweep-reference.md`
+  Step 1b), an exit `0`/`2` at this step **proceeds** — a sweep claiming #4 is
+  never blocked by a failed lease publish, only its reclaim evidence degrades
+  from "a lease comment exists" to "none does," exactly as if no lease had
+  ever been attempted. This is an observability gap, not a functional one.
+- **`sweep-lease-renew.sh` never calls `addComment` at all in its steady-state
+  path.** Once a lease comment exists, `renew-once` locates it and PATCHes it
+  (`--method PATCH repos/{owner}/{repo}/issues/comments/${candidate_id}`) —
+  see that script's own header comment: "This is an idempotent PATCH of the
+  EXISTING comment — never a new comment." Renewal is therefore never
+  exposed to the comment-count cap; only the one-time initial `publish` call
+  is (and that call fails open, per the point above).
+- **This is not just theoretical — it is already happening in production on
+  #4.** Multiple lease comments on #4 (all written *before* the cap was hit)
+  show `updated_at` timestamps well after their `created_at`, i.e. a live
+  `sweep-lease-renew.sh` loop has already been PATCHing them successfully
+  *after* #4's comment count reached 2500. Example, read live via `gh api
+  repos/2AMLogic/sg13g2-bandgap/issues/comments/5846657767`: `created_at:
+  2026-09-26T13:28:59Z`, `updated_at: 2026-09-26T13:34:26Z` — one successful
+  renewal PATCH, five and a half minutes after creation, on a comment that is
+  itself part of the capped 2500. This is the empirical confirmation behind
+  §7.4's "did not execute a live mutation" decision: the hypothesis this
+  section rests on (PATCH keeps working on a comment-capped issue) is already
+  independently proven by existing sweep activity, not merely asserted.
+
+**Not yet traced (explicit, non-blocking follow-up — do not resolve this in
+the same pass that reads this note):** whether `.loom/scripts/record-noop-release.sh`
+and the `#6485` `loom:lease-yield` stand-down marker share this same
+fail-open/PATCH-only contract. Both write comments to a tracker issue as part
+of the claim-release path, and neither has been traced with the depth given
+to `sweep-lease-publish.sh`/`sweep-lease-renew.sh` above. If either turns out
+to hard-fail (rather than fail open, or PATCH an existing record) on a
+comment-capped issue, that is a real gap worth its own issue — potentially an
+upstream `rjwalters/loom` question, mirroring §6's `rjwalters/loom#8742`
+precedent for the label-drift half of this file. Flagging it here is
+deliberately as far as this section goes.
+
+### 7.3 The replacement convention: one pinned comment, PATCHed, never re-POSTed
+
+`.loom/scripts/tracker-state-comment.sh` (added by #248) gives the
+maintenance-log convention the same escape hatch #7.2 describes for leases:
+instead of POSTing a new "Tracker re-check" comment on every pass, maintain
+**one** pinned comment — identified by the literal first line
+`<!-- loom:tracker-state -->` — and PATCH it in place every time.
+
+```bash
+# Steady state: find the pinned comment and PATCH it with fresh content.
+# Never POSTs once the pinned comment already exists.
+.loom/scripts/tracker-state-comment.sh ensure 4 --body-file /tmp/tracker-4-recheck.md
+
+# Read-only: print the pinned comment's id and current body. Safe to run
+# against #4 at any time; never mutates anything.
+.loom/scripts/tracker-state-comment.sh show 4
+```
+
+`ensure` PATCHes the newest comment whose body starts with the marker if one
+exists (the `sweep-lease-renew.sh` steady-state path, reused verbatim: same
+`forge_gh_perm_safe`-wrapped escalation ladder, same "write to a temp file,
+`-F body=@<path>`" PATCH shape so a mid-write credential escalation retry
+never re-reads an already-consumed stdin pipe). If no pinned comment exists
+yet, `ensure` tries to POST one — which only succeeds on an issue that has
+not yet hit the cap (every tracker issue in this repo except #4 today). A
+POST failure at that point is not swallowed into a silent no-op: `ensure`
+exits `2` with a message pointing at `bootstrap`.
+
+**Both** of `ensure`'s write paths — the steady-state PATCH and the
+create-new POST — use that temp-file `-F body=@<path>` shape, not a stdin
+pipe. This is load-bearing, not stylistic: `forge_cmd_perm_safe` re-invokes
+the *identical* command on up to three credential rungs when the first 403s
+with GitHub's App-installation permission wording, and a pipe is readable
+exactly once, so a `-F body=@-` call would hand the retry an empty stdin.
+`gh api --method POST … -F body=@-` with empty stdin does not reliably
+*fail* — it can succeed with an empty body, i.e. quietly overwrite the
+tracker's pinned state with nothing on exactly the retry path the ladder
+exists to survive. (`sweep-lease-publish.sh`'s POST is safe with `-F
+body=@-` only because it is a bare, unwrapped `gh` call: one attempt, one
+stdin read. The two properties — "wrapped in the retrying ladder" and
+"piped via stdin" — are only ever a hazard together.) Both retry paths are
+covered by `.loom/scripts/tests/test-tracker-state-comment.sh` cases (l)
+and (m), which force a rung-1 403 and assert the retried call still carries
+a byte-identical, non-empty body.
+
+**Bootstrapping on an issue that is ALREADY at the cap (#4's actual
+situation) needs one extra, explicit step**, because `ensure`'s POST fallback
+above cannot work retroactively — #4 can never accept another `addComment`,
+full stop, so there is no way to *create* a fresh pinned comment on it. The
+only option is to **adopt** an existing comment:
+
+```bash
+# One-time, explicit, destructive: overwrites <ID>'s body with the marker +
+# fresh content. Requires --force -- this script will not guess that an
+# existing comment is safe to repurpose.
+.loom/scripts/tracker-state-comment.sh bootstrap 4 --comment-id <ID> \
+    --body-file /tmp/tracker-4-recheck.md --force
+```
+
+Picking `<ID>` is a judgment call this script deliberately does not automate
+(see the script's own header comment): the best candidate on #4 today is one
+of its own `loom:lease` comments (a genuinely disposable record — "nothing
+reads this record yet" per `defaults/docs/lease-record.md`, and dozens of
+structurally identical siblings already exist), rather than one of the
+substantive "Tracker re-check" comments, which still carry unique historical
+content worth preserving. Whoever runs this should re-read the candidate
+comment first (`gh api repos/2AMLogic/sg13g2-bandgap/issues/comments/<ID>`)
+to confirm it is not currently being renewed by a live claim before
+overwriting it. After bootstrap, every future update is a plain `ensure`
+call — `bootstrap` is a one-time operation, not a recurring one.
+
+### 7.4 Verification performed for this section
+
+**Automated:** `.loom/scripts/tests/test-tracker-state-comment.sh` covers the
+find-or-create/PATCH decision (existing pinned comment vs. none), the
+startswith-not-substring marker match, trailer replacement (not
+accumulation) across repeated `ensure` calls, the POST-failure → exit 2 →
+"use bootstrap" path (simulating the cap without touching a real issue), the
+`bootstrap --force` requirement and its overwrite behavior including the
+stderr audit line, and `show`'s found/not-found paths — mirroring
+`test-sweep-lease-renew.sh`'s stubbing pattern (`gh` stubbed on `PATH`, the
+real script run as a subprocess, real `jq` for JSON shape). Wired into
+`.loom/scripts/tests/ci-wired.txt`.
+
+**Manual, against the real #4:** confirmed live (read-only) that
+`comments.totalCount` is still exactly `2500` and that `addComment` is the
+mutation the cap names. Deliberately did **not** perform a new live PATCH
+exercise against #4 as part of this change: every existing candidate comment
+on #4 is either substantive historical content (the "Tracker re-check"
+comments) or an active-format lease record, and there was no comment on #4
+that was both identifiable as disposable and safe to mutate without a human
+confirming it first — exactly the judgment call §7.3 declines to automate.
+Instead, this relies on the **already-existing production evidence** cited in
+§7.2 (lease comment 5846657767's `updated_at` genuinely advancing past its
+`created_at` after the cap was hit) as the live confirmation that PATCH
+works against #4 today. A human who wants to complete the loop can run the
+exact `bootstrap` command in §7.3 once a suitable `--comment-id` is chosen.
