@@ -204,17 +204,41 @@ patch_comment() {
 # success. Fails (non-zero, message on stderr) on any POST error, including
 # the 2500-comment cap -- callers must not swallow this into a silent no-op,
 # since it is the signal that `bootstrap` is now required.
+#
+# Uses the SAME temp-file `-F body=@<path>` shape as patch_comment above, and
+# for the same reason (Issue #6541): forge_gh_perm_safe's escalation ladder can
+# re-invoke this identical call on up to three credential rungs, and a stdin
+# pipe (`-F body=@-`) is readable exactly once -- a rung-2/rung-3 retry would
+# re-run `gh` against an already-consumed pipe, and `gh api --method POST ...
+# -F body=@-` with empty stdin does not necessarily fail: it can succeed with
+# an EMPTY comment body. Silent content loss on precisely the retry path the
+# ladder exists to make robust. `sweep-lease-publish.sh`'s POST gets away with
+# `-F body=@-` only because it is a bare, unwrapped `gh` call (one attempt, so
+# one stdin read); every forge_gh_perm_safe-wrapped write must use a file.
+#
+# stderr is captured to its own file rather than folded in with `2>&1`: on a
+# successful retry the ladder narrates the escalation on stderr ("forge: still
+# 403 after a fresh mint -- falling back to ..."), and mixing that prose into
+# the captured stdout would break the `jq -r '.id'` parse below and turn a
+# succeeded POST into a spurious "creating one failed" exit 2.
 post_comment() {
     local issue="$1" body="$2"
     shift 2
     local -a repo_args=("$@")
 
-    local post_out
-    if ! post_out="$(printf '%s' "$body" \
-        | forge_gh_perm_safe api "${repo_args[@]+"${repo_args[@]}"}" --method POST "repos/{owner}/{repo}/issues/${issue}/comments" -F body=@- 2>&1)"; then
-        echo "$post_out" >&2
+    local post_body_file post_err_file post_out rc=0
+    post_body_file="$(mktemp)"
+    post_err_file="$(mktemp)"
+    printf '%s' "$body" > "$post_body_file"
+    post_out="$(forge_gh_perm_safe api "${repo_args[@]+"${repo_args[@]}"}" --method POST "repos/{owner}/{repo}/issues/${issue}/comments" \
+        -F "body=@${post_body_file}" \
+        2> "$post_err_file")" || rc=$?
+    if [[ "$rc" -ne 0 ]]; then
+        cat "$post_err_file" >&2
+        rm -f "$post_body_file" "$post_err_file"
         return 1
     fi
+    rm -f "$post_body_file" "$post_err_file"
     jq -r '.id // empty' <<< "$post_out" 2> /dev/null || true
 }
 

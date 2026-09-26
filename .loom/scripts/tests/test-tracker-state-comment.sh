@@ -24,6 +24,13 @@
 #   (i) show finds and prints the pinned comment; exits 2 when none exists
 #   (j) --body and --body-file are mutually exclusive; at least one required
 #   (k) --marker overrides the default prefix end-to-end (ensure + show)
+#   (l) REGRESSION (#6541 / PR #249 review): when forge_gh_perm_safe's
+#       escalation ladder 403s on rung 1 and retries the identical POST on a
+#       later credential rung, the retried call still carries the FULL body --
+#       the hazard being guarded against is `-F body=@-` (a stdin pipe, which
+#       is readable exactly once), where the retry would send an EMPTY body and
+#       silently create an empty pinned comment instead of failing loudly
+#   (m) the same retry guarantee for the PATCH (steady-state) path
 #
 # Usage:
 #   ./.loom/scripts/tests/test-tracker-state-comment.sh
@@ -154,17 +161,25 @@ if [[ "$1" == "api" ]]; then
     if [[ "$method" == "PATCH" ]]; then
       n=$(( $(cat "$D/patch-count-$id" 2>/dev/null || echo 0) + 1 ))
       echo "$n" > "$D/patch-count-$id"
-      if [[ -f "$D/patch-fail" ]]; then
-        echo "stub gh: patch failed" >&2
-        exit 1
-      fi
+      # Record the body THIS attempt saw before any failure branch, so a
+      # ladder-retried PATCH's body is observable too (see the POST route).
       val="${field_kv#*=}"
       if [[ "$field_flag" == "-F" && "$val" == "@-" ]]; then
         cat > "$D/patch-$id-$n.body"
       elif [[ "$field_flag" == "-F" && "$val" == @* ]]; then
+        : > "$D/patch-$id-$n.body"
         cat "${val#@}" > "$D/patch-$id-$n.body" 2>/dev/null || true
       else
         printf '%s' "$val" > "$D/patch-$id-$n.body"
+      fi
+      if [[ -f "$D/patch-fail" ]]; then
+        echo "stub gh: patch failed" >&2
+        exit 1
+      fi
+      if [[ -f "$D/patch-403-attempts" ]] \
+        && [[ "$n" -le "$(cat "$D/patch-403-attempts")" ]]; then
+        echo "gh: Resource not accessible by integration (HTTP 403)" >&2
+        exit 1
       fi
       echo "$id" >> "$D/patch-calls.log"
       echo '{}'
@@ -185,15 +200,36 @@ if [[ "$1" == "api" ]]; then
     exit 0
   fi
   if [[ "$method" == "POST" && "$path" == repos/*/issues/*/comments ]]; then
+    # Count EVERY attempt (before any failure branch) so a caller that is
+    # retried by forge_cmd_perm_safe's escalation ladder is observable, and
+    # record the body this specific attempt saw -- that is what proves a
+    # retried POST is not silently sending an empty body (#6541 hazard).
+    n=$(( $(cat "$D/post-count" 2>/dev/null || echo 0) + 1 ))
+    echo "$n" > "$D/post-count"
+    val="${field_kv#*=}"
+    if [[ "$field_flag" == "-F" && "$val" == "@-" ]]; then
+      cat > "$D/post-attempt-$n.body"
+    elif [[ "$field_flag" == "-F" && "$val" == @* ]]; then
+      : > "$D/post-attempt-$n.body"
+      cat "${val#@}" > "$D/post-attempt-$n.body" 2>/dev/null || true
+    else
+      printf '%s' "$val" > "$D/post-attempt-$n.body"
+    fi
     if [[ -f "$D/post-fail" ]]; then
       echo "GraphQL: Commenting is disabled on issues with more than 2500 comments (addComment)" >&2
       exit 1
     fi
-    body="$(cat)"
-    n=$(( $(cat "$D/post-count" 2>/dev/null || echo 0) + 1 ))
-    echo "$n" > "$D/post-count"
+    # post-403-attempts holds a count K: the first K attempts fail with
+    # GitHub's App-installation permission-scope wording, which is the ONLY
+    # signature is_app_permission_error() matches and therefore the only way
+    # to make forge_cmd_perm_safe advance a credential rung and re-invoke us.
+    if [[ -f "$D/post-403-attempts" ]] \
+      && [[ "$n" -le "$(cat "$D/post-403-attempts")" ]]; then
+      echo "gh: Resource not accessible by integration (HTTP 403)" >&2
+      exit 1
+    fi
     new_id=$((9000 + n))
-    printf '%s' "$body" > "$D/post-$new_id.body"
+    cp "$D/post-attempt-$n.body" "$D/post-$new_id.body"
     echo "$new_id" >> "$D/post-calls.log"
     printf '{"id": %s}' "$new_id"
     exit 0
@@ -207,10 +243,13 @@ exit 3
 STUB
 chmod +x "$STUB_DIR/gh"
 
-# A `github-app-token.sh` stub speaking the "not configured" envelope so
-# forge_gh_perm_safe's escalation ladder has nothing beyond rung 1 (ambient)
-# to try -- these tests only exercise rung 1, which the `gh` stub above
-# handles deterministically.
+# A `github-app-token.sh` stub speaking the "not configured" envelope, so
+# forge_gh_perm_safe's rung 2 (fresh App-installation token mint) is always
+# skipped. Most tests below therefore run entirely on rung 1 (ambient), which
+# the `gh` stub above handles deterministically. Tests (l)/(m) reach rung 3
+# by exporting LOOM_PERSONAL_GH_TOKEN and having the stub 403 on rung 1 --
+# with rung 2 unavailable, that makes the ladder exactly two invocations of
+# the identical `gh` command, which is the retry shape #6541 is about.
 cat > "$STUB_DIR/github-app-token.sh" <<'MINT'
 #!/usr/bin/env bash
 echo '{"status":"not_configured","message":"github app not configured"}'
@@ -223,9 +262,9 @@ export LOOM_GITHUB_APP_SCRIPT="$STUB_DIR/github-app-token.sh"
 
 reset_state() {
     rm -f "$STUB_DIR"/comments.json "$STUB_DIR"/comments-fail
-    rm -f "$STUB_DIR"/post-fail "$STUB_DIR"/post-count "$STUB_DIR"/post-calls.log "$STUB_DIR"/post-*.body
+    rm -f "$STUB_DIR"/post-fail "$STUB_DIR"/post-403-attempts "$STUB_DIR"/post-count "$STUB_DIR"/post-calls.log "$STUB_DIR"/post-*.body
     rm -f "$STUB_DIR"/get-fail "$STUB_DIR"/get-*.json
-    rm -f "$STUB_DIR"/patch-fail "$STUB_DIR"/patch-*.body "$STUB_DIR"/patch-count-* "$STUB_DIR"/patch-calls.log
+    rm -f "$STUB_DIR"/patch-fail "$STUB_DIR"/patch-403-attempts "$STUB_DIR"/patch-*.body "$STUB_DIR"/patch-count-* "$STUB_DIR"/patch-calls.log
     unset LOOM_PERSONAL_GH_TOKEN 2> /dev/null || true
 }
 
@@ -373,6 +412,48 @@ run_script show 4 --marker "<!-- loom:custom-state -->"
 assert_eq "0" "$RC" "(k) show with the matching custom marker finds the comment"
 run_script show 4
 assert_eq "2" "$RC" "(k) show with the DEFAULT marker does not find a custom-marker comment"
+
+# --- (l) POST survives an escalation-ladder retry (#6541 regression) ------
+# Rung 1 403s with GitHub's App-permission wording, rung 2 is unavailable (the
+# not_configured mint stub), so forge_cmd_perm_safe re-invokes the IDENTICAL
+# `gh api --method POST ...` on rung 3 with LOOM_PERSONAL_GH_TOKEN. Had
+# post_comment piped the body through stdin (`-F body=@-`), that second
+# invocation would read an already-consumed pipe and POST an empty body.
+reset_state
+echo "[]" > "$STUB_DIR/comments.json"
+echo "1" > "$STUB_DIR/post-403-attempts"
+export LOOM_PERSONAL_GH_TOKEN="stub-personal-token"
+run_script ensure 4 --body "POST body that must survive a credential escalation."
+unset LOOM_PERSONAL_GH_TOKEN
+assert_eq "0" "$RC" "(l) ensure still succeeds when the POST's first rung 403s and the ladder retries"
+assert_eq "2" "$(cat "$STUB_DIR/post-count" 2> /dev/null || echo 0)" "(l) the POST really was invoked twice (rung 1 403 -> rung 3 retry)"
+ATTEMPT1_L="$(cat "$STUB_DIR/post-attempt-1.body" 2> /dev/null || echo MISSING)"
+ATTEMPT2_L="$(cat "$STUB_DIR/post-attempt-2.body" 2> /dev/null || echo MISSING)"
+assert_contains "$ATTEMPT1_L" "POST body that must survive a credential escalation." "(l) the FIRST (403'd) POST attempt carried the full body"
+assert_contains "$ATTEMPT2_L" "POST body that must survive a credential escalation." "(l) the RETRIED POST attempt still carries the full body (not emptied by an already-consumed stdin pipe)"
+assert_eq "<!-- loom:tracker-state -->" "$(head -n1 <<< "$ATTEMPT2_L")" "(l) the retried POST still carries the marker as its literal first line"
+assert_eq "$ATTEMPT1_L" "$ATTEMPT2_L" "(l) both attempts sent byte-identical bodies"
+assert_eq "9002" "$(cat "$STUB_DIR/post-calls.log" 2> /dev/null || echo "")" "(l) the successful retry (not the 403'd first attempt) is the comment that lands"
+assert_contains "$ERR" "created pinned state comment 9002" "(l) ensure reports the retry's comment id -- the ladder's escalation narration on stderr does not corrupt the id parse"
+
+# --- (m) PATCH survives an escalation-ladder retry too -------------------
+reset_state
+cat > "$STUB_DIR/comments.json" <<'JSON'
+[
+  {"id": 42, "body": "<!-- loom:tracker-state -->\nOld content."}
+]
+JSON
+echo "1" > "$STUB_DIR/patch-403-attempts"
+export LOOM_PERSONAL_GH_TOKEN="stub-personal-token"
+run_script ensure 4 --body "PATCH body that must survive a credential escalation."
+unset LOOM_PERSONAL_GH_TOKEN
+assert_eq "0" "$RC" "(m) ensure still succeeds when the PATCH's first rung 403s and the ladder retries"
+assert_eq "2" "$(cat "$STUB_DIR/patch-count-42" 2> /dev/null || echo 0)" "(m) the PATCH really was invoked twice"
+BODY_M1="$(cat "$STUB_DIR/patch-42-1.body" 2> /dev/null || echo MISSING)"
+BODY_M2="$(cat "$STUB_DIR/patch-42-2.body" 2> /dev/null || echo MISSING)"
+assert_contains "$BODY_M2" "PATCH body that must survive a credential escalation." "(m) the RETRIED PATCH still carries the full body"
+assert_eq "$BODY_M1" "$BODY_M2" "(m) both PATCH attempts sent byte-identical bodies"
+assert_eq "42" "$(cat "$STUB_DIR/patch-calls.log" 2> /dev/null || echo "")" "(m) exactly one PATCH landed, on the existing pinned comment"
 
 # --- Summary ---------------------------------------------------------------
 echo ""

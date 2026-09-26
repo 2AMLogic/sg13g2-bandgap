@@ -342,6 +342,23 @@ not yet hit the cap (every tracker issue in this repo except #4 today). A
 POST failure at that point is not swallowed into a silent no-op: `ensure`
 exits `2` with a message pointing at `bootstrap`.
 
+**Both** of `ensure`'s write paths — the steady-state PATCH and the
+create-new POST — use that temp-file `-F body=@<path>` shape, not a stdin
+pipe. This is load-bearing, not stylistic: `forge_cmd_perm_safe` re-invokes
+the *identical* command on up to three credential rungs when the first 403s
+with GitHub's App-installation permission wording, and a pipe is readable
+exactly once, so a `-F body=@-` call would hand the retry an empty stdin.
+`gh api --method POST … -F body=@-` with empty stdin does not reliably
+*fail* — it can succeed with an empty body, i.e. quietly overwrite the
+tracker's pinned state with nothing on exactly the retry path the ladder
+exists to survive. (`sweep-lease-publish.sh`'s POST is safe with `-F
+body=@-` only because it is a bare, unwrapped `gh` call: one attempt, one
+stdin read. The two properties — "wrapped in the retrying ladder" and
+"piped via stdin" — are only ever a hazard together.) Both retry paths are
+covered by `.loom/scripts/tests/test-tracker-state-comment.sh` cases (l)
+and (m), which force a rung-1 403 and assert the retried call still carries
+a byte-identical, non-empty body.
+
 **Bootstrapping on an issue that is ALREADY at the cap (#4's actual
 situation) needs one extra, explicit step**, because `ensure`'s POST fallback
 above cannot work retroactively — #4 can never accept another `addComment`,
