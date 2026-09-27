@@ -2164,10 +2164,12 @@ alone:
   reclassification: #240 drew one `draw_well_tap` island per shared MOS well
   and wired it into `vdd` (PR #244), so the committed `extract_report.json`
   shows every `pfet`'s body terminal reading `vdd` where #174 found two
-  unnamed, deck-synthesized well nets (`$34` for five instances, `$36` for
-  three), and `unbiased_pmos_body_nets` — the underlying `klt extract`
-  warning that listed all 8 entries then — is now `[]`. All eight `pfet`
-  consequently pair: those 6 vanished `device.unmatched` entries, plus the 2
+  unnamed, deck-synthesized well nets (`$36` for five instances — `$10`–`$14`
+  — and `$29` for three — `$7`–`$9`, the net that also appears as one of that
+  report's `net.split` entries), and `unbiased_pmos_body_nets` — the
+  underlying `klt extract` warning that listed all 8 entries then — is now
+  `[]`. All eight `pfet` consequently pair: those 6 vanished
+  `device.unmatched` entries (`$7`–`$9` and `$12`–`$14`), plus the 2
   `net.split` entries discussed below, are the 8 findings Cause 4 shed on the
   way from 22 to 14.
 
