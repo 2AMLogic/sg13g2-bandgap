@@ -1671,133 +1671,37 @@ to `vref`. See `measurements/2026-09-resistor-fold/`.
 
 ### Boundary ports for `bandgap_top` assembly (issue #76)
 
-`fb` (a tap pad left of `M1`) and `vdd` (the merged source rail along the
-top) were already flush with this cell's own bounding box -- reachable from
-outside the cell without crossing anything. `sns1`, `sns2` and `vref` were
-not: each is a plain interior column (`sns1` at `x=0` from `Q1`'s emitter up
-to `M1`'s drain; `sns2` at `x=45` from `R2`'s own pad up to `M2`'s drain;
-`vref` at `x=180` from `R1`'s own pad up to `M3`'s drain), unreachable from
-outside the cell's own footprint without threading a corridor the cell never
-reserved -- concretely, `Q1`'s own base/collector rings close on three of
-their four sides, so a straight drop through the ring from outside would
-short `sns1` to `vss` rather than connect to it (exactly the "plausible but
-not correct" failure issue #76's own analysis warns against).
-
-Each of the three now gets a dedicated `common_sg13cmos5l.boundary_port()`
-pad -- a `Metal1` pad flush with one edge of the cell, labelled with the net
-it carries, returned (alongside `vdd`/`vss`/`fb`'s own already-flush
-geometry) as a `{net: pad_box}` map from `generate.py`'s own `build()` for a
-parent assembly to route against:
-
-- **`sns1`** branches left off its own vertical trunk at `y=50` (clear of
-  `Q1`'s ring, whose top is at `y=33.01`, and of `M1`'s drain pad, whose
-  bottom is at `y=59.1`), straight out to the left edge.
-- **`sns2`** branches right off its own trunk at `y=50`, straight across --
-  **except** `vref`'s own trunk occupies the entire column `x=179.75` from
-  `y=16.1` to `y=59.1` (the whole span between its own two pads), so any
-  rightward path at any height in that band crosses it. Resolved with one
-  `poly_underpass()` at `x=176..184.5`, the same single-metal crossing
-  technique `bandgap_amp` already uses for its own `out` net.
-- **`vref`** branches right off its own trunk at `y=40` (a different height
-  from `sns2`'s crossing, so the two new stubs never share a row), straight
-  to the right edge -- clear because neither the `vss` aisle (`x=87`, which
-  only exists for `y` in `[0, 30]`) nor the Q2 emitter bus (`y=34`, which
-  spans `x=58..165.75` since issue #243 extended it west -- see "`R2`'s `e2`
-  drop" below) reaches `y=40`.
-
-**Re-verified, not just re-drawn**: `klt drc` stays `clean` (0 violations)
-and `klt extract`'s device/net list is **byte-identical** to the
-pre-#76 committed one (verified: the regenerated
-`sg13cmos5l-bandgap_core.extracted.spice` diffs empty against the previously
-committed file) -- the three new pads add reachability, not topology, since
-every one of `sns1`/`sns2`/`vref`'s labels already existed inside the cell
-before this issue. `klt lvs`'s finding counts are consequently unchanged
-(27 findings, 25 error-severity, identical `category_counts`). The one new
-thing `extract_report.json` records is a third `unmodelled_poly` entry (the
-`sns2` crossing's own poly strip) -- the same already-filed
-klayout-tools#1425 gap (an intentional poly underpass reads as an
-unmodelled resistor body), not a new one.
-
-### `R2`'s `e2` drop: disjoint-net defect fixed (issue #243)
-
-`R2`'s `end_b` pad (net `e2`) sits at `x=58.0` (leg 5 of its 6-leg fold,
-`X_M2=45.0` plus five legs at a 2.4 µm pitch -- see `generate.py`'s own
-"issue #173" comment for the fold arithmetic), west of the Q2 unit row's own
-x-span (`Q2_X0=123.75` .. `165.75`). `_route()`'s `-- e2:` block used to drop
-straight down from that pad onto `Q2_BUS_Y` (the shared Metal1 trunk every
-Q2 unit's emitter escapes onto) at `x=58` without first checking that `x=58`
-actually lay inside the trunk's own drawn span -- it did not, so the drop
-landed in free field next to, not on, the trunk, and `e2` extracted as two
-disjoint electrical islands (`e2` and a second one KLayout numbers `e2$1` in
-the `.SUBCKT` pin list, confirmed on the pre-fix
-`sg13cmos5l-bandgap_core.extracted.spice`). This open-circuited the PTAT
-branch (`R2` -> `Q2`) as drawn -- a real electrical defect, not merely a
-cosmetic net-name split.
-
-**Fixed by extending the trunk, not by moving the drop.** The trunk is
-already one continuous Metal1 `route_h` shape spanning every Q2 unit's own
-landing x; widening that one call's own span to include `x_e2` (`x=58`)
-costs nothing else in the floorplan -- the field between `x=58` and
-`x=123.75` at `y=34` is clear (`R2`'s own folded body sits above, at
-`y=44..57.85`, and the `vss` aisle at `x=87` only exists for `y` in
-`[0, 30]`, well below the trunk's own row). Moving the drop instead would
-have needed a new dog-leg through the same clear field for no benefit.
-
-**Verified**: a fresh `klt extract --deck sg13cmos5l` on the regenerated
-`sg13cmos5l-bandgap_core.gds` now reports exactly one `e2` net (`net_count`
-9 -> 8, no `e2$1` pin in the `.SUBCKT` line), `klt drc` stays `clean` (0
-violations, unchanged), and `klt lvs`'s `net.unmatched` count drops 13 -> 12
-(`mismatch_count` 25 -> 24, `error_count` 24 -> 23) -- the electrical proof
-the two former islands are now one net. The assembled
-`sg13cmos5l-bandgap_top` (which instantiates this cell) was regenerated and
-re-verified the same way: `klt drc` stays clean, `klt extract`'s `net_count`
-drops 14 -> 13 (again exactly one `e2`), and `klt lvs`'s `net.split` count
-drops 3 -> 2 (`mismatch_count` 15 -> 14, `error_count` 15 -> 14). See
-"SG13CMOS5L: LVS -- `mismatch`, fully attributed" below for the updated
-per-cause table.
-
-**`e3` (`R1` -> `Q3`) checked for the same defect class and confirmed safe
-by construction, not just by inspection.** `Q3`'s own `x0` is *read back
-from* `r1["end_b_pad"]` (`x_q3 = pad_center_x(r1["end_b_pad"])`, the exact
-same pad `e3`'s drop uses) -- there is only one `Q3` unit, not a multi-unit
-row with its own independently-chosen span the way Q2's row is, so the drop
-and Q3's emitter can never disagree on x. No corresponding fix was needed
-there.
+`fb` and `vdd` were already flush with this cell's own bounding box;
+`sns1`, `sns2` and `vref` were plain interior columns, so each now gets a
+dedicated `common_sg13cmos5l.boundary_port()` pad and `build()` returns a
+`{net: pad_box}` map covering all six schematic ports for a parent assembly
+to route against. **The per-net escape routes, the clearances that fix their
+heights, and the one `poly_underpass()` `sns2` needs to cross `vref`'s trunk
+live in `generate.py`'s own module docstring**, in its section of this same
+name, next to the code that draws them — that is the one copy to read. The
+pads added reachability, not topology: `klt drc` stayed `clean` and the
+regenerated
+`sg13cmos5l-bandgap_core.extracted.spice` diffed empty against the pre-#76
+committed one. Full account: issue
+[#76](https://github.com/2AMLogic/sg13g2-bandgap/issues/76) (closed).
 
 ### Q2: 8 parallel unit devices (issue #73, DR-0005)
 
-The SG13CMOS5L layout phase (this section, issue #66) originally found that
-the schematic's `Q2` (a single `pnpMPA` `w=8u l=2u`) could not be
-PCell-generated: CMOS5L's `pnpMPA_maxW` is 2.0 µm
-(`sg13cmos5l_pycell_lib/sg13cmos5l_tech.json`), so `generate.py` drew that
-instance's emitter geometry by hand to match the netlist's `a`/`p` exactly
--- an honest rendering of a non-buildable device, not a real PCell
-instantiation. Issue #73 / DR-0005 resolved this at the design level: `Q2`
-is now `pnpMPA a={1u*2u} p={(1u+2u)*2} m=8` -- 8 parallel copies of the same
-unit device `Q1`/`Q3` already use, electrically identical to the
-single-wide-emitter construction it replaces (DR-0005 shows the compact
-model depends only on `a`, never `p`, and SPICE's `m=` multiplier is
-mathematically equivalent to an area multiplier for this model). This
-layout now draws 8 real, individually-PCell-buildable `pnpMPA` unit
-instances (`w=1u l=2u`, each well inside `pnpMPA_maxW`) in a row, all wired
-in parallel -- see `generate.py`'s own module docstring for the exact
-routing (a shared Metal1 emitter trunk plus a chained vss strap, both
-direct extensions of the patterns every other device in this cell already
-uses) and floorplan-shift rationale (`X_M3` 150 -> 180).
-
-**Re-verified, not just re-drawn**: `klt drc` stays `clean` (0 violations,
-same as before), and `klt lvs`'s `mismatch` finding counts are **exactly
-unchanged** (27 findings, 25 error-severity, identical `category_counts`)
--- because `klt lvs`'s reference-side device count treats a `pnpMPA` call's
-`m=` as a property of one logical device, not a physical expansion, and the
-curated deck's `bipolars=()` gap (unchanged, see below) makes every
-`pnpMPA` instance invisible to layout-side extraction regardless of how
-many physical copies are drawn. `layout/lvs_reference.py`'s `pnpMPA`
-conversion is updated to carry `m=` through as the reference `Q` line's
-`M=` parameter (previously dropped entirely -- inconsequential while every
-`m=` in this cell's netlist was `1`, newly load-bearing now that `Q2`'s is
-not), so the reference netlist honestly says what the schematic built even
-though the deck cannot yet compare it.
+`Q2` is `pnpMPA a={1u*2u} p={(1u+2u)*2} m=8` in the netlist and is drawn
+here as **8 real, individually-PCell-buildable `pnpMPA` `w=1u l=2u` unit
+instances** in a row — the same unit device `Q1`/`Q3` use — all wired in
+parallel on a shared Metal1 emitter trunk plus a chained `vss` strap. A
+single `w=8u l=2u` device is not buildable at all: CMOS5L's `pnpMPA_maxW`
+is 2.0 µm (`sg13cmos5l_pycell_lib/sg13cmos5l_tech.json`).
+`layout/lvs_reference.py` carries `m=` through as the reference `Q` line's
+`M=` parameter, so the reference netlist says what the schematic built even
+though the curated deck's `bipolars=()` gap (see below) leaves every
+`pnpMPA` invisible to layout-side extraction. The equivalence argument (the
+compact model depends only on `a`, never `p`) is in
+[DR-0005](../spec/decision-records/0005-cmos5l-q2-matched-array-construction.md);
+the exact routing and the floorplan shift it forced (`X_M3` 150 -> 180) are
+in `generate.py`'s own module docstring; the full account is issue
+[#73](https://github.com/2AMLogic/sg13g2-bandgap/issues/73) (closed).
 
 **Single-metal, planar by necessity.** The curated `sg13cmos5l` deck's
 extraction stack is `metals=((8, 0),)` with `vias=()` — one routing metal, no
@@ -1871,29 +1775,17 @@ gate bar again). See `generate.py`'s own floorplan sketch.
 
 ### Boundary ports for `bandgap_top` assembly (issue #76)
 
-`vdd` (top rail), `vss` (bottom rail) and `out` (`MN3`'s own drain pad,
-whose device width happens to reach the cell's left edge) were already
-flush with this cell's own bounding box. `in_p`/`in_n` were not — each is a
-poly gate tap in the interior (`X_IN_P_TAB=7`, `X_IN_N_TAB=58`), the same
-gap issue #76 found in `bandgap_core`. Both now get a dedicated
-`boundary_port()`, reached by extending each tap's own gate-link sideways:
-
-- **`in_p`** escapes left at the input pair's own row (`y=20`) — crossing
-  `out`'s own vertical stub at `x=0` (which spans the entire `y=0.64..36`
-  band between `MN3`'s drain and the underpass lane) on a second
-  `poly_underpass()`, distinct from the one this cell already uses for
-  `out` itself.
-- **`in_n`** escapes right at the same `y=20` — crossing `pn`'s own
-  vertical stub at `x=65` (`MN4`'s drain up to the `Y_OUT_LANE` turn) on a
-  third poly underpass.
-
-**Re-verified, not just re-drawn**: `klt drc` stays `clean` and
-`klt extract`'s device/net list is byte-identical to the pre-#76 committed
-one, so `klt lvs`'s finding counts are unchanged (25 findings, 23
-error-severity). Two new `unmodelled_poly` entries appear in
-`extract_report.json` (the two new underpasses' own poly strips) — the same
-already-filed klayout-tools#1425 gap this cell's own pre-existing underpass
-already triggers, not a new one.
+`vdd` (top rail), `vss` (bottom rail) and `out` were already flush with this
+cell's own bounding box; `in_p`/`in_n` were interior poly gate taps
+(`X_IN_P_TAB=7`, `X_IN_N_TAB=58`) and each now gets a dedicated
+`boundary_port()`, reached by extending its own gate-link sideways at `y=20`
+across a second and third `poly_underpass()`. **The per-net routes and the
+nets they cross are in `generate.py`'s own module docstring**, in its section
+of this same name, next to the code that draws them. The pads added
+reachability, not topology: `klt drc` stayed `clean` and `klt extract`'s
+device/net list was byte-identical to the pre-#76 committed one. Full
+account: issue
+[#76](https://github.com/2AMLogic/sg13g2-bandgap/issues/76) (closed).
 
 ## Cell: `sg13cmos5l-bandgap_startup` (issue #74)
 
@@ -1935,38 +1827,19 @@ the terminal they name.
 
 ### Boundary ports for `bandgap_top` assembly (issue #76)
 
-`vdd` (`RPU`'s own left head) already sits flush against this cell's own
-left+top edges; `vss` (the merged NMOS source rail) already sits flush
-against the bottom edge. `sns1`/`fb` did not — each is an interior gate tab
-(`X_SNS1_TAB=1388`, `MKFB`'s own drain pad at `x=1419..1421`). Both now get
-a dedicated `boundary_port()`:
-
-- **`sns1`** drops straight down from its own tap to the bottom edge — the
-  tap sits 2 µm clear of the `vss` rail's own left edge (`x=1390`), so no
-  crossing is needed.
-- **`fb`** — `MKFB`'s own drain pad sits directly above the `vss` rail
-  (whose x-span, `1390..1421`, includes the pad's own x-position) *and*
-  `det`'s own horizontal lane at `y=3` spans the entire `x=1395..1423.5`
-  run (crossing `fb`'s own column at `x=1420` too), so a straight escape in
-  any direction hits one net or the other. Resolved with a **vertical**
-  poly underpass across `det`'s lane (`y=2.0..4.0`, built from the same
-  `poly_tab()`/`route_v(L_GATPOLY, ...)` primitives `poly_underpass()`
-  itself composes, oriented across a horizontal metal lane instead of a
-  vertical one), then a jog up and right to the cell's own right edge.
-  **One iteration needed fixing**: the underpass's first landing pads (at
-  `y=2.5`/`3.5`, only 0.10 µm from `det`'s own Metal1 lane) DRC-failed
-  `metal1.space.1` three times; widening to `y=2.0`/`4.0` (2.0 µm clearance)
-  cleared all three.
-
-**Re-verified, not just re-drawn**: `klt drc` stays `clean` and
-`klt extract`'s device/net list is byte-identical to the pre-#76 committed
-one (`fb` and `det|vdd` remain two separate nets — the first attempt's `fb`
-route crossed `det`'s own lane on plain Metal1 and merged the two, caught by
-re-running `klt extract` and comparing net counts before committing
-anything). `klt lvs`'s finding counts are unchanged (16 findings, 14
-error-severity). One new `unmodelled_poly` entry appears in
-`extract_report.json` (the vertical underpass's own poly strip) — the same
-already-filed klayout-tools#1425 gap, not a new one.
+`vdd` (`RPU`'s own left head) and `vss` (the merged NMOS source rail) already
+sat flush against this cell's own edges; `sns1`/`fb` were interior gate tabs
+(`X_SNS1_TAB=1388`, `MKFB`'s own drain pad at `x=1419..1421`) and each now
+gets a dedicated `boundary_port()` — `sns1` straight down to the bottom edge,
+`fb` out to the right across a **vertical** poly underpass of `det`'s
+horizontal lane. **The routes, the clearances, and the `metal1.space.1` DRC
+iteration that set the underpass's own `y=2.0`/`4.0` landing pads are in
+`generate.py`'s own module docstring**, in its section of this same name,
+next to the code that draws them. The pads added reachability, not topology:
+`klt drc` stayed `clean` and `klt extract`'s device/net list was
+byte-identical to the pre-#76 committed one (`fb` and `det|vdd` still two
+separate nets). Full account: issue
+[#76](https://github.com/2AMLogic/sg13g2-bandgap/issues/76) (closed).
 
 ## Cell: `sg13cmos5l-bandgap_top` (issue #81)
 
@@ -2671,8 +2544,14 @@ than fixed in passing.
 
 **Then issue #243 fixed that layout defect.** `_route()`'s `-- e2:` block
 now extends the Q2 emitter trunk's own `route_h` span west to `R2`'s real
-drop x (`x=58`) instead of dropping onto a point outside it — see "`R2`'s
-`e2` drop: disjoint-net defect fixed" above for the full account. A fresh
+drop x (`x=58`) instead of dropping onto a point outside it — the trunk is
+already one continuous Metal1 shape spanning every Q2 unit's landing x, so
+widening its span costs nothing else in the floorplan, and `e3` is safe from
+the same defect class by construction (`Q3`'s own `x0` is read back from the
+very pad `e3`'s drop uses). Both points are written up in
+`layout/sg13cmos5l-bandgap_core/generate.py`'s own `-- e2:`/`-- e3:`
+comments, next to the code; the full account is issue
+[#243](https://github.com/2AMLogic/sg13g2-bandgap/issues/243) (closed). A fresh
 `klt extract` on the regenerated `bandgap_core.gds` now reports exactly one
 `e2` net (no `e2$1`), and `klt lvs`'s `net.unmatched` count drops one, 13 →
 **12** (`mismatch_count` 25 → **24**, `error_count` 24 → **23** — the
@@ -3106,15 +2985,11 @@ no guard rings, fill or seal ring;
 no analog matching structures — no common-centroid mirror interdigitation, no
 dummy devices). Two CMOS5L-specific additions:
 
-- **`Q2` is now drawn as 8 parallel unit devices, not one wide emitter**
-  (issue #73, DR-0005 — resolved; see "Q2: 8 parallel unit devices" above for
-  the full account). It was originally drawn as one `w=8u` emitter matching
-  the netlist's then-`a={ 8u * 2u }` / `p={ (8u + 2u) * 2 }` exactly, flagged
-  here as *not* how a real matched 8× PNP would be built and, worse, not even
-  PCell-buildable (`pnpMPA_maxW` is `2.0u` in `sg13cmos5l_tech.json`). The
-  design-side fix (issue #73) and this layout's own regeneration landed
-  together in the same change. `bandgap_core` only — `bandgap_amp` and
-  `bandgap_startup` (#74) draw no bipolars at all.
+- **`Q2` is drawn as 8 parallel unit devices, not one wide emitter** (issue
+  #73, DR-0005 — see "Q2: 8 parallel unit devices" above). `bandgap_core`
+  only — `bandgap_amp` and `bandgap_startup` (#74) draw no bipolars at all.
+  The 8-unit row is a real matched array, but still without the
+  common-centroid interdigitation or dummies a production 8× PNP would get.
 - **The n-well is shared across each cell's PMOS** (rather than one well per
   device) so their body terminals resolve to a single well net, matching the
   schematic's common `vdd` body tie — the only part of the body connection
@@ -3129,21 +3004,8 @@ dummy devices). Two CMOS5L-specific additions:
 
 ## Cells not laid out
 
-None, as of issue #81. `bandgap_top` (schematic landed in #70) was the last
-one — it is not a fourth leaf cell but an **assembly** of the three others
-(`Xx1 vdd vss fb sns1 sns2 vref bandgap_core`, `Xx2 sns2 sns1 vss fb vdd
-bandgap_amp`, `Xx3 vdd vss sns1 fb bandgap_startup`,
-`design/sg13cmos5l/netlist/bandgap_top.spice`'s own top-level netlist), and
-its own layout — `layout/sg13cmos5l-bandgap_top/` — is now assembled,
-routed, and DRC/LVS/extract-verified. See "Cell:
-`sg13cmos5l-bandgap_top` (issue #81)" above for the full account
-(floorplan, routing, the short found and fixed, and the LVS attribution).
-
-This section's own history, briefly: issue #76 closed the blocker that had
-kept the assembly out of scope — **none of the three leaf cells had a
-boundary port** (every net name used to be a `Metal1.pin` label on whatever
-*internal* device pad happened to carry the net, sufficient for a
-standalone leaf-cell LVS but leaving several ports physically unreachable
-from outside the cell's own footprint), and added the
-`common_sg13cmos5l.boundary_port()` convention plus `lvs_reference.py`'s
-`flatten()` mode. Issue #81 (this section) did the assembly itself.
+None — all four SG13CMOS5L cells are laid out, as of issue
+[#81](https://github.com/2AMLogic/sg13g2-bandgap/issues/81) (closed), which
+assembled `bandgap_top` on the boundary-port convention issue
+[#76](https://github.com/2AMLogic/sg13g2-bandgap/issues/76) (closed) added.
+See "Cell: `sg13cmos5l-bandgap_top` (issue #81)" above.
