@@ -1817,13 +1817,16 @@ negative (`rhigh_lwd = -0.04u` against `rppd`'s `+6 nm`), and the sheet value
 the symbol uses is `rhighG2_rspec` (1360.0), not the bare `rhigh_rspec`
 (1300.0).
 
-**Planar, single-metal, no underpass needed.** This cell's net graph is a
-path, so it fits the one-metal/no-via stack directly. Both transistors sit at
-the far right end under `RPU`'s `det` head, so `det` — the only net here with
-more than two members — never travels the bar's length; `MSENSE`'s gate
-escapes left and `MKFB`'s escapes right, so the two gate nets never share a
-poly corridor. `vdd`, `sns1` and `fb` are ports whose only in-cell member is
-the terminal they name.
+**Planar and single-metal, via-free except for one poly underpass.** This
+cell's net graph is a path, so it fits the one-metal/no-via stack directly.
+Both transistors sit at the far right end under `RPU`'s `det` head, so `det`
+— the only net here with more than two members — never travels the bar's
+length; `MSENSE`'s gate escapes left and `MKFB`'s escapes right, so the two
+gate nets never share a poly corridor. `vdd`, `sns1` and `fb` are ports whose
+only in-cell member is the terminal they name — except that `fb`'s own
+boundary-port escape (added for the `bandgap_top` assembly, see below) does
+cross `det`'s Metal1 lane, and that one crossing is resolved in poly rather
+than on a second metal.
 
 ### Boundary ports for `bandgap_top` assembly (issue #76)
 

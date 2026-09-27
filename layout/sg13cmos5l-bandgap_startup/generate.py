@@ -44,11 +44,15 @@ members -- never travels the bar's length. ``vdd`` (``RPU``'s left head),
 ports whose only in-cell member is the terminal they name, so each is a
 labelled pad with nothing to route.
 
-Single-metal and planar, with no poly underpass needed: this cell's net
-graph is a path, so unlike ``bandgap_amp`` it fits the curated deck's
-one-metal/no-via stack (klayout-tools#1417) directly. ``MSENSE``'s gate bar
-escapes left and ``MKFB``'s escapes right, so the two gate nets -- ``sns1``
-and ``det`` -- never share a poly corridor.
+Single-metal and planar: this cell's net graph is a path, so unlike
+``bandgap_amp`` it fits the curated deck's one-metal/no-via stack
+(klayout-tools#1417) directly. ``MSENSE``'s gate bar escapes left and
+``MKFB``'s escapes right, so the two gate nets -- ``sns1`` and ``det`` --
+never share a poly corridor. That is true of the device floorplan alone;
+``fb``'s own boundary-port escape (added for the ``bandgap_top`` assembly,
+see below) does cross ``det``'s horizontal Metal1 lane, and that one
+crossing is resolved with a vertical poly underpass rather than a second
+metal.
 
 What this layout does **not** try to do is force an LVS ``match``: the same
 four deck-coverage causes ``layout/README.md`` enumerates for
@@ -166,9 +170,11 @@ Y_SNS1_PORT = -1.2
 #: underpass spanning Y_FB_UNDERPASS, the same single-metal crossing
 #: technique bandgap_amp/bandgap_core use, oriented across a horizontal
 #: metal lane instead of a vertical one. The underpass's own landing pads
-#: (0.5 um square, centred 2.0 um from det's lane) clear `metal1.space.1`'s
-#: 0.18 um floor against that lane's own Metal1 by a wide margin -- a
-#: tighter first attempt (pads 0.25 um from the lane) did not.
+#: (0.5 um square, at y=2.0 and y=4.0) are each centred 1.0 um off det's
+#: lane centreline (y=3.0) and 2.0 um apart from each other, clearing
+#: `metal1.space.1`'s 0.18 um floor against that lane's own Metal1 by a
+#: wide margin -- a tighter first attempt (pads 0.25 um from the lane) did
+#: not.
 Y_FB_JOG = 6.0
 Y_FB_UNDERPASS = (2.0, 4.0)
 X_FB_PORT = 84.4
