@@ -1832,10 +1832,14 @@ sat flush against this cell's own edges; `sns1`/`fb` were interior gate tabs
 (`X_SNS1_TAB=1388`, `MKFB`'s own drain pad at `x=1419..1421`) and each now
 gets a dedicated `boundary_port()` — `sns1` straight down to the bottom edge,
 `fb` out to the right across a **vertical** poly underpass of `det`'s
-horizontal lane. **The routes, the clearances, and the `metal1.space.1` DRC
-iteration that set the underpass's own `y=2.0`/`4.0` landing pads are in
-`generate.py`'s own module docstring**, in its section of this same name,
-next to the code that draws them. The pads added reachability, not topology:
+horizontal lane. **That underpass, its `y=2.0`/`4.0` landing pads, and the
+`metal1.space.1` clearance iteration that set them are in `generate.py`'s
+`#:` comment on the `Y_FB_JOG`/`Y_FB_UNDERPASS` constants** (L162-173),
+immediately above the constants the `fb` route itself reads: `det`'s Metal1
+lane at `Y_DET_LANE=3` crosses `fb`'s own column, so `fb` jogs up and makes
+the crossing in `GatPoly` between two landing pads whose clearance to that
+lane's Metal1 satisfies `metal1.space.1`'s 0.18 µm floor by a wide margin —
+a tighter first attempt did not. The pads added reachability, not topology:
 `klt drc` stayed `clean` and `klt extract`'s device/net list was
 byte-identical to the pre-#76 committed one (`fb` and `det|vdd` still two
 separate nets). Full account: issue
