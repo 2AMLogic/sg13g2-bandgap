@@ -1968,16 +1968,16 @@ re-routed riser add. See `measurements/2026-09-two-row-placement/` §5.
 
 | Cell | Report | Status | Deck (content hash) |
 | --- | --- | --- | --- |
-| `sg13cmos5l-bandgap_top` | `layout/sg13cmos5l-bandgap_top/drc_report.json` | `clean`, 0 violations | `sg13cmos5l`, `sha256:9a4e18f2fd7a…` (same content hash as the three leaf cells) |
+| `sg13cmos5l-bandgap_top` | `layout/sg13cmos5l-bandgap_top/drc_report.json` | `clean`, 0 violations | `sg13cmos5l`, `sha256:1912f174…` (same content hash as `bandgap_core` and `bandgap_amp`; `bandgap_startup` alone still records the older `sha256:5b5309ec…` — see the per-cell table under "LVS" below) |
 
 Reproduce: `klt drc --check layout/sg13cmos5l-bandgap_top/drc_report.json`
 (or `--rerun` for a full re-check).
 
-### LVS — `mismatch`, four causes re-verified against the current report (#174)
+### LVS — `mismatch`, four causes re-derived against the current report (#174 audit, refreshed after #244/#245 by #252)
 
 | Report | Status | Engine | nets | devices | pins |
 | --- | --- | --- | --- | --- | --- |
-| `layout/sg13cmos5l-bandgap_top/lvs_report.json` | `mismatch` (22 findings, all error-severity) | `klayout` | layout=15, reference=13, matched=2 | layout=17, reference=20, matched=8 | layout=13, reference=0, matched=13 |
+| `layout/sg13cmos5l-bandgap_top/lvs_report.json` | `mismatch` (14 findings, all error-severity) | `klayout` | layout=13, reference=13, matched=5 | layout=17, reference=20, matched=14 | layout=13, reference=0, matched=13 |
 
 Reproduce: `klt lvs lvs_request.json` from `layout/sg13cmos5l-bandgap_top/`
 (run against `lvs_reference.flatten()`'s own output — `python3
@@ -1987,9 +1987,11 @@ layout/lvs_reference.py` regenerates
 assembled GDS); `klt lvs --check lvs_report.json` verifies the committed
 report against the current inputs without re-running the compare.
 
-**Re-run and re-committed by issue #171 for two separate reasons; this
-section itemises the *current* 22-finding report, not the pre-#171
-51-finding one.** Issue #171 fixed `layout/lvs_reference.py`'s `flatten()`
+**Re-run and re-committed by issue #171 for two separate reasons; re-audited
+by #174; then moved twice more by two in-repo layout fixes. This section
+itemises the *current* 14-finding report** — not the pre-#171 51-finding one,
+and no longer the 22-finding one #174 itself audited (see the ledger below).
+Issue #171 fixed `layout/lvs_reference.py`'s `flatten()`
 (shared by this cell and the SG13G2 `bandgap_top` above — see that cell's
 own "LVS" section for the fix itself), which regenerated this cell's
 `.lvs_reference.spice` too and, per this repo's own evidence-freshness gate,
@@ -1999,11 +2001,44 @@ fixing #171 already differed from what the pre-#171 report recorded
 (`provenance.deck.content_hash` and `klayout_version` both changed) — issue
 #171 itself flagged that the resulting narrative below would need its own
 re-audit rather than assuming the fix alone explained every count change;
-this issue (#174) is that re-audit, re-deriving the four-cause table below
-directly from the current, already-committed `lvs_report.json`
-(`category_counts: {"device.unmatched": 15, "net.merged": 2, "net.split": 4,
-"topology": 1}` — sums to 22) rather than carrying the old narrative
-forward.
+issue #174 is that re-audit, which re-derived the four-cause table from the
+then-current `lvs_report.json` (`category_counts: {"device.unmatched": 15,
+"net.merged": 2, "net.split": 4, "topology": 1}` — summed to 22) rather than
+carrying the old narrative forward.
+
+**Then two in-repo layout fixes moved the counts again, and this section is
+re-derived against them (#252).** Both landed *after* #174's write-up and
+neither re-read this section, so the table and the four-cause split above it
+went stale while still claiming to be current — the drift #252 corrects. The
+ledger, every column read directly out of the committed `lvs_report.json` at
+each commit:
+
+| Report state | findings | `device.unmatched` | `net.merged` | `net.split` | `topology` | nets matched | devices matched |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| as #174 audited it (report state through `a19b60b`) | 22 | 15 | 2 | 4 | 1 | 2 of 15 | 8 of 17 |
+| after #240's well taps (`c6998b0`, PR #244) | 15 | 9 | 2 | 3 | 1 | 5 of 14 | 14 of 17 |
+| after #243's `e2` trunk fix (`b1d5425`, PR #245) — **current** | **14** | **9** | **2** | **2** | **1** | **5 of 13** | **14 of 17** |
+
+Neither step is a deck or engine drift: both are geometry changes in this
+repo, and each re-minted this cell's own evidence against the toolchain of
+its day. What they did, in the terms of the four causes below:
+
+- **#240 drew the well taps** (one `draw_well_tap` island per shared MOS
+  well, wired into `vdd`; one explicit `nSD` ring over every pnpMPA base
+  ring — see "ERC supply spec" below). That closed the open half of Cause 4
+  in this repo's own geometry: all six `pfet` `device.unmatched` findings
+  disappeared (devices matched 8 → 14, i.e. **every** `nfet` and `pfet` now
+  pairs), and so did the two `net.split` entries Cause 4 owned (`$29`, the
+  anonymous well net, and `vdd` itself). 22 → 15.
+- **The same current deck simultaneously surfaced one pre-existing layout
+  defect** the older deck had absorbed — `bandgap_core`'s `R2` `e2` drop
+  landed disjoint from the Q2 emitter trunk, so `e2` extracted as two
+  islands and appeared as a *second* `e2` `net.split` entry. Verified
+  byte-identical on the pre-#240 GDS, i.e. not caused by #240, and filed as
+  #243. That is why `net.split` went 4 → 3 rather than 4 → 2.
+- **#243 then fixed that defect** (the Q2 emitter trunk's `route_h` span now
+  reaches `R2`'s real drop x). `net_count` 14 → 13 — exactly one `e2` net —
+  and the duplicate `net.split` entry is gone. 15 → **14**.
 
 **Cause 1 — no bipolar device class (`klayout-tools#1242`) — still fully
 open, unchanged.** The three bipolar instances the composed netlist declares
@@ -2012,17 +2047,18 @@ device line via SPICE's `M=` multiplier, per DR-0005's own convention — and
 `X1_Q3`) are reference-only `device.unmatched`, class `PNPMPA`. Permanently
 declined: the same `CustomBJTExtractor` gap already documented for the
 SG13G2 side and for this cell's own three leaves, on literally the same
-source file.
+source file. This cause owns **4 of the report's 14 findings** — those 3,
+plus the single `topology` entry attributed to it by inference below.
 
 **Cause 2 — no resistor recognition (`klayout-tools#1415`) — partially
 resolved, by upstream deck drift, not by any code change in this repo.**
 The three resistor instances (`X1_R1`, `X1_R2` from `bandgap_core`, `X3_RPU`
 from `bandgap_startup`) are still `device.unmatched` — but the original
-cause name, "no resistor recognition", is no longer fully accurate. A fresh
-`klt extract --deck sg13cmos5l` against this cell's own
-already-committed GDS now returns three real `rppd`/`rhigh` device records
-(`$15`, `$16`, `$17`, each with concrete terminal nets and an `r_ohm`
-value) — the deck
+cause name, "no resistor recognition", is no longer fully accurate. This
+cell's own committed `extract_report.json` records three real `rppd`/`rhigh`
+device records with concrete terminal nets and an `r_ohm` value — `$15`
+(`in_p|sns2`–`e2`, 11.06 kΩ), `$16` (`vref`–`e3`, 84.11 kΩ) and `$17`
+(`vdd`–`det`, 1.919 MΩ) — where the deck
 previously extracted no resistor devices at all here and instead absorbed
 each resistor's `GatPoly` body into ordinary interconnect (the "unmodelled
 body shorts its own terminals" half of this cause's original name). Those
@@ -2035,26 +2071,29 @@ current report, alongside the three reference-side `RPPD`/`RHIGH` ones.
 blocks the match is that these three resistors' surrounding *net*
 environment does not yet correspond either (see the `net.merged`/
 `net.split` findings below). Cause 2's "recognised as a device at all" half
-is fixed upstream; its "pairs against the reference" half is not.
+is fixed upstream; its "pairs against the reference" half is not — and with
+Causes 3 and 4 both attributing nothing now, this cause owns **10 of the
+report's 14 findings** (6 `device.unmatched` + all 4 net findings).
 
 **Cause 3 — no HV MOS flavour (`klayout-tools#1416`) — closed upstream; the
 extraction/model-binding gap this cause named no longer exists, and it
-attributes none of this report's 22 findings.** `klayout-tools#1416` is
+attributes none of this report's 14 findings.** `klayout-tools#1416` is
 **closed as completed** (2026-08-26), fixed by merged PR
 `klayout-tools#1428` ("feat(decks): add sg13cmos5l HV (ThickGateOx) MOS
 flavour"), and the deck that produced this very report
-(`content_hash sha256:5b5309ec…`) already carries that fix: `decks/
+(`content_hash sha256:1912f174…`, the deck's own `release: 0.6.0` build —
+`sha256:5b5309ec…` when #174 audited it, two deck bumps back) carries that
+fix: `decks/
 sg13cmos5l.py` declares a one-entry `mos_flavours=(MOSFlavour(marker=(44,
 0), flavour="hv", …),)` citing `mos_extraction.lvs`'s own `sg13_hv_nmos`/
-`sg13_hv_pmos` extractors. Re-verified live for this issue rather than
-inferred from the issue state: a fresh `klt extract --deck sg13cmos5l
-sg13cmos5l-bandgap_top.gds` on this cell's own committed GDS returns
-`voltage_domain_warnings: []`, and this cell's own **committed**
-`extract_report.json` (regenerated by issue #173 against the same current
-deck) records the same empty list — the `44/0` entry it used to carry is
-gone from the evidence, not merely from a scratch re-run. See "Committed
-`extract_report.json`/`drc_report.json`: three of four cells are current"
-below for the one cell that still lags.
+`sg13_hv_pmos` extractors. Re-verified against the deck source for #252
+rather than inferred from the issue state, and this cell's own **committed**
+`extract_report.json` (re-minted by #243 against that same deck)
+records `voltage_domain_warnings: []` — the `44/0` entry it used to carry is
+gone from the evidence, not merely from a scratch re-run — and, as of #252's
+re-derivation, from **all four** cells' committed extract reports (see
+"Committed `extract_report.json`/`drc_report.json`: all four now record
+`voltage_domain_warnings: []`" below).
 
 *(An earlier draft of this section asserted the opposite — `mos_flavours=()`
 "still fully open, unchanged" — citing `klt deck info --deck sg13cmos5l`.
@@ -2069,23 +2108,25 @@ KLayout device *property*, not given a distinct class — `extract.py`'s own
 comment on the per-flavour pass: "leaving `devices[].class` and
 `device_counts` unaffected by flavour". The flavour selects the HV model
 only under `--pdk` model binding, which `klt lvs` does not use here. The
-fresh extraction confirms it: `device_counts` is still `{nfet: 6, pfet: 8,
-rhigh: 1, rppd: 2}`, and the reference netlist independently maps
-`sg13_hv_pmos`/`sg13_hv_nmos` onto `pfet`/`nfet` for the same reason. **So
-the six `pfet` `device.unmatched` findings (`X1_M1`/`X1_M2`/`X1_M3` from
-`bandgap_core`, `X2_MP3`/`X2_MP4`/`X2_MTAIL` from `bandgap_amp`) are not
-attributable to Cause 3 at all** — they are re-attributed to Cause 4 below
-(every layout-side `pfet` body is an anonymous well net where the reference
-says `vdd`), compounded by the net-graph breakage Causes 1 and 2 leave
-around them. The remaining two `pfet`s (and all six `nfet`s) are among the 8
-devices `counts.devices.matched` reports as paired.
+committed `extract_report.json` confirms it: `device_counts` is still
+`{nfet: 6, pfet: 8, rhigh: 1, rppd: 2}`, and the reference netlist
+independently maps `sg13_hv_pmos`/`sg13_hv_nmos` onto `pfet`/`nfet` for the
+same reason. **The six `pfet` `device.unmatched` findings this cause was once
+credited with (`X1_M1`/`X1_M2`/`X1_M3` from `bandgap_core`,
+`X2_MP3`/`X2_MP4`/`X2_MTAIL` from `bandgap_amp`) were never attributable to
+Cause 3 — and are now gone from the report entirely.** #174 re-attributed
+them to Cause 4 (every layout-side `pfet` body was then an anonymous well net
+where the reference says `vdd`); #240's drawn well taps then removed them by
+fixing exactly that. All eight `pfet` and all six `nfet` now pair —
+`counts.devices.matched: 14` of 17 — and the only unmatched **layout**-side
+devices left are Cause 2's three resistors.
 
 **What has *not* closed is a narrower, differently-scoped residue that
 `#1416` never claimed.** `klt drc`'s `coverage.voltage_domain_warnings`
-still reports the `44/0` marker on the current deck — re-run live for this
-issue against `sg13cmos5l-bandgap_core.gds`, one entry, `status: clean`, and
-identically present in this cell's own committed, current-deck
-`drc_report.json` — because the curated deck's DRC rules still apply the
+still reports the `44/0` marker on the current deck — re-run live for #174
+against `sg13cmos5l-bandgap_core.gds`, one entry, `status: clean`, and still
+present, re-read for #252, in all four cells' committed
+`drc_report.json` files — because the curated deck's DRC rules still apply the
 general-case thresholds to geometry regardless of `ThickGateOx` (the
 channel-length-specific `Gat.a1`/`Gat.a2` `GatPoly`-width rules that do read
 it are not transcribed). That committed entry's own text now says so
@@ -2096,122 +2137,145 @@ deck's DRC rules". That is a DRC rule-coverage gap, not the
 extraction/model-binding gap this cause named, and it contributes nothing to
 `lvs_report.json`.
 
-**Cause 4 — no well/substrate tap (`klayout-tools#1414`) —
-`device.body_unverified` no longer appears in `category_counts` at all;
-confirmed as upstream drift, and only half a real fix, not a closed gap.**
-Two distinct things are going on underneath, verified directly against this
-cell's own currently-committed GDS rather than assumed from the count alone:
+**Cause 4 — no well/substrate tap (`klayout-tools#1414`) — now closed on
+*both* sides of the line, and it attributes zero findings.** #174 found this
+cause half-resolved (`nfet` bodies) and half merely reclassified (`pfet`
+bodies); #240's drawn well taps closed the open half. Both halves, verified
+directly against this cell's own currently-committed
+`extract_report.json`/`lvs_report.json` rather than assumed from the counts
+alone:
 
-- **All six `nfet` bodies now resolve to a real net.** A fresh `klt
-  extract --deck sg13cmos5l` on `sg13cmos5l-bandgap_top.gds` shows every
-  `nfet`'s body terminal reading `vss` — an actual, already-existing net —
-  not the deck-synthesized `vsubs` placeholder that `bandgap_amp`'s and
+- **All six `nfet` bodies resolve to a real net, by composition.** Every
+  `nfet`'s body terminal reads `vss` — an actual, already-existing net — not
+  the deck-synthesized `vsubs` placeholder that `bandgap_amp`'s and
   `bandgap_startup`'s own *standalone* leaf-level extractions still report
-  (re-verified for this same issue; see "SG13CMOS5L: LVS" below). This is
+  (`bandgap_amp` 4 ×, `bandgap_startup` 2 ×, re-confirmed from their
+  committed extract reports; see "SG13CMOS5L: LVS" below). This is
   the same composition effect the SG13G2 side's own Cause A documents for
   its resistor bulk terminals: once assembled, the whole layout's substrate
   is one physically continuous node, and some leaf's own tap — not this
   particular `nfet`'s own standalone leaf — ties these bodies to the real
-  `vss` rail. Re-confirmed for this issue against the current deck: all six
-  bodies read `vss` composed, while the same cells extracted *standalone*
-  still read the deck-synthesized `vsubs` (`bandgap_amp` 4 ×,
-  `bandgap_startup` 2 ×). This half of Cause 4 is a genuine, if incidental,
-  partial resolution from composition, and it is what lets all six `nfet`s
-  pair: none of them appears in the 15 `device.unmatched` findings, and they
-  are 6 of the 8 devices `counts.devices.matched` reports.
-- **All eight `pfet` bodies are still anonymous, unchanged.** The same
-  fresh extraction shows every `pfet`'s body resolving to one of two
+  `vss` rail. This half of Cause 4 is a genuine, if incidental, resolution
+  from composition, and it is what lets all six `nfet`s pair: none of them
+  appears in the 9 `device.unmatched` findings, and they are 6 of the 14
+  devices `counts.devices.matched` reports.
+- **All eight `pfet` bodies now resolve to `vdd`, through geometry this repo
+  draws.** This is the change since #174, and it is a real fix, not a
+  reclassification: #240 drew one `draw_well_tap` island per shared MOS well
+  and wired it into `vdd` (PR #244), so the committed `extract_report.json`
+  shows every `pfet`'s body terminal reading `vdd` where #174 found two
   unnamed, deck-synthesized well nets (`$34` for five instances, `$36` for
-  three) — same shape as before, only the anonymous numbering moved with
-  issue #173's fold. `device.body_unverified` does not fire for
-  them either, but not because that gap closed: `klt lvs` emits that
-  narrower diagnostic only when a device otherwise pairs cleanly and the
-  body terminal is the sole divergence. At this composed level, Causes 1
-  and 2 above already break enough of the surrounding net graph that these
-  `pfet`s fail to pair on other terminals too, so `NetlistComparer` reports
-  them under the broader `device.unmatched` category instead — a
-  reclassification, not a fix. `unbiased_pmos_body_nets` (the underlying
-  `klt extract` warning, not part of this LVS report) still lists all 8
-  entries, unchanged.
+  three), and `unbiased_pmos_body_nets` — the underlying `klt extract`
+  warning that listed all 8 entries then — is now `[]`. All eight `pfet`
+  consequently pair: those 6 vanished `device.unmatched` entries, plus the 2
+  `net.split` entries discussed below, are the 8 findings Cause 4 shed on the
+  way from 22 to 14.
 
-Net effect: Cause 4 is **half genuinely improved by composition** (`nfet`
-bodies) and **half merely reclassified, not resolved** (`pfet` bodies) —
-"no longer appears" is accurate for the report's own top-line
-`category_counts`, but does not mean this design's PMOS bodies are biased.
+Net effect: Cause 4 no longer attributes any finding in this cell. That is a
+stronger statement than the one #174 could make — it is not that
+`device.body_unverified` stopped firing (`klt lvs` emits that narrower
+diagnostic only when a device otherwise pairs cleanly and the body terminal
+is the sole divergence, so its absence proved nothing on its own), but that
+every MOS body in this assembly now ties to the rail its reference says it
+should, and every MOS device pairs.
 
-**The upstream tracker is closed; this design's own gap is not.** These are
-two different statements and this section previously conflated them.
-`klayout-tools#1414` is **closed as completed** (2026-08-26) and the current
-deck does declare the tap layers it asked for — `tap_nplus=(7, 0)` (`nSD`)
-and `tap_pplus=(14, 0)` (`pSD`), with `tap=None` retained deliberately
-because cmos5l has no dedicated tap mask. What is still missing is on *this*
-side of the line: these layouts draw no `nSD`-covered `Activ` inside `NWell`,
-so there is no well tie for that derivation to find, and every `pfet` body
-stays anonymous exactly as before. The remedy is now a layout change here,
-not an upstream deck change — tracked as this repo's own follow-up rather
-than as an open upstream gap.
+**Both sides of the line are now closed for this cell.** The upstream tracker
+and this design's own geometry are two different statements, and this section
+once conflated them. `klayout-tools#1414` is **closed as completed**
+(2026-08-26) and the current deck declares the tap layers it asked for —
+`tap_nplus=(7, 0)` (`nSD`) and `tap_pplus=(14, 0)` (`pSD`), with `tap=None`
+retained deliberately because cmos5l has no dedicated tap mask. What #174
+found still missing was on *this* side: these layouts drew no `nSD`-covered
+`Activ` inside `NWell`, so there was no well tie for that derivation to find.
+Issue #240 drew it (plus an explicit `nSD` ring over every pnpMPA base ring),
+which is what makes the derivation fire and the `pfet` bodies resolve. The
+substrate side needs no equivalent change *here*: this assembly already picks
+up a `pSD`-covered `Activ` tie from `bandgap_core`'s own p+ geometry, which is
+the first bullet above. The leaf cells extracted standalone are a different
+matter — see "SG13CMOS5L: LVS" below.
 
-**The remaining six net findings (2 `net.merged`, 4 `net.split`) are
-downstream of Causes 1–4 above, not a fifth, independent cause.**
+**The remaining four net findings (2 `net.merged`, 2 `net.split`) are
+downstream of Cause 2, not a fifth, independent cause.**
 `net.merged` (`E2`, `E3` — `bandgap_core`'s own internal sense-node
 reference names) and `net.split` (`e2`, `e3` — the same two nets, from the
 layout side's own perspective) are the reference/layout mirror-image report
 of one and the same not-yet-corresponding pair: the now-recognised-but-
-still-unpaired `rppd` resistors from Cause 2 sit directly on these nets, so
-their net environment reports as merged from one side and split from the
-other for the identical underlying gap. `net.split`'s remaining two entries
-trace to Cause 4 (`$36`, the still-anonymous `pfet` body net) and to
-`counts.nets.matched: 2` leaving most of this cell's 15 nets — including
-`vdd` itself — without a confirmed structural correspondence yet. The
+still-unpaired `rppd` resistors from Cause 2 sit directly on these nets
+(`$15` on `in_p|sns2`/`e2`, `$16` on `vref`/`e3` in the committed extract
+report), so their net environment reports as merged from one side and split
+from the other for the identical underlying gap. The two further `net.split`
+entries #174 recorded are **gone**, each for its own reason: `$29` (the
+then-anonymous `pfet` body net) and `vdd` itself both resolved when #240
+drew the well taps, and the duplicate `e2` entry the current deck briefly
+surfaced was #243's `e2`-island defect, now fixed. `counts.nets.matched` is
+correspondingly 2 of 15 → **5 of 13**. The
 single `topology` finding (`side: "reference"`, no class named) is
 **inferred, not verified**: the same finding recurs, unattributed, in every
 leaf cell's own standalone report alongside its `PNPMPA` gap and nothing
 else unmapped, so Cause 1 is the most plausible attribution here too, the
 same inference the SG13G2 `bandgap_top` section above draws for its own
-analogous finding. None of these six is a new, unattributed defect.
+analogous finding. None of these five is a new, unattributed defect.
 
-**Reconciled against `category_counts`**: `device.unmatched: 15` (3
-`PNPMPA` + 2 `RPPD` + 1 `RHIGH`, reference-only, Causes 1/2; 3 `rppd`/
-`rhigh`, layout-only, Cause 2; 6 `pfet`, reference-only, Cause 4) +
-`net.merged: 2` + `net.split: 4` + `topology: 1` (inferred, Cause 1) = 22,
-matching the committed report exactly. **Cause 3 attributes zero findings**
-— it is closed upstream and, by that fix's own design, never affected
-`devices[].class` and so never affected these counts (see Cause 3 above);
-the six `pfet` entries it was previously credited with jointly are Cause 4's
-alone.
+**Reconciled against `category_counts`**: `device.unmatched: 9` (3 `PNPMPA`,
+reference-only, Cause 1; 2 `RPPD` + 1 `RHIGH` reference-only **and** 3
+`rppd`/`rhigh` layout-only — `$15`/`$16`/`$17` — both sides of Cause 2) +
+`net.merged: 2` + `net.split: 2` (Cause 2) + `topology: 1` (inferred, Cause
+1) = **14**, matching the committed report exactly. Per cause: **Cause 1
+attributes 4** (3 `PNPMPA` + the inferred `topology`), **Cause 2 attributes
+10** (6 resistor `device.unmatched` + the 4 net findings), and **Causes 3 and
+4 attribute zero**. Cause 3 never affected these counts at all — by its
+upstream fix's own design it does not touch `devices[].class` (see Cause 3
+above). Cause 4's zero is newer and different in kind: it *did* own 8 of the
+22 findings #174 audited (6 `pfet` `device.unmatched`, plus the `$29` and
+`vdd` `net.split` entries), and #240's taps removed every one of them.
 
 `status: "mismatch"` is reported honestly, per `CLAUDE.md`'s "Verification
 is the product" — no reference device was dropped and no net was renamed to
-manufacture a `match`. `sg13cmos5l-bandgap_top.gds` (and the three leaf GDS
-files it assembles) are unchanged by this issue; only the deck
-(`sg13cmos5l`, `content_hash sha256:5b5309ec…`) and engine (`klayout
-0.30.12`) that produced the already-committed `lvs_report.json` differ from
-what a pre-#171 report would have recorded — the report itself is already
-current and is not re-run again here.
+manufacture a `match`. The residue is Causes 1 and 2 only. The committed
+`lvs_report.json` was produced by deck `sg13cmos5l` `content_hash
+sha256:1912f174…` on `klayout 0.30.10` / `klt 0.6.0`; both this assembly's
+GDS and `bandgap_core`'s changed since #174 (#240's taps, #243's `e2` trunk
+fix), and every affected report was re-minted alongside them, so
+`environment.layout_sha256`/`reference_sha256` are current and the report is
+not re-run again here. #252 changed only this narration, not one byte of
+evidence.
 
-**Committed `extract_report.json`/`drc_report.json`: three of four cells are
-current, `bandgap_amp` is not.** Issue #171 re-ran and re-committed only the
-`lvs_report.json` files, which left every cell's `extract_report.json` and
-`drc_report.json` on the *pre*-#1428 deck. Issue #173's resistor fold then
-regenerated all three of the cells it touched — `bandgap_core`,
-`bandgap_startup` and this assembly — against the current deck
-(`content_hash sha256:5b5309ec…`), and their committed `extract_report.json`
-files now record `voltage_domain_warnings: []` directly. `bandgap_amp` has
-no resistor, so #173 did not touch it: its `extract_report.json` and
-`drc_report.json` alone still record `sha256:9a4e18f2…` and still carry the
-old `44/0` entry. Verified per file for this issue rather than assumed.
-Every extraction fact quoted in this section — `voltage_domain_warnings`,
-MOS body nets, `unbiased_pmos_body_nets`, `device_counts` — was
-independently re-derived from a **fresh `klt extract` re-run** against the
-current deck and the committed GDS, and agrees with the three current
-committed reports. Refreshing `bandgap_amp`'s own extract/DRC reports is a
-follow-up in its own right (it changes committed evidence bytes beyond this
-issue's narrative-correction scope), not something this section assumes has
-already happened.
+**Committed `extract_report.json`/`drc_report.json`: all four now record
+`voltage_domain_warnings: []`; `bandgap_startup` is the one still on an older
+deck hash.** Issue #171 re-ran and re-committed only the `lvs_report.json`
+files, which left every cell's `extract_report.json` and `drc_report.json` on
+the *pre*-#1428 deck. Issue #173's resistor fold regenerated the three cells
+it touched (`bandgap_core`, `bandgap_startup` and this assembly), which is
+what #174 recorded as "three of four current, `bandgap_amp` is not" —
+`bandgap_amp` has no resistor, so #173 skipped it. #240's well taps then
+changed `bandgap_core`'s, `bandgap_amp`'s and this assembly's GDS and
+re-minted all of their reports, and #243 re-minted `bandgap_core`'s and this
+assembly's again, so the laggard has changed hands. Read per file from the
+committed reports for #252 rather than carried forward:
 
-**New `unmodelled_poly` entries, same already-filed gap.** This assembly's
-own poly risers (16 `unmodelled_poly` entries, in both the committed
-current-deck `extract_report.json` and a fresh re-run) read
+| Cell | `extract`/`drc` deck `content_hash` | engine / `klt` | `voltage_domain_warnings` (extract) |
+| --- | --- | --- | --- |
+| `sg13cmos5l-bandgap_core` | `sha256:1912f174…` | `0.30.10` / `0.6.0` | `[]` |
+| `sg13cmos5l-bandgap_amp` | `sha256:1912f174…` | `0.30.12` / `0.5.0+g32f69f81` | `[]` |
+| `sg13cmos5l-bandgap_startup` | `sha256:5b5309ec…` | `0.30.12` / `0.3.0` | `[]` |
+| `sg13cmos5l-bandgap_top` | `sha256:1912f174…` | `0.30.10` / `0.6.0` | `[]` |
+
+So the `44/0` entry is gone from **every** cell's committed extract evidence —
+`bandgap_amp` included, which is the one #174 still had carrying it — while
+`klt drc`'s separate `coverage.voltage_domain_warnings` still reports one
+entry on all four, exactly the DRC rule-coverage residue Cause 3 above
+describes. `bandgap_startup` draws no well and was untouched by #240/#243,
+which is why it alone still records the pre-#240 deck hash; nothing in this
+section's counts depends on it, and refreshing it is a follow-up in its own
+right (it changes committed evidence bytes beyond this section's
+narrative-correction scope), not something assumed here. Every extraction
+fact quoted in this section — `voltage_domain_warnings`, MOS body nets,
+`unbiased_pmos_body_nets`, `device_counts` — is read from those committed
+reports.
+
+**`unmodelled_poly` entries, same already-filed gap.** This assembly's
+own poly risers (20 `unmodelled_poly` entries in the committed
+`extract_report.json`) read
 exactly like every leaf cell's own `poly_underpass()`/gate-tap poly already
 does — an intentional poly wire with no resistor-marker geometry reads as an
 unmodelled resistor body to this deck. Same already-filed
