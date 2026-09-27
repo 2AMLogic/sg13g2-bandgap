@@ -1961,11 +1961,16 @@ confirming no device was dropped or duplicated by the assembly.
 change is exactly the class of edit that can silently merge two nets: this
 cell's extracted net set is byte-identical to the pre-#177 one (the same 13
 `* pin` lines), and `extract_report.json`'s `device_count` (17),
-`net_count` (15), `pin_count` (13), `device_counts`, `dead_metal` cluster
-and eight warning classes are all unchanged. Its one moved field is the
-count in "*N* poly-layer shapes not part of any recognised device"
-(16 → 20), the four new `GatPoly` segments `sns2`'s new bus and `vref`'s
-re-routed riser add. See `measurements/2026-09-two-row-placement/` §5.
+`net_count` (15 as of #177), `pin_count` (13), `device_counts`,
+`dead_metal` cluster and eight warning classes are all unchanged. Its one
+moved field is the count in "*N* poly-layer shapes not part of any
+recognised device" (16 → 20), the four new `GatPoly` segments `sns2`'s new
+bus and `vref`'s re-routed riser add. See
+`measurements/2026-09-two-row-placement/` §5. (`net_count` has since moved
+again: #243's `e2` fix merged the two `e2` islands, so the currently
+committed `extract_report.json` records `net_count: 13`, `pin_count: 13` —
+`device_count` (17) and `device_counts` are still unchanged from this
+paragraph's own re-verification.)
 
 ### DRC — clean
 
@@ -2593,15 +2598,18 @@ attributable separately:
 
 | Cell | old GDS, old committed report | old GDS, current klt (control) | new GDS, current klt (committed) |
 | --- | --- | --- | --- |
-| `bandgap_core` | 29 findings | 31 (incl. 1 `device.body_unverified`) | **25** |
+| `bandgap_core` | 29 findings | 31 (incl. 1 `device.body_unverified`) | **24** |
 | `bandgap_amp` | 24 | 25 (incl. 2 `device.body_unverified`) | **8** |
-| `bandgap_top` | 22 | 24 (incl. 1 `device.body_unverified`) | **15** |
+| `bandgap_top` | 22 | 24 (incl. 1 `device.body_unverified`) | **14** |
 
 The #240 geometry effect (column 3 → 4) is strictly an improvement and
-adds **no** new finding category: every `device.body_unverified`
+adds **no** new finding category: the `pfet`-class `device.body_unverified`
 disclosure is gone (the PMOS bodies now extract to `vdd` through the
 drawn taps — `klt extract`'s `unbiased_pmos_body_nets` is empty on every
-cell), `bandgap_amp`'s five `pfet` now pair (devices matched 0 → 5 of 9,
+cell) — `bandgap_core`'s own single warning, previously `pfet`-only,
+disappears entirely, while `bandgap_amp`'s committed report still carries
+one `device.body_unverified` warning, now `nfet`-class only (see item 4
+below) — `bandgap_amp`'s five `pfet` now pair (devices matched 0 → 5 of 9,
 `device.unmatched` 9 → 4, all four remaining being the NMOS/substrate
 half cause 4 keeps), `bandgap_core`'s `vdd`/`fb` nets now match their
 references (nets matched 0 → 2; the anonymous `$30` well net is gone),
@@ -2659,7 +2667,7 @@ apply everywhere, and cause 4 turns out to be far more damaging than
 | 1. no bipolar class | yes (`Q1`–`Q3`) | n/a — no bipolar | n/a — no bipolar |
 | 2. no resistor class, body shorts its terminals | yes (`R1`/`R2`) — device now extracted but still unpaired (issue #174) | n/a — no resistor | yes (`RPU`, now extracted as a device but its own body still shorts `vdd`/`det`, issue #174) |
 | 3. no HV MOS flavour | **no longer** — closed upstream, attributes nothing (issue #174) | **no longer** — same (issue #174) | **no longer** — same (issue #174) |
-| 4. no well/substrate tap | yes | yes — **and it alone accounts for the whole verdict** | yes |
+| 4. no well/substrate tap | yes (`pfet`/well half closed by #240, see item 4 below) | yes — **and it alone accounts for the whole verdict**: all 8 findings in the current `lvs_report.json` (5 of 9 devices matched), now solely the `nfet`/substrate half — the `pfet`/well half closed by #240 | yes |
 
 1. **No bipolar device class** — `EXTRACTION_DECK.bipolars == ()`, so `Q1`,
    `Q2` and `Q3` have no layout counterpart (3 × `device.unmatched`,
@@ -2746,45 +2754,55 @@ apply everywhere, and cause 4 turns out to be far more damaging than
    authority of `klt deck info --deck sg13cmos5l`. That command reports only
    `content_hash`/`device_classes`/`released` and never exposes
    `mos_flavours`, so it could not have checked this either way.)*
-4. **No well/substrate tap — the `pfet`-class half of `device.body_unverified`
-   no longer fires upstream; this design's PMOS bodies are still unbiased.**
-   klayout-tools#1414 is **closed as completed** (2026-08-26) and the
-   current deck does declare the tap layers it asked for — `tap_nplus=(7, 0)`
-   (`nSD`) and `tap_pplus=(14, 0)` (`pSD`), with `tap=None` kept
-   deliberately because cmos5l has no dedicated tap mask. The deck
-   capability existing and this design exercising it are different things:
-   these cells draw no `nSD`-covered `Activ` inside `NWell`, so the
-   derivation finds no well tie, and a fresh `klt extract` on each cell's
-   own committed GDS still shows every `pfet` body resolving to an
-   anonymous, deck-synthesized well net (`bandgap_core`'s three PMOS bodies
-   all on one `$30`; `bandgap_amp`'s five all on one `$10`). Closing the
-   remaining
-   gap is now a **layout** change in this repo, not an upstream deck change.
-   What changed is only which of those anonymous-body findings `klt lvs`
-   still reports as the dedicated `device.body_unverified` warning:
-   `bandgap_core` (pfet-only) had exactly one such warning before this
-   drift and has zero now; `bandgap_amp` (which has both `nfet` and `pfet`)
-   had two (one per class) and now has one (the `nfet`-class one only);
-   `bandgap_startup` (nfet-only) is unaffected, still one. The pattern is
-   consistent across all three cells and requires no per-cell exception:
-   **the deck's `pfet`-class `device.body_unverified` warning no longer
-   fires on the current toolchain; the `nfet`-class one is unaffected.**
-   This is a diagnostic-reporting change, not evidence that any PMOS body
-   now resolves to a real net — `unbiased_pmos_body_nets` (the underlying
-   `klt extract` warning, not part of the LVS report) still lists every
-   PMOS body across all three cells, unchanged (re-confirmed on the current
-   deck: `bandgap_amp` still reports all five). This refinement is recorded
-   *here* and nowhere else: with #1414 closed and the tap layers declared,
-   what is left is this design's own missing tie geometry, not a generic
-   tool gap to re-file upstream.
-   **Previously tried and rejected** (still holds): labelling the shared
-   n-well `vdd` on `NWell.pin`. It names the isolated net but cannot connect
-   it — the netlist simply grows a second, disjoint `vdd$1` net, and the
-   only real effect is to suppress `klt extract`'s own "PMOS devices tie
-   their body to an anonymous net with no DC bias path" warning. Suppressing
-   the most direct evidence of the gap to gain a misleading net name is the
-   wrong trade; the wells are left unlabelled and the warning stands in
-   `extract_report.json`.
+4. **No well/substrate tap — the `pfet`/well half is now closed by issue
+   #240's drawn taps; the `nfet`/substrate half is unaffected and still
+   open.** klayout-tools#1414 is **closed as completed** (2026-08-26) and
+   the current deck does declare the tap layers it asked for —
+   `tap_nplus=(7, 0)` (`nSD`) and `tap_pplus=(14, 0)` (`pSD`), with
+   `tap=None` kept deliberately because cmos5l has no dedicated tap mask.
+   The deck capability existing and this design exercising it were
+   different things when #74 wrote this item: these cells drew no
+   `nSD`-covered `Activ` inside `NWell`, so the derivation found no well
+   tie, and every `pfet` body resolved to an anonymous, deck-synthesized
+   well net. **Issue #240 then drew that tie in this repo** (one
+   `draw_well_tap` island per shared MOS well, wired into `vdd` — see
+   "Then issue #240's well taps landed on top" above), and a fresh `klt
+   extract` on each cell's own committed GDS now shows every `pfet` body
+   resolving to `vdd` through the drawn taps, not an anonymous well net:
+   `bandgap_core`'s `extract_report.json` records all three PMOS bodies
+   (`nets.b`) as `vdd`; `bandgap_amp`'s records all five as `vdd`;
+   `bandgap_startup` draws no `pfet`. `unbiased_pmos_body_nets` (the
+   underlying `klt extract` warning, not part of the LVS report) is `[]`
+   in all three cells' committed `extract_report.json` files — this gap is
+   closed by drawn geometry, not merely reclassified or suppressed.
+
+   What `klt lvs`'s own `device.body_unverified` warning reports is a
+   narrower, separate fact and still holds as originally recorded:
+   `bandgap_core` (pfet-only) had exactly one such warning before the
+   #1414 deck drift and has zero now; `bandgap_amp` (which has both `nfet`
+   and `pfet`) had two (one per class) under the deck drift alone and
+   still carries exactly one in its current, post-#240 committed report —
+   now genuinely `nfet`-class only, since its `pfet`s pair cleanly and
+   `klt lvs` emits this narrower diagnostic only when a device otherwise
+   pairs and the body terminal is the sole divergence; `bandgap_startup`
+   (nfet-only, untouched by #240) is unaffected, still one. **The
+   `nfet`/substrate half of this cause is unchanged and still open**
+   (`bandgap_amp` 4 × `vsubs`, `bandgap_startup` 2 × `vsubs`, both
+   standalone) — only the `pfet`/well half closed, and it closed for real:
+   the PMOS bodies now resolve to `vdd`, not merely to a diagnostic that
+   stopped firing.
+
+   **Previously tried and rejected — now moot, not a live tradeoff.**
+   Before #240 drew the real tie, one workaround considered was labelling
+   the shared n-well `vdd` on `NWell.pin`. It would have named the
+   isolated net but could not connect it — the netlist would simply grow a
+   second, disjoint `vdd$1` net, and the only real effect would have been
+   to suppress `klt extract`'s own "PMOS devices tie their body to an
+   anonymous net with no DC bias path" warning without fixing the
+   underlying connectivity, the wrong trade. That tradeoff no longer
+   applies to this design: #240's drawn `nSD`-covered `Activ` taps connect
+   the wells to `vdd` in fact, not merely in name, so there is no
+   remaining well/body gap left for a labelling workaround to paper over.
 
    **#74 found this cause is much worse than `bandgap_core` alone showed.**
    The CMOS5L cells with NMOS hit it from the substrate side as well — the
@@ -2805,11 +2823,17 @@ apply everywhere, and cause 4 turns out to be far more damaging than
 
 ### Isolating cause 4: the `bandgap_amp` layout is topologically correct
 
-`bandgap_amp` reads `mismatch` with 0/9 devices matched, which looks like a
-routing bug. It is not. Re-run the identical, committed GDS against a
-reference netlist whose **only** edit is detaching the body terminals — each
-MOS's 4th node changed from the rail it belongs on to a dangling node; no
-device removed, no other net renamed, no parameter touched:
+As originally recorded here (pre-#240 well taps), `bandgap_amp` read
+`mismatch` with 0/9 devices matched, which looked like a routing bug. It was
+not — the probe below demonstrates that. (Since #240's drawn taps landed,
+`bandgap_amp`'s own committed report no longer needs this probe to make that
+case for the `pfet` half: its five `pfet` now pair for real, 5/9 devices
+matched, 8 findings — see item 4 above. The probe still isolates the
+residual `nfet`/substrate half the same way.) Re-run the identical, committed
+GDS against a reference netlist whose **only** edit is detaching the body
+terminals — each MOS's 4th node changed from the rail it belongs on to a
+dangling node; no device removed, no other net renamed, no parameter
+touched:
 
 ```bash
 cd layout/sg13cmos5l-bandgap_amp
