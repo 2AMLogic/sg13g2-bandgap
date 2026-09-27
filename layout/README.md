@@ -2598,9 +2598,9 @@ attributable separately:
 
 | Cell | old GDS, old committed report | old GDS, current klt (control) | new GDS, current klt (committed) |
 | --- | --- | --- | --- |
-| `bandgap_core` | 29 findings | 31 (incl. 1 `device.body_unverified`) | **25** |
+| `bandgap_core` | 29 findings | 31 (incl. 1 `device.body_unverified`) | **24** |
 | `bandgap_amp` | 24 | 25 (incl. 2 `device.body_unverified`) | **8** |
-| `bandgap_top` | 22 | 24 (incl. 1 `device.body_unverified`) | **15** |
+| `bandgap_top` | 22 | 24 (incl. 1 `device.body_unverified`) | **14** |
 
 The #240 geometry effect (column 3 → 4) is strictly an improvement and
 adds **no** new finding category: the `pfet`-class `device.body_unverified`
