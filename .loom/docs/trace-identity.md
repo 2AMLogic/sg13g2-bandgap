@@ -29,7 +29,10 @@ inside a key use RFC 3339 UTC with nanosecond precision.
 
 Every sweep of an issue is a `loom.sweep` span in that issue's story trace.
 Its span ID is derived from the story root and the sweep id
-(`sweep-issue-42-1790000000`).
+(`sweep-issue-42-1790000000`). A role-runner tick that wrote to an issue or PR
+adds a `loom.role_attempt` span to that story (#9168) whose ID is derived from
+the story root, `loom.role_tick`, the tick's execution id (`loom.sweep_id`)
+and the target (`pr:<loom.pr_number>`, else `issue:<loom.issue>`).
 
 A child span's ID is derived from its trace ID, its parent span ID, its span
 name, its `loom.role` (if any), its `loom.tool.name` (if any), and its start
@@ -54,6 +57,12 @@ tries to mint a random ID fails to build. A new root trace must choose a
 natural key and call `TraceContext::derived`. If a derivation ever has to
 change, give it a new tag rather than silently changing its inputs, so old and
 new IDs cannot collide.
+
+Both rules scope to **spans Loom emits**. The opt-in worker-native sub-spans
+([`tracing.md`](tracing.md) → "Worker-native sub-spans", #9215) are minted by a
+spawned session's own OTel SDK: their IDs are random and they carry none of the
+provenance below. Loom's contribution there is the parent context alone, so they
+appear under a `loom.sweep` span whose identity does follow both rules.
 
 ## 2. Provenance
 
