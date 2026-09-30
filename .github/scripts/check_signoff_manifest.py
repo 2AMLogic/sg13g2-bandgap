@@ -33,34 +33,22 @@ citation cannot pin; its freshness is enforced by
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
+from _ci_common import Report, sha256_file as _sha256_file_bare
+
 #: `klt signoff --manifest` exit codes that are valid grades (see
 #: klayout_tools/cli/signoff_cmd.py: 0 = tier T1, 3 = graded, not-T1).
 VALID_GRADE_EXITS = {0, 3}
 
 
-class Report:
-    def __init__(self) -> None:
-        self.problems: list[str] = []
-        self.notes: list[str] = []
-        self.checked = 0
-
-    def problem(self, msg: str) -> None:
-        print(f"::error::{msg}")
-        self.problems.append(msg)
-
-    def note(self, msg: str) -> None:
-        self.notes.append(msg)
-
-
 def sha256_file(path: Path) -> str:
-    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+    """`sha256:`-prefixed digest, matching this manifest's `content_hash` pins."""
+    return "sha256:" + _sha256_file_bare(path)
 
 
 def run_grade(klt: str, root: Path, manifest: Path) -> tuple[int, Any]:
@@ -215,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"::error::no block manifest found under {manifests_dir}")
         return 1
 
-    report = Report()
+    report = Report(annotate=True)
     for manifest_path in manifest_paths:
         report_path = manifest_path.with_name(manifest_path.stem + ".signoff.json")
         try:

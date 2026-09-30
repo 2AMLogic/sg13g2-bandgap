@@ -98,6 +98,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from _ci_common import Report, sha256_file
+
 # --- sim/ convention constants (sim/README.md) -------------------------------
 
 RECORDS_DIR = "records"
@@ -185,29 +187,6 @@ INSTANCE_RE = re.compile(r"^[XxRrCcLlMmQqDdVvIiJjKkEeFfGgHhSsTtUuWwZz]\S*\s+\S")
 APPEND_ONLY_RE = re.compile(
     r"^sim/[^/]+/(?:%s)/" % "|".join(re.escape(d) for d in (RECORDS_DIR, SNAPSHOT_DIR, CORNERS_DIR))
 )
-
-
-class Report:
-    """Collects problems as `<path>: <message>` and prints them once."""
-
-    def __init__(self) -> None:
-        self.problems: list[str] = []
-        self.notes: list[str] = []
-        self.checked = 0
-
-    def fail(self, where: str | Path, message: str) -> None:
-        self.problems.append(f"{where}: {message}")
-
-    def note(self, message: str) -> None:
-        self.notes.append(message)
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def parse_corner_id(corner_id: str) -> str | None:
