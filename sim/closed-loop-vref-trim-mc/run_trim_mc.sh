@@ -178,8 +178,14 @@ echo "run_trim_mc.sh: fit pass -- ${FIT_TOTAL} netlists, ${PARALLEL}-way paralle
 xargs -P "${PARALLEL}" -n2 bash -c 'ngspice -b "$0" > "$1" 2>&1; echo $? > "$1.rc"; exit 0' < "${FIT_MANIFEST}"
 
 # ------------------------------------------------ code* per (point, draw)
-# vref(code) = a + unit*code fitted from codes {0,1}; the code-255 row
-# measures the linearity residual; code* targets 1.050 V.
+# vref(code) is linear in code to first order with a small measured
+# second-order concavity (sim/trim-coverage/ records it at ~-1.4 LSB at
+# full scale, every corner -- the M3 finite-ro sublinearity of the
+# output branch). The per-die fit therefore uses the {0,255} CHORD
+# (a = vref(0), unit = (vref(255)-vref(0))/255), whose interpolation
+# error against the true curve is bounded by ~1/4 of the full-scale
+# curvature (~0.36 LSB) instead of the {0,1}-tangent line's ~1.45 LSB;
+# the code-1 row stays as the per-die low-code sanity check.
 CODES_FILE="${SCRATCH_DIR}/code_star.tsv"
 : > "${CODES_FILE}"
 for point in "${POINT_LABELS[@]}"; do
@@ -199,8 +205,8 @@ CODE_STAR_FILE="${SCRATCH_DIR}/code_star_of.tsv"
 awk -F'\t' -v tgt="${VREF_TARGET_V}" '
   {
     point=$1; draw=$2; v0=$3; v1=$4; v255=$5; s0=$6; s1=$7; s255=$8
-    if (s0=="OK" && s1=="OK" && v0!="NA" && v1!="NA") {
-      unit = v1 - v0
+    if (s0=="OK" && s255=="OK" && v0!="NA" && v255!="NA") {
+      unit = (v255 - v0)/255
       ideal = (unit != 0) ? (tgt - v0)/unit : 128
       c = (ideal < 0) ? int(ideal - 0.5) : int(ideal + 0.5)
       if (c < 0) c = 0
@@ -243,10 +249,10 @@ for point in "${POINT_LABELS[@]}"; do
     unit=""; resid=""
     verify_status=FAIL
     v27=""; vn40=""; v125=""
-    if [[ "${v0}" != "NA" && "${v1}" != "NA" && "${code}" != "-1" ]]; then
-      unit=$(awk -v a="${v0}" -v b="${v1}" 'BEGIN{printf "%.9g", b-a}')
-      if [[ "${v255}" != "NA" ]]; then
-        resid=$(awk -v f="${v255}" -v a="${v0}" -v u="${unit}" 'BEGIN{printf "%.9g", f-(a+255*u)}')
+    if [[ "${v0}" != "NA" && "${v255}" != "NA" && "${code}" != "-1" ]]; then
+      unit=$(awk -v a="${v0}" -v b="${v255}" 'BEGIN{printf "%.9g", (b-a)/255}')
+      if [[ "${v1}" != "NA" ]]; then
+        resid=$(awk -v l="${v1}" -v a="${v0}" -v u="${unit}" 'BEGIN{printf "%.9g", l-(a+u)}')
       fi
       s27=$(op_status_of_log "${SCRATCH_DIR}/logs/verify_${point}_${draw}_t27_c${code}.log" 2>/dev/null || echo BAD)
       sn40=$(op_status_of_log "${SCRATCH_DIR}/logs/verify_${point}_${draw}_t-40_c${code}.log" 2>/dev/null || echo BAD)
@@ -293,7 +299,7 @@ done
 # Same hard gate as sim/closed-loop-vref-mc: the negative control's
 # trimmed vref must be EXACTLY identical at every draw and every verify
 # temperature -- any spread is a driver bug, not sampling noise.
-negctrl_spread=$(awk -F, '$1=="negctrl" && $12=="PASS" {print $13; print $14; print $15}' "${DRAWS_CSV}" | sort -u | wc -l | tr -d ' ')
+negctrl_spread=$(awk -F, '$1=="negctrl" && $12=="PASS" {print $13","$14","$15}' "${DRAWS_CSV}" | sort -u | wc -l | tr -d ' ')
 if [[ "${negctrl_spread}" != "1" ]]; then
   echo "run_trim_mc.sh: NEGATIVE CONTROL FAILED -- trimmed negctrl draws show nonzero spread (${negctrl_spread} distinct values). Driver bug, not noise. Aborting." >&2
   exit 1

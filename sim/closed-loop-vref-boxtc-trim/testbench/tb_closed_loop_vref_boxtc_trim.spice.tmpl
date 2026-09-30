@@ -11,12 +11,26 @@
 * PDK: @@PDK@@ @@PDK_ROOT@@ (see sim/pdk.json for the pinned release)
 * OSDI models: @@OSDI_DIR@@ (built by sim/tools/build-osdi.sh)
 *
-* The SAME transient fixture, solver options, settledness convention and
-* every .measure as sim/closed-loop-vref-pvt-boxtc (issue #222) -- this
-* bench is that experiment re-pointed at the trim-bearing core at a
-* swept trim code; only the DUT's R1/trim ladder and the code axis
-* differ (see README).
-.options temp=@@TEMP_C@@ tnom=27 rshunt=1e9 gmin=1e-9 reltol=5e-3
+* The SAME transient fixture, settledness convention and every .measure
+* as sim/closed-loop-vref-pvt-boxtc (issue #222) -- this bench is that
+* experiment re-pointed at the trim-bearing core at a swept trim code --
+* with ONE deliberate solver-options deviation: rshunt=1e9/gmin=1e-9 are
+* DROPPED (kept: reltol=5e-3 + tran 50n, the #149 timestep-stiffness
+* pair). The pre-trim bench's convergence aids assume a circuit with a
+* handful of high-impedance nodes; the ladder adds 254 interior series
+* nodes, and at 1e9 ohm // 1e-9 S each they leak a measured ~0.55 uA out
+* of the output branch (code 128, typ/27C: settled vref reads 1.01206 V
+* with the aids vs 1.04728 V without -- a 37 mV artifact; even the
+* pre-trim circuit reads 2.2 mV high at 125 C with them). Without the
+* aids the transient settles to the same operating point as a plain .op
+* to 5 significant figures (verified at typ/27C and typ/125C, and the
+* cross-check is what sim/trim-coverage/'s .op rows and this bench's
+* code-128 rows agree on -- see the README's "Solver options" section).
+.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerHBT.lib" @@HBT_SECTION@@
+.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerMOShv.lib" @@MOS_SECTION@@
+.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerRES.lib" @@RES_SECTION@@
+
+.options temp=@@TEMP_C@@ tnom=27 reltol=5e-3
 
 * FIXTURE -- transient supply ramp: vdd ramps 0 -> VDD over 200 us and
 * holds to 3 ms, so vref can be measured at 2 ms and 3 ms and confirmed

@@ -30,9 +30,13 @@
 * therefore the SAME die's trim, evaluated at -40/27/125C.
 *
 * Per draw, the driver runs this template at:
-*   stage=fit   temp=27  trim_code in {{0, 1, 255}}  -> linear vref(code)
-*              fit a=vref(0), b=vref(1)-vref(0), linearity residual at 255;
-*              code* = clip(round((1.050 - a)/b), 0, 255)
+*   stage=fit   temp=27  trim_code in {{0, 1, 255}}  -> the {0,255} CHORD
+*              fit a=vref(0), unit=(vref(255)-vref(0))/255 (the chord,
+*              not the {0,1} tangent: the measured ~-1.4-LSB full-scale
+*              concavity -- sim/trim-coverage/ -- makes the chord's
+*              interpolation error ~4x smaller); the code-1 row is the
+*              per-die low-code sanity check vs the chord;
+*              code* = clip(round((1.050 - a)/unit), 0, 255)
 *   stage=verify temp in {{-40, 27, 125}}  trim_code=code*
 *              -> the trimmed die's vref at the three temperatures; the
 *              +/-0.5% trimmed line is max_T |vref(T) - 1.050 V| / 1.050.

@@ -9,43 +9,64 @@ verify, not a measurement)"*.
 It is [`../closed-loop-vref-pvt-boxtc/`](../closed-loop-vref-pvt-boxtc/README.md)
 (issue #222) re-pointed at the trim-bearing core with a trim-code axis:
 the **same** transient fixture (200 µs supply ramp, 3 ms hold), the same
-solver options, the same settledness convention
-(|vref(3ms) − vref(2ms)| ≤ 1 mV plus the startup-release / loop-closure /
-not-railed prerequisites) and every `.measure` — only the DUT differs
-(R1 base `l=37.2u` + the 255-unit ladder, subcircuit copied
-device-for-device from `design/netlist/bandgap_trim.spice`) and the code
-is swept per point via the subcircuit-local `.param trim_code`.
+settledness convention (|vref(3ms) − vref(2ms)| ≤ 1 mV plus the
+startup-release / loop-closure / not-railed prerequisites) and every
+`.measure` — only the DUT differs (R1 base `l=37.2u` + the 255-unit
+ladder, subcircuit copied device-for-device from
+`design/netlist/bandgap_trim.spice`) and the code is swept per point via
+the subcircuit-local `.param trim_code`.
 
-## Why a code axis
+### Solver options (one deliberate deviation from the #222 bench)
+
+`rshunt=1e9` / `gmin=1e-9` — the pre-trim bench's convergence aids — are
+**dropped** here (`reltol=5e-3` + `tran 50n`, the #149 timestep-stiffness
+pair, are kept). The aids assume a circuit with a handful of
+high-impedance nodes; the ladder adds 254 interior series nodes, and at
+1 GΩ ‖ 1 nS each they leak a measured ~0.55 µA out of the output branch:
+at code 128 / typ / 27 °C the settled transient reads 1.01206 V **with**
+the aids vs 1.04728 V without — a 37 mV artifact (and the pre-trim
+circuit itself reads 2.2 mV high at 125 °C with them, A/B-tested by
+stripping the aids from the committed #222 snapshot netlist). Without the
+aids, this bench's settled transient agrees with a plain `.op` of the
+same netlist to 5 significant figures (verified at typ/27 °C and
+typ/125 °C) — that tran↔op equivalence is the bench's own internal
+cross-check, and its code-128 rows are what `sim/trim-coverage/`'s `.op`
+rows reproduce at the shared points.
+
+## Why a code axis — and why the gated band is ±1 code, not ±64
 
 The core's one knob sets both the output level and the TC (the R1/R2
-ratio is the PTAT gain): moving off the code-128 TC-null by design
-*adds* TC. The trim's job (per DR-0011) is to correct each die **toward**
-the TC-null point, so a correctly-trimed die sits near the null — but a
-die trimmed many codes away sits measurably off it. This bench bounds
-that trim-induced TC degradation:
+ratio is the PTAT gain): moving a die off **its own** TC-null adds TC.
+The key physics (see
+[`../../design/bandgap_trim_network.md`](../../design/bandgap_trim_network.md)
+§3): the mismatch population's errors are PTAT-shaped (loop-current
+scaling, R1/R2 ratio, ΔVBE), so correcting a die's level with R1 restores
+**its own** null ratio — a correctly-trimmed die sits at its own null
+whatever `code*` it lands on. The trim-induced TC that remains comes from
+the **sub-code mis-aim**: ±½ LSB of quantization plus the chord-fit aim
+error (bounded <~0.4 LSB by `sim/trim-coverage/`'s measured full-scale
+curvature) — i.e. ≤ ~1 code off null.
 
-| code | role |
-|---|---|
-| 128 | the schematic default — total R1_eff ≈ the pre-trim 511 µm single instance; the TC-null baseline, expected to reproduce the committed pre-trim box-TC evidence |
-| 64, 192 | the ±64-code band around default that the trim-domain MC's `code*` population actually lands in ([`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md)) |
-| 0, 255 | the rails — the worst trim-induced TC the ladder can produce at all, bounding the sensitivity even for dies outside the covered population |
+| code | grid | role |
+|---|---|---|
+| 127, 128, 129 | full corner × supply × 8 temps | the ±1-code mis-aim band real trims land in — **the claim gate** |
+| 0, 64, 192, 255 | `{typ, bcs, wcs}` × 3.30 V × 8 temps | the TC-vs-code sensitivity slope and its saturation — reported, ungated (a correctly-trimmed die never sits there; a mis-trimmed one is bounded by them) |
 
-**Claim gate**: over the ±64 band (the codes real dies use), the
-worst-case trim-induced box-TC delta × the 98 °C span from the 27 °C trim
-point to either rail must stay inside the ~0.175% headroom DR-0011's
-budget table carries for trim-induced TC drift (0.5% − 0.20% TC drift −
-0.125% quantization). `records/<record-id>-trimdtc.csv` carries each
-corner/supply group's deltas and gate status.
+**Claim gate**: the worst ±1-code box-TC delta vs the code-128 baseline,
+over the full corner/supply grid, × the 98 °C span from the 27 °C trim
+point, must stay inside the ~0.175% headroom DR-0011's budget table
+carries for trim-induced TC drift (0.5% − 0.20% TC drift − 0.125%
+quantization) — i.e. a delta cap of ~18.75 ppm/°C.
+`records/<record-id>-trimdtc.csv` carries each group's delta and gate
+status.
 
 ## Grid
 
-Process corner `{typ, bcs, wcs, sf, fs}` × trim code `{128, 64, 192,
-0, 255}` × temperature `{−40, −20, 0, 27, 50, 75, 100, 125} °C` × supply
-`{2.97, 3.30, 3.63} V` — 600 transient points (5× the pre-trim boxtc
-bench's 120; the code axis is the multiplier). `TRIM_CODES="128 192"` can
-scope a re-run to a code subset — the record mints a new `<record-id>`
-either way.
+Codes {127, 128, 129} × `{typ, bcs, wcs, sf, fs}` × 8 temperatures ×
+`{2.97, 3.30, 3.63} V` (360 points) + codes {0, 64, 192, 255} ×
+`{typ, bcs, wcs}` × 3.30 V × 8 temperatures (96 points) — 456 transient
+points (3.8× the pre-trim boxtc bench's 120; the code axis is the
+multiplier).
 
 ## What this testbench claims, and what it does not
 

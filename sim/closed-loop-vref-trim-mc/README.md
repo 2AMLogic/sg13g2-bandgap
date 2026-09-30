@@ -29,9 +29,13 @@ unit (mV/LSB) and the fit's linearity residual — all in
 knob.** Each draw runs six netlists through the actual 255-unit ladder:
 
 1. **Fit** (27 °C, codes `{0, 1, 255}`): `vref(code) = a + unit·code`
-   from codes 0/1; code 255 measures the linearity residual rather than
-   assuming it. `code* = clip(round((1.050 − a)/unit), 0, 255)` — the
-   code a wafer-sort 1-point trim would pick for this die.
+   from the **{0, 255} chord** (`unit = (vref(255)−vref(0))/255`) — not
+   the `{0,1}` tangent, because the ladder has a measured ~−1.4 LSB
+   full-scale concavity (M3 finite-`ro` sublinearity,
+   `sim/trim-coverage/`) whose chord-interpolation error is ~4× smaller
+   than the tangent's; the code-1 row is the per-die low-code sanity
+   check. `code* = clip(round((1.050 − a)/unit), 0, 255)` — the code a
+   wafer-sort 1-point trim would pick for this die.
 2. **Verify** (`code*`, temps `{−40, 27, 125}` °C): the trimmed die's
    `vref`; the trimmed line is `max_T |vref(T) − 1.050|/1.050`.
 

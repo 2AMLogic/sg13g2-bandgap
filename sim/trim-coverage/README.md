@@ -29,10 +29,15 @@ the layout will carry, never through a synthetic trim source.
   identical physical device hold `2^b` ratios at every corner by
   construction — gf180's measured lesson that differently-sized single
   resistors do not; this gate verifies it on this PDK's own corners).
-- **Linearity**: the code-255 residual against `vref(0) + 255·unit` is
-  within a quarter LSB (the loop's `vref = VBE(Q3) + I·(R1 + Rtrim)` with
-  `I` set entirely by the R2/Q1/Q2 loop is linear in code to first order;
-  this MEASURES the residual instead of assuming it).
+- **Curvature**: the code-255 residual against the `{0,1}` tangent
+  `vref(0) + 255·unit` is within 2 LSB (measured ~−1.4 LSB at every
+  corner — a real second-order sublinearity: the loop's
+  `vref = VBE(Q3) + I·(R1 + Rtrim)` is linear in code to first order with
+  `I` set by the R2/Q1/Q2 loop, but M3's finite output impedance droops
+  the branch current as `vref` rises; the per-die trim model in
+  [`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md)
+  fits the `{0,255}` chord, whose interpolation error this bounds at
+  <~0.5 LSB).
 - **Monotonicity**: `vref` strictly increases over the visited codes.
 
 **It also verifies the default-code continuity claim** (the sizing

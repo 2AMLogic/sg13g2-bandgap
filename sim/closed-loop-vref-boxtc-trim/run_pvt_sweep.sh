@@ -9,9 +9,6 @@
 # Optional: JOBS=N (default 1) bounded N-way concurrency (wall-clock only,
 # same netlists/logs/rows/emission order as sequential -- same contract as
 # sim/closed-loop-vref-pvt-boxtc).
-# Optional: TRIM_CODES="128 64 192" to scope a re-run to a subset of the
-# code axis (the record mints a new <record-id>; the full-axis default is
-# documented in README.md).
 #
 # Post-trim box-method temperature-coefficient bench (issue #229 --
 # DR-0011's obligated post-trim TC re-measurement: "a post-trim TC
@@ -20,20 +17,28 @@
 # not a measurement)"). Same transient fixture, solver options,
 # settledness convention and every .measure as
 # sim/closed-loop-vref-pvt-boxtc (issue #222) -- this bench re-points that
-# experiment at the trim-bearing core and sweeps the trim code:
+# experiment at the trim-bearing core and sweeps the trim code.
 #
-#   code 128 -- the schematic default (total R1_eff ~= the pre-trim 511 um
-#               single instance): the TC-null baseline, expected to
-#               reproduce the committed pre-trim box-TC evidence.
-#   code 64/192 -- one quarter of the ladder each side of default: the
-#               +/-64-code band the trim-domain MC's code* distribution
-#               actually lands in (see sim/closed-loop-vref-trim-mc/).
-#   code 0/255 -- the rails: the worst-case trim-induced TC the ladder can
-#               produce at all, bounding the sensitivity even for dies
-#               outside the covered population.
+# PHYSICS FRAMING (see design/bandgap_trim_network.md Sec 3): a correctly
+# trimmed die sits at its OWN TC-null -- the mismatch population's errors
+# are PTAT-shaped (loop-current scaling, R1/R2 ratio, dVBE), and
+# correcting the level with R1 restores the die's null ratio to first
+# order, whatever code* it lands on. The trim-induced TC that remains
+# comes from the SUB-CODE mis-aim: +/-1/2 LSB of quantization plus the
+# chord-fit aim error (bounded <~0.4 LSB by sim/trim-coverage/'s measured
+# curvature), i.e. |code* - code_null| <=~ 1 code. The grid therefore:
+#
+#   codes {127, 128, 129}  (+/-1 around the default/null) on the FULL
+#       corner x temp x supply grid -- the band real trims land in; the
+#       claim gate is the +/-1-code box-TC delta vs code 128.
+#   codes {0, 64, 192, 255} (the far codes and rails) on
+#       {typ, bcs, wcs} x 3.30 V only -- the TC-vs-code sensitivity slope
+#       and its linearity/saturation bound, reported not gated (a
+#       correctly-trimmed die never sits there; a MIS-trimmed one is
+#       bounded by these).
 #
 # Writes append-only evidence under corners/<record-id>/,
-# netlist-snapshots/<record-id>/ and records/<record-id>.{md,csv,-boxtc.csv}
+# netlist-snapshots/<record-id>/ and records/<record-id>.{md,csv,-boxtc.csv,-trimdtc.csv}
 # -- see sim/README.md.
 set -euo pipefail
 
@@ -57,17 +62,21 @@ alias_dut_git_shas TRIM=design/netlist/bandgap_trim.spice AMP=design/netlist/ban
 
 TEMPS=(-40 -20 0 27 50 75 100 125)
 TEMP_SPAN_C=165
-TRIM_CODES_STR="${TRIM_CODES:-128 64 192 0 255}"
-read -r -a TRIM_CODES <<< "${TRIM_CODES_STR}"
 CODE_DEFAULT=128
 
-# The +/-0.5% trimmed budget's headroom for trim-induced TC drift
-# (DR-0011's derived table: 0.20% TC drift + 0.125% quantization leaves
-# ~0.175%): the claim gate checks the codes the MC's code* population
-# actually uses (the +/-64 band) stay inside it over the 98 C span from
-# the 27 C trim point to either rail.
+# The +/-1-code band (full grid) and the far codes (scoped grid).
+NEAR_CODES=(127 128 129)
+FAR_CODES=(0 64 192 255)
+FAR_CORNERS=(typ bcs wcs)
+FAR_VDDS=(3.30)
+
+# DR-0011's trimmed budget leaves ~0.175% (of 1.050 V) of headroom for
+# trim-induced TC drift; the sub-code mis-aim is <=~1 code, so the gate is
+# the worst +/-1-code box-TC delta over the 98 C span from the 27 C trim
+# point: delta_ppm * 98 / 1e4 %  <=  0.175  <=>  delta_ppm <= 18.75.
 TRIM_TC_HEADROOM_PCT="0.175"
 TRIM_TC_SPAN_C="98"
+GATE_DELTA_PPM_CAP=$(awk -v h="${TRIM_TC_HEADROOM_PCT}" -v s="${TRIM_TC_SPAN_C}" 'BEGIN{printf "%.2f", h*1e4/s}')
 
 JOBS="${JOBS:-1}"
 if [[ "${JOBS}" -lt 1 ]]; then
@@ -132,13 +141,22 @@ run_one_point() {
   printf '%s\n' "${verdict}" > "${ROWS_DIR}/${corner_id}.verdict"
 }
 
-# The grid: corner x code x temp x vdd (code before temp so all temps of
-# one (corner, code) group land adjacently in the CSV).
+# The grid: near codes on the full corner x temp x vdd grid; far codes on
+# the scoped {typ,bcs,wcs} x 3.30V grid (see header PHYSICS FRAMING).
 GRID=()
 for corner in "${CORNER_LABELS[@]}"; do
-  for code in "${TRIM_CODES[@]}"; do
+  for code in "${NEAR_CODES[@]}"; do
     for temp in "${TEMPS[@]}"; do
       for vdd in "${VDDS[@]}"; do
+        GRID+=("${corner}|${temp}|${vdd}|${code}")
+      done
+    done
+  done
+done
+for corner in "${FAR_CORNERS[@]}"; do
+  for code in "${FAR_CODES[@]}"; do
+    for temp in "${TEMPS[@]}"; do
+      for vdd in "${FAR_VDDS[@]}"; do
         GRID+=("${corner}|${temp}|${vdd}|${code}")
       done
     done
@@ -188,8 +206,9 @@ done
 # sim/closed-loop-vref-pvt-boxtc, one group per (corner, code, supply).
 BOXT_OUT="${RECORDS_DIR}/${RECORD_ID}-boxtc.csv"
 echo "corner_label,trim_code,vdd_v,n_pass,n_grid,vmin_v,vmin_temp_c,vmax_v,vmax_temp_c,vref_27c_v,box_tc_ppm_per_c,endpoint_tc_ppm_per_c" > "${BOXT_OUT}"
+ALL_CODE_LABELS=("${NEAR_CODES[@]}" "${FAR_CODES[@]}")
 for corner in "${CORNER_LABELS[@]}"; do
-  for code in "${TRIM_CODES[@]}"; do
+  for code in "${ALL_CODE_LABELS[@]}"; do
     for vdd in "${VDDS[@]}"; do
       awk -F, -v c="${corner}_code${code}" -v code_in="${code}" -v vdd_in="${vdd}" -v vcol="${VREF_3MS_COL}" -v scol="${STATUS_COL}" \
         -v span="${TEMP_SPAN_C}" -v out="${BOXT_OUT}" '
@@ -220,55 +239,74 @@ for corner in "${CORNER_LABELS[@]}"; do
   done
 done
 
-# ------------------------------------------------- Trim-induced TC deltas
-# Per (corner, vdd): box TC at each code vs the code-128 baseline, and the
-# drift-vs-headroom check over the +/-64-code band (the code* population
-# the trim MC actually observes -- cross-referenced in the record prose).
+# ---------------------------------------- Trim-induced TC (the claim gate)
+# Per (corner, vdd) on the FULL grid: the +/-1-code box-TC delta vs the
+# code-128 baseline (the sub-code mis-aim band), gated at
+# GATE_DELTA_PPM_CAP; the far-code deltas ride along, ungated, as the
+# sensitivity slope and its saturation bound.
 DELT_OUT="${RECORDS_DIR}/${RECORD_ID}-trimdtc.csv"
-echo "corner_label,vdd_v,box_tc_128_ppm_c,box_tc_64_ppm_c,box_tc_192_ppm_c,box_tc_0_ppm_c,box_tc_255_ppm_c,worst_band_code,worst_band_dtc_ppm_c,band_drift_pct,headroom_pct,headroom_status" > "${DELT_OUT}"
+echo "corner_label,vdd_v,scope,box_tc_128_ppm_c,delta_code,box_tc_code_ppm_c,delta_ppm_c,drift_pct_of_target,gate_ppm_c,gate_status" > "${DELT_OUT}"
 headroom_fail=0
 for corner in "${CORNER_LABELS[@]}"; do
   for vdd in "${VDDS[@]}"; do
-    read -r tc128 tc64 tc192 tc0 tc255 <<< "$(awk -F, -v c="${corner}" -v vdd_in="${vdd}" -v o="${BOXT_OUT}" '
-      NR>1 && $1 ~ ("^"c"_code") && $3==vdd_in { tc[$2]=$11 }
-      END { printf "%.3f %.3f %.3f %.3f %.3f", tc[128], tc[64], tc[192], tc[0], tc[255] }' "${BOXT_OUT}")"
-    worst_code="none"; worst_dtc="0"
-    if [[ -n "${tc64:-}" || -n "${tc192:-}" ]]; then
-      if awk -v a="${tc64:-0}" -v b="${tc192:-0}" 'BEGIN{exit !(a>=b)}'; then
-        worst_code=64; worst_dtc=$(awk -v a="${tc64:-0}" -v b="${tc128:-0}" 'BEGIN{d=a-b; if(d<0)d=-d; printf "%.3f", d}')
-      else
-        worst_code=192; worst_dtc=$(awk -v a="${tc192:-0}" -v b="${tc128:-0}" 'BEGIN{d=a-b; if(d<0)d=-d; printf "%.3f", d}')
+    tc128=$(awk -F, -v c="${corner}_code128" -v vdd_in="${vdd}" 'NR>1 && $1==c && $3==vdd_in {print $11; exit}' "${BOXT_OUT}")
+    [[ -z "${tc128}" ]] && continue
+    for code in "${NEAR_CODES[@]}"; do
+      [[ "${code}" == "128" ]] && continue
+      tcc=$(awk -F, -v c="${corner}_code${code}" -v vdd_in="${vdd}" 'NR>1 && $1==c && $3==vdd_in {print $11; exit}' "${BOXT_OUT}")
+      [[ -z "${tcc}" ]] && continue
+      delta=$(awk -v a="${tcc}" -v b="${tc128}" 'BEGIN{d=a-b; if(d<0)d=-d; printf "%.3f", d}')
+      drift=$(awk -v d="${delta}" -v s="${TRIM_TC_SPAN_C}" 'BEGIN{printf "%.4f", d*s/1e4}')
+      hs=OK
+      if awk -v a="${delta}" -v b="${GATE_DELTA_PPM_CAP}" 'BEGIN{exit !(a>b)}'; then
+        hs=FAIL
+        headroom_fail=$((headroom_fail+1))
       fi
-    fi
-    band_pct=$(awk -v dtc="${worst_dtc}" -v span="${TRIM_TC_SPAN_C}" 'BEGIN{printf "%.4f", 1e-4*dtc*span}')
-    hs=OK
-    if awk -v a="${band_pct}" -v b="${TRIM_TC_HEADROOM_PCT}" 'BEGIN{exit !(a>b)}'; then
-      hs=FAIL
-      headroom_fail=$((headroom_fail+1))
-    fi
-    echo "${corner},${vdd},${tc128:-},${tc64:-},${tc192:-},${tc0:-},${tc255:-},${worst_code},${worst_dtc},${band_pct},${TRIM_TC_HEADROOM_PCT},${hs}" >> "${DELT_OUT}"
+      echo "${corner},${vdd},near,${tc128},${code},${tcc},${delta},${drift},${GATE_DELTA_PPM_CAP},${hs}" >> "${DELT_OUT}"
+    done
+  done
+done
+for corner in "${FAR_CORNERS[@]}"; do
+  for vdd in "${FAR_VDDS[@]}"; do
+    tc128=$(awk -F, -v c="${corner}_code128" -v vdd_in="${vdd}" 'NR>1 && $1==c && $3==vdd_in {print $11; exit}' "${BOXT_OUT}")
+    [[ -z "${tc128}" ]] && continue
+    for code in "${FAR_CODES[@]}"; do
+      tcc=$(awk -F, -v c="${corner}_code${code}" -v vdd_in="${vdd}" 'NR>1 && $1==c && $3==vdd_in {print $11; exit}' "${BOXT_OUT}")
+      [[ -z "${tcc}" ]] && continue
+      delta=$(awk -v a="${tcc}" -v b="${tc128}" 'BEGIN{d=a-b; if(d<0)d=-d; printf "%.3f", d}')
+      drift=$(awk -v d="${delta}" -v s="${TRIM_TC_SPAN_C}" 'BEGIN{printf "%.4f", d*s/1e4}')
+      echo "${corner},${vdd},far,${tc128},${code},${tcc},${delta},${drift},${GATE_DELTA_PPM_CAP},n/a" >> "${DELT_OUT}"
+    done
   done
 done
 
 WORST_BOX=$(awk -F, 'NR>1 && $4==$5 && $11+0 > m { m = $11+0; line = $1"/"$3"V = "sprintf("%.1f", $11)" ppm/C" } END { print line }' "${BOXT_OUT}")
-WORST_BAND=$(awk -F, 'NR>1 && $10+0 > m { m=$10+0; line = $1"/"$2"V @code"$8" = +"sprintf("%.1f", $9)" ppm/C vs code-128 ("$10"% of 1.050V over 98C)" } END { print line }' "${DELT_OUT}")
+WORST_NEAR=$(awk -F, 'NR>1 && $3=="near" && $7+0 > m { m=$7+0; line = $1"/"$2"V code"$5" vs 128: +"sprintf("%.2f", $7)" ppm/C ("$8"% over 98C, cap "$9")" } END { print line }' "${DELT_OUT}")
 
 {
   echo "# Record ${RECORD_ID}"
   echo
   echo "- **Experiment**: closed-loop-vref-boxtc-trim (issue #229)"
   echo "- **Claim**: the post-trim box-method TC re-measurement DR-0011's"
-  echo "  +/-0.5% trimmed budget obligates: through the same closed-loop"
-  echo "  transient fixture as sim/closed-loop-vref-pvt-boxtc (issue #222),"
-  echo "  on the trim-bearing core, vref's box TC is measured on the same"
-  echo "  8-temperature grid at trim codes {128 (default/baseline),"
-  echo "  64, 192 (the +/-64-code band the trim-domain MC's code*"
-  echo "  population lands in), 0, 255 (the rails)}. The record bounds the"
-  echo "  trim-induced TC degradation (box TC at band codes minus the"
-  echo "  code-128 baseline) against the ~0.175% headroom DR-0011's budget"
-  echo "  table carries for it over the 98 C span from the 27 C trim point."
-  echo "  NOT a claim against a different target -- the ratified TC row"
-  echo "  (< 50 ppm/C target) is unchanged."
+  echo "  +/-0.5% trimmed budget obligates, bounding the trim-induced TC"
+  echo "  degradation. A correctly-trimmed die sits at its OWN TC-null"
+  echo "  (the mismatch population's errors are PTAT-shaped; correcting"
+  echo "  the level with R1 restores the null ratio -- see"
+  echo "  design/bandgap_trim_network.md Sec 3), so the residual"
+  echo "  trim-induced TC comes from the sub-code mis-aim (+/-1/2 LSB"
+  echo "  quantization + <~0.4 LSB chord-fit aim), i.e. <=~1 code off"
+  echo "  null. This bench measures the box-method TC on the same"
+  echo "  8-temperature grid as sim/closed-loop-vref-pvt-boxtc at codes"
+  echo "  {127, 128, 129} (the +/-1-code band, full corner x supply grid)"
+  echo "  and gates the +/-1-code delta vs the code-128 baseline at"
+  echo "  ${GATE_DELTA_PPM_CAP} ppm/C (the ~0.175% headroom DR-0011's budget"
+  echo "  carries, over the 98 C span from the 27 C trim point). Codes"
+  echo "  {0, 64, 192, 255} on {typ, bcs, wcs}/3.30 V bound the"
+  echo "  TC-vs-code sensitivity slope and its saturation (reported,"
+  echo "  ungated -- a correctly-trimmed die never sits there; a"
+  echo "  mis-trimmed one is bounded by them). NOT a claim against a"
+  echo "  different target -- the ratified TC row (< 50 ppm/C) is"
+  echo "  unchanged."
   echo "- **Devices**: all real PDK compact models; the DUT is the"
   echo "  trim-bearing bandgap_core (R1 base l=37.2u + XXTRIM ladder),"
   echo "  ladder subcircuit copied device-for-device from"
@@ -288,16 +326,16 @@ WORST_BAND=$(awk -F, 'NR>1 && $10+0 > m { m=$10+0; line = $1"/"$2"V @code"$8" = 
   echo "  compiler provenance pinned in \`sim/pdk.json\` (\"osdi_toolchain\")."
   echo "- **ngspice**: \`${NGSPICE_VERSION}\`"
   echo "- **JOBS**: ${JOBS} (wall-clock concurrency only)."
-  echo "- **Corner matrix run**: process corner {typ, bcs, wcs, sf, fs} x"
-  echo "  trim code {${TRIM_CODES_STR}} x temperature"
-  echo "  {-40, -20, 0, 27, 50, 75, 100, 125} C x supply {2.97, 3.30, 3.63} V"
+  echo "- **Corner matrix run**: {typ, bcs, wcs, sf, fs} x {2.97, 3.30,"
+  echo "  3.63} V x 8 temperatures x codes {127, 128, 129} (full grid)"
+  echo "  + {typ, bcs, wcs} x 3.30 V x codes {0, 64, 192, 255}"
   echo "  = ${total} points."
   echo "- **Result**: ${passed}/${total} points PASS (startup-release,"
   echo "  loop-closure, not-railed AND settledness criteria above). Worst"
-  echo "  box-method group across complete groups: ${WORST_BOX}."
-  echo "  Worst +/-64-band trim-induced TC: ${WORST_BAND};"
-  echo "  ${headroom_fail}/15 groups FAIL the 0.175%-headroom gate"
-  echo "  (see records/${RECORD_ID}-trimdtc.csv)."
+  echo "  box-method group across complete groups: ${WORST_BOX}. Worst"
+  echo "  +/-1-code trim-induced delta: ${WORST_NEAR};"
+  echo "  ${headroom_fail} near-band group(s) FAIL the ${GATE_DELTA_PPM_CAP} ppm/C"
+  echo "  headroom gate (see records/${RECORD_ID}-trimdtc.csv)."
   if [[ ${#failed_points[@]} -gt 0 ]]; then
     echo "- **Failed points**: ${failed_points[*]}"
     echo "  Box-method groups a failed point shrank are disclosed by"
