@@ -20,9 +20,9 @@ including pre- and post-layout (PEX) PVT sweeps and committed `klt drc` /
 because SiGe HBT recognition was investigated and permanently declined
 upstream
 ([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/pull/1242)),
-and the Output-reference row's untrimmed-accuracy gap, whose disposition both
-ratification keys sent back for a deliberate decision (issue #221) — not
-further tooling work. The earlier "not-yet-routed floorplan" cause (#20) was
+and the trim network obligated by the re-cast Output-reference row (issue
+#229) — design work, not further tooling work. The earlier
+"not-yet-routed floorplan" cause (#20) was
 retired by PR #27 and #20 is closed; the earlier ratification gate (#13) is
 closed and the target-spec table below is ratified against
 currently-committed evidence — see
@@ -59,11 +59,12 @@ SG13G2 being a **BiCMOS** process is a genuine bonus: it offers real bipolar
 devices rather than the parasitic PNPs the CMOS ports rely on, which is a
 different device class for extraction and LVS to handle.
 
-## Target specification (RATIFIED; one row's disposition re-opened by the two-key review — see below)
+## Target specification (RATIFIED; Output-reference row re-cast by the two-key-gated decision record 0010 — see below)
 
 | Parameter | Target | Stretch |
 |---|---|---|
-| Output reference | ~1.2 V ±1% untrimmed | ±0.5% with trim |
+| Output reference | 1.050 V — ±16% untrimmed (3σ, mismatch MC + PVT); ±0.5% trimmed (1-point @ 27 °C) | — |
+| Trim | 1-point @ 27 °C; range ≥ ±15%; resolution ≤ 0.25%/step; magnitude only | — |
 | Temp coefficient (−40…125 °C) | < 50 ppm/°C | < 20 ppm/°C |
 | PSRR @ DC | > 60 dB | > 70 dB |
 | Supply | 3.3 V ±10% (HV flavor) | 1.2 V (LV flavor) |
@@ -75,9 +76,13 @@ Ratified in
 against the currently-committed `R1=511µm` retune (issue #134) and an N=300
 device-mismatch Monte Carlo (issue #215); that record supersedes the earlier
 `feature/issue-125` ratification draft (PR #128), whose cited evidence
-predated both. Ratifying the table locks in these target *numbers*, not a
-claim that every row is currently met — per `CLAUDE.md`/`spec/README.md`
-this repo does not relax a spec to make results pass.
+predated both. The Output-reference row is re-cast (nominal, untrimmed and
+trimmed lines, plus a Trim row) by
+[`spec/decision-records/0010-output-reference-row-disposition.md`](spec/decision-records/0010-output-reference-row-disposition.md)
+(issue #221, two-key-gated). Ratifying the table locks in these target
+*numbers*, not a claim that every row is currently met — per
+`CLAUDE.md`/`spec/README.md` this repo does not relax a spec to make
+results pass.
 
 **The two-key ratification review of that record ran on 2026-09-19** (EE key
 `request-changes`, market key `escalate`, `ratify-key.sh release` →
@@ -105,23 +110,32 @@ so the honest per-row status is:
   to `bcs` post-layout); and
   the PSRR row's post-layout margin at its binding corner (`bcs`/125 °C/
   3.63 V) is 0.20 dB, on a corner that reads 59.68 dB pre-layout.
-- **Output reference — unmet, and its disposition is re-opened.** Untrimmed
-  `vref` is 11.9–13.1% below the 1.2 V nominal across the 45-point
-  post-layout PVT grid (0/45 inside ±1%; ~12.5% low at the nominal point),
-  and the N=300 Monte Carlo puts untrimmed device-mismatch scatter at
-  ~13% 3σ/mean — so ±1% untrimmed is not reachable for this core even with
-  the systematic offset removed. Both keys declined to ratify the row as
-  written (the EE key on physics and on the gf180/sky130 precedent of
-  re-casting the row and adding a Trim row; the market key because no public
-  part in this class publishes an untrimmed accuracy line at all). Choosing
-  between re-targeting the row and defending ±1% untrimmed is
-  **issue #221**, which needs its own decision record and its own two-key
-  review. The trim network that would close the trimmed line remains out of
-  scope (`design/README.md`) and is tracked by #221, not by the closed
-  issue #9.
+- **Output reference — re-cast by decision record
+  [`0010`](spec/decision-records/0010-output-reference-row-disposition.md)
+  (issue #221).** The row both keys declined is disposed by re-cast, not
+  defence: the nominal is re-targeted from ~1.2 V to **1.050 V**, this
+  core's own TC-null operating point (the one R1/R2 knob that closed the TC
+  row in #134 sets both the output level and the PTAT gain; at the TC-null
+  ratio the measured post-layout output is 1.04309–1.05667 V across the
+  45-point PVT grid, nominal point 1.05048 V — holding 1.2 V instead is the
+  measured 349–376 ppm/°C pre-retune core). The untrimmed line is set to
+  what the block's own mismatch evidence supports: **±16% (3σ)**, derived
+  from the N=300 mismatch Monte Carlo (3σ/mean 13.04% at typ/27 °C,
+  12.09–14.60% across corner points) plus the corner-mean offset — an
+  order of magnitude wider than the gf180/sky130 ±2% lines because this
+  PDK's mismatch scatter is an order of magnitude larger than theirs. The
+  buyer-facing accuracy is the **±0.5% trimmed** line (1-point trim at
+  27 °C), backed by the new **Trim row** (range ≥ ±15%, resolution
+  ≤ 0.25%/step) — the row shape the market key asked for, and the same
+  re-cast shape both siblings ratified on their own numbers. The trim
+  network behind the trimmed line does not exist yet and is tracked by
+  **#229** (replacing the closed issue #9 as the tracker); until it lands,
+  the committed evidence demonstrates the untrimmed ±16% line and supports
+  ±0.5% as a budgeted target.
 
 See `0007` for full per-row evidence and the Output-reference-vs-TC trade-off,
-and `0008` for what the review changed about the status above.
+`0008` for what the two-key review changed about the status above, and `0010`
+for the Output-reference disposition and its derivations.
 
 Supply row confirmed against SG13G2's actual device menu (1.2 V LV core /
 3.3 V HV I/O — no 1.8 V-rated flavor exists in this PDK) — see
@@ -138,7 +152,7 @@ Maturity ladder: tooling resolved → spec ratified → schematic simulated
 across PVT → layout DRC/LVS-clean → post-layout re-verification → shuttle
 seat → measured silicon. **Current position: tooling resolved; spec
 ratified (see decision records above), five of six rows two-key reviewed
-clean and the Output-reference row's disposition re-opened by that review
+clean and the Output-reference row re-cast by the two-key-gated record 0010
 (#221) rather than blocking the other five; schematic simulated across PVT,
 pre- and post-layout (PEX);
 layout DRC-clean, with LVS `match` on `bandgap_startup` and `mismatch` on
