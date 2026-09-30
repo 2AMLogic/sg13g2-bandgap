@@ -113,6 +113,35 @@ v {xschem version=3.4.8RC file_version=1.3
 * Earlier note ("#10 will re-derive them") predates #86's PVT-sweep grounding
 * and #134's retune -- kept for history, superseded by the above.
 *
+* TRIM NETWORK (issue #229 -- the design work DR-0011's Trim row obligates;
+* replaces the first-pass scope cut that excluded trim, and the closed issue
+* #9 this README previously cited as the trim tracker). The output-branch
+* summing resistor is now segmented: R1 keeps w=2u but is shortened to
+* l=37.2u and runs vref -> tn0, and XTRIM (bandgap_trim.sch, a 255-unit
+* binary-weighted rppd ladder with strap-shorted groups decoded from the
+* subcircuit-local trim_code, default 128) continues tn0 -> cb3. Magnitude
+* only, 1-point at 27 C, per the ratified Trim row (range >= +/-15%,
+* resolution <= 0.25%/step): the ladder's unit segment is rppd w=2u l=3.43u
+* (R_unit = 478.3 ohm at typ/27C), the measured closed-loop trim step is
+* 2.443 mV = 0.2327% of the 1.050 V nominal, and the default code 128
+* leaves 127 steps up / 128 steps down (= 29.6%/29.8% of vref -- sized by
+* the correlated-coverage requirement, not the naive voltage window; a die
+* needing +13.3% correction carries a ~14% low branch current and therefore
+* a ~14% smaller step). The trim corrects each die toward the TC-null
+* operating point (total R1_eff(code 128) = 66.066 kohm vs the pre-trim
+* 511um single instance's 66.069 kohm, i.e. every pre-#229 record stays
+* electrically valid at the default code -- measured -0.06 mV at
+* typ/27C/3.30V), NEVER toward 1.2 V (DR-0011's Alternatives). The trim
+* acts on the output branch only: the PTAT current I = VT*ln(8)/R2 is set
+* by the R2/Q1/Q2 loop, so vref = VBE(Q3) + I*(R1 + Rtrim) is linear in
+* trim_code and the ladder adds no active device to the reference path.
+* Full sizing derivation, coverage argument and layout area budget:
+* design/bandgap_trim_network.md. Measured range/resolution/linearity:
+* sim/trim-coverage/. Trimmed-line mismatch MC: sim/closed-loop-vref-trim-mc/.
+* Post-trim box-TC: sim/closed-loop-vref-boxtc-trim/. Re-layout of
+* layout/bandgap_core for the segmented R1 + ladder remains a separate
+* follow-on (as it already was for #134's 511um retune).
+*
 * UNIT-DEVICE DECOMPOSITION (issue #149, T1 tracker #4 item 4 cause d):
 * M1/M2/M3 previously each drew as ONE `sg13_hv_pmos w=10u l=1u` instance,
 * identical at the recognised-device level -- with bipolar (Q1-Q3) and
@@ -259,11 +288,18 @@ N 780 360 760 360 {}
 C {lab_pin.sym} 760 360 0 0 {name=l39 lab=fb}
 N 820 390 840 410 {}
 C {lab_pin.sym} 840 410 0 0 {name=l40 lab=vref}
-C {sg13g2_pr/rppd.sym} 1050 400 0 0 {name=R1 model=rppd body=sub! spiceprefix=X w=2u l=511u b=0 m=1}
+C {sg13g2_pr/rppd.sym} 1050 400 0 0 {name=R1 model=rppd body=sub! spiceprefix=X w=2u l=37.2u b=0 m=1}
 N 1050 370 1050 350 {}
 C {lab_pin.sym} 1050 350 0 0 {name=l23 lab=vref}
 N 1050 430 1050 450 {}
-C {lab_pin.sym} 1050 450 0 0 {name=l24 lab=cb3}
+C {lab_pin.sym} 1050 450 0 0 {name=l24 lab=tn0}
+C {bandgap_trim.sym} 1300 400 0 0 {name=XTRIM spiceprefix=X}
+N 1300 340 1300 320 {}
+C {lab_pin.sym} 1300 320 2 0 {name=l33 lab=tn0}
+N 1300 460 1300 480 {}
+C {lab_pin.sym} 1300 480 0 0 {name=l34 lab=cb3}
+N 1240 400 1220 400 {}
+C {lab_pin.sym} 1220 400 2 0 {name=l35 lab=sub!}
 C {sg13g2_pr/npn13G2.sym} 1050 600 0 0 {name=Q3 model=npn13G2 spiceprefix=X Nx=1}
 N 1070 570 1090 550 {}
 C {lab_pin.sym} 1090 550 0 0 {name=l25 lab=cb3}

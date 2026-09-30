@@ -34,6 +34,11 @@ design/
                       (issue #58)
   bandgap_top.sch     top-level integration: core + amp + startup wired
                       together, the first closed-loop schematic (issue #58)
+  bandgap_trim.sch    the trim ladder: 255 binary-weighted rppd unit
+                      segments + strap links, in series with R1
+                      (issue #229 — see bandgap_trim_network.md)
+  bandgap_trim.sym    hierarchical-instantiation symbol for the above
+                      (issue #229)
   netlist/        xschem-generated .spice netlists (committed — see fleet
                    convention note below)
 ```
@@ -90,7 +95,16 @@ README summarizes, it does not duplicate the full derivation.
   floor) — a future PSRR pass could still add one to the mirror, and would
   need to keep any *bipolar* device it adds within the same BVCEO/BVEBO
   ceiling per DR-0001.
-- **A trim network.** Neither sibling repo's first-pass core had one either.
+- ~~**A trim network.** Neither sibling repo's first-pass core had one
+  either.~~ — **landed by issue #229**: `bandgap_trim.sch` (a 255-unit
+  binary-weighted `rppd` ladder in series with R1, strap-decoded
+  `trim_code`, default 128 ≡ the pre-trim 511 µm summing resistor), the
+  design work DR-0011's Trim row obligated. Sizing derivation and layout
+  area budget: [`bandgap_trim_network.md`](bandgap_trim_network.md);
+  measured coverage evidence: `sim/trim-coverage/`,
+  `sim/closed-loop-vref-trim-mc/`, `sim/closed-loop-vref-boxtc-trim/`.
+  Re-layout of `layout/bandgap_core` for the segmented R1 + ladder
+  remains a follow-on (as it already was for #134's retune).
 - **Simulation-grounded sizing.** All resistor/device sizes here are a
   first-pass, hand-derived estimate (see each schematic's header) — #10
   (PVT testbenches) is what will re-derive them against real corner-swept
@@ -292,9 +306,11 @@ actually ran, in the sandbox it ran in — not a substitute for #10.
     measured band) and computes an **informal** temperature coefficient per
     process-corner/supply group (~349-376 ppm/°C, endpoint method) — well
     above `spec/porting-plan.md` §6's draft (unratified, #125) `< 50 ppm/°C`
-    target, but expected and not itself a design defect: this design has no
-    trim network yet (issue #9's explicit scope cut, "Explicitly out of
-    scope" above), and an untrimmed VBE-based reference's TC is normally in
+    target, but expected and not itself a design defect: at the time of
+    that #86 record this design had no trim network (issue #9's
+    first-pass scope cut — the trim ladder has since landed via issue
+    #229, and the TC itself was nulled by #134's R1 retune), and an
+    untrimmed VBE-based reference's TC is normally in
     the hundreds-of-ppm/°C range without one. Not a claim against the
     (still-unratified) spec row — see that README's own disclaimer.
   - [`sim/loop-gain-phase-margin/README.md`](../sim/loop-gain-phase-margin/README.md)

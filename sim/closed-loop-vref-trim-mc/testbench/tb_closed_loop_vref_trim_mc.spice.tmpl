@@ -1,12 +1,63 @@
-** sch_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-229/design/bandgap_core.sch
-**.subckt bandgap_core vdd vss fb sns1 sns2 vref
+* sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+* closed-loop TRIMMED-vref device-mismatch Monte Carlo campaign
+* (issue #229 -- the trim-domain mismatch MC DR-0011's trimmed +/-0.5%
+* line obligates). Generated from
+* sim/closed-loop-vref-trim-mc/testbench/tb_closed_loop_vref_trim_mc.spice.tmpl
+* by sim/closed-loop-vref-trim-mc/run_trim_mc.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run.
+* Full methodology: sim/closed-loop-vref-trim-mc/README.md.
+*
+* Generated for: point=@@POINT_LABEL@@ stage=@@STAGE@@ mode=@@MISMATCH_MODE@@
+* corner=@@CORNER_LABEL@@ temp=@@TEMP_C@@C vdd=@@VDD@@V draw=@@DRAW_INDEX@@
+* rndseed=@@SEED@@ trim_code=@@TRIM_CODE@@
+* DUT git sha: @@DUT_GIT_SHA@@
+* PDK: @@PDK@@ @@PDK_ROOT@@ (see sim/pdk.json for the pinned release)
+* OSDI models: @@OSDI_DIR@@ (built by sim/tools/build-osdi.sh)
+*
+* ------------------------------------------------------------- MC method
+* Same two ingredients as sim/closed-loop-vref-mc (issue #215), carried
+* over verbatim -- this campaign is that experiment's trim-domain twin:
+*   1. `.options rndseed=@@SEED@@` at SPICE-netlist level BEFORE any
+*      .lib/device parse (agauss/gauss mismatch expressions evaluate at
+*      parse time; verified by #215's own direct experiment).
+*   2. The `_mismatch` corner-lib sections for mismatch points; the plain
+*      sections for the negative control.
+* Die identity across a draw's SEVERAL netlists (the three 27C fit codes
+* and the three verify temperatures): the device draw is a pure function
+* of (.options rndseed, the device instance list), and every netlist of
+* one draw shares both -- only .param trim_code and .options temp differ,
+* neither of which touches the draw. A draw's code* chosen at 27C is
+* therefore the SAME die's trim, evaluated at -40/27/125C.
+*
+* Per draw, the driver runs this template at:
+*   stage=fit   temp=27  trim_code in {{0, 1, 255}}  -> linear vref(code)
+*              fit a=vref(0), b=vref(1)-vref(0), linearity residual at 255;
+*              code* = clip(round((1.050 - a)/b), 0, 255)
+*   stage=verify temp in {{-40, 27, 125}}  trim_code=code*
+*              -> the trimmed die's vref at the three temperatures; the
+*              +/-0.5% trimmed line is max_T |vref(T) - 1.050 V| / 1.050.
 
-*.iopin vdd
-*.iopin vss
-*.iopin fb
-*.iopin sns1
-*.iopin sns2
-*.iopin vref
+.nodeset v(fb)=@@FB_SEED@@ v(sns1)=@@SNS1_SEED@@ v(sns2)=@@SNS2_SEED@@ v(vref)=@@VREF_SEED@@
+
+.options rndseed=@@SEED@@
+
+.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerHBT.lib" @@HBT_SECTION@@
+.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerMOShv.lib" @@MOS_SECTION@@
+.lib "@@PDK_ROOT@@/@@PDK@@/libs.tech/ngspice/models/cornerRES.lib" @@RES_SECTION@@
+
+.options temp=@@TEMP_C@@ tnom=27
+
+* FIXTURE -- vdd is a fixed DC source (no ramp, no AC): each netlist is
+* one .nodeset-seeded .op of one (die, trim_code, temperature) point.
+Vvdd vdd 0 dc @@VDD@@
+Vvss vss 0 dc 0
+Vsub sub! vss dc 0
+
+* DUT -- design/netlist/bandgap_core.spice, verbatim (R1 base l=37.2u
+* to node tn0 + XXTRIM bandgap_trim tn0->cb3, per issue #229 -- see
+* design/bandgap_trim_network.md), with the trim ladder subcircuit
+* definition copied verbatim from design/netlist/bandgap_trim.spice
+* (its subcircuit-local .param trim_code carries THIS point's code).
 XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
 XQ1 sns1 sns1 vss vss npn13G2 Nx=1
 XM2A sns2 fb vdd vdd sg13_hv_pmos w=9u l=1u ng=1 m=1
@@ -19,14 +70,8 @@ XM3C vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
 XR1 vref tn0 sub! rppd w=2u l=37.2u m=1 b=0
 XXTRIM tn0 cb3 sub! bandgap_trim
 XQ3 cb3 cb3 vss vss npn13G2 Nx=1
-**.ends
 
-* expanding   symbol:  bandgap_trim.sym # of pins=3
-** sym_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-229/design/bandgap_trim.sym
-** sch_path: /Users/rwalters/GitHub/sg13g2-bandgap/.loom/worktrees/issue-229/design/bandgap_trim.sch
 .subckt bandgap_trim in out sub
-
-
 *.iopin in
 *.iopin out
 *.iopin sub
@@ -294,10 +339,39 @@ RS5 t031 t063 {1e-3 + 1e12*(floor(trim_code/32)-2*floor(trim_code/64))} m=1
 RS6 t063 t127 {1e-3 + 1e12*(floor(trim_code/64)-2*floor(trim_code/128))} m=1
 RS7 t127 out {1e-3 + 1e12*(floor(trim_code/128)-2*floor(trim_code/256))} m=1
 **** begin user architecture code
-
-.param trim_code=128
-
+.param trim_code=@@TRIM_CODE@@
 **** end user architecture code
 .ends
 
+* DUT -- design/netlist/bandgap_amp.spice, verbatim. in_p <- sns2
+* (non-inverting), in_n <- sns1 (inverting), out -> fb.
+XMTAIL tail fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP2 d2 sns1 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
+XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMP4 fb pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN3 fb d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+
+* DUT -- design/netlist/bandgap_startup.spice, verbatim + Vmkfb ammeter.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=@@MSENSE_W@@ l=0.5u ng=1 m=1
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+.control
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
+pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
+op
+print v(fb)
+print v(sns1)
+print v(sns2)
+print v(vref)
+print v(det)
+print i(Vmkfb)
+.endc
 .end
