@@ -1,4 +1,4 @@
-# 0010: Output-reference row disposition — re-cast to the core's TC-null operating point (1.050 V) with evidence-derived untrimmed/trimmed lines and a Trim row
+# 0011: Output-reference row disposition — re-cast to the core's TC-null operating point (1.050 V) with evidence-derived untrimmed/trimmed lines and a Trim row
 
 - **Status**: proposed — ratified by operation of the two-key release gating this
   record's PR (see Consequences); not ratified by this author's assertion
@@ -6,12 +6,19 @@
 - **Decided by**: Loom Builder agent, issue #221 (disposition A, numbers
   derived, not copied)
 
-Numbering note: this record is `0010` per `TEMPLATE.md`'s numbering rule —
-`0008` is taken (`0008-two-key-ratification-review-outcome.md`, PR #224) and
-`0009` was taken on `main` by #228's rename of the former duplicate `0007`
+Numbering note: this record was originally assigned `0010` per
+`TEMPLATE.md`'s numbering rule — `0008` was taken
+(`0008-two-key-ratification-review-outcome.md`, PR #224) and `0009` was
+taken on `main` by #228's rename of the former duplicate `0007`
 (`0009-sim-evidence-log-retention.md`) while this branch was in flight; an
 earlier draft of this record used `0009` and was renumbered after #228
-landed (the duplicate-number CI check #228 added caught it).
+landed (the duplicate-number CI check #228 added caught it). It was
+renumbered a second time, `0010` → `0011`, by #262: PR #230 merged this
+record as `0010` without rebasing past `#236`, which had already merged
+`0010-box-method-tc-evidence.md` to `main` 76 minutes before PR #230's last
+green `hygiene` run — a second `0010` collision the duplicate-number CI
+check caught again, this time on `main` after merge. `0011` is the next
+unused number as of the #262 fix.
 
 ## Context
 
