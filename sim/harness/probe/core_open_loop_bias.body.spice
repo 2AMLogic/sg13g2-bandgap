@@ -1,0 +1,93 @@
+* sg13g2-bandgap -- `klt sim` netlist-body probe (issue #275).
+*
+* NOT an evidence testbench. This is the harness self-test
+* `sim/harness/probe/run_probe.sh` runs: one corner, one point, driven
+* through `klt sim` instead of through a `run_pvt_sweep.sh` shell loop, so
+* that the three things the `klt sim` path needs from ngspice are proven
+* against a DUT this repo already has committed evidence for rather than
+* asserted in prose. See sim/harness/README.md.
+*
+* The DUT and fixtures are copied from
+* sim/core-open-loop-bias/testbench/tb_core_open_loop_bias.spice.tmpl at the
+* trim-bearing core (issue #264, `.param trim_code=128`), deliberately
+* verbatim: the probe's job is to reproduce that experiment's own committed
+* typ/27C/3.30V point, so any difference has to come from the harness.
+*
+* `klt sim` netlist-body convention (klt sim --help, "Netlist convention"):
+* this file is a circuit BODY. It carries no `.lib`, no `.temp`, no
+* `.options temp=`, no analysis card and no `.end` -- `klt sim` generates all
+* of those around an `.include` of this file, per corner.
+*
+* ONE DELIBERATE DEVIATION, and the reason this probe exists:
+*
+*   The `.control` block below is exactly what that same convention says a
+*   netlist body may not have. It is here because SG13G2's MOS and resistor
+*   compact models are OSDI (Verilog-A compiled by sim/tools/build-osdi.sh),
+*   and an OSDI library must be loaded by `pre_osdi` BEFORE the netlist is
+*   parsed -- there is no `.model`/`.include` form of it. `klt sim`'s
+*   generated `.control` block has no extension point for an engine preload
+*   command (klayout_tools.sim._write_corner_deck emits only `alter`, the
+*   analysis, `write`, `quit`), so the body is the only place it can go.
+*
+*   Verified, not assumed: ngspice 46 accepts a second `.control` block
+*   reached through `.include` and honours its `pre_osdi` cards, and the
+*   generated deck's own `.control` block still runs. run_probe.sh is the
+*   standing check that this stays true. The capability gap itself is filed
+*   upstream per this repo's friction protocol -- see sim/harness/README.md
+*   § "Upstream friction". Until it is closed, every `klt sim` netlist body
+*   in this repo needs this block, and every one of them must say so.
+.control
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
+pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
+.endc
+
+* Solver options. `klt sim`'s request `options` object is the runner's
+* (timeout, artifacts, worker pool) and carries no engine-option passthrough,
+* so a SPICE `.options` setting belongs here in the body. `reltol=5e-3` is
+* issue #264's setting for the trim-bearing DUT. `rshunt`/`gmin` are
+* deliberately absent: against the ladder's 254 interior nodes they leak
+* ~0.55 uA out of the output branch (a ~37 mV settled-vref artifact at code
+* 128/typ/27C) -- see sim/closed-loop-vref-boxtc-trim/README.md
+* § "Solver options". `temp`/`tnom` are NOT set here: `klt sim` emits the
+* corner's own `.temp` card.
+.options reltol=5e-3
+
+* Supply/ground. `Vvdd`'s dc value is a placeholder: `klt sim` overrides it
+* per corner with an `alter Vvdd=<v>` card generated from the request's
+* `corners.supply_v` axis, which is why the rail source has to be a named,
+* alterable element here (it already was).
+Vvdd vdd 0 dc 3.30
+Vvss vss 0 dc 0
+Vsub sub! vss dc 0
+
+* FIXTURE 1 -- open-loop mirror bias (verbatim from sim/core-open-loop-bias).
+XM0 fb fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Ibias fb vss dc 5u
+
+* DUT mirror legs + per-leg ammeters (FIXTURE 2), verbatim.
+XM1 m1d fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Vm1 m1d sns1 dc 0
+XM2A m2d fb vdd vdd sg13_hv_pmos w=9u l=1u ng=1 m=1
+XM2B m2d fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+Vm2 m2d sns2 dc 0
+XM3A m3d fb vdd vdd sg13_hv_pmos w=8u l=1u ng=1 m=1
+XM3B m3d fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XM3C m3d fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+Vm3 m3d vref dc 0
+
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XR1 vref tn0 sub! rppd w=2u l=37.2u m=1 b=0
+XXTRIM tn0 cb3 sub! bandgap_trim
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+* The trim ladder, spliced verbatim from design/netlist/bandgap_core.spice
+* (255 units + the eight behavioural RS<b> mask-option straps + the ratified
+* `.param trim_code=128` default). A SCHEMATIC-level DUT keeps the
+* behavioural form; the code-fixed PEX form is a different question and is
+* the one this issue's D2 mask-option disposition is about -- see
+* sim/harness/README.md § "D2 and the mask option".
+.include @@TRIM_SUBCKT@@
