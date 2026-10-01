@@ -394,7 +394,7 @@ netlist matches the trim-bearing schematic" checkable rather than asserted.
 | cell | DRC | LVS | extraction |
 | --- | --- | --- | --- |
 | `bandgap_core` | `clean`, 0 violations | `mismatch`, 8 findings / **4 error-severity** — the same four as pre-#272 (`Q1`–`Q3` `device.unmatched` plus their class-level topology entry, the permanent bipolar-recognition cause); devices **263/263** matched, nets 253/257 | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C |
-| `bandgap_top` | `clean`, 0 violations | `mismatch`, 10 findings / **4 error-severity** — down from 6 pre-#272, and the remaining four are the same bipolar cause; devices **275/275** matched, nets 257/261 | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C |
+| `bandgap_top` | `clean`, 0 violations | `mismatch`, 10 findings / **4 error-severity** — the same four as pre-#272, same bipolar cause (the 6 → 4 drop was issue #185's `bandgap_amp` body ties, 2026-09-05, not this change); devices **275/275** matched, nets 257/261 | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C |
 
 Every error-severity finding on both cells is the bipolar-recognition cause
 already documented under "Permanent blockers" below. **No new error class
