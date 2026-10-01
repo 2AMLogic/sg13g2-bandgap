@@ -257,6 +257,25 @@ left untouched**, so historical records still name #13; read those as
 
 ## Testbenches landed so far
 
+**Read the per-experiment numbers quoted in this list as of the record that
+was newest when each entry was written.** #229 replaced the core's monolithic
+summing resistor with the segmented `XR1` + 255-unit `bandgap_trim` ladder,
+and #264 re-ran the schematic-DUT experiments against that core at the
+schematic default `trim_code=128` with the `rshunt=1e9`/`gmin=1e-9`
+convergence aids dropped (they leak ~0.55 µA across the ladder's 254 interior
+nodes — worth 37 mV of settled `vref` if left in). **The current numbers for
+each refreshed experiment live in its own README's §"Trim-bearing DUT refresh
+(issue #264)" section**, not in this index: nine experiments carry one
+(`core-open-loop-bias`, `startup-core-handover`, `closed-loop-startup`,
+`closed-loop-offset`, `closed-loop-psrr`, `loop-gain-phase-margin`,
+`startup-time-to-release`, `closed-loop-vref-pvt`, `closed-loop-iq`),
+`closed-loop-vref-mc` and `closed-loop-vref-pvt-boxtc` are tracked in #273,
+and the five `*-pex` experiments wait on the trim-bearing re-layout (#272).
+Their freshness waivers in
+[`evidence-freshness-waivers.json`](evidence-freshness-waivers.json) name
+whichever of those trackers owns them.
+
+
 - **[`core-open-loop-bias/`](core-open-loop-bias/README.md)** — the bandgap
   core (three real `npn13G2` legs + the real `sg13_hv_pmos` mirror + both
   real `rppd` resistors), with the mirror biased open-loop from a

@@ -5,50 +5,50 @@
       "report": "sim/closed-loop-psrr-pex/records/20260905-233826-f6f3efc.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-psrr-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry; blocked on the trim-bearing re-layout, tracked here"
+      "issue": "#272",
+      "reason": "closed-loop-psrr-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry. Cannot self-expire until a trim-bearing re-layout + PEX exists -- tracked in #272 (the schematic-DUT counterpart was refreshed in #264)."
     },
     {
       "report": "sim/closed-loop-vref-mc/records/20260909-232418-c9b83ab.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-vref-mc 2026-09-09 record (the untrimmed +/-16% line's own evidence): pre-trim core DUT, superseded by #229's trim-bearing core; the untrimmed-line numbers remain valid history, the refresh re-runs them at default code 128; tracked here"
+      "issue": "#273",
+      "reason": "closed-loop-vref-mc 2026-09-09 record (the untrimmed +/-16% line's own evidence): pre-trim core DUT, superseded by #229's trim-bearing core. The testbench template is already re-pointed at the trim-bearing core at code 128 (#264); the 1800-draw re-run itself was deferred from #264 and is tracked here. The untrimmed-line numbers remain valid history."
     },
     {
       "report": "sim/closed-loop-vref-pvt-boxtc/records/20260921-194249-77820fc.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-vref-pvt-boxtc 2026-09-21 record (the box-method TC evidence DR-0011's 0.20% drift term cites): pre-trim core DUT, superseded by #229's trim-bearing core; refresh tracked here"
+      "issue": "#273",
+      "reason": "closed-loop-vref-pvt-boxtc 2026-09-21 record (the box-method TC evidence DR-0011's 0.20% drift term cites): pre-trim core DUT, superseded by #229's trim-bearing core. The testbench template is already re-pointed at the trim-bearing core at code 128 (#264); the 120-point transient re-run itself was deferred from #264 and is tracked here. The trim-bearing box-TC evidence #229 landed in sim/closed-loop-vref-boxtc-trim covers the same grid at the same default code in the meantime."
     },
     {
       "report": "sim/closed-loop-vref-pvt-pex/records/20260905-114438-8abe2aa.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-vref-pvt-pex 2026-09-05 record (the 45-point post-layout grid DR-0011's nominal 1.05048 V derives from): extracted-layout DUT on the pre-trim geometry; blocked on the trim-bearing re-layout, tracked here"
+      "issue": "#272",
+      "reason": "closed-loop-vref-pvt-pex 2026-09-05 record (the 45-point post-layout grid DR-0011's nominal 1.05048 V derives from): extracted-layout DUT on the pre-trim geometry. Cannot self-expire until a trim-bearing re-layout + PEX exists -- tracked in #272 (the schematic grid was refreshed in #264 and now reads 1.04728 V nominal)."
     },
     {
       "report": "sim/closed-loop-vref-pvt-pex-boxtc/records/20260921-195122-77820fc.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-vref-pvt-pex-boxtc 2026-09-21 record: extracted-layout DUT on the pre-trim geometry; blocked on the trim-bearing re-layout, tracked here"
+      "issue": "#272",
+      "reason": "closed-loop-vref-pvt-pex-boxtc 2026-09-21 record: extracted-layout DUT on the pre-trim geometry. Cannot self-expire until a trim-bearing re-layout + PEX exists -- tracked in #272."
     },
     {
       "report": "sim/closed-loop-zout-pex/records/20260906-003654-dd45eaf.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-zout-pex 2026-09-06 record: extracted-layout DUT on the pre-trim geometry; blocked on the trim-bearing re-layout, tracked here"
+      "issue": "#272",
+      "reason": "closed-loop-zout-pex 2026-09-06 record: extracted-layout DUT on the pre-trim geometry. Cannot self-expire until a trim-bearing re-layout + PEX exists -- tracked in #272."
     },
     {
       "report": "sim/core-open-loop-bias-pex/records/20260905-033431-fe97115.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "core-open-loop-bias-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry; blocked on the trim-bearing re-layout, tracked here"
+      "issue": "#272",
+      "reason": "core-open-loop-bias-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry. Cannot self-expire until a trim-bearing re-layout + PEX exists -- tracked in #272 (the schematic-DUT counterpart was refreshed in #264)."
     }
   ]
 }
