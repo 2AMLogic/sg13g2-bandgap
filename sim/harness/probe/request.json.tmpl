@@ -1,0 +1,59 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for the harness self-test",
+    "(issue #275). Instantiated by sim/harness/probe/run_probe.sh, which",
+    "substitutes @@BODY@@ and @@CORNER_BUNDLE@@ with the generated absolute",
+    "paths; `klt sim` resolves a relative `netlist`/`models.lib` against the",
+    "request file's own directory, and this request is written into a scratch",
+    "dir, so both are absolute here rather than relative.",
+    "",
+    "This probe declares ONE corner on purpose -- see run_probe.sh's header.",
+    "A real experiment's request widens `corners` to the five process labels",
+    "x three temperatures x three supplies the grid needs; the shape is",
+    "otherwise identical, which is the whole point of landing the probe.",
+    "",
+    "`analysis.kind` is `tran`, not `op`, even though the claim is an",
+    "operating point: ngspice implements no `.MEASURE OP` (there is no sweep",
+    "variable for a measurement to search over), so `klt sim` validates a",
+    "`.meas op` card away before it ever reaches the engine. The documented",
+    "substitute is a short single-step transient plus `.meas tran ... at=<t>`,",
+    "and it is numerically free here -- the probe asserts the measured point",
+    "matches sim/core-open-loop-bias's committed `.op` record to 2e-5 V.",
+    "",
+    "`reltol=5e-3` and the 50 ns window are the solver settings issue #264",
+    "settled for the trim-bearing DUT; `rshunt`/`gmin` are deliberately NOT",
+    "set -- against the ladder's interior nodes they leak ~0.55 uA out of the",
+    "output branch (a ~37 mV settled-vref artifact). See",
+    "sim/closed-loop-vref-boxtc-trim/README.md 'Solver options'. `reltol`",
+    "lives in the netlist body's own `.options` card, not here: `klt sim`'s",
+    "`options` object is the runner's (timeout, artifacts, workers) and has no",
+    "engine-option passthrough. That is fine -- a body may carry `.options` --",
+    "but it does mean a solver setting is per-netlist, not per-request."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "schematic",
+  "models": { "lib": "@@CORNER_BUNDLE@@" },
+  "corners": {
+    "process": ["typ"],
+    "supply_v": { "Vvdd": [3.30] },
+    "temperature_c": [27]
+  },
+  "analysis": { "kind": "tran", "args": "10n 50n" },
+  "measurements": [
+    { "name": "vref_v", "spice": ".meas tran vref_v find v(vref) at=40n" },
+    { "name": "vfb_v", "spice": ".meas tran vfb_v find v(fb) at=40n" },
+    { "name": "vbe_q1_v", "spice": ".meas tran vbe_q1_v find v(sns1) at=40n" },
+    { "name": "vbe_q2_v", "spice": ".meas tran vbe_q2_v find v(cb2) at=40n" },
+    { "name": "vbe_q3_v", "spice": ".meas tran vbe_q3_v find v(cb3) at=40n" },
+    { "name": "i_leg1_a", "spice": ".meas tran i_leg1_a find i(vm1) at=40n" },
+    { "name": "i_leg2_a", "spice": ".meas tran i_leg2_a find i(vm2) at=40n" },
+    { "name": "i_leg3_a", "spice": ".meas tran i_leg3_a find i(vm3) at=40n" },
+    { "name": "r1_ohm", "spice": ".meas tran r1_ohm find par('(v(vref)-v(cb3))/i(vm3)') at=40n" },
+    { "name": "r2_ohm", "spice": ".meas tran r2_ohm find par('(v(sns2)-v(cb2))/i(vm2)') at=40n" }
+  ],
+  "options": {
+    "timeout_s": 300,
+    "keep_artifacts": true
+  }
+}

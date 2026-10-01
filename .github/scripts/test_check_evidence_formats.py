@@ -657,6 +657,87 @@ def case_valid_sim_waiver_passes(root: Path):
     return None
 
 
+# --- mask-option (metal-option) resolution, issue #275 -----------------------
+
+#: A mask-option trim ladder in miniature: two units, two behavioural straps
+#: and the `.param trim_code=` default that names the realised code. Shaped
+#: exactly like `design/netlist/bandgap_core.spice`'s own `bandgap_trim`, just
+#: two units instead of 255.
+_MASK_OPTION_DUT_TAIL = """XXTRIM out cb sub! synthetic_trim
+.subckt synthetic_trim in out sub
+XRU1 in t001 sub rppd w=2u l=3.43u m=1 b=0
+XRU2 t001 out sub rppd w=2u l=3.43u m=1 b=0
+RS0 in t001 {1e-3 + 1e12*(floor(trim_code/1)-2*floor(trim_code/2))} m=1
+RS1 t001 out {1e-3 + 1e12*(floor(trim_code/2)-2*floor(trim_code/4))} m=1
+.param trim_code=2
+.ends
+"""
+
+#: What a *code-fixed post-layout* snapshot of that ladder looks like: the
+#: units inlined flat under their own names, carrying extracted hub nodes and
+#: extra parameters, and NO `XXTRIM` call and NO `RS<bit>` cards at all --
+#: a mask option leaves metal or absence behind, never a behavioural resistor.
+_MASK_OPTION_PEX_SNAPSHOT_TAIL = """XRU1 pexhub1 pexhub2 vsubs rppd w=2u l=3.43u m=1 b=0 r=445.9
+XRU2 pexhub2 pexhub3 vsubs rppd w=2u l=3.43u m=1 b=0 r=445.9
+Rstrap pexhub1 pexhub2 0.0123
+"""
+
+
+def _add_mask_option(root: Path, dut_tail: str = _MASK_OPTION_DUT_TAIL) -> None:
+    """Give the fixture's DUT a mask-option trim ladder, and its snapshots the
+    code-fixed post-layout form of it."""
+    dut = root / SIM_DUT_REL
+    dut.write_text(
+        dut.read_text(encoding="utf-8").replace(".ends\n", ".ends\n" + dut_tail, 1),
+        encoding="utf-8",
+    )
+    snapshots = root / "sim/synthetic-experiment/netlist-snapshots" / RECORD_ID
+    for corner in CORNERS:
+        path = snapshots / f"{corner}.spice"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace(
+                ".tran", _MASK_OPTION_PEX_SNAPSHOT_TAIL + ".tran", 1
+            ),
+            encoding="utf-8",
+        )
+
+
+def case_mask_option_code_fixed_snapshot_passes(root: Path):
+    """Disposition (b), issue #275: a code-fixed post-layout snapshot of a
+    mask-option DUT is fresh evidence, not stale.
+
+    The snapshot holds no `XXTRIM` call and no behavioural `RS<bit>` straps,
+    because the layout realises one code in metal. That must not read as 3
+    `<absent>` instances -- the design did not change, only the representation.
+    """
+    _add_mask_option(root)
+    return None
+
+
+def case_mask_option_unit_resize_is_still_stale(root: Path):
+    """Resolving the option must not blind D2 to a real resize of a ladder unit."""
+    _add_mask_option(root)
+    dut = root / SIM_DUT_REL
+    dut.write_text(
+        dut.read_text(encoding="utf-8").replace("l=3.43u", "l=4.00u"), encoding="utf-8"
+    )
+    return "STALE"
+
+
+def case_mask_option_needs_both_signatures(root: Path):
+    """A subcircuit is a mask option only with BOTH signatures present.
+
+    Same ladder, same `RS<bit>` cards, but no `.param trim_code=` default: an
+    ordinary subcircuit that happens to name a resistor `RS1`. Its instances
+    therefore stay in the DUT signature, and a snapshot that drops them is
+    stale -- the detector must not be greedy.
+    """
+    _add_mask_option(
+        root, _MASK_OPTION_DUT_TAIL.replace(".param trim_code=2\n", "")
+    )
+    return "STALE"
+
+
 CASES = [
     ("undamaged fixture passes", case_valid),
     ("Result headline overclaims point count", case_result_overclaims_total),
@@ -707,6 +788,12 @@ CASES = [
     ("sim waiver without a tracking issue is rejected", case_sim_waiver_without_issue),
     ("obsolete sim waiver self-expires", case_obsolete_sim_waiver_self_expires),
     ("valid sim waiver downgrades a stale record to a note", case_valid_sim_waiver_passes),
+    ("code-fixed snapshot of a mask-option DUT is fresh",
+     case_mask_option_code_fixed_snapshot_passes),
+    ("resizing a mask-option ladder unit is still stale",
+     case_mask_option_unit_resize_is_still_stale),
+    ("a subckt needs both mask-option signatures to be resolved",
+     case_mask_option_needs_both_signatures),
 ]
 
 

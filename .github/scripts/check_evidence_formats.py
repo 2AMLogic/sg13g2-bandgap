@@ -71,6 +71,15 @@ superseded DUT is stale evidence no matter how honest its prose. Only models
 and parameters are compared, never node names (a testbench legitimately rewires
 the DUT's ports), and a netlist that merely *adds* parameters still matches (a
 PEX-sourced device carries `as`/`ad`/`ps`/`pd` the schematic does not).
+A **mask option** is resolved before the compare rather than compared: the
+behavioural `RS<bit>` strap cards and the subcircuit call that select the trim
+ladder's drawn code model a metal option, not silicon, so no extracted netlist
+can hold them — they are excluded from the DUT signature while the ladder's own
+255 units stay in it. That is the same convention
+`layout/lvs_reference.py`'s `convert_with_metal_options` already applies to the
+LVS reference, and it means *which* code is realised is guarded by LVS rather
+than here; see the "mask-option resolution" comment block beside
+`resolve_mask_options` (issue #275).
 Known-stale records are waived through `sim/evidence-freshness-waivers.json`,
 which self-expires twice over: the recorded signature stops matching once the
 record is re-run, and the waiver stops matching anything once a newer record is
@@ -181,6 +190,47 @@ DUT_PATH_RE = re.compile(r"\bdesign/[A-Za-z0-9_./-]*?\.spice\b")
 #: device letter, then at least one more token. Comments (`*`), directives
 #: (`.tran`, `.model`, …) and continuations (`+`) are filtered before this runs.
 INSTANCE_RE = re.compile(r"^[XxRrCcLlMmQqDdVvIiJjKkEeFfGgHhSsTtUuWwZz]\S*\s+\S")
+
+# --- mask-option (metal-option) resolution, issue #275 -----------------------
+#
+# `design/netlist/bandgap_core.spice` is not a flat device list: as of issue
+# #229 its top level calls one *metal-option* subcircuit
+# (`XXTRIM tn0 cb3 sub! bandgap_trim`), whose body holds the trim ladder's 255
+# `rppd` units plus eight `RS0`-`RS7` cards that are **behavioural models of a
+# mask option, not devices** — each is `{1e-3 + 1e12*<bit>}`: 1 mΩ when its
+# bit is 0 (strap drawn, that binary group shorted out) and 1 TΩ when its bit
+# is 1 (strap absent, the group in circuit). `design/bandgap_trim_network.md`
+# §4 states that, and `layout/bandgap_core/generate.py` draws exactly it:
+# `Metal2` straps for the closed bits, no geometry at all for the open ones.
+#
+# So a *layout* realises one code, and a faithful post-layout netlist of that
+# layout has no `trim_code` parameter, no `XXTRIM` instance and no `RS<b>`
+# cards: the closed straps are real metal (wire resistance) and the open one is
+# simply absent. Comparing such a snapshot against the unresolved schematic
+# instance set reads as `<absent>` on 264 instances — the design did not
+# change, only the representation did.
+#
+# `layout/lvs_reference.py`'s `convert_with_metal_options` already settled this
+# for LVS by resolving the option at the subcircuit's own `.param trim_code`
+# default. D2 adopts the same convention here (issue #275 disposition (b)):
+# the *expected* instance set is the option-resolved one — the call instance
+# and the behavioural strap cards dropped, the ladder's own units kept flat
+# under their own `RU…` names, exactly as the LVS reference keeps them.
+#
+# WHAT THIS DELIBERATELY STOPS CHECKING, stated rather than left implicit:
+# with the `RS<b>` cards out of the expected set, D2 no longer notices which
+# code a snapshot realises (the 255 units are geometrically identical and D2
+# compares no node names). That axis is guarded by LVS instead, which is where
+# it belongs: `convert_with_metal_options` reads the realised code from the
+# same `.param trim_code` default the layout's own `TRIM_CODE` must agree
+# with, so a code mismatch surfaces as an LVS failure. D2's job here is
+# "is this the same design?", not "is this the same mask option?".
+
+#: A behavioural mask-option strap card: `RS<bit> <n1> <n2> {…}`.
+MASK_OPTION_STRAP_RE = re.compile(r"^RS\d+\s+\S+\s+\S+\s", re.IGNORECASE)
+
+#: The `.param trim_code=<n>` default that names the realised option.
+MASK_OPTION_PARAM_RE = re.compile(r"^\.param\s+trim_code\s*=", re.IGNORECASE)
 
 # --- append-only constants ---------------------------------------------------
 
@@ -813,6 +863,84 @@ def spice_instances(text: str) -> dict[str, tuple[str, dict[str, str]]]:
     return devices
 
 
+def mask_option_subckts(text: str) -> dict[str, list[str]]:
+    """`{subckt name: its own instance names}` for each mask-option subcircuit.
+
+    A `.subckt` block qualifies only when it carries **both** signatures of the
+    convention — at least one `RS<bit>` behavioural strap card and a
+    `.param trim_code=` default — so an ordinary subcircuit that happens to
+    hold a resistor named `RS1` is not mistaken for one. See the
+    "mask-option resolution" comment block above for why this exists.
+    """
+    found: dict[str, list[str]] = {}
+    name: str | None = None
+    instances: list[str] = []
+    straps = False
+    param = False
+    for raw in text.splitlines():
+        line = " ".join(raw.split())
+        if not line:
+            continue
+        lowered = line.lower()
+        if lowered.startswith(".subckt "):
+            name = line.split()[1]
+            instances, straps, param = [], False, False
+            continue
+        if name is None:
+            continue
+        if lowered.startswith(".ends"):
+            if straps and param:
+                found[name] = instances
+            name = None
+            continue
+        if MASK_OPTION_PARAM_RE.match(line):
+            param = True
+            continue
+        if MASK_OPTION_STRAP_RE.match(line):
+            straps = True
+            instances.append(line.split()[0])
+            continue
+        if not line.startswith(("*", ".", "+", "$")) and INSTANCE_RE.match(line):
+            instances.append(line.split()[0])
+    return found
+
+
+def resolve_mask_options(
+    devices: dict[str, tuple[str, dict[str, str]]], text: str
+) -> tuple[dict[str, tuple[str, dict[str, str]]], list[str]]:
+    """Drop the parts of `devices` that model a mask option rather than silicon.
+
+    Returns `(resolved devices, dropped instance names)`. Two kinds go:
+
+    * the top-level **call** of a mask-option subcircuit (`XXTRIM … bandgap_trim`)
+      — it is a hierarchy node, and the layout draws the ladder flat in its own
+      top cell, so the resolved reference is flat too (the same reason
+      `convert_with_metal_options` expands it un-prefixed);
+    * that subcircuit's own `RS<bit>` **strap** cards — behavioural mask-option
+      models, which no extracted netlist can contain.
+
+    The ladder's 255 real `rppd` units stay, under their own names: a resize of
+    a unit (the thing #134's `R1` retune was) still fails D2.
+    """
+    option_blocks = mask_option_subckts(text)
+    if not option_blocks:
+        return devices, []
+    strap_names = {
+        instance
+        for name, instances in option_blocks.items()
+        for instance in instances
+        if MASK_OPTION_STRAP_RE.match(f"{instance} x y {{}}")
+    }
+    resolved = {}
+    dropped = []
+    for instance, (model, params) in devices.items():
+        if model in option_blocks or instance in strap_names:
+            dropped.append(instance)
+            continue
+        resolved[instance] = (model, params)
+    return resolved, sorted(dropped)
+
+
 def dut_signature(
     dut: dict[str, tuple[str, dict[str, str]]],
     observed: dict[str, tuple[str, dict[str, str]]] | None = None,
@@ -888,6 +1016,7 @@ def check_sim_freshness(root: Path, report: Report) -> None:
     waivers = load_waivers(root, report, SIM_WAIVER_FILE)
     used_waivers: set[tuple[str, str]] = set()
     uncovered: list[str] = []
+    mask_resolved_noted: set[str] = set()
 
     experiments = sorted(p for p in sim.iterdir() if p.is_dir() and (p / RECORDS_DIR).is_dir())
     for experiment in experiments:
@@ -913,10 +1042,30 @@ def check_sim_freshness(root: Path, report: Report) -> None:
 
         for dut_rel in dut_rels:
             report.checked += 1
-            dut = spice_instances((root / dut_rel).read_text(encoding="utf-8"))
+            dut_text = (root / dut_rel).read_text(encoding="utf-8")
+            dut = spice_instances(dut_text)
             if not dut:
                 report.fail(f"{record_rel} [{dut_rel}]",
                             "the named DUT netlist holds no device instances to compare")
+                continue
+            dut, mask_dropped = resolve_mask_options(dut, dut_text)
+            if mask_dropped and dut_rel not in mask_resolved_noted:
+                # Once per DUT netlist, not once per record that names it: the
+                # resolution is a property of the netlist, and 19 identical
+                # notes would bury the rest of the run's output.
+                mask_resolved_noted.add(dut_rel)
+                report.note(
+                    f"mask-option resolved: {dut_rel} — {len(mask_dropped)} instance(s) "
+                    "model a mask option rather than silicon and are excluded from the "
+                    f"DUT signature ({', '.join(mask_dropped[:4])}"
+                    f"{', …' if len(mask_dropped) > 4 else ''}); the realised code is "
+                    "guarded by LVS, not by D2 — see this file's 'mask-option "
+                    "resolution' comment block (issue #275)"
+                )
+            if not dut:
+                report.fail(f"{record_rel} [{dut_rel}]",
+                            "every instance in the named DUT netlist models a mask option; "
+                            "nothing is left to compare")
                 continue
 
             expected = dut_signature(dut)

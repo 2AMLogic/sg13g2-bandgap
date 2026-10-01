@@ -1,5 +1,64 @@
 # closed-loop-psrr-pex
 
+> ## Two decisions taken by issue #275, before this experiment's re-run
+>
+> This experiment is one of the five whose PEX evidence is still waived against
+> the **pre-trim** geometry in `sim/evidence-freshness-waivers.json`. #272
+> delivered the trim-bearing re-layout and re-extraction; #275 settled the two
+> questions that had to be answered before the AC PSRR grid could be
+> re-run against it, and this section records both — the re-run itself is
+> **#278**, blocked on **#277**. Neither decision changes any number in the
+> records already committed here; they change how the next record is produced
+> and how CI judges it. Disclosed here rather than silently reconciled, per this
+> repo's convention.
+>
+> **1. The harness is `klt sim`, not `run_pvt_sweep.sh`** (option 1 of the two
+> #275 offered). The dispatch hosts this repo's agents run on forbid
+> hand-looping `ngspice -b` over a corner grid and direct multi-corner work to
+> `klt sim`'s batch backend. The next record here will therefore be minted by
+> `sim/harness/klt_sim_evidence.py` from a `klt sim` report rather than by this
+> directory's `run_pvt_sweep.sh`, and its `- **Harness**:` field will say so.
+> `run_pvt_sweep.sh` stays on disk and stays correct — it is how every record
+> currently in `records/` was produced, and it remains the right entry point on
+> a workstation. Read [`sim/harness/README.md`](../harness/README.md) for the
+> decision, the three pieces of the harness, the one-corner anchor that proves
+> it (3 µV against a committed record), and precisely what still blocks the
+> grids: the batch fleet's runner image carries no `ihp-sg13g2` PDK and no
+> compiled-OSDI step (#277).
+>
+> **2. A mask-option PEX DUT has no `trim_code`, and D2 now knows that**
+> (disposition (b) of the three #275 sketched). The layout realises **one** trim
+> code (128) in metal, so a faithful post-layout netlist of it has no
+> `trim_code` parameter, no `XXTRIM` instance and no `RS0`-`RS7` cards: the
+> closed straps are real metal (wire resistance, worth ~0.3 mV here — about an
+> eighth of the 2.443 mV trim step) and the open strap is simply absent.
+> Compared against `design/netlist/bandgap_core.spice`'s *unresolved* instance
+> set, such a snapshot would read as `<absent>` on 264 instances and fail the
+> D2 freshness rule — even though the design did not change, only its
+> representation did.
+>
+> `.github/scripts/check_evidence_formats.py` now **resolves** the mask option
+> before comparing: the behavioural `RS<bit>` strap cards and the `XXTRIM`
+> subcircuit call are excluded from the DUT signature, while the ladder's own
+> 255 `rppd` units stay in it and must still match device-for-device. That is
+> the same convention `layout/lvs_reference.py`'s `convert_with_metal_options`
+> already applies to the LVS reference, so both sides of the compare agree on
+> what a mask-option netlist is. The code-fixed PEX template this experiment
+> will use must therefore name its ladder units `XRU1`-`XRU255`, the schematic's
+> own names, because that is what D2 keys on.
+>
+> The honest cost, stated rather than left implicit: with the strap cards out of
+> the expected set, **D2 no longer notices which code a snapshot realises** —
+> the 255 units are geometrically identical and D2 compares no node names. That
+> axis is guarded by LVS instead, where it belongs: `convert_with_metal_options`
+> reads the realised code from the same `.param trim_code` default the layout's
+> own `TRIM_CODE` must agree with, so a code mismatch surfaces as an LVS
+> failure. Rejected alternative (#275's disposition (a)): keeping a
+> `.subckt bandgap_trim` shell with the behavioural straps inside the PEX
+> template would have satisfied D2 unchanged, but it would make this bench model
+> a code the layout does not realise whenever `trim_code != 128` — a trap set
+> for the next reader.
+
 Post-layout (PEX) counterpart to
 [`sim/closed-loop-psrr/`](../closed-loop-psrr/README.md), for T1 tracker #4
 item 7 (post-layout simulation). Same claim, same co-simulated

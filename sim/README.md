@@ -69,6 +69,9 @@ sim/
   README.md            this file — the authoritative convention
   pdk.json              pinned PDK revision (see "PDK pin" above)
   env.sh                 PDK_ROOT/PDK resolution, sourced by every testbench
+  harness/               the `klt sim` corner-grid harness (issue #275) — NOT an
+                          experiment: it holds no records/, so the format
+                          checker skips it. See harness/README.md
   <experiment-slug>/     one directory per distinct claim under test
     README.md            testbench rationale, cold-start invocation, PDK pin,
                           and any device/model substitutions + why (required)
@@ -204,6 +207,21 @@ So each experiment's newest record is checked against the design it names:
 - Only the **newest** record per experiment is required to be fresh. Older
   records are superseded history and are kept, never regenerated.
 
+- **A mask option is resolved, not compared** (issue #275). The trim ladder's
+  drawn code is selected by metal option, so `design/netlist/bandgap_core.spice`
+  models it behaviourally: eight `RS0`-`RS7` strap cards
+  (`{1e-3 + 1e12*<bit>}` — 1 mΩ strap drawn, 1 TΩ strap absent) inside a
+  `bandgap_trim` subcircuit with a `.param trim_code=` default. A *layout*
+  realises one code, so a faithful post-layout netlist of it holds no
+  `trim_code`, no `XXTRIM` call and no `RS<bit>` cards at all. The checker
+  therefore excludes the strap cards and the subcircuit call from the DUT
+  signature while keeping the ladder's own 255 units in it — the same
+  convention `layout/lvs_reference.py`'s `convert_with_metal_options` applies to
+  the LVS reference. **Which** code is realised is consequently guarded by LVS,
+  not here: D2's question is "is this the same design?", not "is this the same
+  mask option?". A code-fixed post-layout testbench must name its ladder units
+  with the schematic's own `RU…` names, because that is what D2 keys on.
+
 A record whose DUT is a layout-extracted netlist is not covered here (nothing
 yet ties it back to the extraction it consumed); the checker prints a
 `DUT freshness not checked: …` note rather than passing silently.
@@ -236,6 +254,28 @@ under `sim/` is minted deliberately by a human or agent on a machine with the
 PDK, the OSDI models and ngspice — never by a CI robot. The self-test runs
 first in CI, because a format checker that cannot fail is indistinguishable
 from no checker at all.
+
+## Corner-grid harness: `run_pvt_sweep.sh` and `klt sim` (issue #275)
+
+Two ways to run a grid in this tree, and they produce the same evidence:
+
+- **`sim/<exp>/run_pvt_sweep.sh`** — the original: a serial bash loop invoking
+  `ngspice -b` once per PVT point. Every record currently under `sim/` was
+  minted this way, and it remains the right entry point on a workstation.
+- **`klt sim` + `sim/harness/klt_sim_evidence.py`** — the grid expressed as a
+  `klt sim` request document, dispatched to whichever backend the host allows
+  (including 2am's Spot batch fleet), with the returned JSON report translated
+  into the same `records/` + `corners/` + `netlist-snapshots/` quadruple by a
+  shared adapter. Adopted by #275 because the AWS dispatch hosts this repo's
+  agents run on forbid hand-looping `ngspice -b` over a corner grid.
+
+A record says which harness produced it: the `klt sim` path adds a
+`- **Harness**:` field naming the request and the backend. Read
+[`harness/README.md`](harness/README.md) before writing a new `klt sim`
+experiment — it carries the four-file recipe, the one-corner self-test
+(`harness/probe/run_probe.sh`, which reproduces a committed record to 3 µV),
+the two `klt sim` capability gaps this PDK runs into and how they are worked
+around, and what still blocks dispatching SG13G2 grids to the batch fleet.
 
 ## Spec ratification: which issue tracks it
 
