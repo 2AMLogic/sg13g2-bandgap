@@ -450,6 +450,14 @@ pre_osdi @@OSDI_DIR@@/psp103.osdi
 pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
 pre_osdi @@OSDI_DIR@@/mosvar.osdi
 pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
+* Keep only the measured vectors resident (issue #264): with the trim
+* ladder inlined the node count is ~700, and ngspice's default batch
+* output allocation (every node x every timestep) asks ~520 MB at 50 ns
+* over 3 ms, which trips its own startup "memory required > memory
+* available" check on a page-cache-warm host. Every .meas card below
+* names a saved vector, so nothing measured changes -- same fix, same
+* reason as sim/closed-loop-vref-boxtc-trim's template (issue #229).
+save v(vref) v(fb) v(sns1) v(sns2) v(det) v(cb3) v(vmkfb) i(Vmkfb)
 tran 50n 3m
 * Loop-closure / startup-release sanity (same criteria/sense as
 * sim/closed-loop-startup, evaluated here at t=3ms instead of 2ms) --
