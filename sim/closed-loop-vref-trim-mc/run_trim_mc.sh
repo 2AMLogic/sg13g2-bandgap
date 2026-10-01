@@ -350,9 +350,12 @@ for point in "${POINT_LABELS[@]}"; do
   # The claim gate (mismatch points only): 3-sigma of the per-draw
   # max-temperature deviation must sit inside the +/-0.5% trimmed line --
   # the trimmed-line counterpart of the untrimmed +/-16% (3-sigma) line.
+  # The CSV status stays in the checker's PASS/FAIL vocabulary; the gate
+  # detail is carried by the digest's three_sigma_max_dev_pct column and
+  # the record's Result prose (claim_fail_points).
   if [[ "${MODE_OF[${point}]}" == "mismatch" ]]; then
     if awk -v a="${tsig}" -v b="${TRIM_BUDGET_PCT}" 'BEGIN{exit !(a>b)}'; then
-      point_status="FAIL(3sigma>${TRIM_BUDGET_PCT}%)"
+      point_status="FAIL"
       claim_fail_points+=("${digest_label}")
     fi
   fi

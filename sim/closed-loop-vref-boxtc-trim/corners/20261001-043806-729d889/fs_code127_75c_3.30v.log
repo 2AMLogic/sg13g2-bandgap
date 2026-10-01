@@ -1,0 +1,17 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+Warning: singular matrix:  check nodes xxtrim.t107 and xxtrim.t141
+
+Note: Starting dynamic gmin stepping
+Warning: singular matrix:  check node xxtrim.t009
+
+Warning: Dynamic gmin stepping failed
+Note: Starting true gmin stepping
+Warning: singular matrix:  check nodes xxtrim.t029 and xxtrim.t189
+
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+

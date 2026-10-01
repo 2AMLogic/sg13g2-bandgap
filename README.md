@@ -134,16 +134,23 @@ so the honest per-row status is:
   the pre-trim 511 µm summing resistor — sizing and the
   correlated-coverage argument in
   [`design/bandgap_trim_network.md`](design/bandgap_trim_network.md)).
-  The Trim row is **met on committed evidence**: measured range
+  The Trim row itself is **met on committed evidence**: measured range
   +29.6%/−29.8% and resolution 0.2327%/step across the full
-  corner/supply grid at 27 °C (`sim/trim-coverage/`), the ±0.5% trimmed
-  line demonstrated by the N=300-per-point trim-domain mismatch Monte
-  Carlo with a modeled 1-point 27 °C trim over −40…125 °C
-  (`sim/closed-loop-vref-trim-mc/`), and the trim-induced TC degradation
-  bounded inside DR-0011's ~0.17% headroom by the post-trim box-TC
-  re-measurement (`sim/closed-loop-vref-boxtc-trim/`). The committed
-  evidence also demonstrates the untrimmed ±16% line
-  (`sim/closed-loop-vref-mc/`, issue #215, unchanged by the trim).
+  corner/supply grid at 27 °C (`sim/trim-coverage/`), exact binary
+  weights, monotonic. The **±0.5% trimmed line is measured NOT met** on
+  the same evidence: the N=300-per-point trim-domain mismatch MC with a
+  modeled 1-point 27 °C trim (`sim/closed-loop-vref-trim-mc/`) reads
+  3σ ≈ ±2.6% over −40…125 °C (≈30% of dies inside ±0.5%) — the 1-point
+  trim centers every die at 27 °C (quantization-class residual) but the
+  population's temperature drift retains a code-correlated spread, and
+  the nominal die's own drift (~0.43%) already exceeds DR-0011's 0.20%
+  budget input, which was derived from convergence-aided TC evidence
+  (the aids-free A/B is documented in
+  `sim/closed-loop-vref-boxtc-trim/README.md`). The row's disposition is
+  tracked in **#265** (superseding record or second trim point,
+  two-key-gated — no silent relaxation); the committed evidence also
+  still demonstrates the untrimmed ±16% line
+  (`sim/closed-loop-vref-mc/`, issue #215).
 
 See `0007` for full per-row evidence and the Output-reference-vs-TC trade-off,
 `0008` for what the two-key review changed about the status above, and `0011`

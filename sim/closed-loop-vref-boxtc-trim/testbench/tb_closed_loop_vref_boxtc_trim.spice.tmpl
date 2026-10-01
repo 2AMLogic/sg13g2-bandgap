@@ -352,6 +352,13 @@ pre_osdi @@OSDI_DIR@@/psp103.osdi
 pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
 pre_osdi @@OSDI_DIR@@/mosvar.osdi
 pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
+* Keep only the measured vectors resident: with ~700 nodes x 60k
+* timesteps, ngspice's default batch output allocation (~336 MB/run)
+* trips its startup "memory required > memory available" check on a
+* memory-contended host; limiting the saved set shrinks it to a few MB
+* without touching any .measure below (verified bit-identical
+* v_vref_3ms = 1.04728 V at typ/27C/3.30V with and without).
+save v(vref) v(fb) v(sns1) v(sns2) v(det) v(cb3) v(vmkfb) i(Vmkfb)
 tran 50n 3m
 meas tran v_fb_v find v(fb) at=3m
 meas tran v_sns1_v find v(sns1) at=3m

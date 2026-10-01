@@ -186,8 +186,9 @@ was, not part of this issue's schematic-level design.
 
 | claim | evidence |
 |---|---|
-| range ≥ ±15%, resolution ≤ 0.25%/step, exact binary weights, monotonic, linear | `sim/trim-coverage/records/` (`-analysis.csv` per corner/supply group at 27 °C) |
-| default code ≡ pre-trim core (records continuity) | `sim/trim-coverage/` headline (vref(128) vs 1.047338 V) |
-| ±0.5% trimmed line over −40…125 °C after a 1-point 27 °C trim | `sim/closed-loop-vref-trim-mc/records/` (3σ gate, per-die draws CSV) |
-| trim-induced TC degradation inside the ~0.175% headroom | `sim/closed-loop-vref-boxtc-trim/records/` (`-trimdtc.csv` ±64-band gate, rails bounded) |
-| untrimmed ±16% (3σ) line (context the trim improves on) | `sim/closed-loop-vref-mc/records/` (issue #215, unchanged) |
+| range ≥ ±15%, resolution ≤ 0.25%/step, exact binary weights, monotonic, linear | `sim/trim-coverage/records/` (`-analysis.csv` per corner/supply group at 27 °C) — **met** |
+| default code ≡ pre-trim core (records continuity) | `sim/trim-coverage/` headline (vref(128) vs 1.047338 V) — **met** (−0.06 mV) |
+| correlated coverage (no railed dies) | `sim/closed-loop-vref-trim-mc/records/` (`n_railed = 0` at every point) — **met** |
+| ±0.5% trimmed line over −40…125 °C after a 1-point 27 °C trim | `sim/closed-loop-vref-trim-mc/records/` — **measured NOT met**: 3σ ≈ ±2.6%, ≈30% of dies inside ±0.5% (the 27 °C trim itself centers every die to quantization-class; the miss is the population's drift — the nominal die's ~0.43% alone exceeds DR-0011's 0.20% drift input, and a code*-correlated pivot ~0.04%/code remains). Disposition tracked in #265 |
+| trim-induced TC degradation inside the ~0.175% headroom | `sim/closed-loop-vref-boxtc-trim/records/` (`-trimdtc.csv` ±1-code gate, rails bounded) |
+| untrimmed ±16% (3σ) line (context the trim improves on) | `sim/closed-loop-vref-mc/records/` (issue #215, unchanged; the trim MC reproduces its typ/27 σ to 3%) |

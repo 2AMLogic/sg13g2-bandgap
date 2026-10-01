@@ -1,0 +1,568 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- post-trim box-method tc bench (issue #229 --
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+sns1                               3.98209e-19
+fb                                           0
+xq1.s1                             1.55271e-28
+xq1.t                               6.6398e-47
+sns2                               1.52175e-12
+cb2                                1.52175e-12
+xr2.dt                                       0
+xq2.s1                             3.06877e-21
+xq2.t                              2.51178e-22
+vref                               -6.3584e-19
+tn0                                -6.3584e-19
+xr1.dt                                       0
+xxtrim.t001                        -6.3584e-19
+xxtrim.xru1.dt                               0
+xxtrim.t002                        -6.3584e-19
+xxtrim.xru2.dt                               0
+xxtrim.t003                        -6.3584e-19
+xxtrim.xru3.dt                               0
+xxtrim.t004                        -6.3584e-19
+xxtrim.xru4.dt                               0
+xxtrim.t005                        -6.3584e-19
+xxtrim.xru5.dt                               0
+xxtrim.t006                        -6.3584e-19
+xxtrim.xru6.dt                               0
+xxtrim.t007                        -6.3584e-19
+xxtrim.xru7.dt                               0
+xxtrim.t008                        -6.3584e-19
+xxtrim.xru8.dt                               0
+xxtrim.t009                        -6.3584e-19
+xxtrim.xru9.dt                               0
+xxtrim.t010                        -6.3584e-19
+xxtrim.xru10.dt                              0
+xxtrim.t011                        -6.3584e-19
+xxtrim.xru11.dt                              0
+xxtrim.t012                        -6.3584e-19
+xxtrim.xru12.dt                              0
+xxtrim.t013                        -6.3584e-19
+xxtrim.xru13.dt                              0
+xxtrim.t014                        -6.3584e-19
+xxtrim.xru14.dt                              0
+xxtrim.t015                        -6.3584e-19
+xxtrim.xru15.dt                              0
+xxtrim.t016                        -6.3584e-19
+xxtrim.xru16.dt                              0
+xxtrim.t017                        -6.3584e-19
+xxtrim.xru17.dt                              0
+xxtrim.t018                        -6.3584e-19
+xxtrim.xru18.dt                              0
+xxtrim.t019                        -6.3584e-19
+xxtrim.xru19.dt                              0
+xxtrim.t020                        -6.3584e-19
+xxtrim.xru20.dt                              0
+xxtrim.t021                        -6.3584e-19
+xxtrim.xru21.dt                              0
+xxtrim.t022                        -6.3584e-19
+xxtrim.xru22.dt                              0
+xxtrim.t023                        -6.3584e-19
+xxtrim.xru23.dt                              0
+xxtrim.t024                        -6.3584e-19
+xxtrim.xru24.dt                              0
+xxtrim.t025                        -6.3584e-19
+xxtrim.xru25.dt                              0
+xxtrim.t026                        -6.3584e-19
+xxtrim.xru26.dt                              0
+xxtrim.t027                        -6.3584e-19
+xxtrim.xru27.dt                              0
+xxtrim.t028                        -6.3584e-19
+xxtrim.xru28.dt                              0
+xxtrim.t029                        -6.3584e-19
+xxtrim.xru29.dt                              0
+xxtrim.t030                        -6.3584e-19
+xxtrim.xru30.dt                              0
+xxtrim.t031                        -6.3584e-19
+xxtrim.xru31.dt                              0
+xxtrim.t032                        -6.3584e-19
+xxtrim.xru32.dt                              0
+xxtrim.t033                        -6.3584e-19
+xxtrim.xru33.dt                              0
+xxtrim.t034                        -6.3584e-19
+xxtrim.xru34.dt                              0
+xxtrim.t035                        -6.3584e-19
+xxtrim.xru35.dt                              0
+xxtrim.t036                        -6.3584e-19
+xxtrim.xru36.dt                              0
+xxtrim.t037                        -6.3584e-19
+xxtrim.xru37.dt                              0
+xxtrim.t038                        -6.3584e-19
+xxtrim.xru38.dt                              0
+xxtrim.t039                        -6.3584e-19
+xxtrim.xru39.dt                              0
+xxtrim.t040                        -6.3584e-19
+xxtrim.xru40.dt                              0
+xxtrim.t041                        -6.3584e-19
+xxtrim.xru41.dt                              0
+xxtrim.t042                        -6.3584e-19
+xxtrim.xru42.dt                              0
+xxtrim.t043                        -6.3584e-19
+xxtrim.xru43.dt                              0
+xxtrim.t044                        -6.3584e-19
+xxtrim.xru44.dt                              0
+xxtrim.t045                        -6.3584e-19
+xxtrim.xru45.dt                              0
+xxtrim.t046                        -6.3584e-19
+xxtrim.xru46.dt                              0
+xxtrim.t047                        -6.3584e-19
+xxtrim.xru47.dt                              0
+xxtrim.t048                        -6.3584e-19
+xxtrim.xru48.dt                              0
+xxtrim.t049                        -6.3584e-19
+xxtrim.xru49.dt                              0
+xxtrim.t050                        -6.3584e-19
+xxtrim.xru50.dt                              0
+xxtrim.t051                        -6.3584e-19
+xxtrim.xru51.dt                              0
+xxtrim.t052                        -6.3584e-19
+xxtrim.xru52.dt                              0
+xxtrim.t053                        -6.3584e-19
+xxtrim.xru53.dt                              0
+xxtrim.t054                        -6.3584e-19
+xxtrim.xru54.dt                              0
+xxtrim.t055                        -6.3584e-19
+xxtrim.xru55.dt                              0
+xxtrim.t056                        -6.3584e-19
+xxtrim.xru56.dt                              0
+xxtrim.t057                        -6.3584e-19
+xxtrim.xru57.dt                              0
+xxtrim.t058                        -6.3584e-19
+xxtrim.xru58.dt                              0
+xxtrim.t059                        -6.3584e-19
+xxtrim.xru59.dt                              0
+xxtrim.t060                        -6.3584e-19
+xxtrim.xru60.dt                              0
+xxtrim.t061                        -6.3584e-19
+xxtrim.xru61.dt                              0
+xxtrim.t062                        -6.3584e-19
+xxtrim.xru62.dt                              0
+xxtrim.t063                        -6.3584e-19
+xxtrim.xru63.dt                              0
+xxtrim.t064                        -6.3584e-19
+xxtrim.xru64.dt                              0
+xxtrim.t065                        -6.3584e-19
+xxtrim.xru65.dt                              0
+xxtrim.t066                        -6.3584e-19
+xxtrim.xru66.dt                              0
+xxtrim.t067                        -6.3584e-19
+xxtrim.xru67.dt                              0
+xxtrim.t068                        -6.3584e-19
+xxtrim.xru68.dt                              0
+xxtrim.t069                        -6.3584e-19
+xxtrim.xru69.dt                              0
+xxtrim.t070                        -6.3584e-19
+xxtrim.xru70.dt                              0
+xxtrim.t071                        -6.3584e-19
+xxtrim.xru71.dt                              0
+xxtrim.t072                        -6.3584e-19
+xxtrim.xru72.dt                              0
+xxtrim.t073                        -6.3584e-19
+xxtrim.xru73.dt                              0
+xxtrim.t074                        -6.3584e-19
+xxtrim.xru74.dt                              0
+xxtrim.t075                        -6.3584e-19
+xxtrim.xru75.dt                              0
+xxtrim.t076                        -6.3584e-19
+xxtrim.xru76.dt                              0
+xxtrim.t077                        -6.3584e-19
+xxtrim.xru77.dt                              0
+xxtrim.t078                        -6.3584e-19
+xxtrim.xru78.dt                              0
+xxtrim.t079                        -6.3584e-19
+xxtrim.xru79.dt                              0
+xxtrim.t080                        -6.3584e-19
+xxtrim.xru80.dt                              0
+xxtrim.t081                        -6.3584e-19
+xxtrim.xru81.dt                              0
+xxtrim.t082                        -6.3584e-19
+xxtrim.xru82.dt                              0
+xxtrim.t083                        -6.3584e-19
+xxtrim.xru83.dt                              0
+xxtrim.t084                        -6.3584e-19
+xxtrim.xru84.dt                              0
+xxtrim.t085                        -6.3584e-19
+xxtrim.xru85.dt                              0
+xxtrim.t086                        -6.3584e-19
+xxtrim.xru86.dt                              0
+xxtrim.t087                        -6.3584e-19
+xxtrim.xru87.dt                              0
+xxtrim.t088                        -6.3584e-19
+xxtrim.xru88.dt                              0
+xxtrim.t089                        -6.3584e-19
+xxtrim.xru89.dt                              0
+xxtrim.t090                        -6.3584e-19
+xxtrim.xru90.dt                              0
+xxtrim.t091                        -6.3584e-19
+xxtrim.xru91.dt                              0
+xxtrim.t092                        -6.3584e-19
+xxtrim.xru92.dt                              0
+xxtrim.t093                        -6.3584e-19
+xxtrim.xru93.dt                              0
+xxtrim.t094                        -6.3584e-19
+xxtrim.xru94.dt                              0
+xxtrim.t095                        -6.3584e-19
+xxtrim.xru95.dt                              0
+xxtrim.t096                        -6.3584e-19
+xxtrim.xru96.dt                              0
+xxtrim.t097                        -6.3584e-19
+xxtrim.xru97.dt                              0
+xxtrim.t098                        -6.3584e-19
+xxtrim.xru98.dt                              0
+xxtrim.t099                        -6.3584e-19
+xxtrim.xru99.dt                              0
+xxtrim.t100                        -6.3584e-19
+xxtrim.xru100.dt                             0
+xxtrim.t101                        -6.3584e-19
+xxtrim.xru101.dt                             0
+xxtrim.t102                        -6.3584e-19
+xxtrim.xru102.dt                             0
+xxtrim.t103                        -6.3584e-19
+xxtrim.xru103.dt                             0
+xxtrim.t104                        -6.3584e-19
+xxtrim.xru104.dt                             0
+xxtrim.t105                        -6.3584e-19
+xxtrim.xru105.dt                             0
+xxtrim.t106                        -6.3584e-19
+xxtrim.xru106.dt                             0
+xxtrim.t107                        -6.3584e-19
+xxtrim.xru107.dt                             0
+xxtrim.t108                        -6.3584e-19
+xxtrim.xru108.dt                             0
+xxtrim.t109                        -6.3584e-19
+xxtrim.xru109.dt                             0
+xxtrim.t110                        -6.3584e-19
+xxtrim.xru110.dt                             0
+xxtrim.t111                        -6.3584e-19
+xxtrim.xru111.dt                             0
+xxtrim.t112                        -6.3584e-19
+xxtrim.xru112.dt                             0
+xxtrim.t113                        -6.3584e-19
+xxtrim.xru113.dt                             0
+xxtrim.t114                        -6.3584e-19
+xxtrim.xru114.dt                             0
+xxtrim.t115                        -6.3584e-19
+xxtrim.xru115.dt                             0
+xxtrim.t116                        -6.3584e-19
+xxtrim.xru116.dt                             0
+xxtrim.t117                        -6.3584e-19
+xxtrim.xru117.dt                             0
+xxtrim.t118                        -6.3584e-19
+xxtrim.xru118.dt                             0
+xxtrim.t119                        -6.3584e-19
+xxtrim.xru119.dt                             0
+xxtrim.t120                        -6.3584e-19
+xxtrim.xru120.dt                             0
+xxtrim.t121                        -6.3584e-19
+xxtrim.xru121.dt                             0
+xxtrim.t122                        -6.3584e-19
+xxtrim.xru122.dt                             0
+xxtrim.t123                        -6.3584e-19
+xxtrim.xru123.dt                             0
+xxtrim.t124                        -6.3584e-19
+xxtrim.xru124.dt                             0
+xxtrim.t125                        -6.3584e-19
+xxtrim.xru125.dt                             0
+xxtrim.t126                        -6.3584e-19
+xxtrim.xru126.dt                             0
+xxtrim.t127                        -6.3584e-19
+xxtrim.xru127.dt                             0
+xxtrim.t128                        -6.3584e-19
+xxtrim.xru128.dt                             0
+xxtrim.t129                        -6.3584e-19
+xxtrim.xru129.dt                             0
+xxtrim.t130                        -6.3584e-19
+xxtrim.xru130.dt                             0
+xxtrim.t131                        -6.3584e-19
+xxtrim.xru131.dt                             0
+xxtrim.t132                        -6.3584e-19
+xxtrim.xru132.dt                             0
+xxtrim.t133                        -6.3584e-19
+xxtrim.xru133.dt                             0
+xxtrim.t134                        -6.3584e-19
+xxtrim.xru134.dt                             0
+xxtrim.t135                        -6.3584e-19
+xxtrim.xru135.dt                             0
+xxtrim.t136                        -6.3584e-19
+xxtrim.xru136.dt                             0
+xxtrim.t137                        -6.3584e-19
+xxtrim.xru137.dt                             0
+xxtrim.t138                        -6.3584e-19
+xxtrim.xru138.dt                             0
+xxtrim.t139                        -6.3584e-19
+xxtrim.xru139.dt                             0
+xxtrim.t140                        -6.3584e-19
+xxtrim.xru140.dt                             0
+xxtrim.t141                        -6.3584e-19
+xxtrim.xru141.dt                             0
+xxtrim.t142                        -6.3584e-19
+xxtrim.xru142.dt                             0
+xxtrim.t143                        -6.3584e-19
+xxtrim.xru143.dt                             0
+xxtrim.t144                        -6.3584e-19
+xxtrim.xru144.dt                             0
+xxtrim.t145                        -6.3584e-19
+xxtrim.xru145.dt                             0
+xxtrim.t146                        -6.3584e-19
+xxtrim.xru146.dt                             0
+xxtrim.t147                        -6.3584e-19
+xxtrim.xru147.dt                             0
+xxtrim.t148                        -6.3584e-19
+xxtrim.xru148.dt                             0
+xxtrim.t149                        -6.3584e-19
+xxtrim.xru149.dt                             0
+xxtrim.t150                        -6.3584e-19
+xxtrim.xru150.dt                             0
+xxtrim.t151                        -6.3584e-19
+xxtrim.xru151.dt                             0
+xxtrim.t152                        -6.3584e-19
+xxtrim.xru152.dt                             0
+xxtrim.t153                        -6.3584e-19
+xxtrim.xru153.dt                             0
+xxtrim.t154                        -6.3584e-19
+xxtrim.xru154.dt                             0
+xxtrim.t155                        -6.3584e-19
+xxtrim.xru155.dt                             0
+xxtrim.t156                        -6.3584e-19
+xxtrim.xru156.dt                             0
+xxtrim.t157                        -6.3584e-19
+xxtrim.xru157.dt                             0
+xxtrim.t158                        -6.3584e-19
+xxtrim.xru158.dt                             0
+xxtrim.t159                        -6.3584e-19
+xxtrim.xru159.dt                             0
+xxtrim.t160                        -6.3584e-19
+xxtrim.xru160.dt                             0
+xxtrim.t161                        -6.3584e-19
+xxtrim.xru161.dt                             0
+xxtrim.t162                        -6.3584e-19
+xxtrim.xru162.dt                             0
+xxtrim.t163                        -6.3584e-19
+xxtrim.xru163.dt                             0
+xxtrim.t164                        -6.3584e-19
+xxtrim.xru164.dt                             0
+xxtrim.t165                        -6.3584e-19
+xxtrim.xru165.dt                             0
+xxtrim.t166                        -6.3584e-19
+xxtrim.xru166.dt                             0
+xxtrim.t167                        -6.3584e-19
+xxtrim.xru167.dt                             0
+xxtrim.t168                        -6.3584e-19
+xxtrim.xru168.dt                             0
+xxtrim.t169                        -6.3584e-19
+xxtrim.xru169.dt                             0
+xxtrim.t170                        -6.3584e-19
+xxtrim.xru170.dt                             0
+xxtrim.t171                        -6.3584e-19
+xxtrim.xru171.dt                             0
+xxtrim.t172                        -6.3584e-19
+xxtrim.xru172.dt                             0
+xxtrim.t173                        -6.3584e-19
+xxtrim.xru173.dt                             0
+xxtrim.t174                        -6.3584e-19
+xxtrim.xru174.dt                             0
+xxtrim.t175                        -6.3584e-19
+xxtrim.xru175.dt                             0
+xxtrim.t176                        -6.3584e-19
+xxtrim.xru176.dt                             0
+xxtrim.t177                        -6.3584e-19
+xxtrim.xru177.dt                             0
+xxtrim.t178                        -6.3584e-19
+xxtrim.xru178.dt                             0
+xxtrim.t179                        -6.3584e-19
+xxtrim.xru179.dt                             0
+xxtrim.t180                        -6.3584e-19
+xxtrim.xru180.dt                             0
+xxtrim.t181                        -6.3584e-19
+xxtrim.xru181.dt                             0
+xxtrim.t182                        -6.3584e-19
+xxtrim.xru182.dt                             0
+xxtrim.t183                        -6.3584e-19
+xxtrim.xru183.dt                             0
+xxtrim.t184                        -6.3584e-19
+xxtrim.xru184.dt                             0
+xxtrim.t185                        -6.3584e-19
+xxtrim.xru185.dt                             0
+xxtrim.t186                        -6.3584e-19
+xxtrim.xru186.dt                             0
+xxtrim.t187                        -6.3584e-19
+xxtrim.xru187.dt                             0
+xxtrim.t188                        -6.3584e-19
+xxtrim.xru188.dt                             0
+xxtrim.t189                        -6.3584e-19
+xxtrim.xru189.dt                             0
+xxtrim.t190                        -6.3584e-19
+xxtrim.xru190.dt                             0
+xxtrim.t191                        -6.3584e-19
+xxtrim.xru191.dt                             0
+xxtrim.t192                        -6.3584e-19
+xxtrim.xru192.dt                             0
+xxtrim.t193                        -6.3584e-19
+xxtrim.xru193.dt                             0
+xxtrim.t194                        -6.3584e-19
+xxtrim.xru194.dt                             0
+xxtrim.t195                        -6.3584e-19
+xxtrim.xru195.dt                             0
+xxtrim.t196                        -6.3584e-19
+xxtrim.xru196.dt                             0
+xxtrim.t197                        -6.3584e-19
+xxtrim.xru197.dt                             0
+xxtrim.t198                        -6.3584e-19
+xxtrim.xru198.dt                             0
+xxtrim.t199                        -6.3584e-19
+xxtrim.xru199.dt                             0
+xxtrim.t200                        -6.3584e-19
+xxtrim.xru200.dt                             0
+xxtrim.t201                        -6.3584e-19
+xxtrim.xru201.dt                             0
+xxtrim.t202                        -6.3584e-19
+xxtrim.xru202.dt                             0
+xxtrim.t203                        -6.3584e-19
+xxtrim.xru203.dt                             0
+xxtrim.t204                        -6.3584e-19
+xxtrim.xru204.dt                             0
+xxtrim.t205                        -6.3584e-19
+xxtrim.xru205.dt                             0
+xxtrim.t206                        -6.3584e-19
+xxtrim.xru206.dt                             0
+xxtrim.t207                        -6.3584e-19
+xxtrim.xru207.dt                             0
+xxtrim.t208                        -6.3584e-19
+xxtrim.xru208.dt                             0
+xxtrim.t209                        -6.3584e-19
+xxtrim.xru209.dt                             0
+xxtrim.t210                        -6.3584e-19
+xxtrim.xru210.dt                             0
+xxtrim.t211                        -6.3584e-19
+xxtrim.xru211.dt                             0
+xxtrim.t212                        -6.3584e-19
+xxtrim.xru212.dt                             0
+xxtrim.t213                        -6.3584e-19
+xxtrim.xru213.dt                             0
+xxtrim.t214                        -6.3584e-19
+xxtrim.xru214.dt                             0
+xxtrim.t215                        -6.3584e-19
+xxtrim.xru215.dt                             0
+xxtrim.t216                        -6.3584e-19
+xxtrim.xru216.dt                             0
+xxtrim.t217                        -6.3584e-19
+xxtrim.xru217.dt                             0
+xxtrim.t218                        -6.3584e-19
+xxtrim.xru218.dt                             0
+xxtrim.t219                        -6.3584e-19
+xxtrim.xru219.dt                             0
+xxtrim.t220                        -6.3584e-19
+xxtrim.xru220.dt                             0
+xxtrim.t221                        -6.3584e-19
+xxtrim.xru221.dt                             0
+xxtrim.t222                        -6.3584e-19
+xxtrim.xru222.dt                             0
+xxtrim.t223                        -6.3584e-19
+xxtrim.xru223.dt                             0
+xxtrim.t224                        -6.3584e-19
+xxtrim.xru224.dt                             0
+xxtrim.t225                        -6.3584e-19
+xxtrim.xru225.dt                             0
+xxtrim.t226                        -6.3584e-19
+xxtrim.xru226.dt                             0
+xxtrim.t227                        -6.3584e-19
+xxtrim.xru227.dt                             0
+xxtrim.t228                        -6.3584e-19
+xxtrim.xru228.dt                             0
+xxtrim.t229                        -6.3584e-19
+xxtrim.xru229.dt                             0
+xxtrim.t230                        -6.3584e-19
+xxtrim.xru230.dt                             0
+xxtrim.t231                        -6.3584e-19
+xxtrim.xru231.dt                             0
+xxtrim.t232                        -6.3584e-19
+xxtrim.xru232.dt                             0
+xxtrim.t233                        -6.3584e-19
+xxtrim.xru233.dt                             0
+xxtrim.t234                        -6.3584e-19
+xxtrim.xru234.dt                             0
+xxtrim.t235                        -6.3584e-19
+xxtrim.xru235.dt                             0
+xxtrim.t236                        -6.3584e-19
+xxtrim.xru236.dt                             0
+xxtrim.t237                        -6.3584e-19
+xxtrim.xru237.dt                             0
+xxtrim.t238                        -6.3584e-19
+xxtrim.xru238.dt                             0
+xxtrim.t239                        -6.3584e-19
+xxtrim.xru239.dt                             0
+xxtrim.t240                        -6.3584e-19
+xxtrim.xru240.dt                             0
+xxtrim.t241                        -6.3584e-19
+xxtrim.xru241.dt                             0
+xxtrim.t242                        -6.3584e-19
+xxtrim.xru242.dt                             0
+xxtrim.t243                        -6.3584e-19
+xxtrim.xru243.dt                             0
+xxtrim.t244                        -6.3584e-19
+xxtrim.xru244.dt                             0
+xxtrim.t245                        -6.3584e-19
+xxtrim.xru245.dt                             0
+xxtrim.t246                        -6.3584e-19
+xxtrim.xru246.dt                             0
+xxtrim.t247                        -6.3584e-19
+xxtrim.xru247.dt                             0
+xxtrim.t248                        -6.3584e-19
+xxtrim.xru248.dt                             0
+xxtrim.t249                        -6.3584e-19
+xxtrim.xru249.dt                             0
+xxtrim.t250                        -6.3584e-19
+xxtrim.xru250.dt                             0
+xxtrim.t251                        -6.3584e-19
+xxtrim.xru251.dt                             0
+xxtrim.t252                        -6.3584e-19
+xxtrim.xru252.dt                             0
+xxtrim.t253                        -6.3584e-19
+xxtrim.xru253.dt                             0
+xxtrim.t254                        -6.3584e-19
+xxtrim.xru254.dt                             0
+cb3                                -6.3584e-19
+xxtrim.xru255.dt                             0
+xq3.s1                            -2.68805e-28
+xq3.t                              3.97351e-40
+tail                                         0
+d1                                           0
+d2                                           0
+pn                                           0
+det                                          0
+xrpu.dt                                      0
+fbx                                          0
+vmkfb#branch                                 0
+vsub#branch                                  0
+vvss#branch                         5.8364e-24
+vvdd#branch                       -5.83636e-24
+
+ Reference value :  0.00000e+00 Reference value :  6.86400e-06 Reference value :  1.50140e-05 Reference value :  2.31140e-05 Reference value :  3.09640e-05 Reference value :  3.80140e-05 Reference value :  4.60140e-05 Reference value :  5.36140e-05 Reference value :  5.98640e-05 Reference value :  6.61640e-05 Reference value :  7.19640e-05 Reference value :  7.94640e-05 Reference value :  8.76140e-05 Reference value :  9.51640e-05 Reference value :  1.03114e-04 Reference value :  1.11364e-04 Reference value :  1.20864e-04 Reference value :  1.29314e-04 Reference value :  1.37664e-04 Reference value :  1.45814e-04 Reference value :  1.54314e-04 Reference value :  1.63214e-04 Reference value :  1.72764e-04 Reference value :  1.81664e-04 Reference value :  1.90314e-04 Reference value :  1.98614e-04 Reference value :  2.06575e-04 Reference value :  2.14325e-04 Reference value :  2.22375e-04 Reference value :  2.30775e-04 Reference value :  2.38525e-04 Reference value :  2.46075e-04 Reference value :  2.53625e-04 Reference value :  2.61725e-04 Reference value :  2.70225e-04 Reference value :  2.79325e-04 Reference value :  2.87825e-04 Reference value :  2.97325e-04 Reference value :  3.07225e-04 Reference value :  3.16825e-04 Reference value :  3.26575e-04 Reference value :  3.36175e-04 Reference value :  3.45475e-04 Reference value :  3.55025e-04 Reference value :  3.64225e-04 Reference value :  3.72375e-04 Reference value :  3.80175e-04 Reference value :  3.88425e-04 Reference value :  3.96875e-04 Reference value :  4.05375e-04 Reference value :  4.13975e-04 Reference value :  4.22525e-04 Reference value :  4.31975e-04 Reference value :  4.41325e-04 Reference value :  4.49925e-04 Reference value :  4.59325e-04 Reference value :  4.68425e-04 Reference value :  4.77875e-04 Reference value :  4.87525e-04 Reference value :  4.96225e-04 Reference value :  5.04475e-04 Reference value :  5.13525e-04 Reference value :  5.22725e-04 Reference value :  5.31625e-04 Reference value :  5.40375e-04 Reference value :  5.48875e-04 Reference value :  5.57825e-04 Reference value :  5.66775e-04 Reference value :  5.75925e-04 Reference value :  5.84825e-04 Reference value :  5.94375e-04 Reference value :  6.03525e-04 Reference value :  6.12425e-04 Reference value :  6.21675e-04 Reference value :  6.31625e-04 Reference value :  6.40175e-04 Reference value :  6.49175e-04 Reference value :  6.57775e-04 Reference value :  6.67125e-04 Reference value :  6.77125e-04 Reference value :  6.87075e-04 Reference value :  6.96625e-04 Reference value :  7.05825e-04 Reference value :  7.14875e-04 Reference value :  7.24225e-04 Reference value :  7.33075e-04 Reference value :  7.41425e-04 Reference value :  7.49275e-04 Reference value :  7.57425e-04 Reference value :  7.65725e-04 Reference value :  7.75075e-04 Reference value :  7.84625e-04 Reference value :  7.93575e-04 Reference value :  8.02775e-04 Reference value :  8.11925e-04 Reference value :  8.21125e-04 Reference value :  8.30775e-04 Reference value :  8.40475e-04 Reference value :  8.49575e-04 Reference value :  8.58075e-04 Reference value :  8.66675e-04 Reference value :  8.75225e-04 Reference value :  8.83675e-04 Reference value :  8.92875e-04 Reference value :  9.02225e-04 Reference value :  9.11275e-04 Reference value :  9.20525e-04 Reference value :  9.29875e-04 Reference value :  9.38275e-04 Reference value :  9.46975e-04 Reference value :  9.55775e-04 Reference value :  9.64825e-04 Reference value :  9.73975e-04 Reference value :  9.83075e-04 Reference value :  9.91625e-04 Reference value :  1.00013e-03 Reference value :  1.00828e-03 Reference value :  1.01598e-03 Reference value :  1.02423e-03 Reference value :  1.03308e-03 Reference value :  1.04293e-03 Reference value :  1.05243e-03 Reference value :  1.06203e-03 Reference value :  1.07182e-03 Reference value :  1.08127e-03 Reference value :  1.09077e-03 Reference value :  1.10047e-03 Reference value :  1.10947e-03 Reference value :  1.11917e-03 Reference value :  1.12867e-03 Reference value :  1.13832e-03 Reference value :  1.14792e-03 Reference value :  1.15797e-03 Reference value :  1.16807e-03 Reference value :  1.17837e-03 Reference value :  1.18857e-03 Reference value :  1.19897e-03 Reference value :  1.20852e-03 Reference value :  1.21842e-03 Reference value :  1.22867e-03 Reference value :  1.23887e-03 Reference value :  1.24817e-03 Reference value :  1.25832e-03 Reference value :  1.26757e-03 Reference value :  1.27777e-03 Reference value :  1.28772e-03 Reference value :  1.29692e-03 Reference value :  1.30672e-03 Reference value :  1.31677e-03 Reference value :  1.32617e-03 Reference value :  1.33602e-03 Reference value :  1.34622e-03 Reference value :  1.35607e-03 Reference value :  1.36607e-03 Reference value :  1.37587e-03 Reference value :  1.38537e-03 Reference value :  1.39537e-03 Reference value :  1.40497e-03 Reference value :  1.41527e-03 Reference value :  1.42557e-03 Reference value :  1.43552e-03 Reference value :  1.44482e-03 Reference value :  1.45317e-03 Reference value :  1.46192e-03 Reference value :  1.47132e-03 Reference value :  1.47982e-03 Reference value :  1.48912e-03 Reference value :  1.49802e-03 Reference value :  1.50717e-03 Reference value :  1.51602e-03 Reference value :  1.52677e-03 Reference value :  1.53757e-03 Reference value :  1.54847e-03 Reference value :  1.55877e-03 Reference value :  1.56922e-03 Reference value :  1.57992e-03 Reference value :  1.59052e-03 Reference value :  1.60127e-03 Reference value :  1.61167e-03 Reference value :  1.62197e-03 Reference value :  1.63187e-03 Reference value :  1.64227e-03 Reference value :  1.65287e-03 Reference value :  1.66392e-03 Reference value :  1.67452e-03 Reference value :  1.68527e-03 Reference value :  1.69532e-03 Reference value :  1.70572e-03 Reference value :  1.71607e-03 Reference value :  1.72572e-03 Reference value :  1.73502e-03 Reference value :  1.74412e-03 Reference value :  1.75387e-03 Reference value :  1.76357e-03 Reference value :  1.77337e-03 Reference value :  1.78302e-03 Reference value :  1.79187e-03 Reference value :  1.80112e-03 Reference value :  1.80987e-03 Reference value :  1.81877e-03 Reference value :  1.82722e-03 Reference value :  1.83717e-03 Reference value :  1.84732e-03 Reference value :  1.85762e-03 Reference value :  1.86687e-03 Reference value :  1.87487e-03 Reference value :  1.88407e-03 Reference value :  1.89327e-03 Reference value :  1.90247e-03 Reference value :  1.91227e-03 Reference value :  1.92227e-03 Reference value :  1.93262e-03 Reference value :  1.94312e-03 Reference value :  1.95322e-03 Reference value :  1.96307e-03 Reference value :  1.97322e-03 Reference value :  1.98367e-03 Reference value :  1.99392e-03 Reference value :  2.00307e-03 Reference value :  2.01167e-03 Reference value :  2.02092e-03 Reference value :  2.02937e-03 Reference value :  2.03752e-03 Reference value :  2.04577e-03 Reference value :  2.05412e-03 Reference value :  2.06362e-03 Reference value :  2.07317e-03 Reference value :  2.08292e-03 Reference value :  2.09182e-03 Reference value :  2.10117e-03 Reference value :  2.11052e-03 Reference value :  2.12002e-03 Reference value :  2.12942e-03 Reference value :  2.13797e-03 Reference value :  2.14577e-03 Reference value :  2.15352e-03 Reference value :  2.16192e-03 Reference value :  2.17032e-03 Reference value :  2.17897e-03 Reference value :  2.18737e-03 Reference value :  2.19502e-03 Reference value :  2.20267e-03 Reference value :  2.20987e-03 Reference value :  2.21722e-03 Reference value :  2.22447e-03 Reference value :  2.23222e-03 Reference value :  2.23982e-03 Reference value :  2.24797e-03 Reference value :  2.25557e-03 Reference value :  2.26337e-03 Reference value :  2.27092e-03 Reference value :  2.27877e-03 Reference value :  2.28702e-03 Reference value :  2.29582e-03 Reference value :  2.30427e-03 Reference value :  2.31252e-03 Reference value :  2.32167e-03 Reference value :  2.32987e-03 Reference value :  2.33842e-03 Reference value :  2.34732e-03 Reference value :  2.35562e-03 Reference value :  2.36447e-03 Reference value :  2.37297e-03 Reference value :  2.38147e-03 Reference value :  2.39042e-03 Reference value :  2.39967e-03 Reference value :  2.40882e-03 Reference value :  2.41807e-03 Reference value :  2.42612e-03 Reference value :  2.43417e-03 Reference value :  2.44267e-03 Reference value :  2.45092e-03 Reference value :  2.45917e-03 Reference value :  2.46757e-03 Reference value :  2.47568e-03 Reference value :  2.48393e-03 Reference value :  2.49163e-03 Reference value :  2.50008e-03 Reference value :  2.50813e-03 Reference value :  2.51653e-03 Reference value :  2.52508e-03 Reference value :  2.53328e-03 Reference value :  2.54143e-03 Reference value :  2.54928e-03 Reference value :  2.55793e-03 Reference value :  2.56638e-03 Reference value :  2.57498e-03 Reference value :  2.58453e-03 Reference value :  2.59338e-03 Reference value :  2.60078e-03 Reference value :  2.60833e-03 Reference value :  2.61513e-03 Reference value :  2.62198e-03 Reference value :  2.62898e-03 Reference value :  2.63688e-03 Reference value :  2.64468e-03 Reference value :  2.65273e-03 Reference value :  2.66083e-03 Reference value :  2.66923e-03 Reference value :  2.67768e-03 Reference value :  2.68618e-03 Reference value :  2.69448e-03 Reference value :  2.70323e-03 Reference value :  2.71158e-03 Reference value :  2.71983e-03 Reference value :  2.72828e-03 Reference value :  2.73678e-03 Reference value :  2.74513e-03 Reference value :  2.75263e-03 Reference value :  2.76023e-03 Reference value :  2.76798e-03 Reference value :  2.77568e-03 Reference value :  2.78298e-03 Reference value :  2.79123e-03 Reference value :  2.79903e-03 Reference value :  2.80703e-03 Reference value :  2.81438e-03 Reference value :  2.82133e-03 Reference value :  2.82843e-03 Reference value :  2.83553e-03 Reference value :  2.84263e-03 Reference value :  2.85103e-03 Reference value :  2.85858e-03 Reference value :  2.86633e-03 Reference value :  2.87378e-03 Reference value :  2.88148e-03 Reference value :  2.88958e-03 Reference value :  2.89733e-03 Reference value :  2.90503e-03 Reference value :  2.91353e-03 Reference value :  2.92318e-03 Reference value :  2.93348e-03 Reference value :  2.94308e-03 Reference value :  2.95268e-03 Reference value :  2.96268e-03 Reference value :  2.97048e-03 Reference value :  2.97763e-03 Reference value :  2.98528e-03 Reference value :  2.99423e-03
+No. of Data Rows : 60011
+v_fb_v              =  2.52493e+00
+v_sns1_v            =  7.08093e-01
+v_sns2_v            =  7.07706e-01
+v_det_v             =  1.35344e-02
+i_mkfb_v            =  5.13181e-14
+v_vref_2ms          =  1.04755e+00
+v_vref_3ms          =  1.04755e+00
+v_vbeq3_2ms         =  7.08739e-01
+v_vbeq3_3ms         =  7.08739e-01
+Note: Simulation executed from .control section 

@@ -6,15 +6,26 @@ post-trim TC re-measurement DR-0011's ±0.5% trimmed budget obligates:
 (DR-0010's ±0.5% budget carries ~0.17% headroom for it — an estimate to
 verify, not a measurement)"*.
 
-It is [`../closed-loop-vref-pvt-boxtc/`](../closed-loop-vref-pvt-boxtc/README.md)
-(issue #222) re-pointed at the trim-bearing core with a trim-code axis:
-the **same** transient fixture (200 µs supply ramp, 3 ms hold), the same
-settledness convention (|vref(3ms) − vref(2ms)| ≤ 1 mV plus the
-startup-release / loop-closure / not-railed prerequisites) and every
-`.measure` — only the DUT differs (R1 base `l=37.2u` + the 255-unit
-ladder, subcircuit copied device-for-device from
-`design/netlist/bandgap_trim.spice`) and the code is swept per point via
+It is [`../closed-loop-vref-pvt-boxtc/`](../closed-loop-vref-pvt-boxtc/README.md)'s
+claim re-pointed at the trim-bearing core with a trim-code axis, on the
+same 8-temperature grid and the same box formula. The DUT is R1 base
+`l=37.2u` + the 255-unit ladder (subcircuit copied device-for-device
+from `design/netlist/bandgap_trim.spice`), the code swept per point via
 the subcircuit-local `.param trim_code`.
+
+### Method: .op grid + per-corner transient validation
+
+The grid points run as `.nodeset`-seeded `.op` draws (the
+[`../closed-loop-vref-mc/`](../closed-loop-vref-mc/README.md) technique;
+intermediate temperatures fall back to the nearest seeded temperature —
+the `.nodeset` is a Newton hint, not an acceptance criterion). One full
+transient validation point per process corner (code 128, 27 °C, 3.30 V —
+200 µs ramp, 3 ms hold, the #222 settledness convention) must agree with
+the same point's `.op` to ≤ 0.1 mV; that tran↔op equivalence is the
+bench's own internal cross-check (this netlist's aids-free tran and `.op`
+were verified to agree to 5 significant figures during bring-up — see
+"Solver options" below), and the `*_tranval_*` rows in each record's
+parsed CSV re-demonstrate it per corner inside the committed evidence.
 
 ### Solver options (one deliberate deviation from the #222 bench)
 
@@ -62,11 +73,14 @@ status.
 
 ## Grid
 
-Codes {127, 128, 129} × `{typ, bcs, wcs, sf, fs}` × 8 temperatures ×
-`{2.97, 3.30, 3.63} V` (360 points) + codes {0, 64, 192, 255} ×
-`{typ, bcs, wcs}` × 3.30 V × 8 temperatures (96 points) — 456 transient
-points (3.8× the pre-trim boxtc bench's 120; the code axis is the
-multiplier).
+Default: codes {127, 128, 129} × `{typ, bcs, wcs, sf, fs}` × 8
+temperatures × `{2.97, 3.30, 3.63} V` (360 points, the gated near-band)
++ codes {0, 64, 192, 255} × `{typ, bcs, wcs}` × 3.30 V × 8 temperatures
+(96 points, the ungated far-code slope bounds) — 456 transient points
+(3.8× the pre-trim boxtc bench's 120; the code axis is the multiplier).
+A scoped re-run (e.g. `TRIM_CODES="127 128 129"`) drops the far codes —
+the record's provenance discloses which axis ran; the far-code bounds
+then land with the next full-axis run or the #264 refresh.
 
 ## What this testbench claims, and what it does not
 
