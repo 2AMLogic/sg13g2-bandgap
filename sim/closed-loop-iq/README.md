@@ -24,6 +24,65 @@ a reproducible `klt stats` measurement of every committed
 `layout/<cell>/<cell>.gds`. It remains out of `sim/`-testbench scope — this
 sentence is unchanged in substance, only cross-referenced.)
 
+## Trim-bearing DUT refresh (issue #264)
+
+**DUT.** The core netlist this bench inlines device-for-device is now
+#229's trim-bearing `design/netlist/bandgap_core.spice`: `XR1` is segmented
+to its `l=37.2u` base into node `tn0`, and the 255-unit binary-weighted
+`bandgap_trim` ladder continues `tn0 -> cb3` (see
+[`../../design/bandgap_trim_network.md`](../../design/bandgap_trim_network.md)).
+The ladder subcircuit is copied into the template device-for-device with its
+subcircuit-local `.param trim_code` pinned to the schematic default **128**;
+there is no trim-code axis here — the code-swept benches are
+[`../trim-coverage/`](../trim-coverage/README.md),
+[`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md) and
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md).
+At code 128 the ladder reproduces the pre-trim 511 µm summing resistor to
+within 12 Ω of its measured 66.06 kΩ (0.018%, measured in
+[`../core-open-loop-bias/`](../core-open-loop-bias/README.md)'s own refresh).
+
+**Solver options — the aids are dropped, and for this bench that matters
+twice over.** `rshunt=1e9` / `gmin=1e-9`, this bench's pre-trim convergence
+aids, are **dropped**; `reltol=5e-3` + `tran 50n` (#149's timestep-stiffness
+pair) are kept. Same deliberate deviation, same reason as
+[`../closed-loop-vref-boxtc-trim/README.md`](../closed-loop-vref-boxtc-trim/README.md)
+§"Solver options": the ladder adds 254 interior series nodes, and at
+1 GΩ ‖ 1 nS each the aids leak a measured ~0.55 µA out of the output branch.
+**On a quiescent-current bench a leak is not just an accuracy artifact — it
+is the measurand**: a ~0.55 µA spurious shunt current is ~2% of this design's
+whole ~28 µA Iq, and `.options rshunt` shunts every node in the circuit, so
+an aids-bearing Iq number against a 700-node DUT would be measuring the
+solver as much as the circuit. The honest cost of dropping them: the
+convergence duty they carried through the early sub-1 V ramp instant now
+rests on `reltol`/`tran` alone, so a point that does not converge is reported
+as a FAIL point and never silently re-aided (this run: 45/45 PASS). The
+template also carries the resident-vector `save` card the trim benches carry,
+without which ngspice's default all-nodes × all-timesteps batch allocation
+over this bench's 3 ms window trips its own startup memory check at ~700
+nodes.
+
+**What moved** — record `20261001-092257-4fe07ea` (trim-bearing, aids-free)
+vs the superseded `20260830-133900-d83f7c4` (pre-trim, aids-bearing),
+45/45 PASS both:
+
+| quantity | pre-trim + aids | trim-bearing, code 128, aids-free |
+|---|---|---|
+| `iq_avg_a` @ `typ`/27 °C/3.30 V | 28.409 µA | **28.068 µA** (−0.34 µA, −1.2%) |
+| `iq_avg_a` grid band | 19.877–42.163 µA | 19.577–41.777 µA |
+| `iq_settle_delta_a` | 0 at all 45 points | 0 at all 45 points |
+| `i_mkfb_a` band | 2.09–3.11 nA | 2.3 fA–183 pA |
+| `dvsns_v` band | 1e−06–3.59e−04 V | 2.42e−04–6.46e−04 V |
+
+Iq comes in **lower** across the whole grid, by roughly the 0.3–0.4 µA the
+aids were adding — i.e. the trim ladder does not add quiescent current
+(its 255 series segments carry the same single output-branch current the
+monolithic `XR1` carried, and its strap devices are 1 mΩ/1 TΩ series
+elements, not current paths). Every point stays below
+`spec/porting-plan.md` §6's still-unratified `< 50 µA` draft target, which
+this bench reports as context rather than as a pass/fail claim (see §"What
+this testbench claims" above). The band quoted in §"Results summary" below
+is an earlier record's.
+
 ## What this testbench claims, and what it does not
 
 It claims: across the full temperature x supply x

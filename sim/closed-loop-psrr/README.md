@@ -16,6 +16,58 @@ already-closed loop rejects a disturbance injected on its own supply
 rail), so this testbench injects an AC perturbation directly on `vdd`
 instead, around a `.nodeset`-seeded DC operating point.
 
+## Trim-bearing DUT refresh (issue #264)
+
+**DUT.** The core netlist this bench inlines device-for-device is now
+#229's trim-bearing `design/netlist/bandgap_core.spice`: `XR1` is segmented
+to its `l=37.2u` base into node `tn0`, and the 255-unit binary-weighted
+`bandgap_trim` ladder continues `tn0 -> cb3` (see
+[`../../design/bandgap_trim_network.md`](../../design/bandgap_trim_network.md)).
+The ladder subcircuit is copied into the template device-for-device with its
+subcircuit-local `.param trim_code` pinned to the schematic default **128**;
+there is no trim-code axis here — the code-swept benches are
+[`../trim-coverage/`](../trim-coverage/README.md),
+[`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md) and
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md).
+At code 128 the ladder reproduces the pre-trim 511 µm summing resistor to
+within 12 Ω of its measured 66.06 kΩ (0.018%, measured in
+[`../core-open-loop-bias/`](../core-open-loop-bias/README.md)'s own refresh).
+
+**Solver options.** Unchanged — this bench never carried the `rshunt=1e9` /
+`gmin=1e-9` convergence aids the transient benches needed, so the ~0.55 µA
+ladder-leak artifact that forced those benches to drop them (see
+[`../closed-loop-vref-boxtc-trim/README.md`](../closed-loop-vref-boxtc-trim/README.md)
+§"Solver options") never applied here. The `.nodeset` seeds this bench reads
+from `../closed-loop-startup`'s newest record are this refresh's own
+aids-free startup record, so the seeded operating point and the DUT agree.
+
+**What moved** — record `20261001-085737-e5507b2` (trim-bearing) vs the
+superseded `20260830-133912-d83f7c4` (pre-trim), 45/45 PASS both:
+
+| quantity | pre-trim | trim-bearing, code 128 |
+|---|---|---|
+| DC PSRR grid band | 59.68–100.40 dB | 59.68–100.40 dB |
+| `psrr_1mhz_db` grid band | 50.59–54.93 dB | 50.68–54.96 dB |
+| worst-case PSRR anywhere in the sweep | 2.52–4.26 dB | **9.03–10.54 dB** |
+| frequency of that worst case | 31.6–39.8 MHz | 31.6–36.9 MHz |
+| `vref_op_v` @ `typ`/27 °C/3.30 V | 1.047339 V | 1.047278 V (−60 µV) |
+
+**The one qualitatively new reading is the HF notch, and it moves in the
+favorable direction**: the resonant minimum this design's rejection collapses
+to near the loop crossover is ~6 dB shallower with the ladder in place
+(2.5–4.3 dB → 9.0–10.5 dB), and its frequency drops slightly. The mechanism
+is the same one that costs phase margin in
+[`../loop-gain-phase-margin/`](../loop-gain-phase-margin/README.md)'s own
+refresh (tracked in #271): 255 `rppd` segments bring 255 segment-to-substrate junction
+capacitances onto the `vref`→`cb3` branch, which loads the output node and
+damps the resonance. This is a **real, disclosed change in the measured HF
+behavior of the DUT**, not a methodology artifact — and it is a change this
+bench's claim is allowed to carry: DC PSRR, the number
+`spec/porting-plan.md` §6's still-unratified `> 60 dB` draft target would be
+read against, is unmoved to the second decimal. Read §"A real feature at
+27°C/3.63V" and §"Results summary" below with the record ids in mind: those
+sections read earlier records.
+
 ## What this testbench claims, and what it does not
 
 It claims: across the full temperature x supply x

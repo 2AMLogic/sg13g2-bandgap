@@ -1,0 +1,415 @@
+* sg13g2-bandgap -- bandgap_core + bandgap_startup co-simulated hand-over
+* testbench (issue #24)
+* Generated from
+* sim/startup-core-handover/testbench/tb_startup_core_handover.spice.tmpl
+* by sim/startup-core-handover/run_pvt_sweep.sh -- do not edit a generated
+* netlist-snapshots/*.spice file directly, edit this template and re-run
+* the sweep. Full rationale is in sim/startup-core-handover/README.md.
+*
+* Generated for: corner=wcs temp=-40C vdd=3.30V
+* DUT git sha (design/netlist/bandgap_core.spice and bandgap_startup.spice
+* this was copied from):
+*   core=9530863 startup=66ac99d
+* PDK: ihp-sg13g2 /home/ubuntu/share/pdk (see sim/pdk.json for the pinned release)
+* OSDI models: /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi (built by sim/tools/build-osdi.sh)
+*
+* Both DUTs are copied verbatim from design/netlist/bandgap_core.spice and
+* design/netlist/bandgap_startup.spice -- same instance names, same node
+* names, same W/L/Nx -- and wired together at the two nodes the assembled
+* block actually shares: `sns1` (bandgap_core's XQ1 collector/base is
+* bandgap_startup's own sense input) and `fb` (bandgap_core's PMOS mirror
+* gate is bandgap_startup's XMKFB pull-down target). This is a true
+* co-simulation, not the cross-bench comparison sim/startup-trip-point and
+* sim/core-open-loop-bias's records were originally compared by (see
+* sim/startup-trip-point/README.md "Cross-bench observation").
+
+* DUT REFRESH (issue #264) -- the core DUT below is the TRIM-BEARING
+* bandgap_core: R1 is segmented to its base l=37.2u into node tn0, and
+* XXTRIM (the 255-unit binary-weighted rppd trim ladder landed by issue
+* #229 -- see design/bandgap_trim_network.md) continues tn0 -> cb3. The
+* ladder subcircuit below is copied device-for-device from
+* design/netlist/bandgap_trim.spice, with its subcircuit-local
+* .param trim_code pinned to the schematic default 128. This bench has NO
+* trim-code axis (the code-swept benches are sim/trim-coverage/,
+* sim/closed-loop-vref-trim-mc/ and sim/closed-loop-vref-boxtc-trim/);
+* code 128 reproduces the pre-trim 511 um summing resistor to within ~3
+* ohm, so this record's claim is the same claim the superseded pre-trim
+* record made, re-measured against today's device set.
+
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_wcs
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib" mos_ss
+.lib "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib" res_wcs
+
+.options temp=-40 tnom=27
+
+* FIXTURE 1 -- transient supply ramp, the piece neither existing testbench
+* has: both sim/core-open-loop-bias and sim/startup-trip-point drive vdd
+* with a plain dc source and either an .op or a dc sweep of a stand-in
+* stimulus. Here vdd itself ramps 0 -> VDD over 200 us (well above the
+* ~2 us RC set by XRPU's ~1.9-2 Mohm rhigh against MOSFET gate
+* capacitance -- see design/bandgap_startup.sch's header for XRPU's R
+* derivation) and holds, so the assembled block's own cold-start ->
+* running-core transition is what the simulator solves for, not an
+* externally-imposed sweep of an internal node.
+Vvdd vdd 0 PWL(0 0 200u 3.30 2m 3.30)
+Vvss vss 0 dc 0
+* both DUT netlists wire their resistor bulk terminals to the global
+* substrate net `sub!`; tied to vss through a 0 V source, same convention
+* both existing testbenches use.
+Vsub sub! vss dc 0
+
+* FIXTURE 2 -- open-loop mirror bias, identical in kind to
+* sim/core-open-loop-bias's own FIXTURE 1: no error amplifier exists yet
+* (issue #9's scope cut), so nothing in the design drives `fb` to a
+* specific steady-state operating point. A diode-connected replica of the
+* mirror device, carrying a 5 uA reference, stands in for the amplifier's
+* eventual job of holding fb at whatever level gives the design current --
+* the three DUT legs are then real PSP103 mirrors of a real PSP103
+* reference device. This is a testbench fixture, not a DUT substitution:
+* it is the exact same XM0/Ibias pair sim/core-open-loop-bias uses,
+* unchanged.
+*
+* IMPORTANT CAVEAT (read before citing this experiment's numbers as a tight
+* bound): an ideal current source is a very high output impedance load at
+* fb. A real error amplifier is normally a *low* output impedance driver
+* of fb (that is what "amplifier" means here), so any residual current
+* XMKFB pulls out of fb while incompletely released would move fb -- and
+* therefore the mirror current and sns1 -- far less than it does against
+* this fixture's near-infinite source impedance. This testbench therefore
+* measures a real, physically grounded consequence of an incomplete
+* release (this exact fixture is already load-bearing for
+* sim/core-open-loop-bias's own claims), but should be read as a
+* pessimistic/worst-case bound on the hand-over transient's severity, not
+* a tight prediction of what the assembled block with its future amplifier
+* will show. See sim/startup-core-handover/README.md for the full
+* discussion.
+XM0 fb fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Ibias fb vss dc 5u
+
+* DUT -- design/netlist/bandgap_core.spice, verbatim. M2/M3 decomposed into
+* per-leg-distinct counts (1/2/3) of dominant-plus-trim-finger sg13_hv_pmos
+* instances (issue #149, T1 tracker #4 item 4 cause (d) -- breaks the
+* M1/M2/M3 LVS graph automorphism at the schematic level; each branch's
+* total mirror W/L stays 10u/1u nominally -- see
+* sim/closed-loop-vref-pvt/testbench/tb_closed_loop_vref.spice.tmpl's own
+* header for the fuller rationale and the {1,2,3} split's not-quite-exact
+* electrical caveat, not repeated here).
+XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+XQ1 sns1 sns1 vss vss npn13G2 Nx=1
+XM2A sns2 fb vdd vdd sg13_hv_pmos w=9u l=1u ng=1 m=1
+XM2B sns2 fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XR2 sns2 cb2 sub! rppd w=2u l=82.7u m=1 b=0
+XQ2 cb2 cb2 vss vss npn13G2 Nx=8
+XM3A vref fb vdd vdd sg13_hv_pmos w=8u l=1u ng=1 m=1
+XM3B vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XM3C vref fb vdd vdd sg13_hv_pmos w=1u l=1u ng=1 m=1
+XR1 vref tn0 sub! rppd w=2u l=37.2u m=1 b=0
+XXTRIM tn0 cb3 sub! bandgap_trim
+XQ3 cb3 cb3 vss vss npn13G2 Nx=1
+
+.subckt bandgap_trim in out sub
+*.iopin in
+*.iopin out
+*.iopin sub
+XRU1 in t001 sub rppd w=2u l=3.43u m=1 b=0
+XRU2 t001 t002 sub rppd w=2u l=3.43u m=1 b=0
+XRU3 t002 t003 sub rppd w=2u l=3.43u m=1 b=0
+XRU4 t003 t004 sub rppd w=2u l=3.43u m=1 b=0
+XRU5 t004 t005 sub rppd w=2u l=3.43u m=1 b=0
+XRU6 t005 t006 sub rppd w=2u l=3.43u m=1 b=0
+XRU7 t006 t007 sub rppd w=2u l=3.43u m=1 b=0
+XRU8 t007 t008 sub rppd w=2u l=3.43u m=1 b=0
+XRU9 t008 t009 sub rppd w=2u l=3.43u m=1 b=0
+XRU10 t009 t010 sub rppd w=2u l=3.43u m=1 b=0
+XRU11 t010 t011 sub rppd w=2u l=3.43u m=1 b=0
+XRU12 t011 t012 sub rppd w=2u l=3.43u m=1 b=0
+XRU13 t012 t013 sub rppd w=2u l=3.43u m=1 b=0
+XRU14 t013 t014 sub rppd w=2u l=3.43u m=1 b=0
+XRU15 t014 t015 sub rppd w=2u l=3.43u m=1 b=0
+XRU16 t015 t016 sub rppd w=2u l=3.43u m=1 b=0
+XRU17 t016 t017 sub rppd w=2u l=3.43u m=1 b=0
+XRU18 t017 t018 sub rppd w=2u l=3.43u m=1 b=0
+XRU19 t018 t019 sub rppd w=2u l=3.43u m=1 b=0
+XRU20 t019 t020 sub rppd w=2u l=3.43u m=1 b=0
+XRU21 t020 t021 sub rppd w=2u l=3.43u m=1 b=0
+XRU22 t021 t022 sub rppd w=2u l=3.43u m=1 b=0
+XRU23 t022 t023 sub rppd w=2u l=3.43u m=1 b=0
+XRU24 t023 t024 sub rppd w=2u l=3.43u m=1 b=0
+XRU25 t024 t025 sub rppd w=2u l=3.43u m=1 b=0
+XRU26 t025 t026 sub rppd w=2u l=3.43u m=1 b=0
+XRU27 t026 t027 sub rppd w=2u l=3.43u m=1 b=0
+XRU28 t027 t028 sub rppd w=2u l=3.43u m=1 b=0
+XRU29 t028 t029 sub rppd w=2u l=3.43u m=1 b=0
+XRU30 t029 t030 sub rppd w=2u l=3.43u m=1 b=0
+XRU31 t030 t031 sub rppd w=2u l=3.43u m=1 b=0
+XRU32 t031 t032 sub rppd w=2u l=3.43u m=1 b=0
+XRU33 t032 t033 sub rppd w=2u l=3.43u m=1 b=0
+XRU34 t033 t034 sub rppd w=2u l=3.43u m=1 b=0
+XRU35 t034 t035 sub rppd w=2u l=3.43u m=1 b=0
+XRU36 t035 t036 sub rppd w=2u l=3.43u m=1 b=0
+XRU37 t036 t037 sub rppd w=2u l=3.43u m=1 b=0
+XRU38 t037 t038 sub rppd w=2u l=3.43u m=1 b=0
+XRU39 t038 t039 sub rppd w=2u l=3.43u m=1 b=0
+XRU40 t039 t040 sub rppd w=2u l=3.43u m=1 b=0
+XRU41 t040 t041 sub rppd w=2u l=3.43u m=1 b=0
+XRU42 t041 t042 sub rppd w=2u l=3.43u m=1 b=0
+XRU43 t042 t043 sub rppd w=2u l=3.43u m=1 b=0
+XRU44 t043 t044 sub rppd w=2u l=3.43u m=1 b=0
+XRU45 t044 t045 sub rppd w=2u l=3.43u m=1 b=0
+XRU46 t045 t046 sub rppd w=2u l=3.43u m=1 b=0
+XRU47 t046 t047 sub rppd w=2u l=3.43u m=1 b=0
+XRU48 t047 t048 sub rppd w=2u l=3.43u m=1 b=0
+XRU49 t048 t049 sub rppd w=2u l=3.43u m=1 b=0
+XRU50 t049 t050 sub rppd w=2u l=3.43u m=1 b=0
+XRU51 t050 t051 sub rppd w=2u l=3.43u m=1 b=0
+XRU52 t051 t052 sub rppd w=2u l=3.43u m=1 b=0
+XRU53 t052 t053 sub rppd w=2u l=3.43u m=1 b=0
+XRU54 t053 t054 sub rppd w=2u l=3.43u m=1 b=0
+XRU55 t054 t055 sub rppd w=2u l=3.43u m=1 b=0
+XRU56 t055 t056 sub rppd w=2u l=3.43u m=1 b=0
+XRU57 t056 t057 sub rppd w=2u l=3.43u m=1 b=0
+XRU58 t057 t058 sub rppd w=2u l=3.43u m=1 b=0
+XRU59 t058 t059 sub rppd w=2u l=3.43u m=1 b=0
+XRU60 t059 t060 sub rppd w=2u l=3.43u m=1 b=0
+XRU61 t060 t061 sub rppd w=2u l=3.43u m=1 b=0
+XRU62 t061 t062 sub rppd w=2u l=3.43u m=1 b=0
+XRU63 t062 t063 sub rppd w=2u l=3.43u m=1 b=0
+XRU64 t063 t064 sub rppd w=2u l=3.43u m=1 b=0
+XRU65 t064 t065 sub rppd w=2u l=3.43u m=1 b=0
+XRU66 t065 t066 sub rppd w=2u l=3.43u m=1 b=0
+XRU67 t066 t067 sub rppd w=2u l=3.43u m=1 b=0
+XRU68 t067 t068 sub rppd w=2u l=3.43u m=1 b=0
+XRU69 t068 t069 sub rppd w=2u l=3.43u m=1 b=0
+XRU70 t069 t070 sub rppd w=2u l=3.43u m=1 b=0
+XRU71 t070 t071 sub rppd w=2u l=3.43u m=1 b=0
+XRU72 t071 t072 sub rppd w=2u l=3.43u m=1 b=0
+XRU73 t072 t073 sub rppd w=2u l=3.43u m=1 b=0
+XRU74 t073 t074 sub rppd w=2u l=3.43u m=1 b=0
+XRU75 t074 t075 sub rppd w=2u l=3.43u m=1 b=0
+XRU76 t075 t076 sub rppd w=2u l=3.43u m=1 b=0
+XRU77 t076 t077 sub rppd w=2u l=3.43u m=1 b=0
+XRU78 t077 t078 sub rppd w=2u l=3.43u m=1 b=0
+XRU79 t078 t079 sub rppd w=2u l=3.43u m=1 b=0
+XRU80 t079 t080 sub rppd w=2u l=3.43u m=1 b=0
+XRU81 t080 t081 sub rppd w=2u l=3.43u m=1 b=0
+XRU82 t081 t082 sub rppd w=2u l=3.43u m=1 b=0
+XRU83 t082 t083 sub rppd w=2u l=3.43u m=1 b=0
+XRU84 t083 t084 sub rppd w=2u l=3.43u m=1 b=0
+XRU85 t084 t085 sub rppd w=2u l=3.43u m=1 b=0
+XRU86 t085 t086 sub rppd w=2u l=3.43u m=1 b=0
+XRU87 t086 t087 sub rppd w=2u l=3.43u m=1 b=0
+XRU88 t087 t088 sub rppd w=2u l=3.43u m=1 b=0
+XRU89 t088 t089 sub rppd w=2u l=3.43u m=1 b=0
+XRU90 t089 t090 sub rppd w=2u l=3.43u m=1 b=0
+XRU91 t090 t091 sub rppd w=2u l=3.43u m=1 b=0
+XRU92 t091 t092 sub rppd w=2u l=3.43u m=1 b=0
+XRU93 t092 t093 sub rppd w=2u l=3.43u m=1 b=0
+XRU94 t093 t094 sub rppd w=2u l=3.43u m=1 b=0
+XRU95 t094 t095 sub rppd w=2u l=3.43u m=1 b=0
+XRU96 t095 t096 sub rppd w=2u l=3.43u m=1 b=0
+XRU97 t096 t097 sub rppd w=2u l=3.43u m=1 b=0
+XRU98 t097 t098 sub rppd w=2u l=3.43u m=1 b=0
+XRU99 t098 t099 sub rppd w=2u l=3.43u m=1 b=0
+XRU100 t099 t100 sub rppd w=2u l=3.43u m=1 b=0
+XRU101 t100 t101 sub rppd w=2u l=3.43u m=1 b=0
+XRU102 t101 t102 sub rppd w=2u l=3.43u m=1 b=0
+XRU103 t102 t103 sub rppd w=2u l=3.43u m=1 b=0
+XRU104 t103 t104 sub rppd w=2u l=3.43u m=1 b=0
+XRU105 t104 t105 sub rppd w=2u l=3.43u m=1 b=0
+XRU106 t105 t106 sub rppd w=2u l=3.43u m=1 b=0
+XRU107 t106 t107 sub rppd w=2u l=3.43u m=1 b=0
+XRU108 t107 t108 sub rppd w=2u l=3.43u m=1 b=0
+XRU109 t108 t109 sub rppd w=2u l=3.43u m=1 b=0
+XRU110 t109 t110 sub rppd w=2u l=3.43u m=1 b=0
+XRU111 t110 t111 sub rppd w=2u l=3.43u m=1 b=0
+XRU112 t111 t112 sub rppd w=2u l=3.43u m=1 b=0
+XRU113 t112 t113 sub rppd w=2u l=3.43u m=1 b=0
+XRU114 t113 t114 sub rppd w=2u l=3.43u m=1 b=0
+XRU115 t114 t115 sub rppd w=2u l=3.43u m=1 b=0
+XRU116 t115 t116 sub rppd w=2u l=3.43u m=1 b=0
+XRU117 t116 t117 sub rppd w=2u l=3.43u m=1 b=0
+XRU118 t117 t118 sub rppd w=2u l=3.43u m=1 b=0
+XRU119 t118 t119 sub rppd w=2u l=3.43u m=1 b=0
+XRU120 t119 t120 sub rppd w=2u l=3.43u m=1 b=0
+XRU121 t120 t121 sub rppd w=2u l=3.43u m=1 b=0
+XRU122 t121 t122 sub rppd w=2u l=3.43u m=1 b=0
+XRU123 t122 t123 sub rppd w=2u l=3.43u m=1 b=0
+XRU124 t123 t124 sub rppd w=2u l=3.43u m=1 b=0
+XRU125 t124 t125 sub rppd w=2u l=3.43u m=1 b=0
+XRU126 t125 t126 sub rppd w=2u l=3.43u m=1 b=0
+XRU127 t126 t127 sub rppd w=2u l=3.43u m=1 b=0
+XRU128 t127 t128 sub rppd w=2u l=3.43u m=1 b=0
+XRU129 t128 t129 sub rppd w=2u l=3.43u m=1 b=0
+XRU130 t129 t130 sub rppd w=2u l=3.43u m=1 b=0
+XRU131 t130 t131 sub rppd w=2u l=3.43u m=1 b=0
+XRU132 t131 t132 sub rppd w=2u l=3.43u m=1 b=0
+XRU133 t132 t133 sub rppd w=2u l=3.43u m=1 b=0
+XRU134 t133 t134 sub rppd w=2u l=3.43u m=1 b=0
+XRU135 t134 t135 sub rppd w=2u l=3.43u m=1 b=0
+XRU136 t135 t136 sub rppd w=2u l=3.43u m=1 b=0
+XRU137 t136 t137 sub rppd w=2u l=3.43u m=1 b=0
+XRU138 t137 t138 sub rppd w=2u l=3.43u m=1 b=0
+XRU139 t138 t139 sub rppd w=2u l=3.43u m=1 b=0
+XRU140 t139 t140 sub rppd w=2u l=3.43u m=1 b=0
+XRU141 t140 t141 sub rppd w=2u l=3.43u m=1 b=0
+XRU142 t141 t142 sub rppd w=2u l=3.43u m=1 b=0
+XRU143 t142 t143 sub rppd w=2u l=3.43u m=1 b=0
+XRU144 t143 t144 sub rppd w=2u l=3.43u m=1 b=0
+XRU145 t144 t145 sub rppd w=2u l=3.43u m=1 b=0
+XRU146 t145 t146 sub rppd w=2u l=3.43u m=1 b=0
+XRU147 t146 t147 sub rppd w=2u l=3.43u m=1 b=0
+XRU148 t147 t148 sub rppd w=2u l=3.43u m=1 b=0
+XRU149 t148 t149 sub rppd w=2u l=3.43u m=1 b=0
+XRU150 t149 t150 sub rppd w=2u l=3.43u m=1 b=0
+XRU151 t150 t151 sub rppd w=2u l=3.43u m=1 b=0
+XRU152 t151 t152 sub rppd w=2u l=3.43u m=1 b=0
+XRU153 t152 t153 sub rppd w=2u l=3.43u m=1 b=0
+XRU154 t153 t154 sub rppd w=2u l=3.43u m=1 b=0
+XRU155 t154 t155 sub rppd w=2u l=3.43u m=1 b=0
+XRU156 t155 t156 sub rppd w=2u l=3.43u m=1 b=0
+XRU157 t156 t157 sub rppd w=2u l=3.43u m=1 b=0
+XRU158 t157 t158 sub rppd w=2u l=3.43u m=1 b=0
+XRU159 t158 t159 sub rppd w=2u l=3.43u m=1 b=0
+XRU160 t159 t160 sub rppd w=2u l=3.43u m=1 b=0
+XRU161 t160 t161 sub rppd w=2u l=3.43u m=1 b=0
+XRU162 t161 t162 sub rppd w=2u l=3.43u m=1 b=0
+XRU163 t162 t163 sub rppd w=2u l=3.43u m=1 b=0
+XRU164 t163 t164 sub rppd w=2u l=3.43u m=1 b=0
+XRU165 t164 t165 sub rppd w=2u l=3.43u m=1 b=0
+XRU166 t165 t166 sub rppd w=2u l=3.43u m=1 b=0
+XRU167 t166 t167 sub rppd w=2u l=3.43u m=1 b=0
+XRU168 t167 t168 sub rppd w=2u l=3.43u m=1 b=0
+XRU169 t168 t169 sub rppd w=2u l=3.43u m=1 b=0
+XRU170 t169 t170 sub rppd w=2u l=3.43u m=1 b=0
+XRU171 t170 t171 sub rppd w=2u l=3.43u m=1 b=0
+XRU172 t171 t172 sub rppd w=2u l=3.43u m=1 b=0
+XRU173 t172 t173 sub rppd w=2u l=3.43u m=1 b=0
+XRU174 t173 t174 sub rppd w=2u l=3.43u m=1 b=0
+XRU175 t174 t175 sub rppd w=2u l=3.43u m=1 b=0
+XRU176 t175 t176 sub rppd w=2u l=3.43u m=1 b=0
+XRU177 t176 t177 sub rppd w=2u l=3.43u m=1 b=0
+XRU178 t177 t178 sub rppd w=2u l=3.43u m=1 b=0
+XRU179 t178 t179 sub rppd w=2u l=3.43u m=1 b=0
+XRU180 t179 t180 sub rppd w=2u l=3.43u m=1 b=0
+XRU181 t180 t181 sub rppd w=2u l=3.43u m=1 b=0
+XRU182 t181 t182 sub rppd w=2u l=3.43u m=1 b=0
+XRU183 t182 t183 sub rppd w=2u l=3.43u m=1 b=0
+XRU184 t183 t184 sub rppd w=2u l=3.43u m=1 b=0
+XRU185 t184 t185 sub rppd w=2u l=3.43u m=1 b=0
+XRU186 t185 t186 sub rppd w=2u l=3.43u m=1 b=0
+XRU187 t186 t187 sub rppd w=2u l=3.43u m=1 b=0
+XRU188 t187 t188 sub rppd w=2u l=3.43u m=1 b=0
+XRU189 t188 t189 sub rppd w=2u l=3.43u m=1 b=0
+XRU190 t189 t190 sub rppd w=2u l=3.43u m=1 b=0
+XRU191 t190 t191 sub rppd w=2u l=3.43u m=1 b=0
+XRU192 t191 t192 sub rppd w=2u l=3.43u m=1 b=0
+XRU193 t192 t193 sub rppd w=2u l=3.43u m=1 b=0
+XRU194 t193 t194 sub rppd w=2u l=3.43u m=1 b=0
+XRU195 t194 t195 sub rppd w=2u l=3.43u m=1 b=0
+XRU196 t195 t196 sub rppd w=2u l=3.43u m=1 b=0
+XRU197 t196 t197 sub rppd w=2u l=3.43u m=1 b=0
+XRU198 t197 t198 sub rppd w=2u l=3.43u m=1 b=0
+XRU199 t198 t199 sub rppd w=2u l=3.43u m=1 b=0
+XRU200 t199 t200 sub rppd w=2u l=3.43u m=1 b=0
+XRU201 t200 t201 sub rppd w=2u l=3.43u m=1 b=0
+XRU202 t201 t202 sub rppd w=2u l=3.43u m=1 b=0
+XRU203 t202 t203 sub rppd w=2u l=3.43u m=1 b=0
+XRU204 t203 t204 sub rppd w=2u l=3.43u m=1 b=0
+XRU205 t204 t205 sub rppd w=2u l=3.43u m=1 b=0
+XRU206 t205 t206 sub rppd w=2u l=3.43u m=1 b=0
+XRU207 t206 t207 sub rppd w=2u l=3.43u m=1 b=0
+XRU208 t207 t208 sub rppd w=2u l=3.43u m=1 b=0
+XRU209 t208 t209 sub rppd w=2u l=3.43u m=1 b=0
+XRU210 t209 t210 sub rppd w=2u l=3.43u m=1 b=0
+XRU211 t210 t211 sub rppd w=2u l=3.43u m=1 b=0
+XRU212 t211 t212 sub rppd w=2u l=3.43u m=1 b=0
+XRU213 t212 t213 sub rppd w=2u l=3.43u m=1 b=0
+XRU214 t213 t214 sub rppd w=2u l=3.43u m=1 b=0
+XRU215 t214 t215 sub rppd w=2u l=3.43u m=1 b=0
+XRU216 t215 t216 sub rppd w=2u l=3.43u m=1 b=0
+XRU217 t216 t217 sub rppd w=2u l=3.43u m=1 b=0
+XRU218 t217 t218 sub rppd w=2u l=3.43u m=1 b=0
+XRU219 t218 t219 sub rppd w=2u l=3.43u m=1 b=0
+XRU220 t219 t220 sub rppd w=2u l=3.43u m=1 b=0
+XRU221 t220 t221 sub rppd w=2u l=3.43u m=1 b=0
+XRU222 t221 t222 sub rppd w=2u l=3.43u m=1 b=0
+XRU223 t222 t223 sub rppd w=2u l=3.43u m=1 b=0
+XRU224 t223 t224 sub rppd w=2u l=3.43u m=1 b=0
+XRU225 t224 t225 sub rppd w=2u l=3.43u m=1 b=0
+XRU226 t225 t226 sub rppd w=2u l=3.43u m=1 b=0
+XRU227 t226 t227 sub rppd w=2u l=3.43u m=1 b=0
+XRU228 t227 t228 sub rppd w=2u l=3.43u m=1 b=0
+XRU229 t228 t229 sub rppd w=2u l=3.43u m=1 b=0
+XRU230 t229 t230 sub rppd w=2u l=3.43u m=1 b=0
+XRU231 t230 t231 sub rppd w=2u l=3.43u m=1 b=0
+XRU232 t231 t232 sub rppd w=2u l=3.43u m=1 b=0
+XRU233 t232 t233 sub rppd w=2u l=3.43u m=1 b=0
+XRU234 t233 t234 sub rppd w=2u l=3.43u m=1 b=0
+XRU235 t234 t235 sub rppd w=2u l=3.43u m=1 b=0
+XRU236 t235 t236 sub rppd w=2u l=3.43u m=1 b=0
+XRU237 t236 t237 sub rppd w=2u l=3.43u m=1 b=0
+XRU238 t237 t238 sub rppd w=2u l=3.43u m=1 b=0
+XRU239 t238 t239 sub rppd w=2u l=3.43u m=1 b=0
+XRU240 t239 t240 sub rppd w=2u l=3.43u m=1 b=0
+XRU241 t240 t241 sub rppd w=2u l=3.43u m=1 b=0
+XRU242 t241 t242 sub rppd w=2u l=3.43u m=1 b=0
+XRU243 t242 t243 sub rppd w=2u l=3.43u m=1 b=0
+XRU244 t243 t244 sub rppd w=2u l=3.43u m=1 b=0
+XRU245 t244 t245 sub rppd w=2u l=3.43u m=1 b=0
+XRU246 t245 t246 sub rppd w=2u l=3.43u m=1 b=0
+XRU247 t246 t247 sub rppd w=2u l=3.43u m=1 b=0
+XRU248 t247 t248 sub rppd w=2u l=3.43u m=1 b=0
+XRU249 t248 t249 sub rppd w=2u l=3.43u m=1 b=0
+XRU250 t249 t250 sub rppd w=2u l=3.43u m=1 b=0
+XRU251 t250 t251 sub rppd w=2u l=3.43u m=1 b=0
+XRU252 t251 t252 sub rppd w=2u l=3.43u m=1 b=0
+XRU253 t252 t253 sub rppd w=2u l=3.43u m=1 b=0
+XRU254 t253 t254 sub rppd w=2u l=3.43u m=1 b=0
+XRU255 t254 out sub rppd w=2u l=3.43u m=1 b=0
+RS0 in t001 {1e-3 + 1e12*(floor(trim_code/1)-2*floor(trim_code/2))} m=1
+RS1 t001 t003 {1e-3 + 1e12*(floor(trim_code/2)-2*floor(trim_code/4))} m=1
+RS2 t003 t007 {1e-3 + 1e12*(floor(trim_code/4)-2*floor(trim_code/8))} m=1
+RS3 t007 t015 {1e-3 + 1e12*(floor(trim_code/8)-2*floor(trim_code/16))} m=1
+RS4 t015 t031 {1e-3 + 1e12*(floor(trim_code/16)-2*floor(trim_code/32))} m=1
+RS5 t031 t063 {1e-3 + 1e12*(floor(trim_code/32)-2*floor(trim_code/64))} m=1
+RS6 t063 t127 {1e-3 + 1e12*(floor(trim_code/64)-2*floor(trim_code/128))} m=1
+RS7 t127 out {1e-3 + 1e12*(floor(trim_code/128)-2*floor(trim_code/256))} m=1
+**** begin user architecture code
+.param trim_code=128
+**** end user architecture code
+.ends
+
+* DUT -- design/netlist/bandgap_startup.spice, verbatim. `sns1` and `fb`
+* are shared with the core DUT above (the two nodes the assembled block
+* actually connects); no separate stimulus source drives either one here,
+* unlike sim/startup-trip-point's `Vsns1`.
+*
+* FIXTURE 3 -- Vmkfb is a 0 V ammeter in series with XMKFB's drain, so the
+* startup circuit's own contribution to the shared fb node can be measured
+* directly (i_mkfb_v below) rather than inferred from fb's voltage alone.
+* A 0 V source is a DC/transient short and does not move the operating
+* point.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1
+
+.control
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/psp103_nqs.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/mosvar.osdi
+pre_osdi /home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/ngspice/osdi/r3_cmc.osdi
+tran 2u 2m
+* Early-ramp check (t=20us, vdd ~10% of final value, core still
+* degenerate): the startup circuit should still be actively engaged.
+meas tran v_det_early find v(det) at=20u
+meas tran v_fb_early find v(fb) at=20u
+* Final (fully ramped + settled) hand-over state -- the actual claim under
+* test.
+meas tran v_det_v find v(det) at=2m
+meas tran v_fb_v find v(fb) at=2m
+meas tran v_sns1_v find v(sns1) at=2m
+meas tran v_vref_v find v(vref) at=2m
+meas tran i_mkfb_v find i(Vmkfb) at=2m
+.endc
+.end

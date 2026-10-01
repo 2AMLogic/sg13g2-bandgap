@@ -11,6 +11,46 @@ did. Built for issue #24; see
 [`spec/decision-records/0003-startup-sense-nmos-resize.md`](../../spec/decision-records/0003-startup-sense-nmos-resize.md)
 for the design decision this experiment's evidence drove.
 
+## Trim-bearing DUT refresh (issue #264)
+
+**DUT.** The core netlist this bench inlines device-for-device is now
+#229's trim-bearing `design/netlist/bandgap_core.spice`: `XR1` is segmented
+to its `l=37.2u` base into node `tn0`, and the 255-unit binary-weighted
+`bandgap_trim` ladder continues `tn0 -> cb3` (see
+[`../../design/bandgap_trim_network.md`](../../design/bandgap_trim_network.md)).
+The ladder subcircuit is copied into the template device-for-device with its
+subcircuit-local `.param trim_code` pinned to the schematic default **128**;
+there is no trim-code axis here — the code-swept benches are
+[`../trim-coverage/`](../trim-coverage/README.md),
+[`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md) and
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md).
+At code 128 the ladder reproduces the pre-trim 511 µm summing resistor to
+within 12 Ω of its measured 66.06 kΩ (0.018% — measured, not asserted, in
+[`../core-open-loop-bias/`](../core-open-loop-bias/README.md)'s own refresh),
+so this record re-measures the **same handover claim** against today's
+device set rather than making a new one.
+
+**Solver options.** Unchanged. This bench never carried the `rshunt=1e9` /
+`gmin=1e-9` convergence aids the transient `vref` benches needed, so the
+~0.55 µA ladder-leak artifact that forced those benches to drop them (see
+[`../closed-loop-vref-boxtc-trim/README.md`](../closed-loop-vref-boxtc-trim/README.md)
+§"Solver options") never applied here.
+
+**What moved** — record `20261001-083332-e5507b2` (trim-bearing) vs the
+superseded `20260830-133912-d83f7c4` (pre-trim), 45/45 PASS both:
+
+| quantity | pre-trim | trim-bearing, code 128 |
+|---|---|---|
+| `vref_final_v` @ `typ`/27 °C/3.30 V | 1.05277 V | 1.05271 V (−60 µV) |
+| `vref_final_v` grid band | 0.887338–1.172010 V | 0.887014–1.171340 V |
+| `det_final_v` (the release criterion's own signal) | — | bit-identical, all 45 points |
+| `i_mkfb_final_a` @ `typ`/27 °C/3.30 V | 9.703e−14 A | 9.681e−14 A |
+
+Both release criteria are decided by `v(det)` and `|i(XMKFB)|`, and neither
+moves: the handover verdict this experiment exists to make is unchanged by
+the trim network, as expected for a network that only re-partitions the
+summing resistor the startup detector never looks at.
+
 ## What this testbench claims, and what it does not
 
 `bandgap_core`'s `sns1` and `fb` pins are wired directly to

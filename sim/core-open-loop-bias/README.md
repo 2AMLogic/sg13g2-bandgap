@@ -4,6 +4,50 @@ The first PVT-cornered testbench for `design/bandgap_core.sch` /
 `design/netlist/bandgap_core.spice` (issue #9's schematic, issue #10's
 testbench infrastructure).
 
+## Trim-bearing DUT refresh (issue #264)
+
+**DUT.** The core netlist this bench inlines device-for-device is now
+#229's trim-bearing `design/netlist/bandgap_core.spice`: `XR1` is segmented
+to its `l=37.2u` base into node `tn0`, and the 255-unit binary-weighted
+`bandgap_trim` ladder continues `tn0 -> cb3` (see
+[`../../design/bandgap_trim_network.md`](../../design/bandgap_trim_network.md)).
+The ladder subcircuit is copied into the template device-for-device with its
+subcircuit-local `.param trim_code` pinned to the schematic default **128**;
+there is no trim-code axis here — the code-swept benches are
+[`../trim-coverage/`](../trim-coverage/README.md),
+[`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md) and
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md).
+
+**This bench is where the "code 128 reproduces the pre-trim R1" claim is
+measured**, not asserted: `r1_ohm` is derived per point from the actual DC
+drop over the actual leg current, and at `typ`/27 °C/3.30 V it reads
+**66 057.0 Ω** against the superseded pre-trim record's **66 069.0 Ω** —
+a 12.0 Ω (0.018%) step, which is the quantization residue of a 255-segment
+ladder standing in for a 511 µm monolithic resistor, exactly as
+`design/bandgap_trim_network.md` §3 predicts.
+
+**Solver options.** Unchanged. This bench never carried the `rshunt=1e9` /
+`gmin=1e-9` convergence aids the transient benches needed, so the ~0.55 µA
+ladder-leak artifact that forced those benches to drop them (see
+[`../closed-loop-vref-boxtc-trim/README.md`](../closed-loop-vref-boxtc-trim/README.md)
+§"Solver options") never applied here. All eleven schematic-DUT benches in
+this tree are now aids-free.
+
+**What moved** — record `20261001-082455-f748685` (trim-bearing) vs the
+superseded `20260830-132212-d83f7c4` (pre-trim), 45/45 PASS both:
+
+| quantity | pre-trim | trim-bearing, code 128 |
+|---|---|---|
+| `vref` @ `typ`/27 °C/3.30 V | 1.052769 V | 1.052707 V (−62 µV) |
+| `vref` grid band | 0.887328–1.172010 V | 0.887004–1.171340 V |
+| `r1_ohm` grid band | 58 897.6–74 158.3 Ω | 59 658.9–73 178.9 Ω |
+| `dvbe_ptat_v`, `r2_ohm`, all three leg currents | — | bit-identical |
+
+The PTAT ΔVBE and `R2` legs are untouched by the trim network and come back
+bit-identical, which is the expected result and the cheapest available check
+that nothing else in the netlist moved with it. The `vref` step is the
+0.018% `R1` step times the leg current, i.e. the same number read two ways.
+
 ## What this testbench claims, and what it does not
 
 It exercises the bandgap core's three real bipolar legs (`XQ1`/`XQ2`/`XQ3`,
