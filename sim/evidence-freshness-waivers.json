@@ -63,13 +63,6 @@
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
       "issue": "#264",
       "reason": "core-open-loop-bias-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry; blocked on the trim-bearing re-layout, tracked here"
-    },
-    {
-      "report": "sim/startup-time-to-release/records/20260904-184431-6fa83b4.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "startup-time-to-release 2026-09-04 record: pre-trim core DUT, superseded by #229's trim-bearing core; refresh tracked here"
     }
   ]
 }

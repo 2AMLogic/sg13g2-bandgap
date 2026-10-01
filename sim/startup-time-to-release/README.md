@@ -12,6 +12,59 @@ unratified — #125) — every prior testbench only checks the release criteria
 at one or two fixed checkpoints (`t=20us`/`t=2ms`), never asks "how fast".
 This experiment is that missing measurement.
 
+## Trim-bearing DUT refresh (issue #264)
+
+**DUT.** The core netlist this bench inlines device-for-device is now
+#229's trim-bearing `design/netlist/bandgap_core.spice`: `XR1` is segmented
+to its `l=37.2u` base into node `tn0`, and the 255-unit binary-weighted
+`bandgap_trim` ladder continues `tn0 -> cb3` (see
+[`../../design/bandgap_trim_network.md`](../../design/bandgap_trim_network.md)).
+The ladder subcircuit is copied into the template device-for-device with its
+subcircuit-local `.param trim_code` pinned to the schematic default **128**;
+there is no trim-code axis here — the code-swept benches are
+[`../trim-coverage/`](../trim-coverage/README.md),
+[`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md) and
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md).
+At code 128 the ladder reproduces the pre-trim 511 µm summing resistor to
+within 12 Ω of its measured 66.06 kΩ (0.018%, measured in
+[`../core-open-loop-bias/`](../core-open-loop-bias/README.md)'s own refresh).
+
+**Solver options — the aids are dropped.** `rshunt=1e9` / `gmin=1e-9`, this
+bench's pre-trim convergence aids, are **dropped**; `reltol=5e-3` + `tran 50n`
+(#149's timestep-stiffness pair) are kept. Same deliberate deviation, same
+reason as
+[`../closed-loop-vref-boxtc-trim/README.md`](../closed-loop-vref-boxtc-trim/README.md)
+§"Solver options": the aids assume a handful of high-impedance nodes, the
+ladder adds 254 interior series ones, and at 1 GΩ ‖ 1 nS each they leak a
+measured ~0.55 µA out of the output branch (a 37 mV settled-`vref` artifact at
+code 128/typ/27 °C). The convergence duty they carried through the early
+sub-1 V ramp instant now rests on `reltol`/`tran` alone, so a point that does
+not converge is reported as a FAIL point and never silently re-aided (this
+run: 45/45 PASS). The template also carries the resident-vector `save` card
+the trim benches carry — with the ladder inlined the node count goes ~40 →
+~700 and ngspice's default all-nodes × all-timesteps batch allocation trips
+its own startup memory check; every `.meas` card here names a saved vector.
+
+**What moved** — record `20261001-085905-e5507b2` (trim-bearing, aids-free)
+vs the superseded `20260904-184431-6fa83b4` (pre-trim, aids-bearing),
+45/45 PASS both:
+
+| quantity | pre-trim + aids | trim-bearing, code 128, aids-free |
+|---|---|---|
+| `release_time_us` | **100 µs at all 45 points** | **100 µs at all 45 points** |
+| `det_2000u_v` band | 0.00257–0.1066 V | 0.00257–0.1080 V |
+| `i_mkfb_2000u_a` band | 2.09–3.11 nA | 2.4 fA–183 pA |
+| `fb_2000u_v` band | 2.08775–2.92639 V | 2.08839–2.92711 V |
+| `dvsns_2000u_v` band | 1e−06–3.59e−04 V | 2.42e−04–6.46e−04 V |
+
+**The headline claim is bit-for-bit unchanged**: the startup path still
+releases by the 100 µs checkpoint at every point of the grid, with the same
+suffix-of-PASS verdict string. The only column that moves by more than its
+last digits is `i_mkfb_2000u_a`, and it moves *down* — the nA-scale floor in
+the pre-trim column was the `rshunt` leak itself, not startup-path current,
+and both columns are far inside the 50 nA release criterion. `dvsns` stays
+1.5 orders of magnitude inside the 20 mV loop-closure tolerance.
+
 ## What this testbench claims, and what it does not
 
 It claims: co-simulating `design/bandgap_core.sch` + `design/bandgap_amp.sch`

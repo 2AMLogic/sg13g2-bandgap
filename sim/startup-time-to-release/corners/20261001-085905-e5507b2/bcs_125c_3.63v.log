@@ -1,0 +1,622 @@
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-bandgap -- bandgap_core + bandgap_amp + bandgap_startup
+
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+sns1                                         0
+fb                                           0
+xq1.s1                                       0
+xq1.t                                        0
+sns2                                         0
+cb2                                          0
+xr2.dt                                       0
+xq2.s1                                       0
+xq2.t                                        0
+vref                                         0
+tn0                                          0
+xr1.dt                                       0
+xxtrim.t001                                  0
+xxtrim.xru1.dt                               0
+xxtrim.t002                                  0
+xxtrim.xru2.dt                               0
+xxtrim.t003                                  0
+xxtrim.xru3.dt                               0
+xxtrim.t004                                  0
+xxtrim.xru4.dt                               0
+xxtrim.t005                                  0
+xxtrim.xru5.dt                               0
+xxtrim.t006                                  0
+xxtrim.xru6.dt                               0
+xxtrim.t007                                  0
+xxtrim.xru7.dt                               0
+xxtrim.t008                                  0
+xxtrim.xru8.dt                               0
+xxtrim.t009                                  0
+xxtrim.xru9.dt                               0
+xxtrim.t010                                  0
+xxtrim.xru10.dt                              0
+xxtrim.t011                                  0
+xxtrim.xru11.dt                              0
+xxtrim.t012                                  0
+xxtrim.xru12.dt                              0
+xxtrim.t013                                  0
+xxtrim.xru13.dt                              0
+xxtrim.t014                                  0
+xxtrim.xru14.dt                              0
+xxtrim.t015                                  0
+xxtrim.xru15.dt                              0
+xxtrim.t016                                  0
+xxtrim.xru16.dt                              0
+xxtrim.t017                                  0
+xxtrim.xru17.dt                              0
+xxtrim.t018                                  0
+xxtrim.xru18.dt                              0
+xxtrim.t019                                  0
+xxtrim.xru19.dt                              0
+xxtrim.t020                                  0
+xxtrim.xru20.dt                              0
+xxtrim.t021                                  0
+xxtrim.xru21.dt                              0
+xxtrim.t022                                  0
+xxtrim.xru22.dt                              0
+xxtrim.t023                                  0
+xxtrim.xru23.dt                              0
+xxtrim.t024                                  0
+xxtrim.xru24.dt                              0
+xxtrim.t025                                  0
+xxtrim.xru25.dt                              0
+xxtrim.t026                                  0
+xxtrim.xru26.dt                              0
+xxtrim.t027                                  0
+xxtrim.xru27.dt                              0
+xxtrim.t028                                  0
+xxtrim.xru28.dt                              0
+xxtrim.t029                                  0
+xxtrim.xru29.dt                              0
+xxtrim.t030                                  0
+xxtrim.xru30.dt                              0
+xxtrim.t031                                  0
+xxtrim.xru31.dt                              0
+xxtrim.t032                                  0
+xxtrim.xru32.dt                              0
+xxtrim.t033                                  0
+xxtrim.xru33.dt                              0
+xxtrim.t034                                  0
+xxtrim.xru34.dt                              0
+xxtrim.t035                                  0
+xxtrim.xru35.dt                              0
+xxtrim.t036                                  0
+xxtrim.xru36.dt                              0
+xxtrim.t037                                  0
+xxtrim.xru37.dt                              0
+xxtrim.t038                                  0
+xxtrim.xru38.dt                              0
+xxtrim.t039                                  0
+xxtrim.xru39.dt                              0
+xxtrim.t040                                  0
+xxtrim.xru40.dt                              0
+xxtrim.t041                                  0
+xxtrim.xru41.dt                              0
+xxtrim.t042                                  0
+xxtrim.xru42.dt                              0
+xxtrim.t043                                  0
+xxtrim.xru43.dt                              0
+xxtrim.t044                                  0
+xxtrim.xru44.dt                              0
+xxtrim.t045                                  0
+xxtrim.xru45.dt                              0
+xxtrim.t046                                  0
+xxtrim.xru46.dt                              0
+xxtrim.t047                                  0
+xxtrim.xru47.dt                              0
+xxtrim.t048                                  0
+xxtrim.xru48.dt                              0
+xxtrim.t049                                  0
+xxtrim.xru49.dt                              0
+xxtrim.t050                                  0
+xxtrim.xru50.dt                              0
+xxtrim.t051                                  0
+xxtrim.xru51.dt                              0
+xxtrim.t052                                  0
+xxtrim.xru52.dt                              0
+xxtrim.t053                                  0
+xxtrim.xru53.dt                              0
+xxtrim.t054                                  0
+xxtrim.xru54.dt                              0
+xxtrim.t055                                  0
+xxtrim.xru55.dt                              0
+xxtrim.t056                                  0
+xxtrim.xru56.dt                              0
+xxtrim.t057                                  0
+xxtrim.xru57.dt                              0
+xxtrim.t058                                  0
+xxtrim.xru58.dt                              0
+xxtrim.t059                                  0
+xxtrim.xru59.dt                              0
+xxtrim.t060                                  0
+xxtrim.xru60.dt                              0
+xxtrim.t061                                  0
+xxtrim.xru61.dt                              0
+xxtrim.t062                                  0
+xxtrim.xru62.dt                              0
+xxtrim.t063                                  0
+xxtrim.xru63.dt                              0
+xxtrim.t064                                  0
+xxtrim.xru64.dt                              0
+xxtrim.t065                                  0
+xxtrim.xru65.dt                              0
+xxtrim.t066                                  0
+xxtrim.xru66.dt                              0
+xxtrim.t067                                  0
+xxtrim.xru67.dt                              0
+xxtrim.t068                                  0
+xxtrim.xru68.dt                              0
+xxtrim.t069                                  0
+xxtrim.xru69.dt                              0
+xxtrim.t070                                  0
+xxtrim.xru70.dt                              0
+xxtrim.t071                                  0
+xxtrim.xru71.dt                              0
+xxtrim.t072                                  0
+xxtrim.xru72.dt                              0
+xxtrim.t073                                  0
+xxtrim.xru73.dt                              0
+xxtrim.t074                                  0
+xxtrim.xru74.dt                              0
+xxtrim.t075                                  0
+xxtrim.xru75.dt                              0
+xxtrim.t076                                  0
+xxtrim.xru76.dt                              0
+xxtrim.t077                                  0
+xxtrim.xru77.dt                              0
+xxtrim.t078                                  0
+xxtrim.xru78.dt                              0
+xxtrim.t079                                  0
+xxtrim.xru79.dt                              0
+xxtrim.t080                                  0
+xxtrim.xru80.dt                              0
+xxtrim.t081                                  0
+xxtrim.xru81.dt                              0
+xxtrim.t082                                  0
+xxtrim.xru82.dt                              0
+xxtrim.t083                                  0
+xxtrim.xru83.dt                              0
+xxtrim.t084                                  0
+xxtrim.xru84.dt                              0
+xxtrim.t085                                  0
+xxtrim.xru85.dt                              0
+xxtrim.t086                                  0
+xxtrim.xru86.dt                              0
+xxtrim.t087                                  0
+xxtrim.xru87.dt                              0
+xxtrim.t088                                  0
+xxtrim.xru88.dt                              0
+xxtrim.t089                                  0
+xxtrim.xru89.dt                              0
+xxtrim.t090                                  0
+xxtrim.xru90.dt                              0
+xxtrim.t091                                  0
+xxtrim.xru91.dt                              0
+xxtrim.t092                                  0
+xxtrim.xru92.dt                              0
+xxtrim.t093                                  0
+xxtrim.xru93.dt                              0
+xxtrim.t094                                  0
+xxtrim.xru94.dt                              0
+xxtrim.t095                                  0
+xxtrim.xru95.dt                              0
+xxtrim.t096                                  0
+xxtrim.xru96.dt                              0
+xxtrim.t097                                  0
+xxtrim.xru97.dt                              0
+xxtrim.t098                                  0
+xxtrim.xru98.dt                              0
+xxtrim.t099                                  0
+xxtrim.xru99.dt                              0
+xxtrim.t100                                  0
+xxtrim.xru100.dt                             0
+xxtrim.t101                                  0
+xxtrim.xru101.dt                             0
+xxtrim.t102                                  0
+xxtrim.xru102.dt                             0
+xxtrim.t103                                  0
+xxtrim.xru103.dt                             0
+xxtrim.t104                                  0
+xxtrim.xru104.dt                             0
+xxtrim.t105                                  0
+xxtrim.xru105.dt                             0
+xxtrim.t106                                  0
+xxtrim.xru106.dt                             0
+xxtrim.t107                                  0
+xxtrim.xru107.dt                             0
+xxtrim.t108                                  0
+xxtrim.xru108.dt                             0
+xxtrim.t109                                  0
+xxtrim.xru109.dt                             0
+xxtrim.t110                                  0
+xxtrim.xru110.dt                             0
+xxtrim.t111                                  0
+xxtrim.xru111.dt                             0
+xxtrim.t112                                  0
+xxtrim.xru112.dt                             0
+xxtrim.t113                                  0
+xxtrim.xru113.dt                             0
+xxtrim.t114                                  0
+xxtrim.xru114.dt                             0
+xxtrim.t115                                  0
+xxtrim.xru115.dt                             0
+xxtrim.t116                                  0
+xxtrim.xru116.dt                             0
+xxtrim.t117                                  0
+xxtrim.xru117.dt                             0
+xxtrim.t118                                  0
+xxtrim.xru118.dt                             0
+xxtrim.t119                                  0
+xxtrim.xru119.dt                             0
+xxtrim.t120                                  0
+xxtrim.xru120.dt                             0
+xxtrim.t121                                  0
+xxtrim.xru121.dt                             0
+xxtrim.t122                                  0
+xxtrim.xru122.dt                             0
+xxtrim.t123                                  0
+xxtrim.xru123.dt                             0
+xxtrim.t124                                  0
+xxtrim.xru124.dt                             0
+xxtrim.t125                                  0
+xxtrim.xru125.dt                             0
+xxtrim.t126                                  0
+xxtrim.xru126.dt                             0
+xxtrim.t127                                  0
+xxtrim.xru127.dt                             0
+xxtrim.t128                                  0
+xxtrim.xru128.dt                             0
+xxtrim.t129                                  0
+xxtrim.xru129.dt                             0
+xxtrim.t130                                  0
+xxtrim.xru130.dt                             0
+xxtrim.t131                                  0
+xxtrim.xru131.dt                             0
+xxtrim.t132                                  0
+xxtrim.xru132.dt                             0
+xxtrim.t133                                  0
+xxtrim.xru133.dt                             0
+xxtrim.t134                                  0
+xxtrim.xru134.dt                             0
+xxtrim.t135                                  0
+xxtrim.xru135.dt                             0
+xxtrim.t136                                  0
+xxtrim.xru136.dt                             0
+xxtrim.t137                                  0
+xxtrim.xru137.dt                             0
+xxtrim.t138                                  0
+xxtrim.xru138.dt                             0
+xxtrim.t139                                  0
+xxtrim.xru139.dt                             0
+xxtrim.t140                                  0
+xxtrim.xru140.dt                             0
+xxtrim.t141                                  0
+xxtrim.xru141.dt                             0
+xxtrim.t142                                  0
+xxtrim.xru142.dt                             0
+xxtrim.t143                                  0
+xxtrim.xru143.dt                             0
+xxtrim.t144                                  0
+xxtrim.xru144.dt                             0
+xxtrim.t145                                  0
+xxtrim.xru145.dt                             0
+xxtrim.t146                                  0
+xxtrim.xru146.dt                             0
+xxtrim.t147                                  0
+xxtrim.xru147.dt                             0
+xxtrim.t148                                  0
+xxtrim.xru148.dt                             0
+xxtrim.t149                                  0
+xxtrim.xru149.dt                             0
+xxtrim.t150                                  0
+xxtrim.xru150.dt                             0
+xxtrim.t151                                  0
+xxtrim.xru151.dt                             0
+xxtrim.t152                                  0
+xxtrim.xru152.dt                             0
+xxtrim.t153                                  0
+xxtrim.xru153.dt                             0
+xxtrim.t154                                  0
+xxtrim.xru154.dt                             0
+xxtrim.t155                                  0
+xxtrim.xru155.dt                             0
+xxtrim.t156                                  0
+xxtrim.xru156.dt                             0
+xxtrim.t157                                  0
+xxtrim.xru157.dt                             0
+xxtrim.t158                                  0
+xxtrim.xru158.dt                             0
+xxtrim.t159                                  0
+xxtrim.xru159.dt                             0
+xxtrim.t160                                  0
+xxtrim.xru160.dt                             0
+xxtrim.t161                                  0
+xxtrim.xru161.dt                             0
+xxtrim.t162                                  0
+xxtrim.xru162.dt                             0
+xxtrim.t163                                  0
+xxtrim.xru163.dt                             0
+xxtrim.t164                                  0
+xxtrim.xru164.dt                             0
+xxtrim.t165                                  0
+xxtrim.xru165.dt                             0
+xxtrim.t166                                  0
+xxtrim.xru166.dt                             0
+xxtrim.t167                                  0
+xxtrim.xru167.dt                             0
+xxtrim.t168                                  0
+xxtrim.xru168.dt                             0
+xxtrim.t169                                  0
+xxtrim.xru169.dt                             0
+xxtrim.t170                                  0
+xxtrim.xru170.dt                             0
+xxtrim.t171                                  0
+xxtrim.xru171.dt                             0
+xxtrim.t172                                  0
+xxtrim.xru172.dt                             0
+xxtrim.t173                                  0
+xxtrim.xru173.dt                             0
+xxtrim.t174                                  0
+xxtrim.xru174.dt                             0
+xxtrim.t175                                  0
+xxtrim.xru175.dt                             0
+xxtrim.t176                                  0
+xxtrim.xru176.dt                             0
+xxtrim.t177                                  0
+xxtrim.xru177.dt                             0
+xxtrim.t178                                  0
+xxtrim.xru178.dt                             0
+xxtrim.t179                                  0
+xxtrim.xru179.dt                             0
+xxtrim.t180                                  0
+xxtrim.xru180.dt                             0
+xxtrim.t181                                  0
+xxtrim.xru181.dt                             0
+xxtrim.t182                                  0
+xxtrim.xru182.dt                             0
+xxtrim.t183                                  0
+xxtrim.xru183.dt                             0
+xxtrim.t184                                  0
+xxtrim.xru184.dt                             0
+xxtrim.t185                                  0
+xxtrim.xru185.dt                             0
+xxtrim.t186                                  0
+xxtrim.xru186.dt                             0
+xxtrim.t187                                  0
+xxtrim.xru187.dt                             0
+xxtrim.t188                                  0
+xxtrim.xru188.dt                             0
+xxtrim.t189                                  0
+xxtrim.xru189.dt                             0
+xxtrim.t190                                  0
+xxtrim.xru190.dt                             0
+xxtrim.t191                                  0
+xxtrim.xru191.dt                             0
+xxtrim.t192                                  0
+xxtrim.xru192.dt                             0
+xxtrim.t193                                  0
+xxtrim.xru193.dt                             0
+xxtrim.t194                                  0
+xxtrim.xru194.dt                             0
+xxtrim.t195                                  0
+xxtrim.xru195.dt                             0
+xxtrim.t196                                  0
+xxtrim.xru196.dt                             0
+xxtrim.t197                                  0
+xxtrim.xru197.dt                             0
+xxtrim.t198                                  0
+xxtrim.xru198.dt                             0
+xxtrim.t199                                  0
+xxtrim.xru199.dt                             0
+xxtrim.t200                                  0
+xxtrim.xru200.dt                             0
+xxtrim.t201                                  0
+xxtrim.xru201.dt                             0
+xxtrim.t202                                  0
+xxtrim.xru202.dt                             0
+xxtrim.t203                                  0
+xxtrim.xru203.dt                             0
+xxtrim.t204                                  0
+xxtrim.xru204.dt                             0
+xxtrim.t205                                  0
+xxtrim.xru205.dt                             0
+xxtrim.t206                                  0
+xxtrim.xru206.dt                             0
+xxtrim.t207                                  0
+xxtrim.xru207.dt                             0
+xxtrim.t208                                  0
+xxtrim.xru208.dt                             0
+xxtrim.t209                                  0
+xxtrim.xru209.dt                             0
+xxtrim.t210                                  0
+xxtrim.xru210.dt                             0
+xxtrim.t211                                  0
+xxtrim.xru211.dt                             0
+xxtrim.t212                                  0
+xxtrim.xru212.dt                             0
+xxtrim.t213                                  0
+xxtrim.xru213.dt                             0
+xxtrim.t214                                  0
+xxtrim.xru214.dt                             0
+xxtrim.t215                                  0
+xxtrim.xru215.dt                             0
+xxtrim.t216                                  0
+xxtrim.xru216.dt                             0
+xxtrim.t217                                  0
+xxtrim.xru217.dt                             0
+xxtrim.t218                                  0
+xxtrim.xru218.dt                             0
+xxtrim.t219                                  0
+xxtrim.xru219.dt                             0
+xxtrim.t220                                  0
+xxtrim.xru220.dt                             0
+xxtrim.t221                                  0
+xxtrim.xru221.dt                             0
+xxtrim.t222                                  0
+xxtrim.xru222.dt                             0
+xxtrim.t223                                  0
+xxtrim.xru223.dt                             0
+xxtrim.t224                                  0
+xxtrim.xru224.dt                             0
+xxtrim.t225                                  0
+xxtrim.xru225.dt                             0
+xxtrim.t226                                  0
+xxtrim.xru226.dt                             0
+xxtrim.t227                                  0
+xxtrim.xru227.dt                             0
+xxtrim.t228                                  0
+xxtrim.xru228.dt                             0
+xxtrim.t229                                  0
+xxtrim.xru229.dt                             0
+xxtrim.t230                                  0
+xxtrim.xru230.dt                             0
+xxtrim.t231                                  0
+xxtrim.xru231.dt                             0
+xxtrim.t232                                  0
+xxtrim.xru232.dt                             0
+xxtrim.t233                                  0
+xxtrim.xru233.dt                             0
+xxtrim.t234                                  0
+xxtrim.xru234.dt                             0
+xxtrim.t235                                  0
+xxtrim.xru235.dt                             0
+xxtrim.t236                                  0
+xxtrim.xru236.dt                             0
+xxtrim.t237                                  0
+xxtrim.xru237.dt                             0
+xxtrim.t238                                  0
+xxtrim.xru238.dt                             0
+xxtrim.t239                                  0
+xxtrim.xru239.dt                             0
+xxtrim.t240                                  0
+xxtrim.xru240.dt                             0
+xxtrim.t241                                  0
+xxtrim.xru241.dt                             0
+xxtrim.t242                                  0
+xxtrim.xru242.dt                             0
+xxtrim.t243                                  0
+xxtrim.xru243.dt                             0
+xxtrim.t244                                  0
+xxtrim.xru244.dt                             0
+xxtrim.t245                                  0
+xxtrim.xru245.dt                             0
+xxtrim.t246                                  0
+xxtrim.xru246.dt                             0
+xxtrim.t247                                  0
+xxtrim.xru247.dt                             0
+xxtrim.t248                                  0
+xxtrim.xru248.dt                             0
+xxtrim.t249                                  0
+xxtrim.xru249.dt                             0
+xxtrim.t250                                  0
+xxtrim.xru250.dt                             0
+xxtrim.t251                                  0
+xxtrim.xru251.dt                             0
+xxtrim.t252                                  0
+xxtrim.xru252.dt                             0
+xxtrim.t253                                  0
+xxtrim.xru253.dt                             0
+xxtrim.t254                                  0
+xxtrim.xru254.dt                             0
+cb3                                          0
+xxtrim.xru255.dt                             0
+xq3.s1                                       0
+xq3.t                                        0
+tail                                         0
+d1                                           0
+d2                                           0
+pn                                           0
+det                                          0
+xrpu.dt                                      0
+fbx                                          0
+vmkfb#branch                                 0
+vsub#branch                                  0
+vvss#branch                                  0
+vvdd#branch                                  0
+
+ Reference value :  6.11400e-06 Reference value :  2.31640e-05 Reference value :  4.29640e-05 Reference value :  6.24140e-05 Reference value :  8.31640e-05 Reference value :  1.02964e-04 Reference value :  1.22414e-04 Reference value :  1.42864e-04 Reference value :  1.63114e-04 Reference value :  1.82764e-04 Reference value :  2.02325e-04 Reference value :  2.19425e-04 Reference value :  2.37625e-04 Reference value :  2.58125e-04 Reference value :  2.78425e-04 Reference value :  2.98875e-04 Reference value :  3.19175e-04 Reference value :  3.39325e-04 Reference value :  3.58675e-04 Reference value :  3.79325e-04 Reference value :  3.98725e-04 Reference value :  4.18475e-04 Reference value :  4.38625e-04 Reference value :  4.58975e-04 Reference value :  4.79325e-04 Reference value :  4.99225e-04 Reference value :  5.18375e-04 Reference value :  5.38325e-04 Reference value :  5.58675e-04 Reference value :  5.77975e-04 Reference value :  5.96175e-04 Reference value :  6.15775e-04 Reference value :  6.34925e-04 Reference value :  6.54325e-04 Reference value :  6.73775e-04 Reference value :  6.94175e-04 Reference value :  7.14675e-04 Reference value :  7.35225e-04 Reference value :  7.55925e-04 Reference value :  7.74825e-04 Reference value :  7.94525e-04 Reference value :  8.14925e-04 Reference value :  8.34825e-04 Reference value :  8.54575e-04 Reference value :  8.74325e-04 Reference value :  8.91775e-04 Reference value :  9.11725e-04 Reference value :  9.31575e-04 Reference value :  9.51775e-04 Reference value :  9.71525e-04 Reference value :  9.92075e-04 Reference value :  1.01248e-03 Reference value :  1.03308e-03 Reference value :  1.05358e-03 Reference value :  1.07252e-03 Reference value :  1.09152e-03 Reference value :  1.11107e-03 Reference value :  1.13172e-03 Reference value :  1.15232e-03 Reference value :  1.17312e-03 Reference value :  1.19352e-03 Reference value :  1.21417e-03 Reference value :  1.23472e-03 Reference value :  1.25402e-03 Reference value :  1.27437e-03 Reference value :  1.29367e-03 Reference value :  1.31332e-03 Reference value :  1.33302e-03 Reference value :  1.35252e-03 Reference value :  1.37252e-03 Reference value :  1.38877e-03 Reference value :  1.40952e-03 Reference value :  1.43037e-03 Reference value :  1.45122e-03 Reference value :  1.47212e-03 Reference value :  1.49307e-03 Reference value :  1.51407e-03 Reference value :  1.53507e-03 Reference value :  1.55577e-03 Reference value :  1.57642e-03 Reference value :  1.59722e-03 Reference value :  1.61717e-03 Reference value :  1.63792e-03 Reference value :  1.65872e-03 Reference value :  1.67762e-03 Reference value :  1.69817e-03 Reference value :  1.71707e-03 Reference value :  1.73672e-03 Reference value :  1.75607e-03 Reference value :  1.77577e-03 Reference value :  1.79407e-03 Reference value :  1.81287e-03 Reference value :  1.83347e-03 Reference value :  1.85387e-03 Reference value :  1.87457e-03 Reference value :  1.89327e-03 Reference value :  1.91282e-03 Reference value :  1.93197e-03 Reference value :  1.95172e-03 Reference value :  1.97182e-03 Reference value :  1.99197e-03
+No. of Data Rows : 40011
+v_det_early         =  1.38389e-01
+v_fb_early          =  4.63950e-02
+v_det_100u          =  8.57425e-03
+i_mkfb_100u         =  1.08587e-10
+v_fb_100u           =  1.11045e+00
+v_sns1_100u         =  5.85240e-01
+v_sns2_100u         =  5.84402e-01
+v_det_200u          =  1.82323e-02
+i_mkfb_200u         =  2.02305e-10
+v_fb_200u           =  2.92712e+00
+v_sns1_200u         =  5.85320e-01
+v_sns2_200u         =  5.84677e-01
+v_det_300u          =  1.82327e-02
+i_mkfb_300u         =  1.83124e-10
+v_fb_300u           =  2.92711e+00
+v_sns1_300u         =  5.85318e-01
+v_sns2_300u         =  5.84672e-01
+v_det_400u          =  1.82327e-02
+i_mkfb_400u         =  1.83124e-10
+v_fb_400u           =  2.92711e+00
+v_sns1_400u         =  5.85318e-01
+v_sns2_400u         =  5.84672e-01
+v_det_500u          =  1.82327e-02
+i_mkfb_500u         =  1.83124e-10
+v_fb_500u           =  2.92711e+00
+v_sns1_500u         =  5.85318e-01
+v_sns2_500u         =  5.84672e-01
+v_det_600u          =  1.82327e-02
+i_mkfb_600u         =  1.83124e-10
+v_fb_600u           =  2.92711e+00
+v_sns1_600u         =  5.85318e-01
+v_sns2_600u         =  5.84672e-01
+v_det_700u          =  1.82327e-02
+i_mkfb_700u         =  1.83124e-10
+v_fb_700u           =  2.92711e+00
+v_sns1_700u         =  5.85318e-01
+v_sns2_700u         =  5.84672e-01
+v_det_800u          =  1.82327e-02
+i_mkfb_800u         =  1.83124e-10
+v_fb_800u           =  2.92711e+00
+v_sns1_800u         =  5.85318e-01
+v_sns2_800u         =  5.84672e-01
+v_det_900u          =  1.82327e-02
+i_mkfb_900u         =  1.83124e-10
+v_fb_900u           =  2.92711e+00
+v_sns1_900u         =  5.85318e-01
+v_sns2_900u         =  5.84672e-01
+v_det_1000u         =  1.82327e-02
+i_mkfb_1000u        =  1.83124e-10
+v_fb_1000u          =  2.92711e+00
+v_sns1_1000u        =  5.85318e-01
+v_sns2_1000u        =  5.84672e-01
+v_det_2000u         =  1.82327e-02
+i_mkfb_2000u        =  1.83124e-10
+v_fb_2000u          =  2.92711e+00
+v_sns1_2000u        =  5.85318e-01
+v_sns2_2000u        =  5.84672e-01
+Note: Simulation executed from .control section 
