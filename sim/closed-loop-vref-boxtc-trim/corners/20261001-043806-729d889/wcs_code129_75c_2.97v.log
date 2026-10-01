@@ -1,0 +1,29 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- bandgap_trim ladder range/resolution/linearity
+
+Doing analysis at TEMP = 75.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+v(fb) = 2.148655e+00
+v(sns1) = 6.576503e-01
+v(sns2) = 6.571379e-01
+v(vref) = 1.052006e+00
+v(det) = 2.902066e-02
+v(cb3) = 6.580453e-01
+i(vmkfb) = 7.885307e-13
+Note: Simulation executed from .control section 

@@ -1,0 +1,5 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+Warning: singular matrix:  check nodes xxtrim.t207 and xxtrim.t187
+
+Note: Starting dynamic gmin stepping

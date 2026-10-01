@@ -1,0 +1,21 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- bandgap_trim ladder range/resolution/linearity
+
+Doing analysis at TEMP = 50.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+v(fb) = 2.811246e+00
+v(sns1) = 6.811276e-01
+v(sns2) = 6.806872e-01
+v(vref) = 1.046407e+00
+v(det) = 8.363107e-03
+v(cb3) = 6.816229e-01
+i(vmkfb) = 1.214637e-12
+Note: Simulation executed from .control section 

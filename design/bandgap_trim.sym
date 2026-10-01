@@ -1,0 +1,47 @@
+v {xschem version=3.4.8RC file_version=1.3
+* bandgap_trim symbol -- binary-weighted trim ladder for the core's R1/R2
+* divider (issue #229, obligated by DR-0011's Trim row: 1-point @ 27 C,
+* range >= +/-15%, resolution <= 0.25%/step, magnitude only).
+*
+* 255 identical rppd unit segments (w=2u, l=3.43u) in one series string,
+* tapped after 1/3/7/15/31/63/127 units into eight binary-weighted groups
+* (weights 2^0..2^7), each group shunted by one strap RS0..RS7 modeling a
+* metal-option / probe-pad link. The subcircuit-local parameter trim_code
+* (0..255, default 128 = MSB group only) decodes each strap:
+*   bit_b = floor(trim_code/2^b) - 2*floor(trim_code/2^(b+1))
+*   RS<b> = 1e-3 ohm when bit_b = 0 (strap closed, group shorted out)
+*        = 1e12 ohm when bit_b = 1 (strap open, group in circuit)
+* so Rtrim(trim_code) = trim_code * R_unit and the default code 128
+* reproduces the pre-trim drawn 511 um summing resistance to within a few
+* ohms (see design/bandgap_trim_network.md for the sizing derivation and
+* sim/trim-coverage/ for the measured range/resolution/linearity evidence).
+*
+* Pins match design/bandgap_trim.sch's iopin list exactly: in (from the
+* core's R1 base resistor, node tn0), out (to Q3's collector/base node
+* cb3), sub (the rppd bodies).
+}
+G {}
+K {type=subcircuit
+format="@spiceprefix@name @pinlist bandgap_trim"
+template="name=XTRIM
+spiceprefix=X"
+}
+V {}
+S {}
+E {}
+L 4 -30 -60 30 -60 {}
+L 4 -30 60 30 60 {}
+L 4 -30 -60 -30 60 {}
+L 4 30 -60 30 60 {}
+L 4 -30 -20 -10 -20 {}
+L 4 -30 -20 -30 20 {}
+B 5 -2.5 -62.5 2.5 -57.5 {name=in dir=inout pinnumber=1}
+B 5 -2.5 57.5 2.5 62.5 {name=out dir=inout pinnumber=2}
+B 5 -62.5 -2.5 -57.5 2.5 {name=sub dir=inout pinnumber=3}
+T {in} -25 -55 0 1 0.2 0.2 {}
+T {out} -25 50 0 1 0.2 0.2 {}
+T {sub} -55 5 0 0 0.2 0.2 {}
+T {bandgap_trim} -25 -15 0 0 0.15 0.15 {}
+T {255x rppd 2u/3.43u} -25 5 0 0 0.15 0.15 {}
+T {trim_code 0..255} -25 25 0 0 0.15 0.15 {}
+T {@name} -30 70 0 0 0.2 0.2 {}

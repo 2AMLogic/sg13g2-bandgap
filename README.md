@@ -128,10 +128,29 @@ so the honest per-row status is:
   27 °C), backed by the new **Trim row** (range ≥ ±15%, resolution
   ≤ 0.25%/step) — the row shape the market key asked for, and the same
   re-cast shape both siblings ratified on their own numbers. The trim
-  network behind the trimmed line does not exist yet and is tracked by
-  **#229** (replacing the closed issue #9 as the tracker); until it lands,
-  the committed evidence demonstrates the untrimmed ±16% line and supports
-  ±0.5% as a budgeted target.
+  network behind the trimmed line **has landed** (**#229**, replacing the
+  closed issue #9 as the tracker): a 255-unit binary-weighted `rppd`
+  ladder in series with R1 (strap-decoded 1-point code, default 128 ≡
+  the pre-trim 511 µm summing resistor — sizing and the
+  correlated-coverage argument in
+  [`design/bandgap_trim_network.md`](design/bandgap_trim_network.md)).
+  The Trim row itself is **met on committed evidence**: measured range
+  +29.6%/−29.8% and resolution 0.2327%/step across the full
+  corner/supply grid at 27 °C (`sim/trim-coverage/`), exact binary
+  weights, monotonic. The **±0.5% trimmed line is measured NOT met** on
+  the same evidence: the N=300-per-point trim-domain mismatch MC with a
+  modeled 1-point 27 °C trim (`sim/closed-loop-vref-trim-mc/`) reads
+  3σ ≈ ±2.6% over −40…125 °C (≈30% of dies inside ±0.5%) — the 1-point
+  trim centers every die at 27 °C (quantization-class residual) but the
+  population's temperature drift retains a code-correlated spread, and
+  the nominal die's own drift (~0.43%) already exceeds DR-0011's 0.20%
+  budget input, which was derived from convergence-aided TC evidence
+  (the aids-free A/B is documented in
+  `sim/closed-loop-vref-boxtc-trim/README.md`). The row's disposition is
+  tracked in **#265** (superseding record or second trim point,
+  two-key-gated — no silent relaxation); the committed evidence also
+  still demonstrates the untrimmed ±16% line
+  (`sim/closed-loop-vref-mc/`, issue #215).
 
 See `0007` for full per-row evidence and the Output-reference-vs-TC trade-off,
 `0008` for what the two-key review changed about the status above, and `0011`

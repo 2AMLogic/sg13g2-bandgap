@@ -1,0 +1,5 @@
+corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,n_draws,n_pass,frac_within_0p5_pct,three_sigma_max_dev_pct,worst_max_dev_pct,mean_code_star,sigma_code_star,min_code_star,max_code_star,n_railed,mean_unit_mv,sigma_unit_mv,mean_lin_resid_uv
+typ_mismatch,hbt_typ_mismatch,mos_tt_mismatch,res_typ_mismatch,27,3.30,10u,FAIL,300,299,29.7659,2.601233,6.720095,131.291,20.410,91,228,0,2.4575,0.3137,14.35
+typ_negctrl,hbt_typ,mos_tt,res_typ,27,3.30,10u,PASS,300,300,100.0000,0.000000,0.434381,129.000,0.000,129,129,0,2.4429,0.0000,13.85
+bcs_mismatch,hbt_bcs_mismatch,mos_ff_mismatch,res_bcs_mismatch,27,3.30,10u,FAIL,300,242,28.5124,2.522647,6.786857,130.029,19.349,91,229,0,2.4987,0.3036,14.95
+wcs_mismatch,hbt_wcs_mismatch,mos_ss_mismatch,res_wcs_mismatch,27,3.30,10u,FAIL,300,293,31.7406,2.592480,6.786857,129.959,20.229,90,226,0,2.4403,0.3108,14.41
