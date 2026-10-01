@@ -2,13 +2,6 @@
   "_comment": "Known-stale sim/ evidence, waived explicitly rather than silently. .github/scripts/check_evidence_formats.py compares each experiment's NEWEST record's committed per-point netlist snapshots against the design/ netlist that record names as its own provenance; a record produced against a superseded DUT is stale evidence, and stale evidence fails ('staleness is failure', klayout-tools docs/design-evidence-tiers.md). An entry here downgrades exactly one such failure to a loud note: it names the exact record, the exact DUT netlist, and the exact stale device signature digest. It SELF-EXPIRES two ways -- if the record is re-run the digest no longer matches, and if a NEWER record is appended to the experiment this entry stops matching any check the checker runs. Either way CI fails until the entry is deleted. Every entry must name a tracking issue; waiving without one is a schema error, not a judgement call. This is the sim/ counterpart of layout/evidence-freshness-waivers.json.",
   "waivers": [
     {
-      "report": "sim/closed-loop-iq/records/20260830-133900-d83f7c4.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-iq 2026-08-30 record: the pre-trim core DUT it froze (R1=511um single instance, no trim ladder) was superseded by #229's trim-bearing core; refresh tracked here"
-    },
-    {
       "report": "sim/closed-loop-psrr-pex/records/20260905-233826-f6f3efc.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
