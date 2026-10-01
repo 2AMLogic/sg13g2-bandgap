@@ -20,9 +20,14 @@ layout/
                               primitives: route_h/route_v/via1_tap/
                               draw_gate_tab) both generate.py scripts import
   lvs_reference.py            converts design/netlist/*.spice to the
-                              plain-element form klt lvs requires (issue #12)
+                              plain-element form klt lvs requires (issue #12),
+                              resolving the mask-option trim ladder to the
+                              single code its .param trim_code selects
+                              (issue #272 -- see "Trim ladder layout")
   bandgap_core/
-    generate.py               draws + routes bandgap_core.gds
+    generate.py               draws + routes bandgap_core.gds, including
+                              #229's 255-unit rppd trim ladder and its
+                              code-128 metal-option straps (issue #272)
     bandgap_core.gds          committed, deterministic layout
     lvs_request.json          klt lvs request (issue #12)
     lvs_reference.spice       generated reference netlist (issue #12)
@@ -30,6 +35,10 @@ layout/
     lvs_report.json           committed klt lvs report
     bandgap_core.pex.spice    klt extract --parasitics output (issue #14)
     pex_extract_report.json   committed klt extract --format json report
+    probe/                    one-point ngspice sanity probe of the
+                              extraction above (issue #272) -- a generator,
+                              its generated netlist and its log. NOT an
+                              evidence record; see "One-point probe"
   bandgap_startup/
     generate.py               draws + routes bandgap_startup.gds
     bandgap_startup.gds       committed, deterministic layout
@@ -190,6 +199,327 @@ and `pnpMPA`'s pin count/naming).
   77.5% of the assembled footprint was aspect-ratio whitespace. Issue #173
   folded them.)*
 
+## Trim ladder layout (issue #272)
+
+#229 split `bandgap_core`'s summing resistor in the *schematic*: `XR1`
+shrank from `l=511u` to `l=37.2u` and now runs `vref -> tn0`, with `XXTRIM`
+(`design/bandgap_trim.sch` — 255 identical `rppd w=2u l=3.43u` unit segments
+in one series string, tapped after 1/3/7/15/31/63/127 units and shunted by
+eight binary-weighted straps `RS0`–`RS7`) continuing `tn0 -> cb3`. #229
+explicitly deferred the layout (`design/bandgap_trim_network.md` §5, "that
+re-layout remains the separate follow-on it already was"). This section is
+that follow-on: `layout/bandgap_core` now draws the ladder, and
+`layout/bandgap_top` is re-assembled, re-verified and re-extracted against
+it.
+
+### The straps are a mask option, and that decides everything else
+
+`design/bandgap_trim_network.md` §4 is explicit that `RS0`–`RS7` are **not
+fabricated devices** — they are "verification-time models of a metal-option /
+probe-pad link", `1e-3 Ω` when the link is drawn (bit 0, that binary group
+shorted out of the string) and `1e12 Ω` when it is cut (bit 1, the group in
+circuit). Two consequences run through the rest of this section:
+
+1. **A layout realises one code, not 256.** This cell draws
+   `TRIM_CODE = 128`, the ratified schematic default: bits 0–6 are 0, so the
+   seven links `t0–t1–t3–t7–t15–t31–t63–t127` are drawn as real `Metal2`
+   straps; bit 7 is 1, so the `t127 -> out` link is absent and units 128–255
+   carry the branch current. `Rtrim(128) = 128 · R_unit`, which is exactly
+   what `trim_code=128` means — and is **verified against the extraction**,
+   not asserted: walking `bandgap_core.pex.spice`'s own series chain from
+   `CB3` back to the merged tap net traverses exactly **128** `rppd`
+   devices.
+2. **Every drawn strap is closed and they chain end-to-end, so all seven are
+   one physical net.** That is why they can be drawn as a single overlapping
+   `Metal2` chain with no inter-strap spacing problem at all, and why that
+   chain may run straight over the shorted-out units' own interior `Metal1`
+   pads — same net above, different layer below, no via, capacitive only, and
+   those nodes carry no branch current *precisely because* they are shorted
+   out. `klt extract` reports the resulting net under its own merged-label
+   convention, `T001|T003|T007|T015|T031|T063|T127|TN0`, and says so as a
+   `merged_net_labels` warning — a correct disclosure, not a short.
+
+### Array geometry
+
+255 = 3 × 5 × 17, and 17 columns × 15 units is the only factorisation that
+gives a block fitting beside the existing cell with no ragged last column
+(a ragged column would special-case the serpentine's tap arithmetic for no
+area gain). Each unit is a `legs=1` `draw_poly_res` call at the schematic's
+own `w=2u`/`l=3.43u`, so each is recognised by `klt`'s curated `sg13g2` deck
+as its **own** `rppd` device — the deck's resistor extractor wants exactly
+two un-marked `GatPoly` contact polygons per marked shape, which is exactly
+what one un-folded unit draws.
+
+| quantity | value | why |
+| --- | --- | --- |
+| columns × units | 17 × 15 = 255 | exact; no ragged column |
+| column pitch | 2.7 µm | a unit's Metal1 pad is 2.4 µm wide, so 0.3 µm between adjacent columns' pads — 0.12 µm clear of `metal1.space.1` (0.18); the GatPoly heads beneath are 2.2 µm, so 0.5 µm there |
+| row pitch | 4.63 µm | a unit occupies 0.5 + 3.43 + 0.5 = 4.43 µm of y, so 0.2 µm of Metal1 gap (bridged explicitly, see below) and 0.4 µm of GatPoly space, 0.22 µm clear of `gatpoly.space.1` |
+| block | 45.9 × 69.25 µm (3,179 µm²) | against `design/bandgap_trim_network.md` §5's 2,200–2,600 µm² budget — over it, see "Area" below |
+| strap width | 1.0 µm | the straps' own resistance is a real series error; see "What the metal option costs" |
+
+The serpentine is column-major: column *j* holds units `15j+1 … 15j+15` in
+series, running bottom-to-top in an even column and top-to-bottom in an odd
+one, so consecutive columns always meet at the end they share. Series
+continuity is 254 explicit `Metal1` link boxes — 238 vertical (one per
+adjacent row pair inside a column, bridging the 0.2 µm pad gap) plus 16
+horizontal (one per adjacent column pair, at the end the serpentine turns
+on, bridging the 0.3 µm pitch gap). `_draw_trim_links` asserts
+`238 + 16 == 254` rather than trusting it.
+
+Pitching the rows to make the pads *touch* (4.43 µm) would have avoided the
+238 link boxes but left only 0.02 µm of margin on the GatPoly space between
+one unit's top head and the next unit's bottom head. The link box is the
+cheaper of the two risks.
+
+### Why the ladder grew the core rightward, not upward
+
+`layout/bandgap_top/generate.py` rises the assembly's `vref` port column
+**straight up through the core** at local x=120 and stops it 1.4 µm above the
+core's own bbox top (issue #177). Growing the core upward would have put new
+core geometry inside an already-verified top-level riser. Growing it
+rightward costs one constant instead: `STARTUP_DX`, 160.0 → 208.0, because
+every startup riser in that module is written as `STARTUP_DX + local` and
+every bus spans its own riser set. `bandgap_core`'s bbox goes
+`(-5.4, -3.1)–(137.478, 70.623)` → `(-5.4, -3.1)–(185.4, 71.675)`, and
+`bandgap_top`'s `(-18.5, -1.59)–(205.1, 125)` → `(-18.5, -1.59)–(252.972,
+125)`. What is given up is #177's "neither row overhangs the other"
+property: row B is simply the wider row now.
+
+`R1`'s own fold count drops 14 → **5**, and odd is deliberate. An odd leg
+count brings end B out on the block's *top* row (see
+`common.py::draw_poly_res`), which is what lets `vref` land on end A from
+the MOS row below while `tn0` escapes upward toward the ladder without the
+two nets' Metal2 jogs sharing a pad row — the exact collision an even count
+would force. `tn0`'s horizontal leg is then drawn on **Metal1** rather than
+Metal2, also deliberately: `cb3` has to cross the same band the other way
+(over the top of the ladder, `TRIM_CB3_TOP_Y`) and its riser column sits
+between `R1` and the array, so one of the two crossings has to be on a
+different layer — and `tn0` is the one that can be, since both of its
+endpoints are already Metal1 pads.
+
+### Area
+
+3,179 µm² drawn, against `design/bandgap_trim_network.md` §5's 2,200–2,600 µm²
+budget — **22–45% over**, disclosed rather than reconciled. The §5 estimate
+costed the 255 unit bodies (1,750 µm²) plus "segment-to-segment series links
+and tap contacts"; what it under-counted is the per-unit *terminal* overhead
+this PDK's recognition geometry requires. `draw_poly_res` has to draw a
+wider un-marked `GatPoly` "dog-bone" head at each end (`RES_HEAD_UM`, 0.4 µm
+per end) with its own `Cont` and `Metal1` pad, because the recognised
+device's terminals are `body − segment` and a head is the only un-marked
+conductor left to contact — see `common.py`'s `RES_*` constants. At
+`l=3.43u` that is 0.8 µm of head per 3.43 µm of body, i.e. the terminal
+overhead is 23% of the device *before* any inter-device space. Per unit:
+2.7 × 4.63 = 12.5 µm² drawn against 6.9 µm² of body. The §5 budget is a
+reasonable estimate for a PDK whose resistor recognition does not need
+per-instance heads; it is not reachable with this one. No dummies-for-matching
+were added at the array edges (§5's budget allowed for them): the array's own
+interior is 15 rows deep and the units that matter at code 128 are
+columns 9–17, interior in x, so edge-row dummies would cost ~190 µm² to
+protect the segments the trim does not use.
+
+### What the metal option costs
+
+The straps are drawn metal, so their resistance is a real series term where
+the schematic models an ideal 1 mΩ. `klt extract --parasitics` measures it:
+the merged tap net carries **16 star-hub legs** of 0.7–4.3 Ω each. Measured
+end-to-end in a one-point ngspice probe of the extracted netlist (typ /
+27 °C / 3.30 V, see "One-point probe" below), the summing resistor's
+effective value lands at **66,123 Ω** against the pre-trim single-bar
+layout's 66,092 Ω — **+30 Ω, +0.046%**, worth ~0.3 mV on `vref`, about an
+eighth of the ladder's own 2.443 mV trim step. Nearly all of that is strap
+metal: `design/bandgap_trim_network.md` §3 puts the *intrinsic*
+ladder-at-128 vs 511 µm-bar difference at −3 Ω, so the measured +30 Ω is
+≈ +33 Ω of drawn link. That is the quantity
+`TRIM_STRAP_W = 1.0` was chosen to bound (at the 0.3 µm `TRUNK_W` it would
+have been ~3× larger), and it is a PEX-only effect the schematic-level
+benches cannot show.
+
+### One-point probe (not an evidence record)
+
+The five `*-pex` experiments' own grid re-runs are deferred to **#275** (see
+"Evidence freshness" below and that issue for why: this repo's
+`run_pvt_sweep.sh` corner loops are not runnable on the dispatch hosts, and
+a mask-option PEX DUT has no `trim_code` for `check_evidence_formats.py`'s
+D2 rule to compare against). What *was* run here, as a single operating
+point, is a direct sanity probe of the refreshed extraction — 257 `rppd` +
+6 `pfet` device cards and all 833 wire-parasitic cards (533 R / 255 C /
+44 coupling C / 1 substrate DC tie) taken from `bandgap_core.pex.spice`,
+bipolars spliced from `design/netlist/bandgap_core.spice`, the same
+FIXTURE 1–3 the committed `core-open-loop-bias-pex` template uses.
+
+**It is committed and re-runnable** — `layout/bandgap_core/probe/`:
+
+```bash
+layout/bandgap_core/probe/run_probe.sh     # ~0.3 s, one corner, local
+```
+
+`make_probe_netlist.py` *generates* `tb_core_pex_probe.spice` from the
+committed extraction rather than hand-splicing a copy of it (issue #176's
+lesson: a hand-spliced copy goes stale silently), and `run_probe.sh` runs
+`--check` before simulating, so a probe result can never come from a
+netlist that has drifted from the `.pex.spice` it claims to probe. The
+numbers below are that script's own output:
+
+| quantity | pre-trim PEX (`core-open-loop-bias-pex` record `20260905-033431`) | trim-bearing PEX probe | trim-bearing schematic (#264, `core-open-loop-bias` record `20261001-082455`) |
+| --- | --- | --- | --- |
+| `vref` | 1.052841 V | **1.052999 V** | 1.052707 V |
+| `R1_eff` | 66,092 Ω | **66,123 Ω** | 66,057 Ω |
+| `i_leg3` | 5.200783 µA | 5.200776 µA | 5.201476 µA |
+
+The refreshed extraction reproduces the pre-trim PEX point to **+0.158 mV
+(+0.015%)**, and the trim-bearing schematic point to +0.29 mV. The ladder
+measures as 128 units independently of the device walk above:
+`(v(tn0) − v(cb3)) / (v(vref) − v(tn0))` = **12.630**, against the design's
+`128·R_unit / R1_base` = 12.64 nominal ratio (the 0.08% shortfall is the
+strap metal above, which sits inside the ladder half of that ratio).
+
+Two deliberate differences from the `core-open-loop-bias-pex` template, both
+visible in the generator: the probe keeps the extraction's **body**-side hub
+legs rather than dropping them (they carry no current it measures, so this
+is only simpler, not more accurate — it is worth 7 pA on `i_leg3`, the whole
+gap to the pre-trim column above), and it addresses the merged tap net by
+`klt`'s own name under an ngspice-legal alias (`tn0_merged`) rather than
+pretending the eight shorted tap nodes are still distinct.
+
+One point is not a PVT grid and is **not** committed as evidence — `sim/`
+records are minted by `run_pvt_sweep.sh`, and #275 owns that; nothing in
+`probe/` is under `sim/`, and the probe's log is overwritten on each run
+rather than appended. It exists because it is what makes the claim "the PEX
+netlist matches the trim-bearing schematic" checkable rather than asserted.
+
+### Verdicts
+
+| cell | DRC | LVS | extraction |
+| --- | --- | --- | --- |
+| `bandgap_core` | `clean`, 0 violations | `mismatch`, 8 findings / **4 error-severity** — the same four as pre-#272 (`Q1`–`Q3` `device.unmatched` plus their class-level topology entry, the permanent bipolar-recognition cause); devices **263/263** matched, nets 253/257 | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C |
+| `bandgap_top` | `clean`, 0 violations | `mismatch`, 10 findings / **4 error-severity** — the same four as pre-#272, same bipolar cause (the 6 → 4 drop was issue #185's `bandgap_amp` body ties, 2026-09-05, not this change); devices **275/275** matched, nets 257/261 | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C |
+
+Every error-severity finding on both cells is the bipolar-recognition cause
+already documented under "Permanent blockers" below. **No new error class
+appeared** — 255 new devices, 248 new nets, and the extra findings are all
+`severity: "warning"` disclosures (the two new ones are discussed next).
+
+### LVS: three real pieces of friction, all filed upstream
+
+**1. The reference netlist for a mask-option block has to be resolved to one
+code, by hand.** `klt lvs` has no notion of a mask option: it treats every
+`R` card as a device to match, so each `RS<b>` becomes a reference device
+with no layout counterpart *and* each closed link's two nodes stay distinct
+on the reference side while the layout has them merged. A correct layout
+reports as a mismatch, with nothing in the report pointing at the cause.
+Filed generically as
+[klayout-tools#2653](https://github.com/2AMLogic/klayout-tools/issues/2653)
+(suggested shapes: a `reference.resolve_options` request block, or a
+`hints.short_nets` dual of the existing `hints.same_nets`).
+
+Worked around in-repo by `layout/lvs_reference.py`'s new
+`convert_with_metal_options()` + `_resolve_metal_option_subckt()`: it reads
+the code from the subcircuit's **own** `.param trim_code` default (not from
+a flag — the layout's `TRIM_CODE` and that default are the same ratified
+number, and a disagreement between them *should* surface as an LVS failure,
+not be papered over), unions the closed straps' nodes, and drops the open
+ones. `flatten()` learned the same thing for `bandgap_top`, where the trim
+is now a *grandchild* subckt call. The one part of this that is genuinely
+reverse-engineering, and the reason it is filed as a tool gap rather than a
+convenience gap, is that the workaround has to reproduce `klt extract`'s own
+merged-net spelling (the sorted, comma-joined union of the shorted labels) to
+avoid a spurious name/identity conflict — discoverable only by running the
+extraction and reading its `merged_net_labels` warning. It is reproduced
+correctly: the merged net pairs by name,
+`T001|T003|T007|T015|T031|T063|T127|TN0` on both sides.
+
+**2. A resistor class's geometry is not compared by default** — klt's own
+`device.geometry_not_compared` disclosure (klayout-tools#2461, already
+closed) says so: KLayout marks only `R` primary on `DeviceClassResistor`, so
+`A`/`L`/`P`/`W` take no part in a default compare and "this resistor's
+geometry could differ between the two sides by any amount and this run would
+still report `match`". For a 255-unit exact-ratio array that is the whole
+claim, so the committed `lvs_request.json` now uses the documented escape
+hatch:
+
+```json
+"options": { "compare_parameters": { "rppd": ["R", "L", "W"] } }
+```
+
+**Verified non-vacuous, not assumed**: perturbing one of the 255 reference
+cards from `L=3.43U` to `L=4.90U` adds a `device.property` error
+(`error_count` 4 → 5). `lvs_report.json`'s `device_parameter_coverage` now
+records `compared: ["R", "L", "W"]`.
+
+**3. …but `compare_parameters` can only narrow.** Enabling `L`/`W` forces
+`A`/`P` out, because the option is specified as "every other parameter that
+class declares is disabled" — so the report carries two
+`device.parameter_excluded` warnings for parameters the caller never
+intended to drop, and attributes to the caller's option an exclusion that is
+really KLayout's secondary-parameter default. (Naming all five is not the
+answer: `A`/`P` are derived areas/perimeters a hand-written reference's `R`
+cards cannot state.) Filed as
+[klayout-tools#2654](https://github.com/2AMLogic/klayout-tools/issues/2654).
+
+### Extraction: `r_ohm` is a sheet estimate whose per-instance error a 129-device string multiplies
+
+`klt extract` computes a drawn poly resistor's value as
+`sheet_rho · L / W`. IHP's own `rppd` symbol gives
+`70.0e-6/w + 260.0·l/(w + 6.0e-9)` — a fixed per-instance end/contact term
+plus a width-corrected body term, neither of which the curated `sg13g2` deck
+models (the `ResistorDevice.fixed_offset_ohm` field that exists for exactly
+this, shipped for sky130 by klayout-tools#518, is left at its `0.0` default
+on all three `sg13g2` poly-resistor flavours).
+
+That error is 0.02% on `R2` (`l=82.7u`) and was +0.25% on the pre-trim `R1`
+bar (`l=511u`) — tolerable, and already disclosed in
+`sim/core-open-loop-bias-pex/README.md`. It is **−7.0%** on one `l=3.43u`
+unit (445.9 Ω reported vs 479.57 Ω from the PDK formula), and a 129-device
+series string multiplies that by its own device count:
+
+| | deck `r_ohm` | PDK formula | delta |
+| --- | --- | --- | --- |
+| `R1` base + 128 units | 61,911 Ω | 66,240 Ω | **−6.5%** |
+
+Filed generically as
+[klayout-tools#2652](https://github.com/2AMLogic/klayout-tools/issues/2652),
+including the measurement table and the observation that the end term is
+`k/w`, not a constant, so `fixed_offset_ohm`'s current constant-ohms shape
+can only express it at one width.
+
+**This does not affect any verdict or any simulated number here.** LVS
+compares `R` against a reference computed with the *same* sheet formula, so
+both sides agree (445.9 vs 445.9). And every simulated value comes from the
+real `rppd` PDK subckt at the extracted *geometry*, not from `r_ohm` — which
+is why the one-point probe above lands at 66,123 Ω rather than at `r_ohm`'s
+61,911 Ω. What the gap does affect is any estimate read straight out of
+`pex_extract_report.json`; treat `r_ohm` on a short segment as a lower bound
+until #2652 lands.
+
+### Reproducing
+
+```bash
+cd layout
+python3 bandgap_core/generate.py        # 255-unit ladder + straps at TRIM_CODE
+python3 bandgap_top/generate.py         # must run after the leaf
+cd ..
+python3 layout/lvs_reference.py         # per-code reference netlists
+
+cd layout/bandgap_core
+klt drc  --deck sg13g2 bandgap_core.gds --format json > drc_report.json
+klt lvs  lvs_request.json               --format json > lvs_report.json
+klt extract --deck sg13g2 --parasitics bandgap_core.gds \
+  -o bandgap_core.pex.spice --format json > pex_extract_report.json
+# then the same three for layout/bandgap_top/
+
+cd ../..
+python3 layout/bandgap_core/probe/make_probe_netlist.py   # tracks the extraction
+layout/bandgap_core/probe/run_probe.sh                    # ~0.3 s sanity probe
+```
+
+Every one of those outputs is **deterministic**: re-running the block above
+against an unchanged tree reproduces both `.gds` files byte-for-byte and
+every `drc_report.json` / `lvs_report.json` / `pex_extract_report.json` /
+`*.pex.spice` exactly (verified on `klt 0.6.0+geb7e7c6ace30`,
+KLayout 0.30.12).
+
 ## Folded (serpentine) resistors (issue #173)
 
 Every long poly resistor in this repo -- `R1`/`R2` in both variants'
@@ -242,6 +572,11 @@ own drawn geometry, so exact length conservation is what keeps the
 | `R1` (`rppd`) | `bandgap_core` | `66430` | `66430` |
 | `RPU` (`rhigh`) | `bandgap_startup` | `1919368` | `1919368` |
 
+(The `R1` row is #173's own measurement at `l=511u`; the device has since
+been resized to `l=37.2u` by #229 and now extracts as `4836` — see "Trim
+ladder layout (issue #272)" above. The fold-conservation property the table
+demonstrates is unchanged by the resize.)
+
 **One device, not a series chain.** The marker layers
 (`PolyRes`/`EXTBlock`/`pSD`/`SalBlock`, plus `nSD` for `rhigh`) are drawn on
 *exactly* the same box set as the `GatPoly` core, corners included, so the
@@ -271,7 +606,7 @@ decision. Each is picked to make its own block roughly square
 | device | `w` / `l` | legs | block (um) | aspect |
 | --- | --- | --- | --- | --- |
 | `R2` (`bandgap_core`) | 2 / 82.7 | 6 | 14.0 x 13.45 | 1.04 |
-| `R1` (`bandgap_core`) | 2 / 511 | 14 | 33.278 x 36.123 | 1.09 |
+| `R1` (`bandgap_core`) | 2 / 37.2 | 5 | 11.6 x 7.12 | 1.63 |
 | `RPU` (`bandgap_startup`) | 1 / 1411.3 | 32 | 44.772 x 43.704 | 1.02 |
 | `R2` (`sg13cmos5l_bandgap_core`) | 2 / 85.1 | 6 | 14.0 x 13.85 | 1.01 |
 | `R1` (`sg13cmos5l_bandgap_core`) | 2 / 647 | 16 | 38.12 x 40.055 | 1.05 |
@@ -281,6 +616,17 @@ A folded block's *footprint* is ~`l * pitch` for **any** leg count, so the
 count trades aspect ratio only -- the area the fold costs over the bare
 conductor is the inter-leg gap, which DRC requires. Both variants draw `RPU`
 at the same count and therefore the same geometry: it is the same device.
+
+`bandgap_core`'s `R1` row is the one that has moved since #173 measured it:
+issue #229 resized the device (`l`: 511 → 37.2 µm, the summing resistor's
+fixed base only) and issue #272 re-folded it at **5** legs — the one **odd**
+count in this table, for the routing reason "Trim ladder layout" above
+gives (an odd count puts end B on the block's top row, off `vref`'s pad
+row). #173's own measured row for it, `2 / 511 | 14 | 33.278 x 36.123`, is
+preserved in `measurements/2026-09-resistor-fold/`. The 255 `rppd` unit
+segments #272 added are all `legs=1` by construction — a folded unit would
+recognise as one device over a serpentine, which is the opposite of what a
+unit-cell array needs.
 
 **Result** (full before/after, all eight committed cells, in
 `measurements/2026-09-resistor-fold/`):
@@ -393,11 +739,13 @@ klt layers layout/bandgap_core/bandgap_core.gds --format json
 ```
 
 `bandgap_core.gds`: 1 top cell (`bandgap_core`), bbox
-`(-5.4, -3.1)`–`(137.478, 70.623)` µm as of issue #173's fold (was
-`(511.5, 61.4)` when `R1` was a straight 511 µm bar that dominated the
-bounding box on its own; the cell traded 374 µm of width for 9 µm of
-height — see "Folded (serpentine) resistors" below and
-`measurements/2026-09-resistor-fold/`). The
+`(-5.4, -3.1)`–`(185.4, 71.675)` µm as of issue #272's trim ladder (it was
+`(-5.4, -3.1)`–`(137.478, 70.623)` after issue #173's fold, and
+`(511.5, 61.4)` before it, when `R1` was a straight 511 µm bar that
+dominated the bounding box on its own — see "Trim ladder layout (issue
+#272)" and "Folded (serpentine) resistors" above,
+`measurements/2026-09-resistor-fold/`, and `TRIM_X0`'s own comment in
+`bandgap_core/generate.py` for why the ladder grew the cell rightward). The
 `EmWind.drawing` (33/0) layer carries exactly 10 shapes — `Q1` (`Nx=1`) + `Q2`
 (`Nx=8`) + `Q3` (`Nx=1`) = 10, matching the schematic's `Nx` values exactly,
 confirming the per-stripe geometry described below.
@@ -511,7 +859,7 @@ source, not a runtime dependency of running it.
 
 | Cell | Report | Status | Deck (content hash) |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:894326a4...` (refreshed, issue #155 — new tap-ring `Activ`/`Cont`/`Metal1` geometry introduces no new violations) |
+| `bandgap_core` | `layout/bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:f9771af8...` (refreshed, issue #272 — the 255-unit trim ladder, its 254 `Metal1` series links and its `Metal2` straps introduce no new violations; the one violation the first pass did find, a `metal1.enclosing.via1.1` on `tn0`'s Via1 landing, was a real zero-enclosure defect and is fixed in `generate.py`) |
 | `bandgap_startup` | `layout/bandgap_startup/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:894326a4...` (refreshed, issue #155, same deck build issue #152 already moved both cells to) |
 
 The 26 `cont.width.1` violations this issue's own informational run
@@ -538,7 +886,7 @@ still clean from before).
 
 | Cell | Report | Status | Engine |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (6 findings, 4 error-severity — down from 10/9 after issue #161's `rppd` bulk-terminal reconciliation; the 4 errors are exactly `Q1`–`Q3` `device.unmatched` plus their own class-level topology entry, the permanent bipolar-recognition cause; see "`rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)" below) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (8 findings, 4 error-severity, **263/263 layout devices matched** — the error count is unchanged by issue #272's 255-device trim ladder, and the 4 errors are still exactly `Q1`–`Q3` `device.unmatched` plus their own class-level topology entry, the permanent bipolar-recognition cause. The two extra findings are `severity: "warning"` `device.parameter_excluded` disclosures from #272's new `options.compare_parameters`, which *adds* `L`/`W` to the compare; see "Trim ladder layout (issue #272)" above and "`rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)" below) | `klayout` (`klayout.db.NetlistComparer`) |
 | `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | **`match`** (`error_count: 0`; `mismatch_count: 2` is two `severity: "warning"` disclosures, down from 3/2 after issue #161's `rhigh` bulk-terminal reconciliation; see "`rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)" below) | `klayout` (`klayout.db.NetlistComparer`) |
 
 Reproduce: `klt lvs layout/bandgap_core/lvs_request.json` (run from
@@ -580,6 +928,21 @@ produces an `RPPD`/`RHIGH`-named class on the reference side, which
 case-insensitively against the layout's own lowercase `rppd`/`rhigh` —
 confirmed against this repo's own real `klt lvs` run, not merely asserted
 from the API docs' wording, see "Resistor recognition" below).
+
+**Updated again for issue #272's mask-option trim ladder.**
+`design/netlist/bandgap_core.spice` stopped being a flat device list at
+issue #229: its top level now mixes nine real device calls with one
+*subcircuit* call (`XXTRIM tn0 cb3 sub! bandgap_trim`), whose body is
+inlined in the same file. Neither existing entry point could express that —
+`convert()` requires every `X` line to *be* a device (so `XXTRIM` raised on
+its unrecognised "model") and `flatten()` requires every top-level `X` line
+to be a subckt call (so `XM1` would have). `convert_with_metal_options()`
+handles the mix, resolving the ladder to the single code its own
+`.param trim_code` default selects; `flatten()` learned to do the same for a
+*grandchild* call, which is what `bandgap_top` now contains. Why an LVS
+reference for a mask-option block is necessarily per-code, and the upstream
+filing for the missing `klt lvs` capability, are both under "Trim ladder
+layout (issue #272)" above.
 
 ### Resistor recognition (issue #20 rescope, 2026-08-23)
 
@@ -976,11 +1339,23 @@ Waivers **self-expire**: once the evidence is regenerated, the recorded hash no
 longer matches and the checker fails until the entry is deleted — so a waiver
 cannot quietly outlive the problem it describes.
 
-Both cells' `pex_extract_report.json` are waived today, tracked at **#56**: the
-PEX leg was last extracted at `f940680` (PR #39) while the GDS was last
-regenerated at `bf9051c` (PR #45, the resistor marker layers) — the same
-follow-up item 1 of "Post-layout parasitic extraction" below already describes
-in prose. Their DRC and LVS reports *were* regenerated in PR #45 and are fresh.
+`layout/evidence-freshness-waivers.json` is **empty** as of issue #272: every
+`layout/` report is fresh against the GDS committed beside it. (It held two
+`pex_extract_report.json` entries under #56 at one point, when the PEX leg had
+last been extracted at `f940680`/PR #39 against a GDS since regenerated at
+`bf9051c`/PR #45 — that is closed.)
+
+**The five `sim/` waivers are a different file and a different question.**
+`sim/evidence-freshness-waivers.json` still waives the five `*-pex`
+experiments' newest records, now tracked at **#275**. Issue #272 delivered
+the precondition those entries describe (a trim-bearing, DRC-clean,
+LVS-matched layout with a fresh extraction at both levels) but not the grid
+re-runs themselves: this repo's `run_pvt_sweep.sh` corner loops are not
+runnable on the dispatch hosts, and a mask-option PEX DUT has no `trim_code`
+for the checker's D2 rule to compare against. #275 owns both questions, and
+each entry self-expires when its own experiment re-runs. The one-point probe
+under "Trim ladder layout (issue #272)" above is what stands in for grid
+evidence until then — and is explicitly *not* committed as a record.
 
 ## Post-layout parasitic extraction (issue #14)
 
@@ -1149,8 +1524,22 @@ files, route only the inter-cell connections" pattern
 SG13CMOS5L variant (issue #81). No leaf cell's own committed GDS is
 modified; `bandgap_top/generate.py` only reads them (`klayout.db.Layout.read`)
 and adds new top-level geometry. Top cell `bandgap_top`, bbox
-`(-18.5, -1.59)`-`(205.1, 125.0)` µm (223.60 × 126.59), across the same
-layer/datatype combinations the leaf cells use (no new layers).
+`(-18.5, -1.59)`-`(252.972, 125.0)` µm (271.47 × 126.59) as of issue #272,
+across the same layer/datatype combinations the leaf cells use (no new
+layers).
+
+**Issue #272 re-assembled it**, with one constant changed: `STARTUP_DX`,
+160.0 -> 208.0. `bandgap_core`'s right edge moved 137.478 -> 185.4 when
+#229's 255-unit trim ladder was laid out beside its device field, so
+`bandgap_startup` moved right by the same amount to keep #177's
+bounding-box gap. The assembly was 223.60 × 126.59 before; it is now
+271.47 × 126.59 (+21%, all of it `bandgap_core`'s own new ladder area plus
+the restored gap). Nothing else in `_route` changed -- every startup riser
+there is written as `STARTUP_DX + local` and every bus spans its own riser
+set, which is exactly the parameterisation issue #173 introduced for this
+case. DRC stayed `clean`/0; LVS's `error_count` stayed 4 while matched
+devices went 20/20 -> **275/275** and matched nets 9/13 -> 257/261. See
+"Trim ladder layout (issue #272)" above.
 
 **Connectivity**, one-to-one against `design/netlist/bandgap_top.spice`'s
 own `Xx1`/`Xx2`/`Xx3` subckt-instance lines and each sub-cell's own port

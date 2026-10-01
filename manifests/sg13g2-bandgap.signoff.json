@@ -22,7 +22,7 @@
         "command": null,
         "kind": "extract",
         "check_status": "extracted",
-        "content_hash": "sha256:b4f68dd262064d373f66cdcf65947bf8fda564b3d5a1b4016b3d9c09a5463189",
+        "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
         "exit_status": 0
       }
     },
@@ -40,7 +40,7 @@
         "command": null,
         "kind": "drc",
         "check_status": "clean",
-        "content_hash": "sha256:b4f68dd262064d373f66cdcf65947bf8fda564b3d5a1b4016b3d9c09a5463189",
+        "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
         "exit_status": 0,
         "coverage": {
           "layers_in_stream_without_rules": [
@@ -123,7 +123,7 @@
         "command": null,
         "kind": "drc",
         "check_status": "clean",
-        "content_hash": "sha256:b4f68dd262064d373f66cdcf65947bf8fda564b3d5a1b4016b3d9c09a5463189",
+        "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
         "exit_status": 0,
         "coverage": {
           "layers_in_stream_without_rules": [

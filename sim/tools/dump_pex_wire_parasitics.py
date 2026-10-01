@@ -22,9 +22,9 @@ a `.pex.spice`'s own two halves so a human/agent refreshing a template's
 spliced block can diff against the current committed extraction without
 hand-transcribing numbers (the actual root cause of the drift #176 fixed):
 
-  - **Devices**: the `.SUBCKT`'s own `M$N`/`R$N` device instance cards, in
-    extraction order, with the net name attached to each of their
-    terminals (drain/gate/source/body for M-cards; a/b/bulk for R-cards).
+  - **Devices**: the `.SUBCKT`'s own `M$N`/`R$N`/`X$N` device instance
+    cards, in extraction order, with the net name attached to each of their
+    terminals (drain/gate/source/body for M-cards; a/b/bulk for R/X-cards).
   - **Wire parasitics**: every other card -- the per-net star-hub
     resistors (`R<NET>_t<N> <NET>__t<N> <NET> <ohms>`), ground caps
     (`C<NET> <NET> vsubs <farads>`), net-to-net coupling caps
@@ -51,12 +51,20 @@ import re
 import sys
 from pathlib import Path
 
-# A device card's instance name starts with M or R and is immediately
+# A device card's instance name starts with M, R or X and is immediately
 # followed by a literal "$" (klt's own anonymous-instance convention, e.g.
-# `M$1`, `R$7`) -- this is what distinguishes a *device* from a
+# `M$1`, `R$7`, `X$144`) -- this is what distinguishes a *device* from a
 # *wire-parasitic* card, whose instance names are always
 # `R<NET>[_t<N>]`/`C<NET>`/`Ccc_<a>_<b>` with no `$`.
-DEVICE_RE = re.compile(r"^(M|R)\$\d+\s+(.*)$", re.IGNORECASE)
+#
+# `X` joined the set at issue #272: `klt extract` emits a device whose model
+# is a PDK *subcircuit* (every `rppd`/`rhigh` in this PDK) as an `X$N` card,
+# and the pre-#272 extractions here happened to contain none -- both poly
+# resistors came out as `R$N`. The trim ladder's 255 units made the gap
+# visible: without `X` here, `--wires-only` silently emitted all 257 rppd
+# device cards as if they were wire parasitics, i.e. the exact
+# hand-transcription hazard this tool exists to remove.
+DEVICE_RE = re.compile(r"^(M|R|X)\$\d+\s+(.*)$", re.IGNORECASE)
 WIRE_RE = re.compile(r"^([A-Za-z][\w.$\\]*)\s+(.*)$")
 
 # klt line-continuation: a card whose card line is split gets a "+"

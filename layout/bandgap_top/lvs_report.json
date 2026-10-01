@@ -8,16 +8,103 @@
   "parameter_tolerance": null,
   "options": {
     "combine_devices": false,
+    "combine_devices_per_circuit": null,
     "flatten_layout": false,
     "flatten_reference": false,
     "netgen_setup": null,
-    "parameter_tolerance": null
+    "parameter_tolerance": null,
+    "compare_parameters": {
+      "rppd": [
+        "R",
+        "L",
+        "W"
+      ],
+      "rhigh": [
+        "R",
+        "L",
+        "W"
+      ]
+    },
+    "power_connectivity": null,
+    "supply_nets": [
+      "GND",
+      "VCC",
+      "VDD",
+      "VGND",
+      "VPWR",
+      "VSS"
+    ]
   },
+  "hints_applied": null,
   "status": "mismatch",
-  "mismatch_count": 6,
+  "power_connectivity": {
+    "status": "unchecked",
+    "reason": "reference.form is 'plain-element', whose reference netlist carries its own power/ground pins and nets -- they take part in the ordinary compare, so this check (which exists to cover the signal-only 'gate-level-verilog' form) does not apply",
+    "power_pins": [],
+    "power_pins_derivation": null,
+    "instance_count": 0,
+    "expected_nets": null,
+    "unchecked_expected_pins": [],
+    "findings": [],
+    "finding_count": 0
+  },
+  "body_verification": {
+    "status": "verified",
+    "reason": null,
+    "device_classes": [],
+    "device_count": 0,
+    "findings": [],
+    "finding_count": 0
+  },
+  "device_parameter_coverage": [
+    {
+      "class": "rhigh",
+      "device_kind": "resistor",
+      "layout_devices": 1,
+      "reference_devices": 1,
+      "compared": [
+        "R",
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "A",
+          "reason": "compare_parameters"
+        },
+        {
+          "parameter": "P",
+          "reason": "compare_parameters"
+        }
+      ]
+    },
+    {
+      "class": "rppd",
+      "device_kind": "resistor",
+      "layout_devices": 257,
+      "reference_devices": 257,
+      "compared": [
+        "R",
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "A",
+          "reason": "compare_parameters"
+        },
+        {
+          "parameter": "P",
+          "reason": "compare_parameters"
+        }
+      ]
+    }
+  ],
+  "mismatch_count": 10,
   "error_count": 4,
   "category_counts": {
     "device.bulk_reconciled": 2,
+    "device.parameter_excluded": 4,
     "device.unmatched": 3,
     "topology": 1
   },
@@ -27,19 +114,19 @@
   },
   "counts": {
     "nets": {
-      "layout": 13,
-      "reference": 13,
-      "matched": 9
+      "layout": 261,
+      "reference": 261,
+      "matched": 257
     },
     "devices": {
-      "layout": 20,
-      "reference": 23,
-      "matched": 20
+      "layout": 275,
+      "reference": 278,
+      "matched": 275
     },
     "pins": {
-      "layout": 13,
+      "layout": 261,
       "reference": 0,
-      "matched": 13
+      "matched": 261
     }
   },
   "device_classes": [
@@ -56,26 +143,31 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "b4f68dd262064d373f66cdcf65947bf8fda564b3d5a1b4016b3d9c09a5463189",
-    "reference_sha256": "a131977a7e583d2024caef49eeab6a5703e576ed8a0e3ec5c23cb751cf226b0b",
+    "netgen_binary": null,
+    "layout_sha256": "0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
+    "reference_sha256": "0824952e8a5588a211039e13442f020b0299a714378c8a9c9d17561edc83a89e",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.3.0",
+    "klt_version": "0.6.0+geb7e7c6ace30",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "content_hash": "sha256:f9771af83c67c59da0f5f305b487b5f842de12e3f37e1307d1057e2c095478a0",
       "released": false
     },
-    "input": null
+    "input": {
+      "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
+      "role": "layout"
+    },
+    "klayout_version_mismatch": false
   },
   "mismatches": [
     {
       "category": "device.bulk_reconciled",
       "severity": "warning",
-      "description": "request.reference.device_bulk reconciled reference device class 'RPPD' with the layout side: a 'W' terminal was added to the reference class (layout: ['A', 'B', 'W'], reference was: ['A', 'B']) and tied to reference net 'VSS' on 2 device instance(s), an existing reference net -- that terminal's connectivity was asserted by the request, not read from the reference netlist, so this dimension of the compare is not independently verified (see docs/cli/lvs.md, 'device.bulk_reconciled')",
+      "description": "request.reference.device_bulk reconciled reference device class 'RPPD' with the layout side: a 'W' terminal was added to the reference class (layout: ['A', 'B', 'W'], reference was: ['A', 'B']) and tied to reference net 'VSS' on 257 device instance(s), an existing reference net -- that terminal's connectivity was asserted by the request, not read from the reference netlist, so this dimension of the compare is not independently verified (see docs/cli/lvs.md, 'device.bulk_reconciled')",
       "side": "reference",
       "net": null,
       "device": {
@@ -88,7 +180,7 @@
         "terminal": "W",
         "reference_net": "VSS",
         "reference_net_created": false,
-        "devices": 2,
+        "devices": 257,
         "layout_terminals": [
           "A",
           "B",
@@ -128,6 +220,102 @@
         "reference_terminals": [
           "A",
           "B"
+        ]
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.parameter_excluded",
+      "severity": "warning",
+      "description": "options.compare_parameters scoped device class 'rppd' to compare only ['L', 'R', 'W'] -- 'A' was excluded from this compare and is NOT verified; a 'match' does not confirm the two sides agree on it (see docs/cli/lvs.md, 'device.parameter_excluded')",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "rppd"
+      },
+      "property": null,
+      "details": {
+        "parameter": "A",
+        "compared_parameters": [
+          "L",
+          "R",
+          "W"
+        ]
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.parameter_excluded",
+      "severity": "warning",
+      "description": "options.compare_parameters scoped device class 'rppd' to compare only ['L', 'R', 'W'] -- 'P' was excluded from this compare and is NOT verified; a 'match' does not confirm the two sides agree on it (see docs/cli/lvs.md, 'device.parameter_excluded')",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "rppd"
+      },
+      "property": null,
+      "details": {
+        "parameter": "P",
+        "compared_parameters": [
+          "L",
+          "R",
+          "W"
+        ]
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.parameter_excluded",
+      "severity": "warning",
+      "description": "options.compare_parameters scoped device class 'rhigh' to compare only ['L', 'R', 'W'] -- 'A' was excluded from this compare and is NOT verified; a 'match' does not confirm the two sides agree on it (see docs/cli/lvs.md, 'device.parameter_excluded')",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "rhigh"
+      },
+      "property": null,
+      "details": {
+        "parameter": "A",
+        "compared_parameters": [
+          "L",
+          "R",
+          "W"
+        ]
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.parameter_excluded",
+      "severity": "warning",
+      "description": "options.compare_parameters scoped device class 'rhigh' to compare only ['L', 'R', 'W'] -- 'P' was excluded from this compare and is NOT verified; a 'match' does not confirm the two sides agree on it (see docs/cli/lvs.md, 'device.parameter_excluded')",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "rhigh"
+      },
+      "property": null,
+      "details": {
+        "parameter": "P",
+        "compared_parameters": [
+          "L",
+          "R",
+          "W"
         ]
       },
       "circuit": null,
@@ -228,6 +416,1246 @@
     {
       "layout": "PN",
       "reference": "PN",
+      "pin": true
+    },
+    {
+      "layout": "T001|T003|T007|T015|T031|T063|T127|TN0",
+      "reference": "T001|T003|T007|T015|T031|T063|T127|TN0",
+      "pin": true
+    },
+    {
+      "layout": "T002",
+      "reference": "T002",
+      "pin": true
+    },
+    {
+      "layout": "T004",
+      "reference": "T004",
+      "pin": true
+    },
+    {
+      "layout": "T005",
+      "reference": "T005",
+      "pin": true
+    },
+    {
+      "layout": "T006",
+      "reference": "T006",
+      "pin": true
+    },
+    {
+      "layout": "T008",
+      "reference": "T008",
+      "pin": true
+    },
+    {
+      "layout": "T009",
+      "reference": "T009",
+      "pin": true
+    },
+    {
+      "layout": "T010",
+      "reference": "T010",
+      "pin": true
+    },
+    {
+      "layout": "T011",
+      "reference": "T011",
+      "pin": true
+    },
+    {
+      "layout": "T012",
+      "reference": "T012",
+      "pin": true
+    },
+    {
+      "layout": "T013",
+      "reference": "T013",
+      "pin": true
+    },
+    {
+      "layout": "T014",
+      "reference": "T014",
+      "pin": true
+    },
+    {
+      "layout": "T016",
+      "reference": "T016",
+      "pin": true
+    },
+    {
+      "layout": "T017",
+      "reference": "T017",
+      "pin": true
+    },
+    {
+      "layout": "T018",
+      "reference": "T018",
+      "pin": true
+    },
+    {
+      "layout": "T019",
+      "reference": "T019",
+      "pin": true
+    },
+    {
+      "layout": "T020",
+      "reference": "T020",
+      "pin": true
+    },
+    {
+      "layout": "T021",
+      "reference": "T021",
+      "pin": true
+    },
+    {
+      "layout": "T022",
+      "reference": "T022",
+      "pin": true
+    },
+    {
+      "layout": "T023",
+      "reference": "T023",
+      "pin": true
+    },
+    {
+      "layout": "T024",
+      "reference": "T024",
+      "pin": true
+    },
+    {
+      "layout": "T025",
+      "reference": "T025",
+      "pin": true
+    },
+    {
+      "layout": "T026",
+      "reference": "T026",
+      "pin": true
+    },
+    {
+      "layout": "T027",
+      "reference": "T027",
+      "pin": true
+    },
+    {
+      "layout": "T028",
+      "reference": "T028",
+      "pin": true
+    },
+    {
+      "layout": "T029",
+      "reference": "T029",
+      "pin": true
+    },
+    {
+      "layout": "T030",
+      "reference": "T030",
+      "pin": true
+    },
+    {
+      "layout": "T032",
+      "reference": "T032",
+      "pin": true
+    },
+    {
+      "layout": "T033",
+      "reference": "T033",
+      "pin": true
+    },
+    {
+      "layout": "T034",
+      "reference": "T034",
+      "pin": true
+    },
+    {
+      "layout": "T035",
+      "reference": "T035",
+      "pin": true
+    },
+    {
+      "layout": "T036",
+      "reference": "T036",
+      "pin": true
+    },
+    {
+      "layout": "T037",
+      "reference": "T037",
+      "pin": true
+    },
+    {
+      "layout": "T038",
+      "reference": "T038",
+      "pin": true
+    },
+    {
+      "layout": "T039",
+      "reference": "T039",
+      "pin": true
+    },
+    {
+      "layout": "T040",
+      "reference": "T040",
+      "pin": true
+    },
+    {
+      "layout": "T041",
+      "reference": "T041",
+      "pin": true
+    },
+    {
+      "layout": "T042",
+      "reference": "T042",
+      "pin": true
+    },
+    {
+      "layout": "T043",
+      "reference": "T043",
+      "pin": true
+    },
+    {
+      "layout": "T044",
+      "reference": "T044",
+      "pin": true
+    },
+    {
+      "layout": "T045",
+      "reference": "T045",
+      "pin": true
+    },
+    {
+      "layout": "T046",
+      "reference": "T046",
+      "pin": true
+    },
+    {
+      "layout": "T047",
+      "reference": "T047",
+      "pin": true
+    },
+    {
+      "layout": "T048",
+      "reference": "T048",
+      "pin": true
+    },
+    {
+      "layout": "T049",
+      "reference": "T049",
+      "pin": true
+    },
+    {
+      "layout": "T050",
+      "reference": "T050",
+      "pin": true
+    },
+    {
+      "layout": "T051",
+      "reference": "T051",
+      "pin": true
+    },
+    {
+      "layout": "T052",
+      "reference": "T052",
+      "pin": true
+    },
+    {
+      "layout": "T053",
+      "reference": "T053",
+      "pin": true
+    },
+    {
+      "layout": "T054",
+      "reference": "T054",
+      "pin": true
+    },
+    {
+      "layout": "T055",
+      "reference": "T055",
+      "pin": true
+    },
+    {
+      "layout": "T056",
+      "reference": "T056",
+      "pin": true
+    },
+    {
+      "layout": "T057",
+      "reference": "T057",
+      "pin": true
+    },
+    {
+      "layout": "T058",
+      "reference": "T058",
+      "pin": true
+    },
+    {
+      "layout": "T059",
+      "reference": "T059",
+      "pin": true
+    },
+    {
+      "layout": "T060",
+      "reference": "T060",
+      "pin": true
+    },
+    {
+      "layout": "T061",
+      "reference": "T061",
+      "pin": true
+    },
+    {
+      "layout": "T062",
+      "reference": "T062",
+      "pin": true
+    },
+    {
+      "layout": "T064",
+      "reference": "T064",
+      "pin": true
+    },
+    {
+      "layout": "T065",
+      "reference": "T065",
+      "pin": true
+    },
+    {
+      "layout": "T066",
+      "reference": "T066",
+      "pin": true
+    },
+    {
+      "layout": "T067",
+      "reference": "T067",
+      "pin": true
+    },
+    {
+      "layout": "T068",
+      "reference": "T068",
+      "pin": true
+    },
+    {
+      "layout": "T069",
+      "reference": "T069",
+      "pin": true
+    },
+    {
+      "layout": "T070",
+      "reference": "T070",
+      "pin": true
+    },
+    {
+      "layout": "T071",
+      "reference": "T071",
+      "pin": true
+    },
+    {
+      "layout": "T072",
+      "reference": "T072",
+      "pin": true
+    },
+    {
+      "layout": "T073",
+      "reference": "T073",
+      "pin": true
+    },
+    {
+      "layout": "T074",
+      "reference": "T074",
+      "pin": true
+    },
+    {
+      "layout": "T075",
+      "reference": "T075",
+      "pin": true
+    },
+    {
+      "layout": "T076",
+      "reference": "T076",
+      "pin": true
+    },
+    {
+      "layout": "T077",
+      "reference": "T077",
+      "pin": true
+    },
+    {
+      "layout": "T078",
+      "reference": "T078",
+      "pin": true
+    },
+    {
+      "layout": "T079",
+      "reference": "T079",
+      "pin": true
+    },
+    {
+      "layout": "T080",
+      "reference": "T080",
+      "pin": true
+    },
+    {
+      "layout": "T081",
+      "reference": "T081",
+      "pin": true
+    },
+    {
+      "layout": "T082",
+      "reference": "T082",
+      "pin": true
+    },
+    {
+      "layout": "T083",
+      "reference": "T083",
+      "pin": true
+    },
+    {
+      "layout": "T084",
+      "reference": "T084",
+      "pin": true
+    },
+    {
+      "layout": "T085",
+      "reference": "T085",
+      "pin": true
+    },
+    {
+      "layout": "T086",
+      "reference": "T086",
+      "pin": true
+    },
+    {
+      "layout": "T087",
+      "reference": "T087",
+      "pin": true
+    },
+    {
+      "layout": "T088",
+      "reference": "T088",
+      "pin": true
+    },
+    {
+      "layout": "T089",
+      "reference": "T089",
+      "pin": true
+    },
+    {
+      "layout": "T090",
+      "reference": "T090",
+      "pin": true
+    },
+    {
+      "layout": "T091",
+      "reference": "T091",
+      "pin": true
+    },
+    {
+      "layout": "T092",
+      "reference": "T092",
+      "pin": true
+    },
+    {
+      "layout": "T093",
+      "reference": "T093",
+      "pin": true
+    },
+    {
+      "layout": "T094",
+      "reference": "T094",
+      "pin": true
+    },
+    {
+      "layout": "T095",
+      "reference": "T095",
+      "pin": true
+    },
+    {
+      "layout": "T096",
+      "reference": "T096",
+      "pin": true
+    },
+    {
+      "layout": "T097",
+      "reference": "T097",
+      "pin": true
+    },
+    {
+      "layout": "T098",
+      "reference": "T098",
+      "pin": true
+    },
+    {
+      "layout": "T099",
+      "reference": "T099",
+      "pin": true
+    },
+    {
+      "layout": "T100",
+      "reference": "T100",
+      "pin": true
+    },
+    {
+      "layout": "T101",
+      "reference": "T101",
+      "pin": true
+    },
+    {
+      "layout": "T102",
+      "reference": "T102",
+      "pin": true
+    },
+    {
+      "layout": "T103",
+      "reference": "T103",
+      "pin": true
+    },
+    {
+      "layout": "T104",
+      "reference": "T104",
+      "pin": true
+    },
+    {
+      "layout": "T105",
+      "reference": "T105",
+      "pin": true
+    },
+    {
+      "layout": "T106",
+      "reference": "T106",
+      "pin": true
+    },
+    {
+      "layout": "T107",
+      "reference": "T107",
+      "pin": true
+    },
+    {
+      "layout": "T108",
+      "reference": "T108",
+      "pin": true
+    },
+    {
+      "layout": "T109",
+      "reference": "T109",
+      "pin": true
+    },
+    {
+      "layout": "T110",
+      "reference": "T110",
+      "pin": true
+    },
+    {
+      "layout": "T111",
+      "reference": "T111",
+      "pin": true
+    },
+    {
+      "layout": "T112",
+      "reference": "T112",
+      "pin": true
+    },
+    {
+      "layout": "T113",
+      "reference": "T113",
+      "pin": true
+    },
+    {
+      "layout": "T114",
+      "reference": "T114",
+      "pin": true
+    },
+    {
+      "layout": "T115",
+      "reference": "T115",
+      "pin": true
+    },
+    {
+      "layout": "T116",
+      "reference": "T116",
+      "pin": true
+    },
+    {
+      "layout": "T117",
+      "reference": "T117",
+      "pin": true
+    },
+    {
+      "layout": "T118",
+      "reference": "T118",
+      "pin": true
+    },
+    {
+      "layout": "T119",
+      "reference": "T119",
+      "pin": true
+    },
+    {
+      "layout": "T120",
+      "reference": "T120",
+      "pin": true
+    },
+    {
+      "layout": "T121",
+      "reference": "T121",
+      "pin": true
+    },
+    {
+      "layout": "T122",
+      "reference": "T122",
+      "pin": true
+    },
+    {
+      "layout": "T123",
+      "reference": "T123",
+      "pin": true
+    },
+    {
+      "layout": "T124",
+      "reference": "T124",
+      "pin": true
+    },
+    {
+      "layout": "T125",
+      "reference": "T125",
+      "pin": true
+    },
+    {
+      "layout": "T126",
+      "reference": "T126",
+      "pin": true
+    },
+    {
+      "layout": "T128",
+      "reference": "T128",
+      "pin": true
+    },
+    {
+      "layout": "T129",
+      "reference": "T129",
+      "pin": true
+    },
+    {
+      "layout": "T130",
+      "reference": "T130",
+      "pin": true
+    },
+    {
+      "layout": "T131",
+      "reference": "T131",
+      "pin": true
+    },
+    {
+      "layout": "T132",
+      "reference": "T132",
+      "pin": true
+    },
+    {
+      "layout": "T133",
+      "reference": "T133",
+      "pin": true
+    },
+    {
+      "layout": "T134",
+      "reference": "T134",
+      "pin": true
+    },
+    {
+      "layout": "T135",
+      "reference": "T135",
+      "pin": true
+    },
+    {
+      "layout": "T136",
+      "reference": "T136",
+      "pin": true
+    },
+    {
+      "layout": "T137",
+      "reference": "T137",
+      "pin": true
+    },
+    {
+      "layout": "T138",
+      "reference": "T138",
+      "pin": true
+    },
+    {
+      "layout": "T139",
+      "reference": "T139",
+      "pin": true
+    },
+    {
+      "layout": "T140",
+      "reference": "T140",
+      "pin": true
+    },
+    {
+      "layout": "T141",
+      "reference": "T141",
+      "pin": true
+    },
+    {
+      "layout": "T142",
+      "reference": "T142",
+      "pin": true
+    },
+    {
+      "layout": "T143",
+      "reference": "T143",
+      "pin": true
+    },
+    {
+      "layout": "T144",
+      "reference": "T144",
+      "pin": true
+    },
+    {
+      "layout": "T145",
+      "reference": "T145",
+      "pin": true
+    },
+    {
+      "layout": "T146",
+      "reference": "T146",
+      "pin": true
+    },
+    {
+      "layout": "T147",
+      "reference": "T147",
+      "pin": true
+    },
+    {
+      "layout": "T148",
+      "reference": "T148",
+      "pin": true
+    },
+    {
+      "layout": "T149",
+      "reference": "T149",
+      "pin": true
+    },
+    {
+      "layout": "T150",
+      "reference": "T150",
+      "pin": true
+    },
+    {
+      "layout": "T151",
+      "reference": "T151",
+      "pin": true
+    },
+    {
+      "layout": "T152",
+      "reference": "T152",
+      "pin": true
+    },
+    {
+      "layout": "T153",
+      "reference": "T153",
+      "pin": true
+    },
+    {
+      "layout": "T154",
+      "reference": "T154",
+      "pin": true
+    },
+    {
+      "layout": "T155",
+      "reference": "T155",
+      "pin": true
+    },
+    {
+      "layout": "T156",
+      "reference": "T156",
+      "pin": true
+    },
+    {
+      "layout": "T157",
+      "reference": "T157",
+      "pin": true
+    },
+    {
+      "layout": "T158",
+      "reference": "T158",
+      "pin": true
+    },
+    {
+      "layout": "T159",
+      "reference": "T159",
+      "pin": true
+    },
+    {
+      "layout": "T160",
+      "reference": "T160",
+      "pin": true
+    },
+    {
+      "layout": "T161",
+      "reference": "T161",
+      "pin": true
+    },
+    {
+      "layout": "T162",
+      "reference": "T162",
+      "pin": true
+    },
+    {
+      "layout": "T163",
+      "reference": "T163",
+      "pin": true
+    },
+    {
+      "layout": "T164",
+      "reference": "T164",
+      "pin": true
+    },
+    {
+      "layout": "T165",
+      "reference": "T165",
+      "pin": true
+    },
+    {
+      "layout": "T166",
+      "reference": "T166",
+      "pin": true
+    },
+    {
+      "layout": "T167",
+      "reference": "T167",
+      "pin": true
+    },
+    {
+      "layout": "T168",
+      "reference": "T168",
+      "pin": true
+    },
+    {
+      "layout": "T169",
+      "reference": "T169",
+      "pin": true
+    },
+    {
+      "layout": "T170",
+      "reference": "T170",
+      "pin": true
+    },
+    {
+      "layout": "T171",
+      "reference": "T171",
+      "pin": true
+    },
+    {
+      "layout": "T172",
+      "reference": "T172",
+      "pin": true
+    },
+    {
+      "layout": "T173",
+      "reference": "T173",
+      "pin": true
+    },
+    {
+      "layout": "T174",
+      "reference": "T174",
+      "pin": true
+    },
+    {
+      "layout": "T175",
+      "reference": "T175",
+      "pin": true
+    },
+    {
+      "layout": "T176",
+      "reference": "T176",
+      "pin": true
+    },
+    {
+      "layout": "T177",
+      "reference": "T177",
+      "pin": true
+    },
+    {
+      "layout": "T178",
+      "reference": "T178",
+      "pin": true
+    },
+    {
+      "layout": "T179",
+      "reference": "T179",
+      "pin": true
+    },
+    {
+      "layout": "T180",
+      "reference": "T180",
+      "pin": true
+    },
+    {
+      "layout": "T181",
+      "reference": "T181",
+      "pin": true
+    },
+    {
+      "layout": "T182",
+      "reference": "T182",
+      "pin": true
+    },
+    {
+      "layout": "T183",
+      "reference": "T183",
+      "pin": true
+    },
+    {
+      "layout": "T184",
+      "reference": "T184",
+      "pin": true
+    },
+    {
+      "layout": "T185",
+      "reference": "T185",
+      "pin": true
+    },
+    {
+      "layout": "T186",
+      "reference": "T186",
+      "pin": true
+    },
+    {
+      "layout": "T187",
+      "reference": "T187",
+      "pin": true
+    },
+    {
+      "layout": "T188",
+      "reference": "T188",
+      "pin": true
+    },
+    {
+      "layout": "T189",
+      "reference": "T189",
+      "pin": true
+    },
+    {
+      "layout": "T190",
+      "reference": "T190",
+      "pin": true
+    },
+    {
+      "layout": "T191",
+      "reference": "T191",
+      "pin": true
+    },
+    {
+      "layout": "T192",
+      "reference": "T192",
+      "pin": true
+    },
+    {
+      "layout": "T193",
+      "reference": "T193",
+      "pin": true
+    },
+    {
+      "layout": "T194",
+      "reference": "T194",
+      "pin": true
+    },
+    {
+      "layout": "T195",
+      "reference": "T195",
+      "pin": true
+    },
+    {
+      "layout": "T196",
+      "reference": "T196",
+      "pin": true
+    },
+    {
+      "layout": "T197",
+      "reference": "T197",
+      "pin": true
+    },
+    {
+      "layout": "T198",
+      "reference": "T198",
+      "pin": true
+    },
+    {
+      "layout": "T199",
+      "reference": "T199",
+      "pin": true
+    },
+    {
+      "layout": "T200",
+      "reference": "T200",
+      "pin": true
+    },
+    {
+      "layout": "T201",
+      "reference": "T201",
+      "pin": true
+    },
+    {
+      "layout": "T202",
+      "reference": "T202",
+      "pin": true
+    },
+    {
+      "layout": "T203",
+      "reference": "T203",
+      "pin": true
+    },
+    {
+      "layout": "T204",
+      "reference": "T204",
+      "pin": true
+    },
+    {
+      "layout": "T205",
+      "reference": "T205",
+      "pin": true
+    },
+    {
+      "layout": "T206",
+      "reference": "T206",
+      "pin": true
+    },
+    {
+      "layout": "T207",
+      "reference": "T207",
+      "pin": true
+    },
+    {
+      "layout": "T208",
+      "reference": "T208",
+      "pin": true
+    },
+    {
+      "layout": "T209",
+      "reference": "T209",
+      "pin": true
+    },
+    {
+      "layout": "T210",
+      "reference": "T210",
+      "pin": true
+    },
+    {
+      "layout": "T211",
+      "reference": "T211",
+      "pin": true
+    },
+    {
+      "layout": "T212",
+      "reference": "T212",
+      "pin": true
+    },
+    {
+      "layout": "T213",
+      "reference": "T213",
+      "pin": true
+    },
+    {
+      "layout": "T214",
+      "reference": "T214",
+      "pin": true
+    },
+    {
+      "layout": "T215",
+      "reference": "T215",
+      "pin": true
+    },
+    {
+      "layout": "T216",
+      "reference": "T216",
+      "pin": true
+    },
+    {
+      "layout": "T217",
+      "reference": "T217",
+      "pin": true
+    },
+    {
+      "layout": "T218",
+      "reference": "T218",
+      "pin": true
+    },
+    {
+      "layout": "T219",
+      "reference": "T219",
+      "pin": true
+    },
+    {
+      "layout": "T220",
+      "reference": "T220",
+      "pin": true
+    },
+    {
+      "layout": "T221",
+      "reference": "T221",
+      "pin": true
+    },
+    {
+      "layout": "T222",
+      "reference": "T222",
+      "pin": true
+    },
+    {
+      "layout": "T223",
+      "reference": "T223",
+      "pin": true
+    },
+    {
+      "layout": "T224",
+      "reference": "T224",
+      "pin": true
+    },
+    {
+      "layout": "T225",
+      "reference": "T225",
+      "pin": true
+    },
+    {
+      "layout": "T226",
+      "reference": "T226",
+      "pin": true
+    },
+    {
+      "layout": "T227",
+      "reference": "T227",
+      "pin": true
+    },
+    {
+      "layout": "T228",
+      "reference": "T228",
+      "pin": true
+    },
+    {
+      "layout": "T229",
+      "reference": "T229",
+      "pin": true
+    },
+    {
+      "layout": "T230",
+      "reference": "T230",
+      "pin": true
+    },
+    {
+      "layout": "T231",
+      "reference": "T231",
+      "pin": true
+    },
+    {
+      "layout": "T232",
+      "reference": "T232",
+      "pin": true
+    },
+    {
+      "layout": "T233",
+      "reference": "T233",
+      "pin": true
+    },
+    {
+      "layout": "T234",
+      "reference": "T234",
+      "pin": true
+    },
+    {
+      "layout": "T235",
+      "reference": "T235",
+      "pin": true
+    },
+    {
+      "layout": "T236",
+      "reference": "T236",
+      "pin": true
+    },
+    {
+      "layout": "T237",
+      "reference": "T237",
+      "pin": true
+    },
+    {
+      "layout": "T238",
+      "reference": "T238",
+      "pin": true
+    },
+    {
+      "layout": "T239",
+      "reference": "T239",
+      "pin": true
+    },
+    {
+      "layout": "T240",
+      "reference": "T240",
+      "pin": true
+    },
+    {
+      "layout": "T241",
+      "reference": "T241",
+      "pin": true
+    },
+    {
+      "layout": "T242",
+      "reference": "T242",
+      "pin": true
+    },
+    {
+      "layout": "T243",
+      "reference": "T243",
+      "pin": true
+    },
+    {
+      "layout": "T244",
+      "reference": "T244",
+      "pin": true
+    },
+    {
+      "layout": "T245",
+      "reference": "T245",
+      "pin": true
+    },
+    {
+      "layout": "T246",
+      "reference": "T246",
+      "pin": true
+    },
+    {
+      "layout": "T247",
+      "reference": "T247",
+      "pin": true
+    },
+    {
+      "layout": "T248",
+      "reference": "T248",
+      "pin": true
+    },
+    {
+      "layout": "T249",
+      "reference": "T249",
+      "pin": true
+    },
+    {
+      "layout": "T250",
+      "reference": "T250",
+      "pin": true
+    },
+    {
+      "layout": "T251",
+      "reference": "T251",
+      "pin": true
+    },
+    {
+      "layout": "T252",
+      "reference": "T252",
+      "pin": true
+    },
+    {
+      "layout": "T253",
+      "reference": "T253",
+      "pin": true
+    },
+    {
+      "layout": "T254",
+      "reference": "T254",
       "pin": true
     },
     {

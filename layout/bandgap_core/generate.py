@@ -30,9 +30,46 @@ Devices instantiated, one-to-one against ``design/netlist/bandgap_core.spice``
     M3A-M3C sg13_hv_pmos w=8u/1u/1u    -- output branch mirror leg, 3x
                                            parallel dominant+trim unit
                                            fingers (vdd/fb -> vref)
-    R1  rppd w=2u l=511u               -- summing resistor (vref -> cb3)
+    R1  rppd w=2u l=37.2u              -- summing resistor's fixed base
+                                           (vref -> tn0), issue #229
+    XTRIM 255x rppd w=2u l=3.43u       -- the binary-weighted trim ladder
+                                           (tn0 -> cb3), issue #229/#272;
+                                           see "Trim ladder" below
     Q3  npn13G2 Nx=1                   -- output branch, diode-connected
                                            (cb3 -> vss)
+
+**Trim ladder (issue #272).** Issue #229 split the summing resistor in the
+*schematic*: ``XR1`` shrank from ``l=511u`` to ``l=37.2u`` and now runs
+``vref -> tn0``, with ``XXTRIM`` (``design/bandgap_trim.sch``, 255 identical
+``rppd w=2u l=3.43u`` unit segments in one series string, tapped after
+1/3/7/15/31/63/127 units and shunted by eight binary-weighted straps
+``RS0``-``RS7``) continuing ``tn0 -> cb3``. This script is the layout
+counterpart: it draws the ladder as a flat 17-column x 15-unit serpentine
+array of individually-recognised ``rppd`` devices plus the strap links the
+**ratified default code 128** selects, and resizes ``R1`` to ``l=37.2u``
+(``R1_LEGS = 5``). See ``design/bandgap_trim_network.md`` for the sizing
+derivation (and its section 5, which budgeted this re-layout) and
+``layout/README.md`` "Trim ladder layout (issue #272)" for the floorplan,
+the strap convention, and the LVS consequences.
+
+Two facts about the straps drive everything else here. ``RS0``-``RS7`` are
+**not fabricated devices** -- ``design/bandgap_trim_network.md`` section 4
+calls them "verification-time models of a metal-option / probe-pad link",
+``1e-3 Ohm`` when the link is drawn (bit 0, group shorted out) and
+``1e12 Ohm`` when it is cut (bit 1, group in circuit). So:
+
+  1. A layout realises **one** code, not all 256. This cell draws
+     ``TRIM_CODE = 128`` (the schematic default): bits 0-6 are 0, so the
+     seven links ``t0-t1-t3-t7-t15-t31-t63-t127`` are drawn as real
+     ``Metal2`` straps; bit 7 is 1, so the ``t127 -> out`` link is **not**
+     drawn and units 128-255 carry the branch current (``Rtrim(128) =
+     128 * R_unit``, exactly what ``trim_code=128`` means).
+  2. Because every drawn strap is closed and they chain end-to-end, all
+     seven are one physical net -- which is why they can be drawn as a
+     single overlapping ``Metal2`` chain with no inter-strap spacing
+     problem, and why that chain is allowed to run straight over the
+     shorted-out units' own interior pads (same-net above, different-layer
+     below; see ``_draw_trim_straps``).
 
 **Unit-device decomposition (issue #149, T1 tracker #4 item 4 cause d).**
 M1/M2/M3 previously drew as ONE ``sg13_hv_pmos w=10u l=1u`` footprint each --
@@ -118,6 +155,7 @@ from common import (  # noqa: E402
     L_GATPOLY,
     L_METAL1,
     L_METAL2,
+    L_TEXT,
     Builder,
     draw_hv_mos,
     draw_npn13g2,
@@ -169,8 +207,101 @@ VIA_ENCLOSE = 0.05
 # Folding conserves the drawn conductor length exactly (see
 # `_klayout_builder_base.fold_plan`), so neither resistor's nominal value
 # moves: `klt extract` reports R1/R2 at the same ohms before and after.
-R1_LEGS = 14
+# `R1` is now the trim network's fixed base only (l=37.2u, issue #229), so
+# its own fold count drops from 14 to 5. **Odd on purpose**: an odd leg
+# count brings end B out on the block's *top* row (see `draw_poly_res`),
+# which is what lets `vref` land on end A from the MOS row below while
+# `tn0` escapes upward toward the ladder without the two nets' Metal2 jogs
+# sharing a pad row -- the exact collision an even count (both pads on the
+# bottom row, one net's jog passing straight over the other's via) would
+# force. sqrt(37.2/2.4) = 3.9, so 5 is also the nearest odd count to the
+# square-block optimum (11.6 x 7.12 um, aspect 1.63).
+R1_LEGS = 5
 R2_LEGS = 6
+
+# ---------------------------------------------------------------------- #
+# Trim ladder geometry (issue #272) -- see this module's own docstring for
+# the schematic it realises and the strap convention, and
+# `design/bandgap_trim_network.md` for the sizing.
+# ---------------------------------------------------------------------- #
+
+#: Number of series unit segments, matching `design/bandgap_trim.sch`'s own
+#: XRU1-XRU255 exactly (8-bit ladder: 2^8 - 1).
+TRIM_UNITS = 255
+TRIM_UNIT_W = 2.0
+TRIM_UNIT_L = 3.43
+#: Units per column. 17 x 15 = 255 **exactly** -- the only factorisation of
+#: 255 (3 x 5 x 17) that gives a block fitting beside the existing cell
+#: without a ragged last column: 15 x TRIM_PITCH_Y = 69.25 um tall against
+#: 17 x TRIM_PITCH_X = 45.9 um wide (aspect 1.51). A ragged column would
+#: make the serpentine's tap arithmetic special-case its own last column
+#: for no area gain.
+TRIM_COL_UNITS = 15
+TRIM_COLS = TRIM_UNITS // TRIM_COL_UNITS  # 17
+
+#: Column pitch. A unit's own Metal1 terminal pad is `w + 0.4` = 2.4 um
+#: wide (`draw_poly_res`'s head margin plus the pad's own 0.1 um overhang
+#: per side), so 2.7 leaves 0.3 um between two adjacent columns' pads --
+#: 0.12 um clear of `metal1.space.1` (0.18). The GatPoly heads underneath
+#: are 2.2 um wide, so their own space is 0.5 um.
+TRIM_PITCH_X = 2.7
+#: Row pitch. A unit occupies `0.5 + l + 0.5` = 4.43 um of y (bottom pad,
+#: body, top pad), so 4.63 leaves a 0.2 um Metal1 gap between one unit's
+#: top pad and the next unit's bottom pad -- bridged explicitly by
+#: `_draw_trim_links` (they are the same series node) -- and 0.4 um of
+#: GatPoly space between the two heads, 0.22 um clear of
+#: `gatpoly.space.1`. Pitching them to *touch* (4.43) would leave only
+#: 0.02 um of margin on that poly space, so the link box is drawn instead.
+TRIM_PITCH_Y = 4.63
+
+#: Lower-left corner of unit (column 0, row 0)'s own marked core. The
+#: ladder is placed to the **right** of the existing cell rather than above
+#: it: `layout/bandgap_top/generate.py` rises the assembly's `vref` port
+#: column straight up through the core at local x=120 and stops it 1.4 um
+#: above the core's own bbox top, so growing the core *upward* would put
+#: new geometry inside an already-verified top-level riser, whereas growing
+#: it *rightward* only moves `STARTUP_DX` (every startup riser there is
+#: written as `STARTUP_DX + local`, and the buses span their riser set).
+TRIM_X0 = 140.0
+TRIM_Y0 = 0.0
+
+#: The code this layout's metal-option straps realise -- the schematic
+#: default (`design/bandgap_trim.sch`'s own `.param trim_code=128`), which
+#: `design/bandgap_trim_network.md` section 3 shows reproduces the pre-#229
+#: single-instance 511 um summing resistor to 3 Ohm (0.005%).
+TRIM_CODE = 128
+
+#: Strap `b` shunts the group between these two ladder nodes (node `k` is
+#: the junction after unit `k`; node 0 is `in`/`tn0`, node 255 is
+#: `out`/`cb3`). Transcribed from `design/netlist/bandgap_core.spice`'s own
+#: RS0-RS7 cards, not re-derived.
+TRIM_STRAP_NODES = ((0, 1), (1, 3), (3, 7), (7, 15), (15, 31), (31, 63), (63, 127), (127, 255))
+
+#: Strap width. These are metal links standing in for a mask option, so
+#: their resistance is a real series error against the 478 Ohm unit: the
+#: drawn code-128 chain (t0 -> t127) is ~115 um of Metal2, which at 1.0 um
+#: wide and this stack's ~0.09 Ohm/sq is ~10 Ohm -- 0.016% of the 66 kOhm
+#: summing resistor, well inside the 2.443 mV trim step. At the 0.3 um
+#: TRUNK_W it would be ~35 Ohm (0.05%), a third of a step; 1.0 um is the
+#: cheapest way to keep the metal option out of the trim's own error
+#: budget, and `klt extract --parasitics` measures what it actually is.
+TRIM_STRAP_W = 1.0
+
+#: `tn0`'s own Metal1 crossing band -- 3.4 um above R1's end-B pad row and
+#: 4.25 um below the ladder's first row-9 pad, i.e. the middle of the only
+#: band in the cell with nothing drawn on Metal1 between R1 and the ladder.
+TRIM_TN0_Y = 45.0
+#: Where `tn0` drops from Metal1 to Metal2 for its vertical run: the 2.6 um
+#: channel between the cell's rightmost device geometry (M3C's NWell, out
+#: to ~135.5) and the ladder's own leftmost pad edge (139.8).
+TRIM_TN0_VIA_X = 138.5
+#: `tn0`'s Metal1 width. Wider than TRUNK_W so the Via1 landing at
+#: TRIM_TN0_VIA_X keeps 0.125 um of Metal1 enclosure on the long axis
+#: (`metal1.enclosing.via1.1` floor: 0.01 um) instead of TRUNK_W's 0.025.
+TN0_TRUNK_W = 0.5
+#: `cb3`'s Metal2 jog row, above every shape the ladder array draws (its
+#: topmost pad edge is TRIM_Y0 + 14*TRIM_PITCH_Y + 3.93 = 68.75).
+TRIM_CB3_TOP_Y = 71.5
 
 
 def build() -> Builder:
@@ -228,20 +359,199 @@ def build() -> Builder:
         for name, w, x in zip(x3_names, x3_widths, x3_xs)
     ]
     q3 = draw_npn13g2(b, "Q3", 1, sum(x3_xs) / len(x3_xs), hbt_y, collector_net="cb3", base_net="cb3", emitter_net="vss")
-    # R1 folded into R1_LEGS legs (issue #173; l=511u, resized from 694.5u to
-    # match design/bandgap_core.sch's own R1/R2 retune, issue #134/PR #136,
-    # per issue #137). 33.278 x 36.123 um, placed directly above its own
-    # M3A-M3C branch on the same row as R2 -- pre-fold this was a 511um bar
-    # starting at x=0 on a row 20um above R2's, and it alone set the cell's
-    # 516.9um width.
+    # R1 folded into R1_LEGS legs (issue #173), resized to l=37.2u by issue
+    # #272 to match design/bandgap_core.sch's own #229 split: this is now
+    # only the summing resistor's *fixed base* (vref -> tn0), with the
+    # 255-unit trim ladder below continuing tn0 -> cb3. 11.6 x 7.12 um,
+    # still placed directly above its own M3A-M3C branch on the same row as
+    # R2 (pre-#229 this was a 33.3 x 36.1 um block that alone set the
+    # cell's 137.5 um width).
     r1 = draw_poly_res(
-        b, "R1", "rppd", 2.0, 511.0, 104.0, res_y,
-        end_a_net="vref", end_b_net="cb3", legs=R1_LEGS,
+        b, "R1", "rppd", 2.0, 37.2, 104.0, res_y,
+        end_a_net="vref", end_b_net="tn0", legs=R1_LEGS,
     )
 
-    _route(b, m1, q1, [m2a, m2b], q2, r2, m3_legs, q3, r1)
+    # The trim ladder (issue #272) -- 255 individually-recognised rppd unit
+    # segments plus the code-128 metal-option straps. Returns the per-node
+    # tap pads `_route` needs for `tn0` (node 0) and `cb3` (node 255).
+    trim = _draw_trim_ladder(b)
+
+    _route(b, m1, q1, [m2a, m2b], q2, r2, m3_legs, q3, r1, trim)
 
     return b
+
+
+def _trim_unit_site(node: int) -> tuple[int, int, bool]:
+    """``(column, row, on_top)`` of the pad carrying ladder node ``node``.
+
+    Node ``k`` is the junction *after* unit ``k`` in series order (node 0 is
+    the ladder's own ``in``/``tn0`` terminal, node 255 its ``out``/``cb3``
+    terminal), which is what ``design/bandgap_trim.sch``'s ``t001``-``t254``
+    net names mean and what ``TRIM_STRAP_NODES`` is written in.
+
+    The array is a column-major serpentine: column ``j`` holds units
+    ``TRIM_COL_UNITS*j + 1 .. TRIM_COL_UNITS*(j+1)`` in series, running
+    **bottom-to-top** in an even column and **top-to-bottom** in an odd one,
+    so consecutive columns always meet at the end they share (top for an
+    even/odd pair, bottom for an odd/even pair) and a single horizontal link
+    box joins them. Each unit is drawn by ``draw_poly_res(..., legs=1)``,
+    whose end A is always the bottom pad and end B always the top pad -- so
+    "which pad carries node k" is a parity question, not a drawing
+    difference, and every unit in the array is geometrically identical
+    (which is the whole point: the ladder's binary weights are exact only
+    because they are integer counts of one identical device, see
+    ``design/bandgap_trim_network.md`` section 1).
+
+    Derivation, for ``k >= 1``: unit ``k`` sits at series position
+    ``c = k - 1``, hence column ``j = c // TRIM_COL_UNITS`` and in-column
+    series position ``p = c % TRIM_COL_UNITS``. An even column's series
+    position *is* its row; an odd column's is counted down from the top.
+    Node ``k`` is that unit's downstream end, i.e. its top pad in an even
+    column and its bottom pad in an odd one. Node 0 is the free bottom pad
+    of column 0, row 0.
+    """
+    if node == 0:
+        return (0, 0, False)
+    series = node - 1
+    col = series // TRIM_COL_UNITS
+    pos = series % TRIM_COL_UNITS
+    even = col % 2 == 0
+    row = pos if even else TRIM_COL_UNITS - 1 - pos
+    return (col, row, even)
+
+
+def _draw_trim_ladder(b: Builder) -> dict:
+    """Draw the 255-unit ``rppd`` trim ladder + its code-``TRIM_CODE``
+    straps, returning ``{"node_pad": {node: pad}, "units": [...]}``.
+
+    Every unit is a ``legs=1`` ``draw_poly_res`` call at the schematic's own
+    ``w=2u``/``l=3.43u``, so each one is recognised by `klt`'s curated
+    ``sg13g2`` deck as its own ``rppd`` device (the deck's resistor
+    extractor needs exactly two un-marked ``GatPoly`` contact polygons per
+    marked shape, which is exactly what one un-folded unit draws -- see
+    ``layout/common.py::draw_poly_res``). 255 devices against the reference
+    netlist's 255 ``XRU`` cards, one-to-one.
+    """
+    node_pad: dict[int, tuple[float, float, float, float]] = {}
+    units: list[dict] = []
+    for col in range(TRIM_COLS):
+        for row in range(TRIM_COL_UNITS):
+            x = TRIM_X0 + col * TRIM_PITCH_X
+            y = TRIM_Y0 + row * TRIM_PITCH_Y
+            # Net labels: only the two free ends carry a schematic net name
+            # (`tn0`/`cb3`); every interior junction is an internal ladder
+            # node, labeled `t<NNN>` exactly as design/bandgap_trim.sch
+            # names it so the extracted netlist reads against the reference
+            # by name as well as by topology.
+            even = col % 2 == 0
+            lower_node = (
+                TRIM_COL_UNITS * col + (row if even else TRIM_COL_UNITS - row)
+            )
+            upper_node = lower_node + (1 if even else -1)
+            units.append(
+                draw_poly_res(
+                    b, f"RU{min(lower_node, upper_node) + 1}", "rppd",
+                    TRIM_UNIT_W, TRIM_UNIT_L, x, y,
+                    end_a_net=_trim_net_name(lower_node),
+                    end_b_net=_trim_net_name(upper_node),
+                    legs=1,
+                )
+            )
+    for node in range(TRIM_UNITS + 1):
+        col, row, on_top = _trim_unit_site(node)
+        unit = units[col * TRIM_COL_UNITS + row]
+        node_pad[node] = unit["end_b_pad" if on_top else "end_a_pad"]
+
+    _draw_trim_links(b, units)
+    _draw_trim_straps(b, node_pad)
+    b.label(
+        L_TEXT,
+        f"XTRIM({TRIM_UNITS}x rppd w={TRIM_UNIT_W}u l={TRIM_UNIT_L}u, "
+        f"code {TRIM_CODE})",
+        TRIM_X0 + (TRIM_COLS - 1) * TRIM_PITCH_X / 2,
+        TRIM_Y0 + (TRIM_COL_UNITS - 1) * TRIM_PITCH_Y + TRIM_UNIT_L + 1.4,
+    )
+    return {"node_pad": node_pad, "units": units}
+
+
+def _trim_net_name(node: int) -> str:
+    """``design/bandgap_trim.sch``'s own name for ladder node ``node``."""
+    if node == 0:
+        return "tn0"
+    if node == TRIM_UNITS:
+        return "cb3"
+    return f"t{node:03d}"
+
+
+def _draw_trim_links(b: Builder, units: list[dict]) -> None:
+    """Join the array's 254 series junctions with ``Metal1`` link boxes.
+
+    Two kinds, both drawn on the same layer the unit terminal pads already
+    use (so they merge with those pads rather than needing a via):
+
+    * **vertical** -- one per adjacent row pair inside a column, bridging
+      the ``TRIM_PITCH_Y - 4.43 = 0.2`` um gap between the lower unit's top
+      pad and the upper unit's bottom pad. 14 per column x 17 = 238.
+    * **horizontal** -- one per adjacent column pair, at the end the
+      serpentine turns on (top when the left column index is even, bottom
+      when it is odd), bridging the ``TRIM_PITCH_X - 2.4 = 0.3`` um gap
+      between the two columns' pads at that row. 16.
+
+    238 + 16 = 254 links, i.e. exactly the 255-unit series string's own
+    internal junction count -- asserted below rather than trusted.
+    """
+    drawn = 0
+    for col in range(TRIM_COLS):
+        for row in range(TRIM_COL_UNITS - 1):
+            lower = units[col * TRIM_COL_UNITS + row]["end_b_pad"]
+            upper = units[col * TRIM_COL_UNITS + row + 1]["end_a_pad"]
+            b.box(L_METAL1, lower[0], lower[3], lower[2], upper[1])
+            drawn += 1
+    for col in range(TRIM_COLS - 1):
+        row = TRIM_COL_UNITS - 1 if col % 2 == 0 else 0
+        key = "end_b_pad" if col % 2 == 0 else "end_a_pad"
+        left = units[col * TRIM_COL_UNITS + row][key]
+        right = units[(col + 1) * TRIM_COL_UNITS + row][key]
+        b.box(L_METAL1, left[2], left[1], right[0], left[3])
+        drawn += 1
+    assert drawn == TRIM_UNITS - 1, f"{drawn} links for {TRIM_UNITS} units"
+
+
+def _draw_trim_straps(b: Builder, node_pad: dict) -> None:
+    """Draw the ``Metal2`` metal-option straps ``TRIM_CODE`` selects.
+
+    Strap ``b`` is drawn when bit ``b`` of ``TRIM_CODE`` is **0** (link
+    present, that binary group shorted out of the string) and omitted when
+    it is 1 (link cut, the group carries current) -- the physical reading of
+    ``design/bandgap_trim.sch``'s own
+    ``{1e-3 + 1e12*(floor(trim_code/2^b) - 2*floor(trim_code/2^(b+1)))}``
+    decode, whose ``1e-3`` branch is a closed link and whose ``1e12`` branch
+    is an open one.
+
+    Each drawn strap is a ``Via1``-``Metal2``-``Via1`` L-route (horizontal
+    at the first tap's own pad row, then vertical at the second tap's own
+    column) at ``TRIM_STRAP_W``. Overlapping is harmless and deliberately
+    exploited: at any code the drawn straps form a single connected chain
+    whenever they are consecutive, and at ``TRIM_CODE = 128`` all seven
+    drawn straps are consecutive, so the whole strap network is one net
+    (``tn0``) -- so no two strap segments ever need `metal2.space` from each
+    other, and the long runs are free to cross the shorted-out units' own
+    interior ``Metal1`` pads (different layer, no via, capacitive only; and
+    those nodes carry no branch current precisely because they are shorted
+    out).
+    """
+    for bit, (node_a, node_b) in enumerate(TRIM_STRAP_NODES):
+        if (TRIM_CODE >> bit) & 1:
+            continue  # link cut -- this group stays in circuit
+        pad_a, pad_b = node_pad[node_a], node_pad[node_b]
+        ax, ay = (pad_a[0] + pad_a[2]) / 2, (pad_a[1] + pad_a[3]) / 2
+        bx, by = (pad_b[0] + pad_b[2]) / 2, (pad_b[1] + pad_b[3]) / 2
+        via1_tap(b, ax, ay, size=VIA)
+        if abs(bx - ax) > 1e-9:
+            route_h(b, L_METAL2, ay, ax, bx, width=TRIM_STRAP_W)
+        if abs(by - ay) > 1e-9:
+            route_v(b, L_METAL2, bx, ay, by, width=TRIM_STRAP_W)
+        via1_tap(b, bx, by, size=VIA)
 
 
 def _tie_drains(b: Builder, legs: list[dict]) -> tuple[float, float, float, float]:
@@ -272,6 +582,7 @@ def _route(
     m3_legs: list[dict],
     q3: dict,
     r1: dict,
+    trim: dict,
 ) -> None:
     """Wire every schematic net -- see this module's own docstring for the
     routing strategy. Each block below names the net it wires."""
@@ -333,14 +644,49 @@ def _route(
     cb2_x = (q2["collector_pad"][0] + q2["collector_pad"][2]) / 2 + 6.0
     _tie_and_riser(b, q2, cb2_x, r2["end_b_pad"], jog_y=_pad_row(r2["end_b_pad"]))
 
-    # -- vref: M3A-M3D.drain (tied together, issue #149), R1.end_a --
-    # mirrors sns2's design, on R1's row.
+    # -- vref: M3A-M3C.drain (tied together, issue #149), R1.end_a --
+    # mirrors sns2's design, on R1's own bottom pad row.
     vref_drain = _tie_drains(b, m3_legs)
     _riser(b, vref_drain, r1["end_a_pad"], jog_y=_pad_row(r1["end_a_pad"]))
 
-    # -- cb3: R1.end_b, Q3.collector, Q3.base -- mirrors cb2's design.
+    # -- tn0 (issue #272): R1.end_b -> the trim ladder's node-0 pad. R1's
+    # odd leg count puts end B on its block's *top* row (y=41.37), clear of
+    # the vref jog that occupies its bottom row (y=33.75) -- so this net
+    # leaves upward on Metal1, crosses the empty band above the resistor
+    # row to the channel just left of the ladder, and only then drops to
+    # Metal2 for the vertical run down past the MOS/HBT rows.
+    #
+    # Metal1 for the horizontal leg is load-bearing, not incidental: `cb3`
+    # below has to come the other way across the same band on Metal2 (over
+    # the ladder's top), and its own Metal2 riser column (`TRIM_CB3_X`)
+    # sits *between* R1 and the ladder. One of the two crossings has to be
+    # on a different layer, and this is the one that can be -- both of its
+    # endpoints are already Metal1 pads.
+    tn0_pad = trim["node_pad"][0]
+    tn0_x = (r1["end_b_pad"][0] + r1["end_b_pad"][2]) / 2
+    route_v(b, L_METAL1, tn0_x, r1["end_b_pad"][1], TRIM_TN0_Y, width=TN0_TRUNK_W)
+    # Both metals overrun the Via1 landing by half the cut plus
+    # VIA_ENCLOSE: a run that *stops* at the via's centre leaves zero
+    # enclosure on that side, which `metal1.enclosing.via1.1` (0.01 um
+    # floor) catches -- it did, on this issue's own first `klt drc` pass.
+    via_overrun = VIA / 2 + VIA_ENCLOSE
+    route_h(b, L_METAL1, TRIM_TN0_Y, tn0_x, TRIM_TN0_VIA_X + via_overrun, width=TN0_TRUNK_W)
+    via1_tap(b, TRIM_TN0_VIA_X, TRIM_TN0_Y, size=VIA)
+    tn0_y = _pad_row(tn0_pad)
+    route_v(b, L_METAL2, TRIM_TN0_VIA_X, tn0_y, TRIM_TN0_Y + via_overrun, width=METAL2_W)
+    tn0_target_x = (tn0_pad[0] + tn0_pad[2]) / 2
+    route_h(b, L_METAL2, tn0_y, TRIM_TN0_VIA_X, tn0_target_x, width=METAL2_W)
+    via1_tap(b, tn0_target_x, tn0_y, size=VIA)
+
+    # -- cb3 (issue #272): the ladder's node-255 pad, Q3.collector,
+    # Q3.base. Same Q3 collector/base tie strap and Metal2 riser column
+    # (`cb3_x`) the pre-#229 cell used -- what changed is the far end: the
+    # jog now runs along the top of the ladder (`TRIM_CB3_TOP_Y`, 2.75um
+    # above the array's own topmost pad) rather than across R1's bottom pad
+    # row, because the net's other terminal moved from R1's end B to the
+    # ladder's far corner.
     cb3_x = (q3["collector_pad"][0] + q3["collector_pad"][2]) / 2 + 3.0
-    _tie_and_riser(b, q3, cb3_x, r1["end_b_pad"], jog_y=_pad_row(r1["end_b_pad"]))
+    _tie_and_riser_over_top(b, q3, cb3_x, trim["node_pad"][TRIM_UNITS], TRIM_CB3_TOP_Y)
 
 
 def _pad_row(pad: tuple[float, float, float, float]) -> float:
@@ -374,6 +720,37 @@ def _riser(b: Builder, drain_pad: tuple[float, float, float, float], target_pad:
     target_x = (target_pad[0] + target_pad[2]) / 2
     route_h(b, L_METAL2, jog_y, x, target_x, width=METAL2_W)
     via1_tap(b, target_x, jog_y, size=VIA)
+
+
+def _tie_and_riser_over_top(
+    b: Builder,
+    hbt: dict,
+    tie_x: float,
+    target_pad: tuple[float, float, float, float],
+    top_y: float,
+) -> None:
+    """``_tie_and_riser`` with the jog carried *over* the trim ladder
+    (issue #272) instead of landing on a pad row inside the device field.
+
+    Same Q3 collector+base ``Metal1`` tie strap and same ``Via1``-to-Metal2
+    riser as ``_tie_and_riser``; the difference is that the Metal2 run goes
+    all the way up to ``top_y`` (above every shape in the ladder array),
+    crosses to the target's own column there, and drops back down to the
+    target pad -- so the only thing it passes over on the way is the array's
+    own ``GatPoly``/``Metal1`` geometry, on a different layer, with no via.
+    """
+    tie_y_lo = hbt["base_pad"][1]
+    via_y_lo = hbt["collector_pad"][3]
+    via_y_hi = via_y_lo + VIA
+    route_v(b, L_METAL1, tie_x, tie_y_lo, via_y_hi + VIA_ENCLOSE, width=TRUNK_W)
+    via_y = (via_y_lo + via_y_hi) / 2
+    via1_tap(b, tie_x, via_y, size=VIA)
+    route_v(b, L_METAL2, tie_x, via_y_lo, top_y, width=METAL2_W)
+    target_x = (target_pad[0] + target_pad[2]) / 2
+    target_y = _pad_row(target_pad)
+    route_h(b, L_METAL2, top_y, tie_x, target_x, width=METAL2_W)
+    route_v(b, L_METAL2, target_x, target_y, top_y, width=METAL2_W)
+    via1_tap(b, target_x, target_y, size=VIA)
 
 
 def _tie_and_riser(b: Builder, hbt: dict, tie_x: float, target_pad: tuple[float, float, float, float], jog_y: float) -> None:

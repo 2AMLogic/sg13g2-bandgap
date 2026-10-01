@@ -5,8 +5,8 @@
       "report": "sim/closed-loop-psrr-pex/records/20260905-233826-f6f3efc.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#272",
-      "reason": "closed-loop-psrr-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry. Cannot self-expire until a trim-bearing re-layout + PEX exists -- tracked in #272 (the schematic-DUT counterpart was refreshed in #264)."
+      "issue": "#275",
+      "reason": "closed-loop-psrr-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry. #272 delivered the missing precondition -- layout/bandgap_core now draws #229's 255-unit trim ladder at code 128, DRC-clean and LVS-matched, and layout/bandgap_top/bandgap_top.pex.spice is re-extracted from it -- but the re-run itself is deferred to #275, which has to settle the corner-grid harness (this repo's run_pvt_sweep.sh shell loops are not runnable on the dispatch hosts) and the mask-option-vs-D2 question first. Delete this entry when that re-run lands."
     },
     {
       "report": "sim/closed-loop-vref-mc/records/20260909-232418-c9b83ab.md",
@@ -26,29 +26,29 @@
       "report": "sim/closed-loop-vref-pvt-pex/records/20260905-114438-8abe2aa.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#272",
-      "reason": "closed-loop-vref-pvt-pex 2026-09-05 record (the 45-point post-layout grid DR-0011's nominal 1.05048 V derives from): extracted-layout DUT on the pre-trim geometry. Cannot self-expire until a trim-bearing re-layout + PEX exists -- tracked in #272 (the schematic grid was refreshed in #264 and now reads 1.04728 V nominal)."
+      "issue": "#275",
+      "reason": "closed-loop-vref-pvt-pex 2026-09-05 record (the 45-point post-layout grid DR-0011's nominal 1.05048 V derives from): extracted-layout DUT on the pre-trim geometry. #272 delivered the missing precondition (trim-bearing re-layout + re-extraction of bandgap_top.pex.spice); the 45-point re-run is deferred to #275 on the harness/D2 grounds recorded there. A one-point probe in #272 puts the refreshed core extraction at vref = 1.052999 V (typ/27C/3.30V) against this record's own 1.052841 V, so the grid is expected to move by ~0.2 mV, not by the ~5 mV gap to #264's schematic refresh -- but that is a probe, not the grid, and this entry stays until the grid exists."
     },
     {
       "report": "sim/closed-loop-vref-pvt-pex-boxtc/records/20260921-195122-77820fc.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#272",
-      "reason": "closed-loop-vref-pvt-pex-boxtc 2026-09-21 record: extracted-layout DUT on the pre-trim geometry. Cannot self-expire until a trim-bearing re-layout + PEX exists -- tracked in #272."
+      "issue": "#275",
+      "reason": "closed-loop-vref-pvt-pex-boxtc 2026-09-21 record: extracted-layout DUT on the pre-trim geometry. #272 delivered the missing precondition (trim-bearing re-layout + re-extraction); the 120-point transient re-run is deferred to #275 -- it is the most harness-bound of the five (120 points at up to 600 s each), and #275 records the resident-vector `save`-card and solver-option requirements it will need. Delete this entry when that re-run lands."
     },
     {
       "report": "sim/closed-loop-zout-pex/records/20260906-003654-dd45eaf.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#272",
-      "reason": "closed-loop-zout-pex 2026-09-06 record: extracted-layout DUT on the pre-trim geometry. Cannot self-expire until a trim-bearing re-layout + PEX exists -- tracked in #272."
+      "issue": "#275",
+      "reason": "closed-loop-zout-pex 2026-09-06 record: extracted-layout DUT on the pre-trim geometry. #272 delivered the missing precondition (trim-bearing re-layout + re-extraction of bandgap_top.pex.spice); the re-run is deferred to #275 on the harness/D2 grounds recorded there. Delete this entry when that re-run lands."
     },
     {
       "report": "sim/core-open-loop-bias-pex/records/20260905-033431-fe97115.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#272",
-      "reason": "core-open-loop-bias-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry. Cannot self-expire until a trim-bearing re-layout + PEX exists -- tracked in #272 (the schematic-DUT counterpart was refreshed in #264)."
+      "issue": "#275",
+      "reason": "core-open-loop-bias-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry. #272 delivered the missing precondition -- layout/bandgap_core/bandgap_core.pex.spice is re-extracted from the trim-bearing, DRC-clean, LVS-matched geometry -- and #272's own one-point probe against that netlist reproduces THIS record's typ/27C/3.30V point to +0.158 mV (1.052999 V vs 1.052841 V), with the ladder measuring as exactly 128 units. The 45-point grid re-run is deferred to #275 (harness + mask-option/D2 disposition). Delete this entry when that re-run lands."
     }
   ]
 }
