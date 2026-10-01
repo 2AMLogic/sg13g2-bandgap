@@ -12,5 +12,19 @@
       "rppd": "VSS",
       "rhigh": "VSS"
     }
+  },
+  "options": {
+    "compare_parameters": {
+      "rppd": [
+        "R",
+        "L",
+        "W"
+      ],
+      "rhigh": [
+        "R",
+        "L",
+        "W"
+      ]
+    }
   }
 }

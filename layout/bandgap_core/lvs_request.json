@@ -11,5 +11,10 @@
     "device_bulk": {
       "rppd": "vsubs"
     }
+  },
+  "options": {
+    "compare_parameters": {
+      "rppd": ["R", "L", "W"]
+    }
   }
 }

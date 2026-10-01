@@ -167,6 +167,28 @@ selection at test is the wafer-probe 1-point trim
 (`sim/closed-loop-vref-trim-mc/` models it per-die); the schematic
 default stays 128.
 
+**Realised in layout as a `Metal2` metal option (issue #272).** The drawn
+cell is code 128: the seven closed links (`t0`–`t1`–`t3`–`t7`–`t15`–`t31`–
+`t63`–`t127`) are real 1 µm-wide `Metal2` straps and the eighth is absent.
+Two things follow that the `1e-3 Ω` model cannot show, both measured
+post-extraction and both documented in `layout/README.md` "Trim ladder
+layout (issue #272)":
+
+- the drawn links carry ≈ **+33 Ω** of real series resistance (against the
+  model's 7 mΩ), moving the summing resistor's effective value +0.046% and
+  `vref` by ~0.3 mV — about an eighth of the 2.443 mV trim step, which is
+  what the 1 µm strap width was chosen to buy;
+- **a layout is one code.** `klt lvs` has no notion of a mask option, so the
+  LVS reference has to be resolved to the single code this section's own
+  `.param trim_code` default names before it can be compared at all
+  (`layout/lvs_reference.py::convert_with_metal_options`; the missing tool
+  capability is filed as
+  [klayout-tools#2653](https://github.com/2AMLogic/klayout-tools/issues/2653)).
+  The same fact reaches the simulation side: an extracted PEX netlist of
+  this block carries no `trim_code` parameter at all, which is one of the
+  two open questions issue #275 has to settle before the five `*-pex`
+  experiments can be re-run against it.
+
 ## 5. Layout area budget
 
 Unit cell: `rppd w=2u l=3.43u` ≈ **6.9 µm²** drawn per segment
@@ -181,6 +203,23 @@ roughly doubles the core's precision-resistor area. Re-layout of
 `layout/bandgap_core` (still sized for the pre-#134 694.5 µm R1) carries
 this budget; that re-layout remains the separate follow-on it already
 was, not part of this issue's schematic-level design.
+
+**Measured (issue #272, the re-layout): 3,179 µm², 22–45% over this
+budget.** The estimate above is not reachable on this PDK, and the reason is
+`rppd` recognition geometry rather than routing: `klt`'s curated `sg13g2`
+deck derives a resistor's terminals as `body − marked segment`, so every
+unit segment has to carry a wider *un-marked* `GatPoly` "dog-bone" head at
+each end (0.4 µm per end) with its own `Cont` and `Metal1` pad before it is
+a recognised device at all. At `l = 3.43 µm` that is 0.8 µm of head per
+3.43 µm of body — a 23% terminal overhead *per unit*, before any inter-unit
+space, which §5's "segment-to-segment series links and tap contacts" clause
+under-counted. Drawn at a 2.7 × 4.63 µm cell pitch (both pitches set by real
+DRC floors, see `layout/README.md` "Trim ladder layout (issue #272)"), each
+unit occupies 12.5 µm² against 6.9 µm² of body. The ±15% range and
+≤0.25%/step resolution this section sizes for are unaffected — only the area
+line is. The re-layout also dropped the edge dummies §5's budget allowed
+for, on the grounds that at code 128 the segments the trim actually uses are
+interior in both axes of a 17 × 15 array.
 
 ## 6. Evidence map
 

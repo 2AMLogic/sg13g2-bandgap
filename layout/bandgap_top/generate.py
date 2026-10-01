@@ -69,15 +69,22 @@ Translation only, no mirroring. The three leaf cells are placed in **two
 horizontal rows** with every inter-cell bus living in the channel between
 them::
 
-    row B (top, y = 49.9 .. 123.6)
-        bandgap_core     (-5.4, 49.9)-(137.5, 123.6)
-          | 17.4 um gap |
-        bandgap_startup  (154.9, 51.7)-(205.0, 102.2)
+    row B (top, y = 49.9 .. 124.7)
+        bandgap_core     (-5.4, 49.9)-(185.4, 124.7)
+          | 17.5 um gap |
+        bandgap_startup  (202.9, 51.7)-(253.0, 102.2)
 
     routing channel (y = 34 .. 46) -- five Metal1 buses, no leaf geometry
 
     row A (bottom, y = -1.6 .. 32.2)
         bandgap_amp      (-10.8, -1.59)-(205.1, 32.175)
+
+(Issue #272 widened row B: `bandgap_core` grew 137.5 -> 185.4 um when #229's
+255-unit trim ladder was laid out beside its device field, and
+`bandgap_startup` moved right with it -- see `STARTUP_DX` below. The figures
+above are post-#272; #177's own measured placement, with `bandgap_core` at
+(-5.4, 49.9)-(137.5, 123.6) and `bandgap_startup` at (154.9, 51.7), is
+preserved in `measurements/2026-09-two-row-placement/`.)
 
 Issue #173 left this a single left-to-right row whose height was set by the
 tallest leaf (``bandgap_core``, 73.7 um) while the two shorter leaves left
@@ -85,8 +92,9 @@ their share of that height empty, and whose five full-width buses sat above
 the whole 482 um-wide row. Two rows fix both at once: the assembly is now
 ~224 x ~127 um rather than ~482 x ~97 um, and the bus channel -- the other
 named mechanism in ``measurements/2026-09-resistor-fold/`` -- is both
-shorter (the longest bus is now ~187 um where the row it used to cross was
-482) and tighter (3 um bus pitch rather than 5 um, still 15x
+shorter (the longest bus is now ~235 um -- ~187 um as #177 measured it,
+before issue #272 widened row B -- where the row it used to cross was 482)
+and tighter (3 um bus pitch rather than 5 um, still 15x
 ``metal1.space.1``'s 0.18 um floor).
 
 Which leaf went where is not arbitrary: it follows each leaf's own **pad
@@ -249,12 +257,30 @@ STARTUP_GDS = os.path.join(HERE, "..", "bandgap_startup", "bandgap_startup.gds")
 # 0.18 um floor, and more than the 2.36 um that already separates the lowest
 # bus from `bandgap_amp`'s own Metal1 top edge below it.
 #
-# STARTUP_DX puts `bandgap_startup`'s right edge (local 44.972) level with
-# `bandgap_amp`'s (205.1) so neither row overhangs the other, leaving a
-# 17.4 um gap to `bandgap_core`'s right edge. Nothing is routed through that
-# gap -- under the two-row invariant every riser drops into the channel
-# rather than travelling between same-row neighbours -- so it is sized only
-# so the two cells' bounding boxes cannot touch.
+# STARTUP_DX is set from `bandgap_core`'s own right edge plus the same
+# bounding-box gap it has always carried. Nothing is routed through that gap
+# -- under the two-row invariant every riser drops into the channel rather
+# than travelling between same-row neighbours -- so it is sized only so the
+# two cells' bounding boxes cannot touch.
+#
+# **Issue #272 moved it**, 160.0 -> 208.0. `bandgap_core`'s right edge went
+# 137.478 -> 185.4 when #229's 255-unit trim ladder was laid out beside the
+# device field (see `layout/bandgap_core/generate.py`'s `TRIM_X0` for why the
+# ladder grew the core *rightward* rather than upward: this module rises the
+# assembly's `vref` port column straight up through the core at local x=120
+# and stops it 1.4 um above the core's own bbox top, so upward growth would
+# have put new core geometry inside an already-verified top-level riser).
+# `bandgap_startup`'s own bbox starts at local -5.1, so 208.0 puts its left
+# edge at 202.9 -- 17.5 um clear of the core's new right edge, the same
+# bbox gap #177 sized (17.4 um).
+#
+# One constant, on purpose: every startup riser in `_route` is written as
+# `STARTUP_DX + local` and every bus spans its own riser set, so re-placing
+# the leaf moves its columns and stretches its buses with it. What is given
+# up is #177's "neither row overhangs the other" property (startup's right
+# edge, 208.0 + 44.972 = 252.972, now overhangs `bandgap_amp`'s 205.1) --
+# row B is simply the wider row now, and `_assert_column_pitch` below is
+# what actually guards the routing.
 #
 # Every riser column in `_route` below is written as `<CELL>_DX + local`
 # rather than as a baked-in absolute, so re-placing moves the columns with
@@ -263,7 +289,7 @@ STARTUP_GDS = os.path.join(HERE, "..", "bandgap_startup", "bandgap_startup.gds")
 ROW_B_DY = 53.0
 CORE_DX, CORE_DY = 0.0, ROW_B_DY
 AMP_DX, AMP_DY = 0.0, 0.0
-STARTUP_DX, STARTUP_DY = 160.0, ROW_B_DY
+STARTUP_DX, STARTUP_DY = 208.0, ROW_B_DY
 
 TRUNK_W = 0.3
 METAL2_W = 0.35

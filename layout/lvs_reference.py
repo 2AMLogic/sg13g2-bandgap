@@ -370,6 +370,199 @@ def convert(reference_path: str, pdk: str = "sg13g2") -> list[str]:
     return out
 
 
+class _Merge:
+    """Minimal union-find over SPICE node names."""
+
+    def __init__(self) -> None:
+        self._parent: dict[str, str] = {}
+
+    def find(self, node: str) -> str:
+        self._parent.setdefault(node, node)
+        while self._parent[node] != node:
+            self._parent[node] = self._parent[self._parent[node]]
+            node = self._parent[node]
+        return node
+
+    def union(self, a: str, b: str) -> None:
+        ra, rb = self.find(a), self.find(b)
+        if ra != rb:
+            self._parent[rb] = ra
+
+    def alias_map(self) -> dict[str, str]:
+        """``node -> klt-extract's own merged-net spelling for its class``.
+
+        A node in a class of one is left alone. A node shorted to others is
+        renamed to the sorted, comma-joined union of every member's own
+        upper-cased name -- the same convention
+        :func:`_shared_connection_aliases` already reproduces for
+        ``bandgap_top``'s merged pin aliases, and the one `klt extract`
+        itself reports (``T001|T003|...|TN0`` in user-facing strings,
+        comma-joined internally; see ``docs/cli/extract.md``, "Merged net
+        labels"). Matching it is what keeps a correctly-merged net from
+        reading back as a `NetlistComparer` name/identity conflict.
+        """
+        groups: dict[str, list[str]] = {}
+        for node in self._parent:
+            groups.setdefault(self.find(node), []).append(node)
+        aliases: dict[str, str] = {}
+        for members in groups.values():
+            if len(members) <= 1:
+                continue
+            canonical = ",".join(sorted(m.upper() for m in members))
+            for member in members:
+                aliases[member] = canonical
+        return aliases
+
+
+#: Subcircuit whose ``RS<b>`` cards are **metal-option links**, not
+#: fabricated devices -- see ``design/bandgap_trim_network.md`` section 4.
+_METAL_OPTION_SUBCKTS = ("bandgap_trim",)
+
+_STRAP_RE = re.compile(r"^RS(\d+)\s+(\S+)\s+(\S+)\s", re.IGNORECASE)
+_PARAM_RE = re.compile(r"^\.param\s+(\w+)\s*=\s*([-+0-9.eE]+)\s*$", re.IGNORECASE)
+
+
+def _resolve_metal_option_subckt(
+    child: dict, node_map: dict[str, str], merge: _Merge
+) -> list[str]:
+    """Resolve one metal-option subcircuit call into its drawn instance.
+
+    ``design/bandgap_trim.sch``'s eight ``RS0``-``RS7`` cards are
+    **behavioural models of a mask option**, not devices: each is
+    ``{1e-3 + 1e12*bit}`` -- 1 mOhm when its bit is 0 (link drawn, that
+    binary group shorted out of the string) and 1 TOhm when its bit is 1
+    (link cut, the group in circuit). ``design/bandgap_trim_network.md``
+    section 4 states this explicitly, and ``layout/bandgap_core/
+    generate.py`` draws exactly that: ``Metal2`` straps for the closed bits
+    and no geometry at all for the open ones.
+
+    A layout therefore realises **one** code, and its LVS reference has to
+    be the netlist *of that code* -- which is what this does, reading the
+    code from the subcircuit's own ``.param trim_code`` default rather than
+    taking it as an argument (the layout's ``TRIM_CODE`` and this default
+    are the same ratified number, and a mismatch between them should
+    surface as an LVS failure, not be papered over by a flag here):
+
+    * bit 0 (link drawn) -> ``merge.union`` the strap's two nodes, so the
+      shorted nodes collapse to one net exactly as they do physically;
+    * bit 1 (link cut) -> emit nothing, the group's units stay in series.
+
+    Returns the child's own device lines with ports substituted through
+    ``node_map`` (net *merging* is applied later, by the caller, because a
+    merged class can reach into the parent too -- ``tn0`` is both the
+    trim's ``in`` port and ``R1``'s end-B node).
+    """
+    code: int | None = None
+    for line in child["lines"]:
+        param = _PARAM_RE.match(line)
+        if param and param.group(1).lower() == "trim_code":
+            code = int(float(param.group(2)))
+    if code is None:
+        raise ValueError("metal-option subckt declares no `.param trim_code=` default")
+
+    straps = 0
+    for line in child["lines"]:
+        strap = _STRAP_RE.match(line)
+        if not strap:
+            continue
+        straps += 1
+        bit = int(strap.group(1))
+        if (code >> bit) & 1:
+            continue  # link cut -- nothing drawn, group stays in circuit
+        n1 = node_map.get(strap.group(2), strap.group(2))
+        n2 = node_map.get(strap.group(3), strap.group(3))
+        merge.union(n1, n2)
+    if not straps:
+        raise ValueError("metal-option subckt declares no RS<b> strap cards")
+
+    out: list[str] = []
+    for line in child["lines"]:
+        if not line.startswith("X"):
+            continue
+        d_instance, d_nodes, d_model, d_params = _parse_device_line(line)
+        renamed = [node_map.get(n, n) for n in d_nodes]
+        param_str = " ".join(f"{k}={v}" for k, v in d_params.items())
+        out.append(f"X{d_instance} {' '.join(renamed)} {d_model} {param_str}".strip())
+    return out
+
+
+def convert_with_metal_options(reference_path: str, pdk: str = "sg13g2") -> list[str]:
+    """:func:`convert`, extended to a netlist carrying metal-option subckts.
+
+    ``design/netlist/bandgap_core.spice`` stopped being a flat device list
+    at issue #229: its top level now mixes nine real device calls with one
+    **subcircuit** call (``XXTRIM tn0 cb3 sub! bandgap_trim``), and the
+    called subcircuit's body is inlined in the same file. :func:`convert`
+    cannot express that (every ``X`` line there must *be* a device, so the
+    ``XXTRIM`` line raises on its unrecognised "model"), and :func:`flatten`
+    cannot either (every top-level ``X`` line there must be a subckt call).
+    This handles the mix: a top-level ``X`` line whose model names a parsed
+    ``.subckt`` is expanded through
+    :func:`_resolve_metal_option_subckt`, everything else goes straight to
+    :func:`_convert_device_line` exactly as in :func:`convert`.
+
+    The expansion is flat and un-prefixed, deliberately: ``bandgap_core``'s
+    layout draws the ladder as 255 individually-recognised ``rppd`` devices
+    in its **own** top cell (no sub-cell), so the layout side of the compare
+    is flat and the reference has to be too. There is exactly one
+    metal-option instance, so the child's own ``RU1``-``RU255`` instance
+    names and ``t001``-``t254`` node names are kept verbatim -- the same
+    "scope bare when only one instance owns the name" rule
+    :func:`_internal_net_scopes` applies, and it also makes the reference's
+    net names line up with the net labels ``generate.py`` draws.
+    """
+    top_lines, subckts = _parse_subckt_blocks(reference_path)
+    out: list[str] = [
+        "* Auto-generated by layout/lvs_reference.py -- DO NOT EDIT BY HAND.",
+        f"* Source: {os.path.relpath(reference_path, REPO_ROOT)}",
+        "* Plain-element form for `klt lvs`, with the metal-option trim",
+        "* ladder (design/bandgap_trim.sch) resolved to the single code its",
+        "* .param trim_code default selects -- see",
+        "* convert_with_metal_options() and _resolve_metal_option_subckt()",
+        "* for why an LVS reference for a mask-option block is per-code, and",
+        "* layout/README.md 'Trim ladder layout' for the layout side.",
+    ]
+    if pdk != "sg13g2":
+        out.append(f"* PDK: {pdk}")
+
+    merge = _Merge()
+    device_lines: list[str] = []
+    for line in top_lines:
+        if not line.startswith("X"):
+            continue
+        instance, nodes, model, _params = _parse_device_line(line)
+        if model in subckts:
+            if model not in _METAL_OPTION_SUBCKTS:
+                raise ValueError(
+                    f"{model!r} is a subckt call but not a known metal-option "
+                    "subckt -- use flatten() for an ordinary hierarchy"
+                )
+            ports = subckts[model]["ports"]
+            if len(nodes) != len(ports):
+                raise ValueError(
+                    f"{model}: call {instance!r} connects {len(nodes)} node(s) "
+                    f"but the subckt declares {len(ports)} port(s)"
+                )
+            node_map = dict(zip(ports, nodes, strict=True))
+            device_lines.extend(_resolve_metal_option_subckt(subckts[model], node_map, merge))
+        else:
+            device_lines.append(line)
+
+    aliases = merge.alias_map()
+    for line in device_lines:
+        instance, nodes, model, params = _parse_device_line(line)
+        renamed = [aliases.get(n, n) for n in nodes]
+        param_str = " ".join(f"{k}={v}" for k, v in params.items())
+        out.append(
+            _convert_device_line(
+                f"X{instance} {' '.join(renamed)} {model} {param_str}".strip(), pdk
+            )
+        )
+
+    out.append(".end")
+    return out
+
+
 def _parse_subckt_blocks(path: str) -> tuple[list[str], dict[str, dict]]:
     """Split a hierarchical SPICE deck into its top-level lines and its
     named ``.subckt``/``.ends`` blocks (issue #76's flattening mode).
@@ -581,6 +774,8 @@ def flatten(top_path: str, pdk: str = "sg13cmos5l") -> list[str]:
     connection_aliases = _shared_connection_aliases(calls, subckts)
     internal_scopes = _internal_net_scopes(calls, subckts)
 
+    merge = _Merge()
+    device_lines: list[str] = []
     for instance, call_nodes, subckt_name in calls:
         child = subckts[subckt_name]
         ports = child["ports"]
@@ -604,7 +799,44 @@ def flatten(top_path: str, pdk: str = "sg13cmos5l") -> list[str]:
             renamed_line = (
                 f"X{renamed_instance} {' '.join(renamed_nodes)} {d_model} {param_str}".strip()
             )
-            out.append(_convert_device_line(renamed_line, pdk))
+            if d_model in subckts:
+                # A *grandchild* subckt call (issue #272): since #229,
+                # `bandgap_core` itself instantiates the metal-option trim
+                # ladder, so flattening the assembly means flattening that
+                # too. Only metal-option subckts are handled here --
+                # anything else would need real nested-hierarchy support,
+                # which this design does not have and should not grow
+                # silently.
+                if d_model not in _METAL_OPTION_SUBCKTS:
+                    raise ValueError(
+                        f"{d_model!r}: nested ordinary subckt call in {subckt_name} "
+                        "-- flatten() handles only metal-option grandchildren"
+                    )
+                grand_ports = subckts[d_model]["ports"]
+                device_lines.extend(
+                    _resolve_metal_option_subckt(
+                        subckts[d_model],
+                        dict(zip(grand_ports, renamed_nodes, strict=True)),
+                        merge,
+                    )
+                )
+            else:
+                device_lines.append(renamed_line)
+
+    # Net merging is applied last, for the same reason
+    # convert_with_metal_options() does it last: a shorted class can reach
+    # out of the metal-option subckt into its parent (`tn0` is both the
+    # trim's `in` port and `bandgap_core`'s own R1 end-B node).
+    aliases = merge.alias_map()
+    for line in device_lines:
+        instance, nodes, model, params = _parse_device_line(line)
+        renamed = [aliases.get(n, n) for n in nodes]
+        param_str = " ".join(f"{k}={v}" for k, v in params.items())
+        out.append(
+            _convert_device_line(
+                f"X{instance} {' '.join(renamed)} {model} {param_str}".strip(), pdk
+            )
+        )
 
     out.append(".end")
     return out
@@ -624,8 +856,21 @@ def _write_flattened(top_path: str, output_path: str, pdk: str = "sg13cmos5l") -
     print(f"wrote {output_path}")
 
 
+def _write_with_metal_options(
+    reference_path: str, output_path: str, pdk: str = "sg13g2"
+) -> None:
+    lines = convert_with_metal_options(reference_path, pdk=pdk)
+    with open(output_path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    print(f"wrote {output_path}")
+
+
 if __name__ == "__main__":
-    _write(
+    # bandgap_core carries the metal-option trim ladder as of issue #229
+    # (XXTRIM -> .subckt bandgap_trim), so it needs the per-code resolution
+    # convert_with_metal_options() applies rather than convert()'s flat
+    # every-X-line-is-a-device grammar -- see issue #272.
+    _write_with_metal_options(
         os.path.join(REPO_ROOT, "design/netlist/bandgap_core.spice"),
         os.path.join(REPO_ROOT, "layout/bandgap_core/bandgap_core.lvs_reference.spice"),
     )
