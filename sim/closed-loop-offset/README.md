@@ -6,6 +6,50 @@ offset/mismatch, the other item `design/README.md`'s issue #58 "Still not
 attempted" list named alongside PSRR (see
 [`../closed-loop-psrr/`](../closed-loop-psrr/README.md) for that one).
 
+## Trim-bearing DUT refresh (issue #264)
+
+**DUT.** The core netlist this bench inlines device-for-device is now
+#229's trim-bearing `design/netlist/bandgap_core.spice`: `XR1` is segmented
+to its `l=37.2u` base into node `tn0`, and the 255-unit binary-weighted
+`bandgap_trim` ladder continues `tn0 -> cb3` (see
+[`../../design/bandgap_trim_network.md`](../../design/bandgap_trim_network.md)).
+The ladder subcircuit is copied into the template device-for-device with its
+subcircuit-local `.param trim_code` pinned to the schematic default **128**;
+there is no trim-code axis here — the code-swept benches are
+[`../trim-coverage/`](../trim-coverage/README.md),
+[`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md) and
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md).
+At code 128 the ladder reproduces the pre-trim 511 µm summing resistor to
+within 12 Ω of its measured 66.06 kΩ (0.018%, measured in
+[`../core-open-loop-bias/`](../core-open-loop-bias/README.md)'s own refresh).
+
+**Solver options.** Unchanged — this bench never carried the `rshunt=1e9` /
+`gmin=1e-9` convergence aids the transient benches needed, so the ~0.55 µA
+ladder-leak artifact that forced those benches to drop them (see
+[`../closed-loop-vref-boxtc-trim/README.md`](../closed-loop-vref-boxtc-trim/README.md)
+§"Solver options") never applied here. The `.nodeset` seeds this bench reads
+from `../closed-loop-startup`'s newest record are this refresh's own
+aids-free startup record, so the seeded operating point and the DUT agree.
+
+**What moved** — record `20261001-085731-e5507b2` (trim-bearing) vs the
+superseded `20260830-132358-d83f7c4` (pre-trim), 9/9 PASS both:
+
+| quantity | pre-trim | trim-bearing, code 128 |
+|---|---|---|
+| `dVref/dVos`, `typ` | 6.6801 V/V | 6.6790 V/V |
+| `dVref/dVos`, `bcs` | 6.6564 V/V | 6.6500 V/V |
+| `dVref/dVos`, `wcs` | 6.6927 V/V | 6.6817 V/V |
+| `vref_op_v` at `Vos=0`, `typ` | 1.047338 V | 1.047278 V (−60 µV) |
+
+The sensitivity this experiment exists to measure is the `R1/R2` ratio, and
+the ladder at code 128 re-partitions `R1` without changing that ratio to the
+third decimal: all three corners move by ≤0.011 V/V (≤0.17%), i.e. the same
+0.018% `R1` step the open-loop bench measures, plus the second-order paths
+§"Results" below already names. **Note the table in §"Results" below is the
+older, pre-#134-retune record's reading** (`dVref/dVos ≈ 8.8`, `R1=694.5u`);
+`sim/` evidence is append-only, so that section is left standing as its own
+record's reading — the numbers above are the current ones.
+
 ## What this testbench claims, and what it does not
 
 **It is explicitly NOT a Monte Carlo / statistical mismatch study.** Monte

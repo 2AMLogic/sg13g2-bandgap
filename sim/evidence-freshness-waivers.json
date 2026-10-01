@@ -9,32 +9,11 @@
       "reason": "closed-loop-iq 2026-08-30 record: the pre-trim core DUT it froze (R1=511um single instance, no trim ladder) was superseded by #229's trim-bearing core; refresh tracked here"
     },
     {
-      "report": "sim/closed-loop-offset/records/20260830-132358-d83f7c4.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-offset 2026-08-30 record: pre-trim core DUT, superseded by #229's trim-bearing core; refresh tracked here"
-    },
-    {
-      "report": "sim/closed-loop-psrr/records/20260830-133912-d83f7c4.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-psrr 2026-08-30 record: pre-trim core DUT, superseded by #229's trim-bearing core; refresh tracked here"
-    },
-    {
       "report": "sim/closed-loop-psrr-pex/records/20260905-233826-f6f3efc.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
       "issue": "#264",
       "reason": "closed-loop-psrr-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry; blocked on the trim-bearing re-layout, tracked here"
-    },
-    {
-      "report": "sim/closed-loop-startup/records/20260830-132425-d83f7c4.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-startup 2026-08-30 record: pre-trim core DUT, superseded by #229's trim-bearing core; refresh tracked here"
     },
     {
       "report": "sim/closed-loop-vref-mc/records/20260909-232418-c9b83ab.md",
@@ -79,32 +58,11 @@
       "reason": "closed-loop-zout-pex 2026-09-06 record: extracted-layout DUT on the pre-trim geometry; blocked on the trim-bearing re-layout, tracked here"
     },
     {
-      "report": "sim/core-open-loop-bias/records/20260830-132212-d83f7c4.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "core-open-loop-bias 2026-08-30 record: pre-trim core DUT, superseded by #229's trim-bearing core; refresh tracked here"
-    },
-    {
       "report": "sim/core-open-loop-bias-pex/records/20260905-033431-fe97115.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
       "issue": "#264",
       "reason": "core-open-loop-bias-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry; blocked on the trim-bearing re-layout, tracked here"
-    },
-    {
-      "report": "sim/loop-gain-phase-margin/records/20260830-133911-d83f7c4.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "loop-gain-phase-margin 2026-08-30 record: pre-trim core DUT, superseded by #229's trim-bearing core; refresh tracked here"
-    },
-    {
-      "report": "sim/startup-core-handover/records/20260830-133912-d83f7c4.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "startup-core-handover 2026-08-30 record: pre-trim core DUT, superseded by #229's trim-bearing core; refresh tracked here"
     },
     {
       "report": "sim/startup-time-to-release/records/20260904-184431-6fa83b4.md",

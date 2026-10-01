@@ -12,6 +12,70 @@ DUTs, wired exactly as `design/bandgap_top.sch` specifies, that
 breaks the loop at the shared `fb` node and runs an `.ac` analysis around a
 `.nodeset`-seeded DC operating point instead of a transient bring-up.
 
+## Trim-bearing DUT refresh (issue #264)
+
+**DUT.** The core netlist this bench inlines device-for-device is now
+#229's trim-bearing `design/netlist/bandgap_core.spice`: `XR1` is segmented
+to its `l=37.2u` base into node `tn0`, and the 255-unit binary-weighted
+`bandgap_trim` ladder continues `tn0 -> cb3` (see
+[`../../design/bandgap_trim_network.md`](../../design/bandgap_trim_network.md)).
+The ladder subcircuit is copied into the template device-for-device with its
+subcircuit-local `.param trim_code` pinned to the schematic default **128**;
+there is no trim-code axis here — the code-swept benches are
+[`../trim-coverage/`](../trim-coverage/README.md),
+[`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md) and
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md).
+At code 128 the ladder reproduces the pre-trim 511 µm summing resistor to
+within 12 Ω of its measured 66.06 kΩ (0.018%, measured in
+[`../core-open-loop-bias/`](../core-open-loop-bias/README.md)'s own refresh).
+
+**Solver options.** Unchanged — this bench never carried the `rshunt=1e9` /
+`gmin=1e-9` convergence aids the transient benches needed, so the ~0.55 µA
+ladder-leak artifact that forced those benches to drop them (see
+[`../closed-loop-vref-boxtc-trim/README.md`](../closed-loop-vref-boxtc-trim/README.md)
+§"Solver options") never applied here. The `.nodeset` seeds this bench reads
+from `../closed-loop-startup`'s newest record are this refresh's own
+aids-free startup record, so the seeded operating point and the DUT agree.
+
+**What moved** — record `20261001-085806-e5507b2` (trim-bearing) vs the
+superseded `20260830-133911-d83f7c4` (pre-trim), 45/45 PASS both:
+
+| quantity | pre-trim | trim-bearing, code 128 |
+|---|---|---|
+| DC loop gain | 45.1–47.6 dB | 45.1–47.6 dB (bit-identical) |
+| unity-gain crossover | 41.6–53.4 MHz | 30.2–49.9 MHz |
+| phase margin (points with a crossing) | 88.5–119.3° (44/45) | **36.3–112.1°** (45/45) |
+| notch minimum | −1.12 … +0.11 dB | −21.59 … −0.17 dB |
+| `notch_margin_flag` = `marginal` | 43/45 | 36/45 |
+| `vref_op_v` @ `typ`/27 °C/3.30 V | 1.047339 V | 1.047278 V (−60 µV) |
+
+**This is the one refreshed experiment where the trim network measurably
+changes the circuit's own behavior, not just the number's last digits — read
+it as a real finding, not as noise.** 255 `rppd` segments carry 255
+segment-to-substrate junction capacitances on the `vref`→`cb3` branch, so the
+ladder loads the output node: the crossover drops (mean 46.2 → 44.2 MHz, and
+the worst corner from 41.6 to 30.2 MHz) and the resonance that sets this
+design's gain margin is damped — the notch deepens everywhere (the
+`notch_margin_flag` count falls from 43 to 36 `marginal`, and this run finds a
+real crossing at all 45 points, so the §"Pass/fail criteria" guard band is
+not load-bearing for any point here).
+
+The phase-margin cost lands almost entirely on one corner:
+`wcs`/125 °C/2.97 V, whose notch goes from −0.39 dB to −21.59 dB and whose
+phase margin reads **36.3°** (that corner is also the one point the pre-trim
+run could not resolve a crossing for — the comparison is honest but not
+like-for-like at that single point). The other 44 points stay in 83.9–112.1°.
+Every point still clears this bench's hard stability bar (phase margin
+> 0° at a found crossing), and no ratified spec row carries a phase-margin
+number for this to violate — `spec/porting-plan.md` §6's draft table has none
+and ratification of it is still open (#125). But "the ladder costs real phase
+margin at the worst corner" is a design-level consequence of #229 that this
+bench is the first to see, and it is tracked separately rather than buried
+here — see **#271**, which also carries the corroborating PSRR-side
+observation and the candidate dispositions.
+A margin number read off the §"Results summary" section below is a pre-trim
+number.
+
 ## What this testbench claims, and what it does not
 
 It claims: across the full temperature x supply x

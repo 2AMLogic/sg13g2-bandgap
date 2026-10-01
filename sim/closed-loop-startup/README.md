@@ -11,6 +11,71 @@ of an ideal current-source fixture standing in for it. Built for issue #58;
 see [`design/README.md`](../../design/README.md) § "What's here (issue #58)"
 for the schematic-side account this testbench validates.
 
+## Trim-bearing DUT refresh (issue #264)
+
+**DUT.** The core netlist this bench inlines device-for-device is now
+#229's trim-bearing `design/netlist/bandgap_core.spice`: `XR1` is segmented
+to its `l=37.2u` base into node `tn0`, and the 255-unit binary-weighted
+`bandgap_trim` ladder continues `tn0 -> cb3` (see
+[`../../design/bandgap_trim_network.md`](../../design/bandgap_trim_network.md)).
+The ladder subcircuit is copied into the template device-for-device with its
+subcircuit-local `.param trim_code` pinned to the schematic default **128**;
+there is no trim-code axis here — the code-swept benches are
+[`../trim-coverage/`](../trim-coverage/README.md),
+[`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md) and
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md).
+At code 128 the ladder reproduces the pre-trim 511 µm summing resistor to
+within 12 Ω of its measured 66.06 kΩ (0.018%, measured in
+[`../core-open-loop-bias/`](../core-open-loop-bias/README.md)'s own refresh).
+
+**Solver options — the aids are dropped, and that is most of the delta
+below.** `rshunt=1e9` / `gmin=1e-9`, this bench's pre-trim convergence aids
+(§"A real numerical finding, not a design defect" above), are **dropped**;
+`reltol=5e-3` + `tran 50n` (#149's timestep-stiffness pair) are kept. This is
+the same deliberate deviation
+[`../closed-loop-vref-boxtc-trim/README.md`](../closed-loop-vref-boxtc-trim/README.md)
+§"Solver options" documents, for the same reason: the aids assume a handful
+of high-impedance nodes, the ladder adds 254 interior series ones, and at
+1 GΩ ‖ 1 nS each they leak a measured ~0.55 µA out of the output branch — a
+37 mV settled-`vref` artifact at code 128/typ/27 °C (1.01206 V with the aids
+vs 1.04728 V without), with the pre-trim circuit itself reading 2.2 mV high
+at 125 °C with them. Carrying them into a trim-bearing record would have made
+this record silently wrong. The honest cost: the convergence duty they
+carried through the early sub-1 V ramp instant now rests on `reltol`/`tran`
+alone, so a point that does not converge is reported as a FAIL point and
+never silently re-aided (this run: 45/45 PASS, no re-aiding).
+
+**Resident-vector `save` card.** With the ladder inlined the node count goes
+from ~40 to ~700; ngspice's default batch output allocation (every node ×
+every timestep) then asks for ~520 MB over this bench's 3 ms window and trips
+its own startup `memory required > memory available` check on a
+page-cache-warm host — 38 of 45 points failed that way, with no circuit
+content to the failure, before the template grew the same resident-vector
+`save` card the trim benches already carry. Every `.meas` card in this bench
+names a saved vector, and all measures were verified unchanged at
+typ/27 °C/3.30 V with the card in place.
+
+**What moved** — record `20261001-083332-e5507b2` (trim-bearing, aids-free)
+vs the superseded `20260830-132425-d83f7c4` (pre-trim, aids-bearing),
+45/45 PASS both:
+
+| quantity | pre-trim + aids | trim-bearing, code 128, aids-free |
+|---|---|---|
+| `vref_final_v` @ `typ`/27 °C/3.30 V | 1.04947 V | 1.04728 V (−2.19 mV) |
+| `vref_final_v` grid band | 1.04289–1.05541 V | 1.04060–1.05052 V |
+| `i_mkfb_final_a` grid band | 2.09–3.11 nA | 2.4 fA–183 pA |
+| `dvsns_final_v` @ `typ`/27 °C/3.30 V | 7.5e−05 V | 3.94e−04 V |
+
+Read the mV-class `vref` step as the aids coming out, not as the ladder
+moving the operating point: the aids-free number is the one that agrees with
+a plain `.op` of the same netlist, and the pre-trim circuit shifts by the
+same sign and order when its own aids are stripped. The nA-scale
+`i_mkfb_final_a` floor in the pre-trim column was the `rshunt` leak itself,
+not startup-path current — with the aids gone it drops by two to six orders
+of magnitude, and both columns sit far inside this bench's own 50 nA release
+criterion. `dvsns` stays two orders of magnitude inside the 20 mV
+loop-closure tolerance.
+
 ## What this testbench claims, and what it does not
 
 It claims: across the full temperature x supply x HBT/MOS/resistor-process-
