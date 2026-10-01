@@ -23,13 +23,6 @@
       "reason": "closed-loop-vref-mc 2026-09-09 record (the untrimmed +/-16% line's own evidence): pre-trim core DUT, superseded by #229's trim-bearing core; the untrimmed-line numbers remain valid history, the refresh re-runs them at default code 128; tracked here"
     },
     {
-      "report": "sim/closed-loop-vref-pvt/records/20260830-114117-931c0e2.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",
-      "issue": "#264",
-      "reason": "closed-loop-vref-pvt 2026-08-30 record (the official 45-point PVT table): pre-trim core DUT, superseded by #229's trim-bearing core; refresh tracked here"
-    },
-    {
       "report": "sim/closed-loop-vref-pvt-boxtc/records/20260921-194249-77820fc.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:88fbebb94b0dd86e45d28857127133e1149bd16cae43df850a3a505dd5851ac1",

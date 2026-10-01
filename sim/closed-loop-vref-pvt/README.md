@@ -15,6 +15,78 @@ temperature** — the two questions `design/README.md`'s issue #58 "Not
 attempted" list named as open (`design/README.md`'s "What has and has not
 been verified" section, updated by this issue).
 
+## Trim-bearing DUT refresh (issue #264)
+
+**DUT.** The core netlist this bench inlines device-for-device is now
+#229's trim-bearing `design/netlist/bandgap_core.spice`: `XR1` is segmented
+to its `l=37.2u` base into node `tn0`, and the 255-unit binary-weighted
+`bandgap_trim` ladder continues `tn0 -> cb3` (see
+[`../../design/bandgap_trim_network.md`](../../design/bandgap_trim_network.md)).
+The ladder subcircuit is copied into the template device-for-device with its
+subcircuit-local `.param trim_code` pinned to the schematic default **128**;
+there is no trim-code axis here — the code-swept benches are
+[`../trim-coverage/`](../trim-coverage/README.md),
+[`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md) and
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md).
+At code 128 the ladder reproduces the pre-trim 511 µm summing resistor to
+within 12 Ω of its measured 66.06 kΩ (0.018%, measured in
+[`../core-open-loop-bias/`](../core-open-loop-bias/README.md)'s own refresh).
+
+**Solver options — the aids are dropped, and that is most of the delta
+below.** `rshunt=1e9` / `gmin=1e-9`, this bench's pre-trim convergence aids,
+are **dropped**; `reltol=5e-3` + `tran 50n` (#149's timestep-stiffness pair)
+are kept. Same deliberate deviation, same reason as
+[`../closed-loop-vref-boxtc-trim/README.md`](../closed-loop-vref-boxtc-trim/README.md)
+§"Solver options": the aids assume a handful of high-impedance nodes, the
+ladder adds 254 interior series ones, and at 1 GΩ ‖ 1 nS each they leak a
+measured ~0.55 µA out of the output branch — a 37 mV settled-`vref` artifact
+at code 128/typ/27 °C (1.01206 V with them vs 1.04728 V without), with the
+pre-trim circuit itself reading 2.2 mV high at 125 °C with them. Keeping them
+here would have made the repo's headline schematic `vref` table silently
+wrong. The honest cost: the convergence duty they carried through the early
+sub-1 V ramp instant now rests on `reltol`/`tran` alone, so a point that does
+not converge is reported as a FAIL point and never silently re-aided (this
+run: 45/45 PASS). The template also carries the resident-vector `save` card
+the trim benches carry — with the ladder inlined the node count goes ~40 →
+~700, and ngspice's default all-nodes × all-timesteps batch allocation over
+this bench's 3 ms window trips its own startup memory check without it.
+
+**What moved** — record `20261001-085908-e5507b2` (trim-bearing, aids-free)
+vs the superseded `20260830-114117-931c0e2` (pre-trim, aids-bearing),
+45/45 PASS both:
+
+| quantity | pre-trim + aids | trim-bearing, code 128, aids-free |
+|---|---|---|
+| `vref_3ms_v` @ `typ`/27 °C/3.30 V | 1.04947 V | **1.04728 V** (−2.19 mV, −0.21%) |
+| `vref_3ms_v` grid band | 1.04289–1.05541 V | 1.04060–1.05052 V |
+| `vref_settle_delta_v` | 0 at all 45 points | 0 at all 45 points |
+| informal TC (`-tc.csv`, endpoint method, 15 groups) | −14.4 … +18.1 ppm/°C | **−37.3 … −14.1 ppm/°C** |
+| `vbeq3_3ms_v` band | 0.586042–0.789430 V | 0.585935–0.789291 V |
+| `i_mkfb_a` band | 2.09–3.11 nA | 2.3 fA–183 pA |
+| `dvsns_v` band | 1e−06–3.59e−04 V | 2.42e−04–6.46e−04 V |
+
+**Read the TC row carefully — it is the one row with a disposition attached.**
+The endpoint-method TC moves by about −25 ppm/°C, which is the same
+direction and order as the independent, aids-free, trim-bearing box-TC
+evidence #229 landed (`../closed-loop-vref-boxtc-trim/`, 20.2–45.7 ppm/°C
+by the box method across the gated ±1-code band) — two separately-written
+benches agreeing. Every group here is still inside `spec/porting-plan.md`
+§6's `< 50 ppm/°C` target; the `< 20 ppm/°C` stretch is not met, and that
+disposition is **#269**'s, not this refresh's: nothing in `spec/` is edited
+here. #269 also names the right experiment to separate the two confounded
+causes (aids removal vs. the ladder itself) — an aids-free re-run of the
+**pre-trim** core, which is by construction not something this refresh can
+produce.
+
+**What this refresh does NOT move**: the post-layout grid. DR-0011's nominal
+1.05048 V comes from [`../closed-loop-vref-pvt-pex/`](../closed-loop-vref-pvt-pex/README.md),
+whose extracted DUT still carries the pre-trim geometry; its freshness waiver
+stays in `../evidence-freshness-waivers.json` until a trim-bearing re-layout
+exists. The schematic nominal above sits 0.30% below that post-layout
+nominal. The numbers in §"Results summary" below predate even the #134 R1
+retune (they read `vref` in the 1.13–1.22 V era) — `sim/` evidence is
+append-only, so that section is left standing as its own record's reading.
+
 ## What this testbench claims, and what it does not
 
 It claims: across the full temperature x supply x
