@@ -20,8 +20,11 @@ including pre- and post-layout (PEX) PVT sweeps and committed `klt drc` /
 because SiGe HBT recognition was investigated and permanently declined
 upstream
 ([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/pull/1242)),
-and the trim network obligated by the re-cast Output-reference row (issue
-#229) — design work, not further tooling work. The earlier
+and — since the trim network obligated by the re-cast Output-reference row
+landed with #229 and measured its own line not met — the accuracy that one
+trim knob can buy (decision record `0012`, issue #265; a second trim degree
+of freedom is tracked by #267). Both are design work, not further tooling
+work. The earlier
 "not-yet-routed floorplan" cause (#20) was
 retired by PR #27 and #20 is closed; the earlier ratification gate (#13) is
 closed and the target-spec table below is ratified against
@@ -59,11 +62,11 @@ SG13G2 being a **BiCMOS** process is a genuine bonus: it offers real bipolar
 devices rather than the parasitic PNPs the CMOS ports rely on, which is a
 different device class for extraction and LVS to handle.
 
-## Target specification (RATIFIED; Output-reference row re-cast by the two-key-gated decision record 0011 — see below)
+## Target specification (RATIFIED; Output-reference row re-cast by the two-key-gated decision records 0011 and 0012 — see below)
 
 | Parameter | Target | Stretch |
 |---|---|---|
-| Output reference | 1.050 V — ±16% untrimmed (3σ, mismatch MC + PVT); ±0.5% trimmed (1-point @ 27 °C) | — |
+| Output reference | 1.050 V — ±16% untrimmed (3σ, mismatch MC + PVT); ±4.5% trimmed (3σ, 1-point @ 27 °C, −40…125 °C) | — |
 | Trim | 1-point @ 27 °C; range ≥ ±15%; resolution ≤ 0.25%/step; magnitude only | — |
 | Temp coefficient (−40…125 °C) | < 50 ppm/°C | < 20 ppm/°C |
 | PSRR @ DC | > 60 dB | > 70 dB |
@@ -79,7 +82,11 @@ device-mismatch Monte Carlo (issue #215); that record supersedes the earlier
 predated both. The Output-reference row is re-cast (nominal, untrimmed and
 trimmed lines, plus a Trim row) by
 [`spec/decision-records/0011-output-reference-row-disposition.md`](spec/decision-records/0011-output-reference-row-disposition.md)
-(issue #221, two-key-gated). Ratifying the table locks in these target
+(issue #221, two-key-gated), and its **trimmed** line is re-cast again —
+±0.5% → ±4.5% (3σ) — by
+[`0012-trimmed-line-disposition.md`](spec/decision-records/0012-trimmed-line-disposition.md)
+(issue #265, two-key-gated) against the trim-domain evidence #229 measured.
+Ratifying the table locks in these target
 *numbers*, not a claim that every row is currently met — per
 `CLAUDE.md`/`spec/README.md` this repo does not relax a spec to make
 results pass.
@@ -124,10 +131,10 @@ so the honest per-row status is:
   12.09–14.60% across corner points) plus the corner-mean offset — an
   order of magnitude wider than the gf180/sky130 ±2% lines because this
   PDK's mismatch scatter is an order of magnitude larger than theirs. The
-  buyer-facing accuracy is the **±0.5% trimmed** line (1-point trim at
-  27 °C), backed by the new **Trim row** (range ≥ ±15%, resolution
-  ≤ 0.25%/step) — the row shape the market key asked for, and the same
-  re-cast shape both siblings ratified on their own numbers. The trim
+  buyer-facing accuracy is the **trimmed** line (1-point trim at 27 °C),
+  backed by the new **Trim row** (range ≥ ±15%, resolution ≤ 0.25%/step) —
+  the row shape the market key asked for, and the same re-cast shape both
+  siblings ratified on their own numbers. The trim
   network behind the trimmed line **has landed** (**#229**, replacing the
   closed issue #9 as the tracker): a 255-unit binary-weighted `rppd`
   ladder in series with R1 (strap-decoded 1-point code, default 128 ≡
@@ -137,24 +144,41 @@ so the honest per-row status is:
   The Trim row itself is **met on committed evidence**: measured range
   +29.6%/−29.8% and resolution 0.2327%/step across the full
   corner/supply grid at 27 °C (`sim/trim-coverage/`), exact binary
-  weights, monotonic. The **±0.5% trimmed line is measured NOT met** on
-  the same evidence: the N=300-per-point trim-domain mismatch MC with a
-  modeled 1-point 27 °C trim (`sim/closed-loop-vref-trim-mc/`) reads
-  3σ ≈ ±2.6% over −40…125 °C (≈30% of dies inside ±0.5%) — the 1-point
-  trim centers every die at 27 °C (quantization-class residual) but the
-  population's temperature drift retains a code-correlated spread, and
-  the nominal die's own drift (~0.43%) already exceeds DR-0011's 0.20%
-  budget input, which was derived from convergence-aided TC evidence
-  (the aids-free A/B is documented in
-  `sim/closed-loop-vref-boxtc-trim/README.md`). The row's disposition is
-  tracked in **#265** (superseding record or second trim point,
-  two-key-gated — no silent relaxation); the committed evidence also
-  still demonstrates the untrimmed ±16% line
-  (`sim/closed-loop-vref-mc/`, issue #215).
+  weights, monotonic.
+- **The trimmed line is re-cast a second time — ±0.5% → ±4.5% (3σ) — by
+  decision record
+  [`0012`](spec/decision-records/0012-trimmed-line-disposition.md) (issue
+  #265).** `0011`'s ±0.5% was a *budget*, not a measurement, and #229's
+  benches measured it not met: the N=300-per-point trim-domain mismatch MC
+  with a modeled 1-point 27 °C trim (`sim/closed-loop-vref-trim-mc/`) puts
+  the trimmed population's worst-temperature |mean| + 3σ at **4.29%** of
+  1.050 V (≈30% of dies inside ±0.5%), and the aids-free post-trim box-TC
+  bench (`sim/closed-loop-vref-boxtc-trim/`) shows a **perfect** die,
+  perfectly trimmed, already drifts 0.333–0.581% from its own 27 °C point
+  across the corner/supply grid — so ±0.5% is unreachable by *any* 1-point
+  trim of this core, mismatch aside. Two measured causes: `0011`'s 0.20%
+  drift input was derived in the wrong units (a 165 °C-span box-TC rate
+  scaled by 98 °C, against the 0.295%/0.324% the #222 CSVs state directly)
+  from convergence-aided evidence (the aids-free A/B is documented in
+  `sim/closed-loop-vref-boxtc-trim/README.md`); and the one knob sets both
+  level and PTAT gain, so a 1-point trim **converts offset into TC** at a
+  measured **+0.058%/code** (r = +0.84, 74% of the deterministic detuning
+  slope) across a population that lands at codes 90…229. `0012` sets the
+  line at **±4.5%** (99.6% of converged draws measured inside it), leaves
+  the stretch column empty rather than naming an unmeasured one, and states
+  plainly that ±4.5% is ~4.5× outside the loosest catalogue comp — the path
+  to a tighter line is a second trim degree of freedom, tracked as **#267**
+  (with **#268** for the benches' gate constants and **#269** for the
+  TC-row stretch the same aids-free evidence re-opens). `0012` is
+  `proposed` pending its two-key release, per the relax-after-measured-FAIL
+  rule — no silent relaxation. The committed evidence also still
+  demonstrates the untrimmed ±16% line (`sim/closed-loop-vref-mc/`, issue
+  #215).
 
 See `0007` for full per-row evidence and the Output-reference-vs-TC trade-off,
-`0008` for what the two-key review changed about the status above, and `0011`
-for the Output-reference disposition and its derivations.
+`0008` for what the two-key review changed about the status above, `0011`
+for the Output-reference disposition and its derivations, and `0012` for the
+trimmed line's re-cast against #229's measured trim-domain evidence.
 
 Supply row confirmed against SG13G2's actual device menu (1.2 V LV core /
 3.3 V HV I/O — no 1.8 V-rated flavor exists in this PDK) — see
@@ -171,8 +195,9 @@ Maturity ladder: tooling resolved → spec ratified → schematic simulated
 across PVT → layout DRC/LVS-clean → post-layout re-verification → shuttle
 seat → measured silicon. **Current position: tooling resolved; spec
 ratified (see decision records above), five of six rows two-key reviewed
-clean and the Output-reference row re-cast by the two-key-gated record 0011
-(#221) rather than blocking the other five; schematic simulated across PVT,
+clean and the Output-reference row re-cast by the two-key-gated records 0011
+(#221) and 0012 (#265, trimmed line) rather than blocking the other five;
+schematic simulated across PVT,
 pre- and post-layout (PEX);
 layout DRC-clean, with LVS `match` on `bandgap_startup` and `mismatch` on
 `bandgap_core` (three unrecognised `NPN13G2` devices, klayout-tools#1242,

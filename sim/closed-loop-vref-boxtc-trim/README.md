@@ -63,6 +63,22 @@ curvature) — i.e. ≤ ~1 code off null.
 | 127, 128, 129 | full corner × supply × 8 temps | the ±1-code mis-aim band real trims land in — **the claim gate** |
 | 0, 64, 192, 255 | `{typ, bcs, wcs}` × 3.30 V × 8 temps | the TC-vs-code sensitivity slope and its saturation — reported, ungated (a correctly-trimmed die never sits there; a mis-trimmed one is bounded by them) |
 
+> **The ±1-code premise is falsified by the trim-domain MC (issue #265).**
+> The paragraph above assumes the mismatch population's errors are
+> PTAT-shaped, so a correctly-trimmed die sits at its own null and only the
+> sub-code mis-aim is left. `../closed-loop-vref-trim-mc/`'s committed
+> campaign measures the opposite: each die's post-trim 27 → 125 °C drift
+> tracks its own `code*` at **+0.058 %/code** (r = +0.84, ~71% of the drift
+> variance), i.e. **74% of the deterministic detuning slope** this bench's
+> own far-code rows establish (+0.0775 %/code), across a population that
+> lands at codes **90…229** — not 127…129. The ±1-code rows below are
+> correct for what they measure and **must not** be read as bounding a real
+> population's trim-induced TC. See
+> [`../../spec/decision-records/0012-trimmed-line-disposition.md`](../../spec/decision-records/0012-trimmed-line-disposition.md)
+> for the disposition, #267 for the mechanism, and #268 for re-designing
+> this gate (deliberately unchanged here: moving it under a `proposed`
+> record would convert a committed verdict).
+
 **Claim gate**: the worst ±1-code box-TC delta vs the code-128 baseline,
 over the full corner/supply grid, × the 98 °C span from the 27 °C trim
 point, must stay inside the ~0.175% headroom DR-0011's budget table
