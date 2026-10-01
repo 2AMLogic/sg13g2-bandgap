@@ -175,7 +175,14 @@ for point in "${POINT_LABELS[@]}"; do
 done
 FIT_TOTAL=$(wc -l < "${FIT_MANIFEST}" | tr -d ' ')
 echo "run_trim_mc.sh: fit pass -- ${FIT_TOTAL} netlists, ${PARALLEL}-way parallel..."
-xargs -P "${PARALLEL}" -n2 bash -c 'ngspice -b "$0" > "$1" 2>&1; echo $? > "$1.rc"; exit 0' < "${FIT_MANIFEST}"
+# Per-invocation 300 s bound: a small tail of mismatch draws at the
+# 125 C corner points (r3_cmc electro-thermal network throws a NaN into
+# Newton there and the solver grinds through its stepping retries) runs
+# for many minutes despite eventually converging; the bound caps the
+# campaign's wall clock, and a timed-out draw is recorded with a nonzero
+# .rc -> verify FAIL -> disclosed in the digest's n_pass < n_draws, the
+# same non-converged-point discipline every PVT bench here carries.
+xargs -P "${PARALLEL}" -n2 bash -c 'timeout 300 ngspice -b "$0" > "$1" 2>&1; echo $? > "$1.rc"; exit 0' < "${FIT_MANIFEST}"
 
 # ------------------------------------------------ code* per (point, draw)
 # vref(code) is linear in code to first order with a small measured
@@ -233,7 +240,8 @@ for point in "${POINT_LABELS[@]}"; do
 done
 VERIFY_TOTAL=$(wc -l < "${VERIFY_MANIFEST}" | tr -d ' ')
 echo "run_trim_mc.sh: verify pass -- ${VERIFY_TOTAL} netlists, ${PARALLEL}-way parallel..."
-xargs -P "${PARALLEL}" -n2 bash -c 'ngspice -b "$0" > "$1" 2>&1; echo $? > "$1.rc"; exit 0' < "${VERIFY_MANIFEST}"
+# Same 300 s per-invocation bound as the fit pass (see above).
+xargs -P "${PARALLEL}" -n2 bash -c 'timeout 300 ngspice -b "$0" > "$1" 2>&1; echo $? > "$1.rc"; exit 0' < "${VERIFY_MANIFEST}"
 
 # ------------------------------------------------------ Per-draw assembly
 echo "run_trim_mc.sh: assembling per-draw rows..."

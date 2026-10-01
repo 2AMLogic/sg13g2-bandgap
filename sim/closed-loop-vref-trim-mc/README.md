@@ -77,8 +77,13 @@ record, exactly as #215's does.
 
 ## Pass/fail criteria
 
-Per draw: all six `.op`s converge with the loop genuinely closed and not
-railed (`pvt_closed_loop_verdict`, same shared thresholds). Per point:
+Per draw: all six `.op`s converge (each invocation is bounded at 300 s —
+a small tail of 125 °C mismatch draws grinds through ngspice's stepping
+retries after the r3_cmc electro-thermal network feeds Newton a NaN;
+bounded draws are recorded FAIL and disclosed, the same
+non-converged-point discipline every PVT bench here carries) with the
+loop genuinely closed and not railed (`pvt_closed_loop_verdict`, same
+shared thresholds). Per point:
 `n_pass == n_draws`, the negative control is exactly zero-spread, and —
 the claim gate — **3σ of the per-draw max-temperature deviation ≤ 0.5%**
 at every mismatch point. The fraction of draws inside ±0.5%

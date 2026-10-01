@@ -113,7 +113,20 @@ run_one_point() {
     -e "s|@@DUT_GIT_SHA@@|core=${DUT_CORE_GIT_SHA} trim=${DUT_TRIM_GIT_SHA} amp=${DUT_AMP_GIT_SHA} startup=${DUT_STARTUP_GIT_SHA}|g" \
     "${TEMPLATE}" > "${netlist}"
 
-  run_pvt_point "${netlist}" "${log}"
+  # Local bounded variant of the shared run_pvt_point (sim/lib/
+  # pvt_preflight.sh): the ladder's 256 r3_cmc instances make a small
+  # tail of 125C-corner transients grind through the electro-thermal
+  # network's error recovery, so each point is capped at 600 s; a
+  # timed-out point is recorded FAIL with empty measures and disclosed
+  # (n_pass < n_grid), never silently dropped.
+  set +e
+  timeout 600 ngspice -b "${netlist}" > "${log}" 2>&1
+  rc=$?
+  set -e
+  model_error=0
+  if grep -qiE "Unable to find definition of model|couldn't be loaded|Unknown model type" "${log}"; then
+    model_error=1
+  fi
 
   local fb_v sns1_v sns2_v det_v i_mkfb_a vref_2ms vref_3ms vbeq3_2ms vbeq3_3ms
   fb_v=$(extract_measure '^v_fb_v' "${log}")
