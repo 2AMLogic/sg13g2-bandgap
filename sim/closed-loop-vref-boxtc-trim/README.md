@@ -3,7 +3,7 @@
 Post-trim **box-method temperature-coefficient bench** (issue #229) — the
 post-trim TC re-measurement DR-0011's ±0.5% trimmed budget obligates:
 *"a post-trim TC re-measurement bounding the trim-induced TC degradation
-(DR-0010's ±0.5% budget carries ~0.17% headroom for it — an estimate to
+(DR-0011's ±0.5% budget carries ~0.17% headroom for it — an estimate to
 verify, not a measurement)"*.
 
 It is [`../closed-loop-vref-pvt-boxtc/`](../closed-loop-vref-pvt-boxtc/README.md)'s
