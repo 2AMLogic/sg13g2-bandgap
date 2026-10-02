@@ -27,7 +27,7 @@
     "res_section": { "typ": "res_typ", "bcs": "res_bcs", "wcs": "res_wcs", "sf": "res_typ", "fs": "res_typ" }
   },
   "extra_links": [
-    "Harness decision + what still blocks the grids: `sim/harness/README.md`",
+    "Harness decision + batch-fleet status: `sim/harness/README.md`",
     "Self-test driver: `sim/harness/probe/run_probe.sh`"
   ]
 }

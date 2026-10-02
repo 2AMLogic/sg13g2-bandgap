@@ -273,9 +273,11 @@ A record says which harness produced it: the `klt sim` path adds a
 `- **Harness**:` field naming the request and the backend. Read
 [`harness/README.md`](harness/README.md) before writing a new `klt sim`
 experiment — it carries the four-file recipe, the one-corner self-test
-(`harness/probe/run_probe.sh`, which reproduces a committed record to 3 µV),
-the two `klt sim` capability gaps this PDK runs into and how they are worked
-around, and what still blocks dispatching SG13G2 grids to the batch fleet.
+(`harness/probe/run_probe.sh`, which reproduces a committed record to 3 µV
+locally and on the batch fleet via `--batch`), the `klt sim` capability
+gaps this PDK runs into and how they are worked around, and the batch-fleet
+status for SG13G2 grids (unblocked for the probe; the five-corner grids
+wait on the runner image's klt pin).
 
 ## Spec ratification: which issue tracks it
 
