@@ -345,8 +345,8 @@ is that disposition — **no second knob is built**, the second-ladder family
 is closed permanently on the measurement in §3.1, and the CTAT knob's
 specification below is ratified as the design of record for whenever a
 2-point Trim row is proposed. The Trim-row question itself (1-point →
-2-point) is filed as its own tracker with that record; it is a wafer-sort
-cost decision and a `0011` supersession, neither of which belongs to this
+2-point) is filed as **#285** alongside that record; it is a wafer-sort cost
+decision and a `0011` supersession, neither of which belongs to this
 document.
 
 Implementation requirements that follow-on must carry, each of which this
