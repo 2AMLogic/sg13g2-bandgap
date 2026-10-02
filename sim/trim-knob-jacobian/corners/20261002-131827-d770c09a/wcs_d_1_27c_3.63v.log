@@ -1,0 +1,21 @@
+Warning: m=xx on .subckt line will override multiplier m hierarchy!
+
+
+Note: Compatibility modes selected: hs a
+
+
+Circuit: * sg13g2-bandgap -- second-trim-knob jacobian bench (issue #267): the
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+v(fb) = 2.780750e+00
+v(sns1) = 7.137097e-01
+v(sns2) = 7.133299e-01
+v(vref) = 1.073525e+00
+v(det) = 1.914538e-02
+v(cb3) = 7.157961e-01
+i(vmkfb) = 3.311800e-14
+Note: Simulation executed from .control section 

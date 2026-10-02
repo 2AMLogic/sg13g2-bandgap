@@ -15,6 +15,20 @@ range/resolution/linearity evidence),
 is that ladder re-derived for a core whose mismatch scatter is an order
 of magnitude wider and whose PTAT term is a smaller share of the output.
 
+**Whether this block should carry a *second* knob is a separate question,
+evaluated in the sibling document
+[`bandgap_trim_second_knob.md`](bandgap_trim_second_knob.md) (issue #267)
+and disposed by
+[`spec/decision-records/0013-second-trim-degree-of-freedom.md`](../spec/decision-records/0013-second-trim-degree-of-freedom.md).**
+That evaluation corrects one premise this document states in §2–§3 — that
+the mismatch population's level errors are PTAT-shaped, so a 1-point R1 trim
+restores each die's *own* TC null. Measured, they are not: a 1-point trim
+converts the non-PTAT part of a die's level error into post-trim drift at
++0.0577 %/code (population) against the +0.0775 %/code deterministic
+detuning slope. Read §2–§3's sizing as still correct (it is about *coverage*,
+which the MC confirms with zero railed dies) and its TC-null premise as
+superseded by that measurement.
+
 ## 1. Topology: a series binary-weighted ladder on the output branch
 
 The trim inserts **in series with R1**, on the Q3 side of the summing
@@ -231,3 +245,4 @@ interior in both axes of a 17 × 15 array.
 | ±0.5% trimmed line over −40…125 °C after a 1-point 27 °C trim | `sim/closed-loop-vref-trim-mc/records/` — **measured NOT met**: 3σ ≈ ±2.6%, ≈30% of dies inside ±0.5% (the 27 °C trim itself centers every die to quantization-class; the miss is the population's drift — the nominal die's ~0.43% alone exceeds DR-0011's 0.20% drift input, and a code*-correlated pivot ~0.04%/code remains). Disposition tracked in #265 |
 | trim-induced TC degradation inside the ~0.175% headroom | `sim/closed-loop-vref-boxtc-trim/records/` (`-trimdtc.csv` ±1-code gate, rails bounded) |
 | untrimmed ±16% (3σ) line (context the trim improves on) | `sim/closed-loop-vref-mc/records/` (issue #215, unchanged; the trim MC reproduces its typ/27 σ to 3%) |
+| this ladder's offset-to-drift column, and whether a *second* knob can break it | `sim/trim-knob-jacobian/records/` (issue #267) — this ladder's ratio is `ΔT/T` to within 1.4–2.5%, so a second ladder on R2 (or a joint R1/R2 code) is **collinear** with it and buys no second degree of freedom; evaluation in [`bandgap_trim_second_knob.md`](bandgap_trim_second_knob.md) |
