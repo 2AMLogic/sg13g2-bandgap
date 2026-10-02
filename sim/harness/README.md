@@ -16,7 +16,7 @@ This directory is that answer, as working code rather than a plan.
 - [Decision: `klt sim` (option 1), with an adapter](#decision-klt-sim-option-1-with-an-adapter)
 - [What is proven, and how to re-prove it](#what-is-proven-and-how-to-re-prove-it)
 - [Reported precision: 6 s.f. through `.meas`, 7 through an `.op` print](#reported-precision-6-sf-through-meas-7-through-an-op-print)
-- [What still blocks the grids](#what-still-blocks-the-grids)
+- [The batch fleet: unblocked for the probe (issue #277)](#the-batch-fleet-unblocked-for-the-probe-issue-277)
 - [Upstream friction](#upstream-friction)
 - [D2 and the mask option](#d2-and-the-mask-option)
 - [Writing a new `klt sim` experiment](#writing-a-new-klt-sim-experiment)
@@ -75,6 +75,7 @@ experiment keeps its own argument.
 
 ```bash
 sim/harness/probe/run_probe.sh        # ~15 s, one corner, local
+sim/harness/probe/run_probe.sh --batch  # one fleet job on the runner image (#277)
 ```
 
 It runs one corner (typ / 27 °C / 3.30 V) of `sim/core-open-loop-bias`'s own
@@ -251,47 +252,50 @@ pin it as provenance instead of discovering it by diff. If that lands, these
 records can be re-minted at full solver precision with no change to any
 request.
 
-## What still blocks the grids
+## The batch fleet: unblocked for the probe (issue #277)
 
-**The five grids are not re-run by this PR, and the five waivers in
-`sim/evidence-freshness-waivers.json` are deliberately left in place.** The
-reason is specific and verifiable, and it is not a `klt sim` problem:
+**Status 2026-10-02: the blocker below is cleared.** 2AMLogic/2am#1885
+merged (one pinned artifact: ngspice 46 + `ihp-sg13g2` 0.3.0 + compiled
+PSP103/`r3_cmc`/`mosvar` OSDI), the rebaked AMI
+`ami-0e40e3245f1923ac8` (`eda-batch-runner-20261002-9be0e73ca350`) is the
+batch launch template's default (v4), and the one-corner probe now runs the
+whole chain on the fleet itself:
 
-> `klt sim --backend batch` can only run on a PDK already baked into the
-> batch fleet's AMI, and the SG13G2 PDK is not one of them.
+```
+sim/harness/probe/run_probe.sh --batch     # one fleet job, ~2 min wall
+```
 
-Checked against the live fleet rather than inferred (2026-10-01, `klt`
-0.6.0+gf0615edf6037):
+First green run (kept here as the acceptance record for #277): job
+`klt-sim-de1e381c615c` on `i-030b9a8c0e4d2e98c` (c7i.8xlarge spot,
+us-east-1b, that AMI, ngspice 46, job exit 0) reproduced
+`sim/core-open-loop-bias`'s committed typ/27C/3.30V point to **3 µV** on
+`vref` and **0.06 Ω** on `r1` — the same deltas the local engine gives — so
+`ihp-sg13g2` resolves on a batch instance with loadable OSDI models and the
+harness moves no number there either. The `--batch` mode's header comment
+records the mechanism: the runner image pins klt 0.5.0, whose request schema
+cannot carry a multi-file corner bundle, so the batch request selects the
+HBT corner PDK-relatively through `models` and adds the other two families
+as body-level `.lib` selection cards against the baked root. That bridge is
+**single-corner-shaped by construction** (body cards cannot vary per
+corner): the five-corner grids need the image's klt pin bumped to a release
+carrying klayout-tools#2522 (per-section corner libraries) — a 2am pin bump,
+not a harness change.
 
-| What | State |
-|---|---|
-| Job bucket, launch template, security group, submit identity | **present** — `aws sts get-caller-identity --profile batch-runner-submit` resolves, the bucket lists, and it already holds prior `klt-sim-*` job trees. The fleet is real and has run `klt sim` before. |
-| Pinned AMI | **present** — `eda-batch-runner-20260921-…` (`Component=eda-batch-runner`), 2026-09-21. |
-| PDKs on that AMI | **`sky130A` + `gf180mcuD` only** — `2am`'s `infra/aws/batch-image-pins.env` pins `PDK_VARIANTS="sky130A gf180mcuD"` under `BAKED_PDK_ROOT=/opt/pdk`; `batch-image.md` describes the image's "open-PDK working set" as exactly those two. No `ihp-sg13g2`. |
-| OSDI models on that AMI | **no bake step exists** — and SG13G2 needs one: IHP-Open-PDK v0.3.0 ships the PSP103/r3_cmc/mosvar Verilog-A *sources*, not compiled `.osdi` binaries. `sim/tools/build-osdi.sh` is this repo's own compile step and has no counterpart in the image bake. |
-| Shipping the PDK as a job input instead | **not expressible** — `klayout_tools.sim_batch._build_batch_job_spec` ships exactly two inputs, the netlist and the request document; `models.pdk`/`models.pdk_root` are passed as *names* for the instance to resolve locally. There is no extra-inputs field. |
+### The 120-point grid vs `BATCH_MAX_JOB_SECONDS` (disposition, #277 AC3)
 
-So the chain is: harness built and proven ✅ → batch backend reachable ✅ →
-batch image cannot simulate SG13G2 ❌. The remedy is a change to the fleet
-image spec (add `ihp-sg13g2` to `PDK_VARIANTS` and an OSDI compile step to
-the bake), which is an operator/infra action in `2AMLogic/2am`, tracked here as
-**#277** (`loom:operator-only`) — not something a Builder can do from a dispatch
-host — and per those hosts' own rules, "if a
-tool is genuinely missing or wrong, say so in your PR/issue; the fix is a
-change to the worker spec, not to this host."
-
-One sizing note for whoever picks that up: the fleet's
-`BATCH_MAX_JOB_SECONDS` is 3600 s. The 45-point `.op`/AC grids fit easily
-(the probe's corner runs in well under a second). The 120-point box-TC
-transient grid at up to 600 s per point does **not** fit one job serially; it
-needs either `klt sim --hosts`-style sharding on the batch backend or a
-raised per-job ceiling, and that should be settled before that grid is
-submitted rather than discovered by a timeout.
-
-The five grid re-runs themselves are **#278**, which depends on #277 and
-carries the remaining template work (a PEX netlist-body *generator*, the hub-tag
-renumbering, the illegal merged-tap-net name, `XRU<n>` naming for D2, the
-transient `save` card, and #272's one-point sanity anchor).
+The fleet's per-job ceiling stays **3600 s** (2am#1885 deliberately left it
+alone, and nothing here asks for a raise). The 120-point box-TC transient
+grid at up to 600 s per point is expressed as **`klt sim`'s fleet sharding**
+(`hosts > 1`: one batch job per contiguous shard, merged deterministically),
+never as one serial job. The arithmetic, anchored on the probe run's own
+instance class: a job runs one ngspice per physical core (the job command
+passes `--max-workers "$EDA_PHYSICAL_CORES"`), the observed class has 16
+physical cores, so `hosts=2` runs 60 points per job in ⌈60/16⌉ = 4 waves —
+≤ 2400 s wall, 20 min inside the ceiling. A smaller instance from the
+diversified pool means more waves, so the rule for that grid is: choose the
+shard count so ⌈points-per-shard / physical-cores⌉ × 600 s keeps headroom
+under 3600 s, and if the acquired instance is smaller than expected, raise
+the shard count — not the ceiling.
 
 **What must not happen in the meantime:** nobody should "just run the grids"
 by looping `ngspice -b` on a dispatch host, or by widening
@@ -305,6 +309,30 @@ launch template and AMI as **absent**, because it defaults to
 negative — re-check with `--profile batch-runner-submit` before concluding the
 fleet does not exist.
 
+### History: what blocked the grids until 2026-10-02
+
+The five grids were not re-run by #275's PR, and the five waivers in
+`sim/evidence-freshness-waivers.json` were deliberately left in place,
+because `klt sim --backend batch` could only run on a PDK already baked into
+the batch fleet's AMI, and the SG13G2 PDK was not one of them. Checked
+against the live fleet rather than inferred (2026-10-01, `klt`
+0.6.0+gf0615edf6037):
+
+| What | State then |
+|---|---|
+| Job bucket, launch template, security group, submit identity | **present** — `aws sts get-caller-identity --profile batch-runner-submit` resolves, the bucket lists, and it already holds prior `klt-sim-*` job trees. The fleet is real and has run `klt sim` before. |
+| Pinned AMI | **present** — `eda-batch-runner-20260921-…` (`Component=eda-batch-runner`), 2026-09-21. |
+| PDKs on that AMI | **`sky130A` + `gf180mcuD` only** — `2am`'s `infra/aws/batch-image-pins.env` pinned `PDK_VARIANTS="sky130A gf180mcuD"` under `BAKED_PDK_ROOT=/opt/pdk`. No `ihp-sg13g2`. |
+| OSDI models on that AMI | **no bake step existed** — and SG13G2 needs one: IHP-Open-PDK v0.3.0 ships the PSP103/r3_cmc/mosvar Verilog-A *sources*, not compiled `.osdi` binaries. |
+| Shipping the PDK as a job input instead | **not expressible** — `klayout_tools.sim_batch._build_batch_job_spec` ships exactly two inputs (the netlist's include closure and the request document); `models.pdk`/`models.pdk_root` are passed as *names* for the instance to resolve locally. There is no extra-inputs field (klayout-tools#2668). |
+
+The remedy was a change to the fleet image spec in `2AMLogic/2am`, tracked
+and closed as **#277**. The five grid re-runs themselves are **#278**, which
+depends on #277 and carries the remaining template work (a PEX netlist-body
+*generator*, the hub-tag renumbering, the illegal merged-tap-net name,
+`XRU<n>` naming for D2, the transient `save` card, and #272's one-point
+sanity anchor).
+
 ## Upstream friction
 
 Per this repo's friction protocol (`CLAUDE.md`), each place `klt` was awkward
@@ -315,7 +343,7 @@ or missing a capability for this work is filed generically at
 |---|---|---|
 | No request field for an **engine preload command**. A PDK whose compact models are OSDI/Verilog-A must execute `pre_osdi` *before* the netlist is parsed; `klt sim`'s generated `.control` block emits only `alter`, the analysis, `write`, `quit`, with no extension point. | A `.control pre_osdi …` block in the netlist **body** — which the netlist-body contract documents as unsupported. Verified to work on ngspice 46; `run_probe.sh` asserts it keeps working. | klayout-tools#2666 |
 | `models.lib` is a **single file**. A PDK that splits corner definitions across several per-device-family `.lib` files cannot be expressed; `corners.process[].sections` multiplexes sections *within* one file. | `klt_corner_bundle.py` synthesizes a bundle `.lib` whose sections are this repo's corner labels. | klayout-tools#2667 |
-| The **batch backend ships only** the netlist and the request, so a grid can only run against a PDK pre-baked into the fleet image — there is no way to declare the model library (or preloadable model binaries) as job inputs. | Nothing. This is the standing blocker above. | klayout-tools#2668 |
+| The **batch backend ships only** the netlist's include closure and the request, so a grid can only run against a PDK pre-baked into the fleet image — there is no way to declare the model library (or preloadable model binaries) as job inputs. | Since 2026-10-02 the image bakes `ihp-sg13g2`+OSDI (2am#1885), and `run_probe.sh --batch` selects real PDK files through `models`/body `.lib` cards, so no generated file needs shipping. The generated-bundle case remains inexpressible: the runner's klt 0.5.0 has no per-section corner libraries, so the five-corner grids wait on a pin bump past klayout-tools#2522. | klayout-tools#2668 |
 | **Measurements are expressible only as `.meas` cards**, and ngspice prints `.meas` results at a fixed 6 significant figures that `.options numdgt=N` does not widen. There is no `print`/`wrdata`/rawfile extraction form, so reported precision is capped one digit below an `.op`-print scrape (the same ceiling this repo's `extract_measure`-based benches already sit at). | Nothing — the digit is unrecoverable through the request schema. Disclosed and dispositioned above ([Reported precision](#reported-precision-6-sf-through-meas-7-through-an-op-print)): 6 s.f. accepted, immaterial to every live claim. | klayout-tools#2681 |
 
 A smaller one, noted but not filed because the body absorbs it cleanly: the

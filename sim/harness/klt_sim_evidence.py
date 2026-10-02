@@ -2,7 +2,7 @@
 """Turn a `klt sim` corner-sweep report into this repo's evidence records.
 
 Issue #275. `klt sim` is the corner-grid harness this repo is moving to (see
-`sim/harness/README.md` for the decision and what still blocks it); its JSON
+`sim/harness/README.md` for the decision and the batch-fleet status); its JSON
 report is a *response document*, not evidence in this repo's sense. This
 module is the adapter between the two, and it is deliberately generic over
 experiments: every one of the 23 `sim/*` experiments emits the same
