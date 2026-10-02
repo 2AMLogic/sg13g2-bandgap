@@ -1,0 +1,5 @@
+corner_label,vdd_v,n_pass,n_grid,vmin_v,vmin_temp_c,vmax_v,vmax_temp_c,vref_27c_v,box_tc_ppm_per_c
+bcs_aided,3.63,2,2,1.0433,125,1.0464,0,,
+bcs_aidsfree,3.63,8,8,1.0411,125,1.0443,0,1.0442,18.515
+typ_aided,3.63,1,1,1.048,125,1.048,125,,
+typ_aidsfree,3.63,8,8,1.0456,125,1.0474,27,1.0474,10.705
