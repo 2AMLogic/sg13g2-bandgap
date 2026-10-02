@@ -94,10 +94,12 @@ so the honest per-row status is:
   currently-committed evidence, and found technically sound (EE key) and
   `competitive`/`adequate-for-catalog` (market key). Two caveats the review
   put on the record: the TC row meets its `< 50 ppm/°C` **target** by both
-  the endpoint and box methods at both levels (worst number anywhere:
-  box-method 20.1 ppm/°C — >2.4× inside the target), but the
-  `< 20 ppm/°C` **stretch** sits at the boundary once the box method is
-  measured on committed testbenches (issue #222,
+  the endpoint and box methods at both levels, on both the pre-trim and the
+  trim-bearing core (worst number anywhere in the near-band grid: box-method
+  45.7 ppm/°C — still inside the target, by ~9%), but the `< 20 ppm/°C`
+  **stretch** is level-dependent: it sat at the boundary for the pre-trim
+  core and is **not met, confirmed, for the as-built trim-bearing core**.
+  Pre-trim (issue #222,
   [`sim/closed-loop-vref-pvt-boxtc/`](sim/closed-loop-vref-pvt-boxtc/README.md)
   and
   [`sim/closed-loop-vref-pvt-pex-boxtc/`](sim/closed-loop-vref-pvt-pex-boxtc/README.md),
@@ -107,7 +109,20 @@ so the honest per-row status is:
   post-layout), box-method worst corner **19.8 ppm/°C** (`wcs`/3.30 V)
   pre-layout — just inside — and **20.1 ppm/°C** (`bcs`/3.63 V)
   post-layout — just outside by ~0.7% (the worst corner moves from `wcs`
-  to `bcs` post-layout); and
+  to `bcs` post-layout). Trim-bearing, aids-free (issue #229's
+  `sim/closed-loop-vref-boxtc-trim/`, the real DUT once the 255-unit
+  R1 ladder landed): box TC reads **38.6 ppm/°C at the default code (128),
+  up to 45.7 ppm/°C across the ±1-code mis-aim band real trims land in** —
+  out by ~2× at four of five corners, *not* an artifact of dropping the
+  pre-trim bench's `rshunt`/`gmin` convergence aids (issue #269's own
+  aids-only A/B on the pre-trim core,
+  [`sim/closed-loop-vref-boxtc-pretrim-aidsfree/`](sim/closed-loop-vref-boxtc-pretrim-aidsfree/README.md),
+  moves box TC by only +3.8%/+5.4% at the two corners checked — 18.5/10.7
+  ppm/°C aids-free vs 17.8/10.2 ppm/°C aided — confirming the ladder, not
+  the aids, is the dominant cause). No decision record supersedes `0010`
+  for this: the `< 20 ppm/°C` stretch *number* is unchanged, and `0010`'s
+  pre-trim characterization stands as a historical reading on the superseded
+  pre-trim core; and
   the PSRR row's post-layout margin at its binding corner (`bcs`/125 °C/
   3.63 V) is 0.20 dB, on a corner that reads 59.68 dB pre-layout.
 - **Output reference — re-cast by decision record

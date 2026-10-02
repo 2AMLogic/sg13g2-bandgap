@@ -1,0 +1,56 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * sg13g2-bandgap -- pre-trim, aids-removable box-method tc a/b testbench
+
+Doing analysis at TEMP = -20.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                          0
+vss                                          0
+sub!                                         0
+sns1                               4.83823e-17
+fb                                           0
+xq1.s1                             1.93898e-26
+xq1.t                              2.32224e-28
+sns2                               1.15241e-20
+cb2                                1.15241e-20
+xr2.dt                                       0
+xq2.s1                             1.22627e-29
+xq2.t                              2.89348e-31
+vref                               3.84715e-17
+cb3                                3.84715e-17
+xr1.dt                                       0
+xq3.s1                             1.54157e-26
+xq3.t                              1.69348e-28
+tail                                         0
+d1                                           0
+d2                                           0
+pn                                           0
+det                                          0
+xrpu.dt                                      0
+fbx                                          0
+vmkfb#branch                                 0
+vsub#branch                                  0
+vvss#branch                        2.60732e-28
+vvdd#branch                       -2.60731e-28
+
+ Reference value :  5.85640e-05 Reference value :  1.36064e-04 Reference value :  2.21925e-04 Reference value :  3.04975e-04 Reference value :  3.88025e-04 Reference value :  4.72625e-04 Reference value :  5.54175e-04 Reference value :  6.39125e-04 Reference value :  7.20875e-04 Reference value :  8.00075e-04 Reference value :  8.78525e-04 Reference value :  9.61725e-04 Reference value :  1.04468e-03 Reference value :  1.12687e-03 Reference value :  1.20892e-03 Reference value :  1.29232e-03 Reference value :  1.37147e-03 Reference value :  1.45557e-03 Reference value :  1.53977e-03 Reference value :  1.62327e-03 Reference value :  1.70372e-03 Reference value :  1.78772e-03 Reference value :  1.86702e-03 Reference value :  1.95072e-03 Reference value :  2.03422e-03 Reference value :  2.11832e-03 Reference value :  2.20022e-03 Reference value :  2.28122e-03 Reference value :  2.36057e-03 Reference value :  2.44237e-03 Reference value :  2.52528e-03 Reference value :  2.60818e-03 Reference value :  2.69468e-03 Reference value :  2.76538e-03 Reference value :  2.84483e-03 Reference value :  2.92848e-03
+No. of Data Rows : 60011
+v_fb_v              =  2.85244e+00
+v_sns1_v            =  7.59190e-01
+v_sns2_v            =  7.58904e-01
+v_det_v             =  4.04412e-03
+i_mkfb_v            =  1.59220e-14
+v_vref_2ms          =  1.04408e+00
+v_vref_3ms          =  1.04408e+00
+v_vbeq3_2ms         =  7.59924e-01
+v_vbeq3_3ms         =  7.59924e-01
+Note: Simulation executed from .control section 
