@@ -60,6 +60,26 @@ actually lands. It also does not re-run the supply axis (held at 3.30 V
 for the same stated reason as #215) and is pre-layout (like every
 `closed-loop-*` experiment here).
 
+## Disposition of what this bench measured (issue #265)
+
+The committed `20260930-232155-affdefe*` campaign **failed** the ±0.5% claim
+gate below at all three mismatch points, and that FAIL stands — it is honest
+against the gate in force when it ran. The spec consequence is recorded in
+[`../../spec/decision-records/0012-trimmed-line-disposition.md`](../../spec/decision-records/0012-trimmed-line-disposition.md):
+the trimmed line is re-cast to **±4.5% (3σ)**, derived from this record's own
+per-draw CSV by the same `|mean| + 3σ` method the untrimmed ±16% line uses,
+because a perfect die on the aids-free post-trim box-TC bench already drifts
+0.333–0.581% from its own 27 °C point (so ±0.5% is unreachable by any 1-point
+trim of this core) and because each die's post-trim drift tracks its own
+`code*` at +0.058 %/code (r = +0.84) — the mechanism tracked as #267.
+
+**`TRIM_BUDGET_PCT` below is deliberately still `0.5`.** Re-pointing it at
+the ratified line is #268's job, gated on `0012`'s two-key release — moving a
+bench's gate under a `proposed` record would turn a committed FAIL into a
+PASS. Read the digest's `three_sigma_max_dev_pct` as this bench's internal
+gate statistic (3σ of a folded magnitude, mean dropped — ~95% coverage), not
+as the accuracy line; `0012` explains why the two differ.
+
 ## Points
 
 | point | sections | trim at | verify at |
