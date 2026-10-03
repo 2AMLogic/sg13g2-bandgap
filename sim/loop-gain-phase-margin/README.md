@@ -230,8 +230,8 @@ The bench defect is that the single-sweep pass bar (PM > 0° at the first
 falling crossing) cannot tell a corrupted solve from a real one. Two
 distinct corrupted points have now PASSed into committed records, as three
 CSV rows. Adding a
-solve-quality guard is **#289**. This issue does not change
-`run_pvt_sweep.sh`.
+solve-quality guard is **#289** (implemented there: see "Solve-quality
+gate"). #271 itself did not change `run_pvt_sweep.sh`.
 
 ## What this testbench claims, and what it does not
 
@@ -427,6 +427,15 @@ above — is the subject of "Pass/fail criteria" below.
 
 A point is `PASS` only if:
 
+0. **The AC response passes the solve-quality gate** (issue #289, methodology
+   change, evaluated first — see "Solve-quality gate" below): finite, spans
+   1 Hz–~1 GHz, at least 5 samples in 10–200 MHz, and `ripple_db <= 1.0 dB`.
+   A point that fails is `FAIL` with `quality=inconclusive` and a
+   `reject_reason` in the CSV; its `crossover_hz` and `phase_margin_deg`
+   are **blank** (it publishes no margin), criteria 2 and 3 are not
+   consulted — in particular the guard band in #2 cannot rescue it — and
+   its raw `*.ac.txt` and log stay as evidence. Its `dc_gain_db`,
+   `n_crossings` and `notch_*` columns remain as diagnostics only.
 1. **`.op` landed near its seed**: `|v(fb_load) - fb_seed| <= 0.05 V` — see
    "op landed near its seed" above.
 2. **Either** a falling 0 dB crossing exists in the 1 Hz-1 GHz sweep (the AC
@@ -445,6 +454,74 @@ A point is `PASS` only if:
 `ngspice` exiting non-zero, a model-load error, or the AC sweep producing
 no data also fails the point, same convention as every other testbench in
 this tree.
+
+### Solve-quality gate (issue #289)
+
+**Why.** Issue #271 showed that this deck's AC matrix (1 mΩ / 1 TΩ trim
+straps, a 1e9 H loop-break inductor: a very wide conductance range) can
+yield a numerically corrupted loop-gain response, deterministically per
+matrix, and that the pre-#289 bar (PM > 0° at the first falling crossing)
+passes it and publishes its margin. The guard changes what the bench
+*publishes*; it does not change the DUT or any spec.
+
+**Metric.** `ripple_db` = max over 10–200 MHz of
+`|mag_db[n] − median(mag_db[n−1], mag_db[n], mag_db[n+1])|`
+(`tools/solve_quality.py`). One module is used by both paths:
+`run_pvt_sweep.sh` calls `solve_quality.py check <ac.txt>` on its own
+`wrdata` file, and `tools/klt_trim_axis.py` imports it. CSV columns
+`ripple_db`, `quality` (`ok`/`inconclusive`) and `reject_reason` are in
+both paths' records.
+
+**Threshold: 1.0 dB.** Calibration over every committed loop-gain
+`*.ac.txt` (dec 30 and dec 300): clean solves read ≤ 0.6643 dB
+(worst: `wcs_code0_np_fine_125c_2.97v`), corrupted solves ≥ 4.0985 dB
+(`wcs_code32_np_125c_2.97v`); no committed unit lies in between
+(`tools/test_solve_quality.py` asserts that). 1.0 dB sits in
+that gap, 0.34 dB above the highest clean reading and 3.1 dB below the lowest
+corrupted one.
+Reasons reported: `ripple_exceeds_threshold`, `no_data`, `non_finite`,
+`truncated_sweep` (the sweep must start ≤ 1.5 Hz and reach ≥ 0.9 GHz),
+`insufficient_band_points`. Every failure mode rejects (fail closed).
+
+**Limits — read before trusting it.** The gate detects the observed
+signature: isolated multi-dB point-to-point jumps of |T| inside 10–200 MHz.
+It does not claim to detect every possible solver corruption: a corrupted
+response whose damage lies outside that band, or one that is smooth but
+wrong, passes. The threshold is calibrated on this deck's committed
+records, not derived. The `temperature limiting function received NaN`
+ngspice message is **not** a criterion: it appears in about half the clean
+solves as well (e.g. `wcs_code128_125c_2.97v` in
+`20261003-151849-bc6b7ce` carries it and is clean). The crossing count is
+diagnostic only; legitimate responses can have several crossings.
+
+**No retry.** A rejected unit is reported inconclusive and stays so.
+Re-solving with a perturbed equivalent matrix (as #271's control deck did)
+was not implemented: a retry that can swap in a favourable answer needs both
+attempts retained and a rule that never picks the larger margin, and the
+fail-closed form already meets the goal.
+
+**Probe vs control twin.** In the `klt sim` records the `probe` deck carries
+the OP PROBE fixture, which is what lets `klt sim` read the bias for the
+"op landed near its seed" check. The `np` control deck has no probe; its op
+check is that its DC loop gain equals its probe twin's. Under the gate a
+`np` row only gets that evidence from a twin that is itself a clean solve
+*and* passed its own op check, so a corrupted twin cannot vouch for a
+control row. Adding the probe changes the matrix, hence which solves
+corrupt: at `wcs`/125 °C/2.97 V, code 128, the bench's matrix (`np`,
+`ripple_db` 15.0336 / 20.5376 on dec 30 / dec 300) is corrupted while the
+`probe` matrix is clean (0.1261 / 0.3599). A clean `probe` row therefore
+means *that matrix's* solve is clean, not that the bench's own matrix is.
+
+**Reproduction vs acceptance.** `run_klt_trim_axis.sh --anchor` reproduces the
+committed 36.3046° at that point and now prints
+`solve quality REJECT (ripple_exceeds_threshold)`: it reproduces an
+*artifact*, and the number is not an accepted margin.
+
+**Modes.** `run_klt_trim_axis.sh --batch` is the unchanged #271
+characterization (a code × corner grid, not a PVT grid).
+`run_klt_trim_axis.sh --pvt` is the full 45-point PVT grid at code 128 on
+the fleet (one `klt sim --backend batch` request per PVT point, because the
+`.nodeset` seed is per point).
 
 ### Why criterion #2 has a guard band (issue #146)
 
@@ -502,6 +579,42 @@ points.
 
 ## Results summary (this repo's own committed record)
 
+### Newest record: solve-quality-gated, `20261003-180919-2addad0` (issue #289)
+
+The newest record is `records/20261003-180919-2addad0.{md,csv}`: all 45 PVT
+points at code 128 (5 process × 3 temperature × 3 supply), through
+`run_klt_trim_axis.sh --pvt` (`klt sim --backend batch`, one fleet job per
+point; 45 distinct job ids, all `done`/exit 0, in
+`records/20261003-180919-2addad0.jobs.json`), every unit checked by the
+solve-quality gate (see "Pass/fail criteria"). Result: **45/45 quality `ok`,
+45/45 PASS, no unit rejected, no retry**. Highest `ripple_db` 0.4463 dB
+(`typ`/125 °C/3.63 V), under the 1.0 dB threshold and far below the lowest corrupted
+reading (4.0985 dB). Phase margin **83.49–115.16°** (lowest: `wcs`/−40 °C/3.63 V, then
+`wcs`/27 °C/3.63 V at 86.46°), DC loop gain 45.13–47.60 dB, crossover
+40.2–51.1 MHz; 36 of 45 notch minima are within ±1.0 dB of 0 dB. Nine units'
+logs carry a recovered `singular matrix` warning and are clean solves.
+
+**This record supersedes the numbers below.** The 36.3° at `wcs`/125 °C/
+2.97 V (`20261001-085806-e5507b2`) and the 43.9° / −16.26 dB at `fs`/125 °C/
+3.63 V (`20260829-103017-1d98d88`, `20260829-115938-6fa92b5`) are
+**artifacts of corrupted solves**, not margins (issue #271): in the new
+record those points read 95.76° and 95.39°.
+
+**What the new record does and does not show.** It is a `klt sim` record,
+whose `probe` deck adds the OP PROBE fixture (see "Probe vs control twin"):
+that is a different matrix from `run_pvt_sweep.sh`'s, and at `wcs`/125 °C/
+2.97 V the bench's own matrix is the corrupted one. So the new record shows
+that the gate passes 45 clean `probe` solves; it does not show that
+`run_pvt_sweep.sh`'s matrix is clean at all 45 points. `run_pvt_sweep.sh`
+carries the same gate now, and would mark the `wcs`/125 °C/2.97 V row
+inconclusive rather than publish 36.3°; this change did not re-run that
+local shell grid (dispatch hosts do not run local grids), so that
+behaviour is covered by the replay tests in `tools/test_solve_quality.py`
+and not by a live shell run. The older records are append-only and keep
+their original rows; read them with the artifact notes in this README.
+
+### Earlier record (pre-#289; its low-end values are artifacts)
+
 45/45 points PASS. Across the 44 points where a crossing was found: DC loop
 gain **45.1-47.5 dB** (~180-750 V/V), unity-gain crossover
 **41.7-52.9 MHz**, phase margin **43.9-117.1°** — every one of those points
@@ -541,11 +654,18 @@ Requires a committed `../closed-loop-startup/records/*.csv` to exist (see
 "Nodeset provenance" above) — already true in this repo; no separate
 `closed-loop-startup` run is required first.
 
-Trim-code axis (issue #271), through `klt sim`:
+Solve-quality regression tests (read-only replay of committed responses):
+
+```bash
+python3 sim/loop-gain-phase-margin/tools/test_solve_quality.py
+```
+
+Trim-code axis (issue #271) and full-PVT (issue #289), through `klt sim`:
 
 ```bash
 sim/loop-gain-phase-margin/run_klt_trim_axis.sh --anchor   # 1 unit, local: the 36.3046 deg sanity anchor
 sim/loop-gain-phase-margin/run_klt_trim_axis.sh --batch    # full plan on 2am's batch fleet -> new record
+sim/loop-gain-phase-margin/run_klt_trim_axis.sh --pvt      # 45-point PVT grid at code 128 on the fleet, gated (#289)
 python3 sim/loop-gain-phase-margin/tools/klt_trim_axis.py ripple-scan \
   sim/loop-gain-phase-margin/corners/<record-id>          # solve-quality scan of any record
 ```
