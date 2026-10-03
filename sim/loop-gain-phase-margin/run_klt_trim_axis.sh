@@ -16,6 +16,14 @@
 #       append-only record. Requires a `klt` carrying the batch backend
 #       (0.6.0+) and 2am's batch-fleet-provision.sh (KLT_BATCH_PROVISION_SCRIPT).
 #
+#   sim/loop-gain-phase-margin/run_klt_trim_axis.sh --pvt
+#       (issue #289) The bench's own 45-point PVT grid (5 process x 3
+#       temperature x 3 supply) at trim code 128, solve-quality-gated,
+#       through the SAME fleet path as --batch: one `klt sim --backend batch`
+#       request per PVT point (the .nodeset seed is per point), then minted
+#       into an append-only record (tools/klt_trim_axis.py --plan pvt).
+#       Same requirements and environment as --batch.
+#
 # Never widen --anchor into a grid on a dispatch host: multi-unit runs go to
 # the fleet (sim/harness/README.md).
 #
@@ -26,8 +34,8 @@ set -euo pipefail
 
 MODE="${1:-}"
 case "${MODE}" in
-  --anchor|--batch) ;;
-  *) echo "usage: run_klt_trim_axis.sh --anchor|--batch" >&2; exit 2 ;;
+  --anchor|--batch|--pvt) ;;
+  *) echo "usage: run_klt_trim_axis.sh --anchor|--batch|--pvt" >&2; exit 2 ;;
 esac
 
 EXPERIMENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -62,9 +70,12 @@ if [[ "${MODE}" == "--anchor" ]]; then
   exit 0
 fi
 
+PLAN_NAME=characterization
+[[ "${MODE}" == "--pvt" ]] && PLAN_NAME=pvt
+
 [[ -x "${PROVISION}" ]] || { echo "run_klt_trim_axis.sh: no provision script at ${PROVISION}" >&2; exit 3; }
 # shellcheck disable=SC2086
-python3 "${TOOL}" prepare --work "${WORK}" --target batch \
+python3 "${TOOL}" prepare --work "${WORK}" --target batch --plan "${PLAN_NAME}" \
   --batch-pdk-root "${KLT_TRIM_AXIS_BATCH_PDK_ROOT:-/opt/pdk}" \
   --provision-script "${PROVISION}" ${KLT_TRIM_AXIS_ONLY:+--only ${KLT_TRIM_AXIS_ONLY}} \
   > "${WORK}/points.txt"
@@ -102,4 +113,4 @@ if [[ "${missing}" -gt 0 && -z "${KLT_TRIM_AXIS_ALLOW_PARTIAL:-}" ]]; then
 fi
 
 RECORD_ID="$(date -u +%Y%m%d-%H%M%S)-$(git -C "${REPO_ROOT}" rev-parse --short HEAD)"
-python3 "${TOOL}" record --work "${WORK}" --record-id "${RECORD_ID}"
+python3 "${TOOL}" record --work "${WORK}" --record-id "${RECORD_ID}" --plan "${PLAN_NAME}"

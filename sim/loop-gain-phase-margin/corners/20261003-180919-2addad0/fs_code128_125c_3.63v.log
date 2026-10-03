@@ -1,0 +1,33 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * klt sim -- generated corner deck, do not edit
+
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+Warning: singular matrix:  check node xxtrim.t229
+
+Note: Starting dynamic gmin stepping
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Dynamic gmin stepping completed
+
+No. of Data Rows : 271
+
+  Measurements for AC Analysis
+
+fb_op_v             =  2.85831e+00
+sns1_op_v           =  5.89976e-01
+sns2_op_v           =  5.89344e-01
+vref_op_v           =  1.04181e+00
+fb_src_db_1hz       =  -4.55539e-02
+fb_load_db_1hz      =  -4.56082e+01
+
+ASCII raw file "/var/tmp/eda-job-klt-sim-d359300acffa/outputs/artifacts/default_rpxxtrimprs00p001_rpxxtrimprs10p001_rpxxtrimprs20p001_rpxxtrimprs30p001_rpxxtrimprs40p001_rpxxtrimprs50p001_rpxxtrimprs60p001_rpxxtrimprs71000000000000p000V_125C/waveform.raw"
+ngspice-46 done

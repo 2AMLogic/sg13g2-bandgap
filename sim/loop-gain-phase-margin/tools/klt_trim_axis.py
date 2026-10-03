@@ -59,13 +59,19 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import solve_quality  # noqa: E402  (shared with run_pvt_sweep.sh; issue #289)
+from solve_quality import RIPPLE_BAND_HZ, RIPPLE_MAX_DB, ripple_db  # noqa: E402,F401
+
 EXPERIMENT_DIR = Path(__file__).resolve().parents[1]
 SIM_DIR = EXPERIMENT_DIR.parent
 REPO_ROOT = SIM_DIR.parent
 TEMPLATE = EXPERIMENT_DIR / "testbench" / "tb_loop_gain.spice.tmpl"
 CROSSOVER_AWK = EXPERIMENT_DIR / "tools" / "find_crossover.awk"
 
-# Pass criteria: run_pvt_sweep.sh's own, unchanged (see its header comment).
+# Pass criteria: run_pvt_sweep.sh's own (see its header comment), behind the
+# solve-quality gate of tools/solve_quality.py (issue #289) -- the SAME module
+# the shell bench calls, so both paths apply one metric and one threshold.
 OP_MATCH_TOL_V = 0.05
 PM_MIN_DEG = 0.0
 NOTCH_GUARD_DB = 1.0
@@ -125,6 +131,20 @@ PLAN = [
     ("wcs", "125", "2.97", "bench", CODES, "np"),
     ("wcs", "125", "2.97", "fine", CODES, "np"),
 ]
+# Full-PVT plan (issue #289): the bench's own 45-point grid (5 process x 3
+# temperature x 3 supply) at the default trim code, one request per PVT point
+# (the .nodeset seed is a per-point constant), probe deck only -- its op check
+# is the bench's own. `--plan pvt` selects it; `--plan characterization`
+# (default) is the issue-#271 trim-axis PLAN above, preserved unchanged.
+DEFAULT_CODE = 128
+PVT_TEMPS = ["-40", "27", "125"]
+PVT_VDDS = ["2.97", "3.30", "3.63"]
+PVT_PLAN = [
+    (corner, temp, vdd, "bench", [DEFAULT_CODE], "probe")
+    for corner in CORNER_SECTIONS for temp in PVT_TEMPS for vdd in PVT_VDDS
+]
+PLANS = {"characterization": PLAN, "pvt": PVT_PLAN}
+
 # |dc_gain(np) - dc_gain(probe twin)| at or below this (dB) = same equilibrium.
 # find_crossover.awk prints dc_gain_db to 4 decimals; the two decks share every
 # DUT element, so the expected difference is 0.0000.
@@ -173,12 +193,6 @@ MEASUREMENTS = [
     ("fb_src_db_1hz", ".meas ac fb_src_db_1hz find vdb(fb_src) at=1", "dB"),
     ("fb_load_db_1hz", ".meas ac fb_load_db_1hz find vdb(fb_load) at=1", "dB"),
 ]
-
-# Band the "ripple" column is computed over: it brackets every crossover and
-# every notch minimum in the 45-point records (30-60 MHz) with margin, and
-# stays below the ~1 GHz rolloff region where steep real features live.
-RIPPLE_BAND_HZ = (1e7, 2e8)
-
 
 def point_name(corner: str, temp: str, vdd: str, grid: str, variant: str) -> str:
     return f"{corner}_{temp}c_{vdd}v_{grid}" + ("_np" if variant == "np" else "")
@@ -375,7 +389,7 @@ def cmd_prepare(args: argparse.Namespace) -> None:
     osdi_dir = os.environ.get("SG13G2_OSDI_DIR") if args.target == "local" else None
     osdi_dir = osdi_dir or f"{pdk_root}/{pdk}/libs.tech/ngspice/osdi"
     names = []
-    for corner, temp, vdd, grid, codes, variant in PLAN:
+    for corner, temp, vdd, grid, codes, variant in PLANS[args.plan]:
         name = point_name(corner, temp, vdd, grid, variant)
         if args.only and name not in args.only:
             continue
@@ -390,7 +404,8 @@ def cmd_prepare(args: argparse.Namespace) -> None:
         request = build_request(body, grid, codes, temp, batch, probe)
         (point_dir / "request.json").write_text(json.dumps(request, indent=2) + "\n", encoding="utf-8")
         meta = {"corner": corner, "temp": temp, "vdd": vdd, "grid": grid, "codes": codes,
-                "variant": variant, "target": args.target, "pdk_root": pdk_root}
+                "variant": variant, "target": args.target, "pdk_root": pdk_root,
+                "plan": args.plan}
         (point_dir / "point.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
         names.append(name)
     print("\n".join(names))
@@ -445,9 +460,13 @@ def loop_gain_rows(names: list[str], cols: list[list[complex]]) -> list[tuple[fl
     rows = []
     prev = None
     for f, a, b in zip(freq, src, load):
-        t = a / b
-        mag_db = 20.0 * math.log10(abs(t))
-        ph = math.atan2(t.imag, t.real)
+        try:
+            t = a / b
+            mag_db = 20.0 * math.log10(abs(t))
+            ph = math.atan2(t.imag, t.real)
+        except (ZeroDivisionError, ValueError):
+            rows.append((f.real, math.nan, math.nan))  # rejected as non_finite
+            continue
         if prev is not None:
             while ph - prev > math.pi:
                 ph -= 2 * math.pi
@@ -456,22 +475,6 @@ def loop_gain_rows(names: list[str], cols: list[list[complex]]) -> list[tuple[fl
         prev = ph
         rows.append((f.real, mag_db, ph * 180.0 / math.pi))
     return rows
-
-
-def ripple_db(rows: list[tuple[float, float, float]]) -> float:
-    """Max |mag - median of (prev, self, next)| over RIPPLE_BAND_HZ, in dB.
-
-    A smooth response sampled on a log grid deviates from its 3-point median
-    by a fraction of the local slope x step; isolated point-to-point jumps
-    (a numerically noisy solve) show up as multi-dB values.
-    """
-    lo, hi = RIPPLE_BAND_HZ
-    mags = [m for f, m, _ in rows if lo <= f <= hi]
-    worst = 0.0
-    for n in range(1, len(mags) - 1):
-        med = sorted(mags[n - 1:n + 2])[1]
-        worst = max(worst, abs(mags[n] - med))
-    return worst
 
 
 def write_ac_txt(rows: list[tuple[float, float, float]], path: Path) -> None:
@@ -554,13 +557,13 @@ def cmd_record(args: argparse.Namespace) -> None:
               "msense_w", "status", "trim_code", "ac_grid", "deck", "op_check", "fb_seed_v",
               "fb_op_v", "sns1_op_v", "sns2_op_v", "vref_op_v", "dc_gain_db", "crossover_hz",
               "phase_margin_deg", "n_crossings", "notch_min_db", "notch_min_hz",
-              "notch_margin_flag", "ripple_db"]
+              "notch_margin_flag", "ripple_db", "quality", "reject_reason"]
     rows: list[dict] = []
     jobs: list[dict] = []
     width = msense_width()
 
     # Pass 1: every unit -> a row with its loop-gain numbers; status deferred.
-    for c, temp, vdd, grid, _codes, variant in PLAN:
+    for c, temp, vdd, grid, _codes, variant in PLANS[args.plan]:
         name = point_name(c, temp, vdd, grid, variant)
         point_dir = work / name
         report_path = point_dir / "report.json"
@@ -597,18 +600,28 @@ def cmd_record(args: argparse.Namespace) -> None:
                 v = got.get(key)
                 row[key] = "" if v is None else f"{v:.6e}"
             for key in ("dc_gain_db", "crossover_hz", "phase_margin_deg", "n_crossings",
-                        "notch_min_db", "notch_min_hz", "notch_margin_flag", "ripple_db"):
+                        "notch_min_db", "notch_min_hz", "notch_margin_flag", "ripple_db",
+                        "reject_reason"):
                 row[key] = ""
+            # Solve-quality gate (issue #289), before any margin is read.
+            q_ok, q_ripple, q_reason = solve_quality.assess(unit["rows"])
+            row["_q_ok"] = q_ok
+            row["quality"] = "ok" if q_ok else "inconclusive"
+            row["reject_reason"] = "" if q_ok else q_reason
+            if q_ripple is not None:
+                row["ripple_db"] = f"{q_ripple:.4f}"
             if unit["rows"] is not None:
                 ac_txt = corners_dir / f"{cid}.ac.txt"
                 write_ac_txt(unit["rows"], ac_txt)
+            if unit["rows"] is not None and q_reason != "non_finite":
                 status, fc, pm, dc_gain, ncross, nmin, nmin_hz = crossover(ac_txt)
+                # A rejected solve keeps dc_gain / n_crossings / notch_* as
+                # DIAGNOSTICS only; it never publishes crossover or margin.
                 row.update({"dc_gain_db": dc_gain, "n_crossings": ncross, "notch_min_db": nmin,
                             "notch_min_hz": nmin_hz,
                             "notch_margin_flag": "marginal" if abs(float(nmin)) <= NOTCH_GUARD_DB
-                            else "clear",
-                            "ripple_db": f"{ripple_db(unit['rows']):.4f}", "_found": status})
-                if status == "FOUND":
+                            else "clear", "_found": status, "_pm": pm})
+                if q_ok and status == "FOUND":
                     row.update({"crossover_hz": fc, "phase_margin_deg": pm})
             rows.append(row)
             log = unit["arts"].get("log")
@@ -630,33 +643,44 @@ def cmd_record(args: argparse.Namespace) -> None:
     if not rows:
         raise SystemExit("klt_trim_axis.py: no report.json found under the work dir")
 
-    # Pass 2: run_pvt_sweep.sh's criteria, with the control deck's op check
-    # taken from its probe twin's DC loop gain.
+    # Pass 2: run_pvt_sweep.sh's criteria behind the solve-quality gate
+    # (solve_quality.decide). The control deck's op check is taken from its
+    # probe twin: the twin must itself be a clean solve whose own op check
+    # against the seed passed, and the control's DC loop gain must equal it.
     twins = {(r["_point"], r["trim_code"], r["_grid"]): r for r in rows if r["_variant"] == "probe"}
+
+    def probe_op_ok(r) -> bool:
+        return bool(r["fb_op_v"]) and (
+            abs(float(r["fb_op_v"]) - float(r["fb_seed_v"])) <= OP_MATCH_TOL_V)
+
     failed: list[str] = []
     marginal: list[str] = []
+    inconclusive: list[str] = []
     for row in rows:
         cid = row["_cid"]
         if row["_klt"] != "pass" or not row["dc_gain_db"]:
             row["status"] = "FAIL"
+            if row["quality"] != "ok":
+                inconclusive.append(f"{cid} ({row['reject_reason']}, klt status {row['_klt']})")
             failed.append(f"{cid} (klt status {row['_klt']}, no loop-gain data)")
             continue
         if row["_variant"] == "probe":
-            op_ok = bool(row["fb_op_v"]) and (
-                abs(float(row["fb_op_v"]) - float(row["fb_seed_v"])) <= OP_MATCH_TOL_V)
+            op_ok = probe_op_ok(row)
         else:
             twin = twins.get((row["_point"], row["trim_code"], row["_grid"]))
-            op_ok = bool(twin and twin["dc_gain_db"]) and (
+            op_ok = bool(twin and twin["dc_gain_db"] and twin["_q_ok"] and probe_op_ok(twin)) and (
                 abs(float(row["dc_gain_db"]) - float(twin["dc_gain_db"])) <= TWIN_DC_GAIN_TOL_DB)
-        if row["_found"] == "FOUND":
-            cross_ok = float(row["phase_margin_deg"]) > PM_MIN_DEG
-        else:
-            cross_ok = row["notch_margin_flag"] == "marginal"
-            if cross_ok:
-                marginal.append(f"{cid} (notch_min={row['notch_min_db']} dB)")
-        row["status"] = "PASS" if (op_ok and cross_ok) else "FAIL"
-        if row["status"] == "FAIL":
-            failed.append(f"{cid} (op_ok={op_ok} crossing_ok={cross_ok})")
+        verdict, cross_ok, marginal_used = solve_quality.decide(
+            row["_q_ok"], op_ok, row["_found"],
+            float(row["_pm"]) if row["_found"] == "FOUND" else None,
+            row["notch_margin_flag"] == "marginal", PM_MIN_DEG)
+        row["status"] = verdict
+        if not row["_q_ok"]:
+            inconclusive.append(f"{cid} ({row['reject_reason']}, ripple_db={row['ripple_db'] or 'n/a'})")
+        elif marginal_used and verdict == "PASS":
+            marginal.append(f"{cid} (notch_min={row['notch_min_db']} dB)")
+        if verdict == "FAIL":
+            failed.append(f"{cid} (quality={row['quality']} op_ok={op_ok} crossing_ok={cross_ok})")
 
     csv_path = exp / "records" / f"{rid}.csv"
     with csv_path.open("w", newline="", encoding="utf-8") as handle:
@@ -667,38 +691,64 @@ def cmd_record(args: argparse.Namespace) -> None:
     (exp / "records" / f"{rid}.jobs.json").write_text(json.dumps(jobs, indent=2) + "\n",
                                                       encoding="utf-8")
     passed = sum(1 for r in rows if r["status"] == "PASS")
-    write_md(exp / "records" / f"{rid}.md", rid, rows, passed, failed, marginal, jobs, args)
+    write_md(exp / "records" / f"{rid}.md", rid, rows, passed, failed, marginal, jobs, args,
+             inconclusive)
     print(f"klt_trim_axis.py: record {rid}: {passed}/{len(rows)} points PASS")
 
 
-def write_md(path: Path, rid: str, rows, passed, failed, marginal, jobs, args) -> None:
+def write_md(path: Path, rid: str, rows, passed, failed, marginal, jobs, args,
+             inconclusive) -> None:
     seed_rel = os.path.relpath(seed_csv(), REPO_ROOT)
     engines = sorted({j.get("engine") or "unknown" for j in jobs})
     backends = sorted({"batch" if j.get("job_id") else "local" for j in jobs})
     points = sorted({(r["corner_label"].split("_code")[0], r["temp_c"], r["vdd_v"]) for r in rows})
-    lines = [
-        f"# Record {rid}",
-        "",
-        "- **Experiment**: loop-gain-phase-margin (trim-code axis, issue #271)",
-        "- **Claim**: the SAME closed-loop Middlebrook loop-gain bench as this",
-        "  experiment's 45-point records (testbench/tb_loop_gain.spice.tmpl,",
-        "  unchanged DUT and loop break), re-run with the TRIM CODE as an axis:",
-        "  at each listed PVT point the ladder's eight binary straps are set per",
-        f"  code ({', '.join(str(c) for c in CODES)}) and the loop gain",
-        "  T = V(fb_src)/V(fb_load) is measured by AC analysis. Phase margin,",
-        "  crossover, crossing count and notch minimum come from the bench's own",
-        "  tools/find_crossover.awk over T; `ripple_db` (README \"Trim-code axis\")",
-        "  is the largest single-point departure of |T| from its 3-point median",
-        "  in 10-200 MHz. Two AC grids: the bench's `dec 30` and a 10x finer",
-        "  `dec 300` (rows labelled `_fine`). Two deck variants (CSV `deck`):",
-        "  `probe` carries the OP PROBE fixture that reads the DC bias for the",
-        "  bench's op check; `np` (rows labelled `_np`) is the CONTROL -- the",
-        "  bench's own matrix with no added element -- whose op check is that its",
-        f"  DC loop gain equals its probe twin's to {TWIN_DC_GAIN_TOL_DB} dB",
-        "  (CSV `op_check`).",
+    if args.plan == "pvt":
+        lines = [
+            f"# Record {rid}",
+            "",
+            "- **Experiment**: loop-gain-phase-margin (full PVT grid at trim code 128,",
+            "  solve-quality-gated, issue #289)",
+            "- **Claim**: the SAME closed-loop Middlebrook loop-gain bench as",
+            "  run_pvt_sweep.sh (testbench/tb_loop_gain.spice.tmpl, unchanged DUT and",
+            "  loop break) at the bench's own 45-point PVT grid -- process {typ, bcs,",
+            "  wcs, sf, fs} x temperature {-40, 27, 125} C x supply {2.97, 3.30, 3.63}",
+            "  V -- at the default trim code 128, run through `klt sim` (one request per",
+            "  PVT point, since the .nodeset seed is per point) instead of a local",
+            "  `ngspice -b` loop. Every unit passes the solve-quality gate below before",
+            "  a margin is read. Rows are the `probe` deck (the OP PROBE fixture carries",
+            "  the bench's op check); it is not byte-identical in matrix to",
+            "  run_pvt_sweep.sh's deck (README \"Solve-quality gate\").",
+        ]
+    else:
+        lines = [
+            f"# Record {rid}",
+            "",
+            "- **Experiment**: loop-gain-phase-margin (trim-code axis, issue #271)",
+        ]
+    if args.plan != "pvt":
+        lines += [
+            "- **Claim**: the SAME closed-loop Middlebrook loop-gain bench as this",
+            "  experiment's 45-point records (testbench/tb_loop_gain.spice.tmpl,",
+            "  unchanged DUT and loop break), re-run with the TRIM CODE as an axis:",
+            "  at each listed PVT point the ladder's eight binary straps are set per",
+            f"  code ({', '.join(str(c) for c in CODES)}) and the loop gain",
+            "  T = V(fb_src)/V(fb_load) is measured by AC analysis. Phase margin,",
+            "  crossover, crossing count and notch minimum come from the bench's own",
+            "  tools/find_crossover.awk over T; `ripple_db` (README \"Trim-code axis\")",
+            "  is the largest single-point departure of |T| from its 3-point median",
+            "  in 10-200 MHz. Two AC grids: the bench's `dec 30` and a 10x finer",
+            "  `dec 300` (rows labelled `_fine`). Two deck variants (CSV `deck`):",
+            "  `probe` carries the OP PROBE fixture that reads the DC bias for the",
+            "  bench's op check; `np` (rows labelled `_np`) is the CONTROL -- the",
+            "  bench's own matrix with no added element -- whose op check is that its",
+            f"  DC loop gain equals its probe twin's to {TWIN_DC_GAIN_TOL_DB} dB",
+            "  (CSV `op_check`).",
+        ]
+    lines += [
         "- **Harness**: `klt sim` via tools/klt_trim_axis.py (run_klt_trim_axis.sh),",
-        f"  backend: {', '.join(backends)}; one request per PVT point, trim code",
-        "  swept by `alter` of the strap resistors (`corners.supply_v` keys",
+        f"  backend: {', '.join(backends)}; one request per PVT point, trim code"
+        + (" fixed at 128" if args.plan == "pvt" else " swept")
+        + " by `alter` of the strap resistors (`corners.supply_v` keys",
         "  r.xxtrim.rs0..rs7). Per-request job ids, instance types and engine",
         f"  versions: `records/{rid}.jobs.json`.",
         "- **XMSENSE width this run used**: w=" + msense_width(),
@@ -724,13 +774,33 @@ def write_md(path: Path, rid: str, rows, passed, failed, marginal, jobs, args) -
         f"- **ngspice**: {', '.join(f'`{e}`' for e in engines)}",
         "- **Corner matrix run**: PVT points "
         + ", ".join(f"{c}/{t}C/{v}V" for c, t, v in points)
-        + f" x trim code; {len(rows)} points total (see CSV `trim_code`/`ac_grid`).",
-        f"- **Result**: {passed}/{len(rows)} points PASS (run_pvt_sweep.sh's own",
+        + ("" if args.plan == "pvt" else " x trim code")
+        + f"; {len(rows)} points total (see CSV `trim_code`/`ac_grid`).",
+        f"- **Result**: {passed}/{len(rows)} points PASS (solve-quality gate, then run_pvt_sweep.sh's own",
         f"  criteria: .op within {OP_MATCH_TOL_V} V of the .nodeset seed (np rows: the",
         "  twin DC-gain check above),",
         f"  AND either a falling 0 dB crossing with phase margin > {PM_MIN_DEG:g} deg",
         f"  or a notch minimum within +-{NOTCH_GUARD_DB} dB of 0 dB).",
     ]
+    lines += [
+        f"- **Solve-quality gate (issue #289)**: every unit's AC response is checked",
+        f"  before any margin is read (tools/solve_quality.py, the module",
+        f"  run_pvt_sweep.sh also calls): finite, spans 1 Hz-1 GHz, >= "
+        f"{solve_quality.MIN_BAND_POINTS} points in 10-200 MHz, and `ripple_db` <=",
+        f"  {RIPPLE_MAX_DB:g} dB. A unit that fails is `quality=inconclusive` (CSV",
+        "  `quality`/`reject_reason`), status FAIL, with `crossover_hz` and",
+        "  `phase_margin_deg` blank (its dc_gain/crossing/notch columns are",
+        "  diagnostics only; the raw `.ac.txt` and log are kept), and the",
+        "  marginal-notch exception is not consulted. No retry was attempted:",
+        "  rejection is fail-closed. The gate detects the observed",
+        "  isolated-jump signature in 10-200 MHz; it does not claim to detect every",
+        "  possible solver corruption (README \"Solve-quality gate\").",
+        f"  Quality: {sum(1 for r in rows if r['quality'] == 'ok')} ok, "
+        f"{sum(1 for r in rows if r['quality'] != 'ok')} inconclusive of {len(rows)}.",
+    ]
+    if inconclusive:
+        lines.append("- **Inconclusive points (rejected, no margin published)**: "
+                     + "; ".join(inconclusive))
     if marginal:
         lines.append("- **Marginal-notch points**: " + "; ".join(marginal))
     if failed:
@@ -744,7 +814,7 @@ def write_md(path: Path, rid: str, rows, passed, failed, marginal, jobs, args) -
         f"  - Parsed CSV: `records/{rid}.csv`; batch job ledger: `records/{rid}.jobs.json`",
         "- **Timestamp / author**: "
         + datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        + ", Loom Builder (agent), issue #271.",
+        + ", Loom Builder (agent), issue " + ("#289." if args.plan == "pvt" else "#271."),
     ]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -770,6 +840,12 @@ def cmd_anchor(args: argparse.Namespace) -> None:
     print(f"  crossover_hz     {fc} (anchor {ANCHOR['crossover_hz']:.6e})")
     print(f"  phase_margin_deg {pm} (anchor {ANCHOR['phase_margin_deg']})")
     print(f"  n_crossings {ncross}  notch_min_db {nmin} @ {nmin_hz}  ripple_db {ripple_db(unit['rows']):.4f}")
+    q_ok, _q_ripple, q_reason = solve_quality.assess(unit["rows"])
+    if q_ok:
+        print("  solve quality    ok -- an ACCEPTABLE margin (compare, do not equate, with the anchor)")
+    else:
+        print(f"  solve quality    REJECT ({q_reason}) -- this REPRODUCES the corrupted artifact the "
+              "committed anchor row carries; its margin is not an accepted result")
 
 
 def cmd_ripple_scan(args: argparse.Namespace) -> None:
@@ -796,6 +872,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--work", required=True)
     p.add_argument("--target", choices=("local", "batch"), required=True)
     p.add_argument("--only", nargs="*")
+    p.add_argument("--plan", choices=tuple(PLANS), default="characterization",
+                   help="characterization: issue #271 trim-axis PLAN; pvt: the 45-point "
+                        "PVT grid at code 128 (issue #289)")
     p.add_argument("--codes", help="override the code list, e.g. 128 (single-unit local anchor)")
     p.add_argument("--batch-pdk-root", default="/opt/pdk")
     p.add_argument("--provision-script",
@@ -805,6 +884,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--work", required=True)
     r.add_argument("--experiment", default=str(EXPERIMENT_DIR))
     r.add_argument("--record-id", required=True)
+    r.add_argument("--plan", choices=tuple(PLANS), default="characterization")
     r.set_defaults(func=cmd_record)
     a = sub.add_parser("anchor")
     a.add_argument("--report", required=True)
