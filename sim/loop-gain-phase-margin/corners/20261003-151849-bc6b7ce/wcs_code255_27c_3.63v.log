@@ -1,0 +1,23 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * klt sim -- generated corner deck, do not edit
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 271
+
+  Measurements for AC Analysis
+
+fb_op_v             =  2.78075e+00
+sns1_op_v           =  7.13710e-01
+sns2_op_v           =  7.13330e-01
+vref_op_v           =  1.35780e+00
+fb_src_db_1hz       =  -3.86457e-02
+fb_load_db_1hz      =  -4.70170e+01
+
+ASCII raw file "/var/tmp/eda-job-klt-sim-8789ef27a1e4/outputs/artifacts/default_rpxxtrimprs01000000000000p000_rpxxtrimprs11000000000000p000_rpxxtrimprs21000000000000p000_rpxxtrimprs31000000000000p000_rpxxtrimprs41000000000000p000_rpxxtrimprs51000000000000p000_rpxxtrimprs61000000000000p000_rpxxtrimprs71000000000000p000V_27C/waveform.raw"
+ngspice-46 done

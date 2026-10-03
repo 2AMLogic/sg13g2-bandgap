@@ -68,6 +68,24 @@ read against, is unmoved to the second decimal. Read §"A real feature at
 27°C/3.63V" and §"Results summary" below with the record ids in mind: those
 sections read earlier records.
 
+> **2026-10-03 (issue #271): the loop-gain corroboration above no longer
+> holds; this bench's own reading stands.** The phase-margin "cost" the
+> paragraph above cites (36.3° at `wcs`/125 °C/2.97 V) turned out to be a
+> numerically corrupted AC solve in that bench. Clean solves of the same
+> point read 92.9544–102.0614° across trim codes 0–255. See
+> [`../loop-gain-phase-margin/README.md`](../loop-gain-phase-margin/README.md)
+> §"Trim-code axis (issue #271)". So the loop-gain side offers **no
+> independent support** for the ladder-loading mechanism named above. The
+> HF-notch shift in *this* bench is unaffected and rests on its own data.
+> Both records' sweeps are clean solves by the same solve-quality metric
+> that flags the loop-gain artifact. Run over `corners/<record-id>/*.ac.txt`
+> with `../loop-gain-phase-margin/tools/klt_trim_axis.py ripple-scan`, it
+> finds at most 0.29 dB in `20260830-133912-d83f7c4` and at most 0.28 dB in
+> `20261001-085737-e5507b2`, against ≥ 4.1 dB for every corrupted
+> loop-gain solve. The shift is systematic across all 45 points, not
+> isolated to one. The mechanism itself (segment junction capacitance
+> loading `vref`) remains a plausible reading, not a measured one.
+
 ## What this testbench claims, and what it does not
 
 It claims: across the full temperature x supply x
