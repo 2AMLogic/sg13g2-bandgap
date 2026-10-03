@@ -64,7 +64,7 @@ different device class for extraction and LVS to handle.
 | Parameter | Target | Stretch |
 |---|---|---|
 | Output reference | 1.050 V — ±16% untrimmed (3σ, mismatch MC + PVT); ±0.5% trimmed (1-point @ 27 °C) | — |
-| Trim | 1-point @ 27 °C; range ≥ ±15%; resolution ≤ 0.25%/step; magnitude only | — |
+| Trim | 1-point @ 27 °C only — no second (hot) sort insertion and no second (CTAT/TC) trim knob ([`0014`](spec/decision-records/0014-trim-row-keep-1-point.md), proposed); range ≥ ±15%; resolution ≤ 0.25%/step; magnitude only | — |
 | Temp coefficient (−40…125 °C) | < 50 ppm/°C | < 20 ppm/°C |
 | PSRR @ DC | > 60 dB | > 70 dB |
 | Supply | 3.3 V ±10% (HV flavor) | 1.2 V (LV flavor) |
