@@ -194,9 +194,13 @@ Clean solves only (`ripple_db` ≤ 1 dB), `probe` deck, `dec 30` grid:
   decks and grids. All 20 clean solves lie in **92.9544–102.0614°**.
   Different clean solves of the same code spread by up to 3.6647° (code
   255). That spread is this measurement's numerical resolution at this
-  corner, and it is two orders of magnitude below the margin.
-- Crossover at the six clean points: 39.70–44.70 MHz. Notch minima:
-  −1.4355 … −0.5184 dB, still within or near the
+  corner. It is about 4% of the smallest clean margin (3.6647° against
+  92.9544°, a ratio of about 25), so more than an order of magnitude
+  below it.
+- Crossover at the six clean points (`dec 30`): 39.70–44.70 MHz. Notch
+  minima (`dec 30`): −1.4355 … −0.5184 dB. On the `dec 300` grid, one row
+  at these points falls just outside that range: `wcs_code128_fine` at
+  125 °C/3.30 V reads −1.4709 dB. All of these are still within or near the
   §"Pass/fail criteria" guard band. Gain margin, not phase margin, remains
   this design's thin margin (§"Results summary"); the code axis does not
   change that.
@@ -216,9 +220,11 @@ What this does **not** cover:
   the top-level `README.md` has no such row, and `spec/porting-plan.md` §6
   still states that none of its draft rows is ratified. Its ratification
   issue, #125, is closed.
-- One unit (`probe`, `dec 30`, code 64 at the anchor) carries a recovered
-  `singular_matrix` diagnostic from `klt sim`. It is a clean solve
-  (`ripple_db` 0.2101 dB) and is reported as such.
+- Two units carry a recovered `singular_matrix` diagnostic from `klt sim`
+  (`Warning: singular matrix:  check node q.xq1.qnpn13g2#emitter` in the
+  log). Both are `probe`-deck, code 64 at the anchor: `wcs_code64`
+  (`dec 30`, `ripple_db` 0.2101 dB) and `wcs_code64_fine` (`dec 300`,
+  `ripple_db` 0.3670 dB). Both are clean solves and are reported as such.
 
 The bench defect is that the single-sweep pass bar (PM > 0° at the first
 falling crossing) cannot tell a corrupted solve from a real one. Two
@@ -238,7 +244,8 @@ all, and — at the one corner where it does not (see "Pass/fail criteria"
 below) — the sweep's own resonant gain notch (see "Multiple 0 dB crossings")
 never robustly clears 0 dB in either direction, so the loop is never shown
 unstable there either. **Phase margin is comfortable everywhere it is
-measured (this run: 43.9-117.1°); gain margin is a separate, much thinner story**
+measured (this run: 43.9-117.1°; 43.9° is a corrupted solve, see the
+2026-10-03 note under "Results summary"); gain margin is a separate, much thinner story**
 — see "Pass/fail criteria" below for why nearly every corner's own notch
 minimum sits within about a dB of 0 dB, not just the one corner that
 occasionally fails to resolve a crossing at all (DC loop gain **45.1-47.5 dB**,
@@ -408,7 +415,8 @@ schematic's own header already flags. `tools/find_crossover.awk` reports
 the **first** (lower-frequency) falling crossing as the phase-margin
 point — the conservative, standard convention — and records `n_crossings`
 in the CSV for transparency; every point in this run's phase margin
-(43.9-117.1°, see "Results summary" below) is measured well clear of the
+(43.9-117.1°, see "Results summary" below, including its 2026-10-03 note
+on the 43.9° point) is measured well clear of the
 brief post-crossing dip, so the choice of first-vs-any crossing does not
 change this run's qualitative conclusion (every corner where a crossing is
 found is comfortably stable in phase). The notch's OWN minimum magnitude —
@@ -452,7 +460,8 @@ the point from `PASS` to `FAIL` on a re-run with nothing else changed.
 `NOTCH_GUARD_DB=1.0` is roughly an order of magnitude more headroom than
 that observed noise floor: a notch that clears the guard band in either
 direction (e.g. this run's `fs`/125°C/3.63V, whose notch bottoms out at a
-comfortable `-16.26 dB`, or `wcs`/-40°C/3.63V at `-1.29 dB`) is treated as
+comfortable `-16.26 dB` (a corrupted solve, see the 2026-10-03 note under
+"Results summary"), or `wcs`/-40°C/3.63V at `-1.29 dB`) is treated as
 a robust, unambiguous result either way. A notch that rises **clearly and
 robustly above 0 dB by more than the guard band** — a genuine several-dB
 regression, not solver noise — still fails outright; the guard band only
@@ -463,7 +472,8 @@ real loss of margin.
 this run's 45 points have a notch minimum within `+-1.0 dB` of 0 dB (see
 `records/<record-id>.csv`'s `notch_min_db` column) — i.e. **gain margin is
 a genuinely thin, near-universal property of this corner grid**, distinct
-from the comfortable phase margin (43.9-117.1°) reported above. Only one
+from the comfortable phase margin (43.9-117.1°; see the 2026-10-03 note
+under "Results summary" on the 43.9° point) reported above. Only one
 of those 41 (`bcs`/125°C/2.97V, this run) actually failed to resolve a
 crossing at all and needed the guard band to avoid a `FAIL`; the CSV's
 `notch_margin_flag` column (`marginal`/`clear`) flags all of them for
@@ -514,7 +524,8 @@ no crossing in this run but PASSes via the notch guard band described in
 `records/<record-id>.csv`'s `notch_min_db`/`notch_margin_flag` columns) —
 this is a genuinely thin margin at nearly every corner in this grid, not
 an artifact isolated to one PVT combination. Only 4 corners
-(`fs`/125°C/3.63V at a comfortable `-16.26 dB`, and three `wcs` points at
+(`fs`/125°C/3.63V at a comfortable `-16.26 dB`, a corrupted solve per the
+2026-10-03 note above, and three `wcs` points at
 `-1.0` to `-1.3 dB`) clear the guard band with room to spare.
 
 ## Running
