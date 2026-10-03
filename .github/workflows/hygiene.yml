@@ -49,6 +49,11 @@ jobs:
         # before trusting its verdict on the real tree.
         run: python3 .github/scripts/test_check_evidence_formats.py
 
+      - name: PEX netlist-body generator self-test
+        # Issue #278: the generator that replaces the five hand-transcribed
+        # PEX templates; the test proves the 255-unit ladder chain closes.
+        run: python3 sim/tools/test_gen_pex_netlist_body.py
+
       - name: Evidence formats and freshness
         # --require-append-only: fail loudly rather than silently skipping if
         # the merge base stops resolving (a skipped check reads as a pass).
