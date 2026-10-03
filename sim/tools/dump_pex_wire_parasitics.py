@@ -40,6 +40,10 @@ Usage:
     python3 sim/tools/dump_pex_wire_parasitics.py --devices-only layout/bandgap_startup/bandgap_startup.pex.spice
     python3 sim/tools/dump_pex_wire_parasitics.py --wires-only layout/bandgap_core/bandgap_core.pex.spice
 
+For a finished, generated netlist body (hub tags read off each card, the merged
+tap net renamed, ladder units named `XRU<n>`) see `gen_pex_netlist_body.py`
+(issue #278), which builds on this module.
+
 Stdlib only; does not require `klt`, ngspice, or a PDK checkout -- it is a
 pure text transform over an already-committed `.pex.spice` file.
 """

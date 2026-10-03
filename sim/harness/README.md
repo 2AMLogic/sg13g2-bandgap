@@ -333,6 +333,30 @@ depends on #277 and carries the remaining template work (a PEX netlist-body
 `XRU<n>` naming for D2, the transient `save` card, and #272's one-point
 sanity anchor).
 
+## Status of the five PEX re-runs (issue #278)
+
+**Landed: the generator.** `sim/tools/gen_pex_netlist_body.py` turns
+`layout/bandgap_core/bandgap_core.pex.spice` plus the design netlist into a
+complete body: hub tags read off each device card, the merged tap net renamed
+to `tn0`, the 255 ladder units under their `XRU<n>` names (D2), `XM*`/`XR*`
+names matched against the schematic, the three bipolars spliced from the
+schematic, no `XXTRIM`/`RS<bit>`. It self-checks that the generated ladder is
+one closed 255-unit chain (`sim/tools/test_gen_pex_netlist_body.py`, run in
+CI). Its output was also run once, locally, as a single typ/27C/3.30V point
+(the one-corner debug case the dispatch rule allows) behind the probe's bias
+fixture: `vref` = 1.053 V against #272's 1.052999 V anchor. That is a
+generator check, not evidence, and nothing from it is committed.
+
+**Not landed: the five grids and their waiver deletions.** Every grid is a
+five-process-corner request, and the batch runner image still pins klt 0.5.0
+(`2am` `infra/aws/batch-image-pins.env`, `PIN_KLAYOUT_TOOLS_VERSION`), which
+cannot carry the generated corner bundle (klayout-tools#2522 is closed
+upstream but not in that pin; see "The batch fleet" above). The single-corner
+bridge `run_probe.sh --batch` uses cannot vary the process per corner. The
+grids therefore wait on a 2am pin bump -- the same item the section above
+already names -- and no waiver in `sim/evidence-freshness-waivers.json` was
+touched, because a waiver is deleted only when its own re-run lands clean.
+
 ## Upstream friction
 
 Per this repo's friction protocol (`CLAUDE.md`), each place `klt` was awkward
