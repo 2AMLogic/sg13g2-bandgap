@@ -32,6 +32,9 @@ source "${SIM_DIR}/lib/pvt_verdict_common.sh"
 
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_loop_gain.spice.tmpl"
 CROSSOVER_AWK="${EXPERIMENT_DIR}/tools/find_crossover.awk"
+# Solve-quality gate (issue #289) -- the SAME module tools/klt_trim_axis.py uses.
+QUALITY_PY="${EXPERIMENT_DIR}/tools/solve_quality.py"
+QUALITY_RIPPLE_MAX_DB="$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import solve_quality; print(solve_quality.RIPPLE_MAX_DB)' "${EXPERIMENT_DIR}/tools")"
 
 # XMSENSE's W is read from the live design/netlist/bandgap_startup.spice,
 # same convention every closed-loop experiment in this tree uses.
@@ -47,7 +50,7 @@ source "${SIM_DIR}/lib/nodeset_seed.sh"
 # compute the amp/startup halves' SHAs separately.
 alias_dut_git_shas AMP=design/netlist/bandgap_amp.spice STARTUP=design/netlist/bandgap_startup.spice
 
-echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,fb_seed_v,fb_op_v,sns1_op_v,sns2_op_v,vref_op_v,dc_gain_db,crossover_hz,phase_margin_deg,n_crossings,notch_min_db,notch_min_hz,notch_margin_flag" > "${CSV_OUT}"
+echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,fb_seed_v,fb_op_v,sns1_op_v,sns2_op_v,vref_op_v,dc_gain_db,crossover_hz,phase_margin_deg,n_crossings,notch_min_db,notch_min_hz,notch_margin_flag,ripple_db,quality,reject_reason" > "${CSV_OUT}"
 
 # Pass criteria:
 #   1. .op converged near its own .nodeset seed (|fb_op - fb_seed| <=
@@ -80,6 +83,14 @@ echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,sta
 # catching a genuine multi-dB regression (a notch minimum rising clearly
 # and robustly above 0 dB, well outside solver noise, still fails -- see
 # README "Pass/fail criteria").
+#   0. (issue #289, evaluated FIRST) the AC response passes the solve-quality
+#      gate in tools/solve_quality.py: finite, spans 1 Hz-1 GHz, enough
+#      points in 10-200 MHz, and ripple_db <= 1.0 dB (the largest departure
+#      of |T| from its 3-point median in 10-200 MHz; clean solves <= 0.6643
+#      dB, corrupted >= 4.0985 dB -- README "Solve-quality gate"). A point
+#      that fails is FAIL / quality=inconclusive: crossover_hz and
+#      phase_margin_deg stay blank, the marginal-notch exception in #2 is NOT
+#      consulted, and the raw ac.txt/log stay as evidence.
 OP_MATCH_TOL_V="0.05"
 PM_MIN_DEG="0"
 NOTCH_GUARD_DB="1.0"
@@ -88,6 +99,8 @@ NOTCH_GUARD_DB="1.0"
 # within NOTCH_GUARD_DB of 0 dB) -- reported in the record for transparency,
 # same convention as `failed_points` from sim/lib/pvt_preflight.sh.
 marginal_points=()
+# Points rejected by criterion #0 ("<corner_id> (<reason>, ripple_db=<x>)").
+inconclusive_points=()
 
 for corner in "${CORNER_LABELS[@]}"; do
   hbt_section="${HBT_SECTION_OF[${corner}]}"
@@ -104,7 +117,7 @@ for corner in "${CORNER_LABELS[@]}"; do
       vref_seed="$(lookup_seed "${corner}" "${temp}" "${vdd}" vref_final_v)"
 
       if [[ -z "${fb_seed}" || -z "${sns1_seed}" || -z "${sns2_seed}" || -z "${vref_seed}" ]]; then
-        echo "${corner},${hbt_section},${mos_section},${res_section},${temp},${vdd},${MSENSE_W},FAIL,,,,,,,,,0,,," >> "${CSV_OUT}"
+        echo "${corner},${hbt_section},${mos_section},${res_section},${temp},${vdd},${MSENSE_W},FAIL,,,,,,,,,0,,,,,inconclusive,no_seed" >> "${CSV_OUT}"
         failed_points+=("${corner_id} (no seed in ${SEED_CSV})")
         continue
       fi
@@ -139,11 +152,28 @@ for corner in "${CORNER_LABELS[@]}"; do
       notch_min_db=""
       notch_min_hz=""
       notch_margin_flag=""
+      ripple=""
+      quality=""
+      reject_reason=""
       if [[ $rc -ne 0 || $model_error -ne 0 ]]; then
         verdict=FAIL
+        quality=inconclusive; reject_reason=sim_failed
       elif [[ -z "${fb_op}" || ! -s "${ac_out}" ]]; then
         verdict=FAIL
+        quality=inconclusive; reject_reason=no_ac_data_or_op
       else
+        # Solve-quality gate (#289), fail closed: a helper that errors or
+        # prints nothing is a REJECT, never an accept.
+        quality_line="$(python3 "${QUALITY_PY}" check "${ac_out}" 2>/dev/null || true)"
+        quality_word=REJECT; ripple=-; reject_reason=quality_helper_failed
+        [[ -n "${quality_line}" ]] && read -r quality_word ripple reject_reason <<< "${quality_line}"
+        [[ "${ripple}" == "-" ]] && ripple=""
+        if [[ "${quality_word}" == "OK" ]]; then
+          quality=ok
+          reject_reason=""
+        else
+          quality=inconclusive
+        fi
         op_delta=$(abs_diff "${fb_op}" "${fb_seed}")
         read -r status crossover_hz pm_deg dc_gain ncross notch_min_db notch_min_hz < <(awk -f "${CROSSOVER_AWK}" "${ac_out}")
         op_ok=$(awk -v d="${op_delta}" -v tol="${OP_MATCH_TOL_V}" 'BEGIN{print (d<=tol)?1:0}')
@@ -158,7 +188,13 @@ for corner in "${CORNER_LABELS[@]}"; do
           'BEGIN{v=(m<0)?-m:m; print (v<=g)?"marginal":"clear"}')
         pm_ok=0
         crossing_ok=0
-        if [[ "${status}" == "FOUND" ]]; then
+        if [[ "${quality}" != "ok" ]]; then
+          # Rejected solve: no margin is published and the marginal-notch
+          # exception is not consulted. dc_gain/ncross/notch_* stay in the
+          # CSV as diagnostics only; the raw ac.txt/log are kept.
+          verdict=FAIL
+          inconclusive_points+=("${corner_id} (${reject_reason}, ripple_db=${ripple:-n/a})")
+        elif [[ "${status}" == "FOUND" ]]; then
           pm_ok=$(awk -v pm="${pm_deg}" -v minpm="${PM_MIN_DEG}" 'BEGIN{print (pm>minpm)?1:0}')
           crossing_ok="${pm_ok}"
         elif [[ "${notch_margin_flag}" == "marginal" ]]; then
@@ -176,14 +212,14 @@ for corner in "${CORNER_LABELS[@]}"; do
         if [[ "${op_ok}" != "1" || "${crossing_ok}" != "1" ]]; then
           verdict=FAIL
         fi
-        if [[ "${status}" != "FOUND" ]]; then
+        if [[ "${status}" != "FOUND" || "${quality}" != "ok" ]]; then
           crossover_hz=""
           pm_deg=""
         fi
       fi
 
       tally_verdict "${verdict}" "${corner_id}"
-      echo "${corner},${hbt_section},${mos_section},${res_section},${temp},${vdd},${MSENSE_W},${verdict},${fb_seed},${fb_op},${sns1_op},${sns2_op},${vref_op},${dc_gain},${crossover_hz},${pm_deg},${ncross},${notch_min_db},${notch_min_hz},${notch_margin_flag}" >> "${CSV_OUT}"
+      echo "${corner},${hbt_section},${mos_section},${res_section},${temp},${vdd},${MSENSE_W},${verdict},${fb_seed},${fb_op},${sns1_op},${sns2_op},${vref_op},${dc_gain},${crossover_hz},${pm_deg},${ncross},${notch_min_db},${notch_min_hz},${notch_margin_flag},${ripple},${quality},${reject_reason}" >> "${CSV_OUT}"
     done
   done
 done
@@ -243,7 +279,9 @@ done
   echo "  found but the sweep's own resonant notch minimum sits within"
   echo "  +-${NOTCH_GUARD_DB} dB of 0 dB -- a guard band added by issue"
   echo "  #146 for solver noise indistinguishable from a real regression"
-  echo "  at that resolution; see \`notch_min_db\`/\`notch_margin_flag\` in"
+  echo "  at that resolution, AND the AC response passed the solve-quality"
+  echo "  gate: ripple_db <= ${QUALITY_RIPPLE_MAX_DB} dB in 10-200 MHz, issue"
+  echo "  #289; see \`notch_min_db\`/\`notch_margin_flag\` in"
   echo "  \`records/${RECORD_ID}.csv\` and README \"Pass/fail criteria\")."
   if [[ ${#marginal_points[@]} -gt 0 ]]; then
     echo "- **Marginal-notch points** (PASS only via the"
@@ -253,6 +291,14 @@ done
     echo "  CSV; the notch was simply too close to 0 dB for this single"
     echo "  AC sweep to resolve which side it truly sits on):"
     echo "  ${marginal_points[*]}"
+  fi
+  if [[ ${#inconclusive_points[@]} -gt 0 ]]; then
+    echo "- **Inconclusive points (solve-quality gate, issue #289)**: the AC"
+    echo "  response of these points failed the gate (\`ripple_db\` >"
+    echo "  ${QUALITY_RIPPLE_MAX_DB} dB in 10-200 MHz, or missing/non-finite/"
+    echo "  truncated data -- tools/solve_quality.py, README \"Solve-quality"
+    echo "  gate\"). They are FAIL, publish NO crossover/phase margin, and keep"
+    echo "  their raw evidence: ${inconclusive_points[*]}"
   fi
   if [[ ${#failed_points[@]} -gt 0 ]]; then
     echo "- **Failed points**: ${failed_points[*]}"
