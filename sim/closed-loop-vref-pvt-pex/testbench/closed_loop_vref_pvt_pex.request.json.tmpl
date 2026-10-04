@@ -1,0 +1,89 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for closed-loop-vref-pvt-pex",
+    "(issue #278). Instantiated by run_klt_sim.sh per (process, supply)",
+    "variant: the body's PWL ramp target is substituted per supply and the",
+    "runner image's single-models.lib channel carries one process per",
+    "request (klayout-tools#2668), so the 45-point grid runs as 15 requests",
+    "of 3 temperatures each, merged deterministically before the adapter.",
+    "In local mode the generated corner bundle carries all five processes",
+    "in one request and the supply axis still needs per-supply bodies.",
+    "",
+    "The supply axis deliberately does NOT ride `corners.supply_v`: `alter`",
+    "would clobber the PWL ramp source that is this bench's convergence",
+    "path. The temperature axis rides `corners.temperature_c` natively.",
+    "",
+    "Every column is a single-vector `.meas ... at=<t>` -- `par()` derived",
+    "columns are impossible under the resident-vector `.save` this bench",
+    "requires (ngspice 46 rewrites `par('...')` to a non-resident `pa_<n>`",
+    "parameter); the two derived columns (dvsns_v, vref_settle_delta_v) are",
+    "formed by the runner from the reported operands, the same practice the",
+    "committed records use. Values arrive at 6 significant figures."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "extracted",
+  "models": {
+    "lib": "@@CORNER_BUNDLE@@"
+  },
+  "corners": {
+    "process": [
+      "typ",
+      "bcs",
+      "wcs",
+      "sf",
+      "fs"
+    ],
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "tran",
+    "args": "50n 3m"
+  },
+  "measurements": [
+    {
+      "name": "fb_v",
+      "spice": ".meas tran fb_v find v(fb) at=3m"
+    },
+    {
+      "name": "sns1_v",
+      "spice": ".meas tran sns1_v find v(sns1) at=3m"
+    },
+    {
+      "name": "sns2_v",
+      "spice": ".meas tran sns2_v find v(sns2) at=3m"
+    },
+    {
+      "name": "det_v",
+      "spice": ".meas tran det_v find v(det) at=3m"
+    },
+    {
+      "name": "i_mkfb_a",
+      "spice": ".meas tran i_mkfb_a find i(Vmkfb) at=3m"
+    },
+    {
+      "name": "vref_2ms_v",
+      "spice": ".meas tran vref_2ms_v find v(vref) at=2m"
+    },
+    {
+      "name": "vref_3ms_v",
+      "spice": ".meas tran vref_3ms_v find v(vref) at=3m"
+    },
+    {
+      "name": "vbeq3_2ms_v",
+      "spice": ".meas tran vbeq3_2ms_v find v(cb3) at=2m"
+    },
+    {
+      "name": "vbeq3_3ms_v",
+      "spice": ".meas tran vbeq3_3ms_v find v(cb3) at=3m"
+    }
+  ],
+  "options": {
+    "timeout_s": 1800,
+    "keep_artifacts": true
+  }
+}

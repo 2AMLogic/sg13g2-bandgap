@@ -389,7 +389,10 @@ def emit(
         (snaps_out / f"{cid}.spice").write_text(text, encoding="utf-8")
 
     with (records_out / f"{rid}.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        # LF line endings: this repo's committed records are all bash-written
+        # LF files; python's csv default (CRLF) would make every klt-minted
+        # record the odd one out in diffs.
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()), lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     (records_out / f"{rid}.md").write_text(

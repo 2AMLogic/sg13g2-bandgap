@@ -1,0 +1,49 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- record spec for closed-loop-zout-pex on the `klt sim`",
+    "harness (issue #278). The per-experiment half of the adapter contract:",
+    "sim/harness/klt_sim_evidence.py owns the record MECHANICS and takes",
+    "every piece of ARGUMENT from this file."
+  ],
+  "Experiment": "closed-loop-zout-pex",
+  "Claim": "Closed-loop AC output impedance at vref across the full PVT grid, through the same generated PEX DUT and the same seeded-op shape as sim/closed-loop-psrr-pex's klt bench: a 1 A / 0 deg AC test current injected directly at vref (DC = 0, so the seeded operating point is unperturbed), Zout = db(v(vref)). The DC and 1 kHz columns are expected to sit near the pre-#272 record's values; the 100 kHz+ columns are expected to MOVE -- the refreshed extraction carries 44 coupling caps and 843 wire resistors where the old one carried 9 and 77, and vref's loading is exactly where that difference lives. NOT a claim against any ratified spec row.",
+  "Netlist provenance": "layout/bandgap_top/bandgap_top.pex.spice (#272's trim-bearing re-extraction) + design/netlist/bandgap_core.spice, design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice (the top netlist's three subckts, flattened through its own Xx1/Xx2/Xx3 instance lines by sim/tools/gen_pex_netlist_body.py --cell top -- the DUT body is generated, never hand-transcribed, and the flattened instance set is what D2 compares).",
+  "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models built by sim/tools/build-osdi.sh (local) / baked into the batch runner image (#277).",
+  "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x temperature {-40,27,125} C x supply {2.97,3.30,3.63} V (45 points)",
+  "request": "sim/closed-loop-zout-pex/testbench/closed_loop_zout_pex.request.json.tmpl",
+  "author": "Loom Builder (agent), issue #278",
+  "pass_requires": [
+    "zout_dc_db",
+    "vref_op_v",
+    "fb_op_v"
+  ],
+  "extra_columns": {
+    "hbt_section": {
+      "typ": "hbt_typ",
+      "bcs": "hbt_bcs",
+      "wcs": "hbt_wcs",
+      "sf": "hbt_typ",
+      "fs": "hbt_typ"
+    },
+    "mos_section": {
+      "typ": "mos_tt",
+      "bcs": "mos_ff",
+      "wcs": "mos_ss",
+      "sf": "mos_sf",
+      "fs": "mos_fs"
+    },
+    "res_section": {
+      "typ": "res_typ",
+      "bcs": "res_bcs",
+      "wcs": "res_wcs",
+      "sf": "res_typ",
+      "fs": "res_typ"
+    }
+  },
+  "extra_links": [
+    "Harness decision + batch-fleet status: sim/harness/README.md",
+    "DUT body generator: sim/tools/gen_pex_netlist_body.py --cell top",
+    "Runner: sim/closed-loop-zout-pex/run_klt_sim.sh",
+    "Op/verdict enrichment: sim/harness/enrich_ac_report.py"
+  ]
+}

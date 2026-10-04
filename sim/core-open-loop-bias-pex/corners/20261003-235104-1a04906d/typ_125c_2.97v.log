@@ -1,0 +1,1635 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * klt sim -- generated corner deck, do not edit
+
+Doing analysis at TEMP = 125.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+Warning: singular matrix:  check nodes t222 and t254
+
+Note: Starting dynamic gmin stepping
+OSDI(debug) n.xru255.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru254.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru254.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru253.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru253.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru252.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru252.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru251.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru251.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru250.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru250.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru249.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru249.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru248.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru248.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru247.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru247.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru246.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru246.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru245.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru245.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru244.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru244.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru243.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru243.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru242.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru242.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru241.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru241.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru240.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru240.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru239.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru239.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru238.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru238.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru237.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru237.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru236.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru236.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru235.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru235.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru234.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru234.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru233.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru233.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru232.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru232.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru231.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru231.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru230.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru230.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru229.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru229.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru228.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru228.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru227.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru227.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru226.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru226.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru225.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru225.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru224.nr1: OSDI(debug) n.xru255.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru222.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru222.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru221.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru224.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru220.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru220.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru219.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru219.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru218.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru218.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru217.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru217.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru216.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru216.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru215.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru215.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru214.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru214.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru213.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru213.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru212.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru212.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru211.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru211.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru210.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru210.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru209.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru209.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru208.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru208.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru207.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru207.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru206.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru206.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru205.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru205.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru204.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru204.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru203.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru203.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru202.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru202.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru201.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru201.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru200.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru200.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru199.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru199.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru198.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru198.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru197.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru197.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru196.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru196.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru195.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru195.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru194.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru194.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru193.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru193.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru192.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru192.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru191.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru191.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru190.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru190.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru189.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru189.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru188.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru188.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru187.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru187.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru186.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru186.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru185.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru185.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru184.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru184.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru183.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru183.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru182.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru182.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru181.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru181.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru180.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru180.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru179.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru179.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru178.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru178.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru177.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru177.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru176.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru176.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru175.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru175.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru174.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru174.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru173.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru173.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru172.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru172.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru171.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru171.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru170.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru170.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru169.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru169.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru168.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru168.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru167.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru167.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru166.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru166.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru165.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru165.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru164.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru164.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru163.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru163.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru162.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru162.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru161.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru161.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru160.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru160.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru159.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru159.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru158.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru158.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru157.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru157.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru156.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru156.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru155.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru155.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru154.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru154.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru153.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru153.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru152.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru152.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru151.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru151.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru150.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru150.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru149.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru149.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru148.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru148.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru147.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru147.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru146.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru146.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru145.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru145.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru144.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru144.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru143.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru143.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru142.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru142.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru141.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru141.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru140.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru140.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru139.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru139.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru138.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru138.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru137.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru137.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru136.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru136.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru135.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru135.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru134.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru134.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru133.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru133.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru132.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru132.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru131.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru131.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru130.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru130.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru129.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru129.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru128.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru128.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru127.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru127.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru126.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru126.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru125.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru125.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru124.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru124.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru123.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru123.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru122.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru122.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru121.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru121.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru120.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru120.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru119.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru119.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru118.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru118.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru117.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru117.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru116.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru116.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru115.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru115.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru114.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru114.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru113.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru113.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru112.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru112.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru111.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru111.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru110.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru110.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru109.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru109.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru108.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru108.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru107.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru107.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru106.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru106.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru105.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru105.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru104.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru104.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru103.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru103.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru102.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru102.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru101.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru101.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru100.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru100.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru99.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru99.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru98.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru98.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru97.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru97.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru96.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru96.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru95.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru95.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru94.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru94.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru93.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru93.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru92.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru92.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru91.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru91.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru90.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru90.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru89.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru89.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru88.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru88.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru87.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru87.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru86.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru86.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru85.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru85.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru84.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru84.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru83.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru83.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru82.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru82.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru81.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru81.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru80.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru80.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru79.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru79.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru78.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru78.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru77.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru77.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru76.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru76.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru75.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru75.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru74.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru74.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru73.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru73.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru72.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru72.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru71.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru71.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru70.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru70.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru69.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru69.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru68.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru68.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru67.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru67.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru66.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru66.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru65.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru65.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru64.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru64.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru63.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru63.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru62.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru62.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru61.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru61.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru60.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru60.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru59.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru59.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru58.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru58.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru57.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru57.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru56.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru56.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru55.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru55.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru54.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru54.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru53.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru53.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru52.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru52.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru51.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru51.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru50.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru50.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru49.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru49.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru48.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru48.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru47.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru47.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru46.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru46.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru45.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru45.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru44.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru44.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru43.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru43.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru42.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru42.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru41.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru41.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru40.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru40.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru39.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru39.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru38.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru38.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru37.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru37.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru36.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru36.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru35.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru35.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru34.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru34.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru33.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru33.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru32.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru32.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru31.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru31.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru30.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru30.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru29.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru29.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru28.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru28.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru27.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru27.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru26.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru26.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru25.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru25.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru24.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru24.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru23.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru23.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru22.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru22.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru21.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru21.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru20.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru20.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru19.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru19.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru18.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru18.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru17.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru17.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru16.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru16.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru15.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru15.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru14.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru14.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru13.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru13.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru12.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru12.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru11.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru11.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru10.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru10.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru9.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru9.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru8.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru8.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru7.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru7.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru6.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru6.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru5.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru5.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru4.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru4.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru3.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru3.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru2.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru2.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru1.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr1.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr2.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xr2.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru221.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru223.nr1: WARNING: V(i1,c) voltage is greater than specified by vmax
+OSDI(debug) n.xru223.nr1: WARNING: V(i2,c) voltage is greater than specified by vmax
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Dynamic gmin stepping completed
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                       2.97
+vss                                          0
+fb                                     2.26237
+vdd__t0                                2.96997
+vm1_p                                 0.580287
+vdd__t1                                   2.97
+sns1__t0                              0.580287
+vdd__t2                                2.96999
+vm2a_p                                0.562403
+vdd__t3                                   2.97
+sns2__t0                              0.562403
+vdd__t4                                   2.97
+vm2b_p                                0.562391
+vdd__t5                                   2.97
+sns2__t1                              0.562391
+vdd__t6                                2.96999
+vm3a_p                                0.926009
+vdd__t7                                   2.97
+vref__t0                              0.926009
+vdd__t10                                  2.97
+vm3b_p                                0.925996
+vdd__t8                                   2.97
+vref__t2                              0.925996
+vdd__t11                                  2.97
+vm3c_p                                0.925998
+vdd__t9                                   2.97
+vref__t3                              0.925998
+sns2__t2                              0.562367
+vsubs                                        0
+cb2__t0                               0.506303
+xr2.dt                                       0
+vref__t1                              0.925967
+tn0__t2                                0.90051
+xr1.dt                                       0
+tn0__t0                               0.900492
+tn0__t1                               0.900492
+xru1.dt                                      0
+tn0__t8                               0.900492
+t002__t1                              0.900492
+xru2.dt                                      0
+t002__t0                              0.900492
+tn0__t13                              0.900492
+xru3.dt                                      0
+tn0__t15                              0.900492
+t004__t0                              0.900492
+xru4.dt                                      0
+t004__t1                              0.900492
+t005__t0                              0.900492
+xru5.dt                                      0
+t005__t1                              0.900492
+t006__t0                              0.900492
+xru6.dt                                      0
+t006__t1                              0.900492
+tn0__t9                               0.900492
+xru7.dt                                      0
+tn0__t11                              0.900492
+t008__t0                              0.900492
+xru8.dt                                      0
+t008__t1                              0.900492
+t009__t0                              0.900492
+xru9.dt                                      0
+t009__t1                              0.900492
+t010__t0                              0.900492
+xru10.dt                                     0
+t010__t1                              0.900492
+t011__t0                              0.900492
+xru11.dt                                     0
+t011__t1                              0.900492
+t012__t0                              0.900492
+xru12.dt                                     0
+t012__t1                              0.900492
+t013__t0                              0.900492
+xru13.dt                                     0
+t013__t1                              0.900492
+t014__t0                              0.900492
+xru14.dt                                     0
+t014__t1                              0.900492
+tn0__t3                               0.900492
+xru15.dt                                     0
+tn0__t4                               0.900492
+t016__t1                              0.900492
+xru16.dt                                     0
+t016__t0                              0.900492
+t017__t1                              0.900492
+xru17.dt                                     0
+t017__t0                              0.900492
+t018__t1                              0.900492
+xru18.dt                                     0
+t018__t0                              0.900492
+t019__t1                              0.900492
+xru19.dt                                     0
+t019__t0                              0.900492
+t020__t1                              0.900492
+xru20.dt                                     0
+t020__t0                              0.900492
+t021__t1                              0.900492
+xru21.dt                                     0
+t021__t0                              0.900492
+t022__t1                              0.900492
+xru22.dt                                     0
+t022__t0                              0.900492
+t023__t1                              0.900492
+xru23.dt                                     0
+t023__t0                              0.900492
+t024__t1                              0.900492
+xru24.dt                                     0
+t024__t0                              0.900492
+t025__t1                              0.900492
+xru25.dt                                     0
+t025__t0                              0.900492
+t026__t1                              0.900492
+xru26.dt                                     0
+t026__t0                              0.900492
+t027__t1                              0.900492
+xru27.dt                                     0
+t027__t0                              0.900492
+t028__t1                              0.900492
+xru28.dt                                     0
+t028__t0                              0.900492
+t029__t1                              0.900492
+xru29.dt                                     0
+t029__t0                              0.900492
+t030__t1                              0.900492
+xru30.dt                                     0
+t030__t0                              0.900492
+tn0__t6                               0.900492
+xru31.dt                                     0
+tn0__t12                              0.900492
+t032__t0                              0.900492
+xru32.dt                                     0
+t032__t1                              0.900492
+t033__t0                              0.900492
+xru33.dt                                     0
+t033__t1                              0.900492
+t034__t0                              0.900492
+xru34.dt                                     0
+t034__t1                              0.900492
+t035__t0                              0.900492
+xru35.dt                                     0
+t035__t1                              0.900492
+t036__t0                              0.900492
+xru36.dt                                     0
+t036__t1                              0.900492
+t037__t0                              0.900492
+xru37.dt                                     0
+t037__t1                              0.900492
+t038__t0                              0.900492
+xru38.dt                                     0
+t038__t1                              0.900492
+t039__t0                              0.900492
+xru39.dt                                     0
+t039__t1                              0.900492
+t040__t0                              0.900492
+xru40.dt                                     0
+t040__t1                              0.900492
+t041__t0                              0.900492
+xru41.dt                                     0
+t041__t1                              0.900492
+t042__t0                              0.900492
+xru42.dt                                     0
+t042__t1                              0.900492
+t043__t0                              0.900492
+xru43.dt                                     0
+t043__t1                              0.900492
+t044__t0                              0.900492
+xru44.dt                                     0
+t044__t1                              0.900492
+t045__t0                              0.900492
+xru45.dt                                     0
+t045__t1                              0.900492
+t046__t1                              0.900492
+xru46.dt                                     0
+t046__t0                              0.900492
+t047__t1                              0.900492
+xru47.dt                                     0
+t047__t0                              0.900492
+t048__t1                              0.900492
+xru48.dt                                     0
+t048__t0                              0.900492
+t049__t1                              0.900492
+xru49.dt                                     0
+t049__t0                              0.900492
+t050__t1                              0.900492
+xru50.dt                                     0
+t050__t0                              0.900492
+t051__t1                              0.900492
+xru51.dt                                     0
+t051__t0                              0.900492
+t052__t1                              0.900492
+xru52.dt                                     0
+t052__t0                              0.900492
+t053__t1                              0.900492
+xru53.dt                                     0
+t053__t0                              0.900492
+t054__t1                              0.900492
+xru54.dt                                     0
+t054__t0                              0.900492
+t055__t1                              0.900492
+xru55.dt                                     0
+t055__t0                              0.900492
+t056__t1                              0.900492
+xru56.dt                                     0
+t056__t0                              0.900492
+t057__t1                              0.900492
+xru57.dt                                     0
+t057__t0                              0.900492
+t058__t1                              0.900492
+xru58.dt                                     0
+t058__t0                              0.900492
+t059__t1                              0.900492
+xru59.dt                                     0
+t059__t0                              0.900492
+t060__t1                              0.900492
+xru60.dt                                     0
+t060__t0                              0.900492
+t061__t0                              0.900492
+xru61.dt                                     0
+t061__t1                              0.900492
+t062__t0                              0.900492
+xru62.dt                                     0
+t062__t1                              0.900492
+tn0__t7                               0.900492
+xru63.dt                                     0
+tn0__t14                              0.900492
+t064__t0                              0.900492
+xru64.dt                                     0
+t064__t1                              0.900492
+t065__t0                              0.900492
+xru65.dt                                     0
+t065__t1                              0.900492
+t066__t0                              0.900492
+xru66.dt                                     0
+t066__t1                              0.900492
+t067__t0                              0.900492
+xru67.dt                                     0
+t067__t1                              0.900492
+t068__t0                              0.900492
+xru68.dt                                     0
+t068__t1                              0.900492
+t069__t0                              0.900492
+xru69.dt                                     0
+t069__t1                              0.900492
+t070__t0                              0.900492
+xru70.dt                                     0
+t070__t1                              0.900492
+t071__t0                              0.900492
+xru71.dt                                     0
+t071__t1                              0.900492
+t072__t0                              0.900492
+xru72.dt                                     0
+t072__t1                              0.900492
+t073__t0                              0.900492
+xru73.dt                                     0
+t073__t1                              0.900492
+t074__t0                              0.900492
+xru74.dt                                     0
+t074__t1                              0.900492
+t075__t0                              0.900492
+xru75.dt                                     0
+t075__t1                              0.900492
+t076__t1                              0.900492
+xru76.dt                                     0
+t076__t0                              0.900492
+t077__t1                              0.900492
+xru77.dt                                     0
+t077__t0                              0.900492
+t078__t1                              0.900492
+xru78.dt                                     0
+t078__t0                              0.900492
+t079__t1                              0.900492
+xru79.dt                                     0
+t079__t0                              0.900492
+t080__t1                              0.900492
+xru80.dt                                     0
+t080__t0                              0.900492
+t081__t1                              0.900492
+xru81.dt                                     0
+t081__t0                              0.900492
+t082__t1                              0.900492
+xru82.dt                                     0
+t082__t0                              0.900492
+t083__t1                              0.900492
+xru83.dt                                     0
+t083__t0                              0.900492
+t084__t1                              0.900492
+xru84.dt                                     0
+t084__t0                              0.900492
+t085__t1                              0.900492
+xru85.dt                                     0
+t085__t0                              0.900492
+t086__t1                              0.900492
+xru86.dt                                     0
+t086__t0                              0.900492
+t087__t1                              0.900492
+xru87.dt                                     0
+t087__t0                              0.900492
+t088__t1                              0.900492
+xru88.dt                                     0
+t088__t0                              0.900492
+t089__t1                              0.900492
+xru89.dt                                     0
+t089__t0                              0.900492
+t090__t1                              0.900492
+xru90.dt                                     0
+t090__t0                              0.900492
+t091__t0                              0.900492
+xru91.dt                                     0
+t091__t1                              0.900492
+t092__t0                              0.900492
+xru92.dt                                     0
+t092__t1                              0.900492
+t093__t0                              0.900492
+xru93.dt                                     0
+t093__t1                              0.900492
+t094__t0                              0.900492
+xru94.dt                                     0
+t094__t1                              0.900492
+t095__t0                              0.900492
+xru95.dt                                     0
+t095__t1                              0.900492
+t096__t0                              0.900492
+xru96.dt                                     0
+t096__t1                              0.900492
+t097__t0                              0.900492
+xru97.dt                                     0
+t097__t1                              0.900492
+t098__t0                              0.900492
+xru98.dt                                     0
+t098__t1                              0.900492
+t099__t0                              0.900492
+xru99.dt                                     0
+t099__t1                              0.900492
+t100__t0                              0.900492
+xru100.dt                                    0
+t100__t1                              0.900492
+t101__t0                              0.900492
+xru101.dt                                    0
+t101__t1                              0.900492
+t102__t0                              0.900492
+xru102.dt                                    0
+t102__t1                              0.900492
+t103__t0                              0.900492
+xru103.dt                                    0
+t103__t1                              0.900492
+t104__t0                              0.900492
+xru104.dt                                    0
+t104__t1                              0.900492
+t105__t0                              0.900492
+xru105.dt                                    0
+t105__t1                              0.900492
+t106__t1                              0.900492
+xru106.dt                                    0
+t106__t0                              0.900492
+t107__t1                              0.900492
+xru107.dt                                    0
+t107__t0                              0.900492
+t108__t1                              0.900492
+xru108.dt                                    0
+t108__t0                              0.900492
+t109__t1                              0.900492
+xru109.dt                                    0
+t109__t0                              0.900492
+t110__t1                              0.900492
+xru110.dt                                    0
+t110__t0                              0.900492
+t111__t1                              0.900492
+xru111.dt                                    0
+t111__t0                              0.900492
+t112__t1                              0.900492
+xru112.dt                                    0
+t112__t0                              0.900492
+t113__t1                              0.900492
+xru113.dt                                    0
+t113__t0                              0.900492
+t114__t1                              0.900492
+xru114.dt                                    0
+t114__t0                              0.900492
+t115__t1                              0.900492
+xru115.dt                                    0
+t115__t0                              0.900492
+t116__t1                              0.900492
+xru116.dt                                    0
+t116__t0                              0.900492
+t117__t1                              0.900492
+xru117.dt                                    0
+t117__t0                              0.900492
+t118__t1                              0.900492
+xru118.dt                                    0
+t118__t0                              0.900492
+t119__t1                              0.900492
+xru119.dt                                    0
+t119__t0                              0.900492
+t120__t1                              0.900492
+xru120.dt                                    0
+t120__t0                              0.900492
+t121__t0                              0.900492
+xru121.dt                                    0
+t121__t1                              0.900492
+t122__t0                              0.900492
+xru122.dt                                    0
+t122__t1                              0.900492
+t123__t0                              0.900492
+xru123.dt                                    0
+t123__t1                              0.900492
+t124__t0                              0.900492
+xru124.dt                                    0
+t124__t1                              0.900492
+t125__t0                              0.900492
+xru125.dt                                    0
+t125__t1                              0.900492
+t126__t0                              0.900492
+xru126.dt                                    0
+t126__t1                              0.900492
+tn0__t5                               0.900492
+xru127.dt                                    0
+tn0__t10                              0.900481
+t128__t0                              0.897985
+xru128.dt                                    0
+t128__t1                              0.897985
+t129__t0                              0.895489
+xru129.dt                                    0
+t129__t1                              0.895489
+t130__t0                              0.892993
+xru130.dt                                    0
+t130__t1                              0.892993
+t131__t0                              0.890497
+xru131.dt                                    0
+t131__t1                              0.890497
+t132__t0                              0.888001
+xru132.dt                                    0
+t132__t1                              0.888001
+t133__t0                              0.885505
+xru133.dt                                    0
+t133__t1                              0.885505
+t134__t0                              0.883009
+xru134.dt                                    0
+t134__t1                              0.883009
+t135__t0                              0.880513
+xru135.dt                                    0
+t135__t1                              0.880507
+t136__t1                              0.878011
+xru136.dt                                    0
+t136__t0                              0.878011
+t137__t1                              0.875515
+xru137.dt                                    0
+t137__t0                              0.875515
+t138__t1                              0.873019
+xru138.dt                                    0
+t138__t0                              0.873019
+t139__t1                              0.870523
+xru139.dt                                    0
+t139__t0                              0.870523
+t140__t1                              0.868027
+xru140.dt                                    0
+t140__t0                              0.868027
+t141__t1                              0.865531
+xru141.dt                                    0
+t141__t0                              0.865531
+t142__t1                              0.863035
+xru142.dt                                    0
+t142__t0                              0.863035
+t143__t1                              0.860539
+xru143.dt                                    0
+t143__t0                              0.860539
+t144__t1                              0.858043
+xru144.dt                                    0
+t144__t0                              0.858043
+t145__t1                              0.855547
+xru145.dt                                    0
+t145__t0                              0.855547
+t146__t1                              0.853051
+xru146.dt                                    0
+t146__t0                              0.853051
+t147__t1                              0.850555
+xru147.dt                                    0
+t147__t0                              0.850555
+t148__t1                              0.848059
+xru148.dt                                    0
+t148__t0                              0.848059
+t149__t1                              0.845563
+xru149.dt                                    0
+t149__t0                              0.845563
+t150__t1                              0.843067
+xru150.dt                                    0
+t150__t0                              0.843061
+t151__t0                              0.840566
+xru151.dt                                    0
+t151__t1                              0.840565
+t152__t0                               0.83807
+xru152.dt                                    0
+t152__t1                              0.838069
+t153__t0                              0.835574
+xru153.dt                                    0
+t153__t1                              0.835573
+t154__t0                              0.833078
+xru154.dt                                    0
+t154__t1                              0.833077
+t155__t0                              0.830582
+xru155.dt                                    0
+t155__t1                              0.830581
+t156__t0                              0.828086
+xru156.dt                                    0
+t156__t1                              0.828085
+t157__t0                               0.82559
+xru157.dt                                    0
+t157__t1                              0.825589
+t158__t0                              0.823094
+xru158.dt                                    0
+t158__t1                              0.823093
+t159__t0                              0.820598
+xru159.dt                                    0
+t159__t1                              0.820597
+t160__t0                              0.818102
+xru160.dt                                    0
+t160__t1                              0.818101
+t161__t0                              0.815606
+xru161.dt                                    0
+t161__t1                              0.815605
+t162__t0                               0.81311
+xru162.dt                                    0
+t162__t1                              0.813109
+t163__t0                              0.810614
+xru163.dt                                    0
+t163__t1                              0.810613
+t164__t0                              0.808118
+xru164.dt                                    0
+t164__t1                              0.808117
+t165__t0                              0.805622
+xru165.dt                                    0
+t165__t1                              0.805616
+t166__t1                               0.80312
+xru166.dt                                    0
+t166__t0                               0.80312
+t167__t1                              0.800624
+xru167.dt                                    0
+t167__t0                              0.800624
+t168__t1                              0.798128
+xru168.dt                                    0
+t168__t0                              0.798128
+t169__t1                              0.795632
+xru169.dt                                    0
+t169__t0                              0.795632
+t170__t1                              0.793136
+xru170.dt                                    0
+t170__t0                              0.793136
+t171__t1                               0.79064
+xru171.dt                                    0
+t171__t0                               0.79064
+t172__t1                              0.788144
+xru172.dt                                    0
+t172__t0                              0.788144
+t173__t1                              0.785648
+xru173.dt                                    0
+t173__t0                              0.785648
+t174__t1                              0.783152
+xru174.dt                                    0
+t174__t0                              0.783152
+t175__t1                              0.780656
+xru175.dt                                    0
+t175__t0                              0.780656
+t176__t1                               0.77816
+xru176.dt                                    0
+t176__t0                               0.77816
+t177__t1                              0.775664
+xru177.dt                                    0
+t177__t0                              0.775664
+t178__t1                              0.773168
+xru178.dt                                    0
+t178__t0                              0.773168
+t179__t1                              0.770672
+xru179.dt                                    0
+t179__t0                              0.770672
+t180__t1                              0.768176
+xru180.dt                                    0
+t180__t0                               0.76817
+t181__t0                              0.765675
+xru181.dt                                    0
+t181__t1                              0.765674
+t182__t0                              0.763178
+xru182.dt                                    0
+t182__t1                              0.763178
+t183__t0                              0.760682
+xru183.dt                                    0
+t183__t1                              0.760682
+t184__t0                              0.758186
+xru184.dt                                    0
+t184__t1                              0.758186
+t185__t0                               0.75569
+xru185.dt                                    0
+t185__t1                               0.75569
+t186__t0                              0.753194
+xru186.dt                                    0
+t186__t1                              0.753194
+t187__t0                              0.750698
+xru187.dt                                    0
+t187__t1                              0.750698
+t188__t0                              0.748202
+xru188.dt                                    0
+t188__t1                              0.748202
+t189__t0                              0.745706
+xru189.dt                                    0
+t189__t1                              0.745706
+t190__t0                               0.74321
+xru190.dt                                    0
+t190__t1                               0.74321
+t191__t0                              0.740714
+xru191.dt                                    0
+t191__t1                              0.740714
+t192__t0                              0.738218
+xru192.dt                                    0
+t192__t1                              0.738218
+t193__t0                              0.735722
+xru193.dt                                    0
+t193__t1                              0.735722
+t194__t0                              0.733226
+xru194.dt                                    0
+t194__t1                              0.733226
+t195__t0                               0.73073
+xru195.dt                                    0
+t195__t1                              0.730725
+t196__t1                              0.728229
+xru196.dt                                    0
+t196__t0                              0.728229
+t197__t1                              0.725733
+xru197.dt                                    0
+t197__t0                              0.725733
+t198__t1                              0.723237
+xru198.dt                                    0
+t198__t0                              0.723237
+t199__t1                              0.720741
+xru199.dt                                    0
+t199__t0                              0.720741
+t200__t1                              0.718245
+xru200.dt                                    0
+t200__t0                              0.718245
+t201__t1                              0.715749
+xru201.dt                                    0
+t201__t0                              0.715749
+t202__t1                              0.713253
+xru202.dt                                    0
+t202__t0                              0.713253
+t203__t1                              0.710757
+xru203.dt                                    0
+t203__t0                              0.710757
+t204__t1                              0.708261
+xru204.dt                                    0
+t204__t0                              0.708261
+t205__t1                              0.705765
+xru205.dt                                    0
+t205__t0                              0.705765
+t206__t1                              0.703269
+xru206.dt                                    0
+t206__t0                              0.703269
+t207__t1                              0.700773
+xru207.dt                                    0
+t207__t0                              0.700773
+t208__t1                              0.698277
+xru208.dt                                    0
+t208__t0                              0.698277
+t209__t1                              0.695781
+xru209.dt                                    0
+t209__t0                              0.695781
+t210__t1                              0.693285
+xru210.dt                                    0
+t210__t0                              0.693279
+t211__t0                              0.690783
+xru211.dt                                    0
+t211__t1                              0.690783
+t212__t0                              0.688287
+xru212.dt                                    0
+t212__t1                              0.688287
+t213__t0                              0.685791
+xru213.dt                                    0
+t213__t1                              0.685791
+t214__t0                              0.683295
+xru214.dt                                    0
+t214__t1                              0.683295
+t215__t0                              0.680799
+xru215.dt                                    0
+t215__t1                              0.680799
+t216__t0                              0.678303
+xru216.dt                                    0
+t216__t1                              0.678303
+t217__t0                              0.675807
+xru217.dt                                    0
+t217__t1                              0.675807
+t218__t0                              0.673311
+xru218.dt                                    0
+t218__t1                              0.673311
+t219__t0                              0.670815
+xru219.dt                                    0
+t219__t1                              0.670815
+t220__t0                              0.668319
+xru220.dt                                    0
+t220__t1                              0.668319
+t221__t0                              0.665823
+xru221.dt                                    0
+t221__t1                              0.665823
+t222__t0                              0.663327
+xru222.dt                                    0
+t222__t1                              0.663327
+t223__t0                              0.660831
+xru223.dt                                    0
+t223__t1                              0.660831
+t224__t0                              0.658335
+xru224.dt                                    0
+t224__t1                              0.658335
+t225__t0                              0.655839
+xru225.dt                                    0
+t225__t1                              0.655833
+t226__t1                              0.653338
+xru226.dt                                    0
+t226__t0                              0.653337
+t227__t1                              0.650842
+xru227.dt                                    0
+t227__t0                              0.650841
+t228__t1                              0.648346
+xru228.dt                                    0
+t228__t0                              0.648345
+t229__t1                               0.64585
+xru229.dt                                    0
+t229__t0                              0.645849
+t230__t1                              0.643354
+xru230.dt                                    0
+t230__t0                              0.643353
+t231__t1                              0.640858
+xru231.dt                                    0
+t231__t0                              0.640857
+t232__t1                              0.638362
+xru232.dt                                    0
+t232__t0                              0.638361
+t233__t1                              0.635866
+xru233.dt                                    0
+t233__t0                              0.635865
+t234__t1                               0.63337
+xru234.dt                                    0
+t234__t0                              0.633369
+t235__t1                              0.630874
+xru235.dt                                    0
+t235__t0                              0.630873
+t236__t1                              0.628378
+xru236.dt                                    0
+t236__t0                              0.628377
+t237__t1                              0.625882
+xru237.dt                                    0
+t237__t0                              0.625881
+t238__t1                              0.623386
+xru238.dt                                    0
+t238__t0                              0.623385
+t239__t1                               0.62089
+xru239.dt                                    0
+t239__t0                              0.620889
+t240__t1                              0.618394
+xru240.dt                                    0
+t240__t0                              0.618388
+t241__t0                              0.615892
+xru241.dt                                    0
+t241__t1                              0.615892
+t242__t0                              0.613396
+xru242.dt                                    0
+t242__t1                              0.613396
+t243__t0                                0.6109
+xru243.dt                                    0
+t243__t1                                0.6109
+t244__t0                              0.608404
+xru244.dt                                    0
+t244__t1                              0.608404
+t245__t0                              0.605908
+xru245.dt                                    0
+t245__t1                              0.605908
+t246__t0                              0.603412
+xru246.dt                                    0
+t246__t1                              0.603412
+t247__t0                              0.600916
+xru247.dt                                    0
+t247__t1                              0.600916
+t248__t0                               0.59842
+xru248.dt                                    0
+t248__t1                               0.59842
+t249__t0                              0.595924
+xru249.dt                                    0
+t249__t1                              0.595924
+t250__t0                              0.593428
+xru250.dt                                    0
+t250__t1                              0.593428
+t251__t0                              0.590932
+xru251.dt                                    0
+t251__t1                              0.590932
+t252__t0                              0.588436
+xru252.dt                                    0
+t252__t1                              0.588436
+t253__t0                               0.58594
+xru253.dt                                    0
+t253__t1                               0.58594
+t254__t0                              0.583444
+xru254.dt                                    0
+t254__t1                              0.583444
+cb3__t0                               0.580948
+xru255.dt                                    0
+sns1                                   0.58021
+xq1.s1                             3.42322e-08
+xq1.t                                0.0334526
+cb2                                   0.506185
+xq2.s1                             4.11958e-07
+xq2.t                               0.00453266
+cb3                                   0.580747
+xq3.s1                              3.4234e-08
+xq3.t                                0.0339669
+sns2                                  0.562389
+tn0                                   0.900492
+t002                                  0.900492
+t004                                  0.900492
+t005                                  0.900492
+t006                                  0.900492
+t008                                  0.900492
+t009                                  0.900492
+t010                                  0.900492
+t011                                  0.900492
+t012                                  0.900492
+t013                                  0.900492
+t014                                  0.900492
+t016                                  0.900492
+t017                                  0.900492
+t018                                  0.900492
+t019                                  0.900492
+t020                                  0.900492
+t021                                  0.900492
+t022                                  0.900492
+t023                                  0.900492
+t024                                  0.900492
+t025                                  0.900492
+t026                                  0.900492
+t027                                  0.900492
+t028                                  0.900492
+t029                                  0.900492
+t030                                  0.900492
+t032                                  0.900492
+t033                                  0.900492
+t034                                  0.900492
+t035                                  0.900492
+t036                                  0.900492
+t037                                  0.900492
+t038                                  0.900492
+t039                                  0.900492
+t040                                  0.900492
+t041                                  0.900492
+t042                                  0.900492
+t043                                  0.900492
+t044                                  0.900492
+t045                                  0.900492
+t046                                  0.900492
+t047                                  0.900492
+t048                                  0.900492
+t049                                  0.900492
+t050                                  0.900492
+t051                                  0.900492
+t052                                  0.900492
+t053                                  0.900492
+t054                                  0.900492
+t055                                  0.900492
+t056                                  0.900492
+t057                                  0.900492
+t058                                  0.900492
+t059                                  0.900492
+t060                                  0.900492
+t061                                  0.900492
+t062                                  0.900492
+t064                                  0.900492
+t065                                  0.900492
+t066                                  0.900492
+t067                                  0.900492
+t068                                  0.900492
+t069                                  0.900492
+t070                                  0.900492
+t071                                  0.900492
+t072                                  0.900492
+t073                                  0.900492
+t074                                  0.900492
+t075                                  0.900492
+t076                                  0.900492
+t077                                  0.900492
+t078                                  0.900492
+t079                                  0.900492
+t080                                  0.900492
+t081                                  0.900492
+t082                                  0.900492
+t083                                  0.900492
+t084                                  0.900492
+t085                                  0.900492
+t086                                  0.900492
+t087                                  0.900492
+t088                                  0.900492
+t089                                  0.900492
+t090                                  0.900492
+t091                                  0.900492
+t092                                  0.900492
+t093                                  0.900492
+t094                                  0.900492
+t095                                  0.900492
+t096                                  0.900492
+t097                                  0.900492
+t098                                  0.900492
+t099                                  0.900492
+t100                                  0.900492
+t101                                  0.900492
+t102                                  0.900492
+t103                                  0.900492
+t104                                  0.900492
+t105                                  0.900492
+t106                                  0.900492
+t107                                  0.900492
+t108                                  0.900492
+t109                                  0.900492
+t110                                  0.900492
+t111                                  0.900492
+t112                                  0.900492
+t113                                  0.900492
+t114                                  0.900492
+t115                                  0.900492
+t116                                  0.900492
+t117                                  0.900492
+t118                                  0.900492
+t119                                  0.900492
+t120                                  0.900492
+t121                                  0.900492
+t122                                  0.900492
+t123                                  0.900492
+t124                                  0.900492
+t125                                  0.900492
+t126                                  0.900492
+t128                                  0.897985
+t129                                  0.895489
+t130                                  0.892993
+t131                                  0.890497
+t132                                  0.888001
+t133                                  0.885505
+t134                                  0.883009
+t135                                   0.88051
+t136                                  0.878011
+t137                                  0.875515
+t138                                  0.873019
+t139                                  0.870523
+t140                                  0.868027
+t141                                  0.865531
+t142                                  0.863035
+t143                                  0.860539
+t144                                  0.858043
+t145                                  0.855547
+t146                                  0.853051
+t147                                  0.850555
+t148                                  0.848059
+t149                                  0.845563
+t150                                  0.843064
+t151                                  0.840566
+t152                                   0.83807
+t153                                  0.835574
+t154                                  0.833078
+t155                                  0.830582
+t156                                  0.828086
+t157                                   0.82559
+t158                                  0.823094
+t159                                  0.820598
+t160                                  0.818102
+t161                                  0.815606
+t162                                   0.81311
+t163                                  0.810614
+t164                                  0.808118
+t165                                  0.805619
+t166                                   0.80312
+t167                                  0.800624
+t168                                  0.798128
+t169                                  0.795632
+t170                                  0.793136
+t171                                   0.79064
+t172                                  0.788144
+t173                                  0.785648
+t174                                  0.783152
+t175                                  0.780656
+t176                                   0.77816
+t177                                  0.775664
+t178                                  0.773168
+t179                                  0.770672
+t180                                  0.768173
+t181                                  0.765674
+t182                                  0.763178
+t183                                  0.760682
+t184                                  0.758186
+t185                                   0.75569
+t186                                  0.753194
+t187                                  0.750698
+t188                                  0.748202
+t189                                  0.745706
+t190                                   0.74321
+t191                                  0.740714
+t192                                  0.738218
+t193                                  0.735722
+t194                                  0.733226
+t195                                  0.730728
+t196                                  0.728229
+t197                                  0.725733
+t198                                  0.723237
+t199                                  0.720741
+t200                                  0.718245
+t201                                  0.715749
+t202                                  0.713253
+t203                                  0.710757
+t204                                  0.708261
+t205                                  0.705765
+t206                                  0.703269
+t207                                  0.700773
+t208                                  0.698277
+t209                                  0.695781
+t210                                  0.693282
+t211                                  0.690783
+t212                                  0.688287
+t213                                  0.685791
+t214                                  0.683295
+t215                                  0.680799
+t216                                  0.678303
+t217                                  0.675807
+t218                                  0.673311
+t219                                  0.670815
+t220                                  0.668319
+t221                                  0.665823
+t222                                  0.663327
+t223                                  0.660831
+t224                                  0.658335
+t225                                  0.655836
+t226                                  0.653338
+t227                                  0.650842
+t228                                  0.648346
+t229                                   0.64585
+t230                                  0.643353
+t231                                  0.640857
+t232                                  0.638361
+t233                                  0.635865
+t234                                  0.633369
+t235                                  0.630873
+t236                                  0.628377
+t237                                  0.625881
+t238                                  0.623385
+t239                                  0.620889
+t240                                  0.618391
+t241                                  0.615892
+t242                                  0.613396
+t243                                    0.6109
+t244                                  0.608404
+t245                                  0.605908
+t246                                  0.603412
+t247                                  0.600916
+t248                                   0.59842
+t249                                  0.595924
+t250                                  0.593428
+t251                                  0.590932
+t252                                  0.588436
+t253                                   0.58594
+t254                                  0.583444
+vref                                  0.925995
+vss__par                                     0
+pa_00                                0.0740243
+pa_01                              5.12568e-06
+pa_02                              5.15571e-06
+pa_03                                  66964.1
+pa_04                                  10965.2
+bpa_04#branch                                0
+vm2a#branch                        4.57745e-06
+vm2b#branch                        5.48229e-07
+bpa_03#branch                                0
+vm3a#branch                        4.06291e-06
+vm3b#branch                        5.46401e-07
+vm3c#branch                        5.46397e-07
+bpa_02#branch                                0
+bpa_01#branch                                0
+bpa_00#branch                                0
+vm1#branch                         5.07898e-06
+vvss#branch                        2.03604e-05
+vvdd#branch                       -2.03604e-05
+
+
+No. of Data Rows : 59
+
+  Measurements for Transient Analysis
+
+vref_v              =  9.25995e-01
+vpexfb_v            =  2.26237e+00
+vbe_q1_v            =  5.80210e-01
+vbe_q2_v            =  5.06185e-01
+vbe_q3_v            =  5.80747e-01
+dvbe_ptat_v         =  7.40243e-02
+i_leg1_a            =  5.07898e-06
+i_leg2_a            =  5.12568e-06
+i_leg3_a            =  5.15571e-06
+r1_ohm              =  6.69641e+04
+r2_ohm              =  1.09652e+04
+
+ngspice-46 done

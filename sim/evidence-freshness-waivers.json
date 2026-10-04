@@ -2,13 +2,6 @@
   "_comment": "Known-stale sim/ evidence, waived explicitly rather than silently. .github/scripts/check_evidence_formats.py compares each experiment's NEWEST record's committed per-point netlist snapshots against the design/ netlist that record names as its own provenance; a record produced against a superseded DUT is stale evidence, and stale evidence fails ('staleness is failure', klayout-tools docs/design-evidence-tiers.md). An entry here downgrades exactly one such failure to a loud note: it names the exact record, the exact DUT netlist, and the exact stale device signature digest. It SELF-EXPIRES two ways -- if the record is re-run the digest no longer matches, and if a NEWER record is appended to the experiment this entry stops matching any check the checker runs. Either way CI fails until the entry is deleted. Every entry must name a tracking issue; waiving without one is a schema error, not a judgement call. This is the sim/ counterpart of layout/evidence-freshness-waivers.json.",
   "waivers": [
     {
-      "report": "sim/closed-loop-psrr-pex/records/20260905-233826-f6f3efc.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:fc1118a5a72f6d76ccac5bec07108d958db25d0267aca5ee77a570eb9840e523",
-      "issue": "#275",
-      "reason": "closed-loop-psrr-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry. #272 delivered the missing precondition -- layout/bandgap_core now draws #229's 255-unit trim ladder at code 128, DRC-clean and LVS-matched, and layout/bandgap_top/bandgap_top.pex.spice is re-extracted from it -- but the re-run itself is deferred to #275, which has to settle the corner-grid harness (this repo's run_pvt_sweep.sh shell loops are not runnable on the dispatch hosts) and the mask-option-vs-D2 question first. Delete this entry when that re-run lands. Hash rebased by #275: D2 now resolves the metal-option trim ladder before comparing (the behavioural RS0-RS7 straps and the XXTRIM call model a mask option, not silicon, and are excluded from the DUT signature -- the same convention layout/lvs_reference.py's convert_with_metal_options applies to the LVS reference), so these snapshots' recorded signature changed from 88fbebb94b0d... to fc1118a5a72f... with no change to the snapshots themselves. The staleness being waived is unchanged: these records still ran against the pre-trim DUT."
-    },
-    {
       "report": "sim/closed-loop-vref-mc/records/20260909-232418-c9b83ab.md",
       "check": "design/netlist/bandgap_core.spice",
       "recorded_hash": "sha256:fc1118a5a72f6d76ccac5bec07108d958db25d0267aca5ee77a570eb9840e523",
@@ -35,20 +28,6 @@
       "recorded_hash": "sha256:fc1118a5a72f6d76ccac5bec07108d958db25d0267aca5ee77a570eb9840e523",
       "issue": "#275",
       "reason": "closed-loop-vref-pvt-pex-boxtc 2026-09-21 record: extracted-layout DUT on the pre-trim geometry. #272 delivered the missing precondition (trim-bearing re-layout + re-extraction); the 120-point transient re-run is deferred to #275 -- it is the most harness-bound of the five (120 points at up to 600 s each), and #275 records the resident-vector `save`-card and solver-option requirements it will need. Delete this entry when that re-run lands. Hash rebased by #275: D2 now resolves the metal-option trim ladder before comparing (the behavioural RS0-RS7 straps and the XXTRIM call model a mask option, not silicon, and are excluded from the DUT signature -- the same convention layout/lvs_reference.py's convert_with_metal_options applies to the LVS reference), so these snapshots' recorded signature changed from 88fbebb94b0d... to fc1118a5a72f... with no change to the snapshots themselves. The staleness being waived is unchanged: these records still ran against the pre-trim DUT."
-    },
-    {
-      "report": "sim/closed-loop-zout-pex/records/20260906-003654-dd45eaf.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:fc1118a5a72f6d76ccac5bec07108d958db25d0267aca5ee77a570eb9840e523",
-      "issue": "#275",
-      "reason": "closed-loop-zout-pex 2026-09-06 record: extracted-layout DUT on the pre-trim geometry. #272 delivered the missing precondition (trim-bearing re-layout + re-extraction of bandgap_top.pex.spice); the re-run is deferred to #275 on the harness/D2 grounds recorded there. Delete this entry when that re-run lands. Hash rebased by #275: D2 now resolves the metal-option trim ladder before comparing (the behavioural RS0-RS7 straps and the XXTRIM call model a mask option, not silicon, and are excluded from the DUT signature -- the same convention layout/lvs_reference.py's convert_with_metal_options applies to the LVS reference), so these snapshots' recorded signature changed from 88fbebb94b0d... to fc1118a5a72f... with no change to the snapshots themselves. The staleness being waived is unchanged: these records still ran against the pre-trim DUT."
-    },
-    {
-      "report": "sim/core-open-loop-bias-pex/records/20260905-033431-fe97115.md",
-      "check": "design/netlist/bandgap_core.spice",
-      "recorded_hash": "sha256:fc1118a5a72f6d76ccac5bec07108d958db25d0267aca5ee77a570eb9840e523",
-      "issue": "#275",
-      "reason": "core-open-loop-bias-pex 2026-09-05 record: extracted-layout DUT on the pre-trim geometry. #272 delivered the missing precondition -- layout/bandgap_core/bandgap_core.pex.spice is re-extracted from the trim-bearing, DRC-clean, LVS-matched geometry -- and #272's own one-point probe against that netlist reproduces THIS record's typ/27C/3.30V point to +0.158 mV (1.052999 V vs 1.052841 V), with the ladder measuring as exactly 128 units. The 45-point grid re-run is deferred to #275 (harness + mask-option/D2 disposition). Delete this entry when that re-run lands. Hash rebased by #275: D2 now resolves the metal-option trim ladder before comparing (the behavioural RS0-RS7 straps and the XXTRIM call model a mask option, not silicon, and are excluded from the DUT signature -- the same convention layout/lvs_reference.py's convert_with_metal_options applies to the LVS reference), so these snapshots' recorded signature changed from 88fbebb94b0d... to fc1118a5a72f... with no change to the snapshots themselves. The staleness being waived is unchanged: these records still ran against the pre-trim DUT."
     }
   ]
 }

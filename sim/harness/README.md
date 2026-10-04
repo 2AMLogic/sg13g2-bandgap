@@ -277,9 +277,12 @@ cannot carry a multi-file corner bundle, so the batch request selects the
 HBT corner PDK-relatively through `models` and adds the other two families
 as body-level `.lib` selection cards against the baked root. That bridge is
 **single-corner-shaped by construction** (body cards cannot vary per
-corner): the five-corner grids need the image's klt pin bumped to a release
-carrying klayout-tools#2522 (per-section corner libraries) — a 2am pin bump,
-not a harness change.
+corner): the five-corner grids are expressed as the per-process /
+per-process-per-supply sharded request sets the experiment runners own —
+see "Status of the five PEX re-runs" below for that bridge and for the
+correction to this section's earlier pin-bump-waits claim (0.5.0 *does*
+carry per-section corner libraries; what it cannot do is span the PDK's
+three per-family corner *files* in one request).
 
 ### The 120-point grid vs `BATCH_MAX_JOB_SECONDS` (disposition, #277 AC3)
 
@@ -335,27 +338,72 @@ sanity anchor).
 
 ## Status of the five PEX re-runs (issue #278)
 
-**Landed: the generator.** `sim/tools/gen_pex_netlist_body.py` turns
-`layout/bandgap_core/bandgap_core.pex.spice` plus the design netlist into a
-complete body: hub tags read off each device card, the merged tap net renamed
-to `tn0`, the 255 ladder units under their `XRU<n>` names (D2), `XM*`/`XR*`
-names matched against the schematic, the three bipolars spliced from the
-schematic, no `XXTRIM`/`RS<bit>`. It self-checks that the generated ladder is
-one closed 255-unit chain (`sim/tools/test_gen_pex_netlist_body.py`, run in
-CI). Its output was also run once, locally, as a single typ/27C/3.30V point
-(the one-corner debug case the dispatch rule allows) behind the probe's bias
-fixture: `vref` = 1.053 V against #272's 1.052999 V anchor. That is a
-generator check, not evidence, and nothing from it is committed.
+**Landed: the generator, for both cells.**
+`sim/tools/gen_pex_netlist_body.py` turns each committed extraction plus
+its design netlist into a complete body: hub tags read off each device
+card, the merged tap net renamed to `tn0`, the 255 ladder units under
+their `XRU<n>` names (D2), `XM*`/`XR*` names matched against the
+schematic, the three bipolars spliced from the schematic, no
+`XXTRIM`/`RS<bit>`. `--cell top` adds the assembled block (three subckts
+flattened, gate/non-rail-terminal MOS matching across the amp and startup
+devices, the `FB|OUT`/`IN_N|SNS1`/`IN_P|SNS2` merged label nets renamed
+to `fb`/`sns1`/`sns2`, and the `Vmkfb` drain split every closed-loop
+bench measures through). `--ammeter DEVICE:TERMINAL:NAME` cuts a 0 V
+ammeter into any device terminal -- the only place a terminal can be cut
+correctly -- which is how the core bench's per-leg currents exist at all.
+It self-checks that each generated ladder is one closed 255-unit chain
+(`sim/tools/test_gen_pex_netlist_body.py`, run in CI).
 
-**Not landed: the five grids and their waiver deletions.** Every grid is a
-five-process-corner request, and the batch runner image still pins klt 0.5.0
-(`2am` `infra/aws/batch-image-pins.env`, `PIN_KLAYOUT_TOOLS_VERSION`), which
-cannot carry the generated corner bundle (klayout-tools#2522 is closed
-upstream but not in that pin; see "The batch fleet" above). The single-corner
-bridge `run_probe.sh --batch` uses cannot vary the process per corner. The
-grids therefore wait on a 2am pin bump -- the same item the section above
-already names -- and no waiver in `sim/evidence-freshness-waivers.json` was
-touched, because a waiver is deleted only when its own re-run lands clean.
+**Landed: the per-process batch bridge, and the grids through it.** The
+correction this section owed its previous reader: the pinned klt 0.5.0
+*does* carry `corners.process` per-section bundle entries (klayout-tools
+#2538, in the v0.5.0 tag) -- but that feature selects multiple sections
+of ONE `models.lib`, and SG13G2's corner set spans three per-device-family
+*files*, which remains inexpressible on the runner (klayout-tools#2668:
+`models` resolves on the executing host; a generated bundle cannot ride as
+a job input). The grids therefore do NOT wait on the pin bump: each
+experiment's `run_klt_sim.sh` widens the probe's single-corner bridge
+into a **per-process** (core bench) or **per-process-per-supply**
+(closed-loop benches) set of `klt sim --backend batch` requests, sweeping
+the temperature axis (and, where the fixture allows `alter`, the supply
+axis) natively within each request, then merges the reports
+deterministically (`sim/harness/merge_batch_shards.py`, the same
+shard-merge contract `remote.hosts > 1` applies one level down), fixes the
+pulled-back decks' runner-side paths for the adapter
+(`sim/harness/fixup_batch_report.py`), enriches each point with the
+derived columns and the closed-loop verdict
+(`sim/harness/enrich_pvt_report.py`,
+`sim/harness/enrich_ac_report.py`), and mints one record through the
+adapter. Each runner is resumable (a passing per-variant report is never
+re-submitted) and gates the grid behind a one-local-corner sanity anchor
+(#278's own sanity-gate item).
+
+Two ngspice findings this work established, recorded so the next bench
+does not re-derive them (both verified on ngspice 46):
+
+- **A resident-vector `.save` list disables `par('...')` in `.meas ...
+  find`** -- ngspice rewrites the expression to an internal `pa_<n>`
+  parameter and then cannot find it as a vector. The 3 ms benches need
+  the `.save` card (issue #278 work item 3), so their derived columns are
+  formed from reported operands by the enrichment pass; the 50 ns core
+  bench skips the `.save` and keeps engine-side `par()` columns.
+- **An `ac` analysis re-solves its DC operating point from the sources'
+  DC values** -- a PWL source's DC value is its t=0 point, so a
+  ramp-settled supply linearises AC around a *collapsed* point, not the
+  settled equilibrium. A linear toy circuit cannot distinguish the two
+  (the trap that hid this initially); the AC benches therefore stay
+  `.nodeset`-seeded with the hand-transcribed templates' own seed
+  provenance, and the enrichment checks the landed op against the seed.
+
+**Waiver policy unchanged**: a waiver in
+`sim/evidence-freshness-waivers.json` is deleted only when its own
+experiment's re-run lands clean, never speculatively. `core-open-loop-
+bias-pex`'s is deleted (45/45 PASS, record minted, checker green); the
+rest follow their grids.
+
+The pin bump remains worth doing -- it collapses the per-process sharding
+into one five-corner request per experiment (the shape this directory's
+recipe documents) -- but it is a simplification now, not a blocker.
 
 ## Upstream friction
 

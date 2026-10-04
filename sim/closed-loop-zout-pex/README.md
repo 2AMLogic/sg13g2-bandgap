@@ -141,6 +141,52 @@ Identical to `sim/closed-loop-psrr-pex`, and identically limited:
 closed-loop output impedance at all — this is a confirmation probe for
 issue #191, not a spec-conformance claim.
 
+## `klt sim` harness migration (issue #278)
+
+This experiment's grid now runs through the `klt sim` batch harness
+(`sim/harness/README.md`, the #275 decision) instead of the
+`run_pvt_sweep.sh` shell loop; the loop script itself remains for history
+and cold-start reference but is no longer the evidence-producing path on
+the dispatch hosts (their operating rules direct multi-corner work to
+`klt sim`'s batch backend).
+
+```bash
+sim/closed-loop-zout-pex/run_klt_sim.sh --sanity   # one local corner, vs the sanity anchor
+sim/closed-loop-zout-pex/run_klt_sim.sh --batch    # the PVT grid, on the fleet (resumable)
+sim/closed-loop-zout-pex/run_klt_sim.sh --record   # mint the record from the merged report
+```
+
+What changed about how this experiment's evidence is minted:
+
+- **The DUT half is generated, not transcribed.**
+  `sim/tools/gen_pex_netlist_body.py --cell top` regenerates the whole
+  device + wire-parasitic body from the committed extraction and design
+  netlists on every run (hub tags read off each device card, the merged
+  tap net renamed to `tn0`, the 255 ladder units under their `XRU<n>`
+  names for D2, the three subckts are flattened and the merged label nets renamed as in the vref bench). The hand-transcribed
+  `testbench/*.spice.tmpl` files remain for history; the bench body
+  (`testbench/*.body.spice.tmpl`) now carries only fixtures and includes
+  the generated DUT.
+- **The grid runs as per-process x supply `klt sim --backend batch` requests**
+  (one fleet job each), merged deterministically
+  (`sim/harness/merge_batch_shards.py`) before the adapter mints one
+  record: the runner image's klt 0.5.0 carries one model library and
+  SG13G2's corner set spans three per-device-family files
+  (klayout-tools#2668), so the process axis cannot vary within one
+  request. same fixture shape as the psrr bench (the `Itest` injection and the seed set are both per-supply) -- 15 requests of 3 temperatures each.
+- **Reported precision is 6 significant figures** (`.meas`'s fixed print
+  format; `sim/harness/README.md` "Reported precision" owns the
+  disposition and its arithmetic against every live claim).
+  Same log-side enrichment shape as the psrr bench, with the +dB sign (`Zout = db(v(vref))` for the 1 A stimulus).
+- **The per-point verdict is applied by the enrichment pass**
+  (`sim/harness/enrich_ac_report.py --kind zout`) over the merged report, not by the loop script's inline
+  checks: same verdict shape as the psrr bench.
+- The record quadruple layout (`records/<id>.{{md,csv}}` +
+  `corners/<id>/*.log` + `netlist-snapshots/<id>/*.spice`) is unchanged --
+  `sim/harness/klt_sim_evidence.py` mints it from the report, and the
+  netlist snapshots now inline the generated DUT through the same include
+  splicing the adapter always did.
+
 ## Cold-start invocation
 
 Same prerequisites as `sim/closed-loop-psrr-pex` (ngspice, a resolvable

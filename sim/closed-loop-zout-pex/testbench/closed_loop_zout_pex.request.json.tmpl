@@ -1,0 +1,74 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for closed-loop-zout-pex",
+    "(issue #278). Instantiated by run_klt_sim.sh per (process, supply)",
+    "variant, exactly like the vref bench; the seed set is per-supply, so",
+    "the supply axis lives in per-supply body variants (an `alter`-driven",
+    "supply axis would clobber the AC stimulus -- verified on ngspice 46).",
+    "15 requests of 3 temperatures each, merged deterministically before",
+    "the adapter.",
+    "",
+    "The declared analysis is the AC sweep; the bench body's own `.control`",
+    "block runs the seeded `op`, the op prints and the same AC sweep (see",
+    "the body's header for why), so klt's re-run of the declared analysis",
+    "re-solves an identically-seeded operating point and the top-level",
+    "`.meas ac` cards below attach to it.",
+    "",
+    "The four request-level measurements are LINEAR magnitudes, vm(vref):",
+    "`v(vref)` in a `.meas ac` is the signed REAL part, which flips sign",
+    "wherever the response's phase passes 180 deg (observed on the 3.63 V",
+    "hot corners of the first grid run), while vm() is the magnitude. A",
+    "resident-vector `.save` list disables `par('...')` in `.meas find`",
+    "(ngspice 46), so the dB conversions happen in the enrichment pass",
+    "over single reported values -- a unit conversion, not a differencing,",
+    "so the 6-s.f. disposition is not spent. The op-point columns and the",
+    "worst-case/frequency columns come from the per-corner log (body-side",
+    "prints)."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "extracted",
+  "models": {
+    "lib": "@@CORNER_BUNDLE@@"
+  },
+  "corners": {
+    "process": [
+      "typ",
+      "bcs",
+      "wcs",
+      "sf",
+      "fs"
+    ],
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "ac",
+    "args": "dec 30 1 1e9"
+  },
+  "measurements": [
+    {
+      "name": "zout_dc_lin",
+      "spice": ".meas ac zout_dc_lin find vm(vref) at=1"
+    },
+    {
+      "name": "zout_1khz_lin",
+      "spice": ".meas ac zout_1khz_lin find vm(vref) at=1k"
+    },
+    {
+      "name": "zout_100khz_lin",
+      "spice": ".meas ac zout_100khz_lin find vm(vref) at=100k"
+    },
+    {
+      "name": "zout_1mhz_lin",
+      "spice": ".meas ac zout_1mhz_lin find vm(vref) at=1meg"
+    }
+  ],
+  "options": {
+    "timeout_s": 900,
+    "keep_artifacts": true
+  }
+}
