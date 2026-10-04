@@ -277,6 +277,52 @@ scope was exhausted — so neither is the live cause any more.
   nothing about whether extraction handles it. Left for a future thermal
   testbench, not silently claimed either way.
 
+## `klt sim` harness migration (issue #278)
+
+This experiment's grid now runs through the `klt sim` batch harness
+(`sim/harness/README.md`, the #275 decision) instead of the
+`run_pvt_sweep.sh` shell loop; the loop script itself remains for history
+and cold-start reference but is no longer the evidence-producing path on
+the dispatch hosts (their operating rules direct multi-corner work to
+`klt sim`'s batch backend).
+
+```bash
+sim/core-open-loop-bias-pex/run_klt_sim.sh --sanity   # one local corner, vs the sanity anchor
+sim/core-open-loop-bias-pex/run_klt_sim.sh --batch    # the PVT grid, on the fleet (resumable)
+sim/core-open-loop-bias-pex/run_klt_sim.sh --record   # mint the record from the merged report
+```
+
+What changed about how this experiment's evidence is minted:
+
+- **The DUT half is generated, not transcribed.**
+  `sim/tools/gen_pex_netlist_body.py --ammeter XM1:3:Vm1 --ammeter XM2A:3:Vm2a --ammeter XM2B:3:Vm2b --ammeter XM3A:3:Vm3a --ammeter XM3B:3:Vm3b --ammeter XM3C:3:Vm3c` regenerates the whole
+  device + wire-parasitic body from the committed extraction and design
+  netlists on every run (hub tags read off each device card, the merged
+  tap net renamed to `tn0`, the 255 ladder units under their `XRU<n>`
+  names for D2, this bench's per-leg ammeters are cut into each mirror leg's load-side terminal by the same generator, the only place a terminal can be cut correctly). The hand-transcribed
+  `testbench/*.spice.tmpl` files remain for history; the bench body
+  (`testbench/*.body.spice.tmpl`) now carries only fixtures and includes
+  the generated DUT.
+- **The grid runs as per-process `klt sim --backend batch` requests**
+  (one fleet job each), merged deterministically
+  (`sim/harness/merge_batch_shards.py`) before the adapter mints one
+  record: the runner image's klt 0.5.0 carries one model library and
+  SG13G2's corner set spans three per-device-family files
+  (klayout-tools#2668), so the process axis cannot vary within one
+  request. this bench's rail source is a plain alterable DC element, so the supply and temperature axes ride one request natively -- five requests of nine points each.
+- **Reported precision is 6 significant figures** (`.meas`'s fixed print
+  format; `sim/harness/README.md` "Reported precision" owns the
+  disposition and its arithmetic against every live claim).
+  Derived columns (`dvbe_ptat_v`, the `i_leg2/3_a` sums, `r1/r2_ohm`) are single `.meas` cards evaluated inside the engine via `find par('...')` -- this bench's 50 ns window needs no resident-vector `.save` card (which would disable `par()`, verified on ngspice 46).
+- **The per-point verdict is applied by the enrichment pass**
+  (none needed) over the merged report, not by the loop script's inline
+  checks: klt's own measurement-presence grading is the whole verdict here, matching the loop script's extraction-failure check.
+- The record quadruple layout (`records/<id>.{{md,csv}}` +
+  `corners/<id>/*.log` + `netlist-snapshots/<id>/*.spice`) is unchanged --
+  `sim/harness/klt_sim_evidence.py` mints it from the report, and the
+  netlist snapshots now inline the generated DUT through the same include
+  splicing the adapter always did.
+
 ## Cold-start invocation
 
 Same prerequisites as `sim/core-open-loop-bias/` (ngspice, a resolvable

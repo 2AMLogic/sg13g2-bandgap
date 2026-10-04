@@ -1,0 +1,58 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for core-open-loop-bias-pex",
+    "(issue #278). Instantiated by run_klt_sim.sh, which substitutes",
+    "@@BODY@@ with the instantiated bench body and, in local mode, points",
+    "`models.lib` at the generated corner bundle so all five process labels",
+    "ride one request. In batch mode the runner splits the request per",
+    "process corner (the runner image's single-models.lib channel cannot",
+    "vary the process within one request) and merges the per-process",
+    "reports before the adapter sees them -- run_klt_sim.sh owns that",
+    "split/merge, this template declares the full grid.",
+    "",
+    "`analysis.kind` is `tran`, not `op`, even though the claim is an",
+    "operating point: ngspice implements no `.MEASURE OP`, so the documented",
+    "substitute is a short single-step transient plus `.meas tran ...",
+    "at=<t>` (sim/harness/README.md). The window is the probe's own",
+    "10n/50n/at=40n shape, reproduced to 3 uV against the committed .op",
+    "record there.",
+    "",
+    "Every measured column -- including the derived dvbe_ptat_v, i_leg2/3_a",
+    "sums and r1/r2_ohm quotients -- is ONE `.meas` card, evaluated inside",
+    "the engine via `find par('...')` rather than recomputed from two",
+    "reported values (the 6-s.f. precision disposition: a difference of two",
+    "reported values loses digits a derived `.meas` keeps). All values",
+    "arrive at 6 significant figures.",
+    "",
+    "`reltol=5e-3` and the absence of `rshunt`/`gmin` live in the body's",
+    "own `.options` card: `klt sim`'s `options` object is the runner's and",
+    "has no engine-option passthrough."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "extracted",
+  "models": { "lib": "@@CORNER_BUNDLE@@" },
+  "corners": {
+    "process": ["typ", "bcs", "wcs", "sf", "fs"],
+    "supply_v": { "Vvdd": [2.97, 3.3, 3.63] },
+    "temperature_c": [-40, 27, 125]
+  },
+  "analysis": { "kind": "tran", "args": "10n 50n" },
+  "measurements": [
+    { "name": "vref_v", "spice": ".meas tran vref_v find v(vref) at=40n" },
+    { "name": "vpexfb_v", "spice": ".meas tran vpexfb_v find v(fb) at=40n" },
+    { "name": "vbe_q1_v", "spice": ".meas tran vbe_q1_v find v(sns1) at=40n" },
+    { "name": "vbe_q2_v", "spice": ".meas tran vbe_q2_v find v(cb2) at=40n" },
+    { "name": "vbe_q3_v", "spice": ".meas tran vbe_q3_v find v(cb3) at=40n" },
+    { "name": "dvbe_ptat_v", "spice": ".meas tran dvbe_ptat_v find par('v(sns1)-v(cb2)') at=40n" },
+    { "name": "i_leg1_a", "spice": ".meas tran i_leg1_a find i(vm1) at=40n" },
+    { "name": "i_leg2_a", "spice": ".meas tran i_leg2_a find par('i(vm2a)+i(vm2b)') at=40n" },
+    { "name": "i_leg3_a", "spice": ".meas tran i_leg3_a find par('i(vm3a)+i(vm3b)+i(vm3c)') at=40n" },
+    { "name": "r1_ohm", "spice": ".meas tran r1_ohm find par('(v(vref)-v(cb3))/(i(vm3a)+i(vm3b)+i(vm3c))') at=40n" },
+    { "name": "r2_ohm", "spice": ".meas tran r2_ohm find par('(v(sns2)-v(cb2))/(i(vm2a)+i(vm2b))') at=40n" }
+  ],
+  "options": {
+    "timeout_s": 300,
+    "keep_artifacts": true
+  }
+}

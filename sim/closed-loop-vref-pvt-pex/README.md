@@ -163,6 +163,52 @@ simulation.
   same as every other testbench in this tree (no `dtemp`/`trise` sweep, no
   thermal network wired).
 
+## `klt sim` harness migration (issue #278)
+
+This experiment's grid now runs through the `klt sim` batch harness
+(`sim/harness/README.md`, the #275 decision) instead of the
+`run_pvt_sweep.sh` shell loop; the loop script itself remains for history
+and cold-start reference but is no longer the evidence-producing path on
+the dispatch hosts (their operating rules direct multi-corner work to
+`klt sim`'s batch backend).
+
+```bash
+sim/closed-loop-vref-pvt-pex/run_klt_sim.sh --sanity   # one local corner, vs the sanity anchor
+sim/closed-loop-vref-pvt-pex/run_klt_sim.sh --batch    # the PVT grid, on the fleet (resumable)
+sim/closed-loop-vref-pvt-pex/run_klt_sim.sh --record   # mint the record from the merged report
+```
+
+What changed about how this experiment's evidence is minted:
+
+- **The DUT half is generated, not transcribed.**
+  `sim/tools/gen_pex_netlist_body.py --cell top` regenerates the whole
+  device + wire-parasitic body from the committed extraction and design
+  netlists on every run (hub tags read off each device card, the merged
+  tap net renamed to `tn0`, the 255 ladder units under their `XRU<n>`
+  names for D2, the three subckts are flattened through the design netlist's own instance lines, and the `FB|OUT`/`IN_N|SNS1`/`IN_P|SNS2` merged label nets are renamed to their schematic names `fb`/`sns1`/`sns2`). The hand-transcribed
+  `testbench/*.spice.tmpl` files remain for history; the bench body
+  (`testbench/*.body.spice.tmpl`) now carries only fixtures and includes
+  the generated DUT.
+- **The grid runs as per-process x supply `klt sim --backend batch` requests**
+  (one fleet job each), merged deterministically
+  (`sim/harness/merge_batch_shards.py`) before the adapter mints one
+  record: the runner image's klt 0.5.0 carries one model library and
+  SG13G2's corner set spans three per-device-family files
+  (klayout-tools#2668), so the process axis cannot vary within one
+  request. the ramp source that is this bench's convergence path cannot survive `alter`, so the PWL target is baked into per-supply body variants -- 15 requests of 3 temperatures each.
+- **Reported precision is 6 significant figures** (`.meas`'s fixed print
+  format; `sim/harness/README.md` "Reported precision" owns the
+  disposition and its arithmetic against every live claim).
+  The resident-vector `.save` card the 3 ms transient requires (issue #278 work item 3) disables `par()` in `.meas find` (verified on ngspice 46), so the two derived columns (`dvsns_v`, `vref_settle_delta_v`) are formed by the enrichment pass from the reported operands -- the same practice this experiment's committed records already used for their derived columns.
+- **The per-point verdict is applied by the enrichment pass**
+  (`sim/harness/enrich_pvt_report.py`) over the merged report, not by the loop script's inline
+  checks: startup released (det <= 0.2*vdd, |i_mkfb| <= 50 nA), loop closed (|dvsns| <= 20 mV), fb not railed, settled (|vref(3ms)-vref(2ms)| <= 1 mV) -- the same four criteria and constants `sim/lib/pvt_verdict_common.sh`'s `pvt_closed_loop_verdict` encodes.
+- The record quadruple layout (`records/<id>.{{md,csv}}` +
+  `corners/<id>/*.log` + `netlist-snapshots/<id>/*.spice`) is unchanged --
+  `sim/harness/klt_sim_evidence.py` mints it from the report, and the
+  netlist snapshots now inline the generated DUT through the same include
+  splicing the adapter always did.
+
 ## Cold-start invocation
 
 Same prerequisites as `sim/closed-loop-vref-pvt/` (ngspice, a resolvable

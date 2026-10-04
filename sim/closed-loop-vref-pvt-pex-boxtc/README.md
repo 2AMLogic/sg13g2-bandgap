@@ -189,3 +189,49 @@ See `sim/README.md` for the append-only `records/`/`corners/`/
 `../closed-loop-vref-pvt-pex/README.md` for how to regenerate the committed
 `layout/bandgap_top/bandgap_top.pex.spice` input this bench re-encodes
 (`klt`, offline, once — not needed to re-run this sweep).
+
+## `klt sim` harness migration (issue #278)
+
+This experiment's grid now runs through the `klt sim` batch harness
+(`sim/harness/README.md`, the #275 decision) instead of the
+`run_pvt_sweep.sh` shell loop; the loop script itself remains for history
+and cold-start reference but is no longer the evidence-producing path on
+the dispatch hosts (their operating rules direct multi-corner work to
+`klt sim`'s batch backend).
+
+```bash
+sim/closed-loop-vref-pvt-pex-boxtc/run_klt_sim.sh --sanity   # one local corner, vs the sanity anchor
+sim/closed-loop-vref-pvt-pex-boxtc/run_klt_sim.sh --batch    # the PVT grid, on the fleet (resumable)
+sim/closed-loop-vref-pvt-pex-boxtc/run_klt_sim.sh --record   # mint the record from the merged report
+```
+
+What changed about how this experiment's evidence is minted:
+
+- **The DUT half is generated, not transcribed.**
+  `sim/tools/gen_pex_netlist_body.py --cell top` regenerates the whole
+  device + wire-parasitic body from the committed extraction and design
+  netlists on every run (hub tags read off each device card, the merged
+  tap net renamed to `tn0`, the 255 ladder units under their `XRU<n>`
+  names for D2, the three subckts are flattened through the design netlist's own instance lines, and the `FB|OUT`/`IN_N|SNS1`/`IN_P|SNS2` merged label nets are renamed to their schematic names `fb`/`sns1`/`sns2`). The hand-transcribed
+  `testbench/*.spice.tmpl` files remain for history; the bench body
+  (`testbench/*.body.spice.tmpl`) now carries only fixtures and includes
+  the generated DUT.
+- **The grid runs as per-process x supply `klt sim --backend batch` requests**
+  (one fleet job each), merged deterministically
+  (`sim/harness/merge_batch_shards.py`) before the adapter mints one
+  record: the runner image's klt 0.5.0 carries one model library and
+  SG13G2's corner set spans three per-device-family files
+  (klayout-tools#2668), so the process axis cannot vary within one
+  request. same fixture shape as the vref bench -- 15 requests of 8 temperatures each (120 points), the most harness-bound grid of the five.
+- **Reported precision is 6 significant figures** (`.meas`'s fixed print
+  format; `sim/harness/README.md` "Reported precision" owns the
+  disposition and its arithmetic against every live claim).
+  Same `.save`/`par()` constraint and same derived-column handling as the vref bench.
+- **The per-point verdict is applied by the enrichment pass**
+  (`sim/harness/enrich_pvt_report.py`) over the merged report, not by the loop script's inline
+  checks: same four criteria as the vref bench.
+- The record quadruple layout (`records/<id>.{{md,csv}}` +
+  `corners/<id>/*.log` + `netlist-snapshots/<id>/*.spice`) is unchanged --
+  `sim/harness/klt_sim_evidence.py` mints it from the report, and the
+  netlist snapshots now inline the generated DUT through the same include
+  splicing the adapter always did.

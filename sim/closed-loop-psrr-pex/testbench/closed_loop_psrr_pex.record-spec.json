@@ -1,0 +1,27 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- record spec for closed-loop-psrr-pex on the `klt sim`",
+    "harness (issue #278). The per-experiment half of the adapter contract:",
+    "sim/harness/klt_sim_evidence.py owns the record MECHANICS and takes",
+    "every piece of ARGUMENT from this file."
+  ],
+  "Experiment": "closed-loop-psrr-pex",
+  "Claim": "Closed-loop power-supply rejection of the assembled bandgap across the full PVT grid, through the same generated PEX DUT as sim/closed-loop-vref-pvt-pex's klt bench (every device's geometry and every wire parasitic from #272's trim-bearing re-extraction of layout/bandgap_top.gds): a 1 V/0 deg AC perturbation on vdd with the loop closed, PSRR = -db(v(vref)), the operating point nodeset-seeded from sim/closed-loop-startup's committed record (27 C row per corner/supply) and verified landed (the enrichment pass checks the op against its seed with the hand-transcribed bench's own 50 mV tolerance, plus startup-released / loop-closed / not-railed). The DC and 1 kHz PSRR are expected to sit near the pre-#272 record's values; the 100 kHz+ columns are expected to MOVE -- the refreshed extraction carries 44 coupling caps and 843 wire resistors where the old one carried 9 and 77, and the high-frequency isolation is exactly where that difference lives. NOT a claim against any ratified spec row.",
+  "Netlist provenance": "layout/bandgap_top/bandgap_top.pex.spice (#272's trim-bearing re-extraction) + design/netlist/bandgap_top.spice (three subckts, flattened), transformed by sim/tools/gen_pex_netlist_body.py --cell top -- the DUT body is generated, never hand-transcribed.",
+  "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models built by sim/tools/build-osdi.sh (local) / baked into the batch runner image (#277).",
+  "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x temperature {-40,27,125} C x supply {2.97,3.30,3.63} V (45 points)",
+  "request": "sim/closed-loop-psrr-pex/testbench/closed_loop_psrr_pex.request.json.tmpl",
+  "author": "Loom Builder (agent), issue #278",
+  "pass_requires": ["psrr_dc_db", "vref_op_v", "fb_op_v"],
+  "extra_columns": {
+    "hbt_section": { "typ": "hbt_typ", "bcs": "hbt_bcs", "wcs": "hbt_wcs", "sf": "hbt_typ", "fs": "hbt_typ" },
+    "mos_section": { "typ": "mos_tt", "bcs": "mos_ff", "wcs": "mos_ss", "sf": "mos_sf", "fs": "mos_fs" },
+    "res_section": { "typ": "res_typ", "bcs": "res_bcs", "wcs": "res_wcs", "sf": "res_typ", "fs": "res_typ" }
+  },
+  "extra_links": [
+    "Harness decision + batch-fleet status: sim/harness/README.md",
+    "DUT body generator: sim/tools/gen_pex_netlist_body.py --cell top",
+    "Runner: sim/closed-loop-psrr-pex/run_klt_sim.sh",
+    "Op/verdict enrichment: sim/harness/enrich_ac_report.py"
+  ]
+}

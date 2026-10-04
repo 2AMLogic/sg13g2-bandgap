@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- record spec for core-open-loop-bias-pex on the `klt sim`",
+    "harness (issue #278). The per-experiment half of the adapter contract:",
+    "sim/harness/klt_sim_evidence.py owns the record MECHANICS and takes",
+    "every piece of ARGUMENT from this file."
+  ],
+  "Experiment": "core-open-loop-bias-pex",
+  "Claim": "sg13g2-bandgap's bandgap_core, re-simulated against #272's trim-bearing re-extraction (255 rppd ladder units realising trim code 128 as mask metal, 533 wire resistors, 255 ground caps, 44 coupling caps -- no behavioural XXTRIM/RS<bit> cards anywhere), still produces a PTAT delta-VBE and a summed CTAT+PTAT vref across the full PVT grid with its mirror legs' geometry taken from the routed layout. First grid point is anchored on #272's own one-point probe (vref 1.052999 V, R1_eff 66123 ohm at typ/27C/3.30V): a point far from that anchor means the bench, not the extraction, is wrong. NOT a claim against any ratified spec row.",
+  "Netlist provenance": "layout/bandgap_core/bandgap_core.pex.spice (#272's trim-bearing re-extraction) + design/netlist/bandgap_core.spice, transformed by sim/tools/gen_pex_netlist_body.py -- the DUT body is generated, never hand-transcribed. Bipolar devices are still schematic-sourced (klt's curated sg13g2 deck does not extract them); the rppd/rhigh resistors, MOS geometry and every wire parasitic are extracted.",
+  "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models built by sim/tools/build-osdi.sh (local) / baked into the batch runner image (#277).",
+  "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x temperature {-40,27,125} C x supply {2.97,3.30,3.63} V (45 points)",
+  "request": "sim/core-open-loop-bias-pex/testbench/core_open_loop_bias_pex.request.json.tmpl",
+  "author": "Loom Builder (agent), issue #278",
+  "pass_requires": ["vref_v", "i_leg1_a", "i_leg2_a", "i_leg3_a", "r1_ohm"],
+  "extra_columns": {
+    "hbt_section": { "typ": "hbt_typ", "bcs": "hbt_bcs", "wcs": "hbt_wcs", "sf": "hbt_typ", "fs": "hbt_typ" },
+    "mos_section": { "typ": "mos_tt", "bcs": "mos_ff", "wcs": "mos_ss", "sf": "mos_sf", "fs": "mos_fs" },
+    "res_section": { "typ": "res_typ", "bcs": "res_bcs", "wcs": "res_wcs", "sf": "res_typ", "fs": "res_typ" }
+  },
+  "extra_links": [
+    "Harness decision + batch-fleet status: sim/harness/README.md",
+    "DUT body generator: sim/tools/gen_pex_netlist_body.py",
+    "Runner: sim/core-open-loop-bias-pex/run_klt_sim.sh"
+  ]
+}
