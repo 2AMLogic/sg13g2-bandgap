@@ -59,10 +59,12 @@ print zout_db
 .endc
 
 * Node seeds: sim/closed-loop-startup's committed per-corner DC-bias
-* values (27 C row for this process corner and supply), exactly the
-* provenance sim/lib/nodeset_seed.sh established for the hand-transcribed
-* bench. Checked, not trusted: the enrichment pass verifies the landed
-* op against these with the old bench's 50 mV tolerance.
+* values (125 C row for this process corner and supply -- the
+* worst-corner stiffness; see the header), from the same record
+* sim/lib/nodeset_seed.sh established as the hand-transcribed bench's
+* seed provenance. Checked, not trusted: the enrichment pass verifies
+* the landed op against that record's per-temperature reference with
+* the old bench's 50 mV tolerance.
 .nodeset v(fb)=@@FB_SEED@@ v(sns1)=@@SNS1_SEED@@ v(sns2)=@@SNS2_SEED@@ v(vref)=@@VREF_SEED@@
 
 * Solver options: reltol=5e-3 (settled trim-bearing setting); rshunt/gmin
