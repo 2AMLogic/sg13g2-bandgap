@@ -196,8 +196,8 @@ spec.loader.exec_module(bundle)
 
 seeds = {}
 for row in csv.DictReader(open(seed_csv)):
-    if row["temp_c"] == "27" and row["status"] == "PASS":
-        seeds[(row["corner_label"], row["vdd_v"])] = row
+    if row["status"] == "PASS":
+        seeds[(row["corner_label"], row["temp_c"], row["vdd_v"])] = row
 
 req_tmpl = pathlib.Path(req_tmpl_path)
 body_tmpl = pathlib.Path(body_tmpl_path)
@@ -208,7 +208,18 @@ out = pathlib.Path(work)
 for label, (hbt, mos, res) in bundle.CORNER_SECTIONS.items():
     for vdd in (2.97, 3.30, 3.63):
         vid = f"{vdd:.2f}".replace(".", "p")
-        row = seeds.get((label, f"{vdd:g}")) or seeds.get((label, f"{vdd:.2f}"))
+        # Bake the 125 C row: the seeds are one set per (corner, supply)
+        # shared by the three temperatures a request sweeps, and the hot
+        # corner is the stiff one -- the fs/125 point singular-matrixed
+        # from the 27 C seed on the refreshed extraction while every other
+        # point converged from either. A 27 C-vs-125 C seed difference is
+        # ~30-60 mV of initial guess, immaterial to the points that
+        # converge and decisive for the one that does not; the op-match
+        # check itself uses the per-temperature reference via --seed-csv.
+        for temp_row in ("125", "27"):
+            row = seeds.get((label, temp_row, f"{vdd:g}")) or seeds.get((label, temp_row, f"{vdd:.2f}"))
+            if row is not None:
+                break
         if row is None:
             raise SystemExit(f"no 27C seed row for {label}/{vdd} in {seed_csv}")
         body_text = (
@@ -281,8 +292,9 @@ import json,sys; r=json.load(open('${report}')); sys.exit(0 if r['status']=='pas
           echo "${label}=${WORK}/report-${label}-${vid}-fixed.json"
         done
       done)
-  python3 "${HARNESS_DIR}/enrich_ac_report.py" "${WORK}/report-merged.json" \
-    --kind psrr -o "${WORK}/report-enriched.json"
+  # From WORK: the merged reports' per-corner LOG paths are relative to it.
+  ( cd "${WORK}" && python3 "${HARNESS_DIR}/enrich_ac_report.py" report-merged.json \
+      --kind psrr --seed-csv "${SEED_CSV}" -o report-enriched.json )
   ;;
 
 --record)

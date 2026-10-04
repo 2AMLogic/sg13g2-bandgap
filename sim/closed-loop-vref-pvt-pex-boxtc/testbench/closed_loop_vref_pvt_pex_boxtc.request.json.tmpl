@@ -20,7 +20,8 @@
     "requires (ngspice 46 rewrites `par('...')` to a non-resident `pa_<n>`",
     "parameter); the two derived columns (dvsns_v, vref_settle_delta_v) are",
     "formed by the runner from the reported operands, the same practice the",
-    "committed records use. Values arrive at 6 significant figures."
+    "committed records use. Values arrive at 6 significant figures.",
+    "`remote.hosts: 2` shards each request into two fleet jobs of four points: the 120-point grid's eight points per request oversubscribed a smaller diversified-pool instance on the first run (every corner timed out at 1800 s), which is exactly the case sim/harness/README.md's arithmetic rule names -- raise the shard count, not the ceiling."
   ],
   "engine": "ngspice",
   "netlist": "@@BODY@@",
@@ -92,5 +93,8 @@
   "options": {
     "timeout_s": 1800,
     "keep_artifacts": true
+  },
+  "remote": {
+    "hosts": 2
   }
 }

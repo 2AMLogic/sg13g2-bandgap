@@ -140,11 +140,39 @@ def _splice_deck(deck_path: Path, cwd: Path) -> str:
     return read_with_includes(deck_path)
 
 
-def enrich(report: dict, kind: str) -> dict:
+_STARTUP_RE = None  # per-point seed rows, loaded lazily from --seed-csv
+
+
+def _load_seed_rows(path: str) -> dict:
+    import csv
+
+    rows: dict[tuple[str, str, str], dict] = {}
+    with open(path, newline="") as fh:
+        for row in csv.DictReader(fh):
+            rows[(row["corner_label"], row["temp_c"], row["vdd_v"])] = row
+    return rows
+
+
+def _fmt_vdd(v: float) -> str:
+    for cand in (f"{v:g}", f"{v:.2f}", f"{v:.1f}"):
+        if cand.endswith("0") and "." in cand:
+            continue
+        return cand
+    return f"{v:g}"
+
+
+def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:
     sign = -1.0 if kind == "psrr" else 1.0
     prefix = "psrr" if kind == "psrr" else "zout"
     op_names = ("fb_op_v", "sns1_op_v", "sns2_op_v", "vref_op_v", "det_op_v", "i_vmkfb_a")
     op_match_tol_v = 0.05
+    # When the body's baked (27 C) seed is the only reference available, the
+    # op-match band widens with |T - 27|: fb's own temperature slope is
+    # ~0.6 mV/C, so a fixed 50 mV would fail every hot/cold point whose op
+    # is nonetheless the true equilibrium. With --seed-csv (the per-point
+    # rows the hand-transcribed bench itself seeded from), the check uses
+    # the same-temperature reference and keeps the fixed 50 mV.
+    op_match_slope_v_per_c = 0.002
     for corner in report.get("corners", []):
         if corner.get("status") != "pass":
             continue
@@ -224,39 +252,64 @@ def enrich(report: dict, kind: str) -> dict:
                     "spice": f"derived: {sign:+.0f}*20*log10({lin}) (see sim/harness/enrich_ac_report.py)",
                 }
             )
-        # Curve extrema from the log's print table.
+        # Curve extremum from the log's print table. psrr's worst case is
+        # its MINIMUM (the frequency where the rejection is weakest); zout's
+        # is its PEAK -- the committed records' own column names
+        # (psrr_min_db / zout_peak_db) carry that asymmetry, so the
+        # enrichment keeps each experiment's schema.
         if curve:
-            fmin, dmin = min(curve, key=lambda p: p[1])
+            if kind == "psrr":
+                fx, dx = min(curve, key=lambda q: q[1])
+                ext_name, freq_name = "psrr_min_db", "psrr_min_freq_hz"
+            else:
+                fx, dx = max(curve, key=lambda q: q[1])
+                ext_name, freq_name = "zout_peak_db", "zout_peak_freq_hz"
             corner["measurements"].extend(
                 [
                     {
-                        "name": f"{prefix}_min_db",
-                        "value": dmin,
+                        "name": ext_name,
+                        "value": dx,
                         "spice": "log-side: worst-case over the body's printed AC sweep",
                     },
                     {
-                        "name": f"{prefix}_min_freq_hz",
-                        "value": fmin,
+                        "name": freq_name,
+                        "value": fx,
                         "spice": "log-side: frequency of the worst-case point",
                     },
                 ]
             )
         else:
             problems.append("no AC sweep table in the log")
-        # Op-match verdict: the landed op must sit near the .nodeset seed
-        # (the hand-transcribed bench's own check, same 50 mV tolerance).
-        # Plus the topology checks the op prints make possible.
-        if seeds:
-            fb_seed = seeds.get("fb")
-            if fb_seed is not None and "fb_op_v" in op:
-                if abs(op["fb_op_v"] - fb_seed) > op_match_tol_v:
-                    problems.append("op_landed_far_from_seed")
+        # Op-match verdict: the landed op must sit near the reference the
+        # hand-transcribed bench itself used -- sim/closed-loop-startup's
+        # per-(corner, temp, vdd) row when --seed-csv provided it (same
+        # fixed 50 mV), else this body's own baked 27 C seed with a
+        # temperature-aware band (the body bakes one seed set per
+        # corner/supply; the seed is a convergence aid, and fb legitimately
+        # moves ~0.6 mV/C away from it).
         vdd = None
         cid = corner.get("corner_id", "")
+        temp_c = corner.get("temperature_c")
         try:
             vdd = float(cid.split("/")[1].rstrip("V"))
         except (IndexError, ValueError):
             pass
+        fb_ref = None
+        tol = op_match_tol_v
+        if seed_rows and temp_c is not None and vdd is not None:
+            label = corner.get("process") or cid.split("/")[0]
+            row = seed_rows.get((label, f"{temp_c:g}", f"{vdd:g}")) or seed_rows.get(
+                (label, f"{temp_c:g}", f"{vdd:.2f}")
+            )
+            if row is not None:
+                fb_ref = float(row["fb_final_v"])
+        if fb_ref is None and seeds:
+            fb_ref = seeds.get("fb")
+            if temp_c is not None:
+                tol += abs(float(temp_c) - 27.0) * op_match_slope_v_per_c
+        if fb_ref is not None and "fb_op_v" in op:
+            if abs(op["fb_op_v"] - fb_ref) > tol:
+                problems.append("op_landed_far_from_seed")
         fb = op.get("fb_op_v")
         if vdd is not None and fb is not None and not (FB_RAIL_MARGIN_V <= fb <= vdd - FB_RAIL_MARGIN_V):
             problems.append("fb_railed")
@@ -286,9 +339,13 @@ def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("report", type=Path)
     ap.add_argument("--kind", choices=("psrr", "zout"), required=True)
+    ap.add_argument("--seed-csv", type=Path, default=None,
+                    help="sim/closed-loop-startup record with per-(corner,temp,vdd) "
+                    "op references for the op-match check")
     ap.add_argument("-o", "--output", type=Path, required=True)
     args = ap.parse_args(argv)
-    report = enrich(json.loads(args.report.read_text(encoding="utf-8")), args.kind)
+    seed_rows = _load_seed_rows(str(args.seed_csv)) if args.seed_csv else None
+    report = enrich(json.loads(args.report.read_text(encoding="utf-8")), args.kind, seed_rows)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     for c in report["corners"]:
         if c.get("status") != "pass":

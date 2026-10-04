@@ -7,16 +7,41 @@
   ],
   "Experiment": "closed-loop-vref-pvt-pex-boxtc",
   "Claim": "The box-method temperature coefficient of the closed-loop vref across the full 120-point PVT grid (5 processes x 8 temperatures x 3 supplies), through the same co-simulated closed-loop topology and the same generated PEX DUT as sim/closed-loop-vref-pvt-pex's klt bench -- every device's geometry and every wire parasitic from #272's trim-bearing re-extraction of the assembled layout/bandgap_top.gds. The box TC itself is computed per (corner, vdd) group from the 8 settled vref points by the -boxtc.csv companion (same formula, disclosure and justification policy as sim/closed-loop-vref-pvt-boxtc's committed records: box = (vmax-vmin)/(span*v27)). This is the post-layout box-TC evidence; NOT a claim against any ratified spec row -- the ratified box-TC row's own evidence lives in sim/closed-loop-vref-boxtc-trim.",
-  "Netlist provenance": "layout/bandgap_top/bandgap_top.pex.spice (#272's trim-bearing re-extraction) + design/netlist/bandgap_top.spice (three subckts, flattened), transformed by sim/tools/gen_pex_netlist_body.py --cell top -- the DUT body is generated, never hand-transcribed.",
+  "Netlist provenance": "layout/bandgap_top/bandgap_top.pex.spice (#272's trim-bearing re-extraction) + design/netlist/bandgap_core.spice, design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice (the top netlist's three subckts, flattened through its own Xx1/Xx2/Xx3 instance lines by sim/tools/gen_pex_netlist_body.py --cell top -- the DUT body is generated, never hand-transcribed, and the flattened instance set is what D2 compares).",
   "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models built by sim/tools/build-osdi.sh (local) / baked into the batch runner image (#277).",
   "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x temperature {-40,-20,0,27,50,75,100,125} C x supply {2.97,3.30,3.63} V (120 points)",
   "request": "sim/closed-loop-vref-pvt-pex-boxtc/testbench/closed_loop_vref_pvt_pex_boxtc.request.json.tmpl",
   "author": "Loom Builder (agent), issue #278",
-  "pass_requires": ["vref_3ms_v", "fb_v", "sns1_v", "sns2_v", "det_v", "i_mkfb_a"],
+  "pass_requires": [
+    "vref_3ms_v",
+    "fb_v",
+    "sns1_v",
+    "sns2_v",
+    "det_v",
+    "i_mkfb_a"
+  ],
   "extra_columns": {
-    "hbt_section": { "typ": "hbt_typ", "bcs": "hbt_bcs", "wcs": "hbt_wcs", "sf": "hbt_typ", "fs": "hbt_typ" },
-    "mos_section": { "typ": "mos_tt", "bcs": "mos_ff", "wcs": "mos_ss", "sf": "mos_sf", "fs": "mos_fs" },
-    "res_section": { "typ": "res_typ", "bcs": "res_bcs", "wcs": "res_wcs", "sf": "res_typ", "fs": "res_typ" }
+    "hbt_section": {
+      "typ": "hbt_typ",
+      "bcs": "hbt_bcs",
+      "wcs": "hbt_wcs",
+      "sf": "hbt_typ",
+      "fs": "hbt_typ"
+    },
+    "mos_section": {
+      "typ": "mos_tt",
+      "bcs": "mos_ff",
+      "wcs": "mos_ss",
+      "sf": "mos_sf",
+      "fs": "mos_fs"
+    },
+    "res_section": {
+      "typ": "res_typ",
+      "bcs": "res_bcs",
+      "wcs": "res_wcs",
+      "sf": "res_typ",
+      "fs": "res_typ"
+    }
   },
   "extra_links": [
     "Harness decision + batch-fleet status: sim/harness/README.md",
