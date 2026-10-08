@@ -41,6 +41,13 @@ Three pieces, all in this directory:
 | `klt_sim_evidence.py` | The adapter. `klt sim` report + a per-experiment record spec → `records/<id>.{md,csv}` + `corners/<id>/*.log` + `netlist-snapshots/<id>/*.spice`. Generic over experiments; all 23 can use it. |
 | `probe/run_probe.sh` | The standing self-test: one corner end-to-end, plus five assertions (below). |
 
+The pure JSON/text transforms beside the adapter (`merge_batch_shards.py`,
+`fixup_batch_report.py`, `enrich_pvt_report.py`) and the adapter's own
+record-shaping helpers are unit-tested by `test_harness_transformers.py`
+(stdlib `unittest`, tiny temp-dir fixtures, no ngspice or PDK). CI runs it in
+`.github/workflows/hygiene.yml` (issue #297):
+`python3 sim/harness/test_harness_transformers.py`.
+
 `sim/harness/` deliberately holds no `records/` directory, which is what keeps
 `.github/scripts/check_evidence_formats.py` from treating it as an
 experiment. Nothing here is evidence.

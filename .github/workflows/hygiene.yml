@@ -54,6 +54,18 @@ jobs:
         # PEX templates; the test proves the 255-unit ladder chain closes.
         run: python3 sim/tools/test_gen_pex_netlist_body.py
 
+      - name: Loop-gain solve-quality gate self-test
+        # Issue #297: the guard that stops numerically corrupted AC solves
+        # (#289's 36.3 / 43.9 deg artifacts) from being recorded as evidence.
+        # Replays committed responses read-only; temp dirs for anything else.
+        run: python3 sim/loop-gain-phase-margin/tools/test_solve_quality.py
+
+      - name: klt-sim harness transformer self-test
+        # Issue #297: shard merge, batch-report deck fixup, PVT derived
+        # columns + closed-loop verdict, and the evidence adapter's record
+        # shaping -- the transforms whose output becomes append-only evidence.
+        run: python3 sim/harness/test_harness_transformers.py
+
       - name: Evidence formats and freshness
         # --require-append-only: fail loudly rather than silently skipping if
         # the merge base stops resolving (a skipped check reads as a pass).
