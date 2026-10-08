@@ -8,7 +8,9 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-10-08
 
+- **PR #301**: ci: run solve-quality and harness-transformer self-tests in hygiene
 - **PR #296**: chore: pin tracker-state-comment helper as repo-owned (#295)
+- **Issue #297** (closed): Run the loop-gain solve-quality test in hygiene CI and add harness self-tests
 - **Issue #295** (closed): Orphan helper .loom/scripts/tracker-state-comment.sh: upstream it or pin it
 
 ### 2026-10-04
