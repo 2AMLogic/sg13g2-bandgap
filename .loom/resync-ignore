@@ -1,0 +1,8 @@
+# .loom/resync-ignore — paths Loom must not overwrite or delete
+#
+# Repo-owned (#295): the issue #4 tracker-state comment helper and its
+# regression suite have no counterpart in rjwalters/loom defaults/. They back
+# the repo-local #4 tracker workflow (docs/tracker-4-settle-protocol.md).
+# Pinned rather than upstreamed. scripts/lib/forge-helpers.sh stays managed.
+scripts/tracker-state-comment.sh
+scripts/tests/test-tracker-state-comment.sh
