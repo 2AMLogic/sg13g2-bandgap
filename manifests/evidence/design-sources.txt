@@ -1,0 +1,80 @@
+# Design-source inventory -- T1 item 1 (Design sources)
+#
+# Audited record, bound by manifests/evidence/design-sources.json (generic
+# envelope, t1_item 1). `klt signoff` re-hashes THIS FILE ONLY. The per-file
+# hashes below are the auditor's record of what was examined; nothing
+# recursively re-validates them, so an edit to a listed schematic or netlist
+# does NOT by itself turn the item stale. That drift is caught elsewhere:
+# check_evidence_formats.py (sim-DUT freshness) compares every sim record's
+# netlist snapshot against the committed design/netlist/*.spice. The
+# schematic -> netlist export step is NOT re-checked in CI; it was re-run
+# once, by hand, as part of this audit (below). Re-audit and regenerate this
+# file (and the envelope, manifest pin and verdict) when design/ changes.
+#
+# Audited base commit : b6d79020f0463a0a1e67c0209827eecc540dfcfe (origin/main when audited)
+# Audit date          : 2026-10-08
+# Scope               : the SG13G2 design in design/ (flat). The SG13CMOS5L
+#                       variant under design/sg13cmos5l/ is listed for
+#                       completeness but is OUTSIDE the attested scope (see
+#                       "Not attested").
+
+## Schematic sources (xschem) -- design/*.sch
+15867ee4bdc2bf6d0f64e34bece6ba5d1821374f30bd8560e30cfebc64fb071e  design/bandgap_amp.sch
+1bfc110a5882077dd809c26bc1f3ee0ce7ef1af90f6b018535aef912d38d1437  design/bandgap_core.sch
+4a0033a2d9817ddbe10664bb4e11d3c4b86d40e397f2ec4d1ec8dae15a341921  design/bandgap_startup.sch
+beee54ca8b1afe614cc1a7eb7015d883b3f4e55307b5a085953e90fd3b8f91e8  design/bandgap_top.sch
+e14f40c096fa2fbb7c51552003ad7e251f3e83520045ce6f398512934e027134  design/bandgap_trim.sch
+
+## Symbols the schematics instantiate -- design/*.sym
+94c866fe40c8044ea6676c6e11cd7d1fd2cbad8e00b40e4aac57045f6a9bbc05  design/bandgap_amp.sym
+1cda9811ccb0913b616426aa96cfcc8817634911c3a4461924c7b9db851b0aab  design/bandgap_core.sym
+eb9aa39e33aa33d906ba04656904d7b36cecfc48972e8196a7a5b6fd4aaaa8d4  design/bandgap_startup.sym
+70b899c0029e7c8b16c638027bec958bc444ff0a1bd46365b3406b224909305a  design/bandgap_trim.sym
+
+## Derived netlists (committed, xschem-generated) -- design/netlist/*.spice
+6b0e7babcd57265588a6a7da08cd9465d49b52ce3c0e8e6e2ec1e5cdc4d1bd02  design/netlist/bandgap_amp.spice
+5ce44936e16fcea5217fed19f1a794f9db9e439e49dad41473d95efdfa714a83  design/netlist/bandgap_core.spice
+4182537f3530fa2614c3a40271381c69fe885ffed7e2e3941b4b8d3bc95bacab  design/netlist/bandgap_startup.spice
+586dae89e98d1fed1350be6c53885fd965ce489e2710ddca72077b54c5e2a7be  design/netlist/bandgap_top.spice
+8c735409d401c2c6c63cf8f8c4061b8f6401d67dc3553eee6f001bc6302d675a  design/netlist/bandgap_trim.spice
+
+## Export command (run from design/, PDK_ROOT=<dir containing ihp-sg13g2/>, PDK=ihp-sg13g2)
+xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./<cell>.sch
+# <cell> in: bandgap_core bandgap_startup bandgap_amp bandgap_top bandgap_trim
+# (design/README.md "Running xschem / regenerating the netlist" lists the
+# first four; bandgap_trim.spice is produced by the same command.)
+
+## Audit: export re-run in an isolated scratch copy
+Procedure : `git archive` of design/ at the audited commit into a scratch
+            directory outside the repository; PDK = IHP-Open-PDK v0.3.0
+            tarball (sha256 f6afb7a8d2adf3e40acd3fd2c7892fc93510e6f760565409a8df2b5b242254fc,
+            equal to sim/pdk.json tarball_sha256), extracted into a scratch
+            directory; xschem 3.4.4; the five commands above, output to a
+            scratch directory.
+Outcome   : all five exports ran (exit 0). Compared with the committed
+            design/netlist/*.spice after dropping `**` comment lines
+            (sch_path/sym_path/subckt-port comments carry the author's
+            worktree path) and blank lines: 0 differing lines for each of
+            bandgap_core, bandgap_startup, bandgap_amp, bandgap_top,
+            bandgap_trim. The committed netlists regenerate from the
+            committed schematics.
+Not run   : the export is not wired into CI; no tool compares .sch to .spice
+            on each commit.
+
+## Not attested -- design/sg13cmos5l/ (SG13CMOS5L variant)
+Exports were re-run the same way against an ihp-sg13cmos5l checkout
+(commit 607e18d4bd9214a52575c194b4181ef449f9252f; not compared with the pin in
+sim/pdk-sg13cmos5l.json). bandgap_startup and bandgap_amp: 0 differing lines.
+bandgap_core and bandgap_top: 12 differing lines each, all in the pnpMPA
+instance lines (the fresh export writes `a= 1u * 2u p= ( 1u + 2u ) * 2`, the
+committed netlist `a={ 1u * 2u } p={ ( 1u + 2u ) * 2 }`) -- a
+brace-formatting difference, not re-investigated here. Because the variant did
+not reproduce cleanly, it is excluded from this attestation.
+db2a7050ebe355e377b8c11bc458265d5a7ea185e8978bcc0b70dd838ce70abb  design/sg13cmos5l/bandgap_amp.sch
+66a996151b8f55b90c288753c1cfc47edb377eabe4bd28ab2e7fc4aca1721e96  design/sg13cmos5l/bandgap_core.sch
+8c3d6a723dc6da0b9e473abd203e2f9a4d896a8090ab9a07260e0894735074c1  design/sg13cmos5l/bandgap_startup.sch
+423b9d5c4451478a9890f7fb555cbcb0e9621b9cc6c527f23cc7bbf9e4db0e4f  design/sg13cmos5l/bandgap_top.sch
+5b5013faa0353b10105e7aa5dec1dbe7e1d313ceebdc103db0ec06e1f1355ba2  design/sg13cmos5l/netlist/bandgap_amp.spice
+548b7683c74486dbeb844e75beab8e5b3117694471bb9b3f677e82b22424b0f2  design/sg13cmos5l/netlist/bandgap_core.spice
+69ad3209df7f02d2829050cbb5df6a7f379165de229e9c202447b97248ee8727  design/sg13cmos5l/netlist/bandgap_startup.spice
+a29624d3bbcc89e2f7132ecfb278dd793b248c84b9f74ab51685f8ecde929ad5  design/sg13cmos5l/netlist/bandgap_top.spice

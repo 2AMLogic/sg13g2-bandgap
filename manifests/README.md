@@ -14,9 +14,13 @@ that produced it.
 - `sg13g2-bandgap.signoff.json` — the committed **verdict of record**: the
   exact output of `klt signoff --manifest manifests/sg13g2-bandgap.json
   --format json`.
-  As of the commit that added it: **tier: none — 3/11 T1 items met**. That is
-  the honest state; an all-`unmet` manifest is a correct result, and nothing
-  here inflates it.
+  As of the commit that last regenerated it (#299): **tier: none — 4/11 T1
+  items met** (items 1, 2, 3, 10; read the count from the report's
+  `t1_met_count`, not from this sentence). That is the honest state; an
+  all-`unmet` manifest is a correct result, and nothing here inflates it.
+- `evidence/` — the **audited inventories** (`*.txt`) and their
+  artifact-anchored `generic` envelopes (`*.json`) that items 1 and 10 cite
+  (see below).
 
 ## Re-running
 
@@ -38,15 +42,29 @@ passing envelope was cited" — citing honestly is this repo's responsibility
 (`docs/design-evidence-tiers.md` → "Not every item has a tool behind it").
 The binding used here:
 
-- **Item 1 (Design sources) — cited: `layout/bandgap_top/pex_extract_report.json`**
-  (`extract` envelope, `status: extracted`, input hash pinned to the
-  committed `bandgap_top.gds`). `klt signoff`'s own gate binding documents
-  `klt extract` as the *netlist regeneration* gate; this citation proves the
-  netlist regenerates from the committed, generator-produced GDS. It does
-  **not** prove the xschem-schematic→SPICE export step (`design/*.sch` →
-  `design/netlist/*.spice`), for which no `klt` verb exists — that link is
-  enforced instead by `check_evidence_formats.py`'s sim-DUT freshness check
-  against the committed netlists.
+- **Item 1 (Design sources) — cited: `evidence/design-sources.json`** (#299;
+  artifact-anchored `generic` envelope, `t1_item: 1`, bound to
+  `evidence/design-sources.txt`). Before #299 this item borrowed the
+  `extract` envelope `layout/bandgap_top/pex_extract_report.json`, which
+  graded `met` but proved nothing about the schematic-to-netlist step (and
+  carries no `artifact_binding`; the new grader prints "topic: not bound"
+  for such a citation). The inventory lists every `design/*.sch`, its
+  symbols and the derived `design/netlist/*.spice` with sha256s, the export
+  command, and the outcome of a **one-off audit**: the five exports were
+  re-run in a scratch copy against the pinned IHP-Open-PDK v0.3.0
+  (tarball sha256 matched `sim/pdk.json`) and reproduced every committed
+  netlist (0 differing lines once the author-path `**` comments and blank
+  lines are ignored). The SG13CMOS5L variant under `design/sg13cmos5l/`
+  did **not** reproduce cleanly (a brace-formatting difference in two
+  netlists) and is excluded from the attestation.
+  **What the binding does and does not prove.** `klt signoff` re-hashes the
+  inventory file only. A later edit to a listed schematic or netlist does
+  not make the row stale by itself — the inventory is an audited record, not
+  a transitive hash tree, and nothing here claims otherwise. Netlist drift
+  against the sims is caught by `check_evidence_formats.py`'s sim-DUT
+  freshness check; the `.sch` to `.spice` export is **not** re-checked in
+  CI. Whoever changes `design/` must re-audit and regenerate the inventory,
+  envelope, pin and verdict.
 - **Item 2 (Layout) — cited: `layout/bandgap_top/drc_report.json`**: proves
   the committed GDS exists and was DRC-checkable at the pinned content hash;
   the generator (`layout/bandgap_top/generate.py`) is committed and
@@ -118,17 +136,48 @@ of them, but no `klt` envelope grades it yet):
   exists (`measurements/2026-09-characterization-report/`, #227 closing
   #15) — but item 8 grades only the purpose-built `generic` envelope
   (upstream issue #1152), which this repo has not produced.
-- **9 (Testbenches) / 10 (Repo hygiene):** the testbenches, cold-start docs,
-  README, LICENSE and CI all exist — but no `klt` envelope can attest to
-  them, and a token citation would be exactly the dishonest row the ladder
-  forbids.
+- **9 (Testbenches) — left uncited after the #299 audit.** The upstream
+  contract now allows an artifact-anchored attestation, but the checklist
+  asks for "a documented cold-start invocation **a third party can run**"
+  for every claimed measurement, and this audit could not honestly attest
+  that. Statically: every one of the 27 experiment directories under `sim/`
+  has a `run_*.sh`, 26 open with a cold-start header, and the ratified
+  spec's seven rows (Output reference, Trim, Temp coefficient, PSRR @ DC,
+  Supply, Iq, Startup) each map to committed benches. Dynamically: none of
+  those cold-start invocations was executed, because they are 45-point
+  local `ngspice -b` grids (or N=300 Monte Carlo runs) that the dispatch
+  hosts forbid hand-launching, only some experiments have a `klt sim`
+  wrapper, no SG13G2 PDK or built OSDI models exist on that host, and each
+  run would mint new append-only `sim/` records. A pass inferred from
+  "the files exist" would be exactly the dishonest row the ladder forbids,
+  so the row stays `unmet` / `no_evidence`. To close it: run each row's
+  cold-start in an isolated checkout on a host with the PDK and OSDI models
+  (the multi-corner ones through `klt sim`), record the outcomes in a
+  `testbenches.txt` inventory, add the envelope, and bind it.
+- **10 (Repo hygiene) — cited: `evidence/hygiene.json`** (#299;
+  artifact-anchored `generic` envelope, `t1_item: 10`, bound to
+  `evidence/hygiene.txt`). The audit found a real gap, fixed in the same
+  change: the top-level `README.md` had what-the-block-is and the spec
+  table but no statement of how to reproduce the results, so #299 added a
+  "Reproducing the results" section (pointers to the netlist-export,
+  per-experiment cold-start, layout and signoff instructions — audited for
+  presence and accuracy of the pointers, **not** by re-running them). The
+  inventory records the examined files with sha256s, `LICENSE` (Apache-2.0)
+  and the `hygiene.yml` jobs. As with item 1, only the inventory file is
+  re-hashed by the grader; edits to the listed files are not transitively
+  tracked.
 
 ## Freshness and CI
 
 Every pinned citation's `content_hash` must match both the cited envelope's
 recorded `provenance.input.content_hash` **and** the sha256 of the committed
-artifact that envelope names (the GDS) — a manifest citing an artifact that
-has since changed fails rather than rotting. The `signoff-manifest` job in
+artifact that envelope names (the GDS, or for an artifact-anchored `generic`
+envelope the file named by its `provenance.input.path` — a string resolves
+beside the envelope, a `{path, scope: "repo"}` object against the repository
+root) — a manifest citing an artifact that has since changed fails rather
+than rotting. A `generic` citation must also declare the `t1_item` it is
+cited for, and must be pinned; absolute or repository-escaping paths are
+rejected. Native and compound (item 11) citations are checked as before. The `signoff-manifest` job in
 `.github/workflows/hygiene.yml` enforces all of this:
 `.github/scripts/check_signoff_manifest.py` re-runs the grade and requires
 the committed `*.signoff.json` to be structurally identical to the fresh
@@ -139,11 +188,25 @@ checker (a checker that cannot fail is indistinguishable from no checker).
 
 The verdict is graded against the exact upstream `klt` build recorded in the
 workflow's `pip install` line (a pinned git rev of
-`2AMLogic/klayout-tools`, currently `2b1e55e5` — PyPI releases up to 0.5.0
-predate T1 item 11, which the ladder added 2026-09-17 in klayout-tools#2025,
-so a PyPI pin would silently grade a 10-item checklist). The report embeds
-the governing checklist's own `source_doc_content_hash`; when the pin is
-bumped to a rev whose checklist differs, the committed report stops matching
-and CI fails until the report is regenerated and committed — the same
-"checklist moved, re-read everything" discipline the 2026-09-17 item-11
-incident made necessary fleet-wide.
+`2AMLogic/klayout-tools`, currently `3a75c3ae` — the merge of
+klayout-tools#2718, artifact-anchored `generic` evidence for items 1, 2, 9
+and 10; PyPI releases up to 0.5.0 predate T1 item 11, which the ladder added
+2026-09-17 in klayout-tools#2025, so a PyPI pin would silently grade a
+10-item checklist). The report embeds the governing checklist's own
+`source_doc_content_hash`; when the pin is bumped to a rev whose checklist
+differs, the committed report stops matching and CI fails until the report
+is regenerated and committed — the same "checklist moved, re-read
+everything" discipline the 2026-09-17 item-11 incident made necessary
+fleet-wide.
+
+**What changed between the old pin (`2b1e55e5`) and `3a75c3ae`** (compared by
+grading this unchanged manifest at both): the checklist is still 11 items
+and every verdict is unchanged; the checklist prose of items 6 (campaign
+discipline: `undersized_sample`, `negative_control_not_detected`), 8 (bare
+`generic` envelopes only for item 8; anchored form for 1/2/9/10) and 11
+(island/tie/roles/disclosure rules) was extended, so
+`source_doc_content_hash` changed; the report gained `build`,
+`build_t1_item_count`, per-item `graded_by_build` and, on pinned citations,
+`input_verified`; and items 1, 2, 9, 10 can now carry an `artifact_binding`.
+Native citations of those items still grade `met` but are reported as "not
+bound".

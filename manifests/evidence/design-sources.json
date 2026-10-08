@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 1,
+  "summary": "design sources audited: 5 schematics, 4 symbols and 5 derived netlists inventoried; xschem export re-run in a scratch copy reproduced all 5 committed netlists (0 differing non-comment lines); export command recorded",
+  "source": "design-sources.txt",
+  "provenance": {
+    "klt_version": "0.6.0+g3a75c3ae705b",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:606c784aa5b05cd049f61cfd7b790587bec0c51a6b9654f02b25559924c2569f",
+      "path": "design-sources.txt"
+    }
+  }
+}

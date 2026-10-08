@@ -24,6 +24,15 @@ PDK, klayout, ngspice, and never mints evidence) and requires:
    manifest citing an artifact that has since changed (a regenerated GDS
    without a re-run report) fails.
 
+   Artifact-anchored `generic` envelopes (klayout-tools#2718; T1 items 1, 2,
+   9, 10) are checked the same three ways, with the audited artifact named
+   by `provenance.input.path` instead of a top-level `file`: a string
+   resolves beside the envelope, a `{"path", "scope": "repo"}` object
+   resolves against the repository root. A generic envelope must declare an
+   integer `t1_item` equal to the item it is cited for, must have a usable
+   path, and must be pinned in the manifest; any of those missing, or a
+   missing/edited artifact, fails.
+
 Entries cited without a pin are noted, not failed: `klt lvs` envelopes
 record no `provenance.input` block (upstream JSON contract), so an LVS
 citation cannot pin; its freshness is enforced by
@@ -89,7 +98,95 @@ def first_difference(fresh: Any, committed: Any, path: str = "$") -> str:
     return ""
 
 
-def _check_entry(root: Path, label: str, entry: Any, report: Report) -> None:
+def _resolve_generic_input(root: Path, envelope_path: Path, input_path: Any) -> tuple[Path | None, str]:
+    """Resolve a generic envelope's `provenance.input.path` per the upstream contract.
+
+    Returns (artifact, "") on success or (None, reason). A string resolves
+    beside the envelope; a `{"path", "scope": "repo"}` object resolves
+    against the repository root. Absolute paths and paths that escape the
+    repository are rejected (upstream never emits a raw host path).
+    """
+    if isinstance(input_path, str):
+        rel, base, scope = input_path, envelope_path.parent, "envelope-relative"
+    elif (
+        isinstance(input_path, dict)
+        and isinstance(input_path.get("path"), str)
+        and input_path.get("scope") == "repo"
+    ):
+        rel, base, scope = input_path["path"], root, "repo-scoped"
+    else:
+        return None, (
+            "provenance.input.path must be a string or "
+            "{\"path\": <repo-relative path>, \"scope\": \"repo\"}"
+        )
+    if not rel.strip():
+        return None, "provenance.input.path is empty"
+    if Path(rel).is_absolute():
+        return None, f"{scope} provenance.input.path {rel!r} is absolute"
+    artifact = (base / rel).resolve()
+    try:
+        artifact.relative_to(root.resolve())
+    except ValueError:
+        return None, f"{scope} provenance.input.path {rel!r} escapes the repository"
+    return artifact, ""
+
+
+def _check_generic_entry(
+    root: Path, label: str, item_id: str, file_rel: str, pin: Any,
+    envelope_path: Path, envelope: dict, report: Report,
+) -> None:
+    """Validate an artifact-anchored generic envelope (items 1, 2, 9, 10)."""
+    t1_item = envelope.get("t1_item")
+    if isinstance(t1_item, bool) or not isinstance(t1_item, int):
+        report.problem(
+            f"{label}: generic envelope {file_rel} declares no integer t1_item "
+            "(unanchored_evidence upstream)"
+        )
+        return
+    if str(t1_item) != str(item_id):
+        report.problem(
+            f"{label}: generic envelope {file_rel} attests T1 item {t1_item}, "
+            f"but is cited for item {item_id} (wrong_item upstream)"
+        )
+        return
+    if pin is None:
+        report.problem(
+            f"{label}: generic envelope {file_rel} is cited without a manifest "
+            "content_hash pin (unanchored_evidence upstream)"
+        )
+        return
+    recorded = (envelope.get("provenance") or {}).get("input") or {}
+    if not isinstance(recorded, dict):
+        recorded = {}
+    artifact, reason = _resolve_generic_input(root, envelope_path, recorded.get("path"))
+    if artifact is None:
+        report.problem(f"{label}: generic envelope {file_rel}: {reason}")
+        return
+    actual_pin = recorded.get("content_hash")
+    if actual_pin != pin:
+        report.problem(
+            f"{label}: pinned content_hash {pin} != envelope's recorded "
+            f"provenance.input.content_hash {actual_pin}"
+        )
+        return
+    if not artifact.is_file():
+        report.problem(
+            f"{label}: envelope's audited artifact {artifact} does not exist — "
+            "the pinned citation has nothing fresh to point at"
+        )
+        return
+    artifact_hash = sha256_file(artifact)
+    if artifact_hash != pin:
+        report.problem(
+            f"{label}: STALE — audited artifact {artifact} now hashes to "
+            f"{artifact_hash}, but the citation (and its envelope) pin {pin}; "
+            "re-audit, update the envelope and the manifest pin, and regrade"
+        )
+        return
+    report.checked += 1
+
+
+def _check_entry(root: Path, label: str, entry: Any, report: Report, item_id: str = "") -> None:
     """Validate one evidence entry: a path string or {file, content_hash?}."""
     if isinstance(entry, str):
         file_rel, pin = entry, None
@@ -106,6 +203,14 @@ def _check_entry(root: Path, label: str, entry: Any, report: Report) -> None:
         envelope = json.loads(envelope_path.read_text())
     except json.JSONDecodeError as exc:
         report.problem(f"{label}: cited envelope {file_rel} is not valid JSON: {exc}")
+        return
+    if not isinstance(envelope, dict):
+        report.problem(f"{label}: cited envelope {file_rel} is not a JSON object")
+        return
+    if envelope.get("kind") == "generic" or "t1_item" in envelope:
+        _check_generic_entry(
+            root, label, item_id, file_rel, pin, envelope_path, envelope, report
+        )
         return
     if pin is None:
         report.note(
@@ -175,9 +280,11 @@ def check_citations(root: Path, manifest_path: Path, manifest: dict, report: Rep
                 )
                 continue
             for i, element in enumerate(entry):
-                _check_entry(root, f"manifest evidence['{item_id}'][{i}]", element, report)
+                _check_entry(
+                    root, f"manifest evidence['{item_id}'][{i}]", element, report, item_id
+                )
         else:
-            _check_entry(root, f"manifest evidence['{item_id}']", entry, report)
+            _check_entry(root, f"manifest evidence['{item_id}']", entry, report, item_id)
 
 
 def main(argv: list[str] | None = None) -> int:

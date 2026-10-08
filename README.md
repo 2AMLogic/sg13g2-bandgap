@@ -223,6 +223,30 @@ layout/        GDS + DRC/LVS reports (klayout-tools driven)
 measurements/  silicon characterization (empty until tape-out)
 ```
 
+## Reproducing the results
+
+Every committed result has a documented re-derivation from a clean checkout;
+the exact commands live next to the artifact they reproduce. Prerequisites for the
+design/simulation paths: an SG13G2 PDK install pinned as in
+[`sim/pdk.json`](sim/pdk.json) (`IHP-Open-PDK` `v0.3.0`, `PDK_ROOT` pointing
+at the directory holding `ihp-sg13g2/`), `xschem`, and `ngspice` with the
+OSDI models built by `sim/tools/build-osdi.sh`.
+
+- **Netlists** (`design/netlist/*.spice` from `design/*.sch`): the headless
+  `xschem -n -x -q -r` commands in
+  [`design/README.md`](design/README.md#running-xschem--regenerating-the-netlist).
+- **Simulation results** (`sim/<experiment>/records/`): each experiment's
+  `run_*.sh` opens with its cold-start invocation, and its `README.md`
+  states the rationale and pass criteria; the index of experiments is in
+  [`sim/README.md`](sim/README.md). Grids can also be expressed as `klt sim`
+  requests (`sim/README.md`, "Corner-grid harness").
+- **Layout, DRC, LVS, PEX** (`layout/`): `layout/<cell>/generate.py` draws
+  each GDS and [`layout/README.md`](layout/README.md) documents the `klt`
+  invocations behind the committed reports.
+- **Tier verdict** (`manifests/`): `klt signoff --manifest
+  manifests/sg13g2-bandgap.json --format json`, per
+  [`manifests/README.md`](manifests/README.md).
+
 ## Continuous integration
 
 A `hygiene` workflow (`.github/workflows/hygiene.yml`) runs on every push and

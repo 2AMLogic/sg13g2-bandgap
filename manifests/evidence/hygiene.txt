@@ -1,0 +1,59 @@
+# Repo-hygiene audit record -- T1 item 10 (Repo hygiene)
+#
+# Audited record, bound by manifests/evidence/hygiene.json (generic envelope,
+# t1_item 10). `klt signoff` re-hashes THIS FILE ONLY; the per-file hashes
+# below record what the auditor examined and are not recursively validated,
+# so a later edit to README.md or a workflow does not by itself turn the item
+# stale. Re-audit and regenerate this file (and envelope, manifest pin,
+# verdict) when any listed file changes materially.
+#
+# Audited base commit : b6d79020f0463a0a1e67c0209827eecc540dfcfe plus the README "Reproducing the results"
+#                       section added by the same change (item 10's
+#                       reproduction criterion was NOT met before it)
+# Audit date          : 2026-10-08
+# Checklist text      : "a README stating what the block is, its spec table,
+#                        and how to reproduce every result; a license; CI that
+#                        at minimum keeps the harness and evidence formats valid."
+
+## README.md sections (top-level README)
+what the block is   : opening paragraphs, "Why this block, on this PDK"
+spec table          : "Target specification" (ratified; rows: Output reference,
+                      Trim, Temp coefficient, PSRR @ DC, Supply, Iq, Startup)
+reproduction        : "Reproducing the results" -- points at design/README.md
+                      (netlist export), sim/README.md + each sim/<exp>/run_*.sh
+                      header (cold-start), layout/README.md ("Reproducing"),
+                      manifests/README.md (tier verdict). Audited for presence
+                      and accuracy of the pointers; the pointed-to cold-start
+                      commands were NOT executed (see item 9, left uncited).
+repo layout / CI / license : "Repo layout", "Continuous integration", "License"
+
+## License
+LICENSE : Apache License 2.0 (README "License" section links it)
+
+## CI -- .github/workflows/
+hygiene.yml : jobs `hygiene` (decision-record format, repo structure, evidence
+              checker self-test, PEX generator self-test, loop-gain solve-quality
+              self-test, klt-sim harness self-test, evidence formats + freshness
+              with --require-append-only) and `signoff-manifest` (signoff
+              checker self-test, verdict-of-record freshness at the pinned klt).
+sticky-blocked.yml : tracker-state maintenance, not a validity check.
+Local run at audit: `python3 .github/scripts/check_evidence_formats.py
+--require-append-only` -> OK, 175 evidence artifacts checked.
+
+## Files examined (sha256)
+e62dcbb568f4243af3e859b662d44a39fc3b059f59aa6ba152aa057ebf1583ab  README.md
+cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  LICENSE
+6e97672db314b4f66a71ba73e467d0231f8597384f6d0b01b399f4170f247a31  design/README.md
+0b0910b7e3e7a44ebb1ceebe227fa16d28835bcffc42b7149708c095796ee32c  sim/README.md
+73f759f84f6a068b5e77c4f04064210c21449b034e8264b18af3d48c70bbb77d  layout/README.md
+bc5fc34975641c15b5dbfb7dc27b7fa940968a419fcb40ebca5666b80e22936c  .github/workflows/README.md
+cca64c2b36a3c41280606a238aa2e0cb151b3d3f7fc447cf7d064949de2d8a20  .github/workflows/hygiene.yml
+58ab0f7a9a14aba076399f035609ed3325757ad5231394d9f8be2d2f3dafbb87  .github/workflows/sticky-blocked.yml
+
+## Scripts the workflows run
+966dad773b9b2b2afcd3650ae557ea6aa3ee27b3ce3f7fa599584dfd07440e95  .github/scripts/check-decision-records.sh
+b9220cf2f299adee49f38482c1d03e69f88b71301c6e2d7acaac9f06e3c65ddf  .github/scripts/check-repo-structure.sh
+ea6852c510c21d02d2f74b00a83c45375d497998f3e64e8300330f96b0595929  .github/scripts/check_evidence_formats.py
+e435a8c5976a7d0029ec83b1e44a31d6291e84623e99da3d6096e212057c63b0  .github/scripts/test_check_evidence_formats.py
+986da269733ca0c3e513d822b9baca8d8f3ef9804c5c98b5e0bff00ed50df8da  .github/scripts/check_signoff_manifest.py
+7c6544b0b1454768eaea9cb3862718221cb06b39bc2b9b170c01fd877917fad3  .github/scripts/test_check_signoff_manifest.py
