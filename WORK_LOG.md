@@ -6,6 +6,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-08
+
+- **PR #296**: chore: pin tracker-state-comment helper as repo-owned (#295)
+- **Issue #295** (closed): Orphan helper .loom/scripts/tracker-state-comment.sh: upstream it or pin it
+
 ### 2026-10-04
 
 - **PR #293**: sim(pex): re-run three of the five PEX grids through the klt-sim batch bridge (part of #278)
@@ -155,4 +160,3 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 - **Issue #198** (closed): sim: dedupe .op voltage-extraction idiom across 3 run_pvt_sweep.sh scripts
 - **Issue #196** (closed): sim: dedupe .measure grep/awk extraction idiom across run_pvt_sweep.sh into sim/lib
 - **Issue #55** (closed): Champion: Merge-Risk Hold Digest
-
