@@ -373,6 +373,30 @@ def main() -> int:
         passes=False, fragment="pinned content_hash",
         envelope=generic_envelope(content_hash="sha256:" + "2" * 64),
     )
+    # Item 8 is not in upstream's anchored set {1, 2, 9, 10}
+    # (klayout_tools/signoff.py @ 3a75c3ae): a bare generic envelope with no
+    # t1_item is accepted, but one declaring another item is still wrong_item.
+    generic_case(
+        "case 24: item-8 generic envelope without t1_item passes",
+        passes=True, fragment="OK", item="8",
+        envelope=generic_envelope(t1_item=None),
+    )
+    generic_case(
+        "case 25: item-8 generic envelope declaring t1_item 9 -> wrong_item",
+        passes=False, fragment="wrong_item", item="8",
+        envelope=generic_envelope(t1_item=9),
+    )
+    generic_case(
+        "case 26: item-8 bare generic envelope, unpinned, is noted not failed",
+        passes=True, fragment="accepted upstream for a non-anchored item",
+        item="8", envelope=generic_envelope(t1_item=None), pin=None,
+    )
+    generic_case(
+        "case 27: item-8 bare generic envelope, inventory edited -> STALE",
+        passes=False, fragment="STALE", item="8",
+        envelope=generic_envelope(t1_item=None),
+        inventory=b"edited after attestation\n",
+    )
 
     if failures:
         print(f"\n{failures} case(s) failed", file=sys.stderr)

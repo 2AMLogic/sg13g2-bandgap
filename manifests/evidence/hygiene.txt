@@ -11,6 +11,9 @@
 #                       section added by the same change (item 10's
 #                       reproduction criterion was NOT met before it)
 # Audit date          : 2026-10-08
+# Script hashes       : the two signoff-checker entries below were refreshed
+#                       after the item-8 generic-binding fix (PR #306 review);
+#                       no other listed file changed
 # Checklist text      : "a README stating what the block is, its spec table,
 #                        and how to reproduce every result; a license; CI that
 #                        at minimum keeps the harness and evidence formats valid."
@@ -55,5 +58,5 @@ cca64c2b36a3c41280606a238aa2e0cb151b3d3f7fc447cf7d064949de2d8a20  .github/workfl
 b9220cf2f299adee49f38482c1d03e69f88b71301c6e2d7acaac9f06e3c65ddf  .github/scripts/check-repo-structure.sh
 ea6852c510c21d02d2f74b00a83c45375d497998f3e64e8300330f96b0595929  .github/scripts/check_evidence_formats.py
 e435a8c5976a7d0029ec83b1e44a31d6291e84623e99da3d6096e212057c63b0  .github/scripts/test_check_evidence_formats.py
-986da269733ca0c3e513d822b9baca8d8f3ef9804c5c98b5e0bff00ed50df8da  .github/scripts/check_signoff_manifest.py
-7c6544b0b1454768eaea9cb3862718221cb06b39bc2b9b170c01fd877917fad3  .github/scripts/test_check_signoff_manifest.py
+ae6c1b06245a477dee971c2cd6b3ebbabcfe43fbcee00e1e1b2b96b92fd7067a  .github/scripts/check_signoff_manifest.py
+141ace40000bcc79be6bc97088a67ff2c23279c69dec71b5a2cbc89d69a7a3eb  .github/scripts/test_check_signoff_manifest.py

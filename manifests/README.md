@@ -175,8 +175,13 @@ artifact that envelope names (the GDS, or for an artifact-anchored `generic`
 envelope the file named by its `provenance.input.path` — a string resolves
 beside the envelope, a `{path, scope: "repo"}` object against the repository
 root) — a manifest citing an artifact that has since changed fails rather
-than rotting. A `generic` citation must also declare the `t1_item` it is
-cited for, and must be pinned; absolute or repository-escaping paths are
+than rotting. A `generic` citation for one of the artifact-anchored items
+(1, 2, 9, 10 — upstream's `_ITEMS_REQUIRING_ANCHORED_GENERIC_EVIDENCE` at the
+pin) must also declare the `t1_item` it is cited for, name a
+`provenance.input.path`, and be pinned. A `generic` citation for item 8 may
+omit `t1_item`, as upstream accepts; if it declares one, it must equal 8
+(`wrong_item` otherwise), and if it is pinned and names a path, that artifact
+is re-hashed the same way. Absolute or repository-escaping paths are
 rejected. Native and compound (item 11) citations are checked as before. The `signoff-manifest` job in
 `.github/workflows/hygiene.yml` enforces all of this:
 `.github/scripts/check_signoff_manifest.py` re-runs the grade and requires

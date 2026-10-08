@@ -28,10 +28,17 @@ PDK, klayout, ngspice, and never mints evidence) and requires:
    9, 10) are checked the same three ways, with the audited artifact named
    by `provenance.input.path` instead of a top-level `file`: a string
    resolves beside the envelope, a `{"path", "scope": "repo"}` object
-   resolves against the repository root. A generic envelope must declare an
-   integer `t1_item` equal to the item it is cited for, must have a usable
-   path, and must be pinned in the manifest; any of those missing, or a
-   missing/edited artifact, fails.
+   resolves against the repository root. Mirroring upstream's
+   `_ITEMS_REQUIRING_ANCHORED_GENERIC_EVIDENCE`, a generic envelope cited
+   for an anchored item (1, 2, 9, 10) must declare an integer `t1_item`
+   equal to that item, must have a usable path, and must be pinned in the
+   manifest; any of those missing, or a missing/edited artifact, fails.
+   For any other item (item 8) a declared `t1_item` must still be an
+   integer equal to the cited item (`wrong_item` / `unanchored_evidence`
+   otherwise), but an envelope that declares none is accepted, as upstream
+   accepts it; if pinned, its recorded hash must match the pin and, when it
+   names a `provenance.input.path`, that artifact must still hash to it.
+   Unpinned, it is noted, not failed.
 
 Entries cited without a pin are noted, not failed: `klt lvs` envelopes
 record no `provenance.input` block (upstream JSON contract), so an LVS
@@ -53,6 +60,12 @@ from _ci_common import Report, sha256_file as _sha256_file_bare
 #: `klt signoff --manifest` exit codes that are valid grades (see
 #: klayout_tools/cli/signoff_cmd.py: 0 = tier T1, 3 = graded, not-T1).
 VALID_GRADE_EXITS = {0, 3}
+
+#: T1 items whose `generic` evidence must be artifact-anchored (integer
+#: `t1_item`, usable `provenance.input.path`, manifest pin). Mirrors
+#: `_ITEMS_REQUIRING_ANCHORED_GENERIC_EVIDENCE` in klayout_tools/signoff.py
+#: at the pinned klt (3a75c3ae); item 8 is deliberately not in it.
+ANCHORED_GENERIC_ITEMS = {"1", "2", "9", "10"}
 
 
 def sha256_file(path: Path) -> str:
@@ -135,29 +148,68 @@ def _check_generic_entry(
     root: Path, label: str, item_id: str, file_rel: str, pin: Any,
     envelope_path: Path, envelope: dict, report: Report,
 ) -> None:
-    """Validate an artifact-anchored generic envelope (items 1, 2, 9, 10)."""
+    """Validate a generic envelope against upstream's item binding (#2718).
+
+    Anchored items (ANCHORED_GENERIC_ITEMS: 1, 2, 9, 10) require an integer
+    `t1_item` equal to the cited item, a manifest pin and a usable
+    `provenance.input.path` whose artifact still hashes to the pin. Other
+    items (item 8) accept an envelope with no `t1_item`; a declared one
+    must still match, and a pinned citation is freshness-checked as far as
+    the envelope allows.
+    """
+    anchored = str(item_id) in ANCHORED_GENERIC_ITEMS
     t1_item = envelope.get("t1_item")
-    if isinstance(t1_item, bool) or not isinstance(t1_item, int):
+    if t1_item is None:
+        if anchored:
+            report.problem(
+                f"{label}: generic envelope {file_rel} declares no integer t1_item "
+                "(unanchored_evidence upstream)"
+            )
+            return
+    elif isinstance(t1_item, bool) or not isinstance(t1_item, int):
         report.problem(
-            f"{label}: generic envelope {file_rel} declares no integer t1_item "
-            "(unanchored_evidence upstream)"
+            f"{label}: generic envelope {file_rel} declares a non-integer "
+            f"t1_item {t1_item!r} (unanchored_evidence upstream)"
         )
         return
-    if str(t1_item) != str(item_id):
+    elif str(t1_item) != str(item_id):
         report.problem(
             f"{label}: generic envelope {file_rel} attests T1 item {t1_item}, "
             f"but is cited for item {item_id} (wrong_item upstream)"
         )
         return
     if pin is None:
-        report.problem(
-            f"{label}: generic envelope {file_rel} is cited without a manifest "
-            "content_hash pin (unanchored_evidence upstream)"
-        )
+        if anchored:
+            report.problem(
+                f"{label}: generic envelope {file_rel} is cited without a manifest "
+                "content_hash pin (unanchored_evidence upstream)"
+            )
+        else:
+            report.note(
+                f"{label}: generic envelope {file_rel} cited without a "
+                "content_hash pin (accepted upstream for a non-anchored item)"
+            )
         return
     recorded = (envelope.get("provenance") or {}).get("input") or {}
     if not isinstance(recorded, dict):
         recorded = {}
+    if not anchored and recorded.get("path") is None:
+        # Upstream compares the pin to the envelope's own recorded hash only;
+        # with no named artifact there is nothing further to re-hash.
+        actual_pin = recorded.get("content_hash")
+        if actual_pin != pin:
+            report.problem(
+                f"{label}: pinned content_hash {pin} != envelope's recorded "
+                f"provenance.input.content_hash {actual_pin}"
+            )
+            return
+        report.note(
+            f"{label}: generic envelope {file_rel} names no "
+            "provenance.input.path; pin matches its recorded hash, artifact "
+            "not re-hashed"
+        )
+        report.checked += 1
+        return
     artifact, reason = _resolve_generic_input(root, envelope_path, recorded.get("path"))
     if artifact is None:
         report.problem(f"{label}: generic envelope {file_rel}: {reason}")
