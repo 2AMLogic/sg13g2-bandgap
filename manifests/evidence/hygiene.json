@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 10,
+  "summary": "repo hygiene audited: README (what the block is, spec table, reproduction), Apache-2.0 LICENSE, hygiene.yml CI (decision records, repo structure, evidence formats, signoff manifest); inventory of examined files and hashes recorded",
+  "source": "hygiene.txt",
+  "provenance": {
+    "klt_version": "0.6.0+g3a75c3ae705b",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:7a98b63f993f83dc83fe681b2e5348dbf9addc71f96bcedde80e2b345089628b",
+      "path": "hygiene.txt"
+    }
+  }
+}

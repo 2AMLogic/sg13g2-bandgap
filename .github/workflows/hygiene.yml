@@ -95,7 +95,7 @@ jobs:
         # checklist the committed verdict was graded against (PyPI releases up
         # to 0.5.0 predate T1 item 11). Bump the rev => re-run klt signoff and
         # commit the new *.signoff.json in the same PR, or this job fails.
-        run: python3 -m pip install "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@2b1e55e51bb803c082e8857da44687f3e37ebfc0"
+        run: python3 -m pip install "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@3a75c3ae705b7ad3803625255de93bcd982e70c6"
 
       - name: Signoff checker self-test
         # Runs first, same discipline as the evidence checker: a checker that

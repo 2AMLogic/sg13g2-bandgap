@@ -60,6 +60,47 @@ STUB_REPORT = {
 }
 
 
+INVENTORY_BYTES = b"design sources inventory v1\n"
+INVENTORY_HASH = "sha256:" + __import__("hashlib").sha256(INVENTORY_BYTES).hexdigest()
+
+
+def generic_envelope(*, t1_item=1, path="inventory.txt", content_hash=INVENTORY_HASH,
+                     recorded_path=True):
+    """An artifact-anchored generic envelope (klayout-tools#2718)."""
+    inp = {"content_hash": content_hash}
+    if recorded_path:
+        inp["path"] = path
+    env = {
+        "schema_version": 1,
+        "kind": "generic",
+        "status": "pass",
+        "summary": "fixture attestation",
+        "source": "inventory.txt",
+        "provenance": {"klt_version": "0", "klayout_version": None,
+                       "pdk": None, "deck": None, "input": inp},
+    }
+    if t1_item is not None:
+        env["t1_item"] = t1_item
+    return env
+
+
+def add_generic(t: Path, *, item: str = "1", envelope=None, inventory: bytes = INVENTORY_BYTES,
+                pin=INVENTORY_HASH, entry_extra_evidence=None) -> None:
+    """Add manifests/evidence/{inventory.txt,att.json} and cite it for `item`."""
+    ev = t / "manifests" / "evidence"
+    ev.mkdir(parents=True, exist_ok=True)
+    if inventory is not None:
+        (ev / "inventory.txt").write_bytes(inventory)
+    (ev / "att.json").write_text(json.dumps(envelope or generic_envelope(t1_item=int(item))))
+    mpath = t / "manifests" / "fixture-block.json"
+    m = json.loads(mpath.read_text())
+    entry = {"file": "manifests/evidence/att.json"}
+    if pin is not None:
+        entry["content_hash"] = pin
+    m["evidence"][item] = entry
+    mpath.write_text(json.dumps(m))
+
+
 def build_fixture(t: Path, *, gds: bytes = GDS_BYTES, manifest_evidence=None,
                   committed_report=None, stub_exit: int = 3) -> None:
     layout = t / "layout" / "fixture_cell"
@@ -258,6 +299,104 @@ def main() -> int:
             "case 10: envelope input named repo-rooted resolves and passes",
             run_checker(t), passes=True, message_fragment="1",
         )
+
+    # ---- artifact-anchored generic envelopes (klayout-tools#2718) ----
+    def generic_case(name, *, passes, fragment, item="1", **kw):
+        nonlocal failures
+        with tempfile.TemporaryDirectory() as tmp:
+            t = Path(tmp)
+            build_fixture(t)
+            mutate = kw.pop("mutate", None)
+            add_generic(t, item=item, **kw)
+            if mutate:
+                mutate(t)
+            failures += not expect(name, run_checker(t), passes=passes,
+                                   message_fragment=fragment)
+
+    generic_case("case 11: generic envelope, envelope-relative path, passes",
+                 passes=True, fragment="OK")
+    generic_case(
+        "case 12: generic envelope, repo-scoped path object, passes",
+        passes=True, fragment="OK",
+        envelope=generic_envelope(path={"path": "manifests/evidence/inventory.txt",
+                                        "scope": "repo"}),
+    )
+    generic_case(
+        "case 13: inventory edited after the envelope was written -> STALE",
+        passes=False, fragment="STALE", inventory=b"edited after attestation\n",
+    )
+    generic_case(
+        "case 14: manifest pin disagrees with the envelope's recorded hash",
+        passes=False, fragment="pinned content_hash",
+        pin="sha256:" + "1" * 64,
+    )
+    generic_case(
+        "case 15: audited artifact missing",
+        passes=False, fragment="does not exist", inventory=None,
+    )
+    generic_case(
+        "case 16: generic envelope with no recorded input path",
+        passes=False, fragment="provenance.input.path must be",
+        envelope=generic_envelope(recorded_path=False),
+    )
+    generic_case(
+        "case 17: malformed path object (scope not repo)",
+        passes=False, fragment="provenance.input.path must be",
+        envelope=generic_envelope(path={"path": "x", "scope": "external"}),
+    )
+    generic_case(
+        "case 18: absolute path rejected",
+        passes=False, fragment="is absolute",
+        envelope=generic_envelope(path="/etc/hostname"),
+    )
+    generic_case(
+        "case 19: path escaping the repository rejected",
+        passes=False, fragment="escapes the repository",
+        envelope=generic_envelope(path="../../../../../../etc/hostname"),
+    )
+    generic_case(
+        "case 20: generic envelope cited for the wrong item",
+        passes=False, fragment="wrong_item", item="10",
+        envelope=generic_envelope(t1_item=9),
+    )
+    generic_case(
+        "case 21: generic envelope with no t1_item",
+        passes=False, fragment="declares no integer t1_item",
+        envelope=generic_envelope(t1_item=None),
+    )
+    generic_case(
+        "case 22: generic envelope cited without a manifest pin",
+        passes=False, fragment="without a manifest content_hash pin", pin=None,
+    )
+    generic_case(
+        "case 23: generic envelope pin disagrees with its own recorded hash",
+        passes=False, fragment="pinned content_hash",
+        envelope=generic_envelope(content_hash="sha256:" + "2" * 64),
+    )
+    # Item 8 is not in upstream's anchored set {1, 2, 9, 10}
+    # (klayout_tools/signoff.py @ 3a75c3ae): a bare generic envelope with no
+    # t1_item is accepted, but one declaring another item is still wrong_item.
+    generic_case(
+        "case 24: item-8 generic envelope without t1_item passes",
+        passes=True, fragment="OK", item="8",
+        envelope=generic_envelope(t1_item=None),
+    )
+    generic_case(
+        "case 25: item-8 generic envelope declaring t1_item 9 -> wrong_item",
+        passes=False, fragment="wrong_item", item="8",
+        envelope=generic_envelope(t1_item=9),
+    )
+    generic_case(
+        "case 26: item-8 bare generic envelope, unpinned, is noted not failed",
+        passes=True, fragment="accepted upstream for a non-anchored item",
+        item="8", envelope=generic_envelope(t1_item=None), pin=None,
+    )
+    generic_case(
+        "case 27: item-8 bare generic envelope, inventory edited -> STALE",
+        passes=False, fragment="STALE", item="8",
+        envelope=generic_envelope(t1_item=None),
+        inventory=b"edited after attestation\n",
+    )
 
     if failures:
         print(f"\n{failures} case(s) failed", file=sys.stderr)
