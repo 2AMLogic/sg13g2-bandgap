@@ -33,7 +33,7 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   DRC/LVS/extraction evidence — including the byte-identical net sets that
   are the direct proof no riser merged into a neighbour — and the one
   four-net short an intermediate draft produced that `klt drc` called clean.
-- `2026-09-characterization-report/` — issue #15 (T1 checklist item 8): the
+- `2026-09-characterization-report/` — **superseded by `2026-10-characterization-report/`** (below; kept untouched as history). Issue #15 (T1 checklist item 8): the
   aggregated per-spec-row characterization report #5's verdict table marked
   missing. One honest verdict per ratified spec row (Output reference
   unmet-and-unsettled per the two-key outcome, re-opened as #221; TC, PSRR
@@ -41,3 +41,16 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   its specific committed `sim/` evidence record — all nine citations
   re-verified most-current at `main`@`77820fc` — with headline numbers
   re-derived from the records' own CSVs.
+- `2026-10-characterization-report/` — issue #300 (T1 checklist item 8): the
+  current aggregated characterization report, replacing the September one.
+  One entry per row of the spec table as it stands at the audited commit
+  `b89f4c5f` (seven rows; Output reference reported as its nominal,
+  untrimmed and trimmed lines), each with bound, verdict, binding corner,
+  statistical or not, the newest committed `sim/` record behind it, and
+  whether that record was taken on the trim-bearing netlist or "predates the
+  current netlist" (four waived records, #273/#275). Every quoted number is
+  re-derived from its CSV by `spotcheck.py`, with no new simulation. The
+  trimmed +/-0.5% line is reported as measured unmet and its redesign
+  (#303) as unsettled. `envelope.json` is the `generic` evidence envelope
+  `manifests/sg13g2-bandgap.json` cites for item 8, pinned to the report's
+  sha256.
