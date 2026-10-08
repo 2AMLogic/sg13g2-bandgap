@@ -14,8 +14,8 @@ that produced it.
 - `sg13g2-bandgap.signoff.json` — the committed **verdict of record**: the
   exact output of `klt signoff --manifest manifests/sg13g2-bandgap.json
   --format json`.
-  As of the commit that last regenerated it (#299): **tier: none — 4/11 T1
-  items met** (items 1, 2, 3, 10; read the count from the report's
+  As of the commit that last regenerated it (#300): **tier: none — 5/11 T1
+  items met** (items 1, 2, 3, 8, 10; read the count from the report's
   `t1_met_count`, not from this sentence). That is the honest state; an
   all-`unmet` manifest is a correct result, and nothing here inflates it.
 - `evidence/` — the **audited inventories** (`*.txt`) and their
@@ -116,6 +116,34 @@ The binding used here:
   spec/GDS freshness anchors are what `check_evidence_formats.py`
   re-derives.
 
+- **Item 8 (Characterization report) — cited: `measurements/2026-10-characterization-report/envelope.json`**
+  (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
+  `README.md` beside it, pinned to that report's sha256). The report is
+  [`measurements/2026-10-characterization-report/README.md`](../measurements/2026-10-characterization-report/README.md),
+  stamped at the audited commit `b89f4c5f`: one entry per row of the
+  `README.md` target-spec table (the Output-reference row as its nominal,
+  untrimmed and trimmed lines), each with bound, verdict, binding corner,
+  whether the verdict is statistical, the newest committed `sim/` record
+  behind it, and a current-or-"predates the current netlist" mark; every
+  quoted number is re-derived from its CSV by the report's `spotcheck.py`.
+  **What an item 8 `met` means here — and what it does not.** It means the
+  report exists, is current at the stamped commit and cites its evidence. It
+  is **not** a statement that every spec row passes: the report itself
+  records the trimmed ±0.5% line as measured unmet (3σ ≈ 2.6%), the PSRR
+  row as met by 0.0013 dB, and four records as stale against the
+  trim-bearing netlist (`sim/evidence-freshness-waivers.json`). Whether the
+  block conforms to its spec is item 5's question, and item 5 stays unmet.
+  **The pin binds the report, not the envelope**: the grader re-hashes the
+  report file, so editing the report without regenerating the envelope and
+  this manifest's pin fails `check_signoff_manifest.py` (the exact-bytes
+  freshness is tested, not assumed). Like items 1 and 10, "current" is
+  attested at the stamped commit, not tracked transitively: a later change
+  to `design/` or a new `sim/` record does not by itself stale the pin, so
+  whoever changes the DUT must revisit the report (the report's "Gaps"
+  section names #303 as the change that would force it). The September
+  report (`2026-09-characterization-report/`) is superseded and kept as
+  history.
+
 Items deliberately left **uncited** (they render `unmet` / `no_evidence`,
 which is the honest machine-readable gap — repo evidence exists for several
 of them, but no `klt` envelope grades it yet):
@@ -132,10 +160,6 @@ of them, but no `klt` envelope grades it yet):
 - **7 (Post-layout):** PEX netlists and post-layout PEX sim records exist
   (`layout/*/*.pex.spice`, `sim/closed-loop-*-pex/`) — but no `klt pex`
   delta report; item 7 rejects every other evidence kind by construction.
-- **8 (Characterization report):** the aggregated per-spec-row report now
-  exists (`measurements/2026-09-characterization-report/`, #227 closing
-  #15) — but item 8 grades only the purpose-built `generic` envelope
-  (upstream issue #1152), which this repo has not produced.
 - **9 (Testbenches) — left uncited after the #299 audit.** The upstream
   contract now allows an artifact-anchored attestation, but the checklist
   asks for "a documented cold-start invocation **a third party can run**"
