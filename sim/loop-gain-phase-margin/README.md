@@ -654,7 +654,8 @@ Requires a committed `../closed-loop-startup/records/*.csv` to exist (see
 "Nodeset provenance" above) — already true in this repo; no separate
 `closed-loop-startup` run is required first.
 
-Solve-quality regression tests (read-only replay of committed responses):
+Solve-quality regression tests (read-only replay of committed responses; also
+run by `.github/workflows/hygiene.yml` on every push and PR, issue #297):
 
 ```bash
 python3 sim/loop-gain-phase-margin/tools/test_solve_quality.py

@@ -31,6 +31,22 @@ structure/hygiene that already exists in this repo today — nothing more.
   rejects each one, plus that an undamaged tree passes. Runs **before** the
   checker itself: a format checker that cannot fail is indistinguishable
   from no checker at all.
+- **`sim/tools/test_gen_pex_netlist_body.py`** — self-test of the PEX
+  netlist-body generator (#278): the committed extractions generate a
+  closed 255-unit ladder chain.
+- **`sim/loop-gain-phase-margin/tools/test_solve_quality.py`** — regression
+  test of the loop-gain solve-quality gate (#289, wired in by #297). It
+  replays committed corrupted and clean AC responses, read-only, through
+  `solve_quality.py` and the `klt_trim_axis.py` recorder and asserts the
+  corrupted ones are rejected and the clean ones accepted, so the guard
+  against the 36.3° / 43.9° artifacts cannot rot silently.
+- **`sim/harness/test_harness_transformers.py`** — self-test of the
+  `klt sim` harness transforms (#297) on tiny temp-dir fixtures: shard
+  order/relabelling and recomputed counts (`merge_batch_shards.py`),
+  runner-include and PDK-root rewriting (`fixup_batch_report.py`), PVT
+  derived columns and closed-loop verdict boundaries
+  (`enrich_pvt_report.py`), and corner-id formatting, 6-s.f. CSV cells,
+  include inlining and `${PDK_ROOT}` redaction (`klt_sim_evidence.py`).
 - **`.github/scripts/check_evidence_formats.py`** — the evidence-format and
   freshness gate. Four things, all headless and PDK-free:
   1. **`sim/` record format** — every `sim/<slug>/records/<record-id>.md`
@@ -70,13 +86,16 @@ structure/hygiene that already exists in this repo today — nothing more.
   evidence — `sim/` results are produced deliberately on a machine with the
   PDK, never by a CI robot.
 
-All four checks are plain bash/python3 scripts under `.github/scripts/`
-(stdlib only, no venv), runnable locally the same way CI runs them:
+All of these are plain bash/python3 scripts (stdlib only, no venv, no
+ngspice, no PDK), runnable locally the same way CI runs them:
 
 ```bash
 .github/scripts/check-decision-records.sh
 .github/scripts/check-repo-structure.sh
 python3 .github/scripts/test_check_evidence_formats.py
+python3 sim/tools/test_gen_pex_netlist_body.py
+python3 sim/loop-gain-phase-margin/tools/test_solve_quality.py
+python3 sim/harness/test_harness_transformers.py
 python3 .github/scripts/check_evidence_formats.py
 ```
 
