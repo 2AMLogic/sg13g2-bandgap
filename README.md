@@ -161,9 +161,12 @@ so the honest per-row status is:
   the nominal die's own drift (~0.43%) already exceeds DR-0011's 0.20%
   budget input, which was derived from convergence-aided TC evidence
   (the aids-free A/B is documented in
-  `sim/closed-loop-vref-boxtc-trim/README.md`). The row's disposition is
-  tracked in **#265** (superseding record or second trim point,
-  two-key-gated — no silent relaxation); the committed evidence also
+  `sim/closed-loop-vref-boxtc-trim/README.md`). The spec row is **not
+  relaxed**: the ±4.5% re-cast (PR #270, closed) was declined by operator
+  ruling 2026-10-08 after both ratification keys refused it, and the
+  disposition is the design fix tracked in **#303** (resize the core
+  against mismatch and re-aim the trim; one-point trim only per `0014`);
+  the committed evidence also
   still demonstrates the untrimmed ±16% line
   (`sim/closed-loop-vref-mc/`, issue #215).
 
