@@ -19,7 +19,7 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#265**: Trimmed-line disposition: DR-0011's +/-0.5% does not hold on #229's aids-free trim-domain MC evidence
 
 ## In Progress
 
@@ -37,7 +37,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#270**: spec(0012): re-cast the trimmed line to ±4.5% (3σ) on #229's aids-free trim-domain evidence
+_None._
 
 ## Proposed
 
@@ -62,10 +62,10 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
-| Ready (`loom:issue`) | 0 |
+| Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
+| Approved PRs awaiting merge | 0 |
 | Curated | 4 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
