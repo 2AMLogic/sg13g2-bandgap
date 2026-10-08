@@ -19,13 +19,14 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#265**: Trimmed-line disposition: DR-0011's +/-0.5% does not hold on #229's aids-free trim-domain MC evidence
+_None._
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#299**: signoff: bind T1 items 9 and 10 (and re-bind item 1) to audited artifacts (klayout-tools#2718 landed)
+- **#300**: measurements: refresh the aggregated characterization report against the current spec and trim-bearing core, and wrap it for T1 item 8
 
 ## PRs Awaiting Review
 
@@ -44,9 +45,10 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#4**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
-- **#265**: Trimmed-line disposition: DR-0011's +/-0.5% does not hold on #229's aids-free trim-domain MC evidence *(curated)*
 - **#273**: Finish the #264 refresh: closed-loop-vref-mc (1800 draws) and closed-loop-vref-pvt-boxtc (120 transient points) *(curated)*
 - **#278**: Re-run the five PEX experiments through the klt sim harness (the remaining half of #275) *(curated)*
+- **#299**: signoff: bind T1 items 9 and 10 (and re-bind item 1) to audited artifacts (klayout-tools#2718 landed) *(curated)*
+- **#300**: measurements: refresh the aggregated characterization report against the current spec and trim-bearing core, and wrap it for T1 item 8 *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -62,11 +64,11 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
-| Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 0 |
+| Ready (`loom:issue`) | 0 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 4 |
+| Curated | 5 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
