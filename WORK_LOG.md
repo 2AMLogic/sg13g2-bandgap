@@ -8,6 +8,10 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-10-09
 
+- **PR #316**: ci: detect dependency drift in the active characterization report (#315)
+- **Issue #315** (closed): ci: detect dependency drift in the active characterization summary
+- **PR #314**: design: opt-in netlist drift check (#312)
+- **Issue #312** (closed): design: add a netlist-vs-schematic drift check and fix the regen docs (trim missing, author paths embedded)
 - **PR #311**: sim: bind PEX simulation records to their consumed extraction hashes
 - **Issue #309** (closed): sim: bind PEX simulation records to their consumed extraction hashes
 

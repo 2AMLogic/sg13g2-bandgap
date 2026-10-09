@@ -25,8 +25,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#299**: signoff: bind T1 items 9 and 10 (and re-bind item 1) to audited artifacts (klayout-tools#2718 landed)
-- **#300**: measurements: refresh the aggregated characterization report against the current spec and trim-bearing core, and wrap it for T1 item 8
+_None._
 
 ## PRs Awaiting Review
 
@@ -48,7 +47,7 @@ Issues carrying `loom:curated`.
 - **#273**: Finish the #264 refresh: closed-loop-vref-mc (1800 draws) and closed-loop-vref-pvt-boxtc (120 transient points) *(curated)*
 - **#278**: Re-run the five PEX experiments through the klt sim harness (the remaining half of #275) *(curated)*
 - **#299**: signoff: bind T1 items 9 and 10 (and re-bind item 1) to audited artifacts (klayout-tools#2718 landed) *(curated)*
-- **#300**: measurements: refresh the aggregated characterization report against the current spec and trim-bearing core, and wrap it for T1 item 8 *(curated)*
+- **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -65,7 +64,7 @@ _None._
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 2 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 5 |
