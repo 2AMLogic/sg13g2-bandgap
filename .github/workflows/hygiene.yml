@@ -71,6 +71,17 @@ jobs:
         # the merge base stops resolving (a skipped check reads as a pass).
         run: python3 .github/scripts/check_evidence_formats.py --require-append-only
 
+      - name: Characterization-report dependency checker self-test
+        # Issue #315: hermetic defect injection (changed DUT, newer record,
+        # changed bound, missing dependency, honest stale disclosure, ...).
+        run: python3 .github/scripts/test_check_report_dependencies.py
+
+      - name: Active characterization report dependencies
+        # Issue #315: the actively cited item-8 report's dependencies.json
+        # must still match the committed DUT, spec rows and newest records.
+        # Stdlib hashing/parsing only; never simulates or regenerates.
+        run: python3 .github/scripts/check_report_dependencies.py
+
   signoff-manifest:
     # Re-derives the block's T1 verdict of record (issue #226): re-runs
     # `klt signoff --manifest` over the committed block manifest and requires
