@@ -20,6 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import enrich_pvt_report as epr  # noqa: E402
+import extraction_binding as xb  # noqa: E402
 import fixup_batch_report as fbr  # noqa: E402
 import klt_sim_evidence as kse  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
@@ -490,6 +491,96 @@ class InlineDeckTests(TempDirCase):
         self.assertEqual(out.count("RA a 0 1"), 1)
         self.assertEqual(out.count("RB b 0 1"), 1)
         self.assertIn('.include "a.spice"', out)  # the back-edge stays a card
+
+
+class ExtractionBindingTests(TempDirCase):
+    """Issue #309: PEX records bind the extraction hashes captured at generation."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.pex = self.write("layout/c/c.pex.spice", "R1 a b 1\n")
+        self.design = self.write("design/netlist/c.spice", "XM1 a b c d m\n")
+
+    def test_capture_hashes_the_bytes_read(self) -> None:
+        entries, blobs = xb.capture([self.pex, self.design], self.tmp)
+        self.assertEqual([e["path"] for e in entries], ["layout/c/c.pex.spice", "design/netlist/c.spice"])
+        self.assertEqual(entries[0]["sha256"], xb.sha256_bytes(blobs["layout/c/c.pex.spice"]))
+
+    def test_source_changing_during_generation_is_rejected(self) -> None:
+        entries, _ = xb.capture([self.pex], self.tmp)
+        self.pex.write_text("R1 a b 2\n", encoding="utf-8")
+        with self.assertRaises(xb.BindingError):
+            xb.assert_unchanged(entries, self.tmp)
+
+    def test_missing_and_escaping_sources_rejected(self) -> None:
+        with self.assertRaises(xb.BindingError):
+            xb.capture([self.tmp / "layout/c/none.pex.spice"], self.tmp)
+        outside = self.tmp.parent / "outside.spice"
+        with self.assertRaises(xb.BindingError):
+            xb.capture([outside], self.tmp)
+        with self.assertRaises(xb.BindingError):
+            xb.capture([], self.tmp)
+
+    def test_load_captured_rejects_bad_documents(self) -> None:
+        good = {"schema": xb.SCHEMA, "sources": [{"path": "a/b", "sha256": "0" * 64}]}
+        for bad in (
+            {"schema": "other", "sources": good["sources"]},
+            {"schema": xb.SCHEMA, "sources": [{"path": "../x", "sha256": "0" * 64}]},
+            {"schema": xb.SCHEMA, "sources": [{"path": "/x", "sha256": "0" * 64}]},
+            {"schema": xb.SCHEMA, "sources": [{"path": "a", "sha256": "zz"}]},
+            {"schema": xb.SCHEMA, "sources": []},
+        ):
+            f = self.write("bad.json", json.dumps(bad))
+            with self.assertRaises(xb.BindingError, msg=str(bad)):
+                xb.load_captured([f], self.tmp)
+        f = self.write("good.json", json.dumps(good))
+        self.assertEqual(xb.load_captured([f], self.tmp)[0]["path"], "a/b")
+
+    def test_multiple_sources_merge_and_conflict(self) -> None:
+        a = self.write("a.json", json.dumps({"schema": xb.SCHEMA, "sources": [{"path": "x", "sha256": "1" * 64}]}))
+        b = self.write("b.json", json.dumps({"schema": xb.SCHEMA, "sources": [{"path": "y", "sha256": "2" * 64}]}))
+        c = self.write("c.json", json.dumps({"schema": xb.SCHEMA, "sources": [{"path": "x", "sha256": "3" * 64}]}))
+        self.assertEqual([e["path"] for e in xb.load_captured([a, b], self.tmp)], ["x", "y"])
+        with self.assertRaises(xb.BindingError):
+            xb.load_captured([a, c], self.tmp)
+
+    def test_record_field_lists_every_source(self) -> None:
+        entries, _ = xb.capture([self.pex, self.design], self.tmp)
+        text = "\n".join(xb.record_field_lines(entries))
+        for entry in entries:
+            self.assertIn(f"`{entry['path']}` sha256:{entry['sha256']}", text)
+
+    def test_pex_detection_and_emit_requires_binding(self) -> None:
+        self.assertTrue(kse.is_pex({}, Path("sim/closed-loop-vref-pvt-pex")))
+        self.assertTrue(kse.is_pex({}, Path("sim/closed-loop-vref-pvt-pex-boxtc")))
+        self.assertFalse(kse.is_pex({}, Path("sim/closed-loop-vref-pvt")))
+        self.assertFalse(kse.is_pex({"pex": False}, Path("sim/x-pex")))
+        report = {"corners": [{"process": "typ", "temperature_c": 27, "supply_v": {"vdd": 3.3},
+                               "status": "pass", "measurements": []}]}
+        exp = self.tmp / "sim" / "demo-pex"
+        with self.assertRaises(SystemExit):
+            kse.emit(report, {}, exp, self.tmp, "rid")
+        self.assertFalse(exp.exists())
+
+    def test_emit_rejects_drifted_source_before_writing(self) -> None:
+        entries, _ = xb.capture([self.pex], self.tmp)
+        self.pex.write_text("R1 a b 9\n", encoding="utf-8")
+        report = {"corners": [{"process": "typ", "temperature_c": 27, "supply_v": {"vdd": 3.3},
+                               "status": "pass", "measurements": []}]}
+        exp = self.tmp / "sim" / "demo-pex"
+        with self.assertRaises(SystemExit):
+            kse.emit(report, {}, exp, self.tmp, "rid", extraction=entries)
+        self.assertFalse(exp.exists())
+
+    def test_md_carries_binding_only_when_given(self) -> None:
+        entries, _ = xb.capture([self.pex], self.tmp)
+        spec = {"Experiment": "e", "Claim": "c", "PDK": "p", "request": "r",
+                "Corner matrix run": "m"}
+        with_binding = kse.build_md({}, spec, "rid", 1, 1, [], entries)
+        without = kse.build_md({}, spec, "rid", 1, 1, [])
+        self.assertIn("Extraction sources", with_binding)
+        self.assertIn("layout/c/c.pex.spice", with_binding)
+        self.assertNotIn("Extraction sources", without)
 
 
 if __name__ == "__main__":

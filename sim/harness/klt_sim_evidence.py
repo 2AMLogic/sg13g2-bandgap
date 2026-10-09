@@ -58,6 +58,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import extraction_binding as xb  # noqa: E402
+
 #: Relative-path forms `inline_deck` leaves alone: a model library under the
 #: PDK is referenced, never inlined (it is megabytes, host-resolved, and
 #: already pinned by identity in `sim/pdk.json` plus the report's own
@@ -272,6 +275,7 @@ def build_md(
     passed: int,
     total: int,
     failed: list[str],
+    extraction: list[dict] | None = None,
 ) -> str:
     import datetime
 
@@ -328,6 +332,8 @@ def build_md(
     )
     if failed:
         lines.append(f"- **Failed points**: {' '.join(failed)}")
+    if extraction:
+        lines.extend(xb.record_field_lines(extraction))
     lines.append("- **Links**:")
     lines.append(f"  - `klt sim` request: `{spec['request']}`")
     lines.append(f"  - Per-point generated netlists: `netlist-snapshots/{rid}/`")
@@ -341,6 +347,13 @@ def build_md(
     return "\n".join(lines)
 
 
+def is_pex(spec: dict, experiment: Path) -> bool:
+    """A post-layout experiment: spec says so, or the directory is named `*-pex*`."""
+    if "pex" in spec:
+        return bool(spec["pex"])
+    return re.search(r"(^|-)pex($|-)", experiment.name) is not None
+
+
 def emit(
     report: dict,
     spec: dict,
@@ -349,7 +362,27 @@ def emit(
     rid: str,
     *,
     dry_run: bool = False,
+    extraction: list[dict] | None = None,
 ) -> tuple[int, int]:
+    if is_pex(spec, experiment):
+        # A PEX record must say which extraction it consumed (issue #309).
+        # The hashes come from the bench-generation step, never from hashing
+        # today's files here; publication only re-verifies they have not moved.
+        if not extraction:
+            raise SystemExit(
+                "klt_sim_evidence.py: a PEX record needs --extraction-sources (the JSON"
+                " written by gen_pex_netlist_body.py --sources-out when the bench was"
+                " generated); refusing to publish an unbound PEX record"
+            )
+        try:
+            xb.verify_captured(extraction, repo_root)
+        except xb.BindingError as exc:
+            raise SystemExit(f"klt_sim_evidence.py: {exc}") from None
+    elif extraction:
+        try:
+            xb.verify_captured(extraction, repo_root)
+        except xb.BindingError as exc:
+            raise SystemExit(f"klt_sim_evidence.py: {exc}") from None
     names = measurement_names(report)
     rows, passed = build_csv(report, spec, names)
     total = len(rows)
@@ -396,7 +429,7 @@ def emit(
         writer.writeheader()
         writer.writerows(rows)
     (records_out / f"{rid}.md").write_text(
-        build_md(report, spec, rid, passed, total, failed), encoding="utf-8"
+        build_md(report, spec, rid, passed, total, failed, extraction), encoding="utf-8"
     )
     return passed, total
 
@@ -407,6 +440,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--spec", required=True, help="per-experiment record spec JSON")
     parser.add_argument("--experiment", required=True, help="sim/<experiment> directory")
     parser.add_argument("--record-id", help="override the minted <date>-<time>-<sha> id")
+    parser.add_argument(
+        "--extraction-sources",
+        nargs="+",
+        default=[],
+        metavar="JSON",
+        help="captured-extraction-source JSON file(s) written at bench generation"
+        " (gen_pex_netlist_body.py --sources-out); required for PEX experiments",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
@@ -416,7 +457,16 @@ def main(argv: list[str] | None = None) -> int:
     repo_root = Path(__file__).resolve().parents[2]
     rid = args.record_id or record_id(repo_root)
 
-    passed, total = emit(report, spec, experiment, repo_root, rid, dry_run=args.dry_run)
+    extraction = None
+    if args.extraction_sources:
+        try:
+            extraction = xb.load_captured([Path(f) for f in args.extraction_sources], repo_root)
+        except xb.BindingError as exc:
+            raise SystemExit(f"klt_sim_evidence.py: {exc}") from None
+
+    passed, total = emit(
+        report, spec, experiment, repo_root, rid, dry_run=args.dry_run, extraction=extraction
+    )
     print(f"klt_sim_evidence.py: {passed}/{total} PASS -> {experiment.name}/records/{rid}.md")
     return 0 if passed == total else 1
 

@@ -94,6 +94,15 @@ Usage:
     python3 sim/tools/gen_pex_netlist_body.py --cell top        # top, stdout
     python3 sim/tools/gen_pex_netlist_body.py -o body.inc
     python3 sim/tools/gen_pex_netlist_body.py --check           # verify only
+    python3 sim/tools/gen_pex_netlist_body.py --sources-out src.json -o body.inc
+
+`--sources-out` (issue #309) writes the repo-relative path and sha256 of every
+file the body was generated from (the extraction, the design netlist, and any
+`--bind` extras for benches that splice further blocks). The bytes hashed are
+the bytes read for generation, and the files are re-hashed afterwards; a source
+that changes mid-generation fails the run. Hand the JSON to
+`sim/harness/klt_sim_evidence.py --extraction-sources` so the record binds the
+extraction it consumed.
 """
 
 from __future__ import annotations
@@ -104,7 +113,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "harness"))
 import dump_pex_wire_parasitics as dpw  # noqa: E402
+import extraction_binding as xb  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PEX = REPO_ROOT / "layout" / "bandgap_core" / "bandgap_core.pex.spice"
@@ -671,6 +682,19 @@ def main(argv: list[str]) -> int:
         help="split that device's 1-based terminal through a 0 V source NAME"
         " (repeatable; e.g. --ammeter XM1:3:Vm1)",
     )
+    ap.add_argument(
+        "--sources-out",
+        type=Path,
+        help="write the captured extraction-source hashes (JSON) for the record",
+    )
+    ap.add_argument(
+        "--bind",
+        action="append",
+        default=[],
+        type=Path,
+        metavar="FILE",
+        help="also bind this extra source file (repeatable; for benches that splice more blocks)",
+    )
     ap.add_argument("-o", "--output", type=Path)
     ap.add_argument("--check", action="store_true", help="verify only, print nothing")
     args = ap.parse_args(argv)
@@ -690,14 +714,31 @@ def main(argv: list[str]) -> int:
         rel = args.pex.resolve().relative_to(REPO_ROOT).as_posix()
     except ValueError:
         rel = args.pex.as_posix()
-    body = generate(
-        args.pex.read_text(), args.design.read_text(), source=rel, cell=args.cell, ammeters=ammeters
-    )
+    try:
+        entries, blobs = xb.capture([args.pex, args.design, *args.bind], REPO_ROOT)
+        pex_rel = xb.rel_path(args.pex, REPO_ROOT)
+        design_rel = xb.rel_path(args.design, REPO_ROOT)
+    except xb.BindingError as exc:
+        if args.sources_out:
+            print(f"gen_pex_netlist_body: {exc}", file=sys.stderr)
+            return 1
+        entries, blobs, pex_rel, design_rel = [], {}, None, None
+    # Generate from the exact bytes that were hashed, not from a second read.
+    pex_text = blobs[pex_rel].decode() if pex_rel else args.pex.read_text()
+    design_text = blobs[design_rel].decode() if design_rel else args.design.read_text()
+    body = generate(pex_text, design_text, source=rel, cell=args.cell, ammeters=ammeters)
     problems = verify(body)
     for p in problems:
         print(f"gen_pex_netlist_body: {p}", file=sys.stderr)
     if problems:
         return 1
+    if args.sources_out:
+        try:
+            xb.assert_unchanged(entries, REPO_ROOT)
+        except xb.BindingError as exc:
+            print(f"gen_pex_netlist_body: {exc}", file=sys.stderr)
+            return 1
+        xb.write_captured(entries, args.sources_out)
     if args.check:
         return 0
     if args.output:
