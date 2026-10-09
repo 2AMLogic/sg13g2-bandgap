@@ -8,8 +8,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-10-08
 
+- **PR #306**: signoff: bind T1 items 1 and 10 to audited artifacts, bump klt pin to 3a75c3ae (#299)
+- **PR #305**: docs(readme): Trim-row disposition now tracked in #303
 - **PR #301**: ci: run solve-quality and harness-transformer self-tests in hygiene
 - **PR #296**: chore: pin tracker-state-comment helper as repo-owned (#295)
+- **Issue #265** (closed): Trimmed-line disposition: DR-0011's +/-0.5% does not hold on #229's aids-free trim-domain MC evidence
 - **Issue #297** (closed): Run the loop-gain solve-quality test in hygiene CI and add harness self-tests
 - **Issue #295** (closed): Orphan helper .loom/scripts/tracker-state-comment.sh: upstream it or pin it
 
