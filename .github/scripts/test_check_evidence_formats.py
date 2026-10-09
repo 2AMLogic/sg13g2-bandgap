@@ -738,6 +738,168 @@ def case_mask_option_needs_both_signatures(root: Path):
     return "STALE"
 
 
+# --- PEX extraction-source binding, issue #309 -------------------------------
+
+PEX_REL = "layout/synth_cell/synth_cell.pex.spice"
+SIM_RECORD_PATH = "sim/synthetic-experiment/records/" + RECORD_ID + ".md"
+
+
+def _pex_hash(root: Path) -> str:
+    """Hash of the fixture's committed extraction (layout/ already ships one)."""
+    return "sha256:" + sha256_bytes((root / PEX_REL).read_bytes())
+
+
+def _bind(root: Path, entries=None) -> None:
+    """Make the fixture's record a bound PEX record.
+
+    `entries` is a list of `(path, hash-string)`; the default binds the
+    extraction at its true current hash.
+    """
+    if entries is None:
+        entries = [(PEX_REL, _pex_hash(root))]
+    record = root / SIM_RECORD_PATH
+    text = record.read_text(encoding="utf-8")
+    field = "- **Extraction sources**: captured at bench generation.\n" + "".join(
+        f"  - `{path}` {digest}\n" for path, digest in entries
+    )
+    record.write_text(text.replace("- **Links**:", field + "- **Links**:", 1), encoding="utf-8")
+
+
+def _legacy_pex(root: Path) -> None:
+    """A PEX record with no binding (names its extraction in prose only)."""
+    record = root / SIM_RECORD_PATH
+    text = record.read_text(encoding="utf-8")
+    record.write_text(
+        text.replace("- **PDK**", f"- **Devices**: extracted from `{PEX_REL}`.\n- **PDK**", 1),
+        encoding="utf-8",
+    )
+
+
+def _write_binding_waiver(root: Path, **overrides) -> None:
+    record = root / SIM_RECORD_PATH
+    entry = {
+        "report": SIM_RECORD_REL,
+        "check": "extraction-sources",
+        "recorded_hash": "sha256:" + sha256_bytes(record.read_bytes()),
+        "issue": "#309",
+        "reason": "legacy record, binding lands on re-run",
+    }
+    entry.update(overrides)
+    (root / SIM_WAIVER_FILE).write_text(json.dumps({"waivers": [entry]}), encoding="utf-8")
+
+
+def case_bound_pex_passes(root: Path):
+    _bind(root)
+    return None
+
+
+def case_parasitic_only_change_is_stale(root: Path):
+    """A changed wire R / coupling C leaves every schematic device untouched."""
+    _bind(root)
+    with (root / PEX_REL).open("a", encoding="utf-8") as handle:
+        handle.write("C$99 a 0 3f\n")  # one extra coupling cap, no device changes
+    return f"[extraction:{PEX_REL}]"
+
+
+def case_multi_source_all_checked(root: Path):
+    """Every bound source is checked, not just the first."""
+    extra = root / "layout/synth_cell/splice.spice"
+    extra.write_text("* spliced block\n", encoding="utf-8")
+    _bind(root, [(PEX_REL, _pex_hash(root)), ("layout/synth_cell/splice.spice",
+                                       "sha256:" + sha256_bytes(b"* spliced block\n"))])
+    extra.write_text("* spliced block, edited\n", encoding="utf-8")
+    return "extraction:layout/synth_cell/splice.spice"
+
+
+def case_multi_source_fresh_passes(root: Path):
+    extra = root / "layout/synth_cell/splice.spice"
+    extra.write_text("* spliced block\n", encoding="utf-8")
+    _bind(root, [(PEX_REL, _pex_hash(root)),
+                 ("layout/synth_cell/splice.spice",
+                  "sha256:" + sha256_bytes(b"* spliced block\n"))])
+    return None
+
+
+def case_binding_malformed_hash(root: Path):
+    _bind(root, [(PEX_REL, "sha256:deadbeef")])
+    return "is not a sha256 digest"
+
+
+def case_binding_missing_file(root: Path):
+    _bind(root, [(PEX_REL, _pex_hash(root)),
+                 ("layout/synth_cell/gone.spice", "sha256:" + "0" * 64)])
+    return "bound source does not exist"
+
+
+def case_binding_escaping_path(root: Path):
+    _bind(root, [("../outside.spice", "sha256:" + "0" * 64)])
+    return "may not escape the repo"
+
+
+def case_binding_absolute_path(root: Path):
+    _bind(root, [("/etc/passwd", "sha256:" + "0" * 64)])
+    return "may not escape the repo"
+
+
+def case_binding_empty_field(root: Path):
+    _bind(root, [])
+    return "lists no sources"
+
+
+def case_binding_without_extraction_netlist(root: Path):
+    """Binding only a schematic does not bind the extraction."""
+    _bind(root, [(SIM_DUT_REL, "sha256:" + sha256_bytes(DUT_NETLIST.encode()))])
+    return "no bound source is a committed layout/**.pex.spice extraction"
+
+
+def case_legacy_pex_unwaived_fails(root: Path):
+    _legacy_pex(root)
+    return "binds no extraction sources"
+
+
+def case_legacy_pex_waived_is_loud_note(root: Path):
+    _legacy_pex(root)
+    _write_binding_waiver(root)
+    return None
+
+
+def case_binding_waiver_is_narrow(root: Path):
+    """The binding waiver cannot mask a stale schematic DUT on the same record."""
+    _legacy_pex(root)
+    _resize_dut(root)
+    _write_binding_waiver(root)
+    return f"{SIM_RECORD_REL} [{SIM_DUT_REL}]"
+
+
+def case_binding_waiver_wrong_hash(root: Path):
+    _legacy_pex(root)
+    _write_binding_waiver(root, recorded_hash="sha256:" + "1" * 64)
+    return "re-check the waiver"
+
+
+def case_binding_waiver_obsolete_after_rerun(root: Path):
+    """Once the record binds its sources the waiver must be deleted."""
+    _bind(root)
+    _write_binding_waiver(root)
+    return "waiver is obsolete"
+
+
+def case_binding_waiver_expires_with_newer_record(root: Path):
+    """A newer record supersedes the waived one: the waiver matches nothing."""
+    _legacy_pex(root)
+    _write_binding_waiver(root)
+    exp = root / "sim/synthetic-experiment"
+    newer = "20260102-000000-abcdef2"
+    shutil.copytree(exp / "netlist-snapshots" / RECORD_ID, exp / "netlist-snapshots" / newer)
+    shutil.copytree(exp / "corners" / RECORD_ID, exp / "corners" / newer)
+    (exp / "records" / f"{newer}.csv").write_text(
+        (exp / "records" / f"{RECORD_ID}.csv").read_text(encoding="utf-8"), encoding="utf-8")
+    (exp / "records" / f"{newer}.md").write_text(
+        (exp / "records" / f"{RECORD_ID}.md").read_text(encoding="utf-8").replace(RECORD_ID, newer),
+        encoding="utf-8")
+    return "waiver matches no report/check"
+
+
 CASES = [
     ("undamaged fixture passes", case_valid),
     ("Result headline overclaims point count", case_result_overclaims_total),
@@ -794,6 +956,25 @@ CASES = [
      case_mask_option_unit_resize_is_still_stale),
     ("a subckt needs both mask-option signatures to be resolved",
      case_mask_option_needs_both_signatures),
+    ("fully bound PEX record passes", case_bound_pex_passes),
+    ("a parasitic-only change makes the bound record stale", case_parasitic_only_change_is_stale),
+    ("every source of a multi-source bench is checked", case_multi_source_all_checked),
+    ("a fresh multi-source binding passes", case_multi_source_fresh_passes),
+    ("binding with a malformed hash is rejected", case_binding_malformed_hash),
+    ("binding naming a missing file is rejected", case_binding_missing_file),
+    ("binding with an escaping path is rejected", case_binding_escaping_path),
+    ("binding with an absolute path is rejected", case_binding_absolute_path),
+    ("binding field with no sources is rejected", case_binding_empty_field),
+    ("binding that omits the extraction netlist is rejected",
+     case_binding_without_extraction_netlist),
+    ("legacy PEX record without a waiver fails", case_legacy_pex_unwaived_fails),
+    ("legacy PEX record with a waiver is a loud note", case_legacy_pex_waived_is_loud_note),
+    ("binding waiver cannot mask a stale schematic DUT", case_binding_waiver_is_narrow),
+    ("binding waiver with a stale hash is rejected", case_binding_waiver_wrong_hash),
+    ("binding waiver is obsolete once the record is bound",
+     case_binding_waiver_obsolete_after_rerun),
+    ("binding waiver expires when a newer record lands",
+     case_binding_waiver_expires_with_newer_record),
 ]
 
 

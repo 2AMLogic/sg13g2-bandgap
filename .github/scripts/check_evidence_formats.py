@@ -191,6 +191,24 @@ DUT_PATH_RE = re.compile(r"\bdesign/[A-Za-z0-9_./-]*?\.spice\b")
 #: (`.tran`, `.model`, …) and continuations (`+`) are filtered before this runs.
 INSTANCE_RE = re.compile(r"^[XxRrCcLlMmQqDdVvIiJjKkEeFfGgHhSsTtUuWwZz]\S*\s+\S")
 
+# --- PEX extraction-source binding, issue #309 --------------------------------
+
+#: The waiver `check` name for a legacy newest PEX record that carries no
+#: extraction binding. Distinct from any DUT path, so it can never mask a
+#: schematic-freshness failure (and vice versa).
+EXTRACTION_UNBOUND_CHECK = "extraction-sources"
+
+#: A PEX experiment: its directory is named `…-pex` / `…-pex-…`.
+PEX_EXPERIMENT_RE = re.compile(r"(?:^|-)pex(?:$|-)")
+
+#: A layout-extracted netlist named in a record's prose.
+PEX_PATH_RE = re.compile(r"\blayout/[A-Za-z0-9_./-]*?\.pex\.spice\b")
+
+#: `  - `<repo-relative path>` sha256:<64 hex>` under the record's
+#: `- **Extraction sources**:` field.
+EXTRACTION_FIELD_RE = re.compile(r"^- \*\*Extraction sources\*\*:")
+EXTRACTION_ENTRY_RE = re.compile(r"^\s+- `(?P<path>[^`]*)`\s+(?P<hash>\S+)\s*$")
+
 # --- mask-option (metal-option) resolution, issue #275 -----------------------
 #
 # `design/netlist/bandgap_core.spice` is not a flat device list: as of issue
@@ -989,6 +1007,143 @@ def _signature_diff(expected: str, observed: str) -> str:
     return head + (f" (+{len(differing) - 3} more)" if len(differing) > 3 else "")
 
 
+def parse_extraction_sources(text: str) -> list[tuple[str, str]] | None:
+    """`[(path, recorded hash string)]`, or None if the record has no such field."""
+    entries: list[tuple[str, str]] = []
+    in_field = False
+    found = False
+    for line in text.splitlines():
+        if EXTRACTION_FIELD_RE.match(line):
+            in_field = found = True
+            continue
+        if in_field:
+            match = EXTRACTION_ENTRY_RE.match(line)
+            if match:
+                entries.append((match.group("path"), match.group("hash")))
+            elif not line.startswith(" "):
+                in_field = False
+    return entries if found else None
+
+
+def is_pex_record(experiment: Path, text: str) -> bool:
+    return bool(
+        PEX_EXPERIMENT_RE.search(experiment.name)
+        or PEX_PATH_RE.search(text)
+        or any(EXTRACTION_FIELD_RE.match(line) for line in text.splitlines())
+    )
+
+
+def check_extraction_binding(
+    root: Path,
+    report: Report,
+    record: Path,
+    text: str,
+    waivers: dict[tuple[str, str], dict],
+    used_waivers: set[tuple[str, str]],
+    uncovered: list[str],  # noqa: ARG001 - kept for call symmetry
+) -> None:
+    """Assert a newest PEX record is bound to the extraction it consumed (#309).
+
+    Schematic D2 compares device signatures only, so a changed wire resistor or
+    coupling capacitor leaves it green. A newly minted PEX record therefore
+    carries `Extraction sources`: repo-relative paths and sha256 digests that
+    `klt_sim_evidence.py` copied from the bench-generation step. Here each is
+    re-checked against the committed file, so a parasitic-only change makes the
+    newest record STALE even though every schematic device still matches.
+
+    A legacy newest record has no binding. It is never relabelled as bound: the
+    gap is reported as an uncovered check, and CI demands a waiver naming
+    exactly this record (keyed on the record file's own hash, so editing or
+    superseding it expires the waiver) until a genuine re-run adds the field.
+    """
+    record_rel = str(record.relative_to(root))
+    sources = parse_extraction_sources(text)
+    key = (record_rel, EXTRACTION_UNBOUND_CHECK)
+    waiver = waivers.get(key)
+
+    if sources is None:
+        report.checked += 1
+        record_hex = sha256_file(record)
+        if waiver is None:
+            report.fail(
+                f"{record_rel} [{EXTRACTION_UNBOUND_CHECK}]",
+                "newest PEX record binds no extraction sources, so parasitic freshness "
+                "cannot be established -- re-run it with --extraction-sources, or waive it "
+                f"in {SIM_WAIVER_FILE} with a tracking issue and recorded_hash "
+                f"sha256:{record_hex}",
+            )
+            return
+        used_waivers.add(key)
+        waived = SHA256_RE.match(str(waiver["recorded_hash"]).strip())
+        if not waived or waived.group("hex") != record_hex:
+            report.fail(
+                f"{SIM_WAIVER_FILE} [{record_rel} / {EXTRACTION_UNBOUND_CHECK}]",
+                f"waiver records hash {waiver['recorded_hash']!r} but the record now hashes "
+                f"to sha256:{record_hex} -- re-check the waiver instead of leaving it stale",
+            )
+            return
+        report.note(
+            f"UNBOUND (waived, {waiver['issue']}): {record_rel} binds no extraction "
+            f"sources; parasitic freshness not checked -- {waiver['reason']}"
+        )
+        return
+
+    if waiver is not None:
+        used_waivers.add(key)
+        report.fail(
+            f"{SIM_WAIVER_FILE} [{record_rel} / {EXTRACTION_UNBOUND_CHECK}]",
+            "waiver is obsolete -- the record now binds its extraction sources; delete "
+            f"this entry (tracked at {waiver['issue']})",
+        )
+
+    where = f"{record_rel} [{EXTRACTION_UNBOUND_CHECK}]"
+    if not sources:
+        report.fail(where, "the Extraction sources field lists no sources")
+        return
+    root_resolved = root.resolve()
+    if not any(p.startswith("layout/") and p.endswith(".pex.spice") for p, _ in sources):
+        report.fail(where, "no bound source is a committed layout/**.pex.spice extraction")
+    seen: set[str] = set()
+    for rel, recorded in sources:
+        report.checked += 1
+        item = f"{record_rel} [extraction:{rel}]"
+        parts = Path(rel).parts
+        if not rel or Path(rel).is_absolute() or ".." in parts or "\\" in rel:
+            report.fail(item, "source path must be repository-relative and may not escape the repo")
+            continue
+        if rel in seen:
+            report.fail(item, "source is listed twice")
+            continue
+        seen.add(rel)
+        match = SHA256_RE.match(recorded)
+        if not match:
+            report.fail(item, f"recorded hash {recorded!r} is not a sha256 digest")
+            continue
+        path = (root / rel).resolve()
+        try:
+            path.relative_to(root_resolved)
+        except ValueError:
+            report.fail(item, "source path resolves outside the repository (symlink escape)")
+            continue
+        if not path.is_file():
+            report.fail(item, "bound source does not exist")
+            continue
+        actual = sha256_file(path)
+        if match.group("hex") != actual:
+            compare_recorded(
+                report, record_rel, f"extraction:{rel}",
+                match.group("hex"), actual,
+                f"the record was run against {rel} sha256:{match.group('hex')[:12]}... but the "
+                f"committed file now hashes to sha256:{actual[:12]}...",
+                waivers, used_waivers, SIM_WAIVER_FILE,
+            )
+        else:
+            compare_recorded(
+                report, record_rel, f"extraction:{rel}", actual, actual, "",
+                waivers, used_waivers, SIM_WAIVER_FILE,
+            )
+
+
 def check_sim_freshness(root: Path, report: Report) -> None:
     """Assert each experiment's newest record was run against today's DUT.
 
@@ -1003,9 +1158,11 @@ def check_sim_freshness(root: Path, report: Report) -> None:
     - Only the **newest** record per experiment is required to be fresh. Older
       records are superseded history; `sim/` evidence is append-only, so they
       are kept, not regenerated.
-    - Only **schematic** DUTs (`design/**.spice`) are compared. A record whose
-      DUT is a layout-extracted netlist is covered by `layout/`'s own hash
-      checks on that netlist, not here.
+    - Only **schematic** DUTs (`design/**.spice`) are compared by device
+      signature. Parasitics are invisible to that comparison, so a newest
+      **PEX** record is additionally required to bind the extraction sources
+      it consumed (`check_extraction_binding`, issue #309); a legacy PEX
+      record without a binding is reported as uncovered and needs a waiver.
     - Device **nodes** are not compared, only models and parameters — a
       testbench legitimately rewires the DUT's ports.
     """
@@ -1025,12 +1182,15 @@ def check_sim_freshness(root: Path, report: Report) -> None:
             continue
         record = records[-1]
         record_rel = str(record.relative_to(root))
+        text = record.read_text(encoding="utf-8")
+        if is_pex_record(experiment, text):
+            check_extraction_binding(
+                root, report, record, text, waivers, used_waivers, uncovered)
         snapshots = sorted((experiment / SNAPSHOT_DIR / record.stem).glob("*.spice"))
         if not snapshots:
             # Already failed by check_record(); nothing to compare against.
             continue
 
-        text = record.read_text(encoding="utf-8")
         dut_rels = sorted({m.group(0) for m in DUT_PATH_RE.finditer(text)})
         dut_rels = [d for d in dut_rels if (root / d).is_file()]
         if not dut_rels:

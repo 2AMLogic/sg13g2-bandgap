@@ -41,7 +41,7 @@ structure/hygiene that already exists in this repo today — nothing more.
   corrupted ones are rejected and the clean ones accepted, so the guard
   against the 36.3° / 43.9° artifacts cannot rot silently.
 - **`sim/harness/test_harness_transformers.py`** — self-test of the
-  `klt sim` harness transforms (#297) on tiny temp-dir fixtures: shard
+  `klt sim` harness transforms (#297) on tiny temp-dir fixtures (including the #309 extraction-source binding capture/drift/publish checks): shard
   order/relabelling and recomputed counts (`merge_batch_shards.py`),
   runner-include and PDK-root rewriting (`fixup_batch_report.py`), PVT
   derived columns and closed-loop verdict boundaries
@@ -78,6 +78,15 @@ structure/hygiene that already exists in this repo today — nothing more.
      carrying `as`/`ad`/`ps`/`pd` — still matches. Known-stale records are
      waived by name, with a tracking issue, in
      `sim/evidence-freshness-waivers.json`; see `sim/README.md`.
+
+     D2 compares schematic device signatures only, so it cannot see parasitic
+     changes. A newest **PEX** record is additionally checked for an
+     `Extraction sources` binding (issue #309): repo-relative paths plus sha256
+     digests captured when the bench was generated, each re-verified against
+     the committed file (absent files, malformed hashes and escaping paths are
+     rejected; a changed wire R / coupling C makes the record stale). Legacy
+     PEX records with no binding are reported `UNBOUND` and need a narrow
+     `extraction-sources` waiver until a genuine re-run; nothing is back-filled.
 
   It deliberately does **not** demand a particular DRC/LVS *verdict*. This
   repo's LVS legitimately reads `mismatch` today for reasons documented in

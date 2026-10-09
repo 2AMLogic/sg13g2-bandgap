@@ -222,9 +222,53 @@ So each experiment's newest record is checked against the design it names:
   mask option?". A code-fixed post-layout testbench must name its ladder units
   with the schematic's own `RU…` names, because that is what D2 keys on.
 
-A record whose DUT is a layout-extracted netlist is not covered here (nothing
-yet ties it back to the extraction it consumed); the checker prints a
-`DUT freshness not checked: …` note rather than passing silently.
+Schematic signatures cannot see parasitics: a changed wire resistor or coupling
+capacitor leaves every device parameter untouched. A record whose DUT is a
+layout-extracted netlist is therefore covered by a separate **extraction
+binding** (issue #309), below. D2 itself still prints
+`DUT freshness not checked: …` for a record that names no committed `design/`
+netlist, rather than passing silently.
+
+### PEX extraction binding
+
+A newly minted PEX record carries a field naming every extraction source its
+bench was generated from, with the content hash captured *at generation time*:
+
+```
+- **Extraction sources**: content hashes captured when the bench was generated ...
+  - `layout/bandgap_top/bandgap_top.pex.spice` sha256:<64 hex>
+  - `design/netlist/bandgap_top.spice` sha256:<64 hex>
+```
+
+Producing it: `python3 sim/tools/gen_pex_netlist_body.py --sources-out src.json
+-o body.inc` hashes the exact bytes it generates from (extraction, design
+netlist, plus any `--bind FILE` extras for benches that splice more blocks) and
+fails if a source changes mid-generation. Then
+`sim/harness/klt_sim_evidence.py --extraction-sources src.json …` re-verifies
+the files still match, and refuses to publish a PEX experiment (`*-pex*`
+directory, or `"pex": true` in the spec) without the binding. Hashes are never
+computed after the fact for an old run.
+
+The checker (`check_evidence_formats.py`) verifies, for each experiment's
+**newest** PEX record: every path is repository-relative, inside the repo and
+exists; every hash is a well-formed sha256 and equals the committed file's
+current hash (a parasitic-only edit makes the record STALE even though D2
+passes); at least one bound source is a `layout/**.pex.spice`. Stale bound
+sources can be waived per source (check `extraction:<path>`) like any other
+staleness. Superseded records are history and are not checked.
+
+**Transition.** Records minted before this rule carry no binding and none is
+invented for them (they are append-only). A *legacy* newest PEX record is
+reported as `UNBOUND` and needs a narrow waiver in
+[`evidence-freshness-waivers.json`](evidence-freshness-waivers.json) with check
+`extraction-sources`, a tracking issue, and `recorded_hash` = sha256 of the
+record `.md`. That waiver cannot cover any other check on the record or any
+other record; it expires when a newer record lands (it then matches nothing) and
+becomes an error once the record itself binds its sources. Waivers for the
+seven current PEX experiments are tracked under #309; the genuine re-runs
+(#278, #275) add the binding. Byte hashes are conservative: an
+electrically equivalent regenerated extraction still requires a re-run or a
+reviewed waiver.
 
 Known-stale records are waived **by name** in
 [`evidence-freshness-waivers.json`](evidence-freshness-waivers.json), the `sim/`
