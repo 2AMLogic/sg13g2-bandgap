@@ -20,8 +20,9 @@ including pre- and post-layout (PEX) PVT sweeps and committed `klt drc` /
 because SiGe HBT recognition was investigated and permanently declined
 upstream
 ([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/pull/1242)),
-and the trim network obligated by the re-cast Output-reference row (issue
-#229) — design work, not further tooling work. The earlier
+and the core resizing and trim re-aiming needed to meet the ratified trimmed
+Output-reference line (issue #303). The trim network itself landed in #229;
+the remaining accuracy gap requires design work. The earlier
 "not-yet-routed floorplan" cause (#20) was
 retired by PR #27 and #20 is closed; the earlier ratification gate (#13) is
 closed and the target-spec table below is ratified against
