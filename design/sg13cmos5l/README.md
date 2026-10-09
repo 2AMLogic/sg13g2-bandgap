@@ -179,6 +179,12 @@ xschem -n -x -q -r --rcfile ../xschemrc -o ./netlist ./bandgap_top.sch
 Same `xschem -n -x -q -r` convention `design/README.md` documents for the
 SG13G2 schematics (netlist, headless X, quiet, regenerate-existing).
 
+To check that these committed netlists have not drifted from their
+schematics (without rewriting them), run `design/check_netlist_drift.sh`.
+It covers both this directory and `design/`. See "Checking for netlist
+drift" in [`design/README.md`](../README.md) for usage and exit codes. The
+check is opt-in and local only, and needs xschem and both PDK installs.
+
 **A resolvable SG13CMOS5L PDK install is required.** Unlike SG13G2 (whose
 `design/xschemrc` resolution this repo already documents), SG13CMOS5L's
 own device symbols (`libs.tech/xschem/sg13cmos5l_pr/*.sym`, for every

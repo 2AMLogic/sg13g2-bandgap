@@ -185,6 +185,7 @@ xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./bandgap_core.sch
 xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./bandgap_startup.sch
 xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./bandgap_amp.sch
 xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./bandgap_top.sch
+xschem -n -x -q -r --rcfile ./xschemrc -o ./netlist ./bandgap_trim.sch
 ```
 
 This is the same fleet convention gf180-bandgap's `design/README.md` and
@@ -198,6 +199,43 @@ at an `ihp-sg13g2/` open_pdks-shaped directory, i.e. what `klt pdk find`
 resolves — see `CLAUDE.md`; klayout-tools' own
 `scripts/fetch-ihp-sg13g2.sh` fetches a pinned IHP-Open-PDK release into
 that shape). This repo does not vendor the PDK itself.
+
+### Checking for netlist drift
+
+`design/check_netlist_drift.sh` (issue #312) checks that every committed
+netlist still matches what its schematic netlists to today. It regenerates
+each `design/netlist/*.spice` (SG13G2, `PDK=ihp-sg13g2`, `--rcfile
+./xschemrc`) and each `design/sg13cmos5l/netlist/*.spice` (SG13CMOS5L,
+`PDK=ihp-sg13cmos5l`, `--rcfile ../xschemrc`) into a temp directory, then
+diffs it against the committed copy. It never rewrites the committed
+netlists. Before diffing it drops `**` header comment lines (`sch_path`,
+`sym_path`, the cosmetic `**.subckt` comment) and blank lines. Real
+`.subckt`/`.ends` lines and device lines are compared exactly.
+
+```bash
+export PDK_ROOT=/path/to/parent-of-ihp-sg13g2-and-ihp-sg13cmos5l
+design/check_netlist_drift.sh             # full check (needs xschem + both PDKs)
+design/check_netlist_drift.sh --selftest  # normalization self-test only, no xschem
+```
+
+The script sets `PDK` itself for each directory, so you only need
+`PDK_ROOT`. Exit codes:
+
+| Code | Meaning |
+|------|---------|
+| 0 | No drift: every committed netlist matches its regenerated copy |
+| 1 | Drift: at least one netlist differs (the unified diff is printed) |
+| 2 | Cannot check: `xschem` not on `PATH`, `PDK_ROOT` unset, `$PDK_ROOT/ihp-sg13g2` or `$PDK_ROOT/ihp-sg13cmos5l` missing, or xschem failed on a schematic. This is **not** a pass. |
+| 3 | Orphan: a committed `netlist/<name>.spice` has no `<name>.sch` next to it (takes precedence over 1) |
+
+A schematic with no committed netlist is reported as `skip:` and not
+checked.
+
+**This check is opt-in and local only.** It needs xschem and real SG13G2 and
+SG13CMOS5L PDK installs, so it is deliberately **not** wired into
+`.github/workflows/hygiene.yml`, which stays PDK-free. Run it by hand after
+editing a schematic or the xschemrc, or before relying on a committed
+netlist in a `sim/` run.
 
 ## What has and has not been verified in this environment (issue #9, honest account)
 
