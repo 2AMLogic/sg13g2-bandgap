@@ -6,7 +6,15 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-09
+
+- **PR #311**: sim: bind PEX simulation records to their consumed extraction hashes
+- **Issue #309** (closed): sim: bind PEX simulation records to their consumed extraction hashes
+
 ### 2026-10-08
+
+- **PR #307**: measurements: October characterization report bound to T1 item 8 (#300)
+- **Issue #300** (closed): measurements: refresh the aggregated characterization report against the current spec and trim-bearing core, and wrap it for T1 item 8
 
 - **PR #306**: signoff: bind T1 items 1 and 10 to audited artifacts, bump klt pin to 3a75c3ae (#299)
 - **PR #305**: docs(readme): Trim-row disposition now tracked in #303
