@@ -1,0 +1,405 @@
+{
+  "schema_version": 1,
+  "_comment": "Dependency inventory of the actively cited T1 item-8 report (issue #315). Checked by .github/scripts/check_report_dependencies.py: every DUT input, spec-table row, decision-record status, absent path and selected record below must still match the committed tree, and each selected record must still be its experiment's newest. Any mismatch means a NEW dated report (this one stays unchanged as history), a new inventory, envelope, manifest pin and regenerated signoff verdict. Hand-audited, never regenerated automatically.",
+  "report": "measurements/2026-10-characterization-report/README.md",
+  "report_sha256": "sha256:8e4ac5215b947744445b942b2d9cd9590dcece44b613c535aebed67860f817af",
+  "audited_commit": "b89f4c5f",
+  "dut": [
+    {
+      "path": "design/netlist/bandgap_core.spice",
+      "sha256": "sha256:5ce44936e16fcea5217fed19f1a794f9db9e439e49dad41473d95efdfa714a83"
+    },
+    {
+      "path": "design/netlist/bandgap_trim.spice",
+      "sha256": "sha256:8c735409d401c2c6c63cf8f8c4061b8f6401d67dc3553eee6f001bc6302d675a"
+    },
+    {
+      "path": "design/netlist/bandgap_amp.spice",
+      "sha256": "sha256:6b0e7babcd57265588a6a7da08cd9465d49b52ce3c0e8e6e2ec1e5cdc4d1bd02"
+    },
+    {
+      "path": "design/netlist/bandgap_startup.spice",
+      "sha256": "sha256:4182537f3530fa2614c3a40271381c69fe885ffed7e2e3941b4b8d3bc95bacab"
+    },
+    {
+      "path": "design/netlist/bandgap_top.spice",
+      "sha256": "sha256:586dae89e98d1fed1350be6c53885fd965ce489e2710ddca72077b54c5e2a7be"
+    },
+    {
+      "path": "layout/bandgap_top/bandgap_top.pex.spice",
+      "sha256": "sha256:63b9a85089d93527742ebc48b755ee60aa4028354fe86f3700576269c1db27fe"
+    },
+    {
+      "path": "layout/bandgap_startup/bandgap_startup.pex.spice",
+      "sha256": "sha256:8e43f9daf84599cbcf848a5000c24ab74bc01e7c380fc880507dad02250cf533"
+    }
+  ],
+  "spec": {
+    "table": {
+      "source": "README.md",
+      "heading": "## Target specification",
+      "rows": {
+        "Output reference": "sha256:3b9b478610452d169851a82d2eab6ae0f760112b1c5e238be81c45ac520d7b66",
+        "Trim": "sha256:259fc814682af997a81793e69131d265261c35db8acc30f7f5cddf1a3e35f21f",
+        "Temp coefficient (−40…125 °C)": "sha256:ac982eabdb43789c03879496fc7fc849af5a27c3f66e57cef911eaec6e0e55af",
+        "PSRR @ DC": "sha256:ac1de4949f5139c27d07e63c497092bef3d730461f78fa93ce652a8083d30e1d",
+        "Supply": "sha256:8c6e1180e2d25ece746cd98f8c4257f16f31705d85184209906a94f3371bd870",
+        "Iq": "sha256:188fe453924e13260a7e33e12591d02698df7d1048d98b95f86488be30179e82",
+        "Startup": "sha256:a30b3c9e37b95c18df8d0d5ca428822b626850095b990671ed4ad4df6d863186"
+      }
+    },
+    "decision_records": [
+      {
+        "path": "spec/decision-records/0002-supply-voltage-scope.md",
+        "status": "ratified"
+      },
+      {
+        "path": "spec/decision-records/0007-target-spec-ratification.md",
+        "status": "ratified"
+      },
+      {
+        "path": "spec/decision-records/0008-two-key-ratification-review-outcome.md",
+        "status": "proposed"
+      },
+      {
+        "path": "spec/decision-records/0010-box-method-tc-evidence.md",
+        "status": "proposed"
+      },
+      {
+        "path": "spec/decision-records/0011-output-reference-row-disposition.md",
+        "status": "proposed"
+      },
+      {
+        "path": "spec/decision-records/0013-second-trim-degree-of-freedom.md",
+        "status": "proposed"
+      },
+      {
+        "path": "spec/decision-records/0014-trim-row-keep-1-point.md",
+        "status": "proposed"
+      }
+    ],
+    "absent": [
+      "spec/decision-records/0012-*.md"
+    ]
+  },
+  "experiments": [
+    {
+      "path": "sim/closed-loop-vref-pvt",
+      "summarizes": "Output reference nominal line (schematic 45-point grid) and endpoint TC",
+      "spec_rows": [
+        "Output reference",
+        "Temp coefficient (−40…125 °C)",
+        "Supply"
+      ],
+      "selected_record": "20261001-085908-e5507b2",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice"
+      ],
+      "files": {
+        "sim/closed-loop-vref-pvt/records/20261001-085908-e5507b2-tc.csv": "sha256:5f728b98606fb5af2890acd755b373613147b9a8e762c544b778495743d0b86a",
+        "sim/closed-loop-vref-pvt/records/20261001-085908-e5507b2.csv": "sha256:3b67a6ad360dc832d38426d4c2d9bb2e1c9be3fdc34c917ad41b3f7191c894dd",
+        "sim/closed-loop-vref-pvt/records/20261001-085908-e5507b2.md": "sha256:93ee7cd7601e32b98832ff1a56ed1bb189b440a7827455dec141d62cfe49ca97"
+      }
+    },
+    {
+      "path": "sim/closed-loop-vref-mc",
+      "summarizes": "Output reference untrimmed +/-16% line (N=300 mismatch MC)",
+      "spec_rows": [
+        "Output reference"
+      ],
+      "selected_record": "20260909-232418-c9b83ab",
+      "freshness": "stale",
+      "disclosure": "statistical evidence predates the current netlist",
+      "waiver_issue": "#273",
+      "files": {
+        "sim/closed-loop-vref-mc/records/20260909-232418-c9b83ab-draws.csv": "sha256:70a1ac97216b5adc0c1bb1a2148e87f4a8a508d6b7869565d2d037293c2aef41",
+        "sim/closed-loop-vref-mc/records/20260909-232418-c9b83ab.csv": "sha256:50e82e95889c1308663a904a806e231a63536cd2b114a2b962f55a27da2a26ff",
+        "sim/closed-loop-vref-mc/records/20260909-232418-c9b83ab.md": "sha256:ea6c81969bec834aed711784398a8e49dcf1a3cfa71355fac58a3af7bd53d2fa"
+      }
+    },
+    {
+      "path": "sim/closed-loop-vref-trim-mc",
+      "summarizes": "Output reference trimmed +/-0.5% line (trim-domain MC; measured UNMET)",
+      "spec_rows": [
+        "Output reference"
+      ],
+      "selected_record": "20260930-232155-affdefe",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice"
+      ],
+      "files": {
+        "sim/closed-loop-vref-trim-mc/records/20260930-232155-affdefe-draws.csv": "sha256:6e171c1856c90703d0c8065580c1addc085fc28083e285a04311ff21ac142f32",
+        "sim/closed-loop-vref-trim-mc/records/20260930-232155-affdefe.csv": "sha256:de74f870846d573c8c0cece465b53bd4baf7c0f87f873612058b7f4d12fcf5b5",
+        "sim/closed-loop-vref-trim-mc/records/20260930-232155-affdefe.md": "sha256:55fa85be341ef36e6c53699bfcd8319814638eefdbadd638c03e77b7df164555"
+      }
+    },
+    {
+      "path": "sim/trim-coverage",
+      "summarizes": "Trim range and resolution",
+      "spec_rows": [
+        "Trim"
+      ],
+      "selected_record": "20260930-195507-9530863",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice"
+      ],
+      "files": {
+        "sim/trim-coverage/records/20260930-195507-9530863-analysis.csv": "sha256:1dbde07c24480a6659f25eee4b9a15f71e5800a55ce9c9f9a277f5ca2290fbb0",
+        "sim/trim-coverage/records/20260930-195507-9530863.csv": "sha256:ee4d3767b86f88609563f16f2cbadb2a03ddd6b77d9ff2ddd1fe4fb54fda8797",
+        "sim/trim-coverage/records/20260930-195507-9530863.md": "sha256:317619ef923cc55885a0790064d85c166e317f3e487685adfe9de309e442ed45"
+      }
+    },
+    {
+      "path": "sim/closed-loop-vref-boxtc-trim",
+      "summarizes": "Temp coefficient, box method, trim-bearing",
+      "spec_rows": [
+        "Temp coefficient (−40…125 °C)"
+      ],
+      "selected_record": "20261001-043806-729d889",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice"
+      ],
+      "files": {
+        "sim/closed-loop-vref-boxtc-trim/records/20261001-043806-729d889-boxtc.csv": "sha256:cd9280ef0850ee35a4444eb29f3bde572069def02ac7e2970031d11d22f03e55",
+        "sim/closed-loop-vref-boxtc-trim/records/20261001-043806-729d889-trimdtc.csv": "sha256:6d4222b4f10d5fd0b00e358d955456292334ba029a5d6092d1b04f6bd2d6fe99",
+        "sim/closed-loop-vref-boxtc-trim/records/20261001-043806-729d889.csv": "sha256:192039891177e418833f9b4b1311ece032a0a4bb9039ab7651d6c6bc67511447",
+        "sim/closed-loop-vref-boxtc-trim/records/20261001-043806-729d889.md": "sha256:4846752cac9c8634b0e5aaea2bea3dd84d168ddf906557e6c62d28df142f9412"
+      }
+    },
+    {
+      "path": "sim/closed-loop-psrr-pex",
+      "summarizes": "PSRR @ DC post-layout (primary) and PEX DC-op vref",
+      "spec_rows": [
+        "PSRR @ DC",
+        "Output reference",
+        "Supply"
+      ],
+      "selected_record": "20261004-030337-5553d523",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice",
+        "layout/bandgap_top/bandgap_top.pex.spice"
+      ],
+      "files": {
+        "sim/closed-loop-psrr-pex/records/20261004-030337-5553d523.csv": "sha256:83dae087027c97ea89a0fa33714afc45d139b1d4a19046d86b9b50a669b719e2",
+        "sim/closed-loop-psrr-pex/records/20261004-030337-5553d523.md": "sha256:1cce06b91f8cd34c531c10d93046d5a685a224008cb5e865feda156e61e58da9"
+      }
+    },
+    {
+      "path": "sim/closed-loop-psrr",
+      "summarizes": "PSRR @ DC schematic",
+      "spec_rows": [
+        "PSRR @ DC",
+        "Supply"
+      ],
+      "selected_record": "20261001-085737-e5507b2",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice"
+      ],
+      "files": {
+        "sim/closed-loop-psrr/records/20261001-085737-e5507b2.csv": "sha256:33eced89ced222d6430bcb0fd6152ebc9074194acd49aa522c87373ccdfe1eda",
+        "sim/closed-loop-psrr/records/20261001-085737-e5507b2.md": "sha256:7267f1b2cd341240df5d6ba04de91b9a6eba769877c7494159910d3068b72b03"
+      }
+    },
+    {
+      "path": "sim/closed-loop-iq",
+      "summarizes": "Iq schematic",
+      "spec_rows": [
+        "Iq",
+        "Supply"
+      ],
+      "selected_record": "20261001-092257-4fe07ea",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice"
+      ],
+      "files": {
+        "sim/closed-loop-iq/records/20261001-092257-4fe07ea.csv": "sha256:060c44acd0e5b08374a809f5057dd3097fa5c8a2efdfbd11a1952b9f889f46b0",
+        "sim/closed-loop-iq/records/20261001-092257-4fe07ea.md": "sha256:f6b5906eda388fee0265b34c0f98dbcf1c86c5f1409cd1216746009c3c09a06f"
+      }
+    },
+    {
+      "path": "sim/closed-loop-startup",
+      "summarizes": "Startup self-start",
+      "spec_rows": [
+        "Startup",
+        "Supply"
+      ],
+      "selected_record": "20261001-083332-e5507b2",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice"
+      ],
+      "files": {
+        "sim/closed-loop-startup/records/20261001-083332-e5507b2.csv": "sha256:b00d02d3f9aaf944033c1593aff4d0483cfa38a6a49f929ec73d4f5e4e07096b",
+        "sim/closed-loop-startup/records/20261001-083332-e5507b2.md": "sha256:c7f705ea713675d8ffcb76110353cc32daca942d64eaefd9724cb890e0fc1625"
+      }
+    },
+    {
+      "path": "sim/startup-time-to-release",
+      "summarizes": "Startup time-to-release",
+      "spec_rows": [
+        "Startup"
+      ],
+      "selected_record": "20261001-085905-e5507b2",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice"
+      ],
+      "files": {
+        "sim/startup-time-to-release/records/20261001-085905-e5507b2.csv": "sha256:5abf11ef8eece353466f05631424837edc4fe7e9191b74356d851f0c044f43d1",
+        "sim/startup-time-to-release/records/20261001-085905-e5507b2.md": "sha256:f986407075bcbbb1ec4a084ed19d0ccdbd7596b0f218bbba7af4beab31a9e376"
+      }
+    },
+    {
+      "path": "sim/startup-trip-point-pex",
+      "summarizes": "Startup-cell trip point, post-layout",
+      "spec_rows": [
+        "Startup"
+      ],
+      "selected_record": "20260905-033740-fe97115",
+      "freshness": "current",
+      "dut": [
+        "layout/bandgap_startup/bandgap_startup.pex.spice"
+      ],
+      "files": {
+        "sim/startup-trip-point-pex/records/20260905-033740-fe97115.csv": "sha256:8cb7a66040ecec32082f281eedb6d0f6c93e28027415e3e15174c6764001782e",
+        "sim/startup-trip-point-pex/records/20260905-033740-fe97115.md": "sha256:c1ea93d4e79dc7033804f0985a3d004e8e19c9d77712fd23c670facddb629ab0"
+      }
+    },
+    {
+      "path": "sim/closed-loop-vref-pvt-boxtc",
+      "summarizes": "pre-trim schematic box-method TC (history)",
+      "spec_rows": [
+        "Temp coefficient (−40…125 °C)"
+      ],
+      "selected_record": "20260921-194249-77820fc",
+      "freshness": "stale",
+      "disclosure": "the PEX and pre-trim box-method records (20.1 / 19.8 ppm/C worst) predate the current netlist",
+      "waiver_issue": "#273",
+      "files": {
+        "sim/closed-loop-vref-pvt-boxtc/records/20260921-194249-77820fc-boxtc.csv": "sha256:1f9e94384c045cc3a1773c744f1699c2f639f43329afe95ccbcae2dd75d72d92",
+        "sim/closed-loop-vref-pvt-boxtc/records/20260921-194249-77820fc.csv": "sha256:ac4df9fa8e668df92fec4ff7519bb0db3a3dbb9d9fed708b10d49c9ec2522e81",
+        "sim/closed-loop-vref-pvt-boxtc/records/20260921-194249-77820fc.md": "sha256:0a513247a27e97c5eb5b47a52a4d474f9b166f7c6375077b399d9b09bdbd379a"
+      }
+    },
+    {
+      "path": "sim/closed-loop-vref-pvt-pex",
+      "summarizes": "pre-trim PEX 45-point vref grid and endpoint TC (history)",
+      "spec_rows": [
+        "Output reference",
+        "Temp coefficient (−40…125 °C)"
+      ],
+      "selected_record": "20260905-114438-8abe2aa",
+      "freshness": "stale",
+      "disclosure": "the PEX vref grid predates the current netlist",
+      "waiver_issue": "#275",
+      "files": {
+        "sim/closed-loop-vref-pvt-pex/records/20260905-114438-8abe2aa-tc.csv": "sha256:714692db035a2d1e0177e2efefc185dfeee3964a61d87c736fdc14e90196c948",
+        "sim/closed-loop-vref-pvt-pex/records/20260905-114438-8abe2aa-vs-schematic.csv": "sha256:dcc19144ec7f0e70a38d5bf6b1fd11198a3beccd6e24bc4517f942248563982b",
+        "sim/closed-loop-vref-pvt-pex/records/20260905-114438-8abe2aa.csv": "sha256:5215937d3f8dd27136e17c483e38d70d11dda31464374b2aa7dd15c63457d2f1",
+        "sim/closed-loop-vref-pvt-pex/records/20260905-114438-8abe2aa.md": "sha256:049fd66ed334749c409f10f227dcfb0d406db11a0c549c7948709f754949a6bc"
+      }
+    },
+    {
+      "path": "sim/closed-loop-vref-pvt-pex-boxtc",
+      "summarizes": "pre-trim PEX box-method TC (history)",
+      "spec_rows": [
+        "Temp coefficient (−40…125 °C)"
+      ],
+      "selected_record": "20260921-195122-77820fc",
+      "freshness": "stale",
+      "disclosure": "the PEX and pre-trim box-method records (20.1 / 19.8 ppm/C worst) predate the current netlist",
+      "waiver_issue": "#275",
+      "files": {
+        "sim/closed-loop-vref-pvt-pex-boxtc/records/20260921-195122-77820fc-boxtc.csv": "sha256:4840e451de4ffbe27387ba9faea6a7ac7699ccbacf39e70cb5fb877da7da04ea",
+        "sim/closed-loop-vref-pvt-pex-boxtc/records/20260921-195122-77820fc-vs-schematic-boxtc.csv": "sha256:c360c18f42493e361e59fc43925a84b4f8b83ab025b29e6555510476126f7972",
+        "sim/closed-loop-vref-pvt-pex-boxtc/records/20260921-195122-77820fc.csv": "sha256:597182555b778400db8fe728d17a90ff0875da9f09cb744d5ac0840a75bfd738",
+        "sim/closed-loop-vref-pvt-pex-boxtc/records/20260921-195122-77820fc.md": "sha256:086d90c84bbd1ab95b14b5b3f105604232fbc325062bff9a0d8e3ecb2b300692"
+      }
+    },
+    {
+      "path": "sim/closed-loop-vref-boxtc-pretrim-aidsfree",
+      "summarizes": "solver-aids A/B on the pre-trim core (disclosure only)",
+      "spec_rows": [
+        "Temp coefficient (−40…125 °C)"
+      ],
+      "selected_record": "20261002-125922-d770c09",
+      "freshness": "stale",
+      "disclosure": "(pre-trim core, 2 corners)",
+      "files": {
+        "sim/closed-loop-vref-boxtc-pretrim-aidsfree/records/20261002-125922-d770c09-boxtc.csv": "sha256:0d1aca797ea9d437a0a4010d5ffe67c6556494da4a04117c27362112f7d64b31",
+        "sim/closed-loop-vref-boxtc-pretrim-aidsfree/records/20261002-125922-d770c09.csv": "sha256:e2c683d6be96d7a3093bc21aa82548c3b044b6b0905844200a56446c9a8eb59b",
+        "sim/closed-loop-vref-boxtc-pretrim-aidsfree/records/20261002-125922-d770c09.md": "sha256:bd1bf53718da862e3021a693738703e98361c8cf9b2e4a0163b45255320858b5"
+      }
+    },
+    {
+      "path": "sim/loop-gain-phase-margin",
+      "summarizes": "supplementary: loop stability",
+      "spec_rows": [],
+      "selected_record": "20261003-180919-2addad0",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice"
+      ],
+      "files": {
+        "sim/loop-gain-phase-margin/records/20261003-180919-2addad0.csv": "sha256:dd2c3debc6742b9762e2525bb972f543f05a60faa1937e3e3b6d4740a741a6c4",
+        "sim/loop-gain-phase-margin/records/20261003-180919-2addad0.jobs.json": "sha256:d846196bd75bba27f720c18a6e6f7bb52f1b57f56e54526067045215c3befb70",
+        "sim/loop-gain-phase-margin/records/20261003-180919-2addad0.md": "sha256:79b8523a12b9cbbbf970e45e78990a54cc3a983e9f811a0e34bcf9dbd96aed2e"
+      }
+    },
+    {
+      "path": "sim/closed-loop-zout-pex",
+      "summarizes": "supplementary: post-layout output impedance",
+      "spec_rows": [],
+      "selected_record": "20261004-030338-5553d523",
+      "freshness": "current",
+      "dut": [
+        "design/netlist/bandgap_core.spice",
+        "design/netlist/bandgap_trim.spice",
+        "design/netlist/bandgap_amp.spice",
+        "design/netlist/bandgap_startup.spice",
+        "layout/bandgap_top/bandgap_top.pex.spice"
+      ],
+      "files": {
+        "sim/closed-loop-zout-pex/records/20261004-030338-5553d523.csv": "sha256:d44e0375c9c2ab7205e11bc15115c5b513616ff32cea2a38940c9c6fdeda12b7",
+        "sim/closed-loop-zout-pex/records/20261004-030338-5553d523.md": "sha256:fd563f5529e0f6349496e016c05381fd481c1df0d866d1c8c4cefef12df8d5fd"
+      }
+    }
+  ]
+}

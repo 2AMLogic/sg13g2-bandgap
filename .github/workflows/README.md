@@ -95,6 +95,18 @@ structure/hygiene that already exists in this repo today — nothing more.
   evidence — `sim/` results are produced deliberately on a machine with the
   PDK, never by a CI robot.
 
+- **`.github/scripts/test_check_report_dependencies.py`** then
+  **`.github/scripts/check_report_dependencies.py`** (#315) — the
+  characterization-report dependency gate. The report the block manifest
+  actively cites for T1 item 8 carries a `dependencies.json` beside its
+  envelope; the checker requires its audited DUT netlist hashes, per-row
+  spec-table digests, quoted decision-record statuses and selected `sim/`
+  records to still match the tree, each selected record to still be its
+  experiment's newest, and every stale-evidence mark to be an honest,
+  waiver-backed disclosure present in the report. Experiments outside the
+  inventory, prose outside the spec table and superseded reports are not
+  checked. See `manifests/README.md`.
+
 All of these are plain bash/python3 scripts (stdlib only, no venv, no
 ngspice, no PDK), runnable locally the same way CI runs them:
 
@@ -106,6 +118,8 @@ python3 sim/tools/test_gen_pex_netlist_body.py
 python3 sim/loop-gain-phase-margin/tools/test_solve_quality.py
 python3 sim/harness/test_harness_transformers.py
 python3 .github/scripts/check_evidence_formats.py
+python3 .github/scripts/test_check_report_dependencies.py
+python3 .github/scripts/check_report_dependencies.py
 ```
 
 ### The `signoff-manifest` job

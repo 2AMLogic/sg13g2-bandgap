@@ -53,4 +53,9 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   trimmed +/-0.5% line is reported as measured unmet and its redesign
   (#303) as unsettled. `envelope.json` is the `generic` evidence envelope
   `manifests/sg13g2-bandgap.json` cites for item 8, pinned to the report's
-  sha256.
+  sha256. `dependencies.json` (#315) is the report's audited dependency
+  inventory (DUT netlist hashes, spec-table row digests, decision-record
+  statuses, selected records and stale-evidence disclosures); CI's
+  `check_report_dependencies.py` fails when any of them moves, and the
+  remedy is a new dated report, not an edit to this one. See
+  `manifests/README.md` → "Item-8 dependency drift".
