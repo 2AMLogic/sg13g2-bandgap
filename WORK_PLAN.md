@@ -43,7 +43,6 @@ _None._
 
 Issues carrying `loom:curated`.
 
-- **#4**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
 - **#273**: Finish the #264 refresh: closed-loop-vref-mc (1800 draws) and closed-loop-vref-pvt-boxtc (120 transient points) *(curated)*
 - **#278**: Re-run the five PEX experiments through the klt sim harness (the remaining half of #275) *(curated)*
 - **#299**: signoff: bind T1 items 9 and 10 (and re-bind item 1) to audited artifacts (klayout-tools#2718 landed) *(curated)*
@@ -67,7 +66,7 @@ _None._
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 5 |
+| Curated | 4 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
