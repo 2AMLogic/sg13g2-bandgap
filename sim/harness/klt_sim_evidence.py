@@ -60,6 +60,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import extraction_binding as xb  # noqa: E402
+import merge_batch_shards as mbs  # noqa: E402
 
 #: Relative-path forms `inline_deck` leaves alone: a model library under the
 #: PDK is referenced, never inlined (it is megabytes, host-resolved, and
@@ -354,6 +355,38 @@ def is_pex(spec: dict, experiment: Path) -> bool:
     return re.search(r"(^|-)pex($|-)", experiment.name) is not None
 
 
+def verify_grid(report: dict, expected_grid: list[str] | None = None) -> None:
+    """Block complete-grid publication on an incomplete or malformed grid.
+
+    The expected grid is `--expected-grid` if given, else the one a batch
+    merge embedded in the report (`report["grid"]["expected"]`). A report
+    with neither (a direct single-request `klt sim`) is checked for
+    structure only. Runs before any evidence file is written (issue #327).
+    """
+    grid = report.get("grid")
+    problems: list[str] = []
+    if isinstance(grid, dict) and grid.get("complete") is False:
+        problems.append(
+            "report is an explicitly incomplete diagnostic merge "
+            f"(missing={grid.get('missing')}, unexpected={grid.get('unexpected')})"
+        )
+    shard_problems = mbs.validate_shard(report, "report")
+    problems.extend(shard_problems)
+    expected = expected_grid
+    if expected is None and isinstance(grid, dict):
+        expected = grid.get("expected")
+    if expected is not None and not shard_problems:
+        ids = [corner_id(c)[0] for c in report["corners"]]
+        problems.extend(mbs.check_grid(ids, expected, "report grid")[0])
+    if problems:
+        raise SystemExit(
+            "klt_sim_evidence.py: refusing to publish ("
+            + str(len(problems))
+            + " problem(s))\n  - "
+            + "\n  - ".join(problems)
+        )
+
+
 def emit(
     report: dict,
     spec: dict,
@@ -363,7 +396,9 @@ def emit(
     *,
     dry_run: bool = False,
     extraction: list[dict] | None = None,
+    expected_grid: list[str] | None = None,
 ) -> tuple[int, int]:
+    verify_grid(report, expected_grid)
     if is_pex(spec, experiment):
         # A PEX record must say which extraction it consumed (issue #309).
         # The hashes come from the bench-generation step, never from hashing
@@ -448,6 +483,12 @@ def main(argv: list[str] | None = None) -> int:
         help="captured-extraction-source JSON file(s) written at bench generation"
         " (gen_pex_netlist_body.py --sources-out); required for PEX experiments",
     )
+    parser.add_argument(
+        "--expected-grid",
+        metavar="JSON",
+        help="expected-grid file (see merge_batch_shards.load_expected); overrides"
+        " the grid a batch merge embedded in the report",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
 
@@ -465,7 +506,14 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(f"klt_sim_evidence.py: {exc}") from None
 
     passed, total = emit(
-        report, spec, experiment, repo_root, rid, dry_run=args.dry_run, extraction=extraction
+        report,
+        spec,
+        experiment,
+        repo_root,
+        rid,
+        dry_run=args.dry_run,
+        extraction=extraction,
+        expected_grid=mbs.load_expected(args.expected_grid) if args.expected_grid else None,
     )
     print(f"klt_sim_evidence.py: {passed}/{total} PASS -> {experiment.name}/records/{rid}.md")
     return 0 if passed == total else 1

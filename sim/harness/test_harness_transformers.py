@@ -56,17 +56,24 @@ def shard(process: str, statuses: list[str], remote: dict | None = None) -> dict
         {
             "corner_id": f"{process}/3.300V/{t}C",
             "process": process,
+            "temperature_c": t,
+            "supply_v": {"Vvdd": 3.3},
             "status": s,
             "measurements": [{"name": "vref_v", "value": 1.2 + k * 1e-3}],
         }
         for k, (t, s) in enumerate(zip((-40, 27, 125), statuses))
     ]
+    return report_of(corners, remote)
+
+
+def report_of(corners: list[dict], remote: dict | None = None) -> dict:
+    n = lambda st: sum(1 for c in corners if c["status"] == st)  # noqa: E731
     report = {
-        "status": "pass",
+        "status": "fail" if n("fail") else ("error" if n("error") else "pass"),
         "corner_count": len(corners),
-        "passed": len(corners),
-        "failed": 0,
-        "errored": 0,
+        "passed": n("pass"),
+        "failed": n("fail"),
+        "errored": n("error"),
         "corners": corners,
         "provenance": {"klt_version": "0.5.0"},
     }
@@ -75,23 +82,29 @@ def shard(process: str, statuses: list[str], remote: dict | None = None) -> dict
     return report
 
 
+def want(process: str, n: int = 3) -> list[str]:
+    """Normalized expected identities of `shard(process, ...)`'s first n temps."""
+    return [f"{process}_{t:g}c_3.30v" for t in (-40, 27, 125)[:n]]
+
+
 class MergeTests(TempDirCase):
     def test_corners_concatenate_in_argument_order_not_file_order(self) -> None:
         a = self.write_json("z-first.json", shard("hbt_typ", ["pass", "pass"]))
         b = self.write_json("a-second.json", shard("hbt_wcs", ["pass"]))
-        merged = mbs.merge([str(a), str(b)])
+        exp = want("hbt_typ", 2) + want("hbt_wcs", 1)
+        merged = mbs.merge([str(a), str(b)], exp)
         self.assertEqual(
             [c["corner_id"] for c in merged["corners"]],
             ["hbt_typ/3.300V/-40C", "hbt_typ/3.300V/27C", "hbt_wcs/3.300V/-40C"],
         )
-        reversed_ = mbs.merge([str(b), str(a)])
+        reversed_ = mbs.merge([str(b), str(a)], exp)
         self.assertEqual(reversed_["corners"][0]["corner_id"], "hbt_wcs/3.300V/-40C")
 
     def test_label_rewrites_process_and_corner_id_prefix(self) -> None:
         # sf/fs share hbt_typ with typ: only the label recovers the repo name.
         typ = self.write_json("typ.json", shard("hbt_typ", ["pass"]))
         sf = self.write_json("sf.json", shard("hbt_typ", ["pass", "pass"]))
-        merged = mbs.merge([f"typ={typ}", f"sf={sf}"])
+        merged = mbs.merge([f"typ={typ}", f"sf={sf}"], want("typ", 1) + want("sf", 2))
         self.assertEqual(
             [(c["process"], c["corner_id"]) for c in merged["corners"]],
             [
@@ -105,37 +118,201 @@ class MergeTests(TempDirCase):
         p = self.write_json("p.json", shard("typ", ["pass", "pass", "pass"]))
         e = self.write_json("e.json", shard("bcs", ["pass", "error"]))
         f = self.write_json("f.json", shard("wcs", ["fail"]))
-        merged = mbs.merge([str(p), str(e)])
+        keys = ("corner_count", "passed", "failed", "errored", "status")
+        merged = mbs.merge([str(p), str(e)], want("typ") + want("bcs", 2))
         self.assertEqual(
-            {k: merged[k] for k in ("corner_count", "passed", "failed", "errored", "status")},
+            {k: merged[k] for k in keys},
             {"corner_count": 5, "passed": 4, "failed": 0, "errored": 1, "status": "error"},
         )
         # fail outranks error, whatever order the shards come in
-        merged = mbs.merge([str(f), str(e), str(p)])
+        exp = want("wcs", 1) + want("bcs", 2) + want("typ")
+        merged = mbs.merge([str(f), str(e), str(p)], exp)
         self.assertEqual(
-            {k: merged[k] for k in ("corner_count", "passed", "failed", "errored", "status")},
+            {k: merged[k] for k in keys},
             {"corner_count": 6, "passed": 4, "failed": 1, "errored": 1, "status": "fail"},
         )
-        merged = mbs.merge([str(p)])
+        merged = mbs.merge([str(p)], want("typ"))
         self.assertEqual((merged["status"], merged["passed"]), ("pass", 3))
+        self.assertTrue(merged["grid"]["complete"])
 
     def test_remote_becomes_fleet_array_with_a_slot_per_shard(self) -> None:
         local = self.write_json("l.json", shard("typ", ["pass"]))
         r1 = self.write_json("r1.json", shard("bcs", ["pass"], remote={"job_id": "j1"}))
-        merged = mbs.merge([str(local), str(r1)])
+        merged = mbs.merge([str(local), str(r1)], want("typ", 1) + want("bcs", 1))
         self.assertEqual(merged["environment"]["remote"], {"fleet": [None, {"job_id": "j1"}]})
-        all_local = mbs.merge([str(local)])
+        all_local = mbs.merge([str(local)], want("typ", 1))
         self.assertNotIn("remote", all_local["environment"])
 
     def test_provenance_note_counts_shards_and_keeps_existing_fields(self) -> None:
         paths = [str(self.write_json(f"{n}.json", shard(n, ["pass"]))) for n in ("a", "b", "c")]
-        prov = mbs.merge(paths)["provenance"]
+        prov = mbs.merge(paths, want("a", 1) + want("b", 1) + want("c", 1))["provenance"]
         self.assertEqual(prov["klt_version"], "0.5.0")
         self.assertIn("merged from 3 per-process batch reports", prov["batch_shard_merge"])
 
     def test_no_reports_is_an_error(self) -> None:
         with self.assertRaises(SystemExit):
-            mbs.merge([])
+            mbs.merge([], want("typ"))
+
+    def test_expected_grid_is_mandatory(self) -> None:
+        p = self.write_json("p.json", shard("typ", ["pass"]))
+        with self.assertRaises(SystemExit):
+            mbs.merge([str(p)], None)
+
+
+class GridContractTests(TempDirCase):
+    """Defect injection for issue #327: nothing incomplete becomes PASS."""
+
+    def refused(self, paths: list[str], expected: list[str], needle: str, **kw) -> None:
+        with self.assertRaises(mbs.ShardError) as ctx:
+            mbs.merge(paths, expected, **kw)
+        self.assertIn(needle, "\n".join(ctx.exception.problems))
+
+    def test_empty_error_shard_cannot_become_pass(self) -> None:
+        good = self.write_json("g.json", shard("typ", ["pass"]))
+        empty = self.write_json(
+            "e.json", {"status": "error", "corner_count": 0, "passed": 0, "failed": 0, "errored": 0, "corners": []}
+        )
+        self.refused([str(good), str(empty)], want("typ", 1), "empty shard")
+
+    def test_unknown_corner_status_fails_validation(self) -> None:
+        bad = shard("typ", ["pass", "pass"])
+        bad["corners"][1]["status"] = "skipped"
+        p = self.write_json("b.json", bad)
+        self.refused([str(p)], want("typ", 2), "unknown status 'skipped'")
+
+    def test_unknown_report_status_fails_validation(self) -> None:
+        bad = shard("typ", ["pass"])
+        bad["status"] = "weird"
+        p = self.write_json("b.json", bad)
+        self.refused([str(p)], want("typ", 1), "unknown report status")
+
+    def test_duplicate_corner_within_shard(self) -> None:
+        bad = shard("typ", ["pass", "pass"])
+        bad["corners"][1]["corner_id"] = bad["corners"][0]["corner_id"]
+        p = self.write_json("b.json", bad)
+        self.refused([str(p)], want("typ", 2), "duplicate corner_id")
+
+    def test_duplicate_normalized_identities_across_shards(self) -> None:
+        a = self.write_json("a.json", shard("hbt_typ", ["pass"]))
+        b = self.write_json("b.json", shard("hbt_typ", ["pass"]))
+        # same raw process in both shards: identities collide after merge
+        self.refused([str(a), str(b)], want("hbt_typ", 1), "duplicate normalized point identities")
+        # a label that disagrees with the shard but collides with another one
+        self.refused([f"typ={a}", f"typ={b}"], want("typ", 1), "duplicate normalized point identities")
+
+    def test_inconsistent_counts_and_status(self) -> None:
+        for key, value, needle in (
+            ("corner_count", 9, "corner_count=9"),
+            ("passed", 1, "passed=1"),
+            ("errored", 1, "errored=1"),
+            ("status", "error", "inconsistent status"),
+        ):
+            bad = shard("typ", ["pass", "pass"])
+            bad[key] = value
+            p = self.write_json(f"{key}.json", bad)
+            self.refused([str(p)], want("typ", 2), needle)
+        masked = shard("typ", ["pass", "fail"])
+        masked["status"] = "pass"
+        masked["failed"] = 1
+        p = self.write_json("masked.json", masked)
+        self.refused([str(p)], want("typ", 2), "inconsistent status")
+
+    def test_missing_point_detected_even_when_all_returned_points_pass(self) -> None:
+        a = self.write_json("a.json", shard("typ", ["pass", "pass", "pass"]))
+        b = self.write_json("b.json", shard("bcs", ["pass", "pass"]))  # 27/125 only 2 of 3
+        self.refused([str(a), str(b)], want("typ") + want("bcs"), "requested point(s) missing")
+        self.refused([str(a)], want("typ") + want("bcs"), "bcs_-40c_3.30v")  # omitted shard
+
+    def test_unexpected_point_blocks_publication(self) -> None:
+        a = self.write_json("a.json", shard("typ", ["pass", "pass", "pass"]))
+        self.refused([str(a)], want("typ", 2), "not in the requested grid")
+
+    def test_nothing_written_before_diagnostics(self) -> None:
+        a = self.write_json("a.json", shard("typ", ["pass"]))
+        out = self.tmp / "merged.json"
+        rc = None
+        with self.assertRaises(SystemExit):
+            rc = mbs.main(["-o", str(out), "--expect-process", "typ", "--expect-supplies", "3.3",
+                           "--expect-temps=-40,27", str(a)])
+        self.assertIsNone(rc)
+        self.assertFalse(out.exists())
+
+    def test_allow_incomplete_writes_diagnostic_the_adapter_refuses(self) -> None:
+        a = self.write_json("a.json", shard("typ", ["pass"]))
+        merged = mbs.merge([str(a)], want("typ", 2), allow_incomplete=True)
+        self.assertEqual(merged["status"], "incomplete")
+        self.assertFalse(merged["grid"]["complete"])
+        self.assertEqual(merged["grid"]["missing"], ["typ_27c_3.30v"])
+        # enrichers recompute status from corners; the grid block must still block
+        merged["status"] = "pass"
+        with self.assertRaises(SystemExit) as ctx:
+            kse.verify_grid(merged)
+        self.assertIn("incomplete", str(ctx.exception))
+
+    def test_failed_and_errored_points_are_preserved_not_dropped(self) -> None:
+        a = self.write_json("a.json", shard("typ", ["pass", "fail", "error"]))
+        merged = mbs.merge([str(a)], want("typ"))
+        self.assertEqual([c["status"] for c in merged["corners"]], ["pass", "fail", "error"])
+        self.assertEqual(merged["status"], "fail")
+        self.assertTrue(merged["grid"]["complete"])
+
+    def test_valid_smaller_grid_with_its_own_explicit_grid(self) -> None:
+        a = self.write_json("a.json", shard("typ", ["pass", "pass"]))
+        grid = self.write_json("grid.json", {"points": want("typ", 2)})
+        out = self.tmp / "m.json"
+        self.assertEqual(mbs.main(["-o", str(out), "--expect-grid", str(grid), str(a)]), 0)
+        merged = json.loads(out.read_text())
+        self.assertEqual((merged["status"], merged["corner_count"]), ("pass", 2))
+        axes = self.write_json(
+            "axes.json", {"axes": {"process": ["typ"], "supply_v": [3.3], "temperature_c": [-40, 27]}}
+        )
+        self.assertEqual(mbs.load_expected(str(axes)), want("typ", 2))
+
+    def test_supply_hint_identifies_corners_without_a_supply_axis(self) -> None:
+        # PWL-ramp benches: shards carry no supply_v; ids repeat across shards
+        def novdd(proc: str) -> dict:
+            r = shard(proc, ["pass"])
+            for c in r["corners"]:
+                c["supply_v"] = {}
+                c["corner_id"] = f"{proc}/novdd/{c['temperature_c']}C"
+            return r
+
+        a = self.write_json("a.json", novdd("hbt_typ"))
+        b = self.write_json("b.json", novdd("hbt_typ"))
+        exp = ["typ_-40c_2.97v", "typ_-40c_3.30v"]
+        merged = mbs.merge([f"typ@2.97={a}", f"typ@3.30={b}"], exp)
+        self.assertTrue(merged["grid"]["complete"])
+        self.refused([f"typ={a}"], exp, "no identifiable")
+
+    def test_identity_matches_adapter_grammar(self) -> None:
+        for corner in (
+            {"process": "typ", "temperature_c": 27, "supply_v": {"Vvdd": 3.3}},
+            {"process": "wcs", "temperature_c": -40.0, "supply_v": {"V": 2.97}},
+        ):
+            self.assertEqual(mbs.point_identity(corner), kse.corner_id(corner)[0])
+
+
+class AdapterGridTests(TempDirCase):
+    def test_adapter_blocks_missing_point_with_all_passing(self) -> None:
+        r = shard("typ", ["pass", "pass"])
+        with self.assertRaises(SystemExit) as ctx:
+            kse.verify_grid(r, want("typ"))
+        self.assertIn("missing", str(ctx.exception))
+
+    def test_adapter_uses_embedded_grid_and_accepts_complete(self) -> None:
+        a = self.write_json("a.json", shard("typ", ["pass"]))
+        merged = mbs.merge([str(a)], want("typ", 1))
+        kse.verify_grid(merged)
+        merged["corners"][0]["temperature_c"] = 85  # tampered after merge
+        with self.assertRaises(SystemExit):
+            kse.verify_grid(merged)
+
+    def test_adapter_rejects_empty_error_report(self) -> None:
+        with self.assertRaises(SystemExit):
+            kse.verify_grid({"status": "error", "corners": []})
+
+    def test_report_without_a_grid_is_checked_for_structure_only(self) -> None:
+        kse.verify_grid(shard("typ", ["pass", "fail"]))
 
 
 # --------------------------------------------------------------------------

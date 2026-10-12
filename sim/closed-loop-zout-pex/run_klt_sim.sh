@@ -286,10 +286,11 @@ import json,sys; r=json.load(open('${report}')); sys.exit(0 if r['status']=='pas
   done
 
   python3 "${HARNESS_DIR}/merge_batch_shards.py" -o "${WORK}/report-merged.json" \
+    --expect-process "$(IFS=,; echo "${CORNER_LABELS[*]}")" --expect-supplies "$(IFS=,; echo "${VDDS[*]}")" --expect-temps=-40,27,125 \
     $(for label in "${CORNER_LABELS[@]}"; do
         for vdd in "${VDDS[@]}"; do
           vid="$(echo "${vdd}" | tr '.' 'p')"
-          echo "${label}=${WORK}/report-${label}-${vid}-fixed.json"
+          echo "${label}@${vdd}=${WORK}/report-${label}-${vid}-fixed.json"
         done
       done)
   # From WORK: the merged reports' per-corner LOG paths are relative to it.
