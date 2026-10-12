@@ -185,6 +185,23 @@ It covers both this directory and `design/`. See "Checking for netlist
 drift" in [`design/README.md`](../README.md) for usage and exit codes. The
 check is opt-in and local only, and needs xschem and both PDK installs.
 
+**Pin status (issue [#322](https://github.com/2AMLogic/sg13g2-bandgap/issues/322)).**
+The current *target/setup* pin for SG13CMOS5L is `IHP-GmbH/IHP-Open-PDK`
+branch `dev` @ `f7bca32694fe3d58be0cc7d9df4b9f5db7161a14`, subtree
+`ihp-sg13cmos5l/` (full details and checksum in
+[`sim/pdk-sg13cmos5l.json`](../../sim/pdk-sg13cmos5l.json)). Install it with
+`klayout-tools`' `scripts/fetch-ihp-sg13g2.sh` followed by
+`scripts/fetch-ihp-sg13cmos5l.sh`, which places `ihp-sg13cmos5l/` as a
+sibling of `ihp-sg13g2/`. This is planned setup guidance: schematic entry,
+netlisting and the OSDI build/load behavior at that pin have **not** been
+verified by this repo. OSDI models must be built from Verilog-A source there
+(no prebuilt-binary assumption; `sim/tools/build-osdi.sh` is SG13G2-oriented
+and not claimed to cover every CMOS5L model). Every observation in the
+"What has and has not been verified" sections below was made against the
+older standalone `IHP-GmbH/ihp-sg13cmos5l` @ `607e18d4` install (2026-08),
+not the target pin. Re-running the experiments on the target pin is deferred
+work tracked by #322.
+
 **A resolvable SG13CMOS5L PDK install is required.** Unlike SG13G2 (whose
 `design/xschemrc` resolution this repo already documents), SG13CMOS5L's
 own device symbols (`libs.tech/xschem/sg13cmos5l_pr/*.sym`, for every
@@ -194,7 +211,7 @@ device except the two real MoM-cap symbols) are **symlinks into a sibling
 documents the intended install shape as a combined checkout,
 `IHP-Open-PDK/{ihp-sg13g2,ihp-sg13cmos5l}` side by side; an
 `ihp-sg13cmos5l`-only install (e.g. a bare `git clone
-https://github.com/IHP-GmbH/ihp-sg13cmos5l.git`) leaves those symlinks
+https://github.com/IHP-GmbH/ihp-sg13cmos5l.git`, now archived upstream) leaves those symlinks
 dangling. See "Tooling/PDK friction encountered" below for how this was
 resolved in this environment and the upstream issue filed for it.
 
@@ -222,10 +239,12 @@ time checking this issue's Builder actually ran.
   evidence)**: unlike `../bandgap_core.sch`'s own first-pass check (issue
   #9), which had to substitute ideal current sources and ideal resistors
   for the SG13G2 MOS/resistor devices (no `.osdi` models were buildable in
-  that environment at the time), **this environment's SG13CMOS5L install
-  ships prebuilt `.osdi` binaries already**
+  that environment at the time), **the old-pin SG13CMOS5L install used in that
+  2026-08 pass (standalone repo @ `607e18d4`, not the current target pin)
+  shipped prebuilt `.osdi` binaries already**
   (`libs.tech/ngspice/osdi/{psp103,psp103_nqs,r3_cmc,mosvar,cap_cmomf,cap_cmomi}.osdi`
-  — no `sim/tools/build-osdi.sh`-equivalent build step was needed here).
+  — no `sim/tools/build-osdi.sh`-equivalent build step was needed there;
+  this does not carry over to the target pin, which requires a source build).
   So this check ran the schematic's actual generated netlist verbatim
   (real `sg13_hv_pmos` PSP103 mirror legs, real `rppd` r3_cmc resistors,
   real `pnpMPA` Gummel-Poon devices — no substitutions at all), open-loop
@@ -293,7 +312,7 @@ account of what this issue's Builder actually ran.
   new netlists (`bandgap_core.spice` + `bandgap_amp.spice` +
   `bandgap_startup.spice`, wired exactly as `bandgap_top.sch` specifies) in
   one ngspice run, with real `pnpMPA`/PSP103/`r3_cmc` devices throughout
-  (no substitutions), reusing this environment's prebuilt `.osdi` binaries.
+  (no substitutions), reusing that old-pin install's prebuilt `.osdi` binaries.
   Result at `t=2ms` (fully ramped and settled):
 
   | Node/quantity | Result | `sim/closed-loop-startup/README.md`'s pass/fail bar (reused informally) |
@@ -347,8 +366,8 @@ encountered: every symbol this schematic instantiates
 (`sg13_hv_pmos.sym`, `pnpMPA.sym`, `rppd.sym`) resolved with pinouts and
 `template=`/`format=` netlist parameters exactly matching what
 `spec/decision-records/0004-cmos5l-bipolar-device-selection.md` derived
-from reading the model cards directly, and the PDK's prebuilt `.osdi`
-binaries loaded with no build step. The MoM-cap-only constraint (no MIM
+from reading the model cards directly, and the old-pin PDK's prebuilt `.osdi`
+binaries loaded with no build step (old pin only; unverified at the target pin). The MoM-cap-only constraint (no MIM
 cap symbol/model anywhere in this PDK) was also confirmed directly and
 did not block this phase, since `bandgap_core` alone needs no capacitor
 — see DR-0004 for why this is flagged as forward guidance rather than
