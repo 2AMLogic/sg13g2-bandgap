@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "t1_item": 1,
+  "comment": "Machine-readable dependency inventory for the actively cited item-1 audit (design-sources.txt). Written by hand from the audit's own hash lines plus the export rcfile; checked by .github/scripts/check_design_source_dependencies.py. Hash equality shows the audited inputs are unchanged, NOT that the export is equivalent. Never regenerate automatically.",
+  "attestation": "manifests/evidence/design-sources.txt",
+  "attestation_sha256": "sha256:606c784aa5b05cd049f61cfd7b790587bec0c51a6b9654f02b25559924c2569f",
+  "scope": {
+    "include": [
+      "design/*.sch",
+      "design/*.sym",
+      "design/netlist/*.spice"
+    ],
+    "exclude": [
+      "design/sg13cmos5l"
+    ]
+  },
+  "inputs": [
+    {
+      "path": "design/bandgap_amp.sch",
+      "sha256": "sha256:15867ee4bdc2bf6d0f64e34bece6ba5d1821374f30bd8560e30cfebc64fb071e",
+      "role": "schematic"
+    },
+    {
+      "path": "design/bandgap_core.sch",
+      "sha256": "sha256:1bfc110a5882077dd809c26bc1f3ee0ce7ef1af90f6b018535aef912d38d1437",
+      "role": "schematic"
+    },
+    {
+      "path": "design/bandgap_startup.sch",
+      "sha256": "sha256:4a0033a2d9817ddbe10664bb4e11d3c4b86d40e397f2ec4d1ec8dae15a341921",
+      "role": "schematic"
+    },
+    {
+      "path": "design/bandgap_top.sch",
+      "sha256": "sha256:beee54ca8b1afe614cc1a7eb7015d883b3f4e55307b5a085953e90fd3b8f91e8",
+      "role": "schematic"
+    },
+    {
+      "path": "design/bandgap_trim.sch",
+      "sha256": "sha256:e14f40c096fa2fbb7c51552003ad7e251f3e83520045ce6f398512934e027134",
+      "role": "schematic"
+    },
+    {
+      "path": "design/bandgap_amp.sym",
+      "sha256": "sha256:94c866fe40c8044ea6676c6e11cd7d1fd2cbad8e00b40e4aac57045f6a9bbc05",
+      "role": "symbol"
+    },
+    {
+      "path": "design/bandgap_core.sym",
+      "sha256": "sha256:1cda9811ccb0913b616426aa96cfcc8817634911c3a4461924c7b9db851b0aab",
+      "role": "symbol"
+    },
+    {
+      "path": "design/bandgap_startup.sym",
+      "sha256": "sha256:eb9aa39e33aa33d906ba04656904d7b36cecfc48972e8196a7a5b6fd4aaaa8d4",
+      "role": "symbol"
+    },
+    {
+      "path": "design/bandgap_trim.sym",
+      "sha256": "sha256:70b899c0029e7c8b16c638027bec958bc444ff0a1bd46365b3406b224909305a",
+      "role": "symbol"
+    },
+    {
+      "path": "design/netlist/bandgap_amp.spice",
+      "sha256": "sha256:6b0e7babcd57265588a6a7da08cd9465d49b52ce3c0e8e6e2ec1e5cdc4d1bd02",
+      "role": "netlist"
+    },
+    {
+      "path": "design/netlist/bandgap_core.spice",
+      "sha256": "sha256:5ce44936e16fcea5217fed19f1a794f9db9e439e49dad41473d95efdfa714a83",
+      "role": "netlist"
+    },
+    {
+      "path": "design/netlist/bandgap_startup.spice",
+      "sha256": "sha256:4182537f3530fa2614c3a40271381c69fe885ffed7e2e3941b4b8d3bc95bacab",
+      "role": "netlist"
+    },
+    {
+      "path": "design/netlist/bandgap_top.spice",
+      "sha256": "sha256:586dae89e98d1fed1350be6c53885fd965ce489e2710ddca72077b54c5e2a7be",
+      "role": "netlist"
+    },
+    {
+      "path": "design/netlist/bandgap_trim.spice",
+      "sha256": "sha256:8c735409d401c2c6c63cf8f8c4061b8f6401d67dc3553eee6f001bc6302d675a",
+      "role": "netlist"
+    }
+  ],
+  "export_config": [
+    {
+      "path": "design/xschemrc",
+      "sha256": "sha256:2db904d04cc8900b6e6c06aec8ceedb4384ff155557d67460576e7afac5d6359"
+    }
+  ]
+}
