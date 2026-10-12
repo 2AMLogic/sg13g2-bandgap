@@ -107,6 +107,15 @@ structure/hygiene that already exists in this repo today — nothing more.
   inventory, prose outside the spec table and superseded reports are not
   checked. See `manifests/README.md`.
 
+- **`.github/scripts/test_check_design_source_dependencies.py`** then
+  **`.github/scripts/check_design_source_dependencies.py`** (#324) — the
+  item-1 stale-input gate. `manifests/evidence/design-sources.inventory.json`
+  (beside the actively cited attestation) lists the audited in-scope
+  schematic/symbol/netlist hashes, the export rcfile and the scope globs; the
+  checker fails on a changed or missing input, an unaudited added cell, or an
+  inventory/attestation mismatch. SG13CMOS5L and unrelated edits are ignored;
+  a pass is not an export-equivalence proof and nothing is auto-refreshed.
+
 All of these are plain bash/python3 scripts (stdlib only, no venv, no
 ngspice, no PDK), runnable locally the same way CI runs them:
 
@@ -120,6 +129,8 @@ python3 sim/harness/test_harness_transformers.py
 python3 .github/scripts/check_evidence_formats.py
 python3 .github/scripts/test_check_report_dependencies.py
 python3 .github/scripts/check_report_dependencies.py
+python3 .github/scripts/test_check_design_source_dependencies.py
+python3 .github/scripts/check_design_source_dependencies.py
 ```
 
 ### The `signoff-manifest` job

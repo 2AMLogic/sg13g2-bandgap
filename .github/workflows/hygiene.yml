@@ -82,6 +82,17 @@ jobs:
         # Stdlib hashing/parsing only; never simulates or regenerates.
         run: python3 .github/scripts/check_report_dependencies.py
 
+      - name: Design-source dependency checker self-test
+        # Issue #324: hermetic defect injection (changed/added/deleted in-scope
+        # source, out-of-scope SG13CMOS5L edits, malformed inventory, escaping paths).
+        run: python3 .github/scripts/test_check_design_source_dependencies.py
+
+      - name: Active design-source audit dependencies
+        # Issue #324: the actively cited item-1 audit's inventory must still
+        # match the committed schematics/symbols/netlists/xschemrc. Stdlib hashing
+        # only; never runs xschem and never refreshes the attestation.
+        run: python3 .github/scripts/check_design_source_dependencies.py
+
   signoff-manifest:
     # Re-derives the block's T1 verdict of record (issue #226): re-runs
     # `klt signoff --manifest` over the committed block manifest and requires

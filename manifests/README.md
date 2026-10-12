@@ -65,6 +65,22 @@ The binding used here:
   freshness check; the `.sch` to `.spice` export is **not** re-checked in
   CI. Whoever changes `design/` must re-audit and regenerate the inventory,
   envelope, pin and verdict.
+  **Stale-input detection (#324).** `evidence/design-sources.inventory.json`
+  (beside the attestation, *not* bound by the envelope or manifest pin) is the
+  machine-readable form of the audit's inputs: the 14 in-scope
+  `design/*.sch`, `design/*.sym` and `design/netlist/*.spice` hashes, the
+  export rcfile `design/xschemrc`, and the scope globs (SG13CMOS5L under
+  `design/sg13cmos5l` explicitly excluded). `.github/scripts/check_design_source_dependencies.py`
+  (hygiene job; self-test alongside) fails, naming the path, when an audited
+  input changed or vanished, when an in-scope cell was added that the audit
+  never saw, or when the inventory disagrees with the attestation's own hash
+  lines. Unrelated edits and SG13CMOS5L changes pass. A pass means only
+  "the audited inputs are unchanged" -- it is not a new export-equivalence
+  proof, and CI never refreshes anything. On failure: do a fresh explicit
+  export audit, then write a new attestation, inventory, envelope, pin and
+  verdict (a superseded audit's inventory stays as history and is not checked).
+  The attestation text's sentence that nothing re-validates the listed hashes
+  predates this check and is left byte-identical so the envelope pin holds.
 - **Item 2 (Layout) — cited: `layout/bandgap_top/drc_report.json`**: proves
   the committed GDS exists and was DRC-checkable at the pinned content hash;
   the generator (`layout/bandgap_top/generate.py`) is committed and
