@@ -235,10 +235,11 @@ import json,sys; r=json.load(open('${report}')); sys.exit(0 if r['status']=='pas
   done
 
   python3 "${HARNESS_DIR}/merge_batch_shards.py" -o "${WORK}/report-merged.json" \
+    --expect-process "$(IFS=,; echo "${CORNER_LABELS[*]}")" --expect-supplies "$(IFS=,; echo "${VDDS[*]}")" --expect-temps=-40,-20,0,27,50,75,100,125 \
     $(for label in "${CORNER_LABELS[@]}"; do
         for vdd in "${VDDS[@]}"; do
           vid="$(echo "${vdd}" | tr '.' 'p')"
-          echo "${label}=${WORK}/report-${label}-${vid}-fixed.json"
+          echo "${label}@${vdd}=${WORK}/report-${label}-${vid}-fixed.json"
         done
       done)
   python3 "${HARNESS_DIR}/enrich_pvt_report.py" "${WORK}/report-merged.json" \

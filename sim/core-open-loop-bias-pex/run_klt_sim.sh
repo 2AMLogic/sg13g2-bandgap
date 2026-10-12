@@ -249,6 +249,7 @@ print(len(r['corners']['supply_v']['Vvdd'])*len(r['corners']['temperature_c']))"
   done
 
   python3 "${HARNESS_DIR}/merge_batch_shards.py" -o "${WORK}/report-merged.json" \
+    --expect-process "$(IFS=,; echo "${CORNER_LABELS[*]}")" --expect-supplies 2.97,3.30,3.63 --expect-temps=-40,27,125 \
     "typ=${WORK}/report-typ-fixed.json" "bcs=${WORK}/report-bcs-fixed.json" "wcs=${WORK}/report-wcs-fixed.json" \
     "sf=${WORK}/report-sf-fixed.json" "fs=${WORK}/report-fs-fixed.json"
   python3 - "${WORK}/report-merged.json" <<'PY'

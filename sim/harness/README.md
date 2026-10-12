@@ -375,7 +375,11 @@ into a **per-process** (core bench) or **per-process-per-supply**
 the temperature axis (and, where the fixture allows `alter`, the supply
 axis) natively within each request, then merges the reports
 deterministically (`sim/harness/merge_batch_shards.py`, the same
-shard-merge contract `remote.hosts > 1` applies one level down), fixes the
+shard-merge contract `remote.hosts > 1` applies one level down; every merge
+states its expected grid -- `--expect-process/--expect-supplies/--expect-temps`
+or `--expect-grid FILE` -- and empty shards, unknown statuses, duplicate
+identities, inconsistent counts and missing or unexpected points abort before
+anything is written, issue #327; the adapter re-checks the embedded grid), fixes the
 pulled-back decks' runner-side paths for the adapter
 (`sim/harness/fixup_batch_report.py`), enriches each point with the
 derived columns and the closed-loop verdict
