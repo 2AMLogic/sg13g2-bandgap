@@ -41,6 +41,28 @@ Three pieces, all in this directory:
 | `klt_sim_evidence.py` | The adapter. `klt sim` report + a per-experiment record spec → `records/<id>.{md,csv}` + `corners/<id>/*.log` + `netlist-snapshots/<id>/*.spice`. Generic over experiments; all 23 can use it. |
 | `probe/run_probe.sh` | The standing self-test: one corner end-to-end, plus five assertions (below). |
 
+### Append-only publication and interruption recovery (issue #328)
+
+The adapter never overwrites or mutates an existing record. Before writing it
+validates the record id (letters, digits, `.`, `_`, `-`, `+`; no separators,
+no `..`) and the corner-id uniqueness, rejects any pre-existing
+`records/<id>.{csv,md}`, `corners/<id>/` or `netlist-snapshots/<id>/` (even if
+only one of them exists), and checks that every corner's log and deck is
+readable. It then reserves the id by exclusively creating an empty
+`records/<id>.csv`, builds the whole bundle in a `.stage-<id>-*` temp dir
+inside the experiment, re-verifies any extraction binding, renames the two
+artifact directories and the `.md` into place, and last atomically replaces
+the placeholder with the real CSV. The CSV is the commit marker: a record
+exists if and only if its CSV is non-empty. Handled errors (including
+Ctrl-C) remove only what that run created and release the id.
+
+Several paths cannot be committed with one rename, so a hard kill (SIGKILL,
+power loss) can leave: a `.stage-<id>-*` directory, a zero-byte
+`records/<id>.csv`, and possibly published `corners/`, `netlist-snapshots/`
+or `.md` for that id. Re-running with the same id then fails by design.
+Recover by hand: confirm the CSV is empty, delete the leftovers for that id
+(never anything for another id), and re-run; or just use a new `--record-id`.
+
 The pure JSON/text transforms beside the adapter (`merge_batch_shards.py`,
 `fixup_batch_report.py`, `enrich_pvt_report.py`) and the adapter's own
 record-shaping helpers are unit-tested by `test_harness_transformers.py`

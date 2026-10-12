@@ -760,5 +760,164 @@ class ExtractionBindingTests(TempDirCase):
         self.assertNotIn("Extraction sources", without)
 
 
+class PublicationTests(TempDirCase):
+    """Issue #328: append-only, collision-safe, staged publication."""
+
+    SPEC = {"Experiment": "e", "Claim": "c", "PDK": "p", "request": "r",
+            "Corner matrix run": "m", "pass_requires": ["vref"]}
+
+    def corner(self, temp: int, *, status: str = "pass", log: bool = True, deck: bool = True) -> dict:
+        art: dict = {}
+        if log:
+            art["log"] = str(self.write(f"work/{temp}.log", f"log {temp}\n"))
+        if deck:
+            art["deck"] = str(self.write(f"work/{temp}.cir", f"* deck {temp}\nR1 a b 1\n"))
+        return {"corner_id": f"typ/3.300V/{temp}C", "process": "typ", "temperature_c": temp,
+                "supply_v": {"vdd": 3.3}, "status": status,
+                "measurements": [{"name": "vref", "value": 1.2}], "artifacts": art}
+
+    def report(self, *corners: dict) -> dict:
+        bad = any(c["status"] != "pass" for c in corners)
+        return {"status": "fail" if bad else "pass", "corners": list(corners)}
+
+    def emit(self, report: dict, rid: str = "rid1") -> tuple[int, int]:
+        return kse.emit(report, self.SPEC, self.exp, self.tmp, rid)
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.exp = self.tmp / "sim" / "demo"
+
+    def tree(self) -> dict[str, bytes]:
+        if not self.exp.exists():
+            return {}
+        return {str(p.relative_to(self.exp)): p.read_bytes()
+                for p in sorted(self.exp.rglob("*")) if p.is_file()}
+
+    def test_pass_publishes_current_layout(self) -> None:
+        self.assertEqual(self.emit(self.report(self.corner(27), self.corner(85))), (2, 2))
+        t = self.tree()
+        self.assertEqual(
+            sorted(t),
+            ["corners/rid1/typ_27c_3.30v.log", "corners/rid1/typ_85c_3.30v.log",
+             "netlist-snapshots/rid1/typ_27c_3.30v.spice",
+             "netlist-snapshots/rid1/typ_85c_3.30v.spice",
+             "records/rid1.csv", "records/rid1.md"],
+        )
+        self.assertTrue(t["records/rid1.csv"].startswith(b"corner_label,temp_c,vdd_v,status,vref\n"))
+        self.assertIn(b"typ,27,3.30,PASS,1.200000e+00\n", t["records/rid1.csv"])
+        self.assertIn(b"* deck 27", t["netlist-snapshots/rid1/typ_27c_3.30v.spice"])
+        self.assertEqual(t["corners/rid1/typ_85c_3.30v.log"], b"log 85\n")
+        self.assertEqual([p.name for p in self.exp.iterdir() if p.name.startswith(".")], [])
+
+    def test_fail_corner_is_recorded(self) -> None:
+        self.assertEqual(self.emit(self.report(self.corner(27), self.corner(85, status="fail"))), (1, 2))
+        t = self.tree()
+        self.assertIn(b"typ,85,3.30,FAIL", t["records/rid1.csv"])
+        self.assertIn(b"**Failed points**: typ_85c_3.30v", t["records/rid1.md"])
+
+    def test_rerun_of_existing_id_changes_nothing(self) -> None:
+        rep = self.report(self.corner(27))
+        self.emit(rep)
+        before = self.tree()
+        with self.assertRaises(SystemExit) as ctx:
+            self.emit(rep)
+        self.assertIn("already exists", str(ctx.exception))
+        self.assertEqual(self.tree(), before)
+
+    def test_any_single_existing_path_blocks_publication(self) -> None:
+        for rel in ("records/rid1.csv", "records/rid1.md",
+                    "corners/rid1/x.log", "netlist-snapshots/rid1/x.spice"):
+            with self.subTest(existing=rel):
+                self.exp = self.tmp / "sim" / ("demo-" + rel.replace("/", "_"))
+                path = self.exp / rel
+                path.parent.mkdir(parents=True)
+                path.write_bytes(b"precious")
+                before = self.tree()
+                with self.assertRaises(SystemExit):
+                    self.emit(self.report(self.corner(27)))
+                self.assertEqual(self.tree(), before)
+                self.assertEqual(path.read_bytes(), b"precious")
+                self.assertEqual([p.name for p in self.exp.iterdir() if p.name.startswith(".")], [])
+
+    def test_missing_deck_on_first_corner_copies_nothing(self) -> None:
+        with self.assertRaises(SystemExit):
+            self.emit(self.report(self.corner(27, deck=False), self.corner(85)))
+        self.assertFalse(self.exp.exists())
+
+    def test_missing_later_log_leaves_no_record_and_keeps_prior(self) -> None:
+        self.emit(self.report(self.corner(27)), "old")
+        before = self.tree()
+        with self.assertRaises(SystemExit):
+            self.emit(self.report(self.corner(27), self.corner(85, log=False)), "new")
+        self.assertEqual(self.tree(), before)
+
+    def test_failure_during_staging_is_cleaned_up(self) -> None:
+        rep = self.report(self.corner(27), self.corner(85))
+        real = kse.shutil.copyfile
+        calls = []
+
+        def flaky(src, dst, *a, **k):
+            calls.append(src)
+            if len(calls) == 2:
+                raise OSError("disk full")
+            return real(src, dst, *a, **k)
+
+        kse.shutil.copyfile = flaky
+        try:
+            with self.assertRaises(SystemExit):
+                self.emit(rep)
+        finally:
+            kse.shutil.copyfile = real
+        self.assertEqual(self.tree(), {})
+        self.assertEqual([p.name for p in self.exp.rglob(".*")], [])
+        self.emit(rep)  # the id was released, not burned
+
+    def test_bad_ids_rejected(self) -> None:
+        for bad in ("", ".", "..", "../x", "a/b", "a\\b", ".hidden", "a..b", "/abs", "x y"):
+            with self.subTest(rid=bad):
+                with self.assertRaises(SystemExit):
+                    self.emit(self.report(self.corner(27)), bad)
+        self.assertFalse(self.exp.exists())
+        self.assertFalse((self.tmp / "sim" / "x").exists())
+
+    def test_duplicate_normalised_corners_rejected(self) -> None:
+        twin = self.corner(27)
+        twin["corner_id"] = "typ/3.300V/27.0C"  # distinct to klt, same repo id
+        with self.assertRaises(SystemExit) as ctx:
+            self.emit(self.report(self.corner(27), twin))
+        self.assertIn("not unique", str(ctx.exception))
+        self.assertFalse(self.exp.exists())
+
+    def test_reservation_blocks_a_concurrent_publisher(self) -> None:
+        # A live publisher holds the id by its empty CSV placeholder.
+        (self.exp / "records").mkdir(parents=True)
+        (self.exp / "records" / "rid1.csv").write_bytes(b"")
+        with self.assertRaises(SystemExit):
+            self.emit(self.report(self.corner(27)))
+        self.assertEqual(self.tree(), {"records/rid1.csv": b""})
+
+    def test_binding_recheck_before_commit_leaves_nothing(self) -> None:
+        pex = self.write("layout/c/c.pex.spice", "R1 a b 1\n")
+        entries, _ = xb.capture([pex], self.tmp)
+        real = xb.verify_captured
+        seen = []
+
+        def drifting(*a, **k):
+            seen.append(1)
+            if len(seen) >= 2:  # passes up front, drifts during staging
+                raise xb.BindingError("source drifted")
+            return real(*a, **k)
+
+        xb.verify_captured = drifting
+        try:
+            with self.assertRaises(SystemExit):
+                kse.emit(self.report(self.corner(27)), self.SPEC, self.exp, self.tmp, "rid1",
+                         extraction=entries)
+        finally:
+            xb.verify_captured = real
+        self.assertEqual(len(seen), 2)
+        self.assertEqual(self.tree(), {})
+
+
 if __name__ == "__main__":
     unittest.main()

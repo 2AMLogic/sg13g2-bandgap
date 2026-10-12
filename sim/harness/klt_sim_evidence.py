@@ -56,6 +56,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -431,42 +432,194 @@ def emit(
     corners_out = experiment / "corners" / rid
     snaps_out = experiment / "netlist-snapshots" / rid
     records_out = experiment / "records"
-    if dry_run:
-        print(f"would write {records_out}/{rid}.{{md,csv}}, {corners_out}/, {snaps_out}/")
-        print(f"  {passed}/{total} PASS; measurement columns: {', '.join(names)}")
-        return passed, total
+    csv_out = records_out / f"{rid}.csv"
+    md_out = records_out / f"{rid}.md"
 
-    for directory in (corners_out, snaps_out, records_out):
-        directory.mkdir(parents=True, exist_ok=True)
+    # Everything that can be checked without touching the filesystem is checked
+    # first: id shape, corner-id uniqueness, then every log and deck. A failure
+    # here leaves nothing behind (issue #328).
+    validate_record_id(rid)
+    cids = [corner_id(c)[0] for c in report["corners"]]
+    for cid in cids:
+        validate_record_id(cid, what="corner id")
+    dupes = sorted({c for c in cids if cids.count(c) > 1})
+    if dupes:
+        raise SystemExit(
+            f"klt_sim_evidence.py: corner ids are not unique after normalisation: {dupes}"
+            " (their logs and snapshots would overwrite each other)"
+        )
+    _reject_existing(rid, (csv_out, md_out, corners_out, snaps_out))
 
-    for corner in report["corners"]:
-        cid = corner_id(corner)[0]
+    logs: dict[str, Path] = {}
+    snapshots: dict[str, str] = {}
+    for corner, cid in zip(report["corners"], cids):
         artifacts = corner.get("artifacts") or {}
         log = artifacts.get("log")
         deck = artifacts.get("deck")
-        if not log or not Path(log).is_file():
+        if not log or not _readable(Path(log)):
             raise SystemExit(
                 f"klt_sim_evidence.py: corner {cid} has no readable ngspice log -- re-run "
                 "the request with options.keep_artifacts true (a record must ship its raw "
                 "simulator output)"
             )
-        shutil.copyfile(log, corners_out / f"{cid}.log")
-        if not deck or not Path(deck).is_file():
+        if not deck or not _readable(Path(deck)):
             raise SystemExit(f"klt_sim_evidence.py: corner {cid} has no readable generated deck")
-        text = "\n".join(inline_deck(Path(deck), pdk_root)) + "\n"
-        (snaps_out / f"{cid}.spice").write_text(text, encoding="utf-8")
+        logs[cid] = Path(log)
+        try:
+            snapshots[cid] = "\n".join(inline_deck(Path(deck), pdk_root)) + "\n"
+        except (OSError, UnicodeDecodeError) as exc:
+            raise SystemExit(
+                f"klt_sim_evidence.py: corner {cid} deck is unreadable: {exc}"
+            ) from None
 
-    with (records_out / f"{rid}.csv").open("w", newline="", encoding="utf-8") as handle:
-        # LF line endings: this repo's committed records are all bash-written
-        # LF files; python's csv default (CRLF) would make every klt-minted
-        # record the odd one out in diffs.
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()), lineterminator="\n")
-        writer.writeheader()
-        writer.writerows(rows)
-    (records_out / f"{rid}.md").write_text(
-        build_md(report, spec, rid, passed, total, failed, extraction), encoding="utf-8"
+    if dry_run:
+        print(f"would write {records_out}/{rid}.{{md,csv}}, {corners_out}/, {snaps_out}/")
+        print(f"  {passed}/{total} PASS; measurement columns: {', '.join(names)}")
+        return passed, total
+
+    _publish(
+        experiment,
+        rid,
+        logs,
+        snapshots,
+        rows,
+        build_md(report, spec, rid, passed, total, failed, extraction),
+        recheck=(lambda: xb.verify_captured(extraction, repo_root)) if extraction else None,
     )
     return passed, total
+
+
+_SAFE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]*$")
+
+
+def validate_record_id(value: str, *, what: str = "record id") -> None:
+    """Reject ids that are empty, dotted-parent, or carry path separators.
+
+    The id names a CSV, an MD and two directories under the experiment; it
+    must never be able to point outside them.
+    """
+    if (
+        not isinstance(value, str)
+        or not _SAFE_ID_RE.match(value)
+        or ".." in value
+        or len(value) > 200
+    ):
+        raise SystemExit(
+            f"klt_sim_evidence.py: invalid {what} {value!r}: use letters, digits, '.', '_',"
+            " '-', '+' only, starting with a letter or digit, no '..' or path separators"
+        )
+
+
+def _readable(path: Path) -> bool:
+    try:
+        with path.open("rb") as handle:
+            handle.read(1)
+    except OSError:
+        return False
+    return path.is_file()
+
+
+def _reject_existing(rid: str, paths: tuple[Path, ...]) -> None:
+    clash = [str(p) for p in paths if os.path.lexists(p)]
+    if clash:
+        raise SystemExit(
+            f"klt_sim_evidence.py: record {rid} already exists ({', '.join(clash)}); evidence is"
+            " append-only -- refusing to overwrite. Use a new --record-id, and if these are"
+            " leftovers of an interrupted publish, review and remove them by hand (see"
+            " sim/harness/README.md)."
+        )
+
+
+def _rmtree_quiet(path: Path) -> None:
+    shutil.rmtree(path, ignore_errors=True)
+
+
+def _publish(
+    experiment: Path,
+    rid: str,
+    logs: dict[str, Path],
+    snapshots: dict[str, str],
+    rows: list[dict],
+    md_text: str,
+    *,
+    recheck=None,
+) -> None:
+    """Stage the whole bundle, then publish it without ever overwriting.
+
+    Order: reserve the id (exclusive create of the record CSV as an empty
+    placeholder -- the CSV is the commit marker, so it is also the last thing
+    to become real), stage logs/snapshots/md/csv in a temp dir on the same
+    filesystem, re-verify extraction bindings, rename the artifact dirs and
+    the md into place, and finally atomically replace the placeholder with the
+    staged CSV. Handled failures remove only what this call created.
+    """
+    corners_out = experiment / "corners" / rid
+    snaps_out = experiment / "netlist-snapshots" / rid
+    records_out = experiment / "records"
+    csv_out = records_out / f"{rid}.csv"
+    md_out = records_out / f"{rid}.md"
+
+    for directory in (corners_out.parent, snaps_out.parent, records_out):
+        directory.mkdir(parents=True, exist_ok=True)
+
+    try:
+        fd = os.open(csv_out, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        _reject_existing(rid, (csv_out,))
+        raise  # unreachable; keeps type checkers honest
+    os.close(fd)
+    reserved = True
+    published: list[Path] = []
+    stage = None
+    try:
+        # The placeholder is ours alone now; anything else under this id is a
+        # pre-existing partial record. Leave it untouched and back out.
+        _reject_existing(rid, (md_out, corners_out, snaps_out))
+        stage = Path(tempfile.mkdtemp(prefix=f".stage-{rid}-", dir=experiment))
+        (stage / "corners").mkdir()
+        (stage / "snaps").mkdir()
+        for cid, log in logs.items():
+            shutil.copyfile(log, stage / "corners" / f"{cid}.log")
+            (stage / "snaps" / f"{cid}.spice").write_text(snapshots[cid], encoding="utf-8")
+        with (stage / "r.csv").open("w", newline="", encoding="utf-8") as handle:
+            # LF line endings: this repo's committed records are all bash-written
+            # LF files; python's csv default (CRLF) would make every klt-minted
+            # record the odd one out in diffs.
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()), lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(rows)
+        (stage / "r.md").write_text(md_text, encoding="utf-8")
+
+        if recheck is not None:
+            try:
+                recheck()
+            except xb.BindingError as exc:
+                raise SystemExit(f"klt_sim_evidence.py: {exc}") from None
+
+        os.rename(stage / "corners", corners_out)
+        published.append(corners_out)
+        os.rename(stage / "snaps", snaps_out)
+        published.append(snaps_out)
+        os.rename(stage / "r.md", md_out)
+        published.append(md_out)
+        os.replace(stage / "r.csv", csv_out)  # commit: the placeholder becomes the record
+        reserved = False
+    except BaseException as exc:
+        for path in reversed(published):
+            if path.is_dir():
+                _rmtree_quiet(path)
+            else:
+                path.unlink(missing_ok=True)
+        if reserved:
+            csv_out.unlink(missing_ok=True)
+        if isinstance(exc, OSError):
+            raise SystemExit(
+                f"klt_sim_evidence.py: publishing record {rid} failed ({exc}); nothing was kept"
+            ) from None
+        raise
+    finally:
+        if stage is not None:
+            _rmtree_quiet(stage)
 
 
 def main(argv: list[str] | None = None) -> int:
