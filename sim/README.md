@@ -20,13 +20,56 @@ included — see "Append-only rule" below and
 Every SG13G2 record in this tree is generated against the PDK revision
 pinned in [`pdk.json`](pdk.json) (currently `IHP-Open-PDK` tag `v0.3.0`,
 fetchable via `klayout-tools`' `scripts/fetch-ihp-sg13g2.sh` — the same
-fetch `design/README.md` documents for schematic-entry work). Every
-SG13CMOS5L record (`sim/sg13cmos5l-*/`) is generated against the revision
-pinned in [`pdk-sg13cmos5l.json`](pdk-sg13cmos5l.json) instead — a separate
-file, not a restructuring of `pdk.json`, because the two PDKs pin
-differently (a tagged, checksummed tarball release for SG13G2 vs. a live
-git-commit pin for SG13CMOS5L, which ships no tagged release at all — see
-that file's own `_comment` for the full rationale). A record's own `## PDK`
+fetch `design/README.md` documents for schematic-entry work). SG13CMOS5L
+is tracked separately in [`pdk-sg13cmos5l.json`](pdk-sg13cmos5l.json) — a
+separate file, not a restructuring of `pdk.json`, because the two PDKs pin
+differently (a tagged, checksummed tarball release for SG13G2 vs. a
+commit-SHA pin plus tarball checksum for SG13CMOS5L, which ships in no
+IHP-Open-PDK release yet — see that file's own `_comment`).
+
+That file carries **two distinct SG13CMOS5L pins; do not conflate them**
+(issue [#322](https://github.com/2AMLogic/sg13g2-bandgap/issues/322)):
+
+- **Target/setup pin** (what a fresh environment should install):
+  `IHP-GmbH/IHP-Open-PDK`, branch `dev`, commit
+  `f7bca32694fe3d58be0cc7d9df4b9f5db7161a14`, subtree `ihp-sg13cmos5l/`,
+  tarball sha256
+  `5eb6f8a9b0b2ecc4fa08cc30627668406f85b1a97834f278036c43f0c0dbc70b`,
+  matching `klayout-tools`' `scripts/fetch-ihp-sg13cmos5l.sh`
+  (klayout-tools#2720, which re-pointed it from the now-archived standalone
+  repo). Only the pin file/text was checked for consistency with that script;
+  the tarball was not downloaded or hashed here. **No record in this tree
+  was generated with this pin**, and its runtime compatibility is
+  **unverified**.
+- **Historical pin** (what every existing `sim/sg13cmos5l-*/` record was
+  actually generated against): the standalone `IHP-GmbH/ihp-sg13cmos5l`
+  repository, branch `main`, commit
+  `607e18d4bd9214a52575c194b4181ef449f9252f` (2026-08). Kept as
+  provenance in the pin file's `historical_pin_used_by_existing_evidence`;
+  historical records and their source citations are deliberately unchanged.
+
+Setup for the target pin (planned, not yet exercised by this repo): run
+`klayout-tools`' `scripts/fetch-ihp-sg13g2.sh`, then
+`scripts/fetch-ihp-sg13cmos5l.sh`, which places `ihp-sg13cmos5l/` as a
+**sibling** of `ihp-sg13g2/` under `pdks/ihp-open-pdk/` (the CMOS5L tree's
+shared-device files are relative symlinks into that sibling) and refuses to
+run without it. The OSDI models must then be **built from Verilog-A
+source** (upstream removed the prebuilt capacitor `.osdi` objects). The
+existing `sim/tools/build-osdi.sh` is SG13G2-oriented (models `psp103`,
+`psp103_nqs`, `r3_cmc`, `mosvar`) and is not claimed to cover every CMOS5L
+model. Upstream also reports `rf[n|p]mos_minW` is now 0.39 um; this repo's
+CMOS5L schematics/layout reference no `rfnmos`/`rfpmos`, and any effect is
+unmeasured.
+
+**Outstanding before any new-pin evidence** (all tracked by #322, which
+stays open): (1) provisioning of the pinned CMOS5L subtree, a compatible
+SG13G2 sibling and compiled models on the permitted batch backend (the
+fleet's batch image pin currently lists SG13G2 only, as observed
+2026-10-12; no local-grid exception applies); (2) conversion of the four
+CMOS5L experiments from their legacy `run_pvt_sweep.sh` loops to the
+`sim/harness/` batch harness; (3) confirming the startup PEX deck/extraction
+binding at the new pin. Then the four experiments are re-run as new
+append-only evidence and compared with the old results. A record's own `## PDK`
 field additionally states the exact `PDK_ROOT`/`ngspice -v` the run used, so
 a later reader can tell whether their own environment matches without
 re-deriving it from either pin file alone.
@@ -450,10 +493,12 @@ whichever of those trackers owns them.
   worst-corner `|sns1-sns2|` is 93 uV (well inside its 20 mV bar) with `vref`
   in a 1.189-1.200 V band, and its `typ`/27 degC/3.3V point reproduces
   `design/sg13cmos5l/README.md`'s own informal single-corner check exactly
-  (see that experiment's README "Cross-check" section). Unlike SG13G2, this
-  PDK ships its OSDI models prebuilt — no `sim/tools/build-osdi.sh` compile
-  step needed (see `sim/pdk-sg13cmos5l.json` `"osdi_toolchain"`) — and its
-  own front-end device `.lib` files are symlinks into a sibling `ihp-sg13g2`
+  (see that experiment's README "Cross-check" section). Historical note (old pin, 2026-08
+  — see "PDK pin" above): the old standalone-repo install shipped its OSDI
+  models prebuilt, and `build-osdi.sh --check` passed there; that does **not**
+  hold for the current target pin, which needs a source build with unverified
+  runtime compatibility (see `sim/pdk-sg13cmos5l.json` `"osdi_toolchain"`).
+  Its own front-end device `.lib` files are symlinks into a sibling `ihp-sg13g2`
   checkout, a real install-shape gap filed at
   [`2AMLogic/klayout-tools#1406`](https://github.com/2AMLogic/klayout-tools/issues/1406)
   (see `sim/pdk-sg13cmos5l.json` `"sibling_checkout_requirement"`).
