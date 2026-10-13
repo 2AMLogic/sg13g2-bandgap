@@ -91,6 +91,22 @@ fi
 BATCH_PDK_ROOT="${KLT_SIM_BATCH_PDK_ROOT:-/opt/pdk}"
 BATCH_PROVISION_SCRIPT="${KLT_BATCH_PROVISION_SCRIPT:-${HOME}/GitHub/2am/infra/aws/batch-fleet-provision.sh}"
 
+# Resume safety (#332): a saved report is reused only when its committed
+# submission identity matches the inputs about to be submitted
+# (sim/harness/submission_identity.py). Legacy/stale reports are refused;
+# KLT_SIM_ALLOW_UNBOUND_REPORTS=1 / KLT_SIM_REDISPATCH_STALE=1 are the opt-ins.
+source "${HARNESS_DIR}/submission_identity.sh"
+KLT_VERSION_DECL="$("${KLT_BIN}" --version 2>&1 | head -1 || true)"
+IDENT_ARGS=(--declare "klt_bin=${KLT_BIN}" --declare "klt_version=${KLT_VERSION_DECL}"
+  --declare "pdk=${PDK}" --declare "batch_pdk_root=${BATCH_PDK_ROOT}"
+  --extra "${EXP_DIR}/testbench/core_open_loop_bias_pex.request.json.tmpl"
+  --extra "${EXP_DIR}/testbench/core_open_loop_bias_pex.body.spice.tmpl"
+  --extra "${BATCH_PROVISION_SCRIPT}"
+  --extra "${HARNESS_DIR}/klt_corner_bundle.py"
+  --extra "${SIM_DIR}/tools/gen_pex_netlist_body.py")
+FIXUP_UNBOUND=()
+[[ "${KLT_SIM_ALLOW_UNBOUND_REPORTS:-}" == 1 ]] && FIXUP_UNBOUND=(--allow-unbound)
+
 # #272's one-point probe on this same extraction: the sanity anchor.
 ANCHOR_VREF_V="1.052999"
 ANCHOR_R1_OHM="66123"
@@ -221,18 +237,8 @@ PY
   # Each request's body includes the generated PEX body by its bare staged
   # name; klt stages the include closure from the body's own directory.
   for label in "${CORNER_LABELS[@]}"; do
-    report="${WORK}/report-${label}.json"
-    if [[ -s "${report}" ]] && python3 -c "
-import json,sys; r=json.load(open('${report}')); sys.exit(0 if r['status']=='pass' else 1)" 2>/dev/null; then
-      echo "run_klt_sim.sh: ${label} already complete, skipping"
-      continue
-    fi
-    echo "run_klt_sim.sh: dispatching ${label} ($(python3 -c "
-import json; r=json.load(open('${WORK}/request-${label}.json'));
-print(len(r['corners']['supply_v']['Vvdd'])*len(r['corners']['temperature_c']))") points, one fleet job)"
-    ( cd "${WORK}" && "${KLT_BIN}" sim "request-${label}.json" --backend batch \
-        --format json -o "artifacts-${label}" > "report-${label}.json" ) || \
-      echo "run_klt_sim.sh: ${label} graded non-pass -- recorded, continuing"
+    si_shard "request-${label}.json" "report-${label}.json" "artifacts-${label}" \
+      "${label} (one fleet job)"
   done
 
   # Record-side fixup: repoint each report's decks at locally resolvable
@@ -242,7 +248,7 @@ print(len(r['corners']['supply_v']['Vvdd'])*len(r['corners']['temperature_c']))"
     sed "s|\"${BATCH_PDK_ROOT}/|\"${PDK_ROOT}/|g" "${WORK}/body-${label}.spice" \
       > "${WORK}/body-fixed-${label}.spice"
     python3 "${HARNESS_DIR}/fixup_batch_report.py" "${WORK}/report-${label}.json" \
-      --body "${WORK}/body-fixed-${label}.spice" \
+      "${FIXUP_UNBOUND[@]}" --body "${WORK}/body-fixed-${label}.spice" \
       --runner-pdk-root "${BATCH_PDK_ROOT}" --local-pdk-root "${PDK_ROOT}" \
       --decks-out "${WORK}/decks-fixed-${label}" \
       -o "${WORK}/report-${label}-fixed.json"

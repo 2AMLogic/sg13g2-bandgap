@@ -17,6 +17,7 @@ This directory is that answer, as working code rather than a plan.
 - [What is proven, and how to re-prove it](#what-is-proven-and-how-to-re-prove-it)
 - [Reported precision: 6 s.f. through `.meas`, 7 through an `.op` print](#reported-precision-6-sf-through-meas-7-through-an-op-print)
 - [The batch fleet: unblocked for the probe (issue #277)](#the-batch-fleet-unblocked-for-the-probe-issue-277)
+- [Resuming batch shards: submission identity (issue #332)](#resuming-batch-shards-submission-identity-issue-332)
 - [Upstream friction](#upstream-friction)
 - [D2 and the mask option](#d2-and-the-mask-option)
 - [Writing a new `klt sim` experiment](#writing-a-new-klt-sim-experiment)
@@ -437,6 +438,40 @@ rest follow their grids.
 The pin bump remains worth doing -- it collapses the per-process sharding
 into one five-corner request per experiment (the shape this directory's
 recipe documents) -- but it is a simplification now, not a blocker.
+
+## Resuming batch shards: submission identity (issue #332)
+
+The five per-shard batch runners are resumable, but a saved report that
+graded `pass` says nothing about which inputs produced it. `submission_identity.py`
+(+ `submission_identity.sh`, sourced by the runners) binds each shard's report
+to a hash of what was actually submitted: the exact request bytes, its local
+include closure (the generated DUT body and the generated PEX body), the
+templates/generators/provision script named with `--extra`, runner-side
+references (`/opt/pdk/...`) as strings, and declared identities (klt version,
+PDK name, batch PDK root).
+
+* `begin` (before submitting) snapshots the closure into
+  `report-X.submitted/` and writes a *pending* identity, which never
+  authorises reuse. `commit` (after the submission returned a report) re-checks
+  the inputs and atomically publishes `report-X.identity.json`.
+* On resume, a matching identity reuses the shard without redispatch. A
+  mismatch (changed template, request measurement/axis, body, extraction, or
+  declared tool/PDK identity) or a missing sidecar (legacy report, or a run
+  interrupted before commit) is **refused** (runner exit 4) with the changed
+  inputs named. Remedies: a new `KLT_SIM_WORK`, or delete that shard's report to
+  redispatch it. Explicit opt-ins: `KLT_SIM_REDISPATCH_STALE=1` (resubmit
+  mismatched shards) and `KLT_SIM_ALLOW_UNBOUND_REPORTS=1` (reuse legacy
+  reports, UNVERIFIED; fixup then falls back to the regenerated body).
+* `fixup_batch_report.py` reads the DUT body and include closure from the
+  verified snapshot, not from the regenerated `body-*.spice`, so a file edited
+  after submission cannot change what a recorded measurement claims to have run.
+
+**Boundary.** The identity attests only to what is visible on the submitting
+host at submission. It cannot attest to unrecorded remote changes: the runner
+image, a klt build with an unchanged version string, or the PDK files behind
+`/opt/pdk`. Only what the caller declares is covered; to invalidate across such
+a change, use a new work dir. Tests (`test_harness_transformers.py`,
+`ResumeIdentityTests`) use a mock `klt` and run no simulator.
 
 ## Upstream friction
 

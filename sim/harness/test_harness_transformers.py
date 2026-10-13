@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import json
 import sys
+import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -24,6 +26,7 @@ import extraction_binding as xb  # noqa: E402
 import fixup_batch_report as fbr  # noqa: E402
 import klt_sim_evidence as kse  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
+import submission_identity as si  # noqa: E402
 
 
 class TempDirCase(unittest.TestCase):
@@ -917,6 +920,192 @@ class PublicationTests(TempDirCase):
             xb.verify_captured = real
         self.assertEqual(len(seen), 2)
         self.assertEqual(self.tree(), {})
+
+
+# --------------------------------------------------------------------------
+# submission identity / resumable shards (#332)
+# --------------------------------------------------------------------------
+
+HARNESS = Path(__file__).resolve().parent
+MOCK_KLT = """#!/usr/bin/env bash
+# mock `klt`: counts submissions, writes a passing report, runs no simulator
+if [[ "$1" == "--version" ]]; then echo "mock-klt 1.0"; exit 0; fi
+echo "$2" >> "${MOCK_COUNT}"
+echo '{"status": "pass", "corners": [{"corner_id": "typ/27C", "artifacts": {"deck": "deck.cir"}}]}'
+"""
+
+
+class ResumeIdentityTests(TempDirCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.klt = self.write("bin/klt", MOCK_KLT)
+        self.klt.chmod(0o755)
+        self.count = self.tmp / "count.txt"
+        self.work = self.tmp / "work"
+        self.work.mkdir()
+        self.tmpl = self.write("tmpl/body.tmpl", "* template v1\n.include @@PEX@@\n")
+        self.extraction = "R1 a b 1\n"
+        self.make_inputs()
+
+    def make_inputs(self, template=None, extraction=None, body_extra="", measure="vref_v",
+                    axis=(-40, 27)) -> None:
+        """Mimic a runner's regeneration of body / PEX include / request."""
+        if template is not None:
+            self.tmpl.write_text(template, encoding="utf-8")
+        (self.work / "pex_body.inc").write_text(extraction or self.extraction, encoding="utf-8")
+        body = self.tmpl.read_text().replace("@@PEX@@", "pex_body.inc") + body_extra
+        (self.work / "body-typ.spice").write_text(body, encoding="utf-8")
+        req = {"netlist": str(self.work / "body-typ.spice"),
+               "corners": {"temperature_c": list(axis)},
+               "measurements": [{"name": measure, "spice": f".meas tran {measure} find v(a) at=1m"}]}
+        (self.work / "request-typ.json").write_text(json.dumps(req), encoding="utf-8")
+
+    def shard(self, **env) -> subprocess.CompletedProcess:
+        script = (
+            f'set -euo pipefail; WORK="{self.work}"; HARNESS_DIR="{HARNESS}"; KLT_BIN="{self.klt}"; '
+            f'IDENT_ARGS=(--declare "klt_version=mock" --extra "{self.tmpl}"); '
+            f'source "{HARNESS}/submission_identity.sh"; '
+            'si_shard request-typ.json report-typ.json artifacts-typ "typ (test)"'
+        )
+        e = {**os.environ, "MOCK_COUNT": str(self.count)}
+        e.pop(si.ENV_ALLOW_LEGACY, None)
+        e.pop(si.ENV_REDISPATCH, None)
+        e.update(env)
+        return subprocess.run(["bash", "-c", script], capture_output=True, text=True, env=e)
+
+    def submissions(self) -> int:
+        return len(self.count.read_text().split()) if self.count.exists() else 0
+
+    def first_run(self) -> None:
+        r = self.shard()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.submissions(), 1)
+        self.assertTrue(si.sidecar_path(self.work / "report-typ.json").is_file())
+
+    def test_unchanged_resume_reuses_without_redispatch(self) -> None:
+        self.first_run()
+        self.make_inputs()  # regeneration is byte-identical
+        r = self.shard()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.submissions(), 1)
+        self.assertIn("skipping", r.stdout)
+
+    def test_mutations_invalidate_reuse(self) -> None:
+        cases = {
+            "template": dict(template="* template v2\n.include @@PEX@@\n"),
+            "included extraction": dict(extraction="R1 a b 2\n"),
+            "request measurement": dict(measure="vref_other"),
+            "request axis": dict(axis=(-40, 27, 125)),
+            "generated body": dict(body_extra=".param x=1\n"),
+        }
+        for name, mut in cases.items():
+            with self.subTest(name):
+                self.setUp()
+                self.first_run()
+                self.make_inputs(**mut)
+                r = self.shard()
+                self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+                self.assertEqual(self.submissions(), 1)  # refused, not silently reused
+                self.assertIn("different inputs", r.stderr)
+                self.assertIn("new work dir", r.stderr.lower())
+                self.tearDown()
+
+    def test_stale_redispatch_opt_in_resubmits_and_rebinds(self) -> None:
+        self.first_run()
+        self.make_inputs(extraction="R1 a b 2\n")
+        r = self.shard(**{si.ENV_REDISPATCH: "1"})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.submissions(), 2)
+        self.assertEqual(self.shard().returncode, 0)  # now bound to the new inputs
+        self.assertEqual(self.submissions(), 2)
+
+    def test_declared_identity_change_invalidates(self) -> None:
+        self.first_run()
+        r = subprocess.run(
+            [sys.executable, str(HARNESS / "submission_identity.py"), "check",
+             str(self.work / "request-typ.json"), str(self.work / "report-typ.json"),
+             "--declare", "klt_version=other", "--extra", str(self.tmpl)],
+            capture_output=True, text=True)
+        self.assertEqual(r.returncode, si.EXIT_REFUSE)
+        self.assertIn("declared", r.stderr)
+
+    def test_legacy_report_without_sidecar_is_refused_not_trusted(self) -> None:
+        (self.work / "report-typ.json").write_text('{"status": "pass"}')
+        r = self.shard()
+        self.assertEqual(r.returncode, 4)
+        self.assertEqual(self.submissions(), 0)
+        self.assertIn("no committed submission identity", r.stderr)
+
+    def test_legacy_report_explicit_opt_in_reuses_with_warning(self) -> None:
+        (self.work / "report-typ.json").write_text('{"status": "pass"}')
+        r = self.shard(**{si.ENV_ALLOW_LEGACY: "1"})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.submissions(), 0)
+        self.assertIn("UNBOUND", r.stdout)
+
+    def test_sidecar_only_written_after_submission_completes(self) -> None:
+        report = self.work / "report-typ.json"
+        si.begin(self.work / "request-typ.json", report, [], {})
+        self.assertFalse(si.sidecar_path(report).exists())
+        self.assertTrue(si.pending_path(report).exists())
+        # a pending identity never authorises reuse
+        report.write_text('{"status": "pass"}')
+        rc, _ = si.check(self.work / "request-typ.json", report, [], {}, env={})
+        self.assertEqual(rc, si.EXIT_REFUSE)
+        # no report written => commit refuses and no sidecar appears
+        report.unlink()
+        with self.assertRaises(si.IdentityError):
+            si.commit(report)
+        self.assertFalse(si.sidecar_path(report).exists())
+
+    def test_inputs_changing_during_submission_are_not_committed(self) -> None:
+        report = self.work / "report-typ.json"
+        si.begin(self.work / "request-typ.json", report, [], {})
+        report.write_text('{"status": "pass"}')
+        (self.work / "pex_body.inc").write_text("R1 a b 99\n")
+        with self.assertRaises(si.IdentityError):
+            si.commit(report)
+        self.assertFalse(si.sidecar_path(report).exists())
+
+    def test_non_pass_report_is_redispatched(self) -> None:
+        (self.work / "report-typ.json").write_text('{"status": "fail"}')
+        self.assertEqual(self.shard().returncode, 0)
+        self.assertEqual(self.submissions(), 1)
+
+    def test_fixup_snapshots_original_submitted_body_not_regenerated(self) -> None:
+        self.first_run()
+        report = self.work / "report-typ.json"
+        deck = self.work / "deck.cir"
+        deck.write_text('.include "/var/tmp/eda-job-1/inputs/netlist.cir"\n')
+        # the world moves on after submission: body, include, template regenerate
+        self.make_inputs(template="* CHANGED\n.include @@PEX@@\n", extraction="R1 a b 777\n")
+        out = self.tmp / "fixed"
+        rc = fbr.main([str(report), "--runner-pdk-root", "/opt/pdk", "--local-pdk-root", "/p",
+                       "--decks-out", str(out), "-o", str(self.tmp / "fixed.json")])
+        self.assertEqual(rc, 0)
+        fixed = json.loads((self.tmp / "fixed.json").read_text())
+        deck_text = Path(fixed["corners"][0]["artifacts"]["deck"]).read_text()
+        body_path = Path(deck_text.split('"')[1])
+        self.assertIn("template v1", body_path.read_text())
+        self.assertNotIn("CHANGED", body_path.read_text())
+        self.assertEqual((body_path.parent / "pex_body.inc").read_text(), self.extraction)
+
+    def test_fixup_refuses_tampered_snapshot_and_unbound_report(self) -> None:
+        self.first_run()
+        report = self.work / "report-typ.json"
+        (si.snapshot_dir(report) / "closure" / "pex_body.inc").write_text("tampered")
+        with self.assertRaises(SystemExit):
+            fbr.main([str(report), "--local-pdk-root", "/p", "--decks-out",
+                      str(self.tmp / "o"), "-o", str(self.tmp / "o.json")])
+        legacy = self.work / "report-legacy.json"
+        legacy.write_text('{"status": "pass", "corners": []}')
+        body = self.write("b.spice", "x")
+        with self.assertRaises(SystemExit):  # regenerated --body alone is not accepted
+            fbr.main([str(legacy), "--body", str(body), "--local-pdk-root", "/p",
+                      "--decks-out", str(self.tmp / "o2"), "-o", str(self.tmp / "o2.json")])
+        self.assertEqual(fbr.main([str(legacy), "--body", str(body), "--allow-unbound",
+                                   "--local-pdk-root", "/p", "--decks-out", str(self.tmp / "o3"),
+                                   "-o", str(self.tmp / "o3.json")]), 0)
 
 
 if __name__ == "__main__":
