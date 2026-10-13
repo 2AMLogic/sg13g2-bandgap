@@ -104,7 +104,6 @@ import hashlib
 import json
 import re
 import subprocess
-import sys
 from pathlib import Path
 
 from _ci_common import Report, sha256_file
