@@ -13,6 +13,7 @@ nothing under sim/ is written.
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -917,6 +918,147 @@ class PublicationTests(TempDirCase):
             xb.verify_captured = real
         self.assertEqual(len(seen), 2)
         self.assertEqual(self.tree(), {})
+
+
+# --------------------------------------------------------------------------
+# PWL-ramp PEX runners' merge call (issue #331): the real shell helper both
+# runners source, driven against synthetic fixed shard reports.
+# --------------------------------------------------------------------------
+
+SIM_DIR = Path(__file__).resolve().parent.parent
+LABELS = ("typ", "bcs", "wcs", "sf", "fs")
+HBT = {"typ": "hbt_typ", "bcs": "hbt_bcs", "wcs": "hbt_wcs", "sf": "hbt_typ", "fs": "hbt_typ"}
+SUPPLIES = ("2.97", "3.30", "3.63")
+PEX_RUNNERS = {
+    "closed-loop-vref-pvt-pex": "closed_loop_vref_pvt_pex",
+    "closed-loop-psrr-pex": "closed_loop_psrr_pex",
+}
+
+
+class PexMergeCallTests(TempDirCase):
+    def template(self, exp: str) -> Path:
+        return SIM_DIR / exp / "testbench" / f"{PEX_RUNNERS[exp]}.request.json.tmpl"
+
+    def temps(self, exp: str) -> list:
+        return json.loads(self.template(exp).read_text())["corners"]["temperature_c"]
+
+    def shards(self, exp: str, skip: tuple = (), dup: tuple = ()) -> Path:
+        """Per-(label, vdd) `-fixed` reports as the runner leaves them: no
+        supply axis (the ramp is baked in); vref_v encodes the shard's vdd."""
+        d = self.tmp / "work"
+        d.mkdir(exist_ok=True)
+        for label in LABELS:
+            for vdd in SUPPLIES:
+                if (label, vdd) in skip:
+                    continue
+                corners = [
+                    {
+                        "corner_id": f"{HBT[label]}/novdd/{t:g}C",
+                        "process": HBT[label],
+                        "temperature_c": t,
+                        "status": "pass",
+                        "measurements": [{"name": "vref_v", "value": float(vdd)}],
+                    }
+                    for t in self.temps(exp)
+                ]
+                if (label, vdd) in dup:
+                    corners = corners + corners[:1]
+                rep = report_of(corners)
+                (d / f"report-{label}-{vdd.replace('.', 'p')}-fixed.json").write_text(json.dumps(rep))
+        return d
+
+    def call(self, exp: str, work: Path, fn: str = "pex_merge_shards") -> subprocess.CompletedProcess:
+        out = self.tmp / "report-merged.json"
+        script = (
+            f'set -euo pipefail; HARNESS_DIR="{SIM_DIR / "harness"}"; '
+            f'source "$HARNESS_DIR/pex_merge_call.sh"; '
+            f'CORNER_LABELS=({" ".join(LABELS)}); VDDS=({" ".join(SUPPLIES)}); '
+            f'{fn} "{self.template(exp)}" "{work}" "{out}"'
+        )
+        return subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+
+    def test_complete_grid_merges_then_reaches_enrichment(self) -> None:
+        for exp in PEX_RUNNERS:
+            with self.subTest(exp=exp):
+                work = self.shards(exp)
+                r = self.call(exp, work)
+                self.assertEqual(r.returncode, 0, r.stderr)
+                merged = json.loads((self.tmp / "report-merged.json").read_text())
+                n = len(LABELS) * len(SUPPLIES) * len(self.temps(exp))
+                self.assertEqual(merged["corner_count"], n)
+                self.assertTrue(merged["grid"]["complete"])
+                self.assertEqual(len(merged["grid"]["expected"]), n)
+                enriched = self.tmp / "report-enriched.json"
+                e = subprocess.run(
+                    [sys.executable, str(SIM_DIR / "harness" / "enrich_pvt_report.py"),
+                     str(self.tmp / "report-merged.json"), "-o", str(enriched)],
+                    capture_output=True, text=True, cwd=self.tmp,
+                )
+                self.assertEqual(e.returncode, 0, e.stderr)
+                self.assertTrue(enriched.exists())
+                (self.tmp / "report-merged.json").unlink()
+
+    def test_supply_hint_matches_each_shards_declared_supply(self) -> None:
+        for exp in PEX_RUNNERS:
+            with self.subTest(exp=exp):
+                work = self.shards(exp)
+                r = self.call(exp, work, "pex_merge_args")
+                self.assertEqual(r.returncode, 0, r.stderr)
+                args = r.stdout.splitlines()
+                shard_args = [a for a in args if "@" in a]
+                self.assertEqual(len(shard_args), len(LABELS) * len(SUPPLIES))
+                for a in shard_args:
+                    spec, path = a.split("=", 1)
+                    label, vdd = spec.split("@")
+                    self.assertTrue(path.endswith(f"report-{label}-{vdd.replace('.', 'p')}-fixed.json"), a)
+                # End to end: every merged corner's baked vdd (vref_v) equals
+                # the supply identity the hint gave it.
+                self.assertEqual(self.call(exp, work).returncode, 0)
+                merged = json.loads((self.tmp / "report-merged.json").read_text())
+                ids = merged["grid"]["expected"]
+                for c, ident in zip(merged["corners"], ids):
+                    self.assertTrue(ident.endswith(f"_{c['measurements'][0]['value']:.2f}v"), ident)
+                axes = args[args.index("--expect-process") + 1], args[args.index("--expect-supplies") + 1]
+                self.assertEqual(axes, (",".join(LABELS), ",".join(SUPPLIES)))
+                self.assertIn(
+                    "--expect-temps=" + ",".join(f"{t:g}" for t in self.temps(exp)), args)
+                (self.tmp / "report-merged.json").unlink()
+
+    def test_omitted_shard_rejected_before_publication(self) -> None:
+        for exp in PEX_RUNNERS:
+            with self.subTest(exp=exp):
+                work = self.shards(exp)
+                (work / "report-wcs-3p63-fixed.json").unlink()
+                r = self.call(exp, work)
+                self.assertNotEqual(r.returncode, 0)
+                self.assertFalse((self.tmp / "report-merged.json").exists())
+
+    def test_shard_missing_a_point_rejected(self) -> None:
+        exp = "closed-loop-vref-pvt-pex"
+        work = self.shards(exp)
+        f = work / "report-fs-2p97-fixed.json"
+        rep = json.loads(f.read_text())
+        rep["corners"].pop()
+        f.write_text(json.dumps(report_of(rep["corners"])))
+        r = self.call(exp, work)
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("missing", r.stderr)
+        self.assertFalse((self.tmp / "report-merged.json").exists())
+
+    def test_duplicate_identities_rejected(self) -> None:
+        for exp in PEX_RUNNERS:
+            with self.subTest(exp=exp):
+                work = self.shards(exp, dup=(("typ", "3.30"),))
+                r = self.call(exp, work)
+                self.assertNotEqual(r.returncode, 0)
+                self.assertIn("duplicate", r.stderr)
+                self.assertFalse((self.tmp / "report-merged.json").exists())
+
+    def test_runners_no_longer_call_merger_without_a_grid(self) -> None:
+        for exp in PEX_RUNNERS:
+            text = (SIM_DIR / exp / "run_klt_sim.sh").read_text()
+            self.assertIn("pex_merge_shards", text)
+            self.assertNotIn("merge_batch_shards.py", text.replace("(sim/harness/merge_batch_shards.py)", ""))
 
 
 if __name__ == "__main__":
