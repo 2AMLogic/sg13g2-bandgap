@@ -28,8 +28,8 @@
 # +/-5 mV. "A first refreshed grid point far from the anchor means the
 # template, not the extraction, is wrong" (#278's sanity-gate item).
 #
-# Resumable: a per-variant report that already exists and passed is not
-# re-submitted.
+# Resumable: a per-variant report that already exists, passed AND carries a
+# matching submission identity (#332) is not re-submitted.
 set -euo pipefail
 
 MODE="${1:-}"
@@ -78,6 +78,22 @@ fi
 
 BATCH_PDK_ROOT="${KLT_SIM_BATCH_PDK_ROOT:-/opt/pdk}"
 BATCH_PROVISION_SCRIPT="${KLT_BATCH_PROVISION_SCRIPT:-${HOME}/GitHub/2am/infra/aws/batch-fleet-provision.sh}"
+
+# Resume safety (#332): a saved report is reused only when its committed
+# submission identity matches the inputs about to be submitted
+# (sim/harness/submission_identity.py). Legacy/stale reports are refused;
+# KLT_SIM_ALLOW_UNBOUND_REPORTS=1 / KLT_SIM_REDISPATCH_STALE=1 are the opt-ins.
+source "${HARNESS_DIR}/submission_identity.sh"
+KLT_VERSION_DECL="$("${KLT_BIN}" --version 2>&1 | head -1 || true)"
+IDENT_ARGS=(--declare "klt_bin=${KLT_BIN}" --declare "klt_version=${KLT_VERSION_DECL}"
+  --declare "pdk=${PDK}" --declare "batch_pdk_root=${BATCH_PDK_ROOT}"
+  --extra "${EXP_DIR}/testbench/${STEM}.request.json.tmpl"
+  --extra "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
+  --extra "${BATCH_PROVISION_SCRIPT}"
+  --extra "${HARNESS_DIR}/klt_corner_bundle.py"
+  --extra "${SIM_DIR}/tools/gen_pex_netlist_body.py")
+FIXUP_UNBOUND=()
+[[ "${KLT_SIM_ALLOW_UNBOUND_REPORTS:-}" == 1 ]] && FIXUP_UNBOUND=(--allow-unbound)
 
 # Sanity anchor: sim/closed-loop-vref-pvt's newest committed record,
 # typ/27C/3.30V vref_3ms (the trim-bearing schematic twin, 20261001
@@ -203,19 +219,8 @@ PY
   for label in "${CORNER_LABELS[@]}"; do
     for vdd in "${VDDS[@]}"; do
       vid="$(echo "${vdd}" | tr '.' 'p')"
-      report="${WORK}/report-${label}-${vid}.json"
-      if [[ -s "${report}" ]] && python3 -c "
-import json,sys; r=json.load(open('${report}')); sys.exit(0 if r['status']=='pass' else 1)" 2>/dev/null; then
-        echo "run_klt_sim.sh: ${label}/${vdd}V already complete, skipping"
-        continue
-      fi
-      echo "run_klt_sim.sh: dispatching ${label}/${vdd}V (3 points, one fleet job)"
-      # A variant whose run grades error/fail still writes its report (the
-      # merge + enrichment surface what failed); only a submission that
-      # wrote NO report is fatal, checked after the loop.
-      ( cd "${WORK}" && "${KLT_BIN}" sim "request-${label}-${vid}.json" --backend batch \
-          --format json -o "artifacts-${label}-${vid}" > "report-${label}-${vid}.json" ) || \
-        echo "run_klt_sim.sh: ${label}/${vdd}V graded non-pass -- recorded, continuing"
+      si_shard "request-${label}-${vid}.json" "report-${label}-${vid}.json" \
+        "artifacts-${label}-${vid}" "${label}/${vdd}V (3 points, one fleet job)"
     done
   done
 
@@ -228,7 +233,7 @@ import json,sys; r=json.load(open('${report}')); sys.exit(0 if r['status']=='pas
       sed "s|\"${BATCH_PDK_ROOT}/|\"${PDK_ROOT}/|g" "${WORK}/body-${label}-${vid}.spice" \
         > "${WORK}/body-fixed-${label}-${vid}.spice"
       python3 "${HARNESS_DIR}/fixup_batch_report.py" "${WORK}/report-${label}-${vid}.json" \
-        --body "${WORK}/body-fixed-${label}-${vid}.spice" \
+        "${FIXUP_UNBOUND[@]}" --body "${WORK}/body-fixed-${label}-${vid}.spice" \
         --runner-pdk-root "${BATCH_PDK_ROOT}" --local-pdk-root "${PDK_ROOT}" \
         --decks-out "${WORK}/decks-fixed-${label}-${vid}" \
         -o "${WORK}/report-${label}-${vid}-fixed.json"

@@ -23,7 +23,7 @@ the image's baked paths, because that is what the runner resolves.
 Usage:
 
     python3 sim/harness/fixup_batch_report.py report.json \
-        --body-label typ --body body-fixed-typ.spice \
+        --body body-fixed-typ.spice [--allow-unbound] \
         --runner-pdk-root /opt/pdk --local-pdk-root "$PDK_ROOT" \
         -o report-fixed.json
 """
@@ -33,8 +33,12 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import submission_identity as si  # noqa: E402
 
 _RUNNER_INCLUDE_RE = re.compile(r'^(\s*\.include\s+").*?/inputs/netlist\.cir(")', re.M)
 
@@ -77,18 +81,59 @@ def fixup(
     return report
 
 
+def submitted_body(report_path: Path, runner_pdk_root: str, local_pdk_root: str,
+                   out_dir: Path) -> Path:
+    """Local, PDK-repointed copy of the body the report's shard ACTUALLY ran.
+
+    Reads the snapshot taken at submission (verified against the committed
+    identity), never today's regenerated body (#332). The whole include
+    closure is copied so bare includes (the PEX body) resolve to the original
+    submitted files.
+    """
+    src = si.snapshot_body(report_path)
+    dst = out_dir / "submitted-body"
+    if dst.exists():
+        shutil.rmtree(dst)
+    shutil.copytree(src.parent, dst)
+    body = dst / src.name
+    body.write_text(
+        body.read_text(encoding="utf-8").replace(f'"{runner_pdk_root}/', f'"{local_pdk_root}/'),
+        encoding="utf-8",
+    )
+    return body
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("report", type=Path)
-    ap.add_argument("--body", type=Path, required=True,
-                    help="local body copy the decks' include is repointed at")
+    ap.add_argument("--body", type=Path,
+                    help="UNBOUND fallback: local body copy the decks' include is repointed "
+                         "at. Only used with --allow-unbound; it is not proof of what ran")
+    ap.add_argument("--allow-unbound", action="store_true",
+                    help="accept a report with no committed submission identity "
+                         "(legacy opt-in; uses --body)")
     ap.add_argument("--runner-pdk-root", default="/opt/pdk")
     ap.add_argument("--local-pdk-root", required=True)
     ap.add_argument("--decks-out", type=Path, required=True)
     ap.add_argument("-o", "--output", type=Path, required=True)
     args = ap.parse_args(argv)
+    args.decks_out.mkdir(parents=True, exist_ok=True)
+    if si.sidecar_path(args.report).is_file():
+        try:
+            body = submitted_body(args.report, args.runner_pdk_root, args.local_pdk_root,
+                                  args.decks_out)
+        except si.IdentityError as exc:
+            ap.error(str(exc))
+    elif args.allow_unbound and args.body:
+        print(f"fixup_batch_report: WARNING {args.report.name} is unbound; using --body "
+              "(not necessarily what was submitted)", file=sys.stderr)
+        body = args.body
+    else:
+        ap.error(f"{args.report} has no submission identity; refusing to substitute a "
+                 "regenerated body. Redispatch in a new work dir, or pass --allow-unbound "
+                 "--body for a legacy report")
     report = fixup(
-        args.report, args.body, args.runner_pdk_root, args.local_pdk_root, args.decks_out
+        args.report, body, args.runner_pdk_root, args.local_pdk_root, args.decks_out
     )
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     return 0
