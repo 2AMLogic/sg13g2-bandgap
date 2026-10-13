@@ -329,9 +329,11 @@ python3 .github/scripts/test_check_evidence_formats.py  # the checker's own self
 ```
 
 Stdlib only — no venv, no PDK, no ngspice, no `klt`. It runs on every push and
-PR (`.github/workflows/hygiene.yml`) and covers four things: the record format
-documented above, the append-only rule, the DUT-freshness rule above, and the
-freshness of the `layout/` DRC/LVS/PEX reports (see `layout/README.md`). It is
+PR (`.github/workflows/hygiene.yml`) and covers five things: the record format
+documented above, the append-only rule, the DUT-freshness rule above, the
+freshness of the `layout/` DRC/LVS/PEX reports (see `layout/README.md`), and
+index completeness — every `sim/<dir>/` must be named in §"Testbenches landed
+so far" (issue #341). It is
 the sg13g2 counterpart to
 gf180-bandgap's `sim/check_records.py`, adapted to this repo's own convention
 (per-point netlist-snapshot *directories*, `.md`+`.csv` record pairs).
@@ -737,6 +739,30 @@ whichever of those trackers owns them.
   TC-row status: stretch met by endpoint method at both levels; box
   method at the boundary — pre-layout just inside, post-layout just
   outside.
+- **[`trim-coverage/`](trim-coverage/README.md)** — issue #229's
+  deterministic trim-ladder coverage bench: does the committed trim network
+  realize DR-0011's ratified Trim row (1-point at 27 °C, range, resolution,
+  magnitude only) through the real closed loop. Evidence for the T1 trim
+  items (#303); the per-code numbers live in its README and records.
+- **[`closed-loop-vref-boxtc-trim/`](closed-loop-vref-boxtc-trim/README.md)** —
+  issue #229's post-trim box-method TC bench: the
+  `closed-loop-vref-pvt-boxtc` claim re-pointed at the trim-bearing core with
+  a trim-code axis, bounding the trim-induced TC degradation DR-0011's
+  trimmed budget obligates.
+- **[`closed-loop-vref-trim-mc/`](closed-loop-vref-trim-mc/README.md)** —
+  issue #229's trim-domain device-mismatch Monte Carlo with a modeled 1-point
+  27 °C trim: the trimmed-line evidence DR-0011's Output-reference row
+  obligates. The trim-domain twin of `closed-loop-vref-mc`.
+- **[`closed-loop-vref-boxtc-pretrim-aidsfree/`](closed-loop-vref-boxtc-pretrim-aidsfree/README.md)**
+  — issue #269's focused A/B (not a full PVT grid): does dropping the
+  `rshunt`/`gmin` convergence aids by itself, on the pre-trim core, explain
+  the box-method TC jump #229 measured on the trim-bearing core, or does the
+  trim ladder?
+- **[`trim-knob-jacobian/`](trim-knob-jacobian/README.md)** — issue #267's
+  second-trim-knob Jacobian bench: the measured `(level, drift)` column of
+  each candidate second trim knob on the real trim-bearing closed loop at the
+  27 °C trim point, asking whether a second knob can break the level-to-drift
+  coupling of the 1-point R1 trim.
 
 ## OSDI device models: required setup, and how they are built here (issue #22)
 
