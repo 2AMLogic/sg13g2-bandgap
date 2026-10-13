@@ -90,6 +90,7 @@ def build_fixture(root: Path) -> None:
     experiment = sim / "synthetic-experiment"
     (experiment / "testbench").mkdir(parents=True)
     (experiment / "README.md").write_text("# synthetic-experiment\n", encoding="utf-8")
+    (sim / "README.md").write_text("- `synthetic-experiment/`\n", encoding="utf-8")
     (experiment / "run_pvt_sweep.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
     (experiment / "testbench" / "tb_synthetic.spice.tmpl").write_text("* tb\n", encoding="utf-8")
 
@@ -305,6 +306,17 @@ def case_heading_mismatch(root: Path):
 def case_missing_csv(root: Path):
     (root / "sim/synthetic-experiment/records" / f"{RECORD_ID}.csv").unlink()
     return "no machine-readable sibling"
+
+
+def case_unindexed_sim_directory(root: Path):
+    (root / "sim/unindexed-experiment").mkdir()
+    return "is not mentioned in sim/README.md"
+
+
+def case_index_prefix_name_does_not_satisfy(root: Path):
+    # `synthetic-experiment-pex` must not be satisfied by the shorter name.
+    (root / "sim/synthetic-experiment-pex").mkdir()
+    return "sim/synthetic-experiment-pex"
 
 
 def case_missing_run_script(root: Path):
@@ -910,6 +922,8 @@ CASES = [
     ("a log filename breaks the corner-id grammar", case_bad_corner_id),
     ("record heading disagrees with its filename", case_heading_mismatch),
     ("record has no machine-readable CSV", case_missing_csv),
+    ("sim/ directory absent from sim/README.md", case_unindexed_sim_directory),
+    ("longer dir name not satisfied by a shorter indexed name", case_index_prefix_name_does_not_satisfy),
     ("experiment ships no cold-start run script", case_missing_run_script),
     ("DRC report is stale vs the committed GDS", case_stale_drc_input),
     ("LVS reference netlist edited after the run", case_stale_lvs_reference),

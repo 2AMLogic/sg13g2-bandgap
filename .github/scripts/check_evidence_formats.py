@@ -434,6 +434,23 @@ def _report_set_difference(
     report.fail(where, f"{left_name} and {right_name} disagree on PVT points — " + "; ".join(detail))
 
 
+def check_sim_index(root: Path, report: Report) -> None:
+    """Every sim/<dir>/ must be named in sim/README.md (issue #341)."""
+    readme = root / "sim" / "README.md"
+    if not readme.is_file():
+        report.fail(readme, "missing — sim/README.md is the index of experiments")
+        return
+    text = readme.read_text(encoding="utf-8")
+    for directory in sorted(p for p in (root / "sim").iterdir() if p.is_dir()):
+        # Name-boundary match so `closed-loop-vref-pvt` is not satisfied by
+        # `closed-loop-vref-pvt-pex`.
+        if not re.search(rf"(?<![\w-]){re.escape(directory.name)}(?![\w-])", text):
+            report.fail(
+                directory.relative_to(root),
+                "is not mentioned in sim/README.md — add it to the index of experiments",
+            )
+
+
 def check_sim(root: Path, report: Report) -> None:
     sim = root / "sim"
     if not sim.is_dir():
@@ -452,6 +469,8 @@ def check_sim(root: Path, report: Report) -> None:
             for key in ("source", "release_tag", "tarball_sha256"):
                 if not pinned.get(key):
                     report.fail(pdk_json, f"missing or empty pin field {key!r}")
+
+    check_sim_index(root, report)
 
     experiments = sorted(p for p in sim.iterdir() if p.is_dir() and (p / RECORDS_DIR).is_dir())
     if not experiments:
