@@ -1,0 +1,63 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for",
+    "sg13cmos5l-core-open-loop-bias (issue #337, Part of #322). Same grid and",
+    "same measurements as the legacy run_pvt_sweep.sh loop. Instantiated by",
+    "run_klt_sim.sh via sim/harness/cmos5l_klt.py, which substitutes @@BODY@@",
+    "with the instantiated bench body and, in local (sanity) mode, points",
+    "`models.lib` at the generated SG13CMOS5L corner bundle so all five",
+    "process labels ride one request. In batch mode the runner splits the",
+    "request per process corner (the runner's single-models.lib channel",
+    "cannot vary the process within one request, klayout-tools#2668) and",
+    "merges the per-process reports before the adapter sees them. This",
+    "template declares the full 45-point grid.",
+    "",
+    "Corner labels are this repo's (typ, bcs, wcs, sf, fs); their",
+    "pnpMPA / MOS-hv / resistor section triples are CORNER_SECTIONS in",
+    "sim/harness/cmos5l_klt.py (derived for SG13CMOS5L from cornerPNP.lib's",
+    "own typ/bcs/wcs sections plus the symlinked SG13G2 MOS/RES files; sf and",
+    "fs fall back to the typ pnpMPA section because cornerPNP.lib has no",
+    "skew section).",
+    "",
+    "`analysis.kind` is `tran`, not `op`, even though the claim is an",
+    "operating point: ngspice implements no `.MEASURE OP`, so the documented",
+    "substitute is a short single-step transient plus `.meas tran ...",
+    "at=<t>` (sim/harness/README.md). All sources are DC, so the 40 ns point",
+    "should equal the legacy `.op` solution; that has NOT been run for",
+    "issue #337 -- the run_klt_sim.sh --sanity gate compares it with the",
+    "legacy committed row before any grid is dispatched.",
+    "",
+    "Every measured column, derived ones included (dveb_ptat_v, r1_ohm,",
+    "r2_ohm), is ONE `.meas` card evaluated inside the engine, not recomputed",
+    "from two reported 6-s.f. values. Measurement names are the legacy CSV",
+    "column names; the legacy `veb_*` / `dveb_*` naming is kept (pnpMPA's",
+    "emitter-base voltage, base grounded)."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "extracted",
+  "models": { "lib": "@@CORNER_BUNDLE@@" },
+  "corners": {
+    "process": ["typ", "bcs", "wcs", "sf", "fs"],
+    "supply_v": { "Vvdd": [2.97, 3.3, 3.63] },
+    "temperature_c": [-40, 27, 125]
+  },
+  "analysis": { "kind": "tran", "args": "10n 50n" },
+  "measurements": [
+    { "name": "vref_v", "spice": ".meas tran vref_v find v(vref) at=40n" },
+    { "name": "vfb_v", "spice": ".meas tran vfb_v find v(fb) at=40n" },
+    { "name": "veb_q1_v", "spice": ".meas tran veb_q1_v find v(sns1) at=40n" },
+    { "name": "veb_q2_v", "spice": ".meas tran veb_q2_v find v(e2) at=40n" },
+    { "name": "veb_q3_v", "spice": ".meas tran veb_q3_v find v(e3) at=40n" },
+    { "name": "dveb_ptat_v", "spice": ".meas tran dveb_ptat_v find par('v(sns1)-v(e2)') at=40n" },
+    { "name": "i_leg1_a", "spice": ".meas tran i_leg1_a find i(vm1) at=40n" },
+    { "name": "i_leg2_a", "spice": ".meas tran i_leg2_a find i(vm2) at=40n" },
+    { "name": "i_leg3_a", "spice": ".meas tran i_leg3_a find i(vm3) at=40n" },
+    { "name": "r1_ohm", "spice": ".meas tran r1_ohm find par('(v(vref)-v(e3))/i(vm3)') at=40n" },
+    { "name": "r2_ohm", "spice": ".meas tran r2_ohm find par('(v(sns2)-v(e2))/i(vm2)') at=40n" }
+  ],
+  "options": {
+    "timeout_s": 300,
+    "keep_artifacts": true
+  }
+}

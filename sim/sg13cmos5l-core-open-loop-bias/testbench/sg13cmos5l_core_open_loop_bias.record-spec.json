@@ -1,0 +1,52 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- record spec for sg13cmos5l-core-open-loop-bias on the `klt sim` harness (issue #337, Part of #322).",
+    "The per-experiment half of the adapter contract: sim/harness/klt_sim_evidence.py owns the record MECHANICS and takes",
+    "every piece of ARGUMENT from this file. Narrative is carried over from the legacy run_pvt_sweep.sh record text; it is not a new claim.",
+    "Infrastructure/plumbing evidence for issue #65's port, NOT a claim against any ratified spec row (spec/ tracks no ratified SG13CMOS5L accuracy target)."
+  ],
+  "Experiment": "sg13cmos5l-core-open-loop-bias",
+  "Claim": "sg13g2-bandgap's SG13CMOS5L bandgap_core (design/sg13cmos5l/bandgap_core.sch, issue #64) produces a PTAT delta-VEB across its real pnpMPA legs (Q1 unit vs Q2 8x-area, both grounded-collector/diode-connected) and a summed CTAT+PTAT vref, across the full temperature x supply x MOS/resistor-process-corner x pnpMPA-process-corner grid, when its real sg13_hv_pmos mirror is biased open-loop from a diode-connected replica leg (isolating the core's own PTAT/CTAT generation from the real amplifier's loop dynamics; sg13cmos5l-closed-loop-startup is the companion with the loop closed). Infrastructure/plumbing evidence, NOT a claim against any ratified spec row.",
+  "Devices": "All real PDK compact models -- pnpMPA (Gummel-Poon), sg13_hv_pmos (PSP103.6 via psp103.osdi), rppd (r3_cmc via r3_cmc.osdi). No ideal-primitive substitutions.",
+  "Netlist provenance": "design/sg13cmos5l/netlist/bandgap_core.spice, device-for-device, plus the open-loop bias and ammeter fixtures documented in testbench/ and README.md (schematic-sourced; the body template is hand-maintained from the legacy template, so D2-style freshness is a schematic-signature check only).",
+  "PDK": "`ihp-sg13cmos5l` -- the TARGET/SETUP pin in sim/pdk-sg13cmos5l.json (IHP-Open-PDK dev subtree, sibling `ihp-sg13g2/` required). No record has yet been generated on that pin, so runtime compatibility is UNVERIFIED until the first one exists; a record minted from this spec must be read against the pin its run actually resolved (report `environment`), not against this sentence. OSDI models: sim/pdk-sg13cmos5l.json \"osdi_toolchain\".",
+  "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x temperature {-40,27,125} C x supply {2.97,3.30,3.63} V (45 points) with pnpMPA (cornerPNP.lib) x MOS-hv (cornerMOShv.lib) x resistor (cornerRES.lib) sections paired per sim/harness/cmos5l_klt.py CORNER_SECTIONS",
+  "request": "sim/sg13cmos5l-core-open-loop-bias/testbench/sg13cmos5l_core_open_loop_bias.request.json.tmpl",
+  "author": "Loom Builder (agent), issue #337",
+  "pass_requires": [
+    "vref_v",
+    "veb_q1_v",
+    "veb_q2_v",
+    "i_leg1_a",
+    "i_leg2_a",
+    "i_leg3_a"
+  ],
+  "extra_columns": {
+    "pnp_section": {
+      "typ": "typ",
+      "bcs": "bcs",
+      "wcs": "wcs",
+      "sf": "typ",
+      "fs": "typ"
+    },
+    "mos_section": {
+      "typ": "mos_tt",
+      "bcs": "mos_ff",
+      "wcs": "mos_ss",
+      "sf": "mos_sf",
+      "fs": "mos_fs"
+    },
+    "res_section": {
+      "typ": "res_typ",
+      "bcs": "res_bcs",
+      "wcs": "res_wcs",
+      "sf": "res_typ",
+      "fs": "res_typ"
+    }
+  },
+  "extra_links": [
+    "Harness decision + batch-fleet status: sim/harness/README.md",
+    "SG13CMOS5L corner mapping + request/verdict helpers: sim/harness/cmos5l_klt.py",
+    "Runner: sim/sg13cmos5l-core-open-loop-bias/run_klt_sim.sh"
+  ]
+}

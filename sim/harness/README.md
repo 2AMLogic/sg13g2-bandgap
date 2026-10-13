@@ -473,6 +473,32 @@ image, a klt build with an unchanged version string, or the PDK files behind
 a change, use a new work dir. Tests (`test_harness_transformers.py`,
 `ResumeIdentityTests`) use a mock `klt` and run no simulator.
 
+## SG13CMOS5L experiments on the harness (issue #337, Part of #322)
+
+The four `sim/sg13cmos5l-*` experiments (core-open-loop-bias,
+startup-trip-point, closed-loop-startup, closed-loop-startup-pex) have
+`run_klt_sim.sh`, a request template, a bench body and a record spec each,
+converted from their legacy `run_pvt_sweep.sh` loops with the same grids and
+measurements. The SG13CMOS5L-specific parts live in
+[`cmos5l_klt.py`](cmos5l_klt.py) (corner mapping, request/body
+instantiation, shard merge with an explicit expected grid, the legacy
+verdicts, the sanity-anchor gate) and [`cmos5l_runner.sh`](cmos5l_runner.sh)
+(the shared runner body); the generic mechanics are reused unchanged
+(`klt_sim_evidence.py`, `merge_batch_shards.py`, `fixup_batch_report.py`,
+`submission_identity.*`). Two small shared-code changes:
+`klt_corner_bundle.render_bundle` takes optional `libs`/`sections` for other
+family sets (default unchanged), and `enrich_pvt_report.inject_baked_supply`
+was factored out of `enrich` (behaviour unchanged, tested).
+
+The corner mapping is **derived for CMOS5L** (pnpMPA from `cornerPNP.lib`'s
+`typ/bcs/wcs`; MOS/resistor from the symlinked SG13G2 files), not borrowed
+from SG13G2's HBT table -- see any of the four experiment READMEs for the
+table. Status: converted and fixture-tested only; **no grid, sanity corner
+or batch job has been run**, and `--batch` refuses until a CMOS5L-provisioned
+runner image exists (`sim/pdk-sg13cmos5l.json`
+`deferred_requirements.provisioning`). Tests:
+`python3 sim/harness/test_cmos5l_harness.py`.
+
 ## Upstream friction
 
 Per this repo's friction protocol (`CLAUDE.md`), each place `klt` was awkward

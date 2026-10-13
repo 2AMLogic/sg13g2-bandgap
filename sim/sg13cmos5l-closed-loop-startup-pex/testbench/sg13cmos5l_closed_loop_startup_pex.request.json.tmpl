@@ -1,0 +1,82 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for sg13cmos5l-closed-loop-startup-pex (issue #337, Part of #322).",
+    "Same grid and measurements as the legacy run_pvt_sweep.sh loop; instantiated by run_klt_sim.sh via",
+    "sim/harness/cmos5l_klt.py, which substitutes @@BODY@@ and @@CORNER_BUNDLE@@ (local sanity) or splits per",
+    "process x supply (batch).",
+    "",
+    "NO SUPPLY AXIS, ON PURPOSE. The rail is a PWL ramp whose target is baked into the body (@@VDD@@); `alter`",
+    "would clobber it (klt refuses a supply axis on a transient-waveform source). The grid's supplies {2.97, 3.30,",
+    "3.63} V are cmos5l_klt.py SUPPLIES, one request per (process, supply) with 3 temperatures each; the",
+    "adapter's corner-id grammar needs one supply token, so `enrich --kind closed-loop` injects the baked ramp",
+    "target from each corner's deck (sim/harness/enrich_pvt_report.py inject_baked_supply).",
+    "",
+    "Measurement names are the legacy CSV column names (det_early_v ... i_mkfb_final_a); the legacy `.control`",
+    "`meas tran v_* find ... at=` cards are carried over one for one, early check at 20 us and the settled",
+    "closed-loop state at 2 ms (the tran end point). dvsns_final_v and the verdict are added by",
+    "`cmos5l_klt.py enrich --kind closed-loop` (they are differences/predicates over 6-s.f. reported values;",
+    "the legacy script computed them the same way, post hoc, with awk)."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "extracted",
+  "models": {
+    "lib": "@@CORNER_BUNDLE@@"
+  },
+  "corners": {
+    "process": [
+      "typ",
+      "bcs",
+      "wcs",
+      "sf",
+      "fs"
+    ],
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "tran",
+    "args": "2u 2m"
+  },
+  "measurements": [
+    {
+      "name": "det_early_v",
+      "spice": ".meas tran det_early_v find v(det) at=20u"
+    },
+    {
+      "name": "fb_early_v",
+      "spice": ".meas tran fb_early_v find v(fb) at=20u"
+    },
+    {
+      "name": "fb_final_v",
+      "spice": ".meas tran fb_final_v find v(fb) at=2m"
+    },
+    {
+      "name": "sns1_final_v",
+      "spice": ".meas tran sns1_final_v find v(sns1) at=2m"
+    },
+    {
+      "name": "sns2_final_v",
+      "spice": ".meas tran sns2_final_v find v(sns2) at=2m"
+    },
+    {
+      "name": "vref_final_v",
+      "spice": ".meas tran vref_final_v find v(vref) at=2m"
+    },
+    {
+      "name": "det_final_v",
+      "spice": ".meas tran det_final_v find v(det) at=2m"
+    },
+    {
+      "name": "i_mkfb_final_a",
+      "spice": ".meas tran i_mkfb_final_a find i(Vmkfb) at=2m"
+    }
+  ],
+  "options": {
+    "timeout_s": 600,
+    "keep_artifacts": true
+  }
+}

@@ -1,0 +1,45 @@
+* sg13g2-bandgap -- sg13cmos5l-startup-trip-point bench body for the
+* `klt sim` harness (issue #337, Part of #322). Instantiated by
+* sim/sg13cmos5l-startup-trip-point/run_klt_sim.sh, which substitutes
+* @@OSDI_DIR@@. Source of every device line: the legacy sed-template
+* tb_sg13cmos5l_startup_trip_point.spice.tmpl (still the generator of every
+* committed record) -- same instance names, node names and W/L as
+* design/sg13cmos5l/netlist/bandgap_startup.spice.
+*
+* `klt sim` netlist-body convention: this file is a circuit BODY. Moved out
+* of the legacy template: the two `.lib` corner cards (cornerMOShv /
+* cornerRES, now selected per process corner by the request), the
+* `.options temp=T tnom=27` card (`klt sim` emits the corner's `.temp`),
+* and the `op` / `dc` / `meas` control commands (now the request's
+* `analysis` and `measurements`). No bipolar device here, so no PNP
+* section is involved.
+*
+* Same one deliberate deviation as every `klt sim` body in this repo: the
+* `.control` preload block below (klayout-tools#2666).
+.control
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
+pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
+.endc
+
+* Rail. `klt sim` overrides this per corner via `alter Vvdd=<v>` from
+* `corners.supply_v`.
+Vvdd vdd 0 dc 3.30
+Vvss vss 0 dc 0
+* bandgap_startup.spice wires the rhigh bulk terminal to the global
+* substrate net `sub!`; tied to vss through a 0 V source.
+Vsub sub! vss dc 0
+
+* FIXTURE 1 -- sns1 stimulus: stands in for the core's sense node so the
+* startup circuit's response can be swept from "core is dead" (sns1 = 0) to
+* "core is up" (sns1 = vdd). The request's dc analysis sweeps this source.
+Vsns1 sns1 vss dc 0
+
+* FIXTURE 2 -- fb load: 10 Mohm pull-up standing in for whatever eventually
+* holds fb high, weak enough (<= 0.4 uA) not to contest XMKFB's pull-down.
+Rfbpu vdd fb 10meg
+
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1
+XMKFB fb det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1

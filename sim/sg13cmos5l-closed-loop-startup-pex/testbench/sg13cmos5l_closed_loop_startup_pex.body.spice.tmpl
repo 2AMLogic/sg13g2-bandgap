@@ -1,0 +1,92 @@
+* sg13g2-bandgap -- sg13cmos5l-closed-loop-startup-pex bench body for the
+* `klt sim` harness (issue #337, Part of #322). Instantiated by
+* sim/sg13cmos5l-closed-loop-startup-pex/run_klt_sim.sh, which substitutes @@OSDI_DIR@@ and
+* @@VDD@@ (the ramp target). Every device line is copied from the legacy
+* tb_sg13cmos5l_closed_loop_startup_pex.spice.tmpl.
+*
+* THIS IS A HYBRID PEX NETLIST, NOT A PURE LAYOUT EXTRACTION, and the
+* geometry below is HAND-TRANSCRIBED from
+* layout/sg13cmos5l-bandgap_top/pex_extract_report.json (unlike the SG13G2
+* PEX benches, whose DUT body sim/tools/gen_pex_netlist_body.py generates).
+* Read sim/sg13cmos5l-closed-loop-startup-pex/README.md "What this does and does not model" before
+* trusting a result: all 14 MOS devices carry extracted w/l/as/ad/ps/pd;
+* XQ1-3 (pnpMPA), XR1/XR2 (rppd) and XRPU (rhigh) are schematic-sourced; NO
+* wire (metal) parasitics are modelled (klayout-tools#1440). PEX extraction
+* binding (content hashes of the extraction inputs) is NOT captured by this
+* harness conversion -- deferred, sim/pdk-sg13cmos5l.json
+* deferred_requirements.pex_binding. The PMOS bodies are tied to vdd in this
+* bench (the extracted layout has genuinely floating PMOS bodies,
+* klayout-tools#1414) -- a testbench fixture, not a layout claim.
+*
+* `klt sim` netlist-body convention: this file is a circuit BODY. Moved out
+* of the legacy template: the three `.lib` corner cards (selected per
+* process corner by the request), `.options temp=T tnom=27` (`klt sim`
+* emits the corner's `.temp`), and the `tran` / `meas` control commands
+* (now the request's `analysis` and `measurements`).
+*
+* Same one deliberate deviation as every `klt sim` body in this repo: the
+* `.control` preload block below (klayout-tools#2666).
+.control
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
+pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
+.endc
+
+* rshunt=1e9 / gmin=1e-9: convergence aids only, both far below any current
+* measured here -- carried over unchanged from the legacy template (the
+* real, not-yet-loop-gain-tuned amplifier can fail to converge at an early,
+* near-singular instant on the vdd ramp at a marginal corner). The request
+* `options` object has no engine-option passthrough, so the setting lives
+* in the body.
+.options rshunt=1e9 gmin=1e-9
+
+* FIXTURE -- transient supply ramp: vdd itself ramps 0 -> VDD over 200 us
+* and holds to 2 ms, so the assembled block's own cold-start ->
+* closed-loop-settled transition is what the simulator solves for. The ramp
+* target is baked into this body (@@VDD@@), because a PWL source cannot be
+* swept with `alter`: run_klt_sim.sh therefore dispatches one request per
+* supply (the request carries no supply axis).
+Vvdd vdd 0 PWL(0 0 200u @@VDD@@ 2m @@VDD@@)
+Vvss vss 0 dc 0
+* The core's rppd bulk terminals reach the global substrate net `sub!`;
+* tied to vss through a 0 V source, as in the legacy template.
+Vsub sub! vss dc 0
+
+* DUT -- design/sg13cmos5l/netlist/bandgap_core.spice, verbatim.
+* Grounded-collector pnpMPA legs (base+collector at vss, emitter at the
+* sense node).
+XM1 sns1 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XQ1 vss vss sns1 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
+XM2 sns2 fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XR2 sns2 e2 sub! rppd w=2u l=85.1u m=1 b=0
+XQ2 vss vss e2 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=8
+XM3 vref fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XR1 vref e3 sub! rppd w=2u l=647.0u m=1 b=0
+XQ3 vss vss e3 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
+
+* DUT -- bandgap_amp, fully extracted MOS geometry (no bipolar/resistor
+* devices in this leaf). in_p <- sns2, in_n <- sns1, out -> fb. Extraction
+* provenance: XMTAIL <- $9, XMP1 <- $7, XMP2 <- $8, XMP3 <- $11, XMP4 <- $10,
+* XMN1 <- $2, XMN2 <- $3, XMN3 <- $1, XMN4 <- $4.
+XMTAIL tail fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1 as=8p ad=8p ps=40.8u pd=40.8u
+XMP2 d2 sns1 tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1 as=8p ad=8p ps=40.8u pd=40.8u
+XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMP4 fb pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN3 fb d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+
+* DUT -- design/sg13cmos5l/netlist/bandgap_startup.spice, verbatim. `sns1`
+* and `fb` are shared with the core and amp DUTs above; no separate stimulus
+* source drives either.
+*
+* FIXTURE -- Vmkfb is a 0 V ammeter in series with XMKFB's drain, so the
+* startup circuit's own contribution to the shared fb node is measured
+* directly (i_mkfb_final_a). A 0 V source is a DC/transient short.
+XRPU vdd det sub! rhigh w=1u l=1411.3u m=1 b=0
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1 as=4p ad=4p ps=20.8u pd=20.8u
+Vmkfb fb fbx dc 0
+XMKFB fbx det vss vss sg13_hv_nmos w=2u l=0.5u ng=1 m=1 as=0.8p ad=0.8p ps=4.8u pd=4.8u
