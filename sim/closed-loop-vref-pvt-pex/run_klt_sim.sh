@@ -56,6 +56,7 @@ if ! command -v "${KLT_BIN}" >/dev/null 2>&1; then
 fi
 
 source "${SIM_DIR}/env.sh" >/dev/null
+source "${HARNESS_DIR}/pex_merge_call.sh"
 if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
   for _cand in "${KLT_SIM_PDK_ROOT:-}" \
                "${HOME}/GitHub/klayout-tools/pdks/ihp-open-pdk"; do
@@ -239,13 +240,8 @@ PY
     done
   done
 
-  python3 "${HARNESS_DIR}/merge_batch_shards.py" -o "${WORK}/report-merged.json" \
-    $(for label in "${CORNER_LABELS[@]}"; do
-        for vdd in "${VDDS[@]}"; do
-          vid="$(echo "${vdd}" | tr '.' 'p')"
-          echo "${label}=${WORK}/report-${label}-${vid}-fixed.json"
-        done
-      done)
+  pex_merge_shards "${EXP_DIR}/testbench/${STEM}.request.json.tmpl" "${WORK}" \
+    "${WORK}/report-merged.json"
   python3 "${HARNESS_DIR}/enrich_pvt_report.py" "${WORK}/report-merged.json" \
     -o "${WORK}/report-enriched.json"
   ;;
