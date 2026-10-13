@@ -659,18 +659,73 @@ class InlineDeckTests(TempDirCase):
             ],
         )
 
-    def test_unreadable_or_outside_pdk_kept_as_card(self) -> None:
-        deck = self.write("work/corner.cir", '.include "/nonexistent/x.spice"\n')
-        self.assertEqual(kse.inline_deck(deck, str(self.pdk)), ['.include "/nonexistent/x.spice"'])
+    def test_missing_local_include_fails_with_chain(self) -> None:
+        self.write("work/body.spice", '.include "missing-dut.spice"\n')
+        deck = self.write("work/corner.cir", ".include body.spice\n")
+        with self.assertRaises(SystemExit) as cm:
+            kse.inline_deck(deck, str(self.pdk))
+        msg = str(cm.exception)
+        self.assertIn("missing-dut.spice", msg)
+        self.assertIn("corner.cir", msg)
+        self.assertIn("body.spice", msg)
 
-    def test_include_cycle_is_guarded(self) -> None:
+    def test_missing_include_outside_pdk_fails(self) -> None:
+        deck = self.write("work/corner.cir", '.include "/nonexistent/x.spice"\n')
+        with self.assertRaises(SystemExit):
+            kse.inline_deck(deck, str(self.pdk))
+        with self.assertRaises(SystemExit):
+            kse.inline_deck(deck, None)
+
+    def test_placeholder_pdk_reference_retained(self) -> None:
+        deck = self.write("work/corner.cir", '.include "${PDK_ROOT}/models/x.spice"\n')
+        self.assertEqual(
+            kse.inline_deck(deck, None), ['.include "${PDK_ROOT}/models/x.spice"']
+        )
+
+    def test_unreadable_include_fails(self) -> None:
+        bad = self.tmp / "work" / "bad.spice"
+        bad.parent.mkdir(parents=True, exist_ok=True)
+        bad.write_bytes(b"\xff\xfe\x00bad")
+        deck = self.write("work/corner.cir", ".include bad.spice\n")
+        with self.assertRaises(SystemExit) as cm:
+            kse.inline_deck(deck, None)
+        self.assertIn("bad.spice", str(cm.exception))
+
+    def test_include_cycle_fails_with_chain(self) -> None:
         self.write("work/a.spice", ".include b.spice\nRA a 0 1\n")
         self.write("work/b.spice", ".include a.spice\nRB b 0 1\n")
         deck = self.write("work/corner.cir", ".include a.spice\n")
-        out = kse.inline_deck(deck, None)
-        self.assertEqual(out.count("RA a 0 1"), 1)
-        self.assertEqual(out.count("RB b 0 1"), 1)
-        self.assertIn('.include "a.spice"', out)  # the back-edge stays a card
+        with self.assertRaises(SystemExit) as cm:
+            kse.inline_deck(deck, None)
+        msg = str(cm.exception)
+        self.assertIn("cycle", msg)
+        self.assertIn("a.spice -> ", msg)
+
+    def test_top_level_self_include_is_a_cycle(self) -> None:
+        deck = self.write("work/corner.cir", ".include corner.cir\n")
+        with self.assertRaises(SystemExit) as cm:
+            kse.inline_deck(deck, None)
+        self.assertIn("cycle", str(cm.exception))
+
+    def test_lib_section_nested_local_include_inlined(self) -> None:
+        self.write("work/dut.spice", "XQ1 a b c npn\n")
+        self.write(
+            "work/bundle.lib",
+            f'.lib typ\n.include dut.spice\n.lib "{self.model}" mos_tt\n.endl typ\n',
+        )
+        deck = self.write("work/corner.cir", ".lib bundle.lib typ\n")
+        out = kse.inline_deck(deck, str(self.pdk))
+        self.assertIn("XQ1 a b c npn", out)
+        self.assertIn('.lib "${PDK_ROOT}/models/cornerMOS.lib" mos_tt', out)
+
+    def test_lib_section_missing_nested_include_fails(self) -> None:
+        self.write("work/bundle.lib", ".lib typ\n.include gone.spice\n.endl typ\n")
+        deck = self.write("work/corner.cir", ".lib bundle.lib typ\n")
+        with self.assertRaises(SystemExit) as cm:
+            kse.inline_deck(deck, str(self.pdk))
+        msg = str(cm.exception)
+        self.assertIn("gone.spice", msg)
+        self.assertIn("bundle.lib", msg)
 
 
 class ExtractionBindingTests(TempDirCase):
@@ -846,6 +901,18 @@ class PublicationTests(TempDirCase):
         with self.assertRaises(SystemExit):
             self.emit(self.report(self.corner(27, deck=False), self.corner(85)))
         self.assertFalse(self.exp.exists())
+
+    def test_unresolved_nested_include_publishes_nothing(self) -> None:
+        self.emit(self.report(self.corner(27)), "old")
+        before = self.tree()
+        bad = self.corner(85)
+        self.write("work/85.cir", '* deck\n.include "missing-dut.spice"\n')
+        with self.assertRaises(SystemExit) as ctx:
+            self.emit(self.report(self.corner(27), bad), "new")
+        self.assertIn("missing-dut.spice", str(ctx.exception))
+        self.assertIn("typ_85c_3.30v", str(ctx.exception))
+        self.assertEqual(self.tree(), before)
+        self.assertEqual([p.name for p in self.exp.iterdir() if p.name.startswith(".")], [])
 
     def test_missing_later_log_leaves_no_record_and_keeps_prior(self) -> None:
         self.emit(self.report(self.corner(27)), "old")
