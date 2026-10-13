@@ -108,6 +108,41 @@ def _pdk_relative(path: str, pdk_root: str | None) -> str:
     return path
 
 
+def _is_pdk_ref(raw_path: str, target: Path | None, pdk_root: str | None) -> bool:
+    """True for the external PDK reference forms `inline_deck` permits.
+
+    Exactly two forms are recognised (issue #333); every other path must
+    resolve to a readable local file or the snapshot is refused:
+
+    * a literal `${PDK_ROOT}` / `$PDK_ROOT` prefix (an already-relocatable
+      card, e.g. from a re-processed deck), and
+    * a path that resolves under the configured `pdk_root` (the form `klt`
+      and `fixup_batch_report.py` emit after repointing `/opt/pdk`).
+    """
+    if re.match(r"^\$(\{PDK_ROOT\}|PDK_ROOT)(/|$)", raw_path):
+        return True
+    return bool(
+        pdk_root and target and str(target).startswith(os.path.abspath(pdk_root) + os.sep)
+    )
+
+
+def _chain(seen: tuple[Path, ...], extra: str | None = None) -> str:
+    parts = [str(p) for p in seen]
+    if extra:
+        parts.append(extra)
+    return " -> ".join(parts)
+
+
+def _read_lines(path: Path, seen: tuple[Path, ...]) -> list[str]:
+    try:
+        return path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError) as exc:
+        raise SystemExit(
+            f"klt_sim_evidence.py: unreadable deck/include {path} "
+            f"(chain: {_chain(seen)}): {exc}"
+        ) from None
+
+
 def inline_deck(
     deck_path: Path,
     pdk_root: str | None,
@@ -117,31 +152,51 @@ def inline_deck(
 ) -> list[str]:
     """Read a generated corner deck and return it with local includes spliced in.
 
-    A `.include` of a readable local file is replaced by that file's own
-    inlined text (recursively, with a cycle guard). A `.lib FILE SECTION`
-    whose FILE is readable and local is replaced by that section's *body* --
-    which is how the generated `.lib <bundle> typ` card becomes the three
-    per-family PDK `.lib` cards the equivalent `run_pvt_sweep.sh` snapshot
-    would have carried inline (see `klt_corner_bundle.py` for why the bundle
-    exists). Anything not readable, and anything under `$PDK_ROOT`, is kept
-    as a card with its path made `${PDK_ROOT}`-relative.
+    A `.include` of a local file is replaced by that file's own inlined text
+    (recursively). A `.lib FILE SECTION` whose FILE is local is replaced by
+    that section's *body*, whose own cards follow the same rules -- which is
+    how the generated `.lib <bundle> typ` card becomes the three per-family
+    PDK `.lib` cards the equivalent `run_pvt_sweep.sh` snapshot would have
+    carried inline (see `klt_corner_bundle.py` for why the bundle exists).
+
+    Only recognised PDK references (see :func:`_is_pdk_ref`) are kept as
+    cards, with their path made `${PDK_ROOT}`-relative. Any other include
+    that is missing, unreadable or part of an include cycle raises
+    `SystemExit` naming the deck/include chain (issue #333): a snapshot with
+    an unresolved local dependency would silently weaken the D2 freshness check.
     """
-    if _depth > 8:
-        raise SystemExit(f"klt_sim_evidence.py: include nesting too deep at {deck_path}")
+    if not _seen:
+        _seen = (deck_path.resolve(),)
+    return _process_lines(
+        _read_lines(deck_path, _seen), deck_path.parent, pdk_root, _depth, _seen
+    )
+
+
+def _process_lines(
+    lines: list[str],
+    base: Path,
+    pdk_root: str | None,
+    depth: int,
+    seen: tuple[Path, ...],
+) -> list[str]:
+    if depth > 8:
+        raise SystemExit(
+            f"klt_sim_evidence.py: include nesting too deep (chain: {_chain(seen)})"
+        )
     out: list[str] = []
-    for raw in deck_path.read_text(encoding="utf-8").splitlines():
+    for raw in lines:
         inc = _INCLUDE_RE.match(raw)
         lib = None if inc else _LIB_RE.match(raw)
         target: Path | None = None
+        raw_path = ""
         if inc:
-            target = (deck_path.parent / inc.group(1)).resolve()
+            raw_path = inc.group(1)
         elif lib and lib.group(2):
-            target = (deck_path.parent / lib.group(1)).resolve()
+            raw_path = lib.group(1)
+        if raw_path:
+            target = (base / raw_path).resolve()
 
-        under_pdk = bool(
-            pdk_root and target and str(target).startswith(os.path.abspath(pdk_root) + os.sep)
-        )
-        if target is None or under_pdk or not target.is_file() or target in _seen:
+        if target is None or _is_pdk_ref(raw_path, target, pdk_root):
             if inc:
                 out.append(f'.include "{_pdk_relative(inc.group(1), pdk_root)}"')
             elif lib:
@@ -151,18 +206,26 @@ def inline_deck(
                 out.append(raw)
             continue
 
+        if target in seen:
+            raise SystemExit(
+                "klt_sim_evidence.py: include cycle: " + _chain(seen, str(target))
+            )
+        if not target.is_file():
+            raise SystemExit(
+                f"klt_sim_evidence.py: unresolved include {raw_path!r} (not a recognised "
+                f"PDK reference and no such local file {target}); chain: {_chain(seen)}"
+            )
+        sub = seen + (target,)
         if inc:
             out.append(f"* --- inlined .include {target.name} (klt_sim_evidence.py) ---")
-            out.extend(inline_deck(target, pdk_root, _depth=_depth + 1, _seen=_seen + (target,)))
+            out.extend(
+                _process_lines(_read_lines(target, sub), target.parent, pdk_root, depth + 1, sub)
+            )
             out.append(f"* --- end {target.name} ---")
         else:
             section = lib.group(2)
             out.append(f"* --- inlined .lib {target.name} {section} (klt_sim_evidence.py) ---")
-            out.extend(
-                _lib_section_body(
-                    target, section, pdk_root, _depth=_depth + 1, _seen=_seen + (target,)
-                )
-            )
+            out.extend(_lib_section_body(target, section, pdk_root, _depth=depth + 1, _seen=sub))
             out.append(f"* --- end {target.name} {section} ---")
     return out
 
@@ -177,7 +240,7 @@ def _lib_section_body(
 ) -> list[str]:
     start = re.compile(_SECTION_RE.format(section=re.escape(section)), re.IGNORECASE)
     end = re.compile(_ENDL_RE.format(section=re.escape(section)), re.IGNORECASE)
-    lines = lib_path.read_text(encoding="utf-8").splitlines()
+    lines = _read_lines(lib_path, _seen)
     inside = False
     body: list[str] = []
     for raw in lines:
@@ -190,23 +253,13 @@ def _lib_section_body(
         body.append(raw)
     if not inside:
         raise SystemExit(
-            f"klt_sim_evidence.py: {lib_path} declares no `.lib {section}` section"
+            f"klt_sim_evidence.py: {lib_path} declares no `.lib {section}` section "
+            f"(chain: {_chain(_seen)})"
         )
     # The section body may itself hold `.lib`/`.include` cards (the corner
-    # bundle's whole purpose) -- rewrite their paths under the same
-    # `${PDK_ROOT}`-relative rule rather than inlining a PDK model library.
-    resolved: list[str] = []
-    for raw in body:
-        inc = _INCLUDE_RE.match(raw)
-        lib = None if inc else _LIB_RE.match(raw)
-        if inc:
-            resolved.append(f'.include "{_pdk_relative(inc.group(1), pdk_root)}"')
-        elif lib:
-            tail = f" {lib.group(2)}" if lib.group(2) else ""
-            resolved.append(f'.lib "{_pdk_relative(lib.group(1), pdk_root)}"{tail}')
-        else:
-            resolved.append(raw)
-    return resolved
+    # bundle's whole purpose): resolve them under the same closure policy,
+    # relative to the library file's directory.
+    return _process_lines(body, lib_path.parent, pdk_root, _depth, _seen)
 
 
 def record_id(repo_root: Path, stamp: str | None = None) -> str:
@@ -471,6 +524,8 @@ def emit(
             raise SystemExit(
                 f"klt_sim_evidence.py: corner {cid} deck is unreadable: {exc}"
             ) from None
+        except SystemExit as exc:
+            raise SystemExit(f"{exc} [corner {cid}, deck {deck}]") from None
 
     if dry_run:
         print(f"would write {records_out}/{rid}.{{md,csv}}, {corners_out}/, {snaps_out}/")
