@@ -8,6 +8,12 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-10-13
 
+- **PR #344**: ci: hoist duplicated checker scaffolding into _ci_common
+- **Issue #342** (closed): Simplify CI checkers: hoist duplicated manifest discovery, report printing and sha256: wrapper into _ci_common
+- **PR #343**: docs(sim): index five missing experiments, enforce index completeness
+- **Issue #341** (closed): docs: add the five unindexed sim/ experiments to sim/README.md and enforce index completeness
+- **PR #340**: sim: reject unresolved local include closures before minting snapshots
+- **Issue #333** (closed): sim: reject unresolved local include closures before minting snapshots
 - **PR #338**: sim: bind resumed batch reports to the exact submitted inputs
 - **Issue #332** (closed): sim: bind resumed batch reports to the exact submitted inputs
 - **PR #334**: sim: repair PEX batch callers missing the mandatory expected-grid arguments
