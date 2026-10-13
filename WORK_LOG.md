@@ -6,6 +6,24 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-13
+
+- **PR #338**: sim: bind resumed batch reports to the exact submitted inputs
+- **Issue #332** (closed): sim: bind resumed batch reports to the exact submitted inputs
+- **PR #334**: sim: repair PEX batch callers missing the mandatory expected-grid arguments
+- **Issue #331** (closed): sim: repair PEX batch callers missing the mandatory expected-grid arguments
+
+### 2026-10-12
+
+- **PR #330**: sim: enforce append-only staged publication in the evidence adapter
+- **Issue #328** (closed): sim: enforce append-only staged publication in the evidence adapter
+- **PR #329**: sim: reject incomplete and malformed batch shard grids before publishing evidence
+- **Issue #327** (closed): sim: reject incomplete and malformed batch shard grids before publishing evidence
+- **PR #326**: ci: detect stale inputs behind the active T1 design-source audit
+- **Issue #324** (closed): ci: detect stale inputs behind the active T1 design-source audit
+- **PR #323**: docs: re-stamp SG13CMOS5L target pin to IHP-Open-PDK dev f7bca326 (Refs #322)
+- **Issue #325** (closed): Guard blocks read-only rg search patterns in Codex
+
 ### 2026-10-09
 
 - **PR #316**: ci: detect dependency drift in the active characterization report (#315)
