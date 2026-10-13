@@ -40,6 +40,14 @@ structure/hygiene that already exists in this repo today — nothing more.
   `solve_quality.py` and the `klt_trim_axis.py` recorder and asserts the
   corrupted ones are rejected and the clean ones accepted, so the guard
   against the 36.3° / 43.9° artifacts cannot rot silently.
+- **`sim/harness/test_cmos5l_harness.py`** — self-test of the SG13CMOS5L
+  `klt sim` conversion (#337): the pnpMPA/MOS/resistor corner mapping against
+  the legacy `run_pvt_sweep.sh` maps, the generated sanity/batch request
+  shapes for the full 45-point grid of the four `sim/sg13cmos5l-*`
+  experiments, record columns and provenance through the real adapter, the
+  legacy verdict formulas (failed/missing measurements, partial corner
+  failure), and the runners' refusal to dispatch without the provisioning
+  acknowledgement. No ngspice, PDK or network.
 - **`sim/harness/test_harness_transformers.py`** — self-test of the
   `klt sim` harness transforms (#297) on tiny temp-dir fixtures (including the #309 extraction-source binding capture/drift/publish checks): shard
   order/relabelling and recomputed counts (`merge_batch_shards.py`),
@@ -126,6 +134,7 @@ python3 .github/scripts/test_check_evidence_formats.py
 python3 sim/tools/test_gen_pex_netlist_body.py
 python3 sim/loop-gain-phase-margin/tools/test_solve_quality.py
 python3 sim/harness/test_harness_transformers.py
+python3 sim/harness/test_cmos5l_harness.py
 python3 .github/scripts/check_evidence_formats.py
 python3 .github/scripts/test_check_report_dependencies.py
 python3 .github/scripts/check_report_dependencies.py

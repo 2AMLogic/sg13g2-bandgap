@@ -1,0 +1,52 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- record spec for sg13cmos5l-closed-loop-startup on the `klt sim` harness (issue #337, Part of #322).",
+    "The per-experiment half of the adapter contract: sim/harness/klt_sim_evidence.py owns the record MECHANICS and takes",
+    "every piece of ARGUMENT from this file. Narrative is carried over from the legacy run_pvt_sweep.sh record text; it is not a new claim.",
+    "Infrastructure/plumbing evidence for issue #65's port, NOT a claim against any ratified spec row (spec/ tracks no ratified SG13CMOS5L accuracy target)."
+  ],
+  "Experiment": "sg13cmos5l-closed-loop-startup",
+  "Claim": "co-simulating SG13CMOS5L's bandgap_core + bandgap_amp + bandgap_startup (design/sg13cmos5l/, issues #64/#68) in one netlist (design/sg13cmos5l/bandgap_top.sch's own wiring: core.fb <- amp.out, core.sns1 -> amp.in_n, core.sns2 -> amp.in_p, startup shares sns1 and fb with the core), with vdd itself ramped 0 -> VDD over 200 us, the assembled block self-starts and settles to a closed-loop operating point across the full temperature x supply x pnpMPA/MOS/resistor-process-corner PVT grid: the startup circuit fully releases (v(det) <= 0.2*vdd, |i(XMKFB)| <= 50 nA), the real error amplifier closes the loop (|sns1-sns2| <= 20 mV), and fb settles to a real interior equilibrium rather than railing (fb within [0.05 V, vdd-0.05 V]). The three criteria are applied per point by sim/harness/cmos5l_klt.py (same constants and formula as sim/lib/pvt_verdict_common.sh pvt_closed_loop_verdict, 3-criteria form). Closed-loop infrastructure/plumbing evidence, NOT a claim against any spec accuracy/PSRR/Iq target.",
+  "Devices": "All real PDK compact models, three DUTs copied verbatim from design/sg13cmos5l/netlist/bandgap_core.spice (three pnpMPA legs, three sg13_hv_pmos mirror legs, two rppd), bandgap_amp.spice (five sg13_hv_pmos, four sg13_hv_nmos) and bandgap_startup.spice (rhigh pull-up, two sg13_hv_nmos switches). No fixture stands in for the servo loop.",
+  "Netlist provenance": "design/sg13cmos5l/netlist/{bandgap_core,bandgap_amp,bandgap_startup}.spice, device-for-device, wired as design/sg13cmos5l/bandgap_top.sch specifies, plus the Vmkfb ammeter. XMSENSE's width is read from the live bandgap_startup.spice by run_klt_sim.sh at run time and recorded in the msense_w column.",
+  "PDK": "`ihp-sg13cmos5l` -- the TARGET/SETUP pin in sim/pdk-sg13cmos5l.json (IHP-Open-PDK dev subtree, sibling `ihp-sg13g2/` required). No record has yet been generated on that pin, so runtime compatibility is UNVERIFIED until the first one exists; a record minted from this spec must be read against the pin its run actually resolved (report `environment`), not against this sentence. OSDI models: sim/pdk-sg13cmos5l.json \"osdi_toolchain\".",
+  "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x temperature {-40,27,125} C x supply {2.97,3.30,3.63} V (45 points) with pnpMPA x MOS-hv x resistor sections paired per sim/harness/cmos5l_klt.py CORNER_SECTIONS",
+  "request": "sim/sg13cmos5l-closed-loop-startup/testbench/sg13cmos5l_closed_loop_startup.request.json.tmpl",
+  "author": "Loom Builder (agent), issue #337",
+  "pass_requires": [
+    "fb_final_v",
+    "sns1_final_v",
+    "sns2_final_v",
+    "det_final_v",
+    "i_mkfb_final_a"
+  ],
+  "extra_columns": {
+    "pnp_section": {
+      "typ": "typ",
+      "bcs": "bcs",
+      "wcs": "wcs",
+      "sf": "typ",
+      "fs": "typ"
+    },
+    "mos_section": {
+      "typ": "mos_tt",
+      "bcs": "mos_ff",
+      "wcs": "mos_ss",
+      "sf": "mos_sf",
+      "fs": "mos_fs"
+    },
+    "res_section": {
+      "typ": "res_typ",
+      "bcs": "res_bcs",
+      "wcs": "res_wcs",
+      "sf": "res_typ",
+      "fs": "res_typ"
+    }
+  },
+  "extra_links": [
+    "Harness decision + batch-fleet status: sim/harness/README.md",
+    "SG13CMOS5L corner mapping + request/verdict helpers: sim/harness/cmos5l_klt.py",
+    "Per-point closed-loop verdict: sim/harness/cmos5l_klt.py (kind closed-loop)",
+    "Runner: sim/sg13cmos5l-closed-loop-startup/run_klt_sim.sh"
+  ]
+}

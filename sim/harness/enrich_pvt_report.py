@@ -74,6 +74,41 @@ def _meas_map(corner: dict) -> dict[str, float]:
 _VDD_PWL_RE = re.compile(r"^Vvdd\s+vdd\s+0\s+PWL\(0\s+0\s+[0-9.]+u?\s+([-+0-9.eE]+)", re.M | re.I)
 
 
+def inject_baked_supply(corner: dict, cwd: Path) -> None:
+    """Give a PWL-ramp corner the supply its body baked in (shared helper).
+
+    These benches bake the supply into the body's PWL ramp (an
+    `alter`-driven supply axis would clobber the ramp), so the request
+    carries no supply axis and the corner id has no V token. The adapter's
+    corner-id grammar requires exactly one supply: inject the baked ramp
+    target, read off the corner's own deck. Factored out of :func:`enrich`
+    unchanged (issue #337) so the SG13CMOS5L closed-loop benches reuse it.
+    """
+    deck_ref = (corner.get("artifacts") or {}).get("deck")
+    if deck_ref and "/novdd/" in corner.get("corner_id", ""):
+        dp = Path(deck_ref)
+        if not dp.is_absolute():
+            dp = cwd / dp
+        if dp.exists():
+            import re as _re
+            m = _VDD_PWL_RE.search(dp.read_text(encoding="utf-8", errors="replace"))
+            if not m:
+                for line in dp.read_text(encoding="utf-8", errors="replace").splitlines():
+                    inc = _re.match(r'^\s*\.include\s+"?([^"\s]+)"?', line, _re.I)
+                    if inc:
+                        bp = Path(inc.group(1))
+                        if not bp.is_absolute():
+                            bp = dp.parent / bp
+                        if bp.exists():
+                            m = _VDD_PWL_RE.search(bp.read_text(encoding="utf-8", errors="replace"))
+                        if m:
+                            break
+            if m:
+                vdd = float(m.group(1))
+                corner["supply_v"] = {"Vvdd": vdd}
+                corner["corner_id"] = corner["corner_id"].replace("/novdd/", f"/{vdd:.2f}V/")
+
+
 def enrich(report: dict) -> dict:
     corners = report.get("corners", [])
     cwd = Path.cwd()
@@ -81,34 +116,7 @@ def enrich(report: dict) -> dict:
         got = _meas_map(corner)
         if corner.get("status") != "pass":
             continue
-        # These benches bake the supply into the body's PWL ramp (an
-        # `alter`-driven supply axis would clobber the ramp), so the
-        # request carries no supply axis and the corner id has no V token.
-        # The adapter's corner-id grammar requires exactly one supply:
-        # inject the baked ramp target, read off the corner's own deck.
-        deck_ref = (corner.get("artifacts") or {}).get("deck")
-        if deck_ref and "/novdd/" in corner.get("corner_id", ""):
-            dp = Path(deck_ref)
-            if not dp.is_absolute():
-                dp = cwd / dp
-            if dp.exists():
-                import re as _re
-                m = _VDD_PWL_RE.search(dp.read_text(encoding="utf-8", errors="replace"))
-                if not m:
-                    for line in dp.read_text(encoding="utf-8", errors="replace").splitlines():
-                        inc = _re.match(r'^\s*\.include\s+"?([^"\s]+)"?', line, _re.I)
-                        if inc:
-                            bp = Path(inc.group(1))
-                            if not bp.is_absolute():
-                                bp = dp.parent / bp
-                            if bp.exists():
-                                m = _VDD_PWL_RE.search(bp.read_text(encoding="utf-8", errors="replace"))
-                            if m:
-                                break
-                if m:
-                    vdd = float(m.group(1))
-                    corner["supply_v"] = {"Vvdd": vdd}
-                    corner["corner_id"] = corner["corner_id"].replace("/novdd/", f"/{vdd:.2f}V/")
+        inject_baked_supply(corner, cwd)
         needed = ("sns1_v", "sns2_v", "vref_2ms_v", "vref_3ms_v")
         if any(k not in got for k in needed):
             corner["status"] = "fail"

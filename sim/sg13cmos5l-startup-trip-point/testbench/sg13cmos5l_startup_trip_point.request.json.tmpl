@@ -1,0 +1,51 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for",
+    "sg13cmos5l-startup-trip-point (issue #337, Part of #322). Same grid and",
+    "measurements as the legacy run_pvt_sweep.sh loop; instantiated by",
+    "run_klt_sim.sh via sim/harness/cmos5l_klt.py, which substitutes @@BODY@@",
+    "and @@CORNER_BUNDLE@@ (local sanity) or splits per process x supply",
+    "(batch).",
+    "",
+    "WHY PER-SUPPLY. The dc sweep's stop value and two measurement levels",
+    "scale with the supply: the legacy loop sweeps Vsns1 0..VDD (step 5 mV),",
+    "measures the trip point at v(det) = VDD/2 and the 'core fully up' end",
+    "state one step short of VDD (ngspice refuses `.meas at=` at the exact",
+    "end of a dc sweep). cmos5l_klt.py substitutes @@VDD@@, @@VDD_HALF@@",
+    "(%.4f of VDD/2) and @@VDD_OFF@@ (%.4f of VDD-0.05), as the legacy",
+    "script's awk did, and runs one request per supply with",
+    "`corners.supply_v` pinned to that supply.",
+    "",
+    "The legacy `op` before the sweep (cold-start state, sns1 = 0) is the",
+    "first point of the dc sweep: det_on_v / fb_on_v are measured `at=0`,",
+    "the sweep start. Whether ngspice's `.meas dc ... at=` accepts the exact",
+    "start point has NOT been verified here (no simulation was run for",
+    "issue #337); the run_klt_sim.sh --sanity gate exercises it on one local",
+    "corner before any grid is dispatched.",
+    "",
+    "The pass/fail verdict (six criteria) is NOT expressible as a `limits`",
+    "block against one measurement; sim/harness/cmos5l_klt.py enrich",
+    "--kind trip-point re-grades each point with the legacy formula."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "extracted",
+  "models": { "lib": "@@CORNER_BUNDLE@@" },
+  "corners": {
+    "process": ["typ", "bcs", "wcs", "sf", "fs"],
+    "supply_v": { "Vvdd": [2.97, 3.3, 3.63] },
+    "temperature_c": [-40, 27, 125]
+  },
+  "analysis": { "kind": "dc", "args": "Vsns1 0 @@VDD@@ 0.005" },
+  "measurements": [
+    { "name": "det_on_v", "spice": ".meas dc det_on_v find v(det) at=0" },
+    { "name": "fb_on_v", "spice": ".meas dc fb_on_v find v(fb) at=0" },
+    { "name": "vtrip_v", "spice": ".meas dc vtrip_v when v(det)=@@VDD_HALF@@ cross=1" },
+    { "name": "det_off_v", "spice": ".meas dc det_off_v find v(det) at=@@VDD_OFF@@" },
+    { "name": "fb_off_v", "spice": ".meas dc fb_off_v find v(fb) at=@@VDD_OFF@@" }
+  ],
+  "options": {
+    "timeout_s": 300,
+    "keep_artifacts": true
+  }
+}

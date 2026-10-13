@@ -1,0 +1,77 @@
+* sg13g2-bandgap -- sg13cmos5l-core-open-loop-bias bench body for the
+* `klt sim` harness (issue #337, Part of #322). Instantiated by
+* sim/sg13cmos5l-core-open-loop-bias/run_klt_sim.sh, which substitutes
+* @@OSDI_DIR@@. The legacy sed-template (tb_sg13cmos5l_core_open_loop_bias
+* .spice.tmpl, still the generator of every committed record) is the source
+* of every device line below: same instance names, same node names, same
+* W/L/a/p/m, same open-loop bias fixture -- only the harness-owned cards
+* moved (see "What moved" below).
+*
+* DUT: design/sg13cmos5l/netlist/bandgap_core.spice, device-for-device. The
+* only additions are the two fixtures the legacy template documents
+* (FIXTURE 1 open-loop mirror bias, FIXTURE 2 0 V ammeters).
+*
+* `klt sim` netlist-body convention (klt sim --help, "Netlist convention"):
+* this file is a circuit BODY. What moved out of the legacy template:
+*   - the three `.lib` corner cards (cornerPNP / cornerMOShv / cornerRES):
+*     the request's `models.lib` selects them per process corner, see
+*     sim/harness/cmos5l_klt.py CORNER_SECTIONS;
+*   - `.options temp=T tnom=27`: `klt sim` emits the corner's `.temp` card
+*     and tnom defaults to 27;
+*   - the `.op` analysis card and its `print`: the request's `analysis` and
+*     `measurements` replace them (ngspice has no `.MEASURE OP`, so the
+*     request uses a short single-step transient plus `.meas tran ... at=`,
+*     the documented substitute -- sim/harness/README.md).
+*
+* ONE DELIBERATE DEVIATION, same as every `klt sim` body in this repo: the
+* `.control` block below. SG13CMOS5L's MOS and resistor compact models are
+* OSDI (PSP103 / r3_cmc, shipped prebuilt by the old pin; at the target pin
+* they must be source-built -- sim/pdk-sg13cmos5l.json "osdi_toolchain") and
+* must be loaded by `pre_osdi` BEFORE the netlist is parsed; `klt sim`'s
+* generated `.control` block has no extension point for an engine preload
+* command (filed upstream, klayout-tools#2666 -- sim/harness/README.md
+* "Upstream friction").
+.control
+pre_osdi @@OSDI_DIR@@/psp103.osdi
+pre_osdi @@OSDI_DIR@@/psp103_nqs.osdi
+pre_osdi @@OSDI_DIR@@/mosvar.osdi
+pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
+.endc
+
+* Supply/ground. `Vvdd`'s dc value is a placeholder: `klt sim` overrides it
+* per corner with an `alter Vvdd=<v>` card from the request's
+* `corners.supply_v` axis, which is why the rail has to be a named,
+* alterable element.
+Vvdd vdd 0 dc 3.30
+Vvss vss 0 dc 0
+* bandgap_core.spice wires both rppd bulk terminals to the global substrate
+* net `sub!`; tied to vss through a 0 V source, as in the legacy template.
+Vsub sub! vss dc 0
+
+* FIXTURE 1 -- open-loop mirror bias: a diode-connected replica of the
+* mirror device carrying 5 uA sets the shared gate net (isolates the core's
+* own PTAT/CTAT generation from amplifier loop dynamics; the closed-loop
+* counterpart is sg13cmos5l-closed-loop-startup).
+XM0 fb fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Ibias fb vss dc 5u
+
+* DUT mirror legs, geometry verbatim from
+* design/sg13cmos5l/netlist/bandgap_core.spice.
+* FIXTURE 2 -- each leg's drain reaches its DUT node through a 0 V source,
+* used purely as an ammeter (a short at DC; does not move the operating
+* point).
+XM1 m1d fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Vm1 m1d sns1 dc 0
+XM2 m2d fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Vm2 m2d sns2 dc 0
+XM3 m3d fb vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
+Vm3 m3d vref dc 0
+
+* Grounded-collector pnpMPA legs (base+collector at vss, emitter driven by
+* the mirror) -- V(E)-V(B) with the base grounded, so v(sns1)/v(e2)/v(e3)
+* themselves ARE VEB.
+XQ1 vss vss sns1 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1
+XR2 sns2 e2 sub! rppd w=2u l=85.1u m=1 b=0
+XQ2 vss vss e2 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=8
+XR1 vref e3 sub! rppd w=2u l=647.0u m=1 b=0
+XQ3 vss vss e3 pnpMPA a={ 1u * 2u } p={ ( 1u + 2u ) * 2 } m=1

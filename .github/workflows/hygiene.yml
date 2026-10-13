@@ -66,6 +66,12 @@ jobs:
         # shaping -- the transforms whose output becomes append-only evidence.
         run: python3 sim/harness/test_harness_transformers.py
 
+      - name: SG13CMOS5L klt-sim conversion self-test
+        # Issue #337: corner mapping vs the legacy scripts, generated request
+        # shapes for the full grid, record columns/provenance, legacy verdicts
+        # and the runners' fail-closed gates. No simulation, no PDK.
+        run: python3 sim/harness/test_cmos5l_harness.py
+
       - name: Evidence formats and freshness
         # --require-append-only: fail loudly rather than silently skipping if
         # the merge base stops resolving (a skipped check reads as a pass).

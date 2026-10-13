@@ -91,3 +91,87 @@ to here; noted for whichever future phase adds one (see
 `spec/decision-records/0004-cmos5l-bipolar-device-selection.md`'s own
 forward-guidance flag: MoM caps carry no corner/mismatch spread in this
 PDK's models).
+
+## `klt sim` harness (issue #337, Part of #322)
+
+The legacy `run_pvt_sweep.sh` loop above stays the generator of every
+committed record. This experiment can now also be expressed as a `klt sim`
+request so a multi-corner run goes to the batch fleet (host rules: no
+hand-launched grids on dispatch hosts):
+
+```bash
+sim/sg13cmos5l-core-open-loop-bias/run_klt_sim.sh --sanity   # one local corner vs the legacy anchor (the gate)
+sim/sg13cmos5l-core-open-loop-bias/run_klt_sim.sh --batch    # 45-point grid on the fleet (needs a CMOS5L image)
+sim/sg13cmos5l-core-open-loop-bias/run_klt_sim.sh --record   # KLT_SIM_WORK=<batch work dir>; mint evidence
+```
+
+| file | role |
+|---|---|
+| `testbench/sg13cmos5l_core_open_loop_bias.body.spice.tmpl` | bench body: devices and fixtures carried over from the legacy template (a test asserts the device lines match) |
+| `testbench/sg13cmos5l_core_open_loop_bias.request.json.tmpl` | the full 45-point grid and the measurements |
+| `testbench/sg13cmos5l_core_open_loop_bias.record-spec.json` | the adapter's narrative + `pass_requires` + corner-section columns |
+| `run_klt_sim.sh` | thin declaration over [`sim/harness/cmos5l_runner.sh`](../harness/cmos5l_runner.sh) |
+
+**Sharding.** One request per process corner (5), each sweeping 3
+temperatures x 3 supplies natively (`corners.supply_v` on the plain DC
+`Vvdd`). The runner image's single-`models.lib` request cannot vary the
+process within one request (klayout-tools#2668), so the first family
+(`cornerPNP.lib`) rides `models`/`corners.process` and the MOS/resistor
+sections are body-level `.lib` cards against the image's baked PDK root.
+
+**Measurements** (same columns as the legacy CSV): `vref_v`, `vfb_v`,
+`veb_q1_v`, `veb_q2_v`, `veb_q3_v`, `dveb_ptat_v`, `i_leg1_a`, `i_leg2_a`,
+`i_leg3_a`, `r1_ohm`, `r2_ohm`. The legacy `.op` becomes a 50 ns transient
+read at 40 ns (ngspice has no `.MEASURE OP`; all sources are DC), and the
+derived columns are single `.meas ... find par(...)` cards instead of awk
+post-processing. PASS = `klt sim` pass and `vref_v`, `veb_q1_v`, `veb_q2_v`,
+`i_leg{1,2,3}_a` present -- the legacy rule. Difference from legacy: a
+corner where the r1/r2 quotient itself cannot be evaluated (leg current
+exactly 0) would presumably be graded failed by klt (a failed `.meas`), where the
+legacy loop wrote an empty cell and still PASSed -- not exercised here; with
+no leg current that is a failure anyway.
+
+### SG13CMOS5L corner mapping (derived, not borrowed)
+
+SG13G2's `klt_corner_bundle.CORNER_SECTIONS` pairs an *HBT* section
+(`cornerHBT.lib`) with the MOS/resistor ones, and SG13CMOS5L has no HBT, so
+that table is not evidence here. The triple for this PDK is
+`CORNER_SECTIONS` in [`sim/harness/cmos5l_klt.py`](../harness/cmos5l_klt.py):
+
+| label | pnpMPA (`cornerPNP.lib`) | MOS-hv (`cornerMOShv.lib`) | resistor (`cornerRES.lib`) |
+|---|---|---|---|
+| typ | `typ` | `mos_tt` | `res_typ` |
+| bcs | `bcs` | `mos_ff` | `res_bcs` |
+| wcs | `wcs` | `mos_ss` | `res_wcs` |
+| sf | `typ` | `mos_sf` | `res_typ` |
+| fs | `typ` | `mos_fs` | `res_typ` |
+
+`cornerPNP.lib` is a real file in the CMOS5L tree whose sections are `typ`,
+`stat`, `bcs`, `wcs` -- no skewed section, hence the sf/fs fallback to `typ`.
+`cornerMOShv.lib`/`cornerRES.lib` are symlinks into the sibling `ihp-sg13g2/`
+checkout, so those two columns are SG13G2's. The map is cross-checked, by
+`run_klt_sim.sh` on every invocation and by CI, against the `PNP_SECTION_OF`
+maps of the legacy scripts that generated every committed record and against
+the section names in the installed `*.lib` files
+(`cmos5l_klt.py check-mapping`).
+
+### Status -- read before trusting any of this
+
+* **Nothing here has been run.** Issue #337 is a conversion with no
+  simulation and no evidence: the request/body/spec files were checked only
+  by fixture tests (`python3 sim/harness/test_cmos5l_harness.py`), which
+  need no ngspice or PDK. No record, corner log or snapshot was added, and
+  the legacy records above are untouched.
+* **`--sanity` is the gate and has not been exercised.** It runs one local
+  corner and compares against the newest legacy record's typ/27C/3.30V row
+  (anchors in `run_klt_sim.sh`; tolerances absorb the klt-vs-legacy
+  measurement path, not a design change).
+* **`--batch` cannot dispatch today.** The batch runner image bakes
+  `ihp-sg13g2` only (`sim/pdk-sg13cmos5l.json`
+  `deferred_requirements.provisioning`, a sibling issue); the runner refuses
+  unless `KLT_SIM_CMOS5L_BATCH_READY=1` and has no local-grid fallback. The
+  target PDK pin is likewise unverified at runtime
+  (`sim/pdk-sg13cmos5l.json` `target_pin_status`).
+* A record minted from this harness is a *new* record on the target pin; it
+  neither replaces nor edits the legacy ones, and a regression against them
+  authorises no retune or spec change.
