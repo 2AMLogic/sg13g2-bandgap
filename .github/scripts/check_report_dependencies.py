@@ -75,7 +75,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from _ci_common import Report, sha256_file as _sha256_file_bare
+from _ci_common import Report, add_manifest_args, discover_manifests, sha256_prefixed
 
 #: T1 item whose cited report this script tracks.
 ITEM_ID = "8"
@@ -92,11 +92,6 @@ SIM_WAIVER_FILE = "sim/evidence-freshness-waivers.json"
 _SEPARATOR_CELL_RE = re.compile(r"^:?-{3,}:?$")
 _STATUS_RE = re.compile(r"^\s*-\s*\*\*Status\*\*\s*:\s*([A-Za-z-]+)", re.MULTILINE)
 _SHA_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
-
-
-def sha256_file(path: Path) -> str:
-    """`sha256:`-prefixed digest, matching the manifest's `content_hash` form."""
-    return "sha256:" + _sha256_file_bare(path)
 
 
 def normalise_text(text: str) -> str:
@@ -180,7 +175,7 @@ def _hash_matches(root: Path, rel: Any, pin: Any, what: str, report: Report,
     if not path.is_file():
         report.problem(f"{where}: MISSING DEPENDENCY — {what} {rel} does not exist")
         return False, "missing"
-    if sha256_file(path) != pin:
+    if sha256_prefixed(path) != pin:
         return False, "changed"
     return True, ""
 
@@ -250,7 +245,7 @@ def check_inventory(root: Path, inv_path: Path, report_path: Path,
             f"actively cited report is {report_rel}"
         )
         return
-    actual_report_hash = sha256_file(report_path)
+    actual_report_hash = sha256_prefixed(report_path)
     if inv.get("report_sha256") != actual_report_hash:
         report.problem(
             f"{where}: inventory audits report bytes {inv.get('report_sha256')} but "
@@ -512,19 +507,13 @@ def active_reports(root: Path, manifest_paths: list[Path],
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--root", default=None, help="repo root (default: this script's repo)")
-    parser.add_argument("--manifest", default=None, help="block manifest (default: auto-detect)")
+    add_manifest_args(parser)
     args = parser.parse_args(argv)
 
-    root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parents[2]
-    manifests_dir = root / "manifests"
-    manifest_paths = (
-        [Path(args.manifest).resolve()] if args.manifest else sorted(manifests_dir.glob("*.json"))
-    )
-    manifest_paths = [p for p in manifest_paths if not p.name.endswith(".signoff.json")]
-    if not manifest_paths:
-        print(f"::error::no block manifest found under {manifests_dir}")
+    found = discover_manifests(args)
+    if found is None:
         return 1
+    root, manifest_paths = found
 
     report = Report(annotate=True)
     active_inventories: set[Path] = set()
@@ -547,15 +536,10 @@ def main(argv: list[str] | None = None) -> int:
                 "not required to track newer inputs; not checked"
             )
 
-    for note in report.notes:
-        print(f"note: {note}")
-    if report.problems:
-        print(f"\n{len(report.problems)} report-dependency problem(s):", file=sys.stderr)
-        for problem in report.problems:
-            print(f"  {problem}", file=sys.stderr)
-        return 1
-    print(f"OK: {report.checked} report dependency input(s) match the active item-{ITEM_ID} inventory")
-    return 0
+    return report.finish(
+        "report-dependency",
+        f"OK: {report.checked} report dependency input(s) match the active item-{ITEM_ID} inventory",
+    )
 
 
 if __name__ == "__main__":

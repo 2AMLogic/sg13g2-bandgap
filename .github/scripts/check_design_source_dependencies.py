@@ -57,7 +57,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from _ci_common import Report, sha256_file as _sha256_file_bare
+from _ci_common import Report, add_manifest_args, discover_manifests, sha256_prefixed
 from check_report_dependencies import contained
 
 ITEM_ID = "1"
@@ -67,10 +67,6 @@ ROLES = {"schematic", "symbol", "netlist"}
 _SHA_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _ATTEST_LINE_RE = re.compile(r"^([0-9a-f]{64})  (\S+)\s*$")
 _NOT_ATTESTED_RE = re.compile(r"^## Not attested", re.MULTILINE)
-
-
-def sha256_file(path: Path) -> str:
-    return "sha256:" + _sha256_file_bare(path)
 
 
 REMEDY = (
@@ -118,7 +114,7 @@ def _check_entry_hash(root: Path, entry: Any, what: str, where: str,
             f"(deleted or renamed since the audit). {REMEDY}"
         )
         return entry["path"], pin
-    if sha256_file(path) != pin:
+    if sha256_prefixed(path) != pin:
         report.problem(
             f"{where}: AUDITED INPUT CHANGED -- {what} {entry['path']} no longer hashes "
             f"to the audited {pin}. {REMEDY}"
@@ -163,7 +159,7 @@ def check_inventory(root: Path, inv_path: Path, attest_path: Path, report: Repor
             f"actively cited attestation is {attest_rel}"
         )
         return
-    actual = sha256_file(attest_path)
+    actual = sha256_prefixed(attest_path)
     if inv.get("attestation_sha256") != actual:
         report.problem(
             f"{where}: inventory was written for attestation bytes "
@@ -291,19 +287,13 @@ def active_attestations(root: Path, manifest_paths: list[Path],
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--root", default=None, help="repo root (default: this script's repo)")
-    parser.add_argument("--manifest", default=None, help="block manifest (default: auto-detect)")
+    add_manifest_args(parser)
     args = parser.parse_args(argv)
 
-    root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parents[2]
-    manifests_dir = root / "manifests"
-    manifest_paths = (
-        [Path(args.manifest).resolve()] if args.manifest else sorted(manifests_dir.glob("*.json"))
-    )
-    manifest_paths = [p for p in manifest_paths if not p.name.endswith(".signoff.json")]
-    if not manifest_paths:
-        print(f"::error::no block manifest found under {manifests_dir}")
+    found = discover_manifests(args)
+    if found is None:
         return 1
+    root, manifest_paths = found
 
     report = Report(annotate=True)
     active: set[Path] = set()
@@ -326,16 +316,11 @@ def main(argv: list[str] | None = None) -> int:
                 "not required to track the current design; not checked"
             )
 
-    for note in report.notes:
-        print(f"note: {note}")
-    if report.problems:
-        print(f"\n{len(report.problems)} design-source dependency problem(s):", file=sys.stderr)
-        for problem in report.problems:
-            print(f"  {problem}", file=sys.stderr)
-        return 1
-    print(f"OK: {report.checked} design-source input(s) match the active item-{ITEM_ID} audit inventory "
-          "(unchanged inputs only; not a new export-equivalence proof)")
-    return 0
+    return report.finish(
+        "design-source dependency",
+        f"OK: {report.checked} design-source input(s) match the active item-{ITEM_ID} audit inventory "
+        "(unchanged inputs only; not a new export-equivalence proof)",
+    )
 
 
 if __name__ == "__main__":
