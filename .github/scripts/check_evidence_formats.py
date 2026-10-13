@@ -104,7 +104,6 @@ import hashlib
 import json
 import re
 import subprocess
-import sys
 from pathlib import Path
 
 from _ci_common import Report, sha256_file
@@ -1351,17 +1350,10 @@ def main(argv: list[str] | None = None) -> int:
     if not args.skip_append_only:
         check_append_only(root, args.base_ref, args.require_append_only, report)
 
-    for note in report.notes:
-        print(f"note: {note}")
-
-    if report.problems:
-        print(f"\n{len(report.problems)} evidence-format problem(s):", file=sys.stderr)
-        for problem in report.problems:
-            print(f"  {problem}", file=sys.stderr)
-        return 1
-
-    print(f"OK: {report.checked} evidence artifact(s) checked under {root}")
-    return 0
+    return report.finish(
+        "evidence-format",
+        f"OK: {report.checked} evidence artifact(s) checked under {root}",
+    )
 
 
 if __name__ == "__main__":

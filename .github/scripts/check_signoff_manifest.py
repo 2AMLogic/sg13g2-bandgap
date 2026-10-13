@@ -51,11 +51,10 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any
 
-from _ci_common import Report, sha256_file as _sha256_file_bare
+from _ci_common import Report, add_manifest_args, discover_manifests, sha256_prefixed
 
 #: `klt signoff --manifest` exit codes that are valid grades (see
 #: klayout_tools/cli/signoff_cmd.py: 0 = tier T1, 3 = graded, not-T1).
@@ -66,11 +65,6 @@ VALID_GRADE_EXITS = {0, 3}
 #: `_ITEMS_REQUIRING_ANCHORED_GENERIC_EVIDENCE` in klayout_tools/signoff.py
 #: at the pinned klt (3a75c3ae); item 8 is deliberately not in it.
 ANCHORED_GENERIC_ITEMS = {"1", "2", "9", "10"}
-
-
-def sha256_file(path: Path) -> str:
-    """`sha256:`-prefixed digest, matching this manifest's `content_hash` pins."""
-    return "sha256:" + _sha256_file_bare(path)
 
 
 def run_grade(klt: str, root: Path, manifest: Path) -> tuple[int, Any]:
@@ -227,7 +221,7 @@ def _check_generic_entry(
             "the pinned citation has nothing fresh to point at"
         )
         return
-    artifact_hash = sha256_file(artifact)
+    artifact_hash = sha256_prefixed(artifact)
     if artifact_hash != pin:
         report.problem(
             f"{label}: STALE — audited artifact {artifact} now hashes to "
@@ -295,7 +289,7 @@ def _check_entry(root: Path, label: str, entry: Any, report: Report, item_id: st
         if rooted.is_file():
             artifact = rooted
     try:
-        artifact_hash = sha256_file(artifact)
+        artifact_hash = sha256_prefixed(artifact)
     except (OSError, FileNotFoundError):
         report.problem(
             f"{label}: envelope's input artifact {artifact} does not exist — "
@@ -341,26 +335,16 @@ def check_citations(root: Path, manifest_path: Path, manifest: dict, report: Rep
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--root", default=None, help="repo root (default: this script's repo)")
-    parser.add_argument("--manifest", default=None, help="block manifest (default: auto-detect)")
+    add_manifest_args(parser)
     parser.add_argument("--klt", default="klt", help="klt binary (default: PATH; $KLT_BIN overrides)")
     args = parser.parse_args(argv)
 
-    root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parents[2]
     klt = args.klt if args.klt != "klt" else (__import__("os").environ.get("KLT_BIN") or "klt")
 
-    manifests_dir = root / "manifests"
-    manifest_paths = (
-        [Path(args.manifest).resolve()]
-        if args.manifest
-        else sorted(manifests_dir.glob("*.json"))
-    )
-    manifest_paths = [
-        p for p in manifest_paths if not p.name.endswith(".signoff.json")
-    ]
-    if not manifest_paths:
-        print(f"::error::no block manifest found under {manifests_dir}")
+    found = discover_manifests(args)
+    if found is None:
         return 1
+    root, manifest_paths = found
 
     report = Report(annotate=True)
     for manifest_path in manifest_paths:
@@ -414,17 +398,10 @@ def main(argv: list[str] | None = None) -> int:
             f"{committed.get('t1_item_count')} met)"
         )
 
-    for note in report.notes:
-        print(f"note: {note}")
-
-    if report.problems:
-        print(f"\n{len(report.problems)} signoff-manifest problem(s):", file=sys.stderr)
-        for problem in report.problems:
-            print(f"  {problem}", file=sys.stderr)
-        return 1
-
-    print(f"OK: {report.checked} pinned citation(s) fresh, verdict of record current")
-    return 0
+    return report.finish(
+        "signoff-manifest",
+        f"OK: {report.checked} pinned citation(s) fresh, verdict of record current",
+    )
 
 
 if __name__ == "__main__":

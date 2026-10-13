@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
 """Shared scaffolding for `.github/scripts`' CI evidence checkers.
 
-Not an entry point itself — imported by `check_evidence_formats.py` and
-`check_signoff_manifest.py`, which independently redefined the same `Report`
-collector and `sha256_file()` helper before this module existed (issue #260).
+Not an entry point itself -- imported by all four `check_*.py` checkers
+(`check_evidence_formats`, `check_signoff_manifest`, `check_report_dependencies`,
+`check_design_source_dependencies`), which independently redefined the same
+`Report` collector, `sha256_file()` helper, manifest discovery and end-of-run
+printout before this module existed (issues #260, #342).
 
-The two call sites differ in exactly two ways, both preserved here rather
-than papered over:
+What is shared:
 
-1. `check_signoff_manifest.py` wants each problem to also print immediately
-   as a GitHub Actions inline annotation (``::error::<msg>``); construct
-   `Report(annotate=True)` for that. `check_evidence_formats.py` defers
-   everything to the end-of-run printout, so it uses the `Report()` default.
-2. `sha256_file()` here adopts `check_evidence_formats.py`'s convention
-   (streamed in 1 MiB chunks, bare hex digest, no `"sha256:"` prefix) since
-   it has the larger number of call sites; `check_signoff_manifest.py`'s one
-   call site prepends `"sha256:"` itself where it needs that form.
+- `Report` -- problem/note collector with an end-of-run `finish()` printout.
+  `check_signoff_manifest.py` and the two dependency checkers construct
+  `Report(annotate=True)` so each problem also prints immediately as a GitHub
+  Actions inline annotation (``::error::<msg>``); `check_evidence_formats.py`
+  defers everything to the end-of-run printout and uses the `Report()` default.
+- `sha256_file()` -- bare hex digest, streamed in 1 MiB chunks;
+  `sha256_prefixed()` -- the same with a `"sha256:"` prefix, the form the
+  manifests' `content_hash` pins use.
+- `add_manifest_args()` / `resolve_root()` / `discover_manifests()` -- the
+  `--root`/`--manifest` options and block-manifest discovery shared by the
+  three manifest-driven checkers.
 """
 
 from __future__ import annotations
 
+import argparse
 import hashlib
+import sys
 from pathlib import Path
 
 
@@ -56,6 +62,21 @@ class Report:
     def note(self, message: str) -> None:
         self.notes.append(message)
 
+    def finish(self, label: str, ok_message: str) -> int:
+        """Print notes, then either the problem block (stderr) or `ok_message`.
+
+        Returns the process exit code (1 with problems, else 0).
+        """
+        for note in self.notes:
+            print(f"note: {note}")
+        if self.problems:
+            print(f"\n{len(self.problems)} {label} problem(s):", file=sys.stderr)
+            for problem in self.problems:
+                print(f"  {problem}", file=sys.stderr)
+            return 1
+        print(ok_message)
+        return 0
+
 
 def sha256_file(path: Path) -> str:
     """Return the bare hex sha256 digest of `path`, streamed in 1 MiB chunks."""
@@ -64,3 +85,37 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def sha256_prefixed(path: Path) -> str:
+    """Return `"sha256:" + sha256_file(path)`, the manifests' `content_hash` form."""
+    return "sha256:" + sha256_file(path)
+
+
+def add_manifest_args(parser: argparse.ArgumentParser) -> None:
+    """Add the `--root` / `--manifest` options shared by the manifest checkers."""
+    parser.add_argument("--root", default=None, help="repo root (default: this script's repo)")
+    parser.add_argument("--manifest", default=None, help="block manifest (default: auto-detect)")
+
+
+def resolve_root(args: argparse.Namespace) -> Path:
+    """Repo root from `--root`, else the repo containing `.github/scripts`."""
+    return Path(args.root).resolve() if args.root else Path(__file__).resolve().parents[2]
+
+
+def discover_manifests(args: argparse.Namespace) -> "tuple[Path, list[Path]] | None":
+    """Return `(root, block_manifest_paths)`, or None after printing an error.
+
+    Uses `--manifest` if given, else `manifests/*.json`; `*.signoff.json`
+    verdict-of-record files are never block manifests.
+    """
+    root = resolve_root(args)
+    manifests_dir = root / "manifests"
+    paths = (
+        [Path(args.manifest).resolve()] if args.manifest else sorted(manifests_dir.glob("*.json"))
+    )
+    paths = [p for p in paths if not p.name.endswith(".signoff.json")]
+    if not paths:
+        print(f"::error::no block manifest found under {manifests_dir}")
+        return None
+    return root, paths
