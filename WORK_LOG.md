@@ -6,8 +6,14 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-15
+
+- **PR #347**: Bump Repo Skills 0.19.5 -> 0.24.1
+
 ### 2026-10-13
 
+- **PR #346**: sim: convert the four SG13CMOS5L experiments to the klt sim harness (#337)
+- **Issue #337** (closed): sim: convert the four SG13CMOS5L experiments to the klt sim harness (Part of #322)
 - **PR #344**: ci: hoist duplicated checker scaffolding into _ci_common
 - **Issue #342** (closed): Simplify CI checkers: hoist duplicated manifest discovery, report printing and sha256: wrapper into _ci_common
 - **PR #343**: docs(sim): index five missing experiments, enforce index completeness
