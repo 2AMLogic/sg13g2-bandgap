@@ -6,6 +6,10 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-16
+
+- **PR #350**: Bump Repo Skills 0.24.1 -> 0.24.3
+
 ### 2026-10-15
 
 - **PR #347**: Bump Repo Skills 0.19.5 -> 0.24.1
