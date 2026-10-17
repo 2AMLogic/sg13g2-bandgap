@@ -74,7 +74,14 @@ import re
 from pathlib import Path
 from typing import Any
 
-from _ci_common import Report, add_manifest_args, discover_manifests, sha256_prefixed
+from _ci_common import (
+    Report,
+    add_manifest_args,
+    check_pin,
+    contained,
+    discover_manifests,
+    sha256_prefixed,
+)
 
 #: T1 item whose cited report this script tracks.
 ITEM_ID = "8"
@@ -90,7 +97,6 @@ SIM_WAIVER_FILE = "sim/evidence-freshness-waivers.json"
 
 _SEPARATOR_CELL_RE = re.compile(r"^:?-{3,}:?$")
 _STATUS_RE = re.compile(r"^\s*-\s*\*\*Status\*\*\s*:\s*([A-Za-z-]+)", re.MULTILINE)
-_SHA_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
 def normalise_text(text: str) -> str:
@@ -145,38 +151,13 @@ def decision_record_status(text: str) -> str | None:
     return match.group(1).lower() if match else None
 
 
-def contained(root: Path, rel: Any, what: str, report: Report, where: str) -> Path | None:
-    """Resolve a repo-relative path, rejecting malformed/absolute/escaping ones."""
-    if not isinstance(rel, str) or not rel.strip():
-        report.problem(f"{where}: {what} must be a non-empty repository-relative path, got {rel!r}")
-        return None
-    if Path(rel).is_absolute():
-        report.problem(f"{where}: {what} {rel!r} is absolute")
-        return None
-    resolved = (root / rel).resolve()
-    try:
-        resolved.relative_to(root.resolve())
-    except ValueError:
-        report.problem(f"{where}: {what} {rel!r} escapes the repository")
-        return None
-    return resolved
-
-
 def _hash_matches(root: Path, rel: Any, pin: Any, what: str, report: Report,
                   where: str) -> tuple[bool, str]:
     """Return (ok, kind) where kind is '', 'missing', 'changed' or 'malformed'."""
-    path = contained(root, rel, what, report, where)
-    if path is None:
-        return False, "malformed"
-    if not isinstance(pin, str) or not _SHA_RE.match(pin):
-        report.problem(f"{where}: {what} {rel} has malformed sha256 {pin!r}")
-        return False, "malformed"
-    if not path.is_file():
+    ok, kind = check_pin(root, rel, pin, what, report, where)
+    if kind == "missing":
         report.problem(f"{where}: MISSING DEPENDENCY — {what} {rel} does not exist")
-        return False, "missing"
-    if sha256_prefixed(path) != pin:
-        return False, "changed"
-    return True, ""
+    return ok, kind
 
 
 def _remedy() -> str:
