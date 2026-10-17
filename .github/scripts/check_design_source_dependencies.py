@@ -56,14 +56,19 @@ import re
 from pathlib import Path
 from typing import Any
 
-from _ci_common import Report, add_manifest_args, discover_manifests, sha256_prefixed
-from check_report_dependencies import contained
+from _ci_common import (
+    Report,
+    add_manifest_args,
+    check_pin,
+    contained,
+    discover_manifests,
+    sha256_prefixed,
+)
 
 ITEM_ID = "1"
 INVENTORY_SUFFIX = ".inventory.json"
 SCHEMA_VERSION = 1
 ROLES = {"schematic", "symbol", "netlist"}
-_SHA_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _ATTEST_LINE_RE = re.compile(r"^([0-9a-f]{64})  (\S+)\s*$")
 _NOT_ATTESTED_RE = re.compile(r"^## Not attested", re.MULTILINE)
 
@@ -100,27 +105,23 @@ def _check_entry_hash(root: Path, entry: Any, what: str, where: str,
     if not isinstance(entry, dict):
         report.problem(f"{where}: must be an object {{path, sha256}}")
         return None
-    path = contained(root, entry.get("path"), what, report, where)
-    pin = entry.get("sha256")
-    if path is None:
+    rel, pin = entry.get("path"), entry.get("sha256")
+    ok, kind = check_pin(root, rel, pin, what, report, where)
+    if kind == "malformed":
         return None
-    if not isinstance(pin, str) or not _SHA_RE.match(pin):
-        report.problem(f"{where}: {what} {entry['path']} has malformed sha256 {pin!r}")
-        return None
-    if not path.is_file():
+    if kind == "missing":
         report.problem(
-            f"{where}: MISSING AUDITED INPUT -- {what} {entry['path']} does not exist "
+            f"{where}: MISSING AUDITED INPUT -- {what} {rel} does not exist "
             f"(deleted or renamed since the audit). {REMEDY}"
         )
-        return entry["path"], pin
-    if sha256_prefixed(path) != pin:
+    elif kind == "changed":
         report.problem(
-            f"{where}: AUDITED INPUT CHANGED -- {what} {entry['path']} no longer hashes "
+            f"{where}: AUDITED INPUT CHANGED -- {what} {rel} no longer hashes "
             f"to the audited {pin}. {REMEDY}"
         )
     else:
         report.checked += 1
-    return entry["path"], pin
+    return rel, pin
 
 
 def check_inventory(root: Path, inv_path: Path, attest_path: Path, report: Report) -> None:

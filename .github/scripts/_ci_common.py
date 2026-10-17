@@ -17,6 +17,10 @@ What is shared:
 - `sha256_file()` -- bare hex digest, streamed in 1 MiB chunks;
   `sha256_prefixed()` -- the same with a `"sha256:"` prefix, the form the
   manifests' `content_hash` pins use.
+- `SHA_PIN_RE` / `contained()` / `check_pin()` -- the manifests' `sha256:<hex>`
+  pin format, repo-relative path containment, and the containment -> pin-format
+  -> existence -> hash-match sequence the two dependency checkers share. Each
+  checker words its own MISSING/CHANGED message from the returned kind.
 - `add_manifest_args()` / `resolve_root()` / `discover_manifests()` -- the
   `--root`/`--manifest` options and block-manifest discovery shared by the
   three manifest-driven checkers.
@@ -26,8 +30,13 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import re
 import sys
 from pathlib import Path
+from typing import Any
+
+#: A manifest content-hash pin: lower-case hex digest with the `sha256:` prefix.
+SHA_PIN_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
 class Report:
@@ -90,6 +99,44 @@ def sha256_file(path: Path) -> str:
 def sha256_prefixed(path: Path) -> str:
     """Return `"sha256:" + sha256_file(path)`, the manifests' `content_hash` form."""
     return "sha256:" + sha256_file(path)
+
+
+def contained(root: Path, rel: Any, what: str, report: Report, where: str) -> Path | None:
+    """Resolve a repo-relative path, rejecting malformed/absolute/escaping ones."""
+    if not isinstance(rel, str) or not rel.strip():
+        report.problem(f"{where}: {what} must be a non-empty repository-relative path, got {rel!r}")
+        return None
+    if Path(rel).is_absolute():
+        report.problem(f"{where}: {what} {rel!r} is absolute")
+        return None
+    resolved = (root / rel).resolve()
+    try:
+        resolved.relative_to(root.resolve())
+    except ValueError:
+        report.problem(f"{where}: {what} {rel!r} escapes the repository")
+        return None
+    return resolved
+
+
+def check_pin(root: Path, rel: Any, pin: Any, what: str, report: Report,
+              where: str) -> tuple[bool, str]:
+    """Check a repo-relative file against its `sha256:` pin; return (ok, kind).
+
+    `kind` is '' (matches), 'malformed' (bad path or pin; already reported),
+    'missing' or 'changed'. The last two are NOT reported here: callers word
+    their own message for them.
+    """
+    path = contained(root, rel, what, report, where)
+    if path is None:
+        return False, "malformed"
+    if not isinstance(pin, str) or not SHA_PIN_RE.match(pin):
+        report.problem(f"{where}: {what} {rel} has malformed sha256 {pin!r}")
+        return False, "malformed"
+    if not path.is_file():
+        return False, "missing"
+    if sha256_prefixed(path) != pin:
+        return False, "changed"
+    return True, ""
 
 
 def add_manifest_args(parser: argparse.ArgumentParser) -> None:
