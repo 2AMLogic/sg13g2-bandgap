@@ -221,6 +221,45 @@ def _res_element_line(
     )
 
 
+def _convert_runset_device_line(
+    instance: str, nodes: list[str], model: str, params: dict[str, str]
+) -> str:
+    """Convert one device line to the PDK LVS runset's own SPICE dialect
+    (`klt lvs` ``engine: "klayout-runset"``, issue #352).
+
+    The runset does its own extraction, so its device classes are the PDK's
+    model names, not the curated deck's ``pfet``/``nfet``: MOS keep
+    ``sg13_hv_pmos``/``sg13_hv_nmos`` with ``w``/``l``/``ng``/``m``; the HBT
+    is a 4-terminal ``Q`` with the PDK testcases' ``npn13G2 le=900n we=70n``
+    geometry, ``Nx`` emitters becoming ``m``; resistors are 2-terminal
+    ``R`` elements named by model, as in the curated form.
+    """
+    model_lower = model.lower()
+    if model_lower in _MOS_CLASS:
+        d, g, s, b = nodes
+        extra = " ".join(f"{k}={params[k]}" for k in ("ng", "m") if k in params)
+        return (
+            f"{_element_name(instance, 'M')} {d} {g} {s} {b} {model_lower} "
+            f"w={params['w']} l={params['l']} {extra}".rstrip()
+        )
+    if model_lower == "npn13g2":
+        c, b, e, s = nodes
+        return (
+            f"{_element_name(instance, 'Q')} {c} {b} {e} {s} npn13G2 "
+            f"le=900.0n we=70.00n m={params.get('Nx', params.get('nx', '1'))}"
+        )
+    if model_lower in _RES_SHEET_OHM_PER_SQ:
+        # The runset's own SPICE reader delegate requires the 3-node
+        # `R a b sub model` form (the substrate tie is kept) and no literal
+        # value -- a bare number would be read as a node.
+        n1, n2, sub = nodes
+        return (
+            f"{_element_name(instance, 'R')} {n1} {n2} {sub} {model_lower} "
+            f"l={params['l']} w={params['w']}"
+        )
+    raise ValueError(f"unrecognised device model {model!r} for the runset dialect")
+
+
 def _convert_device_line(line: str, pdk: str) -> str:
     """Convert one already-fully-connected ``X<name> node... model
     param=value...`` device line to its plain-element ``klt lvs`` form.
@@ -235,6 +274,9 @@ def _convert_device_line(line: str, pdk: str) -> str:
     """
     instance, nodes, model, params = _parse_device_line(line)
     model_lower = model.lower()
+
+    if pdk == "sg13g2-runset":
+        return _convert_runset_device_line(instance, nodes, model, params)
 
     if model_lower == "pnpmpa":
         # SG13CMOS5L's only bipolar device (DR-0004) -- a *three*-
@@ -856,6 +898,25 @@ def _write_flattened(top_path: str, output_path: str, pdk: str = "sg13cmos5l") -
     print(f"wrote {output_path}")
 
 
+def _write_runset_flattened(top_path: str, output_path: str, ports: list[str]) -> None:
+    """:func:`flatten` in the runset dialect, wrapped in a ``.subckt`` named
+    for the top cell: the runset's ``align`` pairs the layout's top cell with
+    a schematic *circuit* of the same name, which a bare device list lacks."""
+    top = os.path.splitext(os.path.basename(top_path))[0]
+    body = flatten(top_path, pdk="sg13g2-runset")
+    assert body[-1] == ".end"
+    first_device = next(i for i, ln in enumerate(body) if not ln.startswith("*"))
+    lines = (
+        body[:first_device]
+        + [f".subckt {top} {' '.join(ports)}"]
+        + body[first_device:-1]
+        + [".ends", ".end"]
+    )
+    with open(output_path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    print(f"wrote {output_path}")
+
+
 def _write_with_metal_options(
     reference_path: str, output_path: str, pdk: str = "sg13g2"
 ) -> None:
@@ -896,6 +957,13 @@ if __name__ == "__main__":
         os.path.join(REPO_ROOT, "design/netlist/bandgap_top.spice"),
         os.path.join(REPO_ROOT, "layout/bandgap_top/bandgap_top.lvs_reference.spice"),
         pdk="sg13g2",
+    )
+    # bandgap_top in the PDK LVS runset's own dialect (issue #352) -- the
+    # curated-deck reference above stays as is.
+    _write_runset_flattened(
+        os.path.join(REPO_ROOT, "design/netlist/bandgap_top.spice"),
+        os.path.join(REPO_ROOT, "layout/bandgap_top/bandgap_top.lvs_reference.runset.spice"),
+        ports=["vdd", "vss", "vref"],
     )
     # SG13CMOS5L port (issue #66) -- same conversion, that PDK's own device
     # vocabulary. Directory name mirrors sim/'s own `sg13cmos5l-<slug>`
