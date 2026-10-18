@@ -6,6 +6,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-17
+
+- **PR #357**: refactor(ci): single-source path containment and sha256 pin check in _ci_common
+- **Issue #356** (closed): Consolidate duplicated sha256-pin validation in CI evidence checkers
+
 ### 2026-10-16
 
 - **PR #350**: Bump Repo Skills 0.24.1 -> 0.24.3
