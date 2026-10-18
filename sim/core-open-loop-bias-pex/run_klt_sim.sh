@@ -67,6 +67,7 @@ fi
 # fetched-PDKs tree (the install this repo's extraction flow itself uses on
 # dev hosts), then an explicit KLT_SIM_PDK_ROOT.
 source "${SIM_DIR}/env.sh" >/dev/null
+source "${HARNESS_DIR}/pex_merge_call.sh"
 if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
   for _cand in "${KLT_SIM_PDK_ROOT:-}" \
                "${HOME}/GitHub/klayout-tools/pdks/ihp-open-pdk"; do
@@ -254,10 +255,8 @@ PY
       -o "${WORK}/report-${label}-fixed.json"
   done
 
-  python3 "${HARNESS_DIR}/merge_batch_shards.py" -o "${WORK}/report-merged.json" \
-    --expect-process "$(IFS=,; echo "${CORNER_LABELS[*]}")" --expect-supplies 2.97,3.30,3.63 --expect-temps=-40,27,125 \
-    "typ=${WORK}/report-typ-fixed.json" "bcs=${WORK}/report-bcs-fixed.json" "wcs=${WORK}/report-wcs-fixed.json" \
-    "sf=${WORK}/report-sf-fixed.json" "fs=${WORK}/report-fs-fixed.json"
+  pex_merge_shards "${EXP_DIR}/testbench/core_open_loop_bias_pex.request.json.tmpl" "${WORK}" \
+    "${WORK}/report-merged.json"
   python3 - "${WORK}/report-merged.json" <<'PY'
 import json, pathlib, sys
 r = json.loads(pathlib.Path(sys.argv[1]).read_text())
