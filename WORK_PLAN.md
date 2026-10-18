@@ -31,7 +31,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#360**: Consolidate PEX klt-sim batch runners: zout-pex duplicates psrr-pex, three bypass pex_merge_call.sh
+_None._
 
 ## PRs Awaiting Review
 
@@ -43,7 +43,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#361**: refactor: route remaining PEX batch runners through pex_merge_shards
+_None._
 
 ## Proposed
 
@@ -73,9 +73,9 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
+| Approved PRs awaiting merge | 0 |
 | Curated | 7 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
