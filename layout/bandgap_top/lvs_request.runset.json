@@ -1,0 +1,12 @@
+{
+  "schema": "klt.lvs.request/1",
+  "engine": "klayout-runset",
+  "layout": {
+    "file": "bandgap_top.gds",
+    "top": "bandgap_top"
+  },
+  "reference": {
+    "netlist": "bandgap_top.lvs_reference.runset.spice"
+  },
+  "options": {}
+}
