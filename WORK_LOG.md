@@ -6,6 +6,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-18
+
+- **PR #353**: feat(lvs): grade bandgap_top with the PDK LVS runset for T1 items 4 and 11
+- **Issue #352** (closed): layout: close T1 items 4 and 11 with a klayout-runset LVS report (PDK runset recognizes NPN13G2)
+
 ### 2026-10-17
 
 - **PR #357**: refactor(ci): single-source path containment and sha256 pin check in _ci_common
