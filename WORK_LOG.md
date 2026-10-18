@@ -8,6 +8,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-10-18
 
+- **PR #361**: refactor: route remaining PEX batch runners through pex_merge_shards
+- **Issue #360** (closed): Consolidate PEX klt-sim batch runners: zout-pex duplicates psrr-pex, three bypass pex_merge_call.sh
 - **PR #353**: feat(lvs): grade bandgap_top with the PDK LVS runset for T1 items 4 and 11
 - **Issue #352** (closed): layout: close T1 items 4 and 11 with a klayout-runset LVS report (PDK runset recognizes NPN13G2)
 
