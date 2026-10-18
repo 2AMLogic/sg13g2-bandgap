@@ -7,7 +7,7 @@ Current repository work state, generated from GitHub labels by the Guide role.
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-- **#353**: feat(lvs): grade bandgap_top with the PDK LVS runset for T1 items 4 and 11
+_None._
 
 ## Very Important
 
@@ -31,7 +31,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#352**: layout: close T1 items 4 and 11 with a klayout-runset LVS report (PDK runset recognizes NPN13G2)
+- **#360**: Consolidate PEX klt-sim batch runners: zout-pex duplicates psrr-pex, three bypass pex_merge_call.sh
 
 ## PRs Awaiting Review
 
@@ -43,7 +43,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#353**: feat(lvs): grade bandgap_top with the PDK LVS runset for T1 items 4 and 11
+- **#361**: refactor: route remaining PEX batch runners through pex_merge_shards
 
 ## Proposed
 
@@ -56,7 +56,6 @@ Issues carrying `loom:curated`.
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6) *(curated)*
 - **#322**: Re-stamp SG13CMOS5L PDK pin from klayout-tools (IHP-Open-PDK dev f7bca326) *(curated)*
 - **#335**: sim: provision SG13CMOS5L pin on the permitted batch backend (Part of #322) *(curated)*
-- **#352**: layout: close T1 items 4 and 11 with a klayout-runset LVS report (PDK runset recognizes NPN13G2) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -70,14 +69,14 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 1 |
+| Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 8 |
+| Curated | 7 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
