@@ -116,7 +116,9 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          # Pinned: floating '3.x' resolved to 3.15, which has no prebuilt
+          # klayout wheel (pip then fails building it from source).
+          python-version: '3.14'
 
       - name: Install pinned klt
         # Pinned to the exact upstream rev whose bundled design-evidence-tiers

@@ -56,6 +56,7 @@ Issues carrying `loom:curated`.
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6) *(curated)*
 - **#322**: Re-stamp SG13CMOS5L PDK pin from klayout-tools (IHP-Open-PDK dev f7bca326) *(curated)*
 - **#335**: sim: provision SG13CMOS5L pin on the permitted batch backend (Part of #322) *(curated)*
+- **#371**: Live --batch run of the shared PEX runner driver (sim/harness/pex_runner.sh) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -76,7 +77,7 @@ _None._
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 7 |
+| Curated | 8 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

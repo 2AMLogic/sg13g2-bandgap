@@ -886,8 +886,8 @@ still clean from before).
 
 | Cell | Report | Status | Engine |
 | --- | --- | --- | --- |
-| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (8 findings, 4 error-severity, **263/263 layout devices matched** — the error count is unchanged by issue #272's 255-device trim ladder, and the 4 errors are still exactly `Q1`–`Q3` `device.unmatched` plus their own class-level topology entry, the permanent bipolar-recognition cause. The two extra findings are `severity: "warning"` `device.parameter_excluded` disclosures from #272's new `options.compare_parameters`, which *adds* `L`/`W` to the compare; see "Trim ladder layout (issue #272)" above and "`rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)" below) | `klayout` (`klayout.db.NetlistComparer`) |
-| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | **`match`** (`error_count: 0`; `mismatch_count: 2` is two `severity: "warning"` disclosures, down from 3/2 after issue #161's `rhigh` bulk-terminal reconciliation; see "`rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)" below) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_core` | `layout/bandgap_core/lvs_report.json` | `mismatch` (8 findings, 4 error-severity, **263/263 layout devices matched** — the error count is unchanged by issue #272's 255-device trim ladder, and the 4 errors are still exactly `Q1`–`Q3` `device.unmatched` plus their own class-level topology entry, the permanent bipolar-recognition cause. The two extra findings are `severity: "warning"` `device.parameter_excluded` disclosures from #272's new `options.compare_parameters`, which *adds* `L`/`W` to the compare; see "Trim ladder layout (issue #272)" above and the "Permanent blockers" table below (issue #161)) | `klayout` (`klayout.db.NetlistComparer`) |
+| `bandgap_startup` | `layout/bandgap_startup/lvs_report.json` | **`match`** (`error_count: 0`; `mismatch_count: 2` is two `severity: "warning"` disclosures, down from 3/2 after issue #161's `rhigh` bulk-terminal reconciliation; see the "Permanent blockers" table below (issue #161)) | `klayout` (`klayout.db.NetlistComparer`) |
 
 Reproduce: `klt lvs layout/bandgap_core/lvs_request.json` (run from
 `layout/bandgap_core/`, since the request's relative paths resolve against
@@ -1101,7 +1101,7 @@ confirmed by direct experiment, not inferred:
    schematic-level fix** (unit-device decomposition, not routing/hints,
    and not a parameter-value nudge either — see below for why only a real
    device-*count* difference actually works against this deck) — see
-   "`M1`/`M2`/`M3` automorphism resolved (issue #149)" below for the fix
+   the "Permanent blockers" table below (issue #149) for the fix
    and the direct `klt extract` evidence that the ambiguity is gone.
 
 Net effect: even the devices the deck *does* recognise on both sides
@@ -1119,188 +1119,35 @@ silently downgraded to warnings — per `CLAUDE.md`, "Verification is the
 product": this repo's DRC result is a genuine pass; its LVS result is a
 genuine, fully-explained fail, not fabricated evidence either way.
 
-### Permanent blockers (issue #20 rescope, 2026-08-23; cause 2 resolved in-repo via issue #149, cause 3 resolved upstream via issue #152, the well/substrate-tap gap resolved in-repo via issue #155 (2026-08-30), the net-name case-identity conflict issue #155 newly exposed resolved in-repo via issue #157 (2026-08-30), and the `rppd`/`rhigh` bulk-terminal-count mismatch resolved via issue #161 (2026-08-30) — see "`rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)" below)
+### Permanent blockers (issue #20 rescope, 2026-08-23; only cause 1 is still live)
 
 One cause remains **permanently unreachable through routing, marker-layer
 geometry, or `klt lvs` hints alone** — a future pass should not
 re-investigate it from scratch without a new upstream capability or a
-schematic-level circuit change. The other two, both originally recorded
-here as permanent, have since been resolved — each by exactly one of the
-two escape hatches this list's own caveat named, and neither by routing,
-marker geometry or hints:
-
-- **cause 2** by a schematic-level circuit change in this repo (issue #149's
-  `M1`/`M2`/`M3` unit-device decomposition, see below), and
-- **cause 3** by a new upstream capability (`klayout-tools#1481`, re-verified
-  for issue #152, see below).
-
-The well/substrate-tap gap cause 3's own entry used to name as the reason
-neither cell could reach `net.matched` has *also* since been resolved
-in-repo (issue #155's `draw_hv_mos` tap-ring geometry, see "Well/substrate-
-tap ring geometry added (issue #155)" below) — every `nfet`/`pfet` body
-terminal on both cells now resolves to its real schematic net, not an
-anonymous or deck-synthesized `vsubs` net.
-
-The net-name case-identity conflict issue #155's own tap-ring fix newly
-exposed (`bandgap_startup`'s `det`/`vss` nets pairing correctly but
-tripping a `topology`/"name identity conflict" over case alone, `klt lvs`'s
-reference side always reading upper-case via `NetlistSpiceReader` against
-this repo's own lower-case `layout/common.py` labels) is **also since
-resolved in-repo** (issue #157, 2026-08-30 — see "Net-name case-identity
-conflict resolved (issue #157)" below): `Builder.label()`
-(`layout/common.py`) now upper-cases the text it draws on the deck's real
-net-naming layers, matching the reader's own convention.
-
-All are kept in this list for their own record. As of issue #161
-(2026-08-30), the `rppd`/`rhigh` bulk-terminal-count mismatch that used to
-sit alongside cause 1 on both cells is **also resolved** (see "`rppd`/
-`rhigh` bulk-terminal mismatch resolved (issue #161)" below) —
-`bandgap_startup` now reaches `status: "match"` (`error_count: 0`; its
-`mismatch_count: 2` is two `severity: "warning"` disclosures, never a real
-defect). `bandgap_core` cannot follow it all the way to `match`: cause 1
-above (bipolar recognition, permanently declined upstream) is independent
-of the bulk-terminal fix and still leaves `Q1`–`Q3` `device.unmatched` —
-but its report now narrows to *exactly* that permanent cause plus the same
-two disclosure-only warnings `bandgap_startup` carries.
+schematic-level circuit change:
 
 1. **Bipolar (SiGe HBT) device recognition is permanently declined
    upstream** (`klayout-tools#1242`, closed; `klayout-tools#1232`'s own
    `completed` docs-only PR, no code change to wait on). Every
    `Q1`–`Q3` (`bandgap_core`) instance stays `device.unmatched`,
    class `NPN13G2`, indefinitely.
-2. **RESOLVED in-repo (issue #149): `bandgap_core`'s `M1`/`M2`/`M3` were a
-   genuine graph automorphism** at the recognised-device level when bipolar
-   *and* resistor devices were both excluded from the comparison (cause 3
-   above, PR #27's own experiment, before issue #20's resistor recognition)
-   — confirmed by direct experiment at the time: explicit `hints.same_nets`
-   pairings were rejected by the comparer, with conflicting
-   `net.merged`/`net.split` findings as evidence a different, equally-valid
-   correspondence exists under the layout's own more symmetric graph
-   structure. Issue #149 broke the automorphism at the schematic level
-   (unit-device decomposition, not routing or hints) — see "`M1`/`M2`/`M3`
-   automorphism resolved (issue #149)" below for the fix and the direct
-   before/after evidence that the ambiguity is gone. As with cause 3, this
-   does **not** get `bandgap_core` to a clean `match`: cause 1 above and the
-   well/substrate-tap gap (cause 2 under "Net effect" above, described in
-   cause 3's entry below) are unaffected and independently keep every net on
-   this cell from reaching `net.matched`.
-3. **RESOLVED upstream (issue #152)** (`bandgap_startup`'s `MSENSE.gate` net /
-   `poly_label`). This previously extracted as an anonymous net because the
-   curated deck declared no `poly_label` layer at all
-   (`EXTRACTION_DECK.poly_label=None`) — GDS text placed on a
-   `GatPoly`-adjacent label layer was simply not a signal this deck's
-   net-naming pass read for a gate terminal (unlike `Metal1.text`/
-   `Metal2.text`, see this file's own module-level comment on
-   `L_METAL1_TEXT`/`L_METAL2_TEXT` in `layout/common.py`). Filed as
-   [klayout-tools#1476](https://github.com/2AMLogic/klayout-tools/issues/1476)
-   and closed via
-   [klayout-tools#1481](https://github.com/2AMLogic/klayout-tools/pull/1481),
-   merged 2026-08-30 ("decks: set poly_label on sg13g2/sg13cmos5l so
-   labeled poly gates extract named") — the curated `sg13g2` deck now
-   declares a `poly_label` layer. Re-verified directly for this issue
-   (issue #152), from a fresh `klt` build against the merged commit
-   (`2AMLogic/klayout-tools@7066037`, deck `content_hash:
-   sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda`,
-   vs. the previously-committed report's
-   `sha256:72c12aadf165e17090871284ebf8688f2066e6d11967f30723945c3efc12bf59`):
-   `klt lvs` now extracts `MSENSE`'s gate net as named **`sns1`** —
-   matching the schematic net name exactly — where it previously extracted
-   anonymous `$4`. See the refreshed
-   `layout/bandgap_startup/lvs_report.json` (and `drc_report.json`, whose
-   content hash moved with the deck but whose verdict stayed `clean`, 0
-   violations). **This did not, on its own, get `bandgap_startup` to a
-   clean `match`** at the time: the well/substrate-tap gap (cause 2 under
-   "Net effect" above: [klayout-tools#1273](https://github.com/2AMLogic/klayout-tools/issues/1273)
-   resolved the deck side, but this repo's own `draw_hv_mos`
-   (`layout/common.py`) drew no tap-ring geometry, so both `nfet` body
-   terminals fell back to the deck-synthesized `vsubs` net) remained
-   unresolved and independently kept every net on this cell from reaching
-   `net.matched`. **RESOLVED in-repo, issue #155** — see "Well/substrate-tap
-   ring geometry added (issue #155)" immediately below.
 
-### Well/substrate-tap ring geometry added (issue #155)
+`bandgap_startup` reaches `status: "match"` (`error_count: 0`; its
+`mismatch_count: 2` is two `severity: "warning"` disclosures, never a real
+defect). `bandgap_core` cannot follow it: its report narrows to *exactly*
+cause 1 plus the same two disclosure-only warnings.
 
-`draw_hv_mos` (`layout/common.py`) now draws a small tap ring per MOS
-instance, bridged on `Metal1` into the device's own real body net, so
-every MOS body terminal extracts to its real schematic net instead of an
-anonymous or deck-synthesized `vsubs` net. DRC stayed clean (0 violations)
-on both cells after the change. LVS mismatch counts dropped sharply
-(`bandgap_startup` 16 -> 5, `bandgap_core` 36 -> 10) but neither reached a
-clean `match` yet — the remaining findings newly exposed a net-name
-case-identity conflict (resolved by issue #157, below) and the
-pre-existing `rppd`/`rhigh` bulk-terminal mismatch (resolved by issue
-#161, below). Full investigation, geometry details, and verification
-evidence: issue [#155](https://github.com/2AMLogic/sg13g2-bandgap/issues/155)
-(closed) and its closing PR
-[#158](https://github.com/2AMLogic/sg13g2-bandgap/pull/158).
+The other two causes originally recorded here, and the two defects their
+fixes exposed, are all **resolved**; the full investigation and verification
+evidence for each lives in the linked issue/PR, not here:
 
-### Net-name case-identity conflict resolved (issue #157)
-
-`klayout.db.NetlistSpiceReader` (the engine `klt lvs`'s reference side is
-read through) upper-cases every net name unconditionally, while this
-repo's own GDS labels preserved the lower-case spelling `design/netlist/
-*.spice` uses — once issue #155's tap-ring fix let devices start pairing,
-`NetlistComparer` correctly matched nets like `det`/`vss` topologically but
-still reported a `topology`/"name identity conflict" over case alone.
-Fixed centrally in `Builder.label()` (`layout/common.py`), which now
-upper-cases the text it draws on the deck's real net-naming layers, rather
-than at the reference-conversion script (`layout/lvs_reference.py`) or via
-a `hints.same_nets` workaround. `bandgap_startup`'s `mismatch_count`
-dropped from 5 to 3 (all remaining findings were the then-still-open
-`rppd`/`rhigh` bulk-terminal cause, later resolved by issue #161).
-Full investigation and verification evidence: issue
-[#157](https://github.com/2AMLogic/sg13g2-bandgap/issues/157) (closed) and
-its closing PR [#160](https://github.com/2AMLogic/sg13g2-bandgap/pull/160).
-
-### `M1`/`M2`/`M3` automorphism resolved (issue #149)
-
-`bandgap_core`'s `M1`/`M2`/`M3` pfets were drawn with identical `W`/`L`
-and identical source/gate nets, producing a genuine graph automorphism
-that no routing or `klt lvs` hints could break (confirmed directly:
-`hints.same_nets` pairings were rejected, with `net.merged`/`net.split`
-findings as evidence a different, equally-valid correspondence exists).
-Resolved at the schematic level, not by routing or hints: each branch was
-decomposed into a structurally distinct device count — `M1` stays one
-`w=10u` finger, `M2` becomes two fingers (`w=9u`+`w=1u`), `M3` becomes
-three (`w=8u`+`w=1u`+`w=1u`) — so `klt extract` now recognises 6 distinct
-pfet devices instead of 3, breaking the ambiguity. The decomposition is
-not electrically exact (PSP103 is not scale-invariant in `W`); the
-`{1,2,3}`-count, dominant+trim-finger geometry landed here was chosen to
-minimize that effect, measured via a full 45-corner closed-loop PVT
-re-run at a max `vref(3ms)` delta of 0.366% vs. a pre-#149 baseline — well
-inside this design's own corner-to-corner spread, with TC moving by
-<=1.3 ppm/C at every corner/supply group. A full `match` was not the
-acceptance bar: `bandgap_core`'s remaining `mismatch` status is fully
-attributed to the permanent bipolar-recognition blocker and the (then
-still-open) well/tap gap. Full investigation, decomposition rationale, and
-verification evidence: issue
-[#149](https://github.com/2AMLogic/sg13g2-bandgap/issues/149) (closed) and
-its closing PR [#154](https://github.com/2AMLogic/sg13g2-bandgap/pull/154).
-
-### `rppd`/`rhigh` bulk-terminal mismatch resolved (issue #161)
-
-The curated `sg13g2` deck extracts `rppd`/`rhigh` poly resistors with a
-synthesized third bulk terminal (`DeviceExtractorResistorWithBulk`), while
-`layout/lvs_reference.py`'s converted reference `R`-cards are plain
-two-terminal SPICE — a terminal-count mismatch on every resistor instance,
-`device.unmatched` on both cells plus a `net.unmatched` on `bandgap_core`'s
-`vsubs` net. Fixed via `klt lvs`'s own `request.reference.device_bulk`
-reconciliation hook in each cell's `lvs_request.json` (not a layout or
-reference-script change), naming the real net each cell's synthesized bulk
-terminal should tie to (`VSS` for `bandgap_startup`'s `rhigh`, `vsubs` for
-`bandgap_core`'s `rppd`). `klt lvs` discloses every reconciled class as its
-own `severity: "warning"` `device.bulk_reconciled` entry, so a `"match"`
-reached this way is never silently indistinguishable from a fully
-independent one. Result: **`bandgap_startup` reaches `status: "match"`**
-(`error_count: 0`) — the first cell in this repo's history to do so —
-and `bandgap_core` narrows to exactly the one permanent cause left
-(`Q1`-`Q3` `device.unmatched`, bipolar recognition permanently declined
-upstream). Also fixed an evidence-format-checker bug this uncovered
-(`.github/scripts/check_evidence_formats.py` had wrongly asserted
-`(status == "match") == (mismatch_count == 0)`, an invariant `klt lvs`'s
-own docs do not make). Full investigation and verification evidence: issue
-[#161](https://github.com/2AMLogic/sg13g2-bandgap/issues/161) (closed) and
-its closing PR [#163](https://github.com/2AMLogic/sg13g2-bandgap/pull/163).
+| # | Was | Resolved by | Fix, in one line |
+|---|-----|-------------|------------------|
+| 2 | `bandgap_core`'s `M1`/`M2`/`M3` pfets were a genuine graph automorphism (identical `W`/`L`, source and gate nets) that no routing or `hints.same_nets` could break | issue [#149](https://github.com/2AMLogic/sg13g2-bandgap/issues/149) / PR [#154](https://github.com/2AMLogic/sg13g2-bandgap/pull/154) | Schematic-level unit-device decomposition (`M1` one `w=10u` finger, `M2` two (`9u`+`1u`), `M3` three (`8u`+`1u`+`1u`)) so `klt extract` sees 6 distinct pfets. Not electrically exact (PSP103 is not scale-invariant in `W`): 45-corner closed-loop PVT re-run, max `vref(3ms)` delta 0.366% vs. the pre-#149 baseline, TC moved <=1.3 ppm/C |
+| 3 | `bandgap_startup`'s `MSENSE.gate` net extracted anonymous (`$4`): the `sg13g2` deck declared no `poly_label` layer | issue [#152](https://github.com/2AMLogic/sg13g2-bandgap/issues/152), upstream [klayout-tools#1476](https://github.com/2AMLogic/klayout-tools/issues/1476) / [#1481](https://github.com/2AMLogic/klayout-tools/pull/1481) (merged 2026-08-30) | Deck now sets `poly_label`; `klt lvs` extracts the gate net as `sns1`, matching the schematic |
+| — | No well/substrate-tap geometry: MOS body terminals fell back to an anonymous or deck-synthesized `vsubs` net | issue [#155](https://github.com/2AMLogic/sg13g2-bandgap/issues/155) / PR [#158](https://github.com/2AMLogic/sg13g2-bandgap/pull/158) | `draw_hv_mos` (`layout/common.py`) draws a tap ring per MOS, bridged on `Metal1` into the device's real body net. DRC stayed clean; mismatches `bandgap_startup` 16 -> 5, `bandgap_core` 36 -> 10 |
+| — | `det`/`vss` nets paired but tripped a `topology` "name identity conflict" over case alone (`NetlistSpiceReader` upper-cases every net name; this repo's labels were lower-case) | issue [#157](https://github.com/2AMLogic/sg13g2-bandgap/issues/157) / PR [#160](https://github.com/2AMLogic/sg13g2-bandgap/pull/160) | `Builder.label()` (`layout/common.py`) upper-cases the text it draws on the deck's net-naming layers; no reference-script change or hint. `bandgap_startup` 5 -> 3 |
+| — | `rppd`/`rhigh` extracted with a synthesized third bulk terminal while `layout/lvs_reference.py`'s `R`-cards are two-terminal: `device.unmatched` on every resistor | issue [#161](https://github.com/2AMLogic/sg13g2-bandgap/issues/161) / PR [#163](https://github.com/2AMLogic/sg13g2-bandgap/pull/163) | `request.reference.device_bulk` in each cell's `lvs_request.json` (`VSS` for `bandgap_startup`'s `rhigh`, `vsubs` for `bandgap_core`'s `rppd`); `klt lvs` discloses each as a `severity: "warning"` `device.bulk_reconciled`. `bandgap_startup` became the first cell here to `match`. Also fixed `check_evidence_formats.py`, which had wrongly asserted `(status == "match") == (mismatch_count == 0)` |
 
 ## Evidence freshness, enforced in CI
 
