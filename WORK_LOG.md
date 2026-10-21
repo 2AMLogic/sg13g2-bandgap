@@ -8,6 +8,7 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-10-21
 
+- **PR #375**: docs: condense resolved-blocker history in layout/README.md
 - **PR #369**: refactor(sim): share one driver across the five PEX run_klt_sim.sh runners
 - **Issue #366** (closed): Consolidate five near-identical sim run_klt_sim.sh runners into a shared driver
 - **PR #368**: ci: pin hygiene signoff-manifest Python to 3.14
