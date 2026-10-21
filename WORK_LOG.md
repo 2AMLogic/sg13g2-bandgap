@@ -6,6 +6,13 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-21
+
+- **PR #369**: refactor(sim): share one driver across the five PEX run_klt_sim.sh runners
+- **Issue #366** (closed): Consolidate five near-identical sim run_klt_sim.sh runners into a shared driver
+- **PR #368**: ci: pin hygiene signoff-manifest Python to 3.14
+- **Issue #367** (closed): CI: hygiene/signoff-manifest fails building klayout wheel on Python 3.15 (red main)
+
 ### 2026-10-18
 
 - **PR #361**: refactor: route remaining PEX batch runners through pex_merge_shards
