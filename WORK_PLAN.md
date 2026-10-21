@@ -31,8 +31,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#366**: Consolidate five near-identical sim run_klt_sim.sh runners into a shared driver
-- **#367**: CI: hygiene/signoff-manifest fails building klayout wheel on Python 3.15 (red main)
+_None._
 
 ## PRs Awaiting Review
 
@@ -44,7 +43,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#368**: ci: pin hygiene signoff-manifest Python to 3.14
+_None._
 
 ## Proposed
 
@@ -57,7 +56,7 @@ Issues carrying `loom:curated`.
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6) *(curated)*
 - **#322**: Re-stamp SG13CMOS5L PDK pin from klayout-tools (IHP-Open-PDK dev f7bca326) *(curated)*
 - **#335**: sim: provision SG13CMOS5L pin on the permitted batch backend (Part of #322) *(curated)*
-- **#367**: CI: hygiene/signoff-manifest fails building klayout wheel on Python 3.15 (red main) *(curated)*
+- **#371**: Live --batch run of the shared PEX runner driver (sim/harness/pex_runner.sh) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -75,9 +74,9 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 2 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
+| Approved PRs awaiting merge | 0 |
 | Curated | 8 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
