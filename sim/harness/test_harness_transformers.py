@@ -1310,9 +1310,13 @@ class PexMergeCallTests(TempDirCase):
                 self.assertFalse((self.tmp / "report-merged.json").exists())
 
     def test_runners_no_longer_call_merger_without_a_grid(self) -> None:
+        # The merge call lives once, in the shared driver every PEX runner sources.
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        self.assertIn("pex_merge_shards", driver)
+        self.assertNotIn("merge_batch_shards.py", driver)
         for exp in PEX_RUNNERS:
             text = (SIM_DIR / exp / "run_klt_sim.sh").read_text()
-            self.assertIn("pex_merge_shards", text)
+            self.assertIn("harness/pex_runner.sh", text)
             self.assertNotIn("merge_batch_shards.py", text.replace("(sim/harness/merge_batch_shards.py)", ""))
 
 
