@@ -31,15 +31,13 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-- **#379**: Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact)
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#382**: feat(sim): store new klt-sim evidence in the artifact store, commit manifests
-- **#383**: fix(layout): draw the PDK runset's recognition layers in the HV MOS and npn13G2 helpers
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -61,10 +59,11 @@ Issues carrying `loom:curated`.
 - **#322**: Re-stamp SG13CMOS5L PDK pin from klayout-tools (IHP-Open-PDK dev f7bca326) *(curated)*
 - **#335**: sim: provision SG13CMOS5L pin on the permitted batch backend (Part of #322) *(curated)*
 - **#371**: Live --batch run of the shared PEX runner driver (sim/harness/pex_runner.sh) *(curated)*
+- **#387**: Re-audit characterization report after PR #383 changed the layout PEX netlists *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-- **#310**: signoff: execute the deferred cold-start testbench audit for T1 item 9 *(architect)*
+- **#385**: Remove dead riser 'bridge' machinery in sg13cmos5l-bandgap_top generate.py *(hermit)*
 
 ## Epics
 
@@ -78,10 +77,10 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 2 |
+| In Progress (`loom:building`) | 1 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 10 |
+| Curated | 11 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
