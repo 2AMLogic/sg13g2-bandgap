@@ -25,6 +25,7 @@ import enrich_pvt_report as epr  # noqa: E402
 import extraction_binding as xb  # noqa: E402
 import fixup_batch_report as fbr  # noqa: E402
 import klt_sim_evidence as kse  # noqa: E402
+from test_evidence_store import FakeStore  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
 import submission_identity as si  # noqa: E402
 
@@ -839,32 +840,37 @@ class PublicationTests(TempDirCase):
         return {"status": "fail" if bad else "pass", "corners": list(corners)}
 
     def emit(self, report: dict, rid: str = "rid1") -> tuple[int, int]:
-        return kse.emit(report, self.SPEC, self.exp, self.tmp, rid)
+        return kse.emit(report, self.SPEC, self.exp, self.tmp, rid, store=FakeStore())
 
     def setUp(self) -> None:
         super().setUp()
         self.exp = self.tmp / "sim" / "demo"
 
     def tree(self) -> dict[str, bytes]:
-        if not self.exp.exists():
-            return {}
-        return {str(p.relative_to(self.exp)): p.read_bytes()
-                for p in sorted(self.exp.rglob("*")) if p.is_file()}
+        out = {}
+        if self.exp.exists():
+            out.update({str(p.relative_to(self.exp)): p.read_bytes()
+                        for p in sorted(self.exp.rglob("*")) if p.is_file()})
+        mdir = self.tmp / "manifests"
+        if mdir.exists():
+            out.update({"@" + str(p.relative_to(mdir)): p.read_bytes()
+                        for p in sorted(mdir.rglob("*")) if p.is_file()})
+        return out
 
-    def test_pass_publishes_current_layout(self) -> None:
+    def test_pass_publishes_manifest_and_record_only(self) -> None:
         self.assertEqual(self.emit(self.report(self.corner(27), self.corner(85))), (2, 2))
         t = self.tree()
         self.assertEqual(
             sorted(t),
-            ["corners/rid1/typ_27c_3.30v.log", "corners/rid1/typ_85c_3.30v.log",
-             "netlist-snapshots/rid1/typ_27c_3.30v.spice",
-             "netlist-snapshots/rid1/typ_85c_3.30v.spice",
-             "records/rid1.csv", "records/rid1.md"],
+            ["@artifacts/demo-rid1.manifest.json", "records/rid1.csv", "records/rid1.md"],
         )
         self.assertTrue(t["records/rid1.csv"].startswith(b"corner_label,temp_c,vdd_v,status,vref\n"))
         self.assertIn(b"typ,27,3.30,PASS,1.200000e+00\n", t["records/rid1.csv"])
-        self.assertIn(b"* deck 27", t["netlist-snapshots/rid1/typ_27c_3.30v.spice"])
-        self.assertEqual(t["corners/rid1/typ_85c_3.30v.log"], b"log 85\n")
+        names = [e["name"] for e in json.loads(t["@artifacts/demo-rid1.manifest.json"])["entries"]]
+        self.assertEqual(names, [
+            "sim/demo/corners/rid1/typ_27c_3.30v.log", "sim/demo/corners/rid1/typ_85c_3.30v.log",
+            "sim/demo/netlist-snapshots/rid1/typ_27c_3.30v.spice",
+            "sim/demo/netlist-snapshots/rid1/typ_85c_3.30v.spice"])
         self.assertEqual([p.name for p in self.exp.iterdir() if p.name.startswith(".")], [])
 
     def test_fail_corner_is_recorded(self) -> None:
@@ -883,8 +889,7 @@ class PublicationTests(TempDirCase):
         self.assertEqual(self.tree(), before)
 
     def test_any_single_existing_path_blocks_publication(self) -> None:
-        for rel in ("records/rid1.csv", "records/rid1.md",
-                    "corners/rid1/x.log", "netlist-snapshots/rid1/x.spice"):
+        for rel in ("records/rid1.csv", "records/rid1.md"):
             with self.subTest(existing=rel):
                 self.exp = self.tmp / "sim" / ("demo-" + rel.replace("/", "_"))
                 path = self.exp / rel
@@ -940,6 +945,7 @@ class PublicationTests(TempDirCase):
             kse.shutil.copyfile = real
         self.assertEqual(self.tree(), {})
         self.assertEqual([p.name for p in self.exp.rglob(".*")], [])
+        self.assertFalse((self.tmp / ".evidence-scratch").exists())
         self.emit(rep)  # the id was released, not burned
 
     def test_bad_ids_rejected(self) -> None:
@@ -982,7 +988,7 @@ class PublicationTests(TempDirCase):
         try:
             with self.assertRaises(SystemExit):
                 kse.emit(self.report(self.corner(27)), self.SPEC, self.exp, self.tmp, "rid1",
-                         extraction=entries)
+                         extraction=entries, store=FakeStore())
         finally:
             xb.verify_captured = real
         self.assertEqual(len(seen), 2)

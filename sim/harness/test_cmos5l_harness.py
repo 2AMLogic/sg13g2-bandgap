@@ -41,6 +41,7 @@ import enrich_pvt_report as epr  # noqa: E402
 import klt_corner_bundle as kcb  # noqa: E402
 import klt_sim_evidence as kse  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
+from test_evidence_store import FakeStore  # noqa: E402
 
 SIM_DIR = Path(__file__).resolve().parents[1]
 
@@ -676,7 +677,7 @@ class RecordTests(TempDirCase):
         bad = any(c["status"] != "pass" for c in corners)
         report = {"status": "fail" if bad else "pass", "corners": corners}
         out = kse.emit(report, ck.augment_spec(spec(exp), kw.pop("msense_w", None)), experiment, self.tmp,
-                       "20260101-000000-abc1234", **kw)
+                       "20260101-000000-abc1234", store=FakeStore(), **kw)
         return experiment, out
 
     @staticmethod
@@ -701,8 +702,12 @@ class RecordTests(TempDirCase):
                        "issue #337", "2/2 points PASS", "NOT a claim against any ratified spec row"):
             self.assertIn(needle, md)
         self.assertNotIn("run_pvt_sweep.sh shell loop)", md.replace("(not a `run_pvt_sweep.sh` shell loop)", ""))
-        self.assertTrue((experiment / "netlist-snapshots/20260101-000000-abc1234/sf_27c_3.30v.spice").is_file())
-        self.assertTrue((experiment / "corners/20260101-000000-abc1234/typ_27c_3.30v.log").is_file())
+        manifest = json.loads((self.tmp / "manifests/artifacts" / f"{exp}-20260101-000000-abc1234.manifest.json").read_text())
+        names = {e["name"] for e in manifest["entries"]}
+        self.assertIn(f"sim/{exp}/netlist-snapshots/20260101-000000-abc1234/sf_27c_3.30v.spice", names)
+        self.assertIn(f"sim/{exp}/corners/20260101-000000-abc1234/typ_27c_3.30v.log", names)
+        self.assertFalse((experiment / "corners").exists())
+        self.assertFalse((experiment / "netlist-snapshots").exists())
 
     def test_missing_required_measurement_is_a_fail_row(self) -> None:
         exp = "sg13cmos5l-core-open-loop-bias"
@@ -743,7 +748,7 @@ class RecordTests(TempDirCase):
         report = {"status": "pass", "corners": [self.full_corner(exp, "typ", 27, 3.3)],
                   "grid": {"expected": ["typ_27c_3.30v", "bcs_27c_3.30v"], "complete": True}}
         with self.assertRaises(SystemExit) as ctx:
-            kse.emit(report, spec(exp), self.tmp / "sim" / exp, self.tmp, "rid-x")
+            kse.emit(report, spec(exp), self.tmp / "sim" / exp, self.tmp, "rid-x", store=FakeStore())
         self.assertIn("missing", str(ctx.exception))
 
     def test_augment_spec_does_not_mutate_the_committed_spec(self) -> None:

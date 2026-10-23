@@ -49,6 +49,18 @@ jobs:
         # before trusting its verdict on the real tree.
         run: python3 .github/scripts/test_check_evidence_formats.py
 
+      - name: Artifact-manifest checker self-test
+        # Issue #379 (DR-0015): new sim evidence is stored in the fleet artifact
+        # store and git keeps a manifest. Prove the manifest guard still rejects
+        # each defect class (bucket uri, bad schema, committed bytes) first.
+        run: python3 .github/scripts/test_check_artifact_manifests.py
+
+      - name: Evidence-store writer self-test
+        # Issue #379: the shared writer fails closed -- no broker, no
+        # `klt artifact put`, an unreachable broker or a part-way put commits
+        # nothing. Faked store client: no broker, no network, no klt.
+        run: python3 sim/harness/test_evidence_store.py
+
       - name: PEX netlist-body generator self-test
         # Issue #278: the generator that replaces the five hand-transcribed
         # PEX templates; the test proves the 255-unit ladder chain closes.
@@ -71,6 +83,12 @@ jobs:
         # shapes for the full grid, record columns/provenance, legacy verdicts
         # and the runners' fail-closed gates. No simulation, no PDK.
         run: python3 sim/harness/test_cmos5l_harness.py
+
+      - name: Artifact manifests (schema; no stored bytes committed)
+        # Accepts only artifact:<key> uris and fails if a stored object's bytes
+        # (or the .evidence-scratch/ staging tree) are also tracked. Schema-valid
+        # is not hash-verified: `klt artifact verify` needs a fleet worker.
+        run: python3 .github/scripts/check_artifact_manifests.py
 
       - name: Evidence formats and freshness
         # --require-append-only: fail loudly rather than silently skipping if

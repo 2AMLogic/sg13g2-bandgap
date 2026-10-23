@@ -9,6 +9,9 @@ __pycache__/
 # (append-only record trail), so they escape the *.log rule.
 !sim/*/corners/**/*.log
 sim/build/
+# Issue #379 / DR-0015: a new run's raw outputs are staged here, stored with
+# `klt artifact put`, and never committed (CI fails if any path under it is tracked).
+.evidence-scratch/
 # synthesis / P&R scratch
 flow/build/
 # local klt install, created by the setup script
