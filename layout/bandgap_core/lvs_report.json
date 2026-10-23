@@ -51,29 +51,6 @@
     "findings": [],
     "finding_count": 0
   },
-  "device_parameter_coverage": [
-    {
-      "class": "rppd",
-      "device_kind": "resistor",
-      "layout_devices": 257,
-      "reference_devices": 257,
-      "compared": [
-        "R",
-        "L",
-        "W"
-      ],
-      "not_compared": [
-        {
-          "parameter": "A",
-          "reason": "compare_parameters"
-        },
-        {
-          "parameter": "P",
-          "reason": "compare_parameters"
-        }
-      ]
-    }
-  ],
   "mismatch_count": 8,
   "error_count": 4,
   "category_counts": {
@@ -117,25 +94,24 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "netgen_binary": null,
-    "layout_sha256": "31217986b36d224789f1ecc7bf30cd4c64d306fbf7f079bb8c34e6fe3ea33a90",
+    "layout_sha256": "7749d258e439a758c430c8a0f27c261f0a6d4cbd51526b257711b28e979411fc",
     "reference_sha256": "9f61c2b63122141478946ff2b50af7069bab63f9c56ac610b57e2020fd69c399",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.6.0+geb7e7c6ace30",
+    "klt_version": "0.6.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:f9771af83c67c59da0f5f305b487b5f842de12e3f37e1307d1057e2c095478a0",
-      "released": false
+      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "released": true
     },
     "input": {
-      "content_hash": "sha256:31217986b36d224789f1ecc7bf30cd4c64d306fbf7f079bb8c34e6fe3ea33a90",
+      "content_hash": "sha256:7749d258e439a758c430c8a0f27c261f0a6d4cbd51526b257711b28e979411fc",
       "role": "layout"
     },
-    "klayout_version_mismatch": false
+    "klayout_version_mismatch": true
   },
   "mismatches": [
     {

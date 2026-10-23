@@ -56,50 +56,6 @@
     "findings": [],
     "finding_count": 0
   },
-  "device_parameter_coverage": [
-    {
-      "class": "rhigh",
-      "device_kind": "resistor",
-      "layout_devices": 1,
-      "reference_devices": 1,
-      "compared": [
-        "R",
-        "L",
-        "W"
-      ],
-      "not_compared": [
-        {
-          "parameter": "A",
-          "reason": "compare_parameters"
-        },
-        {
-          "parameter": "P",
-          "reason": "compare_parameters"
-        }
-      ]
-    },
-    {
-      "class": "rppd",
-      "device_kind": "resistor",
-      "layout_devices": 257,
-      "reference_devices": 257,
-      "compared": [
-        "R",
-        "L",
-        "W"
-      ],
-      "not_compared": [
-        {
-          "parameter": "A",
-          "reason": "compare_parameters"
-        },
-        {
-          "parameter": "P",
-          "reason": "compare_parameters"
-        }
-      ]
-    }
-  ],
   "mismatch_count": 10,
   "error_count": 4,
   "category_counts": {
@@ -143,25 +99,24 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "netgen_binary": null,
-    "layout_sha256": "0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
+    "layout_sha256": "3e32887b8d2230bb96fb94bc06a7c4f78ce604e1e45a8465f22ceb57feeffdc4",
     "reference_sha256": "0824952e8a5588a211039e13442f020b0299a714378c8a9c9d17561edc83a89e",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.6.0+geb7e7c6ace30",
+    "klt_version": "0.6.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:f9771af83c67c59da0f5f305b487b5f842de12e3f37e1307d1057e2c095478a0",
-      "released": false
+      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "released": true
     },
     "input": {
-      "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
+      "content_hash": "sha256:3e32887b8d2230bb96fb94bc06a7c4f78ce604e1e45a8465f22ceb57feeffdc4",
       "role": "layout"
     },
-    "klayout_version_mismatch": false
+    "klayout_version_mismatch": true
   },
   "mismatches": [
     {
