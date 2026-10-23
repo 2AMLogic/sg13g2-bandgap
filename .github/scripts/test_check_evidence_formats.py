@@ -980,9 +980,33 @@ def case_stored_manifest_point_mismatch_fails(root: Path):
     return "disagree on PVT points"
 
 
+def _reid_record(root: Path, new_id: str) -> None:
+    """Re-mint the fixture record under `new_id`: content and paths both."""
+    experiment = root / "sim/synthetic-experiment"
+    for path in sorted(experiment.rglob("*"), key=lambda p: -len(p.parts)):
+        if path.is_file() and path.suffix in (".md", ".csv", ".log", ".spice"):
+            text = path.read_text(encoding="utf-8")
+            if RECORD_ID in text:
+                path.write_text(text.replace(RECORD_ID, new_id), encoding="utf-8")
+        if RECORD_ID in path.name:
+            path.rename(path.with_name(path.name.replace(RECORD_ID, new_id)))
+
+
+def case_post_cutoff_legacy_record_fails(root: Path):
+    _reid_record(root, "20261023-000000-abcdef1")
+    return "DR-0015"
+
+
+def case_pre_cutoff_legacy_record_passes(root: Path):
+    _reid_record(root, "20261022-235959-abcdef1")
+    return None
+
+
 CASES = [
     ("undamaged fixture passes", case_valid),
     ("stored (manifest-only) record passes", case_stored_record_passes),
+    ("legacy record minted on/after the DR-0015 cutoff", case_post_cutoff_legacy_record_fails),
+    ("legacy record minted before the DR-0015 cutoff", case_pre_cutoff_legacy_record_passes),
     ("stored record whose manifest names no snapshots", case_stored_record_without_snapshots_fails),
     ("stored record whose manifest names no logs", case_stored_record_without_logs_fails),
     ("record with neither corners/ nor a manifest", case_record_with_neither_fails),

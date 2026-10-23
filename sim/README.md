@@ -248,8 +248,16 @@ Such a record has **no** `corners/<record-id>/` or
 minted before the decision are *legacy*: their committed `corners/` and
 `netlist-snapshots/` trees stay, are still required, and are still
 append-only (history is not rewritten). The older `run_pvt_sweep.sh` writers
-are legacy too and still commit bytes; use the `klt sim` harness for new
-evidence.
+are legacy too and still commit bytes, so they **cannot mint new records**:
+`.github/scripts/check_evidence_formats.py` fails any record whose id is dated
+`20261023` or later and has no artifact manifest. Use the `klt sim` harness
+(`run_klt_sim.sh`) for new evidence. An experiment that has only a legacy
+runner is converted when a re-run is needed (file one issue per experiment
+then). Still unconverted: `closed-loop-iq`, `closed-loop-psrr`,
+`closed-loop-startup`, `closed-loop-vref-pvt`, `closed-loop-vref-pvt-boxtc`,
+`closed-loop-vref-boxtc-trim`, `core-open-loop-bias`,
+`loop-gain-phase-margin`, `startup-core-handover`,
+`startup-time-to-release`, `startup-trip-point`, `startup-trip-point-pex`.
 
 The writer **fails closed**: with `$KLT_ARTIFACT_BROKER` unset, `klt`
 lacking `artifact put` (it needs klayout-tools `7e3561f` or later), or an

@@ -120,6 +120,9 @@ CORNERS_DIR = "corners"
 #: Issue #379: a record minted after DR-0015 keeps its raw logs and netlist
 #: snapshots in the artifact store; git holds this manifest instead.
 MANIFEST_DIR = "manifests/artifacts"
+#: DR-0015 date (`YYYYMMDD`). A record id on or after it must be a stored
+#: record: the legacy committed-`corners/` shape may not mint new records.
+ARTIFACT_STORE_CUTOFF = "20261023"
 
 #: `<YYYYMMDD>-<HHMMSS>-<short-git-sha>`, e.g. `20260821-115433-5f66bd5`.
 RECORD_ID_RE = re.compile(r"^(?P<date>\d{8})-(?P<time>\d{6})-(?P<sha>[0-9a-f]{7,40})$")
@@ -444,6 +447,14 @@ def check_record(record_md: Path, experiment: Path, report: Report) -> None:
             manifest_md, f"sim/{experiment.name}", record_id, report
         )
     else:
+        if record_id[:8] >= ARTIFACT_STORE_CUTOFF:
+            report.fail(
+                record_md,
+                f"record id dates from {ARTIFACT_STORE_CUTOFF} or later but has no artifact "
+                f"manifest {manifest_md.name}; DR-0015 retired committed corners/ evidence "
+                "for new records -- mint it with run_klt_sim.sh, not a legacy "
+                "run_pvt_sweep.sh runner",
+            )
         log_ids, snapshot_ids = legacy_point_ids(
             record_md, corners_dir, snapshots_dir, report
         )
