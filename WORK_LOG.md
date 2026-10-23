@@ -6,6 +6,10 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-23
+
+- **PR #382**: feat(sim): store new klt-sim evidence in the artifact store, commit manifests
+
 ### 2026-10-21
 
 - **PR #365**: Bump Repo Skills 0.24.3 -> 0.24.7
