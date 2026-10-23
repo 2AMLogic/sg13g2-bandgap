@@ -8,6 +8,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-10-23
 
+- **PR #393**: docs(sim): list all 18 experiments without run_klt_sim.sh as unconverted
+- **Issue #389** (closed): sim/README: list the 6 other manifest-less experiments with non-run_pvt_sweep runners
 - **PR #388**: ci(sim): fail manifest-less evidence records dated on/after DR-0015
 - **Issue #386** (closed): Follow-on from PR #382: convert legacy corners/-writing sim runners to the artifact store
 - **PR #391**: fix(sim): make PEX klt-sim record step work cold; add partial item-9 audit log
