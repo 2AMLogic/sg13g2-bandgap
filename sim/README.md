@@ -229,6 +229,41 @@ trimming does not survive measurement (the three `.op`-card experiments'
 ~111M of working-tree logs cost ~3.2 MiB of packed git history). That record
 carries the measurements and two explicit thresholds for superseding it.
 
+### Stored evidence: new `klt sim` runs keep their bytes out of git (issue #379)
+
+[`spec/decision-records/0015-sim-evidence-artifact-store.md`](../spec/decision-records/0015-sim-evidence-artifact-store.md)
+supersedes 0009 **for runs minted after it**. `klt_sim_evidence.py` (behind
+every `sim/*/run_klt_sim.sh`) now stores a run's per-point logs and netlist
+snapshots in the fleet artifact store with `klt artifact put` and commits only
+
+- `manifests/artifacts/<exp>-<record-id>.manifest.json` — one entry per object
+  (`sha256`, `size`, `uri` = `artifact:<key>`, and the `name` the file would
+  have had: `sim/<exp>/corners/<record-id>/<pt>.log`,
+  `sim/<exp>/netlist-snapshots/<record-id>/<pt>.spice`), and
+- `records/<record-id>.md` + `.csv`; the `.md` gains a **Stored evidence**
+  field listing name, size and sha256 per object.
+
+Such a record has **no** `corners/<record-id>/` or
+`netlist-snapshots/<record-id>/` directory, and CI fails if it does. Records
+minted before the decision are *legacy*: their committed `corners/` and
+`netlist-snapshots/` trees stay, are still required, and are still
+append-only (history is not rewritten). The older `run_pvt_sweep.sh` writers
+are legacy too and still commit bytes; use the `klt sim` harness for new
+evidence.
+
+The writer **fails closed**: with `$KLT_ARTIFACT_BROKER` unset, `klt`
+lacking `artifact put` (it needs klayout-tools `7e3561f` or later), or an
+unreachable broker, it exits nonzero and writes nothing under `sim/` or
+`manifests/`. There is no flag that commits the bytes instead. Raw outputs
+are staged in the git-ignored `.evidence-scratch/` at the repo root; a failed
+put leaves them there for a retry. `python3 sim/harness/evidence_store.py
+preflight` tells you before a long run whether a record could be stored.
+Check a stored run's bytes from a fleet worker with
+`klt artifact verify manifests/artifacts/<exp>-<record-id>.manifest.json`;
+fetch one object with `klt artifact get <manifest>#<name> -o <out>`. The
+broker URL is configuration (`$KLT_ARTIFACT_BROKER`) and is never written into
+the repo. See [`manifests/artifacts/README.md`](../manifests/artifacts/README.md).
+
 ## DUT freshness ("staleness is failure")
 
 Append-only keeps old evidence honest. It does **not** keep the *newest*
@@ -326,6 +361,9 @@ deleted — a waiver buys tracked, disclosed staleness, never silence.
 ```bash
 python3 .github/scripts/check_evidence_formats.py       # what CI runs
 python3 .github/scripts/test_check_evidence_formats.py  # the checker's own self-test
+python3 .github/scripts/check_artifact_manifests.py     # stored-run manifests (issue #379)
+python3 .github/scripts/test_check_artifact_manifests.py
+python3 sim/harness/test_evidence_store.py              # the writer fails closed
 ```
 
 Stdlib only — no venv, no PDK, no ngspice, no `klt`. It runs on every push and

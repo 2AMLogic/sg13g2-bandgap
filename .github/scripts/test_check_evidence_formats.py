@@ -912,8 +912,83 @@ def case_binding_waiver_expires_with_newer_record(root: Path):
     return "waiver matches no report/check"
 
 
+# --- stored (manifest-only) records, issue #379 ------------------------------
+
+
+def _store_record(root: Path, *, with_snapshots: bool = True, with_logs: bool = True) -> Path:
+    """Convert the fixture record to a stored one: bytes out, manifest in."""
+    experiment = root / "sim/synthetic-experiment"
+    names = []
+    for kind, suffix, present in (("corners", ".log", with_logs),
+                                  ("netlist-snapshots", ".spice", with_snapshots)):
+        directory = experiment / kind / RECORD_ID
+        if present:
+            names += [f"sim/synthetic-experiment/{kind}/{RECORD_ID}/{c}{suffix}" for c in CORNERS]
+        shutil.rmtree(directory)
+    entries = []
+    for i, name in enumerate(names):
+        sha = hashlib.sha256(name.encode()).hexdigest()
+        entries.append({"sha256": sha, "size": 10 + i, "kind": "evidence",
+                        "producer": {"tool": "klt", "version": "0", "loom.repo": "o/r",
+                                     "commit": None},
+                        "uri": f"artifact:evidence/o__r/{sha[:2]}/{sha}", "name": name})
+    manifest = root / "manifests/artifacts" / f"synthetic-experiment-{RECORD_ID}.manifest.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(json.dumps({"schema_version": 1, "entries": entries}), encoding="utf-8")
+    return manifest
+
+
+def case_stored_record_passes(root: Path):
+    _store_record(root)
+    return None
+
+
+def case_stored_record_without_snapshots_fails(root: Path):
+    _store_record(root, with_snapshots=False)
+    return "names no netlist snapshots"
+
+
+def case_stored_record_without_logs_fails(root: Path):
+    _store_record(root, with_logs=False)
+    return "names no raw simulator logs"
+
+
+def case_record_with_neither_fails(root: Path):
+    shutil.rmtree(root / "sim/synthetic-experiment/corners")
+    shutil.rmtree(root / "sim/synthetic-experiment/netlist-snapshots")
+    return "no raw per-point logs"
+
+
+def case_stored_record_with_committed_bytes_fails(root: Path):
+    _store_record(root)
+    directory = root / "sim/synthetic-experiment/corners" / RECORD_ID
+    directory.mkdir(parents=True)
+    (directory / f"{CORNERS[0]}.log").write_text("bytes that must not be here\n", encoding="utf-8")
+    return "committed beside its artifact manifest"
+
+
+def case_stored_manifest_unreadable_fails(root: Path):
+    manifest = _store_record(root)
+    manifest.write_text("{not json", encoding="utf-8")
+    return "is not a readable artifact manifest"
+
+
+def case_stored_manifest_point_mismatch_fails(root: Path):
+    manifest = _store_record(root)
+    edit_json(manifest, lambda d: d.update(entries=[
+        e for e in d["entries"] if not e["name"].endswith(f"{CORNERS[1]}.log")]))
+    return "disagree on PVT points"
+
+
 CASES = [
     ("undamaged fixture passes", case_valid),
+    ("stored (manifest-only) record passes", case_stored_record_passes),
+    ("stored record whose manifest names no snapshots", case_stored_record_without_snapshots_fails),
+    ("stored record whose manifest names no logs", case_stored_record_without_logs_fails),
+    ("record with neither corners/ nor a manifest", case_record_with_neither_fails),
+    ("stored record also commits its raw logs", case_stored_record_with_committed_bytes_fails),
+    ("stored record's manifest is unreadable", case_stored_manifest_unreadable_fails),
+    ("stored record's manifest drops a point", case_stored_manifest_point_mismatch_fails),
     ("Result headline overclaims point count", case_result_overclaims_total),
     ("Result headline overclaims PASS count", case_result_overclaims_passes),
     ("record drops a required field", case_missing_required_field),
