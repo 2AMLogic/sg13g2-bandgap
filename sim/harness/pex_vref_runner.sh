@@ -33,7 +33,8 @@ PY
 
 pex_vref_main() {
   # --- the DUT body (generated, top cell) -----------------------------------
-  python3 "${SIM_DIR}/tools/gen_pex_netlist_body.py" --cell top -o "${WORK}/pex_body.inc"
+  python3 "${SIM_DIR}/tools/gen_pex_netlist_body.py" --cell top -o "${WORK}/pex_body.inc" \
+    --sources-out "${WORK}/extraction-sources.json"
   case "${MODE}" in
   --sanity)
     pex_instantiate_body "${OSDI_DIR}" "${WORK}/pex_body.inc" VDD=3.30 > "${WORK}/body.spice"
