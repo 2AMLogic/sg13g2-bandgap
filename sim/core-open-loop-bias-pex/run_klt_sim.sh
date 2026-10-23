@@ -52,7 +52,7 @@ ANCHOR_TOL_OHM="10"
 python3 "${SIM_DIR}/tools/gen_pex_netlist_body.py" \
   --ammeter XM1:3:Vm1 --ammeter XM2A:3:Vm2a --ammeter XM2B:3:Vm2b \
   --ammeter XM3A:3:Vm3a --ammeter XM3B:3:Vm3b --ammeter XM3C:3:Vm3c \
-  -o "${WORK}/pex_body.inc"
+  --sources-out "${WORK}/extraction-sources.json" -o "${WORK}/pex_body.inc"
 
 check_anchors() {  # $1 = report json, $2 = mode label
   python3 - "$1" "${ANCHOR_VREF_V}" "${ANCHOR_TOL_V}" "${ANCHOR_R1_OHM}" "${ANCHOR_TOL_OHM}" "$2" <<'PY'

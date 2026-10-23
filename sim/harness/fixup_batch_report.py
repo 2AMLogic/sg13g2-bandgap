@@ -67,6 +67,13 @@ def fixup(
         text = deck_path.read_text(encoding="utf-8")
         text = _RUNNER_INCLUDE_RE.sub(lambda m: f"{m.group(1)}{body}{m.group(2)}", text)
         text = text.replace(f'"{runner_pdk_root}/', f'"{local_pdk_root}/')
+        # klt 0.7 writes the deck's `.lib <path> <section>` card unquoted.
+        text = re.sub(
+            rf"(^\s*\.(?:lib|include)\s+){re.escape(runner_pdk_root)}/",
+            lambda m: f"{m.group(1)}{local_pdk_root}/",
+            text,
+            flags=re.M,
+        )
         # The runner's deck writes the include bare (no quotes); handle that
         # spelling too.
         text = re.sub(

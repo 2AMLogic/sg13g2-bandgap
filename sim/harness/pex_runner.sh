@@ -185,8 +185,11 @@ pex_batch_dispatch() {
 # per-corner artifact paths are relative to the work dir the batch requests
 # wrote into; the record's outputs go to the (absolute) experiment directory.
 pex_record_mint() {
+  # The generator's --sources-out file binds the record to the extraction it
+  # was built from; klt_sim_evidence.py refuses an unbound PEX record.
   ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
       --report "$1" \
+      --extraction-sources "${WORK}/extraction-sources.json" \
       --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
       --experiment "${EXP_DIR}" )
 }
