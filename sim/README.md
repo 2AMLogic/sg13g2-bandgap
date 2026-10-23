@@ -253,11 +253,18 @@ are legacy too and still commit bytes, so they **cannot mint new records**:
 `20261023` or later and has no artifact manifest. Use the `klt sim` harness
 (`run_klt_sim.sh`) for new evidence. An experiment that has only a legacy
 runner is converted when a re-run is needed (file one issue per experiment
-then). Still unconverted: `closed-loop-iq`, `closed-loop-psrr`,
+then). Still unconverted (every experiment without `run_klt_sim.sh`):
+`closed-loop-iq`, `closed-loop-psrr`,
 `closed-loop-startup`, `closed-loop-vref-pvt`, `closed-loop-vref-pvt-boxtc`,
 `closed-loop-vref-boxtc-trim`, `core-open-loop-bias`,
 `loop-gain-phase-margin`, `startup-core-handover`,
-`startup-time-to-release`, `startup-trip-point`, `startup-trip-point-pex`.
+`startup-time-to-release`, `startup-trip-point`, `startup-trip-point-pex`
+(all `run_pvt_sweep.sh` writers), plus six that use other runners and are
+equally unable to mint new records: `closed-loop-offset`
+(`run_offset_check.sh`), `closed-loop-vref-boxtc-pretrim-aidsfree`
+(`run_one_point.sh`), `closed-loop-vref-mc` (`run_mc.sh`),
+`closed-loop-vref-trim-mc` (`run_trim_mc.sh`), `trim-coverage`
+(`run_trim_coverage.sh`), `trim-knob-jacobian` (`run_knob_jacobian.sh`).
 
 The writer **fails closed**: with `$KLT_ARTIFACT_BROKER` unset, `klt`
 lacking `artifact put` (it needs klayout-tools `7e3561f` or later), or an
