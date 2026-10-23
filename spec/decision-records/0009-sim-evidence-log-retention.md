@@ -1,6 +1,6 @@
 # 0009: sim/ evidence-log retention — keep the full `.op` dump, uncompressed
 
-- **Status**: proposed
+- **Status**: proposed; superseded by 0015 for runs minted after 2026-10-23 (records minted before stay governed by this record)
 - **Date**: 2026-09-15
 - **Decided by**: Loom Builder (agent), issue #26
 

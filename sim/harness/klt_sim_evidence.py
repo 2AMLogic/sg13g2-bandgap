@@ -10,8 +10,19 @@ append-only quadruple, so there is exactly one translation to write.
 
     klt sim report.json                 ->  sim/<exp>/records/<id>.csv
     + per-corner artifacts/             ->  sim/<exp>/records/<id>.md
+                                            manifests/artifacts/<exp>-<id>.manifest.json
+                                            (bytes in the artifact store, not in git:
                                             sim/<exp>/corners/<id>/<pt>.log
-                                            sim/<exp>/netlist-snapshots/<id>/<pt>.spice
+                                            sim/<exp>/netlist-snapshots/<id>/<pt>.spice)
+
+Issue #379: the raw logs and netlist snapshots of a *new* run are stored with
+`klt artifact put` (`evidence_store.py`); git keeps the manifest, the CSV and
+the Markdown record, whose "Stored evidence" field lists each object's name,
+size and sha256. The writer fails closed -- no broker, no `klt artifact put`
+or an unreachable broker exits nonzero having written nothing under `sim/` or
+`manifests/` -- and has no option that commits the bytes instead. Records
+minted before #379 keep their committed `corners/` and `netlist-snapshots/`
+trees (DR-0015; history is not rewritten).
 
 Three things the translation is not allowed to fudge, because
 `.github/scripts/check_evidence_formats.py` checks all three (see
@@ -56,10 +67,10 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import evidence_store as es  # noqa: E402
 import extraction_binding as xb  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
 
@@ -331,6 +342,10 @@ def build_md(
     total: int,
     failed: list[str],
     extraction: list[dict] | None = None,
+    *,
+    stored: str | None = None,
+    manifest_rel: str | None = None,
+    experiment_name: str = "<experiment>",
 ) -> str:
     import datetime
 
@@ -391,13 +406,22 @@ def build_md(
         lines.extend(xb.record_field_lines(extraction))
     lines.append("- **Links**:")
     lines.append(f"  - `klt sim` request: `{spec['request']}`")
-    lines.append(f"  - Per-point generated netlists: `netlist-snapshots/{rid}/`")
-    lines.append(f"  - Per-point raw ngspice logs: `corners/{rid}/`")
+    if manifest_rel:
+        lines.append(f"  - Artifact manifest: `{manifest_rel}`")
+        lines.append(
+            f"  - Per-point generated netlists (stored): `sim/{experiment_name}/netlist-snapshots/{rid}/`"
+        )
+        lines.append(f"  - Per-point raw ngspice logs (stored): `sim/{experiment_name}/corners/{rid}/`")
+    else:
+        lines.append(f"  - Per-point generated netlists: `netlist-snapshots/{rid}/`")
+        lines.append(f"  - Per-point raw ngspice logs: `corners/{rid}/`")
     lines.append(f"  - Parsed CSV: `records/{rid}.csv`")
     for link in spec.get("extra_links") or []:
         lines.append(f"  - {link}")
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     lines.append(f"- **Timestamp / author**: {stamp}, {spec.get('author', 'Loom Builder (agent)')}.")
+    if stored:
+        lines.append(stored.rstrip("\n"))
     lines.append("")
     return "\n".join(lines)
 
@@ -451,7 +475,14 @@ def emit(
     dry_run: bool = False,
     extraction: list[dict] | None = None,
     expected_grid: list[str] | None = None,
+    store: es.Store | None = None,
 ) -> tuple[int, int]:
+    """Validate a report and publish it as a stored record (issue #379).
+
+    `store` is the artifact-store client (default: the real `klt artifact put`);
+    tests substitute a fake. There is deliberately no parameter that publishes
+    the raw bytes into git.
+    """
     verify_grid(report, expected_grid)
     if is_pex(spec, experiment):
         # A PEX record must say which extraction it consumed (issue #309).
@@ -482,11 +513,13 @@ def emit(
     ]
     pdk_root = spec.get("pdk_root") or os.environ.get("PDK_ROOT")
 
-    corners_out = experiment / "corners" / rid
-    snaps_out = experiment / "netlist-snapshots" / rid
     records_out = experiment / "records"
     csv_out = records_out / f"{rid}.csv"
     md_out = records_out / f"{rid}.md"
+    try:
+        manifest_out = es.manifest_path(repo_root, experiment.name, rid)
+    except es.StoreError as exc:
+        raise SystemExit(f"klt_sim_evidence.py: {exc}") from None
 
     # Everything that can be checked without touching the filesystem is checked
     # first: id shape, corner-id uniqueness, then every log and deck. A failure
@@ -501,7 +534,7 @@ def emit(
             f"klt_sim_evidence.py: corner ids are not unique after normalisation: {dupes}"
             " (their logs and snapshots would overwrite each other)"
         )
-    _reject_existing(rid, (csv_out, md_out, corners_out, snaps_out))
+    _reject_existing(rid, (csv_out, md_out, manifest_out))
 
     logs: dict[str, Path] = {}
     snapshots: dict[str, str] = {}
@@ -528,17 +561,25 @@ def emit(
             raise SystemExit(f"{exc} [corner {cid}, deck {deck}]") from None
 
     if dry_run:
-        print(f"would write {records_out}/{rid}.{{md,csv}}, {corners_out}/, {snaps_out}/")
+        print(
+            f"would store {len(logs)} log(s) + {len(snapshots)} netlist snapshot(s), then write"
+            f" {records_out}/{rid}.{{md,csv}} and {manifest_out}"
+        )
         print(f"  {passed}/{total} PASS; measurement columns: {', '.join(names)}")
         return passed, total
 
     _publish(
         experiment,
+        repo_root,
         rid,
         logs,
         snapshots,
         rows,
-        build_md(report, spec, rid, passed, total, failed, extraction),
+        lambda stored, manifest_rel: build_md(
+            report, spec, rid, passed, total, failed, extraction,
+            stored=stored, manifest_rel=manifest_rel, experiment_name=experiment.name,
+        ),
+        store or es.Store(),
         recheck=(lambda: xb.verify_captured(extraction, repo_root)) if extraction else None,
     )
     return passed, total
@@ -591,32 +632,41 @@ def _rmtree_quiet(path: Path) -> None:
 
 def _publish(
     experiment: Path,
+    repo_root: Path,
     rid: str,
     logs: dict[str, Path],
     snapshots: dict[str, str],
     rows: list[dict],
-    md_text: str,
+    render_md,
+    store: es.Store,
     *,
     recheck=None,
 ) -> None:
-    """Stage the whole bundle, then publish it without ever overwriting.
+    """Store the raw outputs, then publish manifest + record without overwriting.
 
-    Order: reserve the id (exclusive create of the record CSV as an empty
-    placeholder -- the CSV is the commit marker, so it is also the last thing
-    to become real), stage logs/snapshots/md/csv in a temp dir on the same
-    filesystem, re-verify extraction bindings, rename the artifact dirs and
-    the md into place, and finally atomically replace the placeholder with the
-    staged CSV. Handled failures remove only what this call created.
+    Order: preflight the store (no broker / no `klt artifact put` stops here,
+    before any file exists), reserve the id (exclusive create of the record
+    CSV as an empty placeholder -- the CSV is the commit marker, so it is also
+    the last thing to become real), stage the raw outputs in the git-ignored
+    scratch tree and put them, re-verify extraction bindings, then install the
+    manifest and the md exclusively and atomically replace the placeholder with
+    the CSV. Any failure removes only what this call created; a failed put
+    leaves the staged bytes in the scratch tree (they are git-ignored) and
+    nothing under `sim/` or `manifests/`.
     """
-    corners_out = experiment / "corners" / rid
-    snaps_out = experiment / "netlist-snapshots" / rid
     records_out = experiment / "records"
     csv_out = records_out / f"{rid}.csv"
     md_out = records_out / f"{rid}.md"
+    manifest_out = es.manifest_path(repo_root, experiment.name, rid)
+    manifest_rel = manifest_out.relative_to(repo_root).as_posix()
+    prefix = f"sim/{experiment.name}"
 
-    for directory in (corners_out.parent, snaps_out.parent, records_out):
-        directory.mkdir(parents=True, exist_ok=True)
+    try:
+        store.preflight(repo_root)
+    except es.StoreError as exc:
+        raise SystemExit(f"klt_sim_evidence.py: not storing evidence, nothing written: {exc}") from None
 
+    records_out.mkdir(parents=True, exist_ok=True)
     try:
         fd = os.open(csv_out, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
     except FileExistsError:
@@ -624,26 +674,29 @@ def _publish(
         raise  # unreachable; keeps type checkers honest
     os.close(fd)
     reserved = True
-    published: list[Path] = []
-    stage = None
+    installed: list[Path] = []
+    scratch = es.scratch_path(repo_root, experiment.name, rid)
+    tmp_csv = records_out / f".{rid}.csv.tmp"
+    keep_scratch = False
     try:
         # The placeholder is ours alone now; anything else under this id is a
         # pre-existing partial record. Leave it untouched and back out.
-        _reject_existing(rid, (md_out, corners_out, snaps_out))
-        stage = Path(tempfile.mkdtemp(prefix=f".stage-{rid}-", dir=experiment))
-        (stage / "corners").mkdir()
-        (stage / "snaps").mkdir()
-        for cid, log in logs.items():
-            shutil.copyfile(log, stage / "corners" / f"{cid}.log")
-            (stage / "snaps" / f"{cid}.spice").write_text(snapshots[cid], encoding="utf-8")
-        with (stage / "r.csv").open("w", newline="", encoding="utf-8") as handle:
-            # LF line endings: this repo's committed records are all bash-written
-            # LF files; python's csv default (CRLF) would make every klt-minted
-            # record the odd one out in diffs.
-            writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()), lineterminator="\n")
-            writer.writeheader()
-            writer.writerows(rows)
-        (stage / "r.md").write_text(md_text, encoding="utf-8")
+        _reject_existing(rid, (md_out, manifest_out))
+        _rmtree_quiet(scratch)
+        files: list[tuple[Path, str]] = []
+        for sub, items in (("corners", logs), ("netlist-snapshots", snapshots)):
+            ext = ".log" if sub == "corners" else ".spice"
+            (scratch / sub).mkdir(parents=True)
+            for cid, item in items.items():
+                dest = scratch / sub / f"{cid}{ext}"
+                if isinstance(item, Path):
+                    shutil.copyfile(item, dest)
+                else:
+                    dest.write_text(item, encoding="utf-8")
+                files.append((dest, f"{prefix}/{sub}/{rid}/{cid}{ext}"))
+        keep_scratch = True  # from here a failed put keeps the staged bytes
+        manifest, empty = store.put(files, repo_root)
+        keep_scratch = False
 
         if recheck is not None:
             try:
@@ -651,30 +704,44 @@ def _publish(
             except xb.BindingError as exc:
                 raise SystemExit(f"klt_sim_evidence.py: {exc}") from None
 
-        os.rename(stage / "corners", corners_out)
-        published.append(corners_out)
-        os.rename(stage / "snaps", snaps_out)
-        published.append(snaps_out)
-        os.rename(stage / "r.md", md_out)
-        published.append(md_out)
-        os.replace(stage / "r.csv", csv_out)  # commit: the placeholder becomes the record
+        with tmp_csv.open("w", newline="", encoding="utf-8") as handle:
+            # LF line endings: this repo's committed records are all bash-written
+            # LF files; python's csv default (CRLF) would make every klt-minted
+            # record the odd one out in diffs.
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()), lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(rows)
+        md_text = render_md(es.stored_evidence_section(manifest_rel, manifest, empty), manifest_rel)
+        es.install_manifest(manifest, manifest_out)
+        installed.append(manifest_out)
+        with open(md_out, "x", encoding="utf-8") as handle:
+            handle.write(md_text)
+        installed.append(md_out)
+        os.replace(tmp_csv, csv_out)  # commit: the placeholder becomes the record
         reserved = False
     except BaseException as exc:
-        for path in reversed(published):
-            if path.is_dir():
-                _rmtree_quiet(path)
-            else:
-                path.unlink(missing_ok=True)
+        tmp_csv.unlink(missing_ok=True)
+        for path in reversed(installed):
+            path.unlink(missing_ok=True)
         if reserved:
             csv_out.unlink(missing_ok=True)
+        if isinstance(exc, es.StoreError):
+            raise SystemExit(
+                f"klt_sim_evidence.py: storing evidence failed, nothing was committed: {exc}"
+                + (f" (staged outputs kept in {es.SCRATCH_DIR}/, git-ignored)" if keep_scratch else "")
+            ) from None
         if isinstance(exc, OSError):
             raise SystemExit(
                 f"klt_sim_evidence.py: publishing record {rid} failed ({exc}); nothing was kept"
             ) from None
         raise
     finally:
-        if stage is not None:
-            _rmtree_quiet(stage)
+        if not keep_scratch:
+            _rmtree_quiet(scratch)
+            try:
+                scratch.parent.rmdir()  # only if now empty
+            except OSError:
+                pass
 
 
 def main(argv: list[str] | None = None) -> int:

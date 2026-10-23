@@ -31,7 +31,11 @@ least one netlist or template.
 - the `Timestamp / author` field carries a UTC ISO-8601 timestamp;
 - `netlist-snapshots/<record-id>/` and `corners/<record-id>/` exist and are
   non-empty, and every per-point filename in them parses under the corner-id
-  grammar in `sim/README.md` (`<process>_<temp>c_<supply>v`);
+  grammar in `sim/README.md` (`<process>_<temp>c_<supply>v`). A record minted
+  after DR-0015 (issue #379) instead has `manifests/artifacts/<slug>-<record-id>
+  .manifest.json` naming those same logs and snapshots in the artifact store,
+  and must **not** also commit them; the grammar and the three-view agreement
+  below are then checked against the manifest's names;
 - **the three per-point views agree**: the set of corner ids named by the raw
   logs, by the netlist snapshots, and by the CSV's own
   `corner_label`/`temp_c`/`vdd_v` columns are identical — a record cannot claim
@@ -113,6 +117,9 @@ from _ci_common import Report, sha256_file
 RECORDS_DIR = "records"
 SNAPSHOT_DIR = "netlist-snapshots"
 CORNERS_DIR = "corners"
+#: Issue #379: a record minted after DR-0015 keeps its raw logs and netlist
+#: snapshots in the artifact store; git holds this manifest instead.
+MANIFEST_DIR = "manifests/artifacts"
 
 #: `<YYYYMMDD>-<HHMMSS>-<short-git-sha>`, e.g. `20260821-115433-5f66bd5`.
 RECORD_ID_RE = re.compile(r"^(?P<date>\d{8})-(?P<time>\d{6})-(?P<sha>[0-9a-f]{7,40})$")
@@ -319,6 +326,69 @@ def corner_ids_from_csv(csv_path: Path, report: Report) -> tuple[list[str], int,
     return corner_ids, passed, len(rows)
 
 
+def stored_point_ids(
+    manifest: Path, exp_prefix: str, record_id: str, report: Report
+) -> tuple[set[str], set[str]]:
+    """Corner ids of the logs and snapshots a stored record's manifest names."""
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        entries = data["entries"]
+        names = [e["name"] for e in entries]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        report.fail(manifest, f"is not a readable artifact manifest: {exc!r}")
+        return set(), set()
+    ids: dict[str, set[str]] = {"log": set(), "spice": set()}
+    for kind, sub in (("log", CORNERS_DIR), ("spice", SNAPSHOT_DIR)):
+        prefix = f"{exp_prefix}/{sub}/{record_id}/"
+        suffix = f".{kind}"
+        for name in names:
+            if isinstance(name, str) and name.startswith(prefix) and name.endswith(suffix):
+                stem = name[len(prefix):-len(suffix)]
+                problem = parse_corner_id(stem)
+                if problem:
+                    report.fail(manifest, f"{name}: corner id does not parse: {problem}")
+                else:
+                    ids[kind].add(stem)
+        if not ids[kind]:
+            what = "raw simulator logs" if kind == "log" else "netlist snapshots"
+            report.fail(manifest, f"names no {what} under {prefix} -- a record must ship its {what}")
+    return ids["log"], ids["spice"]
+
+
+def legacy_point_ids(
+    record_md: Path, corners_dir: Path, snapshots_dir: Path, report: Report
+) -> tuple[set[str], set[str]]:
+    """Corner ids of the committed logs and snapshots of a pre-DR-0015 record."""
+    snapshot_ids: set[str] = set()
+    log_ids: set[str] = set()
+    if not corners_dir.is_dir():
+        report.fail(record_md, f"no raw per-point logs at {corners_dir} (and no artifact manifest)")
+    else:
+        logs = sorted(corners_dir.glob("*.log"))
+        if not logs:
+            report.fail(corners_dir, "holds no *.log — a record must ship its raw simulator output")
+        for log in logs:
+            problem = parse_corner_id(log.stem)
+            if problem:
+                report.fail(log, f"corner id does not parse: {problem}")
+            else:
+                log_ids.add(log.stem)
+
+    if not snapshots_dir.is_dir():
+        report.fail(record_md, f"no per-point netlist snapshots at {snapshots_dir}")
+    else:
+        snapshots = sorted(snapshots_dir.glob("*.spice"))
+        if not snapshots:
+            report.fail(snapshots_dir, "holds no *.spice netlist snapshots")
+        for snapshot in snapshots:
+            problem = parse_corner_id(snapshot.stem)
+            if problem:
+                report.fail(snapshot, f"corner id does not parse: {problem}")
+            else:
+                snapshot_ids.add(snapshot.stem)
+    return log_ids, snapshot_ids
+
+
 def check_record(record_md: Path, experiment: Path, report: Report) -> None:
     record_id = record_md.stem
     report.checked += 1
@@ -358,31 +428,25 @@ def check_record(record_md: Path, experiment: Path, report: Report) -> None:
     snapshot_ids: set[str] = set()
     log_ids: set[str] = set()
 
-    if not corners_dir.is_dir():
-        report.fail(record_md, f"no raw per-point logs at {corners_dir}")
+    manifest_md = experiment.parents[1] / MANIFEST_DIR / f"{experiment.name}-{record_id}.manifest.json"
+    if manifest_md.is_file():
+        # Stored record (DR-0015): the raw outputs live in the artifact store and
+        # the manifest names them. A record is stored XOR legacy -- committed
+        # bytes beside a manifest are the fallback that DR-0015 forbids.
+        for committed in (corners_dir, snapshots_dir):
+            if committed.exists():
+                report.fail(
+                    committed,
+                    f"is committed beside its artifact manifest {manifest_md.name}; "
+                    "a stored record's raw outputs must not also be in git",
+                )
+        log_ids, snapshot_ids = stored_point_ids(
+            manifest_md, f"sim/{experiment.name}", record_id, report
+        )
     else:
-        logs = sorted(corners_dir.glob("*.log"))
-        if not logs:
-            report.fail(corners_dir, "holds no *.log — a record must ship its raw simulator output")
-        for log in logs:
-            problem = parse_corner_id(log.stem)
-            if problem:
-                report.fail(log, f"corner id does not parse: {problem}")
-            else:
-                log_ids.add(log.stem)
-
-    if not snapshots_dir.is_dir():
-        report.fail(record_md, f"no per-point netlist snapshots at {snapshots_dir}")
-    else:
-        snapshots = sorted(snapshots_dir.glob("*.spice"))
-        if not snapshots:
-            report.fail(snapshots_dir, "holds no *.spice netlist snapshots")
-        for snapshot in snapshots:
-            problem = parse_corner_id(snapshot.stem)
-            if problem:
-                report.fail(snapshot, f"corner id does not parse: {problem}")
-            else:
-                snapshot_ids.add(snapshot.stem)
+        log_ids, snapshot_ids = legacy_point_ids(
+            record_md, corners_dir, snapshots_dir, report
+        )
 
     if log_ids and snapshot_ids and log_ids != snapshot_ids:
         _report_set_difference(report, record_md, "raw logs", log_ids, "netlist snapshots", snapshot_ids)
@@ -1206,7 +1270,11 @@ def check_sim_freshness(root: Path, report: Report) -> None:
                 root, report, record, text, waivers, used_waivers, uncovered)
         snapshots = sorted((experiment / SNAPSHOT_DIR / record.stem).glob("*.spice"))
         if not snapshots:
-            # Already failed by check_record(); nothing to compare against.
+            if (root / MANIFEST_DIR / f"{experiment.name}-{record.stem}.manifest.json").is_file():
+                # Stored record (DR-0015): the snapshots are private bytes in the
+                # artifact store, so the DUT cannot be compared here.
+                uncovered.append(f"{record_rel} (netlist snapshots are in the artifact store)")
+            # Otherwise already failed by check_record(); nothing to compare against.
             continue
 
         dut_rels = sorted({m.group(0) for m in DUT_PATH_RE.finditer(text)})

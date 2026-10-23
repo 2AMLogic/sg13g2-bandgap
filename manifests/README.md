@@ -18,6 +18,12 @@ that produced it.
   items met** (items 1, 2, 3, 8, 10; read the count from the report's
   `t1_met_count`, not from this sentence). That is the honest state; an
   all-`unmet` manifest is a correct result, and nothing here inflates it.
+- `artifacts/` — **stored-run manifests** (issue #379, DR-0015): one
+  `<bench>-<run-id>.manifest.json` per new `klt sim` run, naming the run's raw
+  logs and netlist snapshots in the fleet artifact store by sha256. See
+  [`artifacts/README.md`](artifacts/README.md). Unrelated to the signoff
+  manifest above and to the `klt` pin: the artifact client needs klayout-tools
+  `7e3561f` or later, installed separately.
 - `evidence/` — the **audited inventories** (`*.txt`) and their
   artifact-anchored `generic` envelopes (`*.json`) that items 1 and 10 cite
   (see below).
