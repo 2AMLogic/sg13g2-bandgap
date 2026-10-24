@@ -63,7 +63,7 @@ Issues carrying `loom:curated`.
 
 ## Proposed (Architect / Hermit)
 
-- **#385**: Remove dead riser 'bridge' machinery in sg13cmos5l-bandgap_top generate.py *(hermit)*
+_None._
 
 ## Epics
 
@@ -81,6 +81,6 @@ _None._
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 11 |
-| Architect / Hermit proposals | 1 |
+| Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
