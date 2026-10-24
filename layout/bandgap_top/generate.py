@@ -351,8 +351,10 @@ MIN_COLUMN_PITCH_UM = 2.0
 #: coordinates (pre-placement-shift) -- shifted by ``_shift()`` below.
 _CORE_PORTS_LOCAL = {
     "vdd": (-5.0, 22.55, 134.5, 22.9),
-    "vss": (-3.05, -0.75, 125.05, 0.75),
-    "sns1": (-0.15, -2.6, 0.15, 21.45),
+    # Issue #380: HBT footprint follows the PDK PCell (emitter Metal1/Via1/Metal2
+    # stack), so the vss bar and the sns1 strap moved with `draw_npn13g2`.
+    "vss": (-0.925, -0.785, 122.925, 0.77),
+    "sns1": (0.625, -1.26, 0.925, 21.45),
     "sns2": (40.5, 21.1, 57.5, 21.45),
     "vref": (106.0, 21.1, 134.5, 21.45),
 }
@@ -687,7 +689,7 @@ def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_s
     x_amp = AMP_DX + 50.6
     x_startup = (startup_sns1_pad[0] + startup_sns1_pad[2]) / 2
     columns += [("sns1", x_core), ("sns1", x_amp), ("sns1", x_startup)]
-    _riser_up(b, CORE_DX + 0.0, CORE["sns1"], Y_BUS_SNS1, jog_to=x_core)
+    _riser_up(b, CORE_DX + 0.775, CORE["sns1"], Y_BUS_SNS1, jog_to=x_core)
     _riser_up(b, x_amp, AMP["sns1"], Y_BUS_SNS1, bridges=((AMP_DY + 31.0, AMP_DY + 33.0),))
     _riser_up(b, x_startup, startup_sns1_pad, Y_BUS_SNS1)
     _bus(b, Y_BUS_SNS1, [x_core, x_amp, x_startup])

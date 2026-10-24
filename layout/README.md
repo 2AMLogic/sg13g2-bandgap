@@ -2577,6 +2577,89 @@ root-caused here; fixing the layout is out of scope for #352 and is a follow-up.
 This is a true negative: it shows the T1 item 4 gap is the layout's device
 drawing, not the curated deck's lack of bipolar recognition alone.
 
+### LVS — PDK runset on single-device fixtures: `draw_hv_mos` / `draw_npn13g2` now recognized (issue #380)
+
+The follow-up to #352's finding. Three one-device fixtures under
+`layout/fixtures/runset/{hv_pmos,hv_nmos,npn13g2}/` (each: `generate.py` calling
+the shared helper exactly as the cell generators do, a source `<dev>.spice`, the
+`sg13g2-runset` reference written by `layout/lvs_reference.py`,
+`lvs_request.runset.json`, the GDS, and the committed `lvs_report.runset.json`)
+isolate each device from the rest of `bandgap_top`.
+
+**Baseline (helpers at `b60f8a0c`).** The runset extracts *no device at all* from
+any of the three: the extracted netlist is empty and `klt lvs` exits 1 with "the
+runset's .lvsdb database carries no layout-vs-schematic cross-reference ... no
+verdict is possible" (no `status`). **After:** all three report `status: match`,
+0 mismatches (nets/devices/pins matched 3/3, 1/1, 3/3 for each).
+
+Runset rules the added geometry satisfies (all in
+`<PDK>/libs.tech/klayout/tech/lvs/rule_decks/`, IHP-Open-PDK `v0.3.0`):
+
+| Added to the helper | Runset rule it satisfies |
+| --- | --- |
+| `ThickGateOx` (44/0) over the HV MOS (`draw_hv_mos`) | `general_derivations.lvs:71-72` (`ngate_hv_base`/`pgate_hv_base = gate.and(thickgateox_drw)`), used by `mos_extraction.lvs:45,71` (`sg13_hv_nmos`/`sg13_hv_pmos`); without it the gate is an LV one |
+| `pSD` (14/0) over the PMOS active area | `general_derivations.lvs:52` (`pactiv = activ.and(psd_drw)`) → `pgate` (`:68`) and `psd_fet` |
+| **Removed** `nSD` (7/0) over the NMOS | `mos_derivations.lvs:26-27,36,62,68`: `nsd_drw` is in `mos_exclude`, which is subtracted from `ngate_hv`; the runset reads 7/0 as an exclusion, not as n+ |
+| `TRANS` (26/0) marker ringed by a `pSD` + `Activ` guard ring (`draw_npn13g2`) | `bjt_derivations.lvs:40` (`npn_mk = trans_drw.and(pwell).and(ptap_holes)`); `ptap_holes` is the hole of a p+ active ring (`general_derivations.lvs:93,95`) |
+| `EmWind` (33/0) 0.07 × 0.9 µm per stripe | `bjt_derivations.lvs:53,55` (`npn13G2_e_pin`, bbox 0.07/0.9, area 0.063) |
+| `Activ.mask` (1/20) intrinsic region | `bjt_derivations.lvs:45,53` (`npn_dev`, emitter `.and(activ_mask)`); layer `layers_definitions.lvs:55` |
+| `nSD.block` (7/21) polygon | `bjt_derivations.lvs:53,56,59` (emitter and base pin, device extents); layer `layers_definitions.lvs:145` |
+| collector `Activ` strip + `Cont`, base `Cont`, emitter `Metal1`/`Via1`/`Metal2` | `bjt_derivations.lvs:57` (`npn13G2_c_pin`); `bjt_connections.lvs:37-41` |
+
+All of it is read from the PDK's own `npn13G2_code.py` and checked against the
+runset's `testing/testcases/unit/bjt_devices/layout/npn13G2.gds`. Not drawn: the
+pcell's thermal pseudo-layer and pin-purpose shapes.
+
+**Things the fixtures needed that the helpers still do not do:**
+
+- The gate net is unnamed (`GatPoly` text is not read by the runset), so the
+  MOS fixtures add `draw_gate_tab` — a Metal1 pad — for the gate pin.
+- `draw_npn13g2(..., substrate_net=...)` is **opt-in**. The pcell's guard ring is
+  bare, so the runset's substrate terminal `S` extracts as an unnamed net; the
+  `npn13g2` fixture passes `substrate_net="sub"`. The cells do not (default
+  `None`): with the ring contacted, the curated deck turns it into a substrate
+  tie and `vss` loses its net name (measured: an extra `net.unmatched` on
+  `bandgap_core`/`bandgap_top`). Tying the ring to `vss` is #381's problem.
+- `Nx > 1` is untested under the runset. The extractor reports `Nx=<n> m=1`
+  while `lvs_reference.py` writes `m=<Nx>`, so expect a property mismatch on
+  `Q2` (`Nx=8`) in #381.
+- The strap that ties a diode-connected HBT's collector and base used to run at
+  the pad centre; with the emitter `Metal1` stripe now present it would short
+  into the emitter, so `bandgap_core`/`bandgap_top` route at the helper's
+  returned `tie_x` (a 0.3 µm strap flush with the rails' right end).
+
+**Curated deck: no regression.** Regenerated `bandgap_core`/`amp`/`startup`/`top`
+(`generate.py`, then `klt drc`/`lvs`/`extract` as in "Reproducing") with
+`klt 0.6.0` (`uvx --from klayout-tools==0.6.0`, which reproduces the previously
+committed verdicts on the unmodified tree):
+
+| Cell | DRC | LVS (before → after) |
+| --- | --- | --- |
+| `bandgap_core` | clean, 0 | `mismatch` 8 findings / 4 errors → identical |
+| `bandgap_amp` | clean, 0 | `match` → `match` |
+| `bandgap_startup` | clean, 0 | `match` (2 info) → identical |
+| `bandgap_top` | clean, 0 | `mismatch` 10 / 4 → identical |
+
+The finding lists are identical entry for entry (the 3 `device.unmatched` are the
+HBTs the curated deck does not extract). `bandgap_amp`/`bandgap_startup` reports
+now record `klt 0.6.0` rather than `0.3.0`. `bandgap_top/lvs_report.runset.json`
+(#352) was produced from the previous GDS and is **not** regenerated here; it is
+stale until #381 re-cites it.
+
+**Reproduce** (from a scratch directory — the runset writes `<top>_extracted.cir`
+into its cwd). The runset needs KLayout 0.30.2+; the host's is 0.28.16, so the
+run used 0.30.3 unpacked from the klayout.org Ubuntu 24 `.deb` into a scratch
+directory (`dpkg-deb -x`, `LD_LIBRARY_PATH` wrapper, `KLT_KLAYOUT_BINARY`),
+nothing installed. `klt 0.7.1.dev2517+g6bb7cf233677`:
+
+```
+python3 layout/lvs_reference.py          # references
+python3 layout/fixtures/runset/<dev>/generate.py
+klt lvs <repo>/layout/fixtures/runset/<dev>/lvs_request.runset.json \
+  --deck-file <PDK>/libs.tech/klayout/tech/lvs/sg13g2.lvs --format json \
+  > <repo>/layout/fixtures/runset/<dev>/lvs_report.runset.json
+```
+
 ### ERC supply spec — structural power delivery (T1 item 11, issue #225)
 
 `erc-supply-spec.json` (this directory) declares `vdd` and `vss` as

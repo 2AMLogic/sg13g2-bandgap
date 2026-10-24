@@ -8,12 +8,43 @@
   "parameter_tolerance": null,
   "options": {
     "combine_devices": false,
+    "combine_devices_per_circuit": null,
     "flatten_layout": false,
     "flatten_reference": false,
     "netgen_setup": null,
-    "parameter_tolerance": null
+    "parameter_tolerance": null,
+    "compare_parameters": null,
+    "power_connectivity": null,
+    "supply_nets": [
+      "GND",
+      "VCC",
+      "VDD",
+      "VGND",
+      "VPWR",
+      "VSS"
+    ]
   },
+  "hints_applied": null,
   "status": "match",
+  "power_connectivity": {
+    "status": "unchecked",
+    "reason": "reference.form is 'plain-element', whose reference netlist carries its own power/ground pins and nets -- they take part in the ordinary compare, so this check (which exists to cover the signal-only 'gate-level-verilog' form) does not apply",
+    "power_pins": [],
+    "power_pins_derivation": null,
+    "instance_count": 0,
+    "expected_nets": null,
+    "unchecked_expected_pins": [],
+    "findings": [],
+    "finding_count": 0
+  },
+  "body_verification": {
+    "status": "verified",
+    "reason": null,
+    "device_classes": [],
+    "device_count": 0,
+    "findings": [],
+    "finding_count": 0
+  },
   "mismatch_count": 0,
   "error_count": 0,
   "category_counts": {},
@@ -49,20 +80,24 @@
   "environment": {
     "engine": "klayout",
     "engine_version": "0.30.12",
-    "layout_sha256": "e04cfbda7a5d1a9c905b99726538b367827dfa4340794ea3f4393424c0dedb25",
+    "layout_sha256": "af7a8a454a009dcff587492029ec8d0ed484f9f0a21d23ba43aaad3d255ea13d",
     "reference_sha256": "39b5d2a616d573457adf28c35b633ebb5daa0f66bcdf9fceacb8ecb126d9ebc9",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.3.0",
+    "klt_version": "0.6.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
       "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
-      "released": false
+      "released": true
     },
-    "input": null
+    "input": {
+      "content_hash": "sha256:af7a8a454a009dcff587492029ec8d0ed484f9f0a21d23ba43aaad3d255ea13d",
+      "role": "layout"
+    },
+    "klayout_version_mismatch": true
   },
   "mismatches": [],
   "net_correspondence": [
