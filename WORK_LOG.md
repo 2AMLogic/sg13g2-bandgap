@@ -6,6 +6,10 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-24
+
+- **Issue #385** (closed): Remove dead riser 'bridge' machinery in sg13cmos5l-bandgap_top generate.py
+
 ### 2026-10-23
 
 - **PR #393**: docs(sim): list all 18 experiments without run_klt_sim.sh as unconverted
