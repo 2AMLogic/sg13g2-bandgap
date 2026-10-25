@@ -6,6 +6,12 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-25
+
+- **PR #400**: refactor(sim): remove uncalled helpers from enrich_ac_report
+- **Issue #399** (closed): Remove dead helpers _interp_log and _fmt_vdd from enrich_ac_report.py
+- **PR #398**: feat(sim): convert closed-loop-vref-pvt-boxtc to the klt sim fleet harness
+
 ### 2026-10-24
 
 - **Issue #385** (closed): Remove dead riser 'bridge' machinery in sg13cmos5l-bandgap_top generate.py
