@@ -1,0 +1,49 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- record spec for closed-loop-vref-pvt-boxtc on the `klt sim` harness (issue #273). Mechanics: sim/harness/klt_sim_evidence.py; argument: this file."
+  ],
+  "Experiment": "closed-loop-vref-pvt-boxtc",
+  "Claim": "The box-method temperature coefficient of the closed-loop vref across the full 120-point PVT grid (5 processes x 8 temperatures x 3 supplies), through the co-simulated closed-loop schematic (bandgap_core + bandgap_amp + bandgap_startup) with the TRIM-BEARING core at trim_code=128 (#229, refreshed by #264; solver convergence aids rshunt/gmin dropped). Box TC per (corner, vdd) group from the 8 settled vref points via the -boxtc.csv companion: box = (vmax-vmin)/(span*v27), span = 165 C. NOT a claim against a ratified spec row -- the ratified box-TC row's evidence lives in sim/closed-loop-vref-boxtc-trim (#269).",
+  "Netlist provenance": "design/netlist/bandgap_core.spice (trim-bearing, trim_code=128), design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice, carried verbatim into sim/closed-loop-vref-pvt-boxtc/testbench/closed_loop_vref_pvt_boxtc.body.spice.tmpl (XMSENSE w= read from the live startup netlist).",
+  "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models built by sim/tools/build-osdi.sh (local) / baked into the batch runner image (#277).",
+  "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x temperature {-40,-20,0,27,50,75,100,125} C x supply {2.97,3.30,3.63} V (120 points)",
+  "request": "sim/closed-loop-vref-pvt-boxtc/testbench/closed_loop_vref_pvt_boxtc.request.json.tmpl",
+  "author": "Loom Builder (agent), issue #273",
+  "pass_requires": [
+    "vref_3ms_v",
+    "fb_v",
+    "sns1_v",
+    "sns2_v",
+    "det_v",
+    "i_mkfb_a"
+  ],
+  "extra_columns": {
+    "hbt_section": {
+      "typ": "hbt_typ",
+      "bcs": "hbt_bcs",
+      "wcs": "hbt_wcs",
+      "sf": "hbt_typ",
+      "fs": "hbt_typ"
+    },
+    "mos_section": {
+      "typ": "mos_tt",
+      "bcs": "mos_ff",
+      "wcs": "mos_ss",
+      "sf": "mos_sf",
+      "fs": "mos_fs"
+    },
+    "res_section": {
+      "typ": "res_typ",
+      "bcs": "res_bcs",
+      "wcs": "res_wcs",
+      "sf": "res_typ",
+      "fs": "res_typ"
+    }
+  },
+  "extra_links": [
+    "Harness decision + batch-fleet status: sim/harness/README.md",
+    "Runner: sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh",
+    "Per-point closed-loop verdict: sim/harness/enrich_pvt_report.py",
+    "Legacy point definitions: sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh (reference only)"
+  ]
+}

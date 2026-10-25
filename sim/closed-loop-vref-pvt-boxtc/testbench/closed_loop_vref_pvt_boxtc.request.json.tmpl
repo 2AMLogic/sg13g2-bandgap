@@ -1,0 +1,100 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for closed-loop-vref-pvt-boxtc (issue #273, completing the #264 trim-bearing schematic refresh).",
+    "Same per-(process, supply) instantiation as sim/closed-loop-vref-pvt-pex-boxtc (issue #278); the DUT here is the schematic (design/netlist/bandgap_{core,amp,startup}.spice, carried verbatim in the body).",
+    "this grid is the 120-point box-TC transient set (5 processes x 8 temps x",
+    "3 supplies), the most harness-bound of the five.",
+    "variant: the body's PWL ramp target is substituted per supply and the",
+    "runner image's single-models.lib channel carries one process per",
+    "request (klayout-tools#2668), so the 45-point grid runs as 15 requests",
+    "of 3 temperatures each, merged deterministically before the adapter.",
+    "In local mode the generated corner bundle carries all five processes",
+    "in one request and the supply axis still needs per-supply bodies.",
+    "",
+    "The supply axis deliberately does NOT ride `corners.supply_v`: `alter`",
+    "would clobber the PWL ramp source that is this bench's convergence",
+    "path. The temperature axis rides `corners.temperature_c` natively.",
+    "",
+    "Every column is a single-vector `.meas ... at=<t>` -- `par()` derived",
+    "columns are impossible under the resident-vector `.save` this bench",
+    "requires (ngspice 46 rewrites `par('...')` to a non-resident `pa_<n>`",
+    "parameter); the two derived columns (dvsns_v, vref_settle_delta_v) are",
+    "formed by the runner from the reported operands, the same practice the",
+    "committed records use. Values arrive at 6 significant figures.",
+    "`remote.hosts: 8` = one fleet job per temperature point. Measured on the fleet (issue #273, m6i.4xlarge, klt 0.7.0 client): hosts=2 (four concurrent ngspice per job) timed out every corner at 1800 s although the same typ/27C point solves in ~40 s locally and ~2 min as a single-corner job; hosts=8 passed 7/8 typ/3.30V points, the 100 C point needing more than 900 s, hence timeout_s 1800. Raise the shard count, not the ceiling (sim/harness/README.md)."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "schematic",
+  "models": {
+    "lib": "@@CORNER_BUNDLE@@"
+  },
+  "corners": {
+    "process": [
+      "typ",
+      "bcs",
+      "wcs",
+      "sf",
+      "fs"
+    ],
+    "temperature_c": [
+      -40,
+      -20,
+      0,
+      27,
+      50,
+      75,
+      100,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "tran",
+    "args": "50n 3m"
+  },
+  "measurements": [
+    {
+      "name": "fb_v",
+      "spice": ".meas tran fb_v find v(fb) at=3m"
+    },
+    {
+      "name": "sns1_v",
+      "spice": ".meas tran sns1_v find v(sns1) at=3m"
+    },
+    {
+      "name": "sns2_v",
+      "spice": ".meas tran sns2_v find v(sns2) at=3m"
+    },
+    {
+      "name": "det_v",
+      "spice": ".meas tran det_v find v(det) at=3m"
+    },
+    {
+      "name": "i_mkfb_a",
+      "spice": ".meas tran i_mkfb_a find i(Vmkfb) at=3m"
+    },
+    {
+      "name": "vref_2ms_v",
+      "spice": ".meas tran vref_2ms_v find v(vref) at=2m"
+    },
+    {
+      "name": "vref_3ms_v",
+      "spice": ".meas tran vref_3ms_v find v(vref) at=3m"
+    },
+    {
+      "name": "vbeq3_2ms_v",
+      "spice": ".meas tran vbeq3_2ms_v find v(cb3) at=2m"
+    },
+    {
+      "name": "vbeq3_3ms_v",
+      "spice": ".meas tran vbeq3_3ms_v find v(cb3) at=3m"
+    }
+  ],
+  "options": {
+    "timeout_s": 1800,
+    "keep_artifacts": true
+  },
+  "remote": {
+    "hosts": 8
+  }
+}
