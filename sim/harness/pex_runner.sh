@@ -9,6 +9,9 @@
 #   EXP    experiment directory name        STEM   testbench file stem
 #   VDDS   (optional) per-supply body variants; leave unset when the bench
 #          sweeps the supply natively (see pex_merge_call.sh)
+#   BODY_TEMPLATE  (optional, a schematic-DUT bench) the body template --
+#          typically the experiment's own with placeholders pre-filled --
+#          that --batch hands the request generator
 # Sourcing validates the CLI mode (positional args pass through), resolves
 # klt / the PDK / the OSDI models, and sets: MODE SCRIPT_DIR SIM_DIR REPO_ROOT
 # HARNESS_DIR EXP_DIR KLT_BIN PDK_ROOT OSDI_DIR BATCH_PDK_ROOT
@@ -141,7 +144,7 @@ pex_batch_dispatch() {
 
   local gen=(python3 "${HARNESS_DIR}/gen_pex_batch_requests.py"
     --request-template "${EXP_DIR}/testbench/${STEM}.request.json.tmpl"
-    --body-template "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
+    --body-template "${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"
     --pdk-root "${BATCH_PDK_ROOT}" --provision-script "${BATCH_PROVISION_SCRIPT}"
     --pdk "${PDK}" --work "${WORK}"
     --osdi "${BATCH_PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi")
