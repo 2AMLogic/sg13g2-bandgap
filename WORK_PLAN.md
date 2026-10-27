@@ -25,7 +25,7 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#371**: Live --batch run of the shared PEX runner driver (sim/harness/pex_runner.sh)
+_None._
 
 ## In Progress
 
@@ -58,6 +58,8 @@ Issues carrying `loom:curated`.
 - **#379**: Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact) *(curated)*
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures) *(curated)*
 - **#387**: Re-audit characterization report after PR #383 changed the layout PEX netlists *(curated)*
+- **#402**: sim: refresh closed-loop-vref-pvt-boxtc (120 points) via concurrent klt sim shard submission (Part of #273) *(curated)*
+- **#403**: sim: closed-loop-vref-mc klt sim monte_carlo seeding design and 1800-draw refresh (Part of #273) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -74,11 +76,11 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 0 |
-| Ready (`loom:issue`) | 1 |
+| Ready (`loom:issue`) | 0 |
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 9 |
+| Curated | 11 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
