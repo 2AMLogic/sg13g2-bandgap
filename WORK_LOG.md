@@ -6,6 +6,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-27
+
+- **PR #406**: docs: classify archived-pin mm_ok netlist delta in drift check
+- **Issue #405** (closed): SG13CMOS5L committed netlists drift from schematics at the dev PDK pin
+
 ### 2026-10-25
 
 - **PR #400**: refactor(sim): remove uncalled helpers from enrich_ac_report
