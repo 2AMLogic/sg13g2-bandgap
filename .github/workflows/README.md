@@ -147,10 +147,9 @@ python3 .github/scripts/check_design_source_dependencies.py
 Added by #226. This is the one job that *does* run `klt` — in read-only
 grading mode over committed envelope JSON (no PDK, no klayout, no evidence
 minting). It installs a **pinned** upstream
-[`klayout-tools`](https://github.com/2AMLogic/klayout-tools) git rev (PyPI
-releases up to 0.5.0 predate T1 item 11, added 2026-09-17 by
-klayout-tools#2025, so a PyPI pin would silently grade a 10-item checklist)
-and then:
+[`klayout-tools`](https://github.com/2AMLogic/klayout-tools) PyPI release
+(`==0.8.0`; a git build reports a dev version that no longer satisfies an
+exact pin, klayout-tools#2823), prints `klt --version`, and then:
 
 - **`.github/scripts/test_check_signoff_manifest.py`** — the checker's own
   self-test, hermetic (stub `klt`, fixture tree, no network): an undamaged

@@ -282,18 +282,20 @@ circuit-performance pass, and no bound is relaxed to make it green.
 
 ### The pin
 
-The verdict is graded against the exact upstream `klt` build recorded in the
-workflow's `pip install` line (a pinned git rev of
-`2AMLogic/klayout-tools`, currently `3a75c3ae` — the merge of
-klayout-tools#2718, artifact-anchored `generic` evidence for items 1, 2, 9
-and 10; PyPI releases up to 0.5.0 predate T1 item 11, which the ladder added
-2026-09-17 in klayout-tools#2025, so a PyPI pin would silently grade a
-10-item checklist). The report embeds the governing checklist's own
-`source_doc_content_hash`; when the pin is bumped to a rev whose checklist
-differs, the committed report stops matching and CI fails until the report
-is regenerated and committed — the same "checklist moved, re-read
-everything" discipline the 2026-09-17 item-11 incident made necessary
-fleet-wide.
+The verdict is graded against the exact upstream `klt` release recorded in
+the workflow's `pip install` line (PyPI `klayout-tools==0.8.0`, tag `v0.8.0`,
+commit `c572046b`). The report embeds the governing checklist's own
+`source_doc_content_hash` and the build's `grading_ruleset_id`; when the pin
+is bumped to a release whose checklist or ruleset differs, the committed
+report stops matching and CI fails until the report is regenerated and
+committed — the same "checklist moved, re-read everything" discipline the
+2026-09-17 item-11 incident made necessary fleet-wide.
+
+**Bump to 0.8.0 (from the git rev `7ee09483`, 0.7.1.dev1743)**: grading this
+unchanged manifest at both gives an identical verdict — `t1_met_count` 5, items
+1/2/3/8/10 `met`, 4/5/6/7/9/11 `unmet`, same `source_doc_content_hash`. Only
+the `build` block changed (release version, tag, commit, `is_release: true`,
+new `grading_ruleset_id`).
 
 **What changed between the old pin (`2b1e55e5`) and `3a75c3ae`** (compared by
 grading this unchanged manifest at both): the checklist is still 11 items
