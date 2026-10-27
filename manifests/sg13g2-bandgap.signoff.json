@@ -9,13 +9,13 @@
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:a26b90262320d0fbd32b3f549a02b6300832706041797a559d8bf6bdb62efdc7",
   "build": {
-    "version": "0.7.1.dev1743+g7ee09483b748",
-    "package_version": "0.7.1.dev1743+g7ee09483b748",
-    "git_commit": "7ee09483b74867a47a05eb353015c2cf5ca33ef3",
-    "git_tag": null,
+    "version": "0.8.0",
+    "package_version": "0.8.0",
+    "git_commit": "c572046be644e0407f693f2410f3abb799d68a3a",
+    "git_tag": "v0.8.0",
     "dirty": false,
-    "is_release": false,
-    "grading_ruleset_id": "sha256:903c436514f2e51dbe8562080f3b36537e26ca088571e457d38d57e78da9056b"
+    "is_release": true,
+    "grading_ruleset_id": "sha256:46c446d84423b7399ee1cf957b3d49801ae4f42a0bda53da92f435776cf977c4"
   },
   "items": [
     {

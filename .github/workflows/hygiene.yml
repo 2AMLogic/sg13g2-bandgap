@@ -139,11 +139,14 @@ jobs:
           python-version: '3.14'
 
       - name: Install pinned klt
-        # Pinned to the exact upstream rev whose bundled design-evidence-tiers
-        # checklist the committed verdict was graded against (PyPI releases up
-        # to 0.5.0 predate T1 item 11). Bump the rev => re-run klt signoff and
-        # commit the new *.signoff.json in the same PR, or this job fails.
-        run: python3 -m pip install "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@7ee09483b74867a47a05eb353015c2cf5ca33ef3"
+        # Pinned to the exact PyPI release whose bundled design-evidence-tiers
+        # checklist the committed verdict was graded against. Bump the version
+        # => re-run klt signoff and commit the new *.signoff.json in the same
+        # PR, or this job fails. Keep the PyPI form: a git build reports a dev
+        # version that no longer satisfies an exact pin (klayout-tools#2823).
+        run: |
+          python3 -m pip install "klayout-tools==0.8.0"
+          klt --version
 
       - name: Signoff checker self-test
         # Runs first, same discipline as the evidence checker: a checker that
