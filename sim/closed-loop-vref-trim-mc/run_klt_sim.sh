@@ -92,7 +92,8 @@ tm_stage() {
   local stage="$1" rc=0
   echo "run_klt_sim.sh: ${stage} stage -- $(ls "${WORK}"/request-"${stage}"-*.json | wc -l) requests on the fleet"
   ( cd "${WORK}" && "${SUBMIT_KLT}" sim --batch-set request-"${stage}"-*.json --max-in-flight 4 \
-      --resume --format json -o "artifacts-${stage}" > "report-${stage}.json" ) || rc=$?
+      --resume --format json -o "artifacts-${stage}" > "report-${stage}.json" \
+      2> >(tee -a klt-stderr.log >&2) ) || rc=$?
   # Unit-level failures (timeouts, engine errors) are verify-FAIL rows; a request the
   # fleet refused or never ran is a submit failure: report it, never run it locally.
   python3 - "${WORK}/report-${stage}.json" "${rc}" <<'PY'
@@ -103,10 +104,12 @@ try:
 except ValueError:
     raise SystemExit(f"run_klt_sim.sh: batch submit failed (klt exit {rc}), no report: {path}\n"
                      "  no local fallback -- fix the cause and re-run with the same KLT_SIM_WORK to resume")
-bad = [r for r in rep.get("requests", []) if r.get("error")]
-if rep.get("refused") or bad:
-    raise SystemExit(f"run_klt_sim.sh: batch submit failed: refused={rep.get('refused')} "
-                     f"codes={rep.get('refused_codes')} errors={[r['error'] for r in bad][:3]}\n"
+# exit_code 4 is "some unit errored or timed out" (a verify-FAIL row, below); anything else
+# nonzero, an error envelope, or a refusal code means the request itself did not run.
+bad = [r for r in rep.get("requests", []) if r.get("error") or r.get("exit_code") not in (0, 4)]
+if rep.get("refused_codes") or bad:
+    raise SystemExit(f"run_klt_sim.sh: batch submit failed: refused_codes={rep.get('refused_codes')} "
+                     f"requests={[(r['request'], r.get('exit_code'), r.get('error')) for r in bad][:3]}\n"
                      "  no local fallback -- re-run with the same KLT_SIM_WORK to resume")
 PY
 }
@@ -130,7 +133,7 @@ tm_batch() {
     --fit-artifacts "${WORK}/artifacts-fit" --template "${TEMPLATE}" --seed-csv "${SEED_CSV}" \
     --msense-w "${MSENSE_W}" --dut-sha "${DUT_SHA}" --pdk "${PDK}" \
     --local-pdk-root "${PDK_ROOT}" --local-osdi-dir "${OSDI_DIR}" \
-    --seed "${SEED}" --n "${N}" --klt-version "${KLT_VERSION_DECL}" \
+    --seed "${SEED}" --n "${N}" --klt-version "${KLT_VERSION_DECL}" --job-log "${WORK}/klt-stderr.log" \
     --draws-out "${WORK}/draws.csv" --report-out "${WORK}/report-assembled.json"
   echo "run_klt_sim.sh: assembled report at ${WORK}/report-assembled.json"
   echo "                 mint evidence with: KLT_SIM_WORK=${WORK} KLT_SIM_N=${N} run_klt_sim.sh --record"
@@ -141,10 +144,12 @@ tm_record() {
   rid="$(date -u +%Y%m%d-%H%M%S)-$(git -C "${REPO_ROOT}" rev-parse --short HEAD)"
   python3 "${TM_PY}" spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
     --msense-w "${MSENSE_W}" --n "${N}" -o "${WORK}/record-spec.json"
+  # The adapter exits 1 when a point is graded FAIL (the 3-sigma claim gate fails at the
+  # mismatch points, as in the committed #229 record): the record is still minted.
   ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
       --report "${WORK}/report-assembled.json" \
       --spec "${WORK}/record-spec.json" \
-      --experiment "${EXP_DIR}" --record-id "${rid}" )
+      --experiment "${EXP_DIR}" --record-id "${rid}" ) || [[ -f "${EXP_DIR}/records/${rid}.md" ]]
   cp "${WORK}/draws.csv" "${EXP_DIR}/records/${rid}-draws.csv"
   echo "run_klt_sim.sh: per-draw data -> records/${rid}-draws.csv"
 }

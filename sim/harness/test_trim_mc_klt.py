@@ -101,7 +101,7 @@ def mk_args(work, art, fit_art, n, **kw):
               msense_w="10u", template=str(work / "t.tmpl"), seed_csv=str(work / "s.csv"), dut_sha="sha",
               pdk="pdk", local_pdk_root="/r", local_osdi_dir="/o",
               draws_out=str(work / "draws.csv"), report_out=str(work / "report.json"),
-              klt_version="x", batch_pdk_root="/opt/pdk", batch_osdi_dir="/opt/o")
+              klt_version="x", job_log=None, batch_pdk_root="/opt/pdk", batch_osdi_dir="/opt/o")
     ns.update(kw)
     return argparse.Namespace(**ns)
 

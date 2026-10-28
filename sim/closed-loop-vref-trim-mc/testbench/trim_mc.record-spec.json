@@ -7,8 +7,8 @@
   "Devices": "All real PDK compact models; the DUT is the trim-bearing bandgap_core (R1 base l=37.2u + XXTRIM ladder, 255 binary-weighted rppd units + strap links, all inside the mismatch draw), plus bandgap_amp and bandgap_startup verbatim.",
   "Netlist provenance": "design/netlist/bandgap_core.spice, bandgap_trim.spice, bandgap_amp.spice and bandgap_startup.spice, carried verbatim into testbench/tb_closed_loop_vref_trim_mc.spice.tmpl (unchanged by the klt conversion; each deck is that template rendered by sim/harness/trim_mc_klt.py with the same substitutions run_trim_mc.sh made; the representative deck of each point is re-rendered with host-resolvable PDK paths -- the fleet ran the identical deck against the image's baked PDK root).",
   "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models baked into the batch runner image (#277).",
-  "Corner matrix run": "points {typ mismatch, typ negative control, bcs mismatch, wcs mismatch} x N=@@N@@ seeded draws x 6 decks per draw (3 fit codes {0,1,255} at 27 C + code* at {-40, 27, 125} C), submitted as two `decks` stages (fit, then verify with host-computed code*) -- each digest row below is one point",
-  "request": "sim/harness/trim_mc_klt.py `decks` requests (request-fit-<point>-<chunk>.json, request-verify-<point>-<chunk>.json)",
+  "Corner matrix run": "points {typ mismatch, typ negative control, bcs mismatch, wcs mismatch} x N=@@N@@ seeded draws x 6 decks per draw (3 fit codes {0,1,255} at 27 C + code* at {-40, 27, 125} C), submitted as two `decks` stages (fit, then verify with host-computed code*) -- digested to one row per point",
+  "request": "sim/harness/trim_mc_klt.py deck-list requests (request-fit-<point>-<chunk>.json, request-verify-<point>-<chunk>.json)",
   "author": "Loom Builder (agent), issue #423",
   "pass_requires": [
     "n_draws",

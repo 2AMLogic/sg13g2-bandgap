@@ -425,20 +425,21 @@ def assemble(a: argparse.Namespace) -> None:
             "artifacts": {"log": str(rep / f"{cid}.log"), "deck": str(rep / f"{cid}.spice")},
         })
         print(f"{label}: {row[8:]}")
+    # klt announces each fleet job on stderr ("batch job <id> submitting"); the
+    # wrapper keeps that stream, which survives a --resume pass that rewrites the
+    # per-request reports.
     job_ids: list[str] = []
-    for root in (Path(a.fit_artifacts), Path(a.artifacts)):
-        try:
-            for req in json.loads((root / "set-manifest.json").read_text()).get("requests", []):
-                job_ids.extend(req.get("job_ids") or [])
-        except (OSError, ValueError):
-            pass
+    if a.job_log and Path(a.job_log).is_file():
+        for jid in re.findall(r"batch job (\S+) submitting", Path(a.job_log).read_text()):
+            if jid not in job_ids:
+                job_ids.append(jid)
     report = {
         "status": "pass" if all(c["status"] == "pass" for c in corners) else "fail",
         "passed": sum(c["status"] == "pass" for c in corners),
         "failed": sum(c["status"] == "fail" for c in corners), "errored": 0,
         "corner_count": len(corners), "corners": corners,
         "environment": {"engine_version": res.engine_version(),
-                        "remote": {"job_ids": job_ids, "n_decks": len(res.where)} if job_ids else None},
+                        "remote": {"job_ids": job_ids, "n_verify_decks": len(res.where)} if job_ids else None},
         "provenance": {"klt_version": a.klt_version},
         "claim_failed_points": claim_fail,
     }
@@ -522,6 +523,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--seed", type=int, required=True)
     p.add_argument("--n", type=int, default=300)
     p.add_argument("--klt-version", default=None)
+    p.add_argument("--job-log")
     p.add_argument("--batch-pdk-root", default="/opt/pdk")
     p.add_argument("--batch-osdi-dir", default="/opt/pdk/ihp-sg13g2/libs.tech/ngspice/osdi")
     p.set_defaults(fn=assemble)
