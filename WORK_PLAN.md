@@ -25,19 +25,20 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#415**: sim: add klt sim wrapper for schematic closed-loop-psrr (Part of #412)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
+- **#416**: sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412)
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#418**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup
 
 ## Approved (Awaiting Merge)
 
@@ -60,6 +61,9 @@ Issues carrying `loom:curated`.
 - **#387**: Re-audit characterization report after PR #383 changed the layout PEX netlists *(curated)*
 - **#402**: sim: refresh closed-loop-vref-pvt-boxtc (120 points) via concurrent klt sim shard submission (Part of #273) *(curated)*
 - **#403**: sim: closed-loop-vref-mc klt sim monte_carlo seeding design and 1800-draw refresh (Part of #273) *(curated)*
+- **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)*
+- **#415**: sim: add klt sim wrapper for schematic closed-loop-psrr (Part of #412) *(curated)*
+- **#416**: sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -76,11 +80,11 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 0 |
-| Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
-| PRs awaiting review | 0 |
+| Ready (`loom:issue`) | 1 |
+| In Progress (`loom:building`) | 2 |
+| PRs awaiting review | 1 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 11 |
+| Curated | 14 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
