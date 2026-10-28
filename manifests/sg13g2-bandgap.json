@@ -25,8 +25,8 @@
     },
     "11": [
       {
-        "file": "layout/sg13cmos5l-bandgap_top/erc_report.json",
-        "content_hash": "sha256:4e4e4f85fa0875651c294c95a1f65792fa1913dd20d027fbe6905f2d001cb330"
+        "file": "layout/bandgap_top/erc_report.json",
+        "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930"
       },
       "layout/bandgap_top/lvs_report.runset.json"
     ]
