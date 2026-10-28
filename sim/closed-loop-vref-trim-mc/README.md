@@ -13,6 +13,16 @@ time, so the seed must be read before any `.lib`), the same
 `.nodeset`-seeded single-`.op`-per-netlist technique, and the same
 negative-control hard gate.
 
+## Which spec row this backs
+
+This bench is the **trimmed-line Monte Carlo** evidence for the **Trim** row
+(DR-0011's Output-reference obligation; the row is kept as ratified by
+[DR-0014](../../spec/decision-records/0014-trim-row-keep-1-point.md), which cites
+this bench for the trimmed +/-0.5% line). Its deterministic counterpart,
+the ladder's range/resolution, is [`../trim-coverage/`](../trim-coverage/README.md).
+`run_trim_mc.sh` loops `ngspice -b` and must not be run as a grid on a dispatch
+host; the `klt sim` conversion of this bench is tracked on issue #416.
+
 ## What this testbench claims, and what it does not
 
 **It claims**: after a per-die 1-point trim at 27 °C (the die's own

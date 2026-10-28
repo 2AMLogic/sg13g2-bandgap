@@ -73,7 +73,36 @@ railed. Per group: the five ladder gates above
 (`records/<record-id>-analysis.csv` carries each group's numbers and
 status; the record's headline quotes the worst resolution/spans).
 
-## Cold start
+## Which spec row this backs
+
+This bench is the evidence for the **Trim** row of the ratified spec: the
+ladder's range, resolution, binary weights and monotonicity at the 27 C trim
+point (DR-0011, kept as the ratified "1-point at 27 C; range >= +/-15%;
+resolution <= 0.25%/step; magnitude only" row by
+[DR-0014](../../spec/decision-records/0014-trim-row-keep-1-point.md), which
+cites `sim/trim-coverage/` for exactly those numbers). Its statistical
+counterpart is [`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md).
+The post-trim temperature-coefficient re-measurement
+(`../closed-loop-vref-boxtc-trim/`) is a Temp-coefficient-row bench, not
+cited by DR-0014 or the signoff manifest, and is not part of this row.
+
+## Running the grid: `run_klt_sim.sh` (issue #416)
+
+The dispatch hosts forbid `ngspice -b` loops, so the 169-point grid
+(15 groups x 11 codes at 27 C + 4 step-temperature probes) runs on the Spot
+batch fleet through `klt sim`; `run_trim_coverage.sh` is the point-definition
+reference only. `run_klt_sim.sh --sanity | --batch | --record` follows the
+[`closed-loop-vref-pvt-boxtc`](../closed-loop-vref-pvt-boxtc/run_klt_sim.sh)
+pattern; the grid is 17 requests (one per process x supply at 27 C, plus the two
+probe temperatures), each sweeping the trim code natively through
+`corners.params.trim_code` (klayout-tools #3035). Mechanics are in
+`../harness/trim_coverage_klt.py`. Two deliberate differences from the legacy
+netlist, both in the body template: the OSDI `pre_osdi` `.control` block, and
+`.param trim_code` hoisted out of the `bandgap_trim` subcircuit to the top level
+(`corners.params` only addresses top-level `.param`s; the strap decode reads it
+unchanged). The sanity gate pins typ/27C/3.30V code 128 to the committed record.
+
+## Cold start (legacy loop, reference only)
 
 ```bash
 export PDK_ROOT=/path/to/ihp-open-pdk   # parent of ihp-sg13g2/
