@@ -6,6 +6,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-28
+
+- **PR #417**: feat: add SG13G2 bandgap_top ERC evidence and cite it for T1 item 11
+- **Issue #411** (closed): T1 item 11 (power delivery): commit a klt erc supply spec and report for the SG13G2 bandgap_top instead of citing the SG13CMOS5L port's ERC
+
 ### 2026-10-27
 
 - **PR #409**: ci: pin klayout-tools to PyPI 0.8.0 and regenerate signoff verdict
