@@ -19,13 +19,13 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-_None._
+- **#415**: sim: add klt sim wrapper for schematic closed-loop-psrr (Part of #412)
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#415**: sim: add klt sim wrapper for schematic closed-loop-psrr (Part of #412)
+_None._
 
 ## In Progress
 
@@ -33,12 +33,13 @@ Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
 - **#416**: sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412)
+- **#423**: sim: add klt sim decks wrapper for closed-loop-vref-trim-mc (split from #416)
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#418**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -50,7 +51,6 @@ _None._
 
 Issues carrying `loom:curated`.
 
-- **#4**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
 - **#299**: signoff: bind T1 items 9 and 10 (and re-bind item 1) to audited artifacts (klayout-tools#2718 landed) *(curated)*
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6) *(curated)*
 - **#322**: Re-stamp SG13CMOS5L PDK pin from klayout-tools (IHP-Open-PDK dev f7bca326) *(curated)*
@@ -64,6 +64,7 @@ Issues carrying `loom:curated`.
 - **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)*
 - **#415**: sim: add klt sim wrapper for schematic closed-loop-psrr (Part of #412) *(curated)*
 - **#416**: sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412) *(curated)*
+- **#423**: sim: add klt sim decks wrapper for closed-loop-vref-trim-mc (split from #416) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -79,10 +80,10 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 0 |
-| Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 1 |
+| Important | 1 |
+| Ready (`loom:issue`) | 0 |
+| In Progress (`loom:building`) | 3 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 14 |
 | Architect / Hermit proposals | 0 |
