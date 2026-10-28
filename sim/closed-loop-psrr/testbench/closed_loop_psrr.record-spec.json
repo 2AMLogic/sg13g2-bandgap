@@ -1,0 +1,46 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- record spec for closed-loop-psrr on the `klt sim` harness (issue #415, part of #412). Mechanics: sim/harness/klt_sim_evidence.py; argument: this file."
+  ],
+  "Experiment": "closed-loop-psrr",
+  "Claim": "Closed-loop power-supply rejection of the assembled schematic bandgap (bandgap_core trim-bearing at trim_code=128 + bandgap_amp + bandgap_startup, wired as design/bandgap_top.sch, loop closed) across the full PVT grid: a 1 V/0 deg AC perturbation on vdd, PSRR = -db(v(vref)), the operating point nodeset-seeded from sim/closed-loop-startup's committed record (125 C row per corner/supply baked, with the enrichment pass checking the landed op against the per-temperature reference from that same record with the legacy bench's 50 mV tolerance, plus startup-released / loop-closed / not-railed). Evidence only: NOT compared against a ratified spec row as a pass/fail verdict (see the experiment README).",
+  "Netlist provenance": "design/netlist/bandgap_core.spice (trim-bearing, trim_code=128), design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice, carried verbatim into sim/closed-loop-psrr/testbench/closed_loop_psrr.body.spice.tmpl (XMSENSE w= read from the live startup netlist).",
+  "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models built by sim/tools/build-osdi.sh (local) / baked into the batch runner image (#277).",
+  "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x temperature {-40,27,125} C x supply {2.97,3.30,3.63} V (45 points)",
+  "request": "sim/closed-loop-psrr/testbench/closed_loop_psrr.request.json.tmpl",
+  "author": "Loom Builder (agent), issue #415",
+  "pass_requires": [
+    "psrr_dc_db",
+    "vref_op_v",
+    "fb_op_v"
+  ],
+  "extra_columns": {
+    "hbt_section": {
+      "typ": "hbt_typ",
+      "bcs": "hbt_bcs",
+      "wcs": "hbt_wcs",
+      "sf": "hbt_typ",
+      "fs": "hbt_typ"
+    },
+    "mos_section": {
+      "typ": "mos_tt",
+      "bcs": "mos_ff",
+      "wcs": "mos_ss",
+      "sf": "mos_sf",
+      "fs": "mos_fs"
+    },
+    "res_section": {
+      "typ": "res_typ",
+      "bcs": "res_bcs",
+      "wcs": "res_wcs",
+      "sf": "res_typ",
+      "fs": "res_typ"
+    }
+  },
+  "extra_links": [
+    "Harness decision + batch-fleet status: sim/harness/README.md",
+    "Runner: sim/closed-loop-psrr/run_klt_sim.sh",
+    "Op/verdict enrichment: sim/harness/enrich_ac_report.py",
+    "Legacy point definitions: sim/closed-loop-psrr/run_pvt_sweep.sh (reference only; must not be run as a grid on a dispatch host)"
+  ]
+}
