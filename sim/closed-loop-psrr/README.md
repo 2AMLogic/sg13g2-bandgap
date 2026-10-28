@@ -302,8 +302,24 @@ monotonic-ish rolloff from the DC value toward the crossover-band minimum.
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
 sim/tools/build-osdi.sh              # one-time: build the OSDI models
-sim/closed-loop-psrr/run_pvt_sweep.sh
+sim/closed-loop-psrr/run_klt_sim.sh --sanity   # one local typ/27C/3.30V corner vs the newest record
+sim/closed-loop-psrr/run_klt_sim.sh --batch    # the 45-point grid via `klt sim` on the batch fleet
+sim/closed-loop-psrr/run_klt_sim.sh --record   # mint records/ from the enriched report
 ```
+
+`run_klt_sim.sh` is the cold-start path (issue #415, on the harness described in
+`sim/harness/README.md`; it is the schematic twin of
+`../closed-loop-psrr-pex/run_klt_sim.sh`). `--sanity` is a single local corner
+and must land on the newest committed record's `psrr_dc_db` 66.0695 dB (±0.1 dB)
+and `vref_op_v` 1.047278 V (±2 mV); `--batch` runs that gate first, then submits
+the grid as 15 requests (5 processes x 3 supplies, 3 temperatures each) and
+records the batch job ids in the report's `environment.remote`; a partial grid is
+refused by the shard merger and cannot be recorded. The DUT is the schematic,
+carried in `testbench/closed_loop_psrr.body.spice.tmpl`; the request, record spec
+and the verdict pass (`sim/harness/enrich_ac_report.py --kind psrr`) are
+alongside. On a dispatch host a multi-corner grid must go through `--batch`:
+`run_pvt_sweep.sh` is kept as the point-definition reference only and must not be
+run as a grid there.
 
 Requires a committed `../closed-loop-startup/records/*.csv` to exist (see
 "DC bias: `.nodeset`" above) — already true in this repo; no separate
