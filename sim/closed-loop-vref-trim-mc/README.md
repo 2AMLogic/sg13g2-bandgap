@@ -21,7 +21,8 @@ This bench is the **trimmed-line Monte Carlo** evidence for the **Trim** row
 this bench for the trimmed +/-0.5% line). Its deterministic counterpart,
 the ladder's range/resolution, is [`../trim-coverage/`](../trim-coverage/README.md).
 `run_trim_mc.sh` loops `ngspice -b` and must not be run as a grid on a dispatch
-host; the `klt sim` conversion of this bench is tracked on issue #416.
+host; it is kept as the point-definition reference. The campaign runs through
+[`run_klt_sim.sh`](run_klt_sim.sh) (issue #423, below).
 
 ## What this testbench claims, and what it does not
 
@@ -109,13 +110,65 @@ CSV (one row per point), the per-draw summary CSV
 summarizes), and ONE representative netlist+log per point (draw 0's
 27 °C verify stage). The scratch directory is deleted on exit.
 
-## Cold start
+## Running it: `klt sim` decks (`run_klt_sim.sh`)
+
+```bash
+sim/closed-loop-vref-trim-mc/run_klt_sim.sh --sanity   # 2 local decks vs the committed record
+sim/closed-loop-vref-trim-mc/run_klt_sim.sh --batch    # fit stage, code*, verify stage, assemble (fleet)
+KLT_SIM_WORK=<batch dir> sim/closed-loop-vref-trim-mc/run_klt_sim.sh --record
+```
+
+`KLT_SIM_N` (default 300) and `KLT_SIM_SEED` (default 20260930) size the
+campaign; `KLT_SIM_WORK` names the work directory (re-run with the same one to
+resume). The decks are the template above, rendered by
+[`sim/harness/trim_mc_klt.py`](../harness/trim_mc_klt.py) with the substitutions
+`run_trim_mc.sh` made, and shipped byte-for-byte by klt's pre-composed `decks`
+requests (`corners` + `monte_carlo` cannot express this: `corners.params`
+cannot vary the code per sample, and the die identity comes from the
+parse-time `.options rndseed` in each deck). Because the verify decks need each
+die's `code*`, it is two fleet stages with a host-side step between:
+
+1. **fit** — per (point, draw) the codes-0/1/255 decks at 27 C;
+2. **`code*`** — computed from the fit logs by the script's own formula
+   (`clip(round((1.050 − a)/unit), 0, 255)`, `unit` the {0,255} chord);
+3. **verify** — per (point, draw) the `code*` decks at −40/27/125 C;
+4. **assemble** — `records/<id>-draws.csv` (header unchanged), the digest, the
+   negative-control gate, and the record via `klt_sim_evidence.py`.
+
+Per-deck timeout stays 300 s. A failed or timed-out deck is a verify-FAIL row
+(disclosed in `n_pass < n_draws`); a unit that never came back from the fleet
+refuses the whole record — a partial draw set is never recorded. The digest port
+is checked against the committed #229 record: fed its `-draws.csv`, it
+reproduces its digest CSV exactly (`sim/harness/test_trim_mc_klt.py`).
+
+A deck-list request refuses `--wait-for-capacity`, so the capacity wait rides
+the request (`batch.capacity_wait_s`, `KLT_SIM_CAPACITY_WAIT_S`). A refused or
+failed submit stops the run with the error; there is no local fallback. This
+path does not use `monte_carlo`, so it does not depend on #403. The fleet
+runner images ship the `decks` transport; the request names the image's baked
+PDK root (`models.pdk_root`, `KLT_SIM_BATCH_PDK_ROOT`, default `/opt/pdk`) so
+klt ships the decks' absolute `.lib` paths verbatim.
+
+**Sanity gate.** Two draw-0, code-0, 27 C decks run first (local backend by
+default; `KLT_SIM_SANITY_BACKEND=batch` for a host whose ngspice cannot load the
+OSDI models). The **negative control** must land on the committed record's
+`fit0_vref_v` (7.336808e-01; same engine, PDK, OSDI and renderer give the same
+number to every printed digit) — that is the gate. The nominal mismatch draw is
+printed against its committed value (7.140489e-01) but does **not** gate: a
+mismatch draw comes from the host's RNG, and the committed record was produced
+on another platform. The same deck, run on a Linux host (locally and on the
+fleet alike), gives 7.318626e-01. Consequence: the fresh fleet record samples a
+different — equally valid — 300-draw population than #229's committed one, so
+its per-draw rows differ draw for draw while the statistics are comparable;
+the negative control and its trimmed values are identical.
+
+## Cold start (legacy loop, reference only)
 
 ```bash
 export PDK_ROOT=/path/to/ihp-open-pdk   # parent of ihp-sg13g2/
 export PDK=ihp-sg13g2
 sim/tools/build-osdi.sh                 # one-time
-sim/closed-loop-vref-trim-mc/run_trim_mc.sh --seed 20260930 --n 300
+sim/closed-loop-vref-trim-mc/run_trim_mc.sh --seed 20260930 --n 300   # NOT on a dispatch host
 ```
 
 Requires at least one committed `sim/closed-loop-startup/records/*.csv`
