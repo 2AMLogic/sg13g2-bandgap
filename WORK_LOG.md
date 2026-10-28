@@ -8,6 +8,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-10-27
 
+- **PR #409**: ci: pin klayout-tools to PyPI 0.8.0 and regenerate signoff verdict
+- **Issue #408** (closed): Bump klayout-tools pin 7ee09483b748 → 0.8.0
 - **PR #406**: docs: classify archived-pin mm_ok netlist delta in drift check
 - **Issue #405** (closed): SG13CMOS5L committed netlists drift from schematics at the dev PDK pin
 
