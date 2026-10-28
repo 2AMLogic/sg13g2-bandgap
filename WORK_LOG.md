@@ -8,6 +8,9 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-10-28
 
+- **PR #421**: sim: add klt sim wrapper for schematic closed-loop-psrr
+- **PR #418**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup
+- **Issue #4** (closed): Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers)
 - **PR #417**: feat: add SG13G2 bandgap_top ERC evidence and cite it for T1 item 11
 - **Issue #411** (closed): T1 item 11 (power delivery): commit a klt erc supply spec and report for the SG13G2 bandgap_top instead of citing the SG13CMOS5L port's ERC
 
