@@ -113,30 +113,32 @@ The binding used here:
   enforced by `check_evidence_formats.py`'s layout-report staleness gate
   instead, which re-derives every committed report's input hashes.
 - **Item 11 (Power delivery, structural) — cited as the compound pair
-  `layout/sg13cmos5l-bandgap_top/erc_report.json` (pinned) +
-  `layout/bandgap_top/lvs_report.json` (item 4's own, unpinned):** grades
-  `check_failed`, honestly — the first item-11 citation any fleet block has
-  registered (#234 closed #225; #239 registered the citation). Since #233
-  declared the spec's `ties[]` entry and regenerated the report under the
-  commit-pinned `klt 0.5.0+g32f69f811682`, the ERC half is **checked
-  evidence with findings on record**, not a passing envelope:
-  `erc_status: "violations"` with **12 `erc.missing_tie` findings** (one
-  per physically distinct `NWell` island — no nSD-covered `Activ` is drawn
-  inside any well; 2 floating MOS wells + 10 marker-less pnpMPA base
-  rings, filed as #240 and kept, not tuned away), while the supply-island
-  half stays clean (each declared supply resolves to exactly one island,
-  and `gates[]`/`nets[]` findings are byte-identical to the pre-tie
-  report — klayout-tools#2186's tie isolation). Both halves keep the item
-  unmet: (a) the ERC half's `erc.missing_tie` count is nonzero until #240
-  clears; (b) the LVS half — every declared supply paired in the cited
-  report's `net_correspondence` — is not met: that report pairs only
-  `d1`/`d2` (the standing NPN13G2 decline item 4 documents,
-  klayout-tools#1242). `t1_met_count` is unchanged at 3. The citation's
-  pin binds the ERC envelope's **input** hash (the committed GDS — the
-  same convention every pinned citation uses), so it is unchanged by a
-  report regeneration that does not touch the GDS; the report's own
-  spec/GDS freshness anchors are what `check_evidence_formats.py`
-  re-derives.
+  `layout/bandgap_top/erc_report.json` (pinned to the `bandgap_top.gds`
+  hash) + `layout/bandgap_top/lvs_report.runset.json` (item 4's LVS
+  report, unpinned):** grades `unmet` / `lvs_did_not_pass` (#411). The ERC
+  half is complete and clean: `layout/bandgap_top/erc-supply-spec.json`
+  (SG13G2 stackup GatPoly/Metal1/Metal2, `Cont` + `Via1`, `VDD`/`VSS` as
+  supplies, one n-well `ties[]` entry) run with the 0.8.0 pin reports
+  `erc_status: "clean"` with zero findings — each supply resolves to
+  exactly one island, and all 7 gates and the n-well tie were *checked*
+  (`erc_coverage.checked`). The envelope's top-level `status` reads
+  `not_checked` (exit 4) only because no `--pdk` antenna table is supplied;
+  gate on `erc_status`. Net names are upper-case because the builders
+  upper-case every drawn label (`layout/common.py`). No substrate tie is
+  declared (no drawn p-well layer for `ties[]` to name). The remaining
+  reason is the LVS half: the cited report's `lvs_status` is `mismatch`
+  (the standing NPN13G2 decline, klayout-tools#1242; re-citation tracked in
+  #381). Before #411 this item cited the **SG13CMOS5L port's** ERC report,
+  which is a different PDK and layout and was never this block's evidence.
+  **Re-run the ERC after any regeneration of the GDS** and re-pin both
+  this citation and the report.
+- **SG13CMOS5L port ERC (not cited anywhere).**
+  `layout/sg13cmos5l-bandgap_top/erc_report.json` still reads
+  `erc_status: "violations"` with **10 `erc.missing_tie` findings** even
+  though #240 ("Zero out the 12 erc.missing_tie findings") closed on
+  2026-09-23. The remaining ten are the pnpMPA wells whose correct tie is
+  `vss` (needs klayout-tools#2354). That residue is *not* resolved by #240's
+  closure; either reopen that work or fix it when the port is next touched.
 
 - **Item 8 (Characterization report) — cited: `measurements/2026-10-characterization-report/envelope.json`**
   (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
