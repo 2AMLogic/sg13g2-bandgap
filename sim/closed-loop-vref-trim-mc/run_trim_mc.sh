@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# DO NOT RUN AS A GRID ON A DISPATCH HOST (issue #416). This loops `ngspice -b`
+# over N seeded draws x 6 netlists x 4 points, which the dispatch hosts forbid.
+# It is kept as the point-definition reference only (and for a dev box that is
+# not a dispatch host); the klt sim conversion of this bench is tracked on #416.
+#
 # Cold-start invocation:
 #
 #   export PDK_ROOT=/path/to/ihp-open-pdk   # parent dir containing ihp-sg13g2/

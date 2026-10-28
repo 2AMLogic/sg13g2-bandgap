@@ -1,0 +1,74 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for trim-coverage (issue #416, Part of #412): the trim-ladder range / resolution / linearity bench behind DR-0011's ratified Trim row, cited by DR-0014.",
+    "One .op per (process, supply, temperature, trim code). The code rides `corners.params.trim_code` (a top-level .param in the body; klayout-tools #3035) -- the 11 codes of the primary 27 C grid are 11 corner units of ONE request. The supply and the .nodeset seeds are baked into a per-(process, supply, temperature) body variant, exactly as the PWL-ramp benches bake the supply, because the seeds differ per variant. The runner image's single-models.lib carries one process per request (klayout-tools#2668), so --batch writes one request per (process, supply) at 27 C (11 codes) plus two typ/3.30V step-temperature probes (-40 and 125 C, codes 128 and 129).",
+    "Measurements are `expr` figures (an operating point has no .meas search); values arrive as `print` output at ngspice's default precision. dvsns_v and the closed-loop verdict are formed by sim/harness/trim_coverage_klt.py from the reported operands, the same practice the committed records use."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "schematic",
+  "models": {
+    "lib": "@@CORNER_BUNDLE@@"
+  },
+  "corners": {
+    "process": [
+      "typ"
+    ],
+    "temperature_c": [
+      27
+    ],
+    "params": {
+      "trim_code": [
+        0,
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        129,
+        255
+      ]
+    }
+  },
+  "analysis": {
+    "kind": "op",
+    "args": ""
+  },
+  "measurements": [
+    {
+      "name": "fb_v",
+      "expr": "v(fb)"
+    },
+    {
+      "name": "sns1_v",
+      "expr": "v(sns1)"
+    },
+    {
+      "name": "sns2_v",
+      "expr": "v(sns2)"
+    },
+    {
+      "name": "vref_v",
+      "expr": "v(vref)"
+    },
+    {
+      "name": "det_v",
+      "expr": "v(det)"
+    },
+    {
+      "name": "vbeq3_v",
+      "expr": "v(cb3)"
+    },
+    {
+      "name": "i_mkfb_a",
+      "expr": "i(vmkfb)"
+    }
+  ],
+  "options": {
+    "timeout_s": 900,
+    "keep_artifacts": true
+  }
+}

@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# DO NOT RUN AS A GRID ON A DISPATCH HOST (issue #416). This loops `ngspice -b`
+# over 169 points, which the dispatch hosts forbid. The grid runs through
+# `sim/trim-coverage/run_klt_sim.sh` (`klt sim` -> the Spot batch fleet).
+# This script is kept as the point-definition reference only (and for a
+# dev box that is not a dispatch host).
+#
 # Cold-start invocation:
 #
 #   export PDK_ROOT=/path/to/ihp-open-pdk   # parent dir containing ihp-sg13g2/
