@@ -399,12 +399,17 @@ from no checker at all.
 
 ## Corner-grid harness: `run_pvt_sweep.sh` and `klt sim` (issue #275)
 
-Two ways to run a grid in this tree, and they produce the same evidence:
+Two harnesses exist in this tree, but only one is an entry point:
 
 - **`sim/<exp>/run_pvt_sweep.sh`** — the original: a serial bash loop invoking
-  `ngspice -b` once per PVT point. Every record currently under `sim/` was
-  minted this way, and it remains the right entry point on a workstation.
-- **`klt sim` + `sim/harness/klt_sim_evidence.py`** — the grid expressed as a
+  `ngspice -b` once per PVT point. Every record minted before the `klt sim`
+  harness was minted this way. It is kept as the readable point-definition
+  reference for each bench (the `klt sim` harness parses some of these scripts
+  and the record-specs cite them) and is **not** an entry point for new runs.
+- **`klt sim` + `sim/harness/klt_sim_evidence.py`** — the entry point for every
+  new run (decision record
+  [0015](../spec/decision-records/0015-sim-evidence-artifact-store.md): the
+  writer stores raw outputs in the artifact store and fails closed). The grid is expressed as a
   `klt sim` request document, dispatched to whichever backend the host allows
   (including 2am's Spot batch fleet), with the returned JSON report translated
   into the same `records/` + `corners/` + `netlist-snapshots/` quadruple by a

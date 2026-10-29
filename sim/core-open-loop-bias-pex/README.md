@@ -19,8 +19,11 @@
 > `sim/harness/klt_sim_evidence.py` from a `klt sim` report rather than by this
 > directory's `run_pvt_sweep.sh`, and its `- **Harness**:` field will say so.
 > `run_pvt_sweep.sh` stays on disk and stays correct — it is how every record
-> currently in `records/` was produced, and it remains the right entry point on
-> a workstation. Read [`sim/harness/README.md`](../harness/README.md) for the
+> currently in `records/` was produced — but only as the point-definition
+> reference for this bench (the `klt sim` harness and the record-specs cite it),
+> not as an entry point: new runs go through `klt sim` and, per
+> [DR-0015](../../spec/decision-records/0015-sim-evidence-artifact-store.md),
+> store their bytes in the artifact store. Read [`sim/harness/README.md`](../harness/README.md) for the
 > decision, the three pieces of the harness, the one-corner anchor that proves
 > it (3 µV against a committed record), and precisely what still blocks the
 > grids: the batch fleet's runner image carries no `ihp-sg13g2` PDK and no
