@@ -32,7 +32,6 @@ _None._
 Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
-- **#416**: sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412)
 - **#423**: sim: add klt sim decks wrapper for closed-loop-vref-trim-mc (split from #416)
 
 ## PRs Awaiting Review
@@ -63,7 +62,6 @@ Issues carrying `loom:curated`.
 - **#403**: sim: closed-loop-vref-mc klt sim monte_carlo seeding design and 1800-draw refresh (Part of #273) *(curated)*
 - **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)*
 - **#415**: sim: add klt sim wrapper for schematic closed-loop-psrr (Part of #412) *(curated)*
-- **#416**: sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412) *(curated)*
 - **#423**: sim: add klt sim decks wrapper for closed-loop-vref-trim-mc (split from #416) *(curated)*
 
 ## Proposed (Architect / Hermit)
@@ -82,10 +80,10 @@ _None._
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 3 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 14 |
+| Curated | 13 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
