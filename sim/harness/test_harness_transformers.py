@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import enrich_pvt_report as epr  # noqa: E402
+import enrich_supply_bench_report as esb  # noqa: E402
 import extraction_binding as xb  # noqa: E402
 import fixup_batch_report as fbr  # noqa: E402
 import klt_sim_evidence as kse  # noqa: E402
@@ -514,6 +515,53 @@ class EnrichTests(TempDirCase):
 # --------------------------------------------------------------------------
 # klt_sim_evidence record shaping
 # --------------------------------------------------------------------------
+
+
+class EnrichSupplyBenchTests(unittest.TestCase):
+    """enrich_supply_bench_report.enrich (issue #414): the Iq and Startup benches."""
+
+    @staticmethod
+    def corner(bench: str, **over: float) -> dict:
+        if bench == "iq":
+            m = {"fb_v": 1.0, "sns1_v": 0.700, "sns2_v": 0.695, "det_v": 0.1,
+                 "i_mkfb_a": 1e-9, "iq_2ms_a": -2.8e-5, "iq_3ms_a": -2.8e-5, "iq_avg_a": -2.8e-5}
+        else:
+            m = {"fb_final_v": 1.0, "sns1_final_v": 0.700, "sns2_final_v": 0.695,
+                 "det_final_v": 0.1, "i_mkfb_final_a": 1e-9, "vref_final_v": 1.04}
+        m.update(over)
+        return {"corner_id": "typ/3.30V/27C", "status": "pass",
+                "measurements": [{"name": k, "value": v} for k, v in m.items()]}
+
+    def run_one(self, bench: str, **over: float) -> dict:
+        report = esb.enrich({"status": "pass", "corners": [self.corner(bench, **over)]}, bench)
+        return report["corners"][0]
+
+    def test_iq_reports_magnitudes_and_derived_columns(self) -> None:
+        c = self.run_one("iq", iq_3ms_a=-2.80005e-5)
+        got = meas(c)
+        self.assertEqual(c["status"], "pass", c.get("diagnostics"))
+        self.assertAlmostEqual(got["iq_avg_a"], 2.8e-5, places=12)
+        self.assertAlmostEqual(got["iq_settle_delta_a"], 5e-10, places=14)
+        self.assertAlmostEqual(got["dvsns_v"], 0.005, places=12)
+
+    def test_iq_not_settled_over_100na(self) -> None:
+        c = self.run_one("iq", iq_3ms_a=-2.82e-5)
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["message"], "not_settled")
+
+    def test_startup_verdict_criteria(self) -> None:
+        self.assertEqual(self.run_one("startup")["status"], "pass")
+        self.assertAlmostEqual(meas(self.run_one("startup"))["dvsns_final_v"], 0.005, places=12)
+        c = self.run_one("startup", det_final_v=2.0, fb_final_v=3.3)
+        self.assertEqual(c["diagnostics"][0]["message"], "startup_not_released; fb_railed")
+        c = self.run_one("startup", sns2_final_v=0.6)
+        self.assertEqual(c["diagnostics"][0]["message"], "loop_not_closed")
+
+    def test_missing_operand_fails(self) -> None:
+        corner = self.corner("startup")
+        corner["measurements"] = [m for m in corner["measurements"] if m["name"] != "fb_final_v"]
+        c = esb.enrich({"status": "pass", "corners": [corner]}, "startup")["corners"][0]
+        self.assertEqual(c["diagnostics"][0]["code"], "derived_columns_missing")
 
 
 class CornerIdTests(unittest.TestCase):

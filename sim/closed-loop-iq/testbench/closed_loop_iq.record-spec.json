@@ -1,0 +1,50 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- record spec for closed-loop-iq on the `klt sim` harness (issue #414, part of #412). Mechanics: sim/harness/klt_sim_evidence.py; argument: this file."
+  ],
+  "Experiment": "closed-loop-iq",
+  "Claim": "Through the co-simulated closed-loop schematic (bandgap_core + bandgap_amp + bandgap_startup, trim-bearing core at trim_code=128, wired as design/bandgap_top.sch), total vdd quiescent supply current (Iq) across the 45-point PVT grid, reported as a magnitude and confirmed settled (|i(Vvdd)(3ms)-i(Vvdd)(2ms)| <= 100 nA) at a genuine closed-loop operating point (startup released, loop closed within 20 mV, fb not railed). Evidence only: NOT compared against the draft Iq target as a pass/fail verdict (see the experiment README).",
+  "Netlist provenance": "design/netlist/bandgap_core.spice (trim-bearing, trim_code=128), design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice, carried verbatim into sim/closed-loop-iq/testbench/closed_loop_iq.body.spice.tmpl (XMSENSE w= read from the live startup netlist).",
+  "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models built by sim/tools/build-osdi.sh (local) / baked into the batch runner image (#277).",
+  "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x temperature {-40,27,125} C x supply {2.97,3.30,3.63} V (45 points)",
+  "request": "sim/closed-loop-iq/testbench/closed_loop_iq.request.json.tmpl",
+  "author": "Loom Builder (agent), issue #414",
+  "pass_requires": [
+    "iq_avg_a",
+    "iq_3ms_a",
+    "fb_v",
+    "sns1_v",
+    "sns2_v",
+    "det_v",
+    "i_mkfb_a"
+  ],
+  "extra_columns": {
+    "hbt_section": {
+      "typ": "hbt_typ",
+      "bcs": "hbt_bcs",
+      "wcs": "hbt_wcs",
+      "sf": "hbt_typ",
+      "fs": "hbt_typ"
+    },
+    "mos_section": {
+      "typ": "mos_tt",
+      "bcs": "mos_ff",
+      "wcs": "mos_ss",
+      "sf": "mos_sf",
+      "fs": "mos_fs"
+    },
+    "res_section": {
+      "typ": "res_typ",
+      "bcs": "res_bcs",
+      "wcs": "res_wcs",
+      "sf": "res_typ",
+      "fs": "res_typ"
+    }
+  },
+  "extra_links": [
+    "Harness decision + batch-fleet status: sim/harness/README.md",
+    "Runner: sim/closed-loop-iq/run_klt_sim.sh",
+    "Per-point closed-loop verdict: sim/harness/enrich_supply_bench_report.py",
+    "Legacy point definitions: sim/closed-loop-iq/run_pvt_sweep.sh (reference only; must not be run as a grid on a dispatch host)"
+  ]
+}

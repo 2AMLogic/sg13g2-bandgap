@@ -1,0 +1,74 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for closed-loop-iq (issue #414, part of #412). Same per-(process, supply) instantiation as sim/closed-loop-vref-pvt-boxtc/testbench/closed_loop_vref_pvt_boxtc.request.json.tmpl (issue #273); the DUT is the schematic (design/netlist/bandgap_{core,amp,startup}.spice, carried verbatim in the body).",
+    "The 45-point grid (5 processes x 3 temperatures x 3 supplies) runs as 15 requests of 3 temperatures each: the runner image's single-models.lib channel carries one process per request (klayout-tools#2668), and the PWL ramp is this bench's convergence path so the supply axis cannot ride `corners.supply_v` (`alter` would clobber it). The temperature axis rides `corners.temperature_c` natively.",
+    "Every column is a single-vector `.meas ... at=<t>` / `avg` over a resident `.save` vector. Derived columns, the closed-loop verdict and (iq) the magnitude of the supply current are applied by sim/harness/enrich_supply_bench_report.py, the same practice the committed records use. Values arrive at 6 significant figures.",
+    "i(Vvdd) is reported by ngspice negative while the supply delivers current (passive sign convention); the enrichment pass takes the magnitude, as the legacy run_pvt_sweep.sh did.",
+    "`remote.hosts: 3` = one fleet job per temperature point (the box-TC wrapper's measured split, scaled to this grid; not separately measured here)."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "schematic",
+  "models": {
+    "lib": "@@CORNER_BUNDLE@@"
+  },
+  "corners": {
+    "process": [
+      "typ",
+      "bcs",
+      "wcs",
+      "sf",
+      "fs"
+    ],
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "tran",
+    "args": "50n 3m"
+  },
+  "measurements": [
+    {
+      "name": "fb_v",
+      "spice": ".meas tran fb_v find v(fb) at=3m"
+    },
+    {
+      "name": "sns1_v",
+      "spice": ".meas tran sns1_v find v(sns1) at=3m"
+    },
+    {
+      "name": "sns2_v",
+      "spice": ".meas tran sns2_v find v(sns2) at=3m"
+    },
+    {
+      "name": "det_v",
+      "spice": ".meas tran det_v find v(det) at=3m"
+    },
+    {
+      "name": "i_mkfb_a",
+      "spice": ".meas tran i_mkfb_a find i(Vmkfb) at=3m"
+    },
+    {
+      "name": "iq_2ms_a",
+      "spice": ".meas tran iq_2ms_a find i(Vvdd) at=2m"
+    },
+    {
+      "name": "iq_3ms_a",
+      "spice": ".meas tran iq_3ms_a find i(Vvdd) at=3m"
+    },
+    {
+      "name": "iq_avg_a",
+      "spice": ".meas tran iq_avg_a avg i(Vvdd) from=2m to=3m"
+    }
+  ],
+  "options": {
+    "timeout_s": 1800,
+    "keep_artifacts": true
+  },
+  "remote": {
+    "hosts": 3
+  }
+}

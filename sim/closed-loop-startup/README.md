@@ -226,8 +226,22 @@ points.
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
 sim/tools/build-osdi.sh              # one-time: build the OSDI models
-sim/closed-loop-startup/run_pvt_sweep.sh
+sim/closed-loop-startup/run_klt_sim.sh --sanity    # one local typ/27C/3.30V corner vs the newest record
+sim/closed-loop-startup/run_klt_sim.sh --batch     # the 45-point grid via `klt sim` on the batch fleet
+sim/closed-loop-startup/run_klt_sim.sh --record    # mint records/ from the enriched report
 ```
+
+`run_klt_sim.sh` is the cold-start path (issue #414, on the harness described in
+`sim/harness/README.md`; it follows `../closed-loop-vref-pvt-boxtc/run_klt_sim.sh`).
+`--sanity` is a single local corner and must land on the newest committed
+record's `vref_final_v` 1.04728 V and `fb_final_v` 2.49682 V; `--batch` runs that gate first, then submits the grid as 15
+requests (5 processes x 3 supplies, 3 temperatures each) and records the batch
+job ids in the report's `environment.remote`; a partial grid is refused by the
+shard merger and cannot be recorded. The DUT is the schematic, carried in
+`testbench/*.body.spice.tmpl`; the request, record spec and the verdict pass
+(`sim/harness/enrich_supply_bench_report.py`) are alongside. On a dispatch
+host a multi-corner grid must go through `--batch`: `run_pvt_sweep.sh` is kept
+as the point-definition reference only and must not be run as a grid there.
 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.
