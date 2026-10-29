@@ -8,6 +8,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-10-29
 
+- **Issue #416** (closed): sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412)
+- **PR #422**: sim: add klt sim wrapper and fleet record for the trim-coverage bench
 - **Issue #242** (closed): README: embed the fleet burndown chart (one line)
 - **Issue #426** (closed): Remove legacy run_pvt_sweep.sh loops in the 13 experiments that already have run_klt_sim.sh
 - **PR #428**: docs: describe run_pvt_sweep.sh as a point-definition reference, not an entry point
