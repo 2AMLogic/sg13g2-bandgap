@@ -157,7 +157,7 @@ number to every printed digit) — that is the gate. The nominal mismatch draw i
 printed against its committed value (7.140489e-01) but does **not** gate: a
 mismatch draw comes from the host's RNG, and the committed record was produced
 on another platform. The same deck, run on a Linux host (locally and on the
-fleet alike), gives 7.318626e-01. Consequence: the fresh fleet record samples a
+fleet alike), gives 7.318626e-01. Consequence: a fresh fleet record would sample a
 different — equally valid — 300-draw population than #229's committed one, so
 its per-draw rows differ draw for draw while the statistics are comparable;
 the negative control and its trimmed values are identical.
