@@ -6,6 +6,12 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+### 2026-10-29
+
+- **Issue #242** (closed): README: embed the fleet burndown chart (one line)
+- **Issue #426** (closed): Remove legacy run_pvt_sweep.sh loops in the 13 experiments that already have run_klt_sim.sh
+- **PR #428**: docs: describe run_pvt_sweep.sh as a point-definition reference, not an entry point
+
 ### 2026-10-28
 
 - **PR #421**: sim: add klt sim wrapper for schematic closed-loop-psrr
