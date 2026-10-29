@@ -84,6 +84,11 @@ jobs:
         # and the runners' fail-closed gates. No simulation, no PDK.
         run: python3 sim/harness/test_cmos5l_harness.py
 
+      - name: trim-coverage klt-sim conversion self-test
+        # Issue #416: shard plan / expected grid, code-axis relabel + merge,
+        # closed-loop verdict, ladder-coverage gates. No simulation, no PDK.
+        run: python3 sim/harness/test_trim_coverage_klt.py
+
       - name: Artifact manifests (schema; no stored bytes committed)
         # Accepts only artifact:<key> uris and fails if a stored object's bytes
         # (or the .evidence-scratch/ staging tree) are also tracked. Schema-valid

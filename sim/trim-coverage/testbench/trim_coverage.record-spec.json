@@ -1,0 +1,50 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- record spec for trim-coverage on the `klt sim` harness (issue #416, Part of #412). Mechanics: sim/harness/klt_sim_evidence.py; argument: this file. `extra_columns` is written per process label here and expanded over the 11 trim codes (`<label>_code<N>`) by `sim/harness/trim_coverage_klt.py spec`."
+  ],
+  "Experiment": "trim-coverage",
+  "Claim": "The committed trim ladder (design/bandgap_trim.sch, 255 binary-weighted rppd unit segments, strap-decoded trim_code, default 128) realizes DR-0011's ratified Trim row (\"1-point at 27 C; range >= +/-15%; resolution <= 0.25%/step; magnitude only\", kept by DR-0014) at the 27 C trim point through the real closed loop: per (process, supply) group the direct step vref(129)-vref(128) is <= 0.25% of the 1.050 V target, the up and down spans around code 128 are each >= 15% of it, each single-bit code's weight is 2^b LSB units within 0.5%, the full-scale curvature against the {0,1} tangent is within 2 LSB, and vref is monotonic over the visited codes; plus the step's temperature dependence at typ/3.30V (-40/125 C). The per-group verdicts and numbers are in the companion records/<id>-analysis.csv (trim_coverage_klt.py analysis); NO statistical claim about mismatched dies (that is sim/closed-loop-vref-trim-mc).",
+  "Devices": "All real PDK compact models; the DUT is the trim-bearing bandgap_core (R1 base l=37.2u + XXTRIM ladder, device-for-device from design/netlist/bandgap_trim.spice), plus bandgap_amp and bandgap_startup verbatim. The straps are the ladder's own decoded links, not a synthetic trim source. The only deviation from the legacy bench: `.param trim_code` is hoisted out of the subcircuit to the top level so corners.params can alter it.",
+  "Netlist provenance": "design/netlist/bandgap_core.spice, bandgap_trim.spice, bandgap_amp.spice and bandgap_startup.spice, carried verbatim into sim/trim-coverage/testbench/trim_coverage.body.spice.tmpl (XMSENSE w= read from the live startup netlist; .nodeset seeds from the newest sim/closed-loop-startup record).",
+  "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models baked into the batch runner image (#277).",
+  "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x supply {2.97,3.30,3.63} V x trim code {0,1,2,4,8,16,32,64,128,129,255} at 27 C (165 points), plus typ/3.30V x {-40,125} C x codes {128,129} (4 step-temperature probe points)",
+  "request": "sim/trim-coverage/testbench/trim_coverage.request.json.tmpl",
+  "author": "Loom Builder (agent), issue #416",
+  "pass_requires": [
+    "fb_v",
+    "sns1_v",
+    "sns2_v",
+    "vref_v",
+    "det_v",
+    "i_mkfb_a"
+  ],
+  "extra_columns": {
+    "hbt_section": {
+      "typ": "hbt_typ",
+      "bcs": "hbt_bcs",
+      "wcs": "hbt_wcs",
+      "sf": "hbt_typ",
+      "fs": "hbt_typ"
+    },
+    "mos_section": {
+      "typ": "mos_tt",
+      "bcs": "mos_ff",
+      "wcs": "mos_ss",
+      "sf": "mos_sf",
+      "fs": "mos_fs"
+    },
+    "res_section": {
+      "typ": "res_typ",
+      "bcs": "res_bcs",
+      "wcs": "res_wcs",
+      "sf": "res_typ",
+      "fs": "res_typ"
+    }
+  },
+  "extra_links": [
+    "Harness decision + batch-fleet status: sim/harness/README.md",
+    "Runner: sim/trim-coverage/run_klt_sim.sh",
+    "Ladder-coverage analysis: records/<id>-analysis.csv (sim/harness/trim_coverage_klt.py analysis)",
+    "Legacy point definitions: sim/trim-coverage/run_trim_coverage.sh (reference only)"
+  ]
+}
