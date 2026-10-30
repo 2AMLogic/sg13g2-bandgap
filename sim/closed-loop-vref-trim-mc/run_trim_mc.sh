@@ -13,6 +13,10 @@
 #
 # Options: --seed S (default 20260930)  --n N (default 300, >= 300 per the
 # issue's Test Plan)  --parallel P (default 8)
+#          --reaim K0,K1  apply DR-0014's code-offset rule (issue #303): the verify code is
+#          code* + round(K0 + K1*code*), clipped to 0..255 (point-definition reference of the
+#          live `reaim` campaign in run_klt_sim.sh; round-half-away here, round-half-even in
+#          the harness -- they differ only on an exact .5)
 #
 # Requires ngspice on PATH plus the OSDI device models sim/tools/build-osdi.sh
 # builds, AND at least one committed sim/closed-loop-startup/records/*.csv
@@ -48,11 +52,14 @@ set -euo pipefail
 SEED=20260930
 N=300
 PARALLEL=8
+REAIM_K0=""
+REAIM_K1=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --seed) SEED="$2"; shift 2 ;;
     --n) N="$2"; shift 2 ;;
     --parallel) PARALLEL="$2"; shift 2 ;;
+    --reaim) REAIM_K0="${2%%,*}"; REAIM_K1="${2##*,}"; shift 2 ;;
     *) echo "run_trim_mc.sh: unknown argument: $1" >&2; exit 2 ;;
   esac
 done
@@ -214,7 +221,7 @@ done
 
 # code* (rounded, clipped) into a side table: point_draw -> code
 CODE_STAR_FILE="${SCRATCH_DIR}/code_star_of.tsv"
-awk -F'\t' -v tgt="${VREF_TARGET_V}" '
+awk -F'\t' -v tgt="${VREF_TARGET_V}" -v k0="${REAIM_K0}" -v k1="${REAIM_K1}" '
   {
     point=$1; draw=$2; v0=$3; v1=$4; v255=$5; s0=$6; s1=$7; s255=$8
     if (s0=="OK" && s255=="OK" && v0!="NA" && v255!="NA") {
@@ -223,6 +230,12 @@ awk -F'\t' -v tgt="${VREF_TARGET_V}" '
       c = (ideal < 0) ? int(ideal - 0.5) : int(ideal + 0.5)
       if (c < 0) c = 0
       if (c > 255) c = 255
+      if (k0 != "") {   # DR-0014 S2 re-aim: shift by round(k0 + k1*code*), clip again
+        m = k0 + k1 * c
+        c = c + ((m < 0) ? int(m - 0.5) : int(m + 0.5))
+        if (c < 0) c = 0
+        if (c > 255) c = 255
+      }
     } else {
       c = -1   # fit failed -- verify stages will fail downstream
     }

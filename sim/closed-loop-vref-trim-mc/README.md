@@ -162,6 +162,61 @@ different — equally valid — 300-draw population than #229's committed one, s
 its per-draw rows differ draw for draw while the statistics are comparable;
 the negative control and its trimmed values are identical.
 
+## Mismatch attribution, resizing and the re-aimed trim (issue #303)
+
+Three campaigns share the template and the harness
+([`sim/harness/trim_mc_klt.py`](../harness/trim_mc_klt.py)); the runner picks one with
+`KLT_SIM_CAMPAIGN` (all go to the fleet; there is no local fallback):
+
+| `KLT_SIM_CAMPAIGN` | what it measures | decks |
+|---|---|---|
+| `trim` (default) | the one-point trim: fit, `code*`, verify (above) | 4 points x N x 6 |
+| `attrib` | the **contribution breakdown** of the untrimmed 27 C `vref` spread | 20 variants x N x 1 |
+| `reaim` | `trim` with DR-0014's code-offset rule applied to `code*` (`KLT_SIM_FIT_FROM`, `KLT_SIM_REAIM_RULE`) | 4 points x N x 3 |
+
+**Attribution** (`attrib`, `--record` writes `records/<id>-attrib.{md,csv}` and
+`<id>-attrib-draws.csv`). Each deck is the template at typ, 27 C, 3.30 V, code 128
+(untrimmed) with a **device group's** mismatch switched off by appending `mm_ok=0` to its
+cards. `mm_ok` is the PDK's own per-instance sigma multiplier (`agauss(x, s, mm_ok != 1 ? 0 : 1)`),
+so the draw stream is consumed identically and every other device keeps its exact draw. Groups
+(`ATTRIB_GROUPS` in the harness; an X-card in no group fails loudly): `amp_input`,
+`amp_bias_load`, `amp_mirror_nmos`, `core_mirror`, `r_core`, `r_ladder`, `startup`, `bipolar`.
+Variants: `all`, `only_<g>`, `loo_<g>` (all but g), and two controls. **Hard gates** (no record
+is written otherwise): `negctrl` (plain sections) and `none` (mismatch sections, every group
+`mm_ok=0`) are each exactly zero-spread, and `none_plainall` equals `negctrl` draw for draw.
+`none` is not required to equal `negctrl`: the mismatch-section resistor card shifts the mean by
+a deterministic ~1.25 mV even at `mm_ok=0`, reported in the record. Shares are quoted over the sum
+of the single-group variances, which is reconciled against the all-mismatch variance; the
+leave-one-out column is a second estimate and is **not additive** (reported, not relied on). The
+other `none_plain{res,mos,hbt}` diagnostics (run with `KLT_SIM_VARIANTS=...`) are how the `none`
+control localised the bipolar mismatch the first time it failed.
+
+**Convergence policy.** No draw is silently dropped: every draw of every point is a row in the
+draws CSV, a failed one with `verify_status=FAIL`; a point whose `n_pass != n_draws` is graded
+`FAIL` in the digest; population statistics are over the converged draws and the record says so.
+`trim_mc_klt.py failed-draws` writes `<id>-failed-draws.csv` (which deck failed and how, from
+the unit records), and `trim_mc_klt.py summary` quotes, beside the pass-only 3 sigma, a **bound with
+every failed draw filled at its point's worst passing deviation**, so dropped draws cannot hide
+upward. A unit that never came back from the fleet still refuses the whole record.
+
+**Axes covered, stated.** Supply: **3.30 V only** (the supply axis is not re-run, as in #215).
+Temperature: the trim at 27 C and verify at **-40 / 27 / 125 C** only (no interior points; the
+8-temperature deterministic floor is `sim/closed-loop-vref-boxtc-trim/`). Process: typ / bcs / wcs
+mismatch points plus the typ negative control. Pre-layout, no parasitics, no lifetime drift.
+
+**Re-aimed trim** (`reaim`). The rule is DR-0014's S2: final code = `code* + round(k0 + k1*code*)`,
+clipped to 0..255, with `(k0, k1)` fitted by `trim_mc_klt.py rule` on the typ-mismatch point of the
+plain campaign (the same grid and criterion `sim/tools/project_trim_strategies.py` uses, knob-A
+shape from the Jacobian record) and applied unchanged to bcs/wcs, which are out of sample. The fit is
+a projection used only to choose the two constants; the re-aimed line is then **measured** on the
+same dies (the fit stage is reused).
+
+**Claim boundary.** These records measure mismatch-driven spread of the one-point trim on a
+pre-layout core at one supply. They do not show the line is met, and an honest measured FAIL is the
+expected kind of result here: the gate is not relaxed to make it pass. The bipolar rows reflect the PDK
+model's 10 % one-sigma emitter-area draw (independent of `Nx`), a property of the model rather than
+of the silicon.
+
 ## Cold start (legacy loop, reference only)
 
 ```bash
