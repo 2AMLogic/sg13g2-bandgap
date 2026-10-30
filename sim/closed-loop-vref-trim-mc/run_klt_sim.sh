@@ -145,7 +145,37 @@ tm_attrib_record() {
   echo "run_klt_sim.sh: per-draw data -> records/${rid}-draws.csv"
 }
 
+# tm_reaim: the trim campaign with DR-0014's code-offset rule applied to code*. The fit stage
+# is REUSED from the plain campaign (KLT_SIM_FIT_FROM: same dies, same fit decks, same fit
+# artifacts), so the only difference between the two records is the verify code.
+tm_reaim() {
+  : "${KLT_SIM_FIT_FROM:?KLT_SIM_FIT_FROM=<plain campaign work dir> is required}"
+  : "${KLT_SIM_REAIM_RULE:?KLT_SIM_REAIM_RULE=<rule.json> is required}"
+  [[ -d "${KLT_SIM_FIT_FROM}/artifacts-fit" ]] || { echo "run_klt_sim.sh: no fit stage in ${KLT_SIM_FIT_FROM}" >&2; exit 3; }
+  echo "run_klt_sim.sh: sanity gate before dispatch"
+  tm_sanity
+  [[ -e "${WORK}/artifacts-fit" ]] || ln -s "${KLT_SIM_FIT_FROM}/artifacts-fit" "${WORK}/artifacts-fit"
+  cp "${KLT_SIM_FIT_FROM}/manifest-fit.json" "${WORK}/manifest-fit.json"
+  cp "${KLT_SIM_REAIM_RULE}" "${WORK}/rule.json"
+  python3 "${TM_PY}" codes --work "${WORK}" --artifacts "${WORK}/artifacts-fit" --n "${N}" --rule "${WORK}/rule.json"
+  tm_prepare verify --codes "${WORK}/codes.json"
+  tm_stage verify
+  python3 "${TM_PY}" assemble --work "${WORK}" --artifacts "${WORK}/artifacts-verify" \
+    --fit-artifacts "${WORK}/artifacts-fit" --template "${TEMPLATE}" --seed-csv "${SEED_CSV}" \
+    --msense-w "${MSENSE_W}" --dut-sha "${DUT_SHA}" --pdk "${PDK}" \
+    --local-pdk-root "${PDK_ROOT}" --local-osdi-dir "${OSDI_DIR}" \
+    --seed "${SEED}" --n "${N}" --klt-version "${KLT_VERSION_DECL}" --job-log "${WORK}/klt-stderr.log" \
+    --draws-out "${WORK}/draws.csv" --report-out "${WORK}/report-assembled.json"
+  echo "run_klt_sim.sh: assembled report at ${WORK}/report-assembled.json"
+  echo "                 mint evidence with: KLT_SIM_WORK=${WORK} KLT_SIM_N=${N} run_klt_sim.sh --record"
+}
+
 tm_batch() {
+  if [[ "${KLT_SIM_CAMPAIGN:-trim}" == reaim ]]; then
+    [[ -x "${BATCH_PROVISION_SCRIPT}" ]] || { echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2; exit 3; }
+    tm_reaim
+    return
+  fi
   if [[ "${KLT_SIM_CAMPAIGN:-trim}" == attrib ]]; then
     [[ -x "${BATCH_PROVISION_SCRIPT}" ]] || { echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2; exit 3; }
     tm_attrib
@@ -180,7 +210,8 @@ tm_record() {
   local rid
   rid="$(date -u +%Y%m%d-%H%M%S)-$(git -C "${REPO_ROOT}" rev-parse --short HEAD)"
   python3 "${TM_PY}" spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
-    --msense-w "${MSENSE_W}" --n "${N}" -o "${WORK}/record-spec.json"
+    --msense-w "${MSENSE_W}" --n "${N}" -o "${WORK}/record-spec.json" \
+    ${KLT_SIM_REAIM_RULE:+--rule "${KLT_SIM_REAIM_RULE}"}
   # The adapter exits 1 when a point is graded FAIL (the 3-sigma claim gate fails at the
   # mismatch points, as in the committed #229 record): the record is still minted.
   ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \

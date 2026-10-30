@@ -824,6 +824,69 @@ def record_attrib(a: argparse.Namespace) -> None:
     print(f"wrote {rid}.md / .csv")
 
 
+# ---------------------------------------------- failed draws + population summary
+
+def failed_draws(a: argparse.Namespace) -> None:
+    """One CSV row per verify-FAIL draw: which deck failed and how (read from the unit
+    records), so a non-converged draw is explained, never just counted."""
+    work = Path(a.work)
+    fits = json.loads((work / "codes.json").read_text())
+    res = Results(Path(a.artifacts), json.loads((work / "manifest-verify.json").read_text()))
+    rows = []
+    with open(a.draws_csv, newline="") as fh:
+        for r in csv.DictReader(fh):
+            if r["verify_status"] == "PASS":
+                continue
+            point, draw, code = r["point"], int(r["draw_index"]), int(r["code_star"])
+            bad = []
+            if code != -1:
+                for t in VERIFY_TEMPS:
+                    uid = verify_id(point, draw, t, code)
+                    text, ran = res.unit(uid)
+                    st = None
+                    rec = res.where[uid] / "unit.json"
+                    if rec.is_file():
+                        st = (json.loads(rec.read_text()).get("result") or {}).get("status")
+                    s_, _ = res.op(uid)
+                    if s_ != "OK":
+                        bad.append(f"{t}C:{st or 'no-result'}")
+            rows.append([point, draw, r["seed"], code, ";".join(bad) or "fit-stage", fits[f"{point}|{draw}"]["v0"]])
+    with open(a.output, "w", newline="") as fh:
+        w = csv.writer(fh, lineterminator="\n")
+        w.writerow(["point", "draw_index", "seed", "code_star", "failed_decks", "fit0_vref_v"])
+        w.writerows(rows)
+    print(f"{len(rows)} failed draws -> {a.output}")
+
+
+def summarize(a: argparse.Namespace) -> None:
+    """Per point: the pass-only 3-sigma line AND a bounding line with every failed draw filled
+    at the worst passing deviation of its point, so the dropped draws cannot hide upward."""
+    by: dict[str, list[dict]] = {}
+    with open(a.draws_csv, newline="") as fh:
+        for r in csv.DictReader(fh):
+            by.setdefault(r["point"], []).append(r)
+    out = {}
+    for point, rows in by.items():
+        ok = [float(r["max_dev_pct"]) for r in rows if r["verify_status"] == "PASS"]
+        n, npass = len(rows), len(ok)
+        sd = math.sqrt(variance(ok))
+        mean = sum(ok) / npass
+        worst = max(ok)
+        filled = ok + [worst] * (n - npass)
+        out[point] = {"n_draws": n, "n_pass": npass, "n_failed": n - npass,
+                      "mean_max_dev_pct": mean, "three_sigma_pct": 3 * sd,
+                      "mean_plus_3sd_pct": mean + 3 * sd, "worst_pct": worst,
+                      "frac_within_0p5_pct": 100 * sum(x <= 0.5 for x in ok) / npass,
+                      "three_sigma_bound_failed_at_worst_pct": 3 * math.sqrt(variance(filled)),
+                      "mean_code": sum(int(r["code_star"]) for r in rows if r["verify_status"] == "PASS") / npass}
+    Path(a.output).write_text(json.dumps(out, indent=2) + "\n")
+    for p, v in out.items():
+        print(f"{p}: n={v['n_draws']} pass={v['n_pass']} 3sigma={v['three_sigma_pct']:.3f}% "
+              f"bound(failed@worst)={v['three_sigma_bound_failed_at_worst_pct']:.3f}% "
+              f"mean+3sd={v['mean_plus_3sd_pct']:.3f}% worst={v['worst_pct']:.3f}% "
+              f"within0.5={v['frac_within_0p5_pct']:.1f}%")
+
+
 def spec(a: argparse.Namespace) -> None:
     data = json.loads(Path(a.spec).read_text())
     extra = data.get("extra_columns") or {}
@@ -831,6 +894,15 @@ def spec(a: argparse.Namespace) -> None:
     data["extra_columns"] = extra
     data["Corner matrix run"] = data["Corner matrix run"].replace("@@N@@", str(a.n))
     data["Claim"] = data["Claim"].replace("@@N@@", str(a.n))
+    if getattr(a, "rule", None):
+        rule = json.loads(Path(a.rule).read_text())
+        note = (f" RE-AIMED (issue #303): the verify code is code* + round({rule['k0']} + {rule['k1']}*code*), "
+                f"clipped to 0..255 -- DR-0014's zero-cost S2 code-offset rule, refit on the typ-mismatch point "
+                f"of the plain campaign ({rule['n_fit_dies']} dies) and applied unchanged to bcs/wcs (out of sample); "
+                "the fit stage is the plain campaign's, so the dies are identical. The rule's own constants are "
+                "chosen by projection (knob-A shape from the Jacobian record); the verified result is measured.")
+        data["Claim"] += note
+        data["Corner matrix run"] += note
     Path(a.output).write_text(json.dumps(data, indent=2) + "\n")
 
 
@@ -920,6 +992,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--seed", type=int, required=True)
     p.set_defaults(fn=record_attrib)
 
+    p = sub.add_parser("failed-draws")
+    common(p, "work", "artifacts", "draws-csv", "output")
+    p.set_defaults(fn=failed_draws)
+
+    p = sub.add_parser("summary")
+    common(p, "draws-csv", "output")
+    p.set_defaults(fn=summarize)
+
     p = sub.add_parser("rule")
     common(p, "draws-csv", "jacobian-csv")
     p.add_argument("-o", "--output", required=True)
@@ -930,6 +1010,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--msense-w", required=True)
     p.add_argument("--n", type=int, required=True)
     p.add_argument("-o", "--output", required=True)
+    p.add_argument("--rule", help="re-aim rule JSON: states the rule in the record's Claim")
     p.set_defaults(fn=spec)
 
     p = sub.add_parser("check-sanity")
