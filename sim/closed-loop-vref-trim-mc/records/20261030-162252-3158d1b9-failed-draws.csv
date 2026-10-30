@@ -1,0 +1,5 @@
+point,draw_index,seed,code_star,failed_decks,fit0_vref_v
+bcs,55,20260985,122,125C:timeout,7.282685e-01
+bcs,161,20261091,115,125C:timeout,7.371680e-01
+bcs,265,20261195,119,125C:timeout,7.387679e-01
+wcs,184,20261114,114,125C:timeout,7.453561e-01
