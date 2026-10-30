@@ -140,11 +140,11 @@ The binding used here:
   `vss` (needs klayout-tools#2354). That residue is *not* resolved by #240's
   closure; either reopen that work or fix it when the port is next touched.
 
-- **Item 8 (Characterization report) — cited: `measurements/2026-10-characterization-report/envelope.json`**
+- **Item 8 (Characterization report) — cited: `measurements/2026-11-characterization-report/envelope.json`**
   (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
   `README.md` beside it, pinned to that report's sha256). The report is
-  [`measurements/2026-10-characterization-report/README.md`](../measurements/2026-10-characterization-report/README.md),
-  stamped at the audited commit `b89f4c5f`: one entry per row of the
+  [`measurements/2026-11-characterization-report/README.md`](../measurements/2026-11-characterization-report/README.md),
+  stamped at the audited commit `03e62489`: one entry per row of the
   `README.md` target-spec table (the Output-reference row as its nominal,
   untrimmed and trimmed lines), each with bound, verdict, binding corner,
   whether the verdict is statistical, the newest committed `sim/` record
@@ -153,7 +153,7 @@ The binding used here:
   **What an item 8 `met` means here — and what it does not.** It means the
   report exists, is current at the stamped commit and cites its evidence. It
   is **not** a statement that every spec row passes: the report itself
-  records the trimmed ±0.5% line as measured unmet (3σ ≈ 2.6%), the PSRR
+  records the trimmed ±0.5% line as measured unmet (3σ ≈ 2.4%), the PSRR
   row as met by 0.0013 dB, and four records as stale against the
   trim-bearing netlist (`sim/evidence-freshness-waivers.json`). Whether the
   block conforms to its spec is item 5's question, and item 5 stays unmet.
@@ -163,13 +163,13 @@ The binding used here:
   freshness is tested, not assumed). The pin alone would not notice the
   report's *dependencies* moving while its bytes stay put, so since #315 the
   report also carries a machine-readable dependency inventory,
-  [`dependencies.json`](../measurements/2026-10-characterization-report/dependencies.json),
+  [`dependencies.json`](../measurements/2026-11-characterization-report/dependencies.json),
   checked by `.github/scripts/check_report_dependencies.py` (see "Item-8
   dependency drift" below): a change to an audited DUT netlist, a spec-table
   bound, a quoted decision-record status, or a newer record in a summarized
   experiment now fails CI even though the pin still matches (#303 is the
-  change expected to trigger it). The September report
-  (`2026-09-characterization-report/`) is superseded and kept as history; it
+  change expected to trigger it). The September and October reports
+  (`2026-09-characterization-report/`, `2026-10-characterization-report/`) are superseded and kept as history; it
   is not required to track newer inputs.
 
 Items deliberately left **uncited** (they render `unmet` / `no_evidence`,
