@@ -33,7 +33,7 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   DRC/LVS/extraction evidence — including the byte-identical net sets that
   are the direct proof no riser merged into a neighbour — and the one
   four-net short an intermediate draft produced that `klt drc` called clean.
-- `2026-09-characterization-report/` — **superseded by `2026-10-characterization-report/`** (below; kept untouched as history). Issue #15 (T1 checklist item 8): the
+- `2026-09-characterization-report/` — **superseded by `2026-10-characterization-report/`**, itself superseded by `2026-11-characterization-report/` (below; kept untouched as history). Issue #15 (T1 checklist item 8): the
   aggregated per-spec-row characterization report #5's verdict table marked
   missing. One honest verdict per ratified spec row (Output reference
   unmet-and-unsettled per the two-key outcome, re-opened as #221; TC, PSRR
@@ -41,8 +41,8 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   its specific committed `sim/` evidence record — all nine citations
   re-verified most-current at `main`@`77820fc` — with headline numbers
   re-derived from the records' own CSVs.
-- `2026-10-characterization-report/` — issue #300 (T1 checklist item 8): the
-  current aggregated characterization report, replacing the September one.
+- `2026-10-characterization-report/` — **superseded by `2026-11-characterization-report/`** (below; kept untouched as history). Issue #300 (T1 checklist item 8): the
+  aggregated characterization report, replacing the September one.
   One entry per row of the spec table as it stands at the audited commit
   `b89f4c5f` (seven rows; Output reference reported as its nominal,
   untrimmed and trimmed lines), each with bound, verdict, binding corner,
@@ -59,3 +59,16 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   `check_report_dependencies.py` fails when any of them moves, and the
   remedy is a new dated report, not an edit to this one. See
   `manifests/README.md` → "Item-8 dependency drift".
+
+- `2026-11-characterization-report/` — issue #427 (T1 checklist item 8): the
+  current aggregated characterization report, replacing the October one. The
+  October report was superseded when the `klt sim` re-mints of
+  `sim/trim-coverage` (`20261030-061206-03e62489`) and
+  `sim/closed-loop-vref-trim-mc` (`20261030-070305-03e62489`, fleet-run,
+  `klt 0.8.0`) became each experiment's newest record (#422/#425 deferred the
+  re-mint to this report). Stamped at audited commit `03e62489`; the trim
+  range/resolution figures are unchanged and the trimmed +/-0.5% line is
+  still measured unmet (3 sigma about 2.4% vs 2.6% in October). Same shape as
+  the October report: `README.md`, `spotcheck.py`, `envelope.json`
+  (cited by `manifests/sg13g2-bandgap.json` for item 8) and
+  `dependencies.json` (#315).
