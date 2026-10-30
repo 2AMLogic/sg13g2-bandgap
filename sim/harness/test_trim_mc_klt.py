@@ -395,5 +395,55 @@ class SanityGateTests(unittest.TestCase):
             self.run_gate("7.40e-01", "7.14e-01")
 
 
+class AttribTests(unittest.TestCase):
+    DUT = ("XM1 a b c d sg13_hv_pmos w=10u l=1u\nXQ1 a a z z npn13G2 Nx=1\nXMP1 a b c d sg13_hv_pmos\n"
+           "XR1 a b sub! rppd w=2u\nXXTRIM a b sub! bandgap_trim\nXRU12 a b sub rppd w=2u\n"
+           "XMN3 a b c d sg13_hv_nmos\nXMTAIL a b c d sg13_hv_pmos\nXRPU a b c rhigh\n")
+
+    def test_every_variant_names_known_groups(self):
+        v = tm.attrib_variants()
+        self.assertEqual(len(v), len(set(v)))
+        self.assertEqual(len(v), 3 + len(tm.CAMPAIGN_DIAG) + 2 * len(tm.ATTRIB_GROUPS))
+
+    def test_only_and_loo_are_complements(self):
+        for g in tm.ATTRIB_GROUPS:
+            self.assertEqual(tm.groups_on(f"only_{g}") | tm.groups_on(f"loo_{g}"), set(tm.ATTRIB_GROUPS))
+            self.assertEqual(tm.groups_on(f"only_{g}") & tm.groups_on(f"loo_{g}"), set())
+
+    def test_mm_ok_only_on_groups_that_are_off(self):
+        out = tm.apply_mm_ok(self.DUT, {"core_mirror"}).split("\n")
+        self.assertFalse(out[0].endswith("mm_ok=0"))          # XM1: core_mirror, on
+        for i in (1, 2, 3, 5, 6, 7, 8):
+            self.assertTrue(out[i].endswith("mm_ok=0"), out[i])
+        self.assertFalse(out[4].endswith("mm_ok=0"))          # the ladder subckt call
+
+    def test_unassigned_card_fails_loudly(self):
+        with self.assertRaises(SystemExit):
+            tm.apply_mm_ok("XNEW a b c d sg13_hv_pmos\n", set())
+
+    def test_negctrl_deck_has_no_mm_ok_and_none_has_all(self):
+        tmpl = TEMPLATE + self.DUT
+        self.assertNotIn("mm_ok", tm.render_attrib_deck(tmpl, ctx(), "negctrl", 0))
+        none = tm.render_attrib_deck(tmpl, ctx(), "none", 0)
+        self.assertEqual(none.count("mm_ok=0"), 8)
+        self.assertEqual(tm.render_attrib_deck(tmpl, ctx(), "all", 0).count("mm_ok"), 0)
+        self.assertIn("code=128", none)
+        self.assertIn("temp=27", none)
+
+    def test_same_seed_in_every_variant(self):
+        tmpl = TEMPLATE + self.DUT
+        self.assertIn("rndseed=105", tm.render_attrib_deck(tmpl, ctx(), "only_r_core", 5))
+        self.assertIn("rndseed=105", tm.render_attrib_deck(tmpl, ctx(), "loo_r_core", 5))
+
+
+class ReaimTests(unittest.TestCase):
+    def test_rule_shifts_and_clips(self):
+        rule = {"k0": 8.0, "k1": -0.06}
+        self.assertEqual(tm.reaim(130, rule), 130 + round(8.0 - 7.8))
+        self.assertEqual(tm.reaim(255, rule), 255 + round(8.0 - 15.3) if 255 + round(8.0 - 15.3) <= 255 else 255)
+        self.assertEqual(tm.reaim(0, {"k0": -5, "k1": 0}), 0)
+        self.assertEqual(tm.reaim(254, {"k0": 9, "k1": 0}), 255)
+
+
 if __name__ == "__main__":
     unittest.main()
