@@ -14,7 +14,7 @@
 #
 # This is the closed-loop-iq twin of sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh and
 # shares its driver (sim/harness/pex_runner.sh) and host-setup caveats (klt
-# version pin for the runner, KLT_SIM_BATCH_PDK_ROOT='$PDK_ROOT'): the grid runs
+# version pin for the runner): the grid runs
 # as 15 requests (5 processes x 3 supplies) of 3 temperatures each, sharded over
 # the fleet. The DUT is the schematic, carried in the body template.
 #

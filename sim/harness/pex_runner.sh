@@ -14,7 +14,7 @@
 #          that --batch hands the request generator
 # Sourcing validates the CLI mode (positional args pass through), resolves
 # klt / the PDK / the OSDI models, and sets: MODE SCRIPT_DIR SIM_DIR REPO_ROOT
-# HARNESS_DIR EXP_DIR KLT_BIN PDK_ROOT OSDI_DIR BATCH_PDK_ROOT
+# HARNESS_DIR EXP_DIR KLT_BIN PDK_ROOT OSDI_DIR BATCH_PDK_ROOT BATCH_LIB_ROOT
 # BATCH_PROVISION_SCRIPT IDENT_ARGS FIXUP_UNBOUND WORK CORNER_LABELS.
 # Then the runner defines its anchors and a `case "${MODE}"` using the
 # pex_* helpers below. No simulation is launched from here directly.
@@ -69,7 +69,14 @@ fi
 
 # The batch runner image's baked PDK root (2am infra/aws/batch-image-pins.env
 # BAKED_PDK_ROOT) and the provision script `klt` shells out to on this host.
+# BATCH_PDK_ROOT is the runner root for what klt does NOT rewrite: the OSDI
+# paths in the body's `.control` block, and the paths in a returned report.
+# BATCH_LIB_ROOT is the root of the body's selection-form `.lib` cards. klt
+# 0.8.x refuses an absolute runner path there ("not under $PDK_ROOT") and
+# accepts one under the SUBMITTING host's $PDK_ROOT, which it rewrites for the
+# runner -- so it is the local PDK root, never the runner's, and not overridable.
 BATCH_PDK_ROOT="${KLT_SIM_BATCH_PDK_ROOT:-/opt/pdk}"
+BATCH_LIB_ROOT="${PDK_ROOT}"
 BATCH_PROVISION_SCRIPT="${KLT_BATCH_PROVISION_SCRIPT:-${HOME}/GitHub/2am/infra/aws/batch-fleet-provision.sh}"
 
 # Resume safety (#332): a saved report is reused only when its committed
@@ -80,6 +87,7 @@ source "${HARNESS_DIR}/submission_identity.sh"
 KLT_VERSION_DECL="$("${KLT_BIN}" --version 2>&1 | head -1 || true)"
 IDENT_ARGS=(--declare "klt_bin=${KLT_BIN}" --declare "klt_version=${KLT_VERSION_DECL}"
   --declare "pdk=${PDK}" --declare "batch_pdk_root=${BATCH_PDK_ROOT}"
+  --declare "batch_lib_root=submitter-pdk-root"
   --extra "${EXP_DIR}/testbench/${STEM}.request.json.tmpl"
   --extra "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
   --extra "${BATCH_PROVISION_SCRIPT}"
@@ -145,7 +153,7 @@ pex_batch_dispatch() {
   local gen=(python3 "${HARNESS_DIR}/gen_pex_batch_requests.py"
     --request-template "${EXP_DIR}/testbench/${STEM}.request.json.tmpl"
     --body-template "${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"
-    --pdk-root "${BATCH_PDK_ROOT}" --provision-script "${BATCH_PROVISION_SCRIPT}"
+    --lib-root "${BATCH_LIB_ROOT}" --provision-script "${BATCH_PROVISION_SCRIPT}"
     --pdk "${PDK}" --work "${WORK}"
     --osdi "${BATCH_PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi")
   [[ -n "${VDDS[*]-}" ]] && gen+=(--supplies "${VDDS[@]}")

@@ -25,8 +25,10 @@
 #   * the fleet runner ran klt 0.7.0 and refuses a client of another version
 #     (host klt was 0.8.1.dev): KLT_SIM_SUBMIT_KLT=<wrapper running
 #     `uvx --from klayout-tools==0.7.0 klt "$@"`>. The sanity gate keeps the host klt.
-#   * klt >= 0.8 rejects a body `.lib`/OSDI path under an absolute runner root
-#     (/opt/pdk) as "not under $PDK_ROOT": KLT_SIM_BATCH_PDK_ROOT='$PDK_ROOT' (literal).
+#   * klt >= 0.8 rejects a body `.lib` path under an absolute runner root
+#     (/opt/pdk) as "not under $PDK_ROOT"; pex_runner.sh now writes the `.lib`
+#     cards under the submitting host's $PDK_ROOT (BATCH_LIB_ROOT), so no
+#     KLT_SIM_BATCH_PDK_ROOT override is needed (it names the OSDI/runner root).
 #
 # Resumable: a per-variant report that passed AND carries a matching
 # submission identity (#332) is not re-submitted.

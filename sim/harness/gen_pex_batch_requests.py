@@ -38,7 +38,10 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--request-template", required=True)
     ap.add_argument("--body-template", required=True)
-    ap.add_argument("--pdk-root", required=True)
+    ap.add_argument("--lib-root", required=True,
+                    help="PDK root of the body's `.lib` cards: the submitting host's "
+                         "$PDK_ROOT, which klt rewrites for the runner (it refuses an "
+                         "absolute runner path there). OSDI paths are --osdi, unrewritten.")
     ap.add_argument("--provision-script", required=True)
     ap.add_argument("--pdk", required=True)
     ap.add_argument("--work", required=True)
@@ -59,7 +62,7 @@ def main() -> None:
 
     body_tmpl = pathlib.Path(a.body_template)
     base = json.loads(pathlib.Path(a.request_template).read_text())
-    models_dir = f"{a.pdk_root}/{a.pdk}/libs.tech/ngspice/models"
+    models_dir = f"{a.lib_root}/{a.pdk}/libs.tech/ngspice/models"
     out = pathlib.Path(a.work)
 
     for label, (hbt, mos, res) in bundle.CORNER_SECTIONS.items():
@@ -79,7 +82,7 @@ def main() -> None:
             text += f"""
 * Batch mode only (issue #278 per-process bridge): the two families the
 * request's single models.lib (klt 0.5.0 on the runner) cannot reach, as
-* selection-form `.lib` cards against the image's baked PDK root. Same
+* selection-form `.lib` cards under the submitting host's PDK root (klt rewrites them). Same
 * CORNER_SECTIONS entry the request's models.lib selects the HBT family
 * from. {where}{'.' if vdd is not None else ''}
 .lib "{models_dir}/cornerMOShv.lib" {mos}

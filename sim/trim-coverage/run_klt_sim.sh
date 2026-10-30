@@ -25,13 +25,12 @@
 #
 # HOST SETUP, as in sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh: a runner
 # image whose klt differs from the host's needs KLT_SIM_SUBMIT_KLT (a wrapper
-# running `uvx --from klayout-tools==X klt "$@"`), and klt >= 0.8 needs
-# KLT_SIM_BATCH_PDK_ROOT='$PDK_ROOT' (literal) for a body `.lib`/OSDI path under
-# the runner's absolute /opt/pdk. klt 0.8.1.dev604 instead wants the `.lib`
-# paths under the SUBMITTING host's $PDK_ROOT (it rewrites them for the runner):
-# KLT_SIM_BATCH_PDK_ROOT=$PDK_ROOT. The OSDI paths sit in the body's `.control`
-# block, which klt does not rewrite, so they always name the runner image's
-# baked root, KLT_SIM_BATCH_OSDI_ROOT (default /opt/pdk).
+# running `uvx --from klayout-tools==X klt "$@"`). klt >= 0.8 wants the body's
+# `.lib` paths under the SUBMITTING host's $PDK_ROOT (it rewrites them for the
+# runner) -- BATCH_LIB_ROOT, set by pex_runner.sh, no override needed. The OSDI
+# paths sit in the body's `.control` block, which klt does not rewrite, so they
+# always name the runner image's baked root, KLT_SIM_BATCH_OSDI_ROOT (default
+# /opt/pdk).
 #
 # Resumable: a per-request report that passed AND carries a matching submission
 # identity (#332) is not re-submitted.
@@ -74,7 +73,7 @@ tc_sanity() {
   local backend="${KLT_SIM_SANITY_BACKEND:-local}"
   if [[ "${backend}" == batch ]]; then
     # One point on the fleet needs the batch-shaped request (baked PDK root).
-    python3 - "${WORK}" "${BATCH_PDK_ROOT}" "${PDK}" "${BATCH_PROVISION_SCRIPT}" "${BATCH_OSDI_ROOT}" <<'PY'
+    python3 - "${WORK}" "${BATCH_LIB_ROOT}" "${PDK}" "${BATCH_PROVISION_SCRIPT}" "${BATCH_OSDI_ROOT}" <<'PY'
 import json, pathlib, re, sys
 work, root, pdk, prov, osdi_root = (pathlib.Path(sys.argv[1]), *sys.argv[2:6])
 body = (work / "body.spice").read_text()
@@ -132,7 +131,7 @@ tc_batch() {
     --request-template "${EXP_DIR}/testbench/${STEM}.request.json.tmpl" \
     --body-template "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl" \
     --work "${WORK}" --seed-csv "${SEED_CSV}" --msense-w "${MSENSE_W}" \
-    --pdk "${PDK}" --batch-pdk-root "${BATCH_PDK_ROOT}" --batch-osdi-root "${BATCH_OSDI_ROOT}" \
+    --pdk "${PDK}" --batch-pdk-root "${BATCH_LIB_ROOT}" --batch-osdi-root "${BATCH_OSDI_ROOT}" \
     --provision "${BATCH_PROVISION_SCRIPT}"
 
   local sid label vdd temp req rep art body fixed decks codes
