@@ -34,7 +34,12 @@ resizing and the re-aimed trim"). Every attribution run passes its hard gates (p
 negative control and all-groups-off control each exactly zero spread) and each trim run keeps
 the plain-section negative control at exactly zero spread.
 
-## 1. Mismatch contribution (item 1)
+## Decision
+
+The decision is items 1–5 below: the sizing, the re-aimed code rule, and the resulting
+trimmed-3σ statement (0.89–0.94 %), each with its measured basis.
+
+### 1. Mismatch contribution (item 1)
 
 Untrimmed vref at 27 °C, code 128, 3.30 V, typ. Shares are over the sum of the single-group
 variances, which reconciles with the all-mismatch variance (ratio 1.026 as-built, 1.004
@@ -70,7 +75,7 @@ Against the review's claims:
   resized variance, and **sizing cannot reduce it** in this model. That is a property of
   the model, not necessarily of silicon.
 
-## 2. Sizing (item 2)
+### 2. Sizing (item 2)
 
 **Decision**: the four amplifier NMOS mirror devices go from W/L = 10 µm/1 µm to
 **40 µm/4 µm** (`design/bandgap_amp.sch`, regenerated `design/netlist/bandgap_amp.spice` and
@@ -83,7 +88,7 @@ gate-area figure only.
 
 Resized offset σ 5.82 → 2.69 mV and untrimmed vref σ 4.59 → 3.14 %; trimmed 3σ in section 4.
 
-## 3. Re-aimed code rule (item 3)
+### 3. Re-aimed code rule (item 3)
 
 `0014`'s S2 rule: final code = `code* + round(k0 + k1·code*)`, clipped to 0..255, no extra
 hardware and no second insertion. `0014` projected `k0 = 8.0, k1 = −0.06` on the as-built
@@ -95,7 +100,7 @@ core. Refitted on the **resized** core, on the typ-mismatch point of
 
 bcs and wcs are out of sample. Projected typ 3σ 0.886 % vs measured 0.890 %.
 
-## 4. Result: the trimmed line (item 4)
+### 4. Result: the trimmed line (item 4)
 
 Max |vref(T) − vref(27 °C)| over −40/27/125 °C after the 27 °C trim, 3σ in % of vref:
 
@@ -122,7 +127,7 @@ trim does not reach ±0.5 % on this evidence. This is the evidence for revisitin
 ruling (for example a second degree of freedom per `0013`); this record does not do that and
 does not relax any gate.
 
-## 5. Evidence quality (item 5 of the issue's scope)
+### 5. Evidence quality (item 5 of the issue's scope)
 
 - **Axes covered**: supply 3.30 V only; trim at 27 °C, verify at −40/27/125 °C only; process
   typ / bcs / wcs mismatch plus a typ negative control; pre-layout, no parasitics, no
