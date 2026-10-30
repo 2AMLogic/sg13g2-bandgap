@@ -1,11 +1,14 @@
 {
-  "schema_version": 1,
-  "file": "layout/bandgap_amp/bandgap_amp.gds",
+  "schema_version": 2,
+  "file": "bandgap_amp.gds",
   "deck": "sg13g2",
   "dbu_um": 0.001,
   "status": "clean",
   "violation_count": 0,
   "rule_counts": {},
+  "metrics": {
+    "drc__error__count": 0
+  },
   "violations": [],
   "coverage": {
     "deck_layers": [
@@ -41,7 +44,26 @@
       "8/25",
       "14/0",
       "31/0",
+      "44/0",
       "63/0"
+    ],
+    "rules_checked": [
+      "activ.enclosing.cont.1",
+      "activ.space.1",
+      "activ.width.1",
+      "cont.space.1",
+      "cont.width.1",
+      "gatpoly.enclosing.cont.1",
+      "gatpoly.separation.activ.1",
+      "gatpoly.space.1",
+      "gatpoly.width.1",
+      "metal1.enclosing.via1.1",
+      "metal1.space.1",
+      "metal1.width.1",
+      "metal2.space.1",
+      "metal2.width.1",
+      "via1.space.1",
+      "via1.width.1"
     ],
     "rules_skipped": [
       "metal2.enclosing.via2.1",
@@ -72,7 +94,12 @@
       "via4.space.1",
       "via4.width.1"
     ],
-    "voltage_domain_warnings": [],
+    "voltage_domain_warnings": [
+      {
+        "marker": "44/0",
+        "description": "ThickGateOx (44/0) marks sg13g2's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base). EXTRACTION_DECK models it for MOS device recognition/model binding (issue #1231: sg13_hv_nmos/sg13_hv_pmos under --pdk); this curated deck's DRC rules still apply the general-case ('-LV') thresholds to geometry regardless of ThickGateOx's presence (e.g. the Gat.a1/Gat.a2 channel-length-specific GatPoly widths, not transcribed in this deck yet)."
+      }
+    ],
     "deck_scope": [
       "Act",
       "Cnt",
@@ -90,19 +117,155 @@
       "V2",
       "V3",
       "V4"
-    ]
+    ],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "activ.enclosing.cont.1",
+      "activ.space.1",
+      "activ.width.1",
+      "cont.space.1",
+      "cont.width.1",
+      "gatpoly.enclosing.cont.1",
+      "gatpoly.separation.activ.1",
+      "gatpoly.space.1",
+      "gatpoly.width.1",
+      "metal1.enclosing.via1.1",
+      "metal1.space.1",
+      "metal1.width.1",
+      "metal2.space.1",
+      "metal2.width.1",
+      "via1.space.1",
+      "via1.width.1"
+    ],
+    "skipped": [],
+    "inapplicable": [
+      {
+        "id": "metal2.enclosing.via2.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.enclosing.via3.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.enclosing.via4.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal5.enclosing.topvia1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal5.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal5.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal1.enclosing.topvia1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal1.enclosing.topvia2.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal1.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal1.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal2.enclosing.topvia2.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal2.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal2.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topvia1.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topvia1.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topvia2.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topvia2.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via2.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via2.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via3.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via3.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via4.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via4.width.1",
+        "reason": "no_applicable_geometry"
+      }
+    ],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
   },
   "provenance": {
-    "klt_version": "0.3.0",
+    "klt_version": "0.6.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
       "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
-      "released": false
+      "released": true
     },
     "input": {
-      "content_hash": "sha256:e04cfbda7a5d1a9c905b99726538b367827dfa4340794ea3f4393424c0dedb25"
-    }
+      "content_hash": "sha256:af7a8a454a009dcff587492029ec8d0ed484f9f0a21d23ba43aaad3d255ea13d",
+      "role": "layout"
+    },
+    "klayout_version_mismatch": true
   }
 }

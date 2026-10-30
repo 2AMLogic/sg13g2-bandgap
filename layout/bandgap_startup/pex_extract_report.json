@@ -5,7 +5,7 @@
   "top": "bandgap_startup",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_startup.pex.spice",
-  "netlist_sha256": "8e43f9daf84599cbcf848a5000c24ab74bc01e7c380fc880507dad02250cf533",
+  "netlist_sha256": "b9a5fc3a3a87674857ee83bc0ad23139a8ccf8f646fcdd3bf094610b5165c031",
   "status": "extracted",
   "device_count": 3,
   "net_count": 5,
@@ -37,6 +37,11 @@
       "layer": 28,
       "datatype": 0,
       "shapes": 63
+    },
+    {
+      "layer": 44,
+      "datatype": 0,
+      "shapes": 2
     },
     {
       "layer": 111,
@@ -77,7 +82,8 @@
         "ad_um2": 4.0,
         "ps_um": 20.8,
         "pd_um": 20.8
-      }
+      },
+      "instance_path": []
     },
     {
       "name": "$2",
@@ -95,7 +101,8 @@
         "ad_um2": 0.8,
         "ps_um": 4.8,
         "pd_um": 4.8
-      }
+      },
+      "instance_path": []
     },
     {
       "name": "$3",
@@ -111,34 +118,110 @@
         "w_um": 1.0,
         "area_um2": 1411.3,
         "perimeter_um": 2824.6
-      }
+      },
+      "instance_path": []
     }
   ],
   "nets": [
     {
       "name": "DET",
       "pin": true,
-      "device_count": 3
+      "device_count": 3,
+      "net_id": 2,
+      "pin_index": 0,
+      "label_positions_um": [
+        {
+          "text": "DET",
+          "x_um": 0.0,
+          "y_um": 0.5
+        },
+        {
+          "text": "DET",
+          "x_um": 18.4,
+          "y_um": 0.0
+        },
+        {
+          "text": "DET",
+          "x_um": 20.0,
+          "y_um": 0.0
+        },
+        {
+          "text": "DET",
+          "x_um": 44.272,
+          "y_um": 4.75
+        }
+      ]
     },
     {
       "name": "FB",
       "pin": true,
-      "device_count": 1
+      "device_count": 1,
+      "net_id": 5,
+      "pin_index": 1,
+      "label_positions_um": [
+        {
+          "text": "FB",
+          "x_um": 20.0,
+          "y_um": 0.5
+        }
+      ]
     },
     {
       "name": "SNS1",
       "pin": true,
-      "device_count": 1
+      "device_count": 1,
+      "net_id": 1,
+      "pin_index": 2,
+      "label_positions_um": [
+        {
+          "text": "SNS1",
+          "x_um": 0.0,
+          "y_um": 0.0
+        }
+      ]
     },
     {
       "name": "VDD",
       "pin": true,
-      "device_count": 1
+      "device_count": 1,
+      "net_id": 3,
+      "pin_index": 3,
+      "label_positions_um": [
+        {
+          "text": "VDD",
+          "x_um": 0.5,
+          "y_um": 4.75
+        }
+      ]
     },
     {
       "name": "VSS",
       "pin": true,
-      "device_count": 5
+      "device_count": 5,
+      "net_id": 6,
+      "pin_index": 4,
+      "label_positions_um": [
+        {
+          "text": "VSS",
+          "x_um": 0.0,
+          "y_um": -1.07
+        },
+        {
+          "text": "VSS",
+          "x_um": 0.0,
+          "y_um": -0.5
+        },
+        {
+          "text": "VSS",
+          "x_um": 20.0,
+          "y_um": -1.07
+        },
+        {
+          "text": "VSS",
+          "x_um": 20.0,
+          "y_um": -0.5
+        }
+      ]
     }
   ],
   "warnings": [
@@ -155,16 +238,17 @@
   "matched_device_groups": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.3.0",
+    "klt_version": "0.6.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
       "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
-      "released": false
+      "released": true
     },
     "input": {
-      "content_hash": "sha256:e8d576056a1685de8b437099cedf05a1259892e4cee144378cf9467270f84f7c"
+      "content_hash": "sha256:58a41f990f55e057e198c1124e0728602ba1e0b12cf23ae71f5a9fb2f4ea1a7c",
+      "role": "layout"
     }
   },
   "parasitics": {
@@ -179,9 +263,18 @@
     "nets": [
       {
         "net": "DET",
-        "net_id": 4,
+        "net_id": 2,
         "resistance_ohm": 20.5272,
         "capacitance_ff": 5.253342,
+        "by_layer": [
+          {
+            "layer": "metal0",
+            "resistance_ohm": 20.5272,
+            "capacitance_ff": 5.253342
+          }
+        ],
+        "resistance_ohm_top_cell": null,
+        "capacitance_ff_top_cell": null,
         "inductance_nh": 0.0,
         "hub_net": "DET",
         "rc_model": "lumped",
@@ -210,9 +303,18 @@
       },
       {
         "net": "FB",
-        "net_id": 2,
+        "net_id": 5,
         "resistance_ohm": 0.6286,
         "capacitance_ff": 0.21056,
+        "by_layer": [
+          {
+            "layer": "metal0",
+            "resistance_ohm": 0.6286,
+            "capacitance_ff": 0.21056
+          }
+        ],
+        "resistance_ohm_top_cell": null,
+        "capacitance_ff_top_cell": null,
         "inductance_nh": 0.0,
         "hub_net": "FB",
         "rc_model": "lumped",
@@ -229,9 +331,18 @@
       },
       {
         "net": "VDD",
-        "net_id": 5,
+        "net_id": 3,
         "resistance_ohm": 0.308,
         "capacitance_ff": 0.174934,
+        "by_layer": [
+          {
+            "layer": "metal0",
+            "resistance_ohm": 0.308,
+            "capacitance_ff": 0.174934
+          }
+        ],
+        "resistance_ohm_top_cell": null,
+        "capacitance_ff_top_cell": null,
         "inductance_nh": 0.0,
         "hub_net": "VDD",
         "rc_model": "lumped",
@@ -251,27 +362,36 @@
         "net_id": 6,
         "resistance_ohm": 11.5088,
         "capacitance_ff": 2.470295,
+        "by_layer": [
+          {
+            "layer": "metal0",
+            "resistance_ohm": 11.5088,
+            "capacitance_ff": 2.470295
+          }
+        ],
+        "resistance_ohm_top_cell": null,
+        "capacitance_ff_top_cell": null,
         "inductance_nh": 0.0,
         "hub_net": "VSS",
         "rc_model": "lumped",
         "terminals": [
           {
+            "device": "$3",
+            "terminal": "W",
+            "leg_net": "VSS__t0",
+            "resistance_ohm": 3.9281
+          },
+          {
             "device": "$1",
             "terminal": "S",
-            "leg_net": "VSS__t0",
+            "leg_net": "VSS__t1",
             "resistance_ohm": 2.2556
           },
           {
             "device": "$2",
             "terminal": "S",
-            "leg_net": "VSS__t1",
-            "resistance_ohm": 1.5348
-          },
-          {
-            "device": "$3",
-            "terminal": "W",
             "leg_net": "VSS__t2",
-            "resistance_ohm": 3.9281
+            "resistance_ohm": 1.5348
           },
           {
             "device": "$1",
@@ -297,12 +417,15 @@
           "net": "vsubs",
           "device": "Rvsubs_dctie"
         }
-      ]
+      ],
+      "node_scope": "global"
     },
     "metals_without_coefficient": [],
     "overlap_pairs_without_coefficient": [],
     "critical_nets": [],
+    "parasitics_nets": [],
     "distributed_rc": false,
+    "top_cell_only": false,
     "model": {
       "capacitance": "net-to-ground for every net's own (non-coupled) area/perimeter, plus net-to-net for the vertical-overlap coupling `coupling` describes below -- a coupled net pair gets a direct capacitor between their two hub nodes, not just capacitors to the deck's ground/substrate net",
       "coupling": "vertical overlap (crossover) unconditionally -- where one net's conductor on an adjacent metal level sits directly over another *distinct* net's conductor, that overlap area is charged between the two nets instead of to ground (issue #760) -- plus lateral (same-layer, sidewall) coupling, but only for a net pair naming one of the caller's declared `--critical-net` nets (issue #976): facing-edge length within that layer's own minimum-spacing lookback is charged between the two nets, *additively* (not deducted from either net's substrate fringe term, unlike the vertical case -- a known simplification). Any same-layer pair with neither side named `--critical-net`, and fringe shielding in general, are still not modelled",
@@ -312,5 +435,19 @@
     "mom_crosscheck": null,
     "mom_rlc_override": null
   },
-  "spef_path": null
+  "spef_path": null,
+  "subcircuit": null,
+  "metrics": {
+    "extract__device__count": 3,
+    "extract__net__count": 5,
+    "extract__pin__count": 5,
+    "extract__resistor__count": 10,
+    "extract__capacitor__count": 4,
+    "extract__coupling__capacitor__count": 0,
+    "extract__inductor__count": 0,
+    "extract__resistance__ohm": 32.9726,
+    "extract__capacitance__ff": 8.109131,
+    "extract__coupling__capacitance__ff": 0.0,
+    "extract__inductance__nh": 0.0
+  }
 }

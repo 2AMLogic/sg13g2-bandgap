@@ -621,7 +621,7 @@ def _route(
     # (top) and base rail (bottom) are two separate drawn Metal1 shapes with
     # nothing tying them together -- a single vertical strip both joins them
     # and reaches up to M1's drain pad.
-    sns1_x = (q1["collector_pad"][0] + q1["collector_pad"][2]) / 2
+    sns1_x = q1["tie_x"]
     route_v(b, L_METAL1, sns1_x, q1["base_pad"][1], m1["drain_pad"][3], width=TRUNK_W)
 
     # -- vss: Q1/Q2/Q3 emitters -- all already Metal2, all at the same
@@ -641,7 +641,7 @@ def _route(
 
     # -- cb2: R2.end_b, Q2.collector, Q2.base -- Q2's own collector/base tie
     # (mirrors sns1's Q1 tie) plus a riser up to R2's far end.
-    cb2_x = (q2["collector_pad"][0] + q2["collector_pad"][2]) / 2 + 6.0
+    cb2_x = q2["tie_x"]
     _tie_and_riser(b, q2, cb2_x, r2["end_b_pad"], jog_y=_pad_row(r2["end_b_pad"]))
 
     # -- vref: M3A-M3C.drain (tied together, issue #149), R1.end_a --
@@ -685,7 +685,7 @@ def _route(
     # above the array's own topmost pad) rather than across R1's bottom pad
     # row, because the net's other terminal moved from R1's end B to the
     # ladder's far corner.
-    cb3_x = (q3["collector_pad"][0] + q3["collector_pad"][2]) / 2 + 3.0
+    cb3_x = q3["tie_x"]
     _tie_and_riser_over_top(b, q3, cb3_x, trim["node_pad"][TRIM_UNITS], TRIM_CB3_TOP_Y)
 
 

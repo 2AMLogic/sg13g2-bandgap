@@ -53,6 +53,10 @@ L_VIA1 = (19, 0)
 L_METAL2 = (10, 0)
 L_METAL2_LABEL = (10, 1)
 L_NWELL = (31, 0)
+L_THICKGATEOX = (44, 0)
+L_TRANS = (26, 0)
+L_ACTIV_MASK = (1, 20)
+L_NSD_BLOCK = (7, 21)
 L_EMWIND = (33, 0)
 L_POLYRES = (128, 0)
 L_POLYRES_LABEL = (128, 1)
@@ -139,6 +143,10 @@ LAYER_NAMES: dict[tuple[int, int], str] = {
     L_METAL2: "Metal2.drawing",
     L_METAL2_LABEL: "Metal2.label",
     L_NWELL: "NWell.drawing",
+    L_THICKGATEOX: "ThickGateOx.drawing",
+    L_TRANS: "TRANS.drawing",
+    L_ACTIV_MASK: "Activ.mask",
+    L_NSD_BLOCK: "nSD.block",
     L_EMWIND: "EmWind.drawing",
     L_POLYRES: "PolyRes.drawing",
     L_POLYRES_LABEL: "PolyRes.label",
@@ -167,6 +175,7 @@ EMITTER_WE_UM = 0.07
 # footprint, not the pcell's exact multi-layer stackup).
 HBT_MARGIN_X_UM = 3.35
 HBT_HALF_HEIGHT_UM = 3.1
+HBT_RING_TOP_UM = 3.58
 
 
 class Builder(BuilderBase):
@@ -191,6 +200,14 @@ class Builder(BuilderBase):
     def __init__(self, top_cell: str, layout: kdb.Layout | None = None) -> None:
         super().__init__(top_cell, LAYER_NAMES, layout=layout)
 
+    def region(self, layer: tuple[int, int], region: kdb.Region) -> None:
+        self.cell.shapes(self._layers[layer]).insert(region)
+
+    def poly(self, layer: tuple[int, int], pts: list[tuple[float, float]]) -> None:
+        self.cell.shapes(self._layers[layer]).insert(
+            kdb.Polygon([kdb.Point(self._u(x), self._u(y)) for x, y in pts])
+        )
+
     def label(self, layer: tuple[int, int], text: str, x: float, y: float) -> None:
         idx = self._layers[layer]
         # Issue #157: fold to upper-case on the deck's real net-naming
@@ -212,6 +229,7 @@ def draw_npn13g2(
     collector_net: str,
     base_net: str,
     emitter_net: str,
+    substrate_net: str | None = None,
 ) -> dict:
     """Draw a simplified ``npn13G2`` footprint at ``Nx`` emitter multiplicity.
 
@@ -225,11 +243,15 @@ def draw_npn13g2(
     spanning the full stripe row, matching the same PyCell's own
     ``stretchX = stepX*(Nx-1)``-wide rail rectangles.
 
-    This is a *simplified representative* footprint, not a re-implementation
-    of the pcell's full ~15-layer stackup (base poly, STI, nSD block
-    polygon, thermal pseudo-layer, etc. are omitted) -- see
-    ``layout/README.md`` "What this layout is / is not" for the explicit
-    scope of the simplification.
+    Issue #380: the footprint also carries the recognition layers the PDK's
+    own LVS runset derives the device from (``EmWind`` + ``Activ.mask`` +
+    ``nSD.block`` inside a ``TRANS`` marker ringed by ``pSD``/``Activ``), read
+    off the same ``genLayout()``; without them the runset extracts nothing. Not
+    drawn: the pcell's thermal pseudo-layer and pin-purpose shapes. Rule
+    citations: ``layout/README.md`` "LVS -- PDK runset on single-device
+    fixtures". The guard ring is left bare like the pcell's unless
+    ``substrate_net`` is given (then one ``Cont``/``Metal1`` tie, joined to the
+    emitter rail when it is the emitter net).
 
     Each metal terminal is labeled twice: once on ``Metal1.label``/
     ``Metal2.label`` (``(8, 1)``/``(10, 1)``, purely informational -- the
@@ -241,7 +263,8 @@ def draw_npn13g2(
     this was confirmed).
 
     Returns a dict of this device's terminal geometry (each a ``(x0, y0,
-    x1, y1)`` box in microns, plus ``"width"`` in microns), for
+    x1, y1)`` box in microns, plus ``"width"`` in microns and ``"tie_x"``, the
+    x of a vertical Metal1 strap clear of the emitter stripes), for
     ``issue #20``'s routing pass (each cell's own ``generate.py``) to wire
     up against the shared nets the schematic declares -- this drawing
     function itself draws no wiring *between* devices, only the one
@@ -251,45 +274,90 @@ def draw_npn13g2(
     stretch_x = HBT_STEP_X_UM * (nx - 1)
     x_lo = x0 - HBT_MARGIN_X_UM
     x_hi = x0 + stretch_x + HBT_MARGIN_X_UM
-    y_lo = y0 - HBT_HALF_HEIGHT_UM
-    y_hi = y0 + HBT_HALF_HEIGHT_UM
+    y_hi = y0 + HBT_RING_TOP_UM
+    half_x = EMITTER_WE_UM / 2
+    half_y = EMITTER_LE_UM / 2
 
-    # Base diffusion / device outline.
-    b.box(L_ACTIV, x_lo, y_lo, x_hi, y_hi)
+    # Recognition stack read off npn13G2_code.py (default params, Nx stripes
+    # on HBT_STEP_X_UM); each layer's runset rule is cited in layout/README.md.
+    # TRANS marker + the pSD/Activ guard ring around it (npn_mk needs the
+    # marker inside a PWell hole of the p+ ring).
+    trans = kdb.Region(kdb.Box(b._u(x0 - 2.45), b._u(y0 - 2.43), b._u(x0 + stretch_x + 2.45), b._u(y0 + 2.88)))
+    b.region(L_TRANS, trans)
+    b.region(
+        L_PSD,
+        kdb.Region(kdb.Box(b._u(x0 - 3.35), b._u(y0 - 3.33), b._u(x0 + stretch_x + 3.35), b._u(y0 + 3.78))) - trans,
+    )
+    ring_in = kdb.Region(kdb.Box(b._u(x0 - 2.65), b._u(y0 - 2.63), b._u(x0 + stretch_x + 2.65), b._u(y0 + 3.08)))
+    b.region(
+        L_ACTIV,
+        kdb.Region(kdb.Box(b._u(x_lo + 0.2), b._u(y0 - 3.13), b._u(x_hi - 0.2), b._u(y0 + 3.58))) - ring_in,
+    )
 
-    # One EmWind + local Via1 pair per emitter stripe -- the real, per-issue
-    # multi-stripe check (see docstring above).
     for i in range(nx):
         xc = x0 + HBT_STEP_X_UM * i
-        b.box(
-            L_EMWIND,
-            xc - EMITTER_WE_UM / 2,
-            y0 - EMITTER_LE_UM / 2,
-            xc + EMITTER_WE_UM / 2,
-            y0 + EMITTER_LE_UM / 2,
+        # Emitter window, emitter Metal1 and its Via1 columns to Metal2.
+        b.box(L_EMWIND, xc - half_x, y0 - half_y, xc + half_x, y0 + half_y)
+        b.box(L_METAL1, xc - 0.35, y0 - 0.785, xc + 0.35, y0 + 0.77)
+        for k in range(4):
+            for xl in (xc - 0.3, xc + 0.11):
+                b.box(L_VIA1, xl, y0 + 0.10 - 0.41 * k + 0.41, xl + 0.19, y0 + 0.29 - 0.41 * k + 0.41)
+        # Collector strip: Activ + Cont; base: Activ.mask intrinsic region.
+        b.box(L_ACTIV, xc - 0.925, y0 + 0.98, xc + 0.925, y0 + 1.28)
+        b.box(L_CONT, xc - 0.825, y0 + 1.05, xc + 0.825, y0 + 1.21)
+        b.box(L_CONT, xc - 0.76, y0 - 1.22, xc + 0.76, y0 - 1.06)
+        b.poly(
+            L_ACTIV_MASK,
+            [
+                (xc + 0.925, y0 + 0.98), (xc - 0.925, y0 + 0.98), (xc - 0.925, y0 - 0.62),
+                (xc - 0.445, y0 - 0.62), (xc - 0.235, y0 - 0.83), (xc + 0.235, y0 - 0.83),
+                (xc + 0.445, y0 - 0.62), (xc + 0.925, y0 - 0.62),
+            ],
         )
-        # Cont y-extent is 0.18um (>= the deck's cont.width.1 0.16um floor,
-        # see layout/README.md "DRC/LVS verification" -- issue #12 found the
-        # original 0.15um extent 10nm under threshold and widened it here;
-        # only the outer edge moves, growing into the Activ region's own
-        # generous margin rather than encroaching on the EmWind gap below).
-        b.box(L_CONT, xc - 0.15, y0 - EMITTER_LE_UM / 2 - 0.23, xc + 0.15, y0 - EMITTER_LE_UM / 2 - 0.05)
-        b.box(L_CONT, xc - 0.15, y0 + EMITTER_LE_UM / 2 + 0.05, xc + 0.15, y0 + EMITTER_LE_UM / 2 + 0.23)
+        b.poly(
+            L_NSD_BLOCK,
+            [
+                (xc + 0.975, y0 - 2.43), (xc + 0.975, y0 - 0.90), (xc + 0.555, y0 - 0.48),
+                (xc + 0.555, y0 + 0.69), (xc + 0.305, y0 + 0.94), (xc - 0.305, y0 + 0.94),
+                (xc - 0.555, y0 + 0.69), (xc - 0.555, y0 - 0.48), (xc - 0.975, y0 - 0.90),
+                (xc - 0.975, y0 - 2.43),
+            ],
+        )
 
-    # Collector rail (top), base rail (bottom), emitter rail (Metal2, over
-    # the emitter windows) -- one each, spanning the full stripe row, per
-    # the pcell's own single collector-metal / base-metal / Metal2 rects.
-    collector_pad = (x_lo, y_hi - 0.9, x_hi, y_hi - 0.5)
+    # Optional substrate tie on the guard ring (the pcell draws the ring bare,
+    # which is what ``substrate_net=None`` keeps): one Cont + Metal1 pad on the
+    # ring's bottom-left corner named for ``substrate_net``, so the runset's
+    # substrate terminal ``S`` lands on a named net. Off by default because the
+    # curated deck turns a contacted p+ ring into a substrate tie and then loses
+    # the net's name (the cells' ``vss`` stays an ordinary net until they opt in).
+    if substrate_net is not None:
+        sx, sy = x0 - 2.9, y0 - 2.88
+        b.box(L_CONT, sx - 0.08, sy - 0.08, sx + 0.08, sy + 0.08)
+        b.box(L_METAL1, sx - 0.17, sy - 0.17, sx + 0.17, sy + 0.17)
+        b.label(L_METAL1_LABEL, substrate_net, sx, sy)
+        b.label(L_METAL1_TEXT, substrate_net, sx, sy)
+        if substrate_net == emitter_net:
+            # Same net as the emitter rail: join them physically (Via1 up to a
+            # Metal2 riser landing on the emitter Metal2 rail) rather than
+            # leaving two islands that only share a label.
+            b.box(L_VIA1, sx - 0.095, sy - 0.095, sx + 0.095, sy + 0.095)
+            b.box(L_METAL2, sx - 0.15, sy - 0.15, sx + 0.15, y0 + 0.15)
+            b.box(L_METAL2, sx - 0.15, y0 - 0.15, x0 - 0.8, y0 + 0.15)
+
+    # Collector rail (top), base rail (bottom), emitter rail (Metal2) -- one
+    # each, spanning the full stripe row (the pcell's single rects).
+    cm_lo, cm_hi = (1.02, 1.46) if nx > 1 else (1.01, 1.25)
+    collector_pad = (x0 - 0.925, y0 + cm_lo, x0 + stretch_x + 0.925, y0 + cm_hi)
     b.box(L_METAL1, *collector_pad)
-    b.label(L_METAL1_LABEL, f"{collector_net}", x0, y_hi - 0.7)
-    b.label(L_METAL1_TEXT, collector_net, x0, y_hi - 0.7)
+    b.label(L_METAL1_LABEL, f"{collector_net}", x0, y0 + (cm_lo + cm_hi) / 2)
+    b.label(L_METAL1_TEXT, collector_net, x0, y0 + (cm_lo + cm_hi) / 2)
 
-    base_pad = (x_lo, y_lo + 0.5, x_hi, y_lo + 0.9)
+    base_pad = (x0 - 0.975, y0 - 1.26, x0 + stretch_x + 0.975, y0 - 1.02)
     b.box(L_METAL1, *base_pad)
-    b.label(L_METAL1_LABEL, f"{base_net}", x0, y_lo + 0.7)
-    b.label(L_METAL1_TEXT, base_net, x0, y_lo + 0.7)
+    b.label(L_METAL1_LABEL, f"{base_net}", x0, y0 - 1.14)
+    b.label(L_METAL1_TEXT, base_net, x0, y0 - 1.14)
 
-    emitter_pad = (x_lo + 0.3, y0 - EMITTER_LE_UM / 2 - 0.3, x_hi - 0.3, y0 + EMITTER_LE_UM / 2 + 0.3)
+    emitter_pad = (x0 - 0.925, y0 - 0.785, x0 + stretch_x + 0.925, y0 + 0.77)
     b.box(L_METAL2, *emitter_pad)
     b.label(L_METAL2_LABEL, f"{emitter_net}", x0, y0)
     b.label(L_METAL2_TEXT, emitter_net, x0, y0)
@@ -300,6 +368,9 @@ def draw_npn13g2(
         "collector_pad": collector_pad,
         "base_pad": base_pad,
         "emitter_pad": emitter_pad,
+        # x of a 0.3um vertical Metal1 strap, flush with the right end of the
+        # rails and clear of every emitter Metal1 stripe (metal1.space.1).
+        "tie_x": x0 + stretch_x + 0.775,
     }
 
 
@@ -392,6 +463,13 @@ def draw_hv_mos(
     ``NWell`` enclosure drawn for ``flavor='pmos'`` (SG13G2 PMOS is an
     n-well device, same as every PDK in the fleet).
 
+    Issue #380: both flavors carry ``ThickGateOx`` over the device (the PDK
+    runset only extracts ``sg13_hv_*`` from thick-oxide gates) and a PMOS
+    carries ``pSD`` over its active area; an NMOS must *not* sit under
+    ``nSD`` (7/0), which the runset treats as an exclusion marker. Rule
+    citations: ``layout/README.md`` "LVS -- PDK runset on single-device
+    fixtures".
+
     Source/drain terminals are labeled twice (``Metal1.label`` (8,1) for
     the original visual convention, ``Metal1.text`` (8,25) for `klt`'s real
     net-naming layer -- see ``draw_npn13g2``'s docstring for why). The gate
@@ -468,8 +546,10 @@ def draw_hv_mos(
     gate_box = (x_lo - 0.1, y0 - l_um / 2, x_hi + 0.1, y0 + l_um / 2)
     b.box(L_GATPOLY, *gate_box)
     b.label(L_GATPOLY_LABEL, gate_net, x0, y0)
+    b.box(L_THICKGATEOX, x_lo - 0.1, y_lo - 0.1, x_hi + 0.1, y_hi + 0.1)
 
     if flavor == "pmos":
+        b.box(L_PSD, x_lo - 0.1, y_lo - 0.1, x_hi + 0.1, y_hi + 0.1)
         # NWell must enclose the tap ring too (the well-tie derivation
         # requires the tap's own nSD-marked Activ to sit *inside* this same
         # NWell island) -- extended on whichever side the tap landed on,
@@ -482,8 +562,6 @@ def draw_hv_mos(
         else:
             nwell_y_lo = min(nwell_y_lo, tap_y_lo - TAP_NWELL_MARGIN_UM)
         b.box(L_NWELL, x_lo - 0.4, nwell_y_lo, x_hi + 0.4, nwell_y_hi)
-    else:
-        b.box(L_NSD, x_lo - 0.1, y_lo - 0.1, x_hi + 0.1, y_hi + 0.1)
 
     # Source/drain contact + Metal1 pad, one strip each side of the gate.
     # Cont y-extent is 0.18um (>= the deck's cont.width.1 0.16um floor, same
