@@ -162,6 +162,15 @@ does not relax any gate.
 - Costs +600 µm² of amplifier gate area (pre-layout figure) and a rewired netlist/schematic;
   any downstream result that used the as-built amp (PEX, startup, loop stability, box-TC)
   predates the resize and must be re-run before it is cited against this core.
+- **Layout and signoff artifacts are stale against the resized schematic.** This record
+  changes `design/` only. The committed `layout/bandgap_amp/` and `layout/bandgap_top/`
+  GDS, LVS references, DRC/LVS reports and `*.pex.spice` extractions still describe the
+  old `w=10u l=1u` mirror (XMN1–4), so layout and schematic disagree until the mirror is
+  re-laid-out and re-extracted. The PEX netlist-body generator self-test
+  (`sim/tools/test_gen_pex_netlist_body.py`) correctly fails on that disagreement and is
+  not relaxed. The re-layout, re-extraction and refresh of artifacts bound to the old
+  extraction are tracked in #436; the footprint of the 40u/4u mirror is not known until
+  that layout exists.
 - The attribution is of the untrimmed 27 °C level. Which group drives the post-trim *drift*
   is not measured; that is the natural next experiment and is not claimed here.
 - The bipolar 10 % area draw is a PDK-model fact that dominates the floor; whether silicon
