@@ -191,6 +191,75 @@ all default (`20260909`/`300`/`8`) if omitted; re-running with the same
 concurrency over independent single-`.op` `ngspice` processes) — it does
 not affect which draws run or their results.
 
+## Running on the `klt sim` fleet (issue #403, Part of #273)
+
+`run_mc.sh` loops `ngspice -b` and **must not be run as a grid on a dispatch
+host**; it is kept as the point-definition reference. The campaign runs as
+
+```bash
+sim/closed-loop-vref-mc/run_klt_sim.sh --sanity   # seed-parity probe (3 decks, never a grid)
+sim/closed-loop-vref-mc/run_klt_sim.sh --batch    # 6 points x 300 draws = 1800 decks, on the fleet
+KLT_SIM_WORK=<batch dir> sim/closed-loop-vref-mc/run_klt_sim.sh --record
+```
+
+### Seed parity: how per-draw seeding maps to `klt sim`
+
+`run_mc.sh` seeds draw *i* as `.options rndseed = SEED + i` (line 140), written
+at netlist level so it is read before any `agauss()` is evaluated. The mapping
+chosen here is the `decks` transport: each draw is the template rendered
+exactly as `run_mc.sh` renders it, with that line included, and klt ships it
+byte-for-byte (`sim/harness/vref_mc_klt.py prepare`, requests of 100 draws).
+The seeding rule is therefore reproduced by construction, not re-derived:
+
+- Rendering is byte-identical to `run_mc.sh`'s sed pipeline (checked for draws
+  0 and 2 of the nominal point; `.options rndseed=20260909` / `20260911`).
+- `monte_carlo` alone could not express this: it derived each sample's seed by
+  a SHA-256 construction (upstream gap 2AMLogic/klayout-tools#4173, now
+  closed). A `monte_carlo.seed_mode: "sequential"` request (`seed + sample_index`)
+  now exists, but would also need the SG13G2 corner bundle
+  (`sim/harness/klt_corner_bundle.py`) to map the six `_mismatch` sections and
+  the per-point `.nodeset` seeds; the decks transport needs neither and matches
+  the sibling `closed-loop-vref-trim-mc` conversion.
+- Fleet probe (nominal draws 0-2, seeds 20260909-20260911, submitted twice):
+  both submissions returned identical `vref` (1.031189 / 1.087442 /
+  1.039954 V), so the seed pins the draw on the fleet.
+
+**Live verification NOT performed: draw-for-draw equality with the committed
+pre-trim record.** The probe's values differ from that record's draws 0-2
+(1.051133 / 1.020032 / 1.084036 V). The two are not like-for-like: that record
+ran the pre-trim core, whereas the template now carries the 255-unit trim
+ladder, which adds devices to the netlist and so changes which mismatch values
+the same seed assigns to which device; and a same-deck local `ngspice` run is
+impossible on this dispatch host (its ngspice rejects the v0.4 OSDI models).
+So the refresh is a statistically equivalent re-draw, not a replay of the old
+draws; equality of the seed rule, not of the values, is what is established.
+
+### Trim-bearing DUT refresh (issue #403)
+
+**DUT.** Same as the #264 refresh: the template's core is the trim-bearing
+`design/netlist/bandgap_core.spice` with the ladder pinned at code **128**
+(no trim-code axis; the code-swept bench is
+[`../closed-loop-vref-trim-mc/`](../closed-loop-vref-trim-mc/README.md)).
+
+**Result** (record `records/20261104-201955-2a0f04d7.md`, 18 fleet jobs
+listed in the run's `environment.remote`, 6 points x 300 = 1800/1800 draws PASS):
+
+| point | mean vref (V) | 3sigma/mean (%) | within +/-1% | within +/-0.5% |
+|---|---|---|---|---|
+| typ mismatch, 27 C | 1.054644 | 13.54 | 0.153 | 0.070 |
+| typ negative control, 27 C | 1.047278 | 0.00 | 1.000 | 1.000 |
+| bcs mismatch, -40 C | 1.053879 | 12.77 | 0.183 | 0.080 |
+| bcs mismatch, 125 C | 1.048679 | 15.08 | 0.147 | 0.087 |
+| wcs mismatch, -40 C | 1.056207 | 12.54 | 0.177 | 0.090 |
+| wcs mismatch, 125 C | 1.054700 | 14.80 | 0.143 | 0.077 |
+
+The negative control is still exactly zero-spread (`vref` identical at all
+300 draws). The nominal 3-sigma is 13.54%, against the superseded record's
+13.04%: close, as expected for the same summing resistor at code 128, and
+reported as measured, not tuned. No ratified spec row is edited; the
+untrimmed/trimmed line dispositions are #265's. The `#273` freshness waiver for
+the 2026-09-09 record is deleted.
+
 ## Results (this repo's own committed record)
 
 See `records/<record-id>.md` for the full per-point table (mean/sigma/
