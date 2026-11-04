@@ -1,0 +1,7 @@
+corner_label,hbt_section,mos_section,res_section,msense_w,temp_c,vdd_v,status,n_draws,n_pass,mean_vref_v,sigma_vref_v,three_sigma_over_mean_pct,min_vref_v,max_vref_v,frac_within_1pct,frac_within_0p5pct
+typ_mismatch,hbt_typ_mismatch,mos_tt_mismatch,res_typ_mismatch,10u,27,3.30,PASS,3.000000e+02,3.000000e+02,1.054644e+00,4.761100e-02,1.354320e+01,9.305960e-01,1.205586e+00,1.533000e-01,7.000000e-02
+typ_negctrl,hbt_typ,mos_tt,res_typ,10u,27,3.30,PASS,3.000000e+02,3.000000e+02,1.047278e+00,0.000000e+00,0.000000e+00,1.047278e+00,1.047278e+00,1.000000e+00,1.000000e+00
+bcs_mismatch,hbt_bcs_mismatch,mos_ff_mismatch,res_bcs_mismatch,10u,-40,3.30,PASS,3.000000e+02,3.000000e+02,1.053879e+00,4.484900e-02,1.276680e+01,9.444840e-01,1.193420e+00,1.833000e-01,8.000000e-02
+bcs_mismatch,hbt_bcs_mismatch,mos_ff_mismatch,res_bcs_mismatch,10u,125,3.30,PASS,3.000000e+02,3.000000e+02,1.048679e+00,5.271200e-02,1.507960e+01,9.029150e-01,1.217780e+00,1.467000e-01,8.670000e-02
+wcs_mismatch,hbt_wcs_mismatch,mos_ss_mismatch,res_wcs_mismatch,10u,-40,3.30,PASS,3.000000e+02,3.000000e+02,1.056207e+00,4.415100e-02,1.254050e+01,9.478010e-01,1.193327e+00,1.767000e-01,9.000000e-02
+wcs_mismatch,hbt_wcs_mismatch,mos_ss_mismatch,res_wcs_mismatch,10u,125,3.30,PASS,3.000000e+02,3.000000e+02,1.054700e+00,5.202300e-02,1.479740e+01,9.107420e-01,1.221523e+00,1.433000e-01,7.670000e-02

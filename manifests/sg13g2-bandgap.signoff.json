@@ -279,11 +279,11 @@
       "reason": null,
       "graded_by_build": true,
       "citation": {
-        "file": "measurements/2026-11-characterization-report/envelope.json",
+        "file": "measurements/2026-11-04-characterization-report/envelope.json",
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:dae00270e1df8a5cee6f9dc24496cf4ebce24618b0fde02ec151fd12211d20e0",
+        "content_hash": "sha256:5eaa2b18a5545a8f6a57d019323c53313dc5ece7b6b92fd63732e650da369d7a",
         "input_verified": true,
         "exit_status": 0
       }

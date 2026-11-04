@@ -1,0 +1,44 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- record spec for closed-loop-vref-mc on the `klt sim` decks transport (issue #403, Part of #273). Mechanics: sim/harness/klt_sim_evidence.py; argument: this file. `@@N@@` is filled and `msense_w` added by `sim/harness/vref_mc_klt.py spec`. The report handed to the adapter is the campaign's digest shaped as a corner report (one row per point; vref_mc_klt.py assemble); the per-draw rows are the companion records/<id>-draws.csv."
+  ],
+  "Experiment": "closed-loop-vref-mc (issue #215; klt sim decks transport, issue #403)",
+  "Claim": "Through the same co-simulated closed-loop topology sim/closed-loop-vref-pvt and sim/closed-loop-offset use (bandgap_core + bandgap_amp + bandgap_startup, loop NOT broken, real devices throughout), a device-MISMATCH Monte Carlo campaign (T1 tracker #4 checklist item 6): N=@@N@@ draws of vref's DC operating point per point, seeded `.options rndseed = 20260909 + draw_index`, against SG13G2's agauss()-based mismatch corner sections, combined with the process-corner axis (bcs/wcs at -40 and 125 C, 3.30 V) plus a deterministic NEGATIVE CONTROL (same seeds against the plain sections, hard-gated to EXACTLY zero spread). The DUT is the trim-bearing core at trim_code=128 (#264). The per-point fractions within +/-1% / +/-0.5% are against that point's own mean, not a spec row: this is evidence for, not a ruling on, the Output-reference row. A point PASSes when all N draws converge with the loop genuinely closed and not railed.",
+  "Devices": "All real PDK compact models; the trim-bearing bandgap_core (R1 base l=37.2u + XXTRIM ladder pinned at code 128), plus bandgap_amp and bandgap_startup verbatim.",
+  "Netlist provenance": "design/netlist/bandgap_core.spice, bandgap_trim.spice, bandgap_amp.spice and bandgap_startup.spice, carried verbatim into testbench/tb_closed_loop_vref_mc.spice.tmpl (unchanged by the klt conversion; each deck is that template rendered by sim/harness/vref_mc_klt.py with the substitutions run_mc.sh made, byte-identical; the representative deck of each point is re-rendered with host-resolvable PDK paths -- the fleet ran the identical deck against the image's baked PDK root).",
+  "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models baked into the batch runner image (#277).",
+  "Corner matrix run": "6 points {typ mismatch, typ negative control, bcs/wcs mismatch x -40/125 C} x N=@@N@@ seeded draws = one `.op` deck per draw, submitted as `decks` requests of 100 draws -- digested to one row per point",
+  "request": "sim/harness/vref_mc_klt.py deck-list requests (request-mc-<point>-<chunk>.json)",
+  "author": "Loom Builder (agent), issue #403",
+  "pass_requires": [
+    "n_draws",
+    "n_pass",
+    "mean_vref_v"
+  ],
+  "extra_columns": {
+    "hbt_section": {
+      "typ_mismatch": "hbt_typ_mismatch",
+      "typ_negctrl": "hbt_typ",
+      "bcs_mismatch": "hbt_bcs_mismatch",
+      "wcs_mismatch": "hbt_wcs_mismatch"
+    },
+    "mos_section": {
+      "typ_mismatch": "mos_tt_mismatch",
+      "typ_negctrl": "mos_tt",
+      "bcs_mismatch": "mos_ff_mismatch",
+      "wcs_mismatch": "mos_ss_mismatch"
+    },
+    "res_section": {
+      "typ_mismatch": "res_typ_mismatch",
+      "typ_negctrl": "res_typ",
+      "bcs_mismatch": "res_bcs_mismatch",
+      "wcs_mismatch": "res_wcs_mismatch"
+    }
+  },
+  "extra_links": [
+    "Harness decision + batch-fleet status: sim/harness/README.md",
+    "Runner: sim/closed-loop-vref-mc/run_klt_sim.sh",
+    "Per-draw data: records/<id>-draws.csv (sim/harness/vref_mc_klt.py assemble)",
+    "Legacy point definitions: sim/closed-loop-vref-mc/run_mc.sh (reference only)"
+  ]
+}
