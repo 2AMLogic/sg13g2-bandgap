@@ -1,6 +1,5 @@
 ** sch_path: /home/ubuntu/GitHub/sg13g2-bandgap/.loom/worktrees/issue-68/design/sg13cmos5l/bandgap_amp.sch
-**.subckt bandgap_amp in_p in_n vss out vdd
-
+**.subckt bandgap_amp vdd vss in_p in_n out
 *.iopin vdd
 *.iopin vss
 *.iopin in_p
