@@ -91,6 +91,12 @@ echo "run_klt_sim.sh: work dir ${WORK}"
 
 CORNER_LABELS=(typ bcs wcs sf fs)
 
+# Captured at bench generation, never at --record time (extraction_binding.py):
+# generators called by a runner pass "${SOURCES_OUT[@]}".
+EXTRACTION_SOURCES="${WORK}/extraction-sources.json"
+SOURCES_OUT=(--sources-out "${EXTRACTION_SOURCES}")
+[[ "${MODE}" == "--record" ]] && SOURCES_OUT=()
+
 # pex_instantiate_body OSDI_DIR PEX_BODY_REF [KEY=VALUE ...]
 # The body template with @@OSDI_DIR@@, @@PEX_BODY@@ and each @@KEY@@ filled.
 pex_instantiate_body() {
@@ -109,9 +115,15 @@ pex_sanity_local() {
   python3 "${HARNESS_DIR}/klt_corner_bundle.py" -o "${WORK}/sg13g2_corners.lib"
   python3 - "${EXP_DIR}/testbench/${STEM}.request.json.tmpl" "${WORK}/body.spice" \
     "${WORK}/sg13g2_corners.lib" "${WORK}/request.json" "${extra}" <<'PY'
-import json, pathlib, sys
+import json, os, pathlib, sys
 tmpl, body, bundle, out, extra = sys.argv[1:6]
-req = json.loads(pathlib.Path(tmpl).read_text().replace("@@BODY@@", body).replace("@@CORNER_BUNDLE@@", bundle))
+text = pathlib.Path(tmpl).read_text().replace("@@BODY@@", body).replace("@@CORNER_BUNDLE@@", bundle)
+vdd = os.environ.get("PEX_SANITY_VDD")
+if vdd:  # dc-sweep benches whose levels scale with the supply (startup-trip-point-pex)
+    v = float(vdd)
+    text = (text.replace("@@VDD@@", vdd).replace("@@VDD_HALF@@", f"{v / 2:.4f}")
+            .replace("@@VDD_OFF@@", f"{v - 0.05:.4f}"))
+req = json.loads(text)
 req["corners"]["process"] = ["typ"]
 req["corners"].update(json.loads(extra))
 req["corners"]["temperature_c"] = [27]
@@ -185,8 +197,12 @@ pex_batch_dispatch() {
 # per-corner artifact paths are relative to the work dir the batch requests
 # wrote into; the record's outputs go to the (absolute) experiment directory.
 pex_record_mint() {
+  # A PEX record must bind the extraction it consumed (#309): the sources are
+  # captured at bench generation (--sanity/--batch) and only re-verified here.
+  local bind=()
+  [[ -f "${EXTRACTION_SOURCES}" ]] && bind=(--extraction-sources "${EXTRACTION_SOURCES}")
   ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
-      --report "$1" \
+      --report "$1" "${bind[@]}" \
       --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
       --experiment "${EXP_DIR}" )
 }

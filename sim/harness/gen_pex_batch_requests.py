@@ -48,6 +48,10 @@ def main() -> None:
     ap.add_argument("--supply-word", default="supply",
                     help="how the per-supply comment names the supply")
     ap.add_argument("--seed-csv", default=None)
+    ap.add_argument("--pin-supply-rail", default=None,
+                    help="with --supplies: pin corners.supply_v to {RAIL: [vdd]} in each "
+                         "request and substitute @@VDD@@/@@VDD_HALF@@/@@VDD_OFF@@ in it "
+                         "(dc-sweep benches whose levels scale with the supply)")
     a = ap.parse_args()
 
     seeds: dict = {}
@@ -87,9 +91,15 @@ def main() -> None:
 """
             body = out / f"body-{label}{vid}.spice"
             body.write_text(text)
-            req = json.loads(json.dumps(base)
-                             .replace("@@BODY@@", str(body))
-                             .replace("@@CORNER_BUNDLE@@", "UNUSED-BATCH"))
+            req_text = (json.dumps(base).replace("@@BODY@@", str(body))
+                        .replace("@@CORNER_BUNDLE@@", "UNUSED-BATCH"))
+            if a.pin_supply_rail and vdd is not None:
+                req_text = (req_text.replace("@@VDD@@", f"{vdd}")
+                            .replace("@@VDD_HALF@@", f"{vdd / 2:.4f}")
+                            .replace("@@VDD_OFF@@", f"{vdd - 0.05:.4f}"))
+            req = json.loads(req_text)
+            if a.pin_supply_rail and vdd is not None:
+                req["corners"]["supply_v"] = {a.pin_supply_rail: [vdd]}
             req["backend"] = "batch"
             req["models"] = {"pdk": a.pdk, "lib": "libs.tech/ngspice/models/cornerHBT.lib"}
             req["corners"]["process"] = [hbt]

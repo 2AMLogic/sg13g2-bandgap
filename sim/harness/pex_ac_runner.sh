@@ -50,7 +50,7 @@ PY
 
 pex_ac_main() {
   # --- the DUT body (generated, top cell) -----------------------------------
-  python3 "${SIM_DIR}/tools/gen_pex_netlist_body.py" --cell top -o "${WORK}/pex_body.inc"
+  python3 "${SIM_DIR}/tools/gen_pex_netlist_body.py" --cell top "${SOURCES_OUT[@]}" -o "${WORK}/pex_body.inc"
   case "${MODE}" in
   --sanity)
     local FB S1 S2 VR
