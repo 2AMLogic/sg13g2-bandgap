@@ -89,6 +89,26 @@ jobs:
         # closed-loop verdict, ladder-coverage gates. No simulation, no PDK.
         run: python3 sim/harness/test_trim_coverage_klt.py
 
+      - name: closed-loop-vref-mc klt-sim self-test
+        # Issue #403: guards vref_mc_klt.py, the closed-loop-vref-mc fleet path.
+        run: python3 sim/harness/test_vref_mc_klt.py
+
+      - name: trim Monte Carlo klt-sim self-test
+        # Issue #423: guards trim_mc_klt.py.
+        run: python3 sim/harness/test_trim_mc_klt.py
+
+      - name: PEX batch-request generator self-test
+        # Issue #432: guards gen_pex_batch_requests.py (klt 0.8.x .lib-root fix).
+        run: python3 sim/harness/test_gen_pex_batch_requests.py
+
+      - name: Self-test wiring guard self-test
+        # Issue #444: hermetic temp-git-repo cases for the guard below.
+        run: python3 .github/scripts/test_check_selftests_wired.py
+
+      - name: Every tracked self-test is wired
+        # Issue #444: fails if a tracked test_*.py is not run by this workflow.
+        run: python3 .github/scripts/check_selftests_wired.py
+
       - name: Artifact manifests (schema; no stored bytes committed)
         # Accepts only artifact:<key> uris and fails if a stored object's bytes
         # (or the .evidence-scratch/ staging tree) are also tracked. Schema-valid
