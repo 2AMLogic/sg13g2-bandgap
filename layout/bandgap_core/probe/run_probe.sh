@@ -60,7 +60,7 @@ for name, val in re.findall(r"^(v\([\w.$|]+\)|i\(vm\d+\))\s*=\s*([-\d.e+]+)", lo
 # The ammeters are 0 V sources in each leg's source branch, so their
 # readings are the leg's own device current; sum the output leg's three
 # fingers (XM4/XM5/XM6, the extraction's M$4-M$6) the way
-# sim/core-open-loop-bias-pex's run_pvt_sweep.sh does.
+# sim/core-open-loop-bias-pex's run_pvt_sweep.sh (removed in #438) does.
 i_leg3 = abs(v["i(vm4)"] + v["i(vm5)"] + v["i(vm6)"])
 vref, tn0, cb3 = v["v(vref)"], v["v(tn0_merged)"], v["v(cb3)"]
 print(f"vref      = {vref:.6f} V")

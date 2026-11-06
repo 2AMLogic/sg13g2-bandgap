@@ -12,16 +12,15 @@
 > and how CI judges it. Disclosed here rather than silently reconciled, per this
 > repo's convention.
 >
-> **1. The harness is `klt sim`, not `run_pvt_sweep.sh`** (option 1 of the two
+> **1. The harness is `klt sim`, not `run_pvt_sweep.sh`** (removed in #438) (option 1 of the two
 > #275 offered). The dispatch hosts this repo's agents run on forbid
 > hand-looping `ngspice -b` over a corner grid and direct multi-corner work to
 > `klt sim`'s batch backend. The next record here will therefore be minted by
 > `sim/harness/klt_sim_evidence.py` from a `klt sim` report rather than by this
-> directory's `run_pvt_sweep.sh`, and its `- **Harness**:` field will say so.
-> `run_pvt_sweep.sh` stays on disk and stays correct — it is how every record
-> currently in `records/` was produced — but only as the point-definition
-> reference for this bench (the `klt sim` harness and the record-specs cite it),
-> not as an entry point: new runs go through `klt sim` and, per
+> directory's `run_pvt_sweep.sh` (removed in #438), and its `- **Harness**:` field will say so.
+> `run_pvt_sweep.sh` (removed in #438; recoverable from git history) is how every record
+> currently in `records/` was produced; it is no longer an entry point:
+> new runs go through `klt sim` and, per
 > [DR-0015](../../spec/decision-records/0015-sim-evidence-artifact-store.md),
 > store their bytes in the artifact store. Read [`sim/harness/README.md`](../harness/README.md) for the
 > decision, the three pieces of the harness, the one-corner anchor that proves
@@ -114,7 +113,7 @@ Only three things are new here:
 2. The transient `vdd` ramp is replaced by a DC supply carrying the 1 V / 0°
    AC stimulus (so this bench needs no `rshunt`/`gmin`/`reltol` convergence
    aids — there is no near-singular ramp instant to get through).
-3. `run_pvt_sweep.sh` uses the **sibling experiment's own**
+3. `run_pvt_sweep.sh` (removed in #438) uses the **sibling experiment's own**
    `../closed-loop-psrr/tools/psrr_summary.awk` rather than a copy, so the
    two benches' DC/worst-case/interpolated numbers cannot drift apart and
    quietly invalidate the cross-bench comparison below.
@@ -163,10 +162,10 @@ measurement was produced at a verified operating point.
 
 This experiment's grid now runs through the `klt sim` batch harness
 (`sim/harness/README.md`, the #275 decision) instead of the
-`run_pvt_sweep.sh` shell loop; the loop script itself remains for history
-and cold-start reference but is no longer the evidence-producing path on
-the dispatch hosts (their operating rules direct multi-corner work to
-`klt sim`'s batch backend).
+`run_pvt_sweep.sh` shell loop (deleted in #438; recoverable from git
+history). It was not the evidence-producing path on the dispatch hosts
+(their operating rules direct multi-corner work to `klt sim`'s batch
+backend).
 
 ```bash
 sim/closed-loop-psrr-pex/run_klt_sim.sh --sanity   # one local corner, vs the sanity anchor
@@ -233,7 +232,7 @@ Then:
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
 sim/tools/build-osdi.sh
-sim/closed-loop-psrr-pex/run_pvt_sweep.sh
+sim/closed-loop-psrr-pex/run_klt_sim.sh
 ```
 
 Same output layout (`netlist-snapshots/`, `corners/`, `records/`) as every

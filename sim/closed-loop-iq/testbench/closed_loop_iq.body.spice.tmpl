@@ -4,7 +4,7 @@
 * convergence path, so the supply axis cannot ride the request's `alter`
 * channel) and @@MSENSE_W@@ (read from design/netlist/bandgap_startup.spice, same
 * convention as the legacy bench). The DUT half below is carried over verbatim
-* from tb_closed_loop_iq.spice.tmpl (the legacy `run_pvt_sweep.sh` bench, kept as the
+* from tb_closed_loop_iq.spice.tmpl (the legacy `run_pvt_sweep.sh` (removed in #438; see git history) bench, kept as the
 * point-definition reference): trim-bearing bandgap_core at trim_code=128,
 * bandgap_amp, bandgap_startup, wired as design/bandgap_top.sch. It is the same
 * DUT, fixture and solver options as sim/closed-loop-vref-pvt-boxtc's body;

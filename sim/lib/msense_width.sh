@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Shared MSENSE-width extraction, sourced (not executed) by any experiment
 # script that needs the live XMSENSE transistor's w= value from a startup
-# netlist -- currently sim/closed-loop-iq/run_pvt_sweep.sh,
-# sim/closed-loop-psrr/run_pvt_sweep.sh,
+# netlist -- currently sim/closed-loop-iq/run_pvt_sweep.sh (removed in #438; likewise closed-loop-psrr and closed-loop-startup below),
+# sim/closed-loop-psrr/run_pvt_sweep.sh (removed in #438),
 # sim/closed-loop-vref-pvt/run_pvt_sweep.sh,
-# sim/closed-loop-startup/run_pvt_sweep.sh,
+# sim/closed-loop-startup/run_pvt_sweep.sh (removed in #438),
 # sim/loop-gain-phase-margin/run_pvt_sweep.sh,
 # sim/startup-core-handover/run_pvt_sweep.sh,
 # sim/closed-loop-offset/run_offset_check.sh and

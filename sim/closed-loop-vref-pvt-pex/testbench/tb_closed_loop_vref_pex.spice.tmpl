@@ -1,7 +1,7 @@
 * sg13g2-bandgap -- closed-loop vref/TC PEX (post-layout) PVT testbench
 * (issue #186, T1 tracker #4 item 7). Generated from
 * sim/closed-loop-vref-pvt-pex/testbench/tb_closed_loop_vref_pex.spice.tmpl
-* by sim/closed-loop-vref-pvt-pex/run_pvt_sweep.sh -- do not edit a
+* by sim/closed-loop-vref-pvt-pex/run_pvt_sweep.sh (removed in #438; see git history) -- do not edit a
 * generated netlist-snapshots/*.spice file directly, edit this template and
 * re-run the sweep. Full rationale is in
 * sim/closed-loop-vref-pvt-pex/README.md; this header is a pointer, not a
@@ -297,7 +297,7 @@ meas tran v_sns2_v find v(sns2) at=3m
 meas tran v_det_v find v(det) at=3m
 meas tran i_mkfb_v find i(Vmkfb) at=3m
 * The claim under test: vref at two separated time points, so
-* run_pvt_sweep.sh can confirm it has stopped moving before reporting it.
+* run_pvt_sweep.sh (removed in #438; see git history) can confirm it has stopped moving before reporting it.
 meas tran v_vref_2ms find v(vref) at=2m
 meas tran v_vref_3ms find v(vref) at=3m
 * VBE(Q3) (decision-support parity with sim/closed-loop-vref-pvt's own

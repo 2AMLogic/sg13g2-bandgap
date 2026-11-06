@@ -2,7 +2,7 @@
 * co-simulated closed-loop quiescent supply current (Iq) testbench (issue
 * #95, follow-on to #86/#88). Generated from
 * sim/closed-loop-iq/testbench/tb_closed_loop_iq.spice.tmpl
-* by sim/closed-loop-iq/run_pvt_sweep.sh -- do not edit a generated
+* by sim/closed-loop-iq/run_pvt_sweep.sh (removed in #438; see git history) -- do not edit a generated
 * netlist-snapshots/*.spice file directly, edit this template and re-run
 * the sweep. Full rationale is in sim/closed-loop-iq/README.md.
 *
@@ -27,7 +27,7 @@
 * sim/closed-loop-startup's 2 ms) and i(Vvdd) -- the fixture ammeter every
 * testbench in this tree already has, since Vvdd is the supply source
 * itself -- is measured at BOTH t=2ms and t=3ms plus averaged over
-* [2ms,3ms], so run_pvt_sweep.sh can confirm the current has genuinely
+* [2ms,3ms], so run_pvt_sweep.sh (removed in #438; see git history) can confirm the current has genuinely
 * stopped moving before reporting it as this experiment's headline number.
 
 * DUT REFRESH (issue #264) -- the core DUT below is the TRIM-BEARING
@@ -447,11 +447,11 @@ meas tran v_det_v find v(det) at=3m
 meas tran i_mkfb_v find i(Vmkfb) at=3m
 * The claim under test: total vdd supply current at two separated time
 * points, plus its average over the same [2ms,3ms] window, so
-* run_pvt_sweep.sh can confirm it has stopped moving (a real settled
+* run_pvt_sweep.sh (removed in #438; see git history) can confirm it has stopped moving (a real settled
 * quiescent value, not a still-slewing snapshot) before reporting it. Vvdd
 * is an independent voltage source, so ngspice's passive sign convention
 * reports i(Vvdd) negative while the source is delivering (not absorbing)
-* current to the circuit -- run_pvt_sweep.sh takes the absolute value.
+* current to the circuit -- run_pvt_sweep.sh (removed in #438; see git history) takes the absolute value.
 meas tran i_vdd_2ms find i(Vvdd) at=2m
 meas tran i_vdd_3ms find i(Vvdd) at=3m
 meas tran i_vdd_avg avg i(Vvdd) from=2m to=3m

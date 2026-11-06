@@ -167,7 +167,7 @@ harder numerical problem, not a symptom of a wiring bug (every one of the
 originally-failing corners converges cleanly, with results consistent with
 its neighbors, once given the aid).
 
-`run_pvt_sweep.sh`'s own measurement-extraction step is also hardened
+`run_pvt_sweep.sh` (removed in #438)'s own measurement-extraction step is also hardened
 against this failure mode (`|| true` on each `grep`, since `set -euo pipefail`
 would otherwise abort the *entire* 45-point sweep — losing every other
 point's evidence — the first time a single corner's `.measure` lines fail to
@@ -240,8 +240,7 @@ job ids in the report's `environment.remote`; a partial grid is refused by the
 shard merger and cannot be recorded. The DUT is the schematic, carried in
 `testbench/*.body.spice.tmpl`; the request, record spec and the verdict pass
 (`sim/harness/enrich_supply_bench_report.py`) are alongside. On a dispatch
-host a multi-corner grid must go through `--batch`: `run_pvt_sweep.sh` is kept
-as the point-definition reference only and must not be run as a grid there.
+host a multi-corner grid must go through `--batch`: `run_pvt_sweep.sh` (removed in #438) was deleted in #438 (recoverable from git history); there is no local grid runner.
 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.

@@ -96,7 +96,7 @@ The §4b scratch scan had one non-converged grid point (`wcs`/0 °C) and
 argued from its two flanking points that it could not exceed the box
 bounded by the other 7 — plausible, but an argument from a scratch re-run,
 not committed data. This experiment's policy, applied automatically by
-`run_pvt_sweep.sh`:
+`run_pvt_sweep.sh` (removed in #438):
 
 - Every group's `n_pass`/`n_grid` in `-boxtc.csv` discloses exactly which
   groups a failed point shrank; the record's `**Failed points**` field
@@ -187,8 +187,7 @@ is a finding to record and investigate, not to tune away.
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
 sim/tools/build-osdi.sh              # one-time: build the OSDI models
-sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh          # sequential (default)
-JOBS=8 sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh   # bounded parallel
+sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh
 ```
 
 `JOBS=N` (default 1) runs the 120 independent per-point `ngspice` batch

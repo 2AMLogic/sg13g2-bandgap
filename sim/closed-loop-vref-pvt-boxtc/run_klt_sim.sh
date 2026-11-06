@@ -13,7 +13,7 @@
 # (klayout-tools#2668 single-models.lib; the PWL ramp is the convergence path
 # so the supply cannot ride `alter`). The DUT is the schematic, carried
 # verbatim in the body template, so there is no extraction and no generated
-# body. The old run_pvt_sweep.sh is kept as the point-definition reference
+# body. The old run_pvt_sweep.sh (removed in #438; see git history) is kept as the point-definition reference
 # only: it must not be run as a grid on a dispatch host.
 #
 # SANITY GATE. One local typ/27C/3.30V corner must land on the committed

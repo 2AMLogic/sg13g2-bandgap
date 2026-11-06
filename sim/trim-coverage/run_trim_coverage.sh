@@ -92,7 +92,7 @@ lookup_seeds() {
   SNS2_SEED="$(lookup_seed "${corner}" "${temp}" "${vdd}" sns2_final_v)"
   VREF_SEED="$(lookup_seed "${corner}" "${temp}" "${vdd}" vref_final_v)"
   if [[ -z "${FB_SEED}" || -z "${SNS1_SEED}" || -z "${SNS2_SEED}" || -z "${VREF_SEED}" ]]; then
-    echo "run_trim_coverage.sh: no PASS seed row for ${corner}/${temp}C/${vdd}V in ${SEED_CSV} -- run sim/closed-loop-startup/run_pvt_sweep.sh first." >&2
+    echo "run_trim_coverage.sh: no PASS seed row for ${corner}/${temp}C/${vdd}V in ${SEED_CSV} -- run sim/closed-loop-startup/run_klt_sim.sh first." >&2
     exit 3
   fi
 }
