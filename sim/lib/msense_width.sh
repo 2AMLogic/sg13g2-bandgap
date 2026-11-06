@@ -8,7 +8,8 @@
 # sim/loop-gain-phase-margin/run_pvt_sweep.sh,
 # sim/startup-core-handover/run_pvt_sweep.sh,
 # sim/closed-loop-offset/run_offset_check.sh and
-# sim/sg13cmos5l-closed-loop-startup/run_pvt_sweep.sh (the only one of the
+# sim/sg13cmos5l-closed-loop-startup/run_pvt_sweep.sh (removed in #443, recoverable
+# from git history; the only one of the
 # eight reading design/sg13cmos5l/netlist/bandgap_startup.spice instead of
 # design/netlist/bandgap_startup.spice). Extracted in issue #105 because this
 # 5-line grep/parse block was duplicated byte-for-byte across all eight --

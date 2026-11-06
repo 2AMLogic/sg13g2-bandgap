@@ -66,7 +66,7 @@ stays open): (1) provisioning of the pinned CMOS5L subtree, a compatible
 SG13G2 sibling and compiled models on the permitted batch backend (the
 fleet's batch image pin currently lists SG13G2 only, as observed
 2026-10-12; no local-grid exception applies); (2) conversion of the four
-CMOS5L experiments from their legacy `run_pvt_sweep.sh` loops to the
+CMOS5L experiments from their legacy `run_pvt_sweep.sh` loops (since removed, issue #443) to the
 `sim/harness/` batch harness; (3) confirming the startup PEX deck/extraction
 binding at the new pin. Then the four experiments are re-run as new
 append-only evidence and compared with the old results. A record's own `## PDK`
@@ -150,7 +150,8 @@ sim/
   are corner-swept from `cornerPNP.lib` instead of `cornerHBT.lib`, with
   section names `typ`/`bcs`/`wcs` (no `hbt_` prefix, and — like
   `cornerHBT.lib` — no skewed `sf`/`fs`-equivalent section, so every
-  `sim/sg13cmos5l-*/run_pvt_sweep.sh` falls those two grid points back to
+  `CORNER_SECTIONS` in `sim/harness/cmos5l_klt.py` (formerly the removed
+  `sim/sg13cmos5l-*/run_pvt_sweep.sh`) falls those two grid points back to
   `typ` the same way SG13G2's shared `HBT_SECTION_OF` map already does; see
   `sim/pdk-sg13cmos5l.json` `"bipolar_device_note"`). Every other device
   family's corner-lib section vocabulary (`cornerMOShv.lib`, `cornerRES.lib`,

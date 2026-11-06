@@ -28,11 +28,15 @@ modules. It owns four things, each of which the SG13G2 harness cannot lend:
    symlinks into the sibling `ihp-sg13g2/` checkout (sim/pdk-sg13cmos5l.json
    "relationship_to_ihp_sg13g2"), so those two columns are the SG13G2 ones;
    the first column is CMOS5L's own. The mapping is not trusted by assertion:
-   :func:`check_legacy_mapping` re-derives it from the legacy scripts that
-   produced every committed record (`PNP_SECTION_OF` in each
-   `run_pvt_sweep.sh`, `MOS_SECTION_OF`/`RES_SECTION_OF` in
-   `sim/lib/pvt_preflight.sh`) and :func:`check_pdk_sections` checks every
-   section name exists in the installed `*.lib` files.
+   :func:`check_legacy_mapping` re-derives the MOS/resistor columns from
+   `MOS_SECTION_OF`/`RES_SECTION_OF` in `sim/lib/pvt_preflight.sh`, and
+   :func:`check_pdk_sections` checks every section name exists in the
+   installed `*.lib` files. The PNP column's provenance is the legacy
+   `PNP_SECTION_OF` map in three of the four SG13CMOS5L `run_pvt_sweep.sh` scripts that
+   produced every committed record; those scripts were removed in issue #443
+   and are recoverable from git history (last commit containing them:
+   356d92bd, `git show 356d92bd:sim/sg13cmos5l-core-open-loop-bias/run_pvt_sweep.sh`).
+   The column is guarded by `test_pnp_map_is_cmos5l_not_hbt`.
 
 2. **Request / body instantiation** (`prepare`): one local sanity request, or
    the batch shard set with per-shard bodies and a manifest the runner loops.
@@ -97,9 +101,10 @@ CMOS5L_LIBS = ("cornerPNP.lib", "cornerMOShv.lib", "cornerRES.lib")
 
 #: This repo's corner label -> (pnpMPA section in cornerPNP.lib, MOS-hv
 #: section in cornerMOShv.lib, resistor section in cornerRES.lib). See the
-#: module docstring for provenance. sf/fs fall back to the typ pnpMPA section
+#: module docstring for provenance (PNP column: the legacy `PNP_SECTION_OF` map,
+#: last present in commit 356d92bd). sf/fs fall back to the typ pnpMPA section
 #: because cornerPNP.lib has no skewed section (the same shape as SG13G2's
-#: cornerHBT.lib), exactly as the legacy `PNP_SECTION_OF` maps do.
+#: cornerHBT.lib), exactly as the legacy `PNP_SECTION_OF` maps did.
 CORNER_SECTIONS: dict[str, tuple[str, str, str]] = {
     "typ": ("typ", "mos_tt", "res_typ"),
     "bcs": ("bcs", "mos_ff", "res_bcs"),
@@ -110,14 +115,6 @@ CORNER_SECTIONS: dict[str, tuple[str, str, str]] = {
 
 #: Section triple column -> the record-spec `extra_columns` name.
 EXTRA_COLUMN_NAMES = ("pnp_section", "mos_section", "res_section")
-
-#: The legacy sweeps that define a PNP map (the experiments that instantiate
-#: pnpMPA). Startup-trip-point has none: it contains no bipolar device.
-LEGACY_PNP_SCRIPTS = (
-    "sg13cmos5l-core-open-loop-bias/run_pvt_sweep.sh",
-    "sg13cmos5l-closed-loop-startup/run_pvt_sweep.sh",
-    "sg13cmos5l-closed-loop-startup-pex/run_pvt_sweep.sh",
-)
 
 
 # --------------------------------------------------------------------------
@@ -141,8 +138,8 @@ def parse_shell_map(text: str, name: str) -> dict[str, str]:
 
 
 def check_legacy_mapping(sim_dir: Path = SIM_DIR) -> list[str]:
-    """Problems (empty = consistent) between :data:`CORNER_SECTIONS` and the
-    legacy scripts that generated every committed SG13CMOS5L record."""
+    """Problems (empty = consistent) between the MOS/resistor columns of
+    :data:`CORNER_SECTIONS` and `sim/lib/pvt_preflight.sh`."""
     problems: list[str] = []
     pre = (sim_dir / "lib" / "pvt_preflight.sh").read_text(encoding="utf-8")
     mos = parse_shell_map(pre, "MOS_SECTION_OF")
@@ -158,12 +155,6 @@ def check_legacy_mapping(sim_dir: Path = SIM_DIR) -> list[str]:
             problems.append(f"{label}: MOS section {m!r} != pvt_preflight.sh {mos.get(label)!r}")
         if res.get(label) != r:
             problems.append(f"{label}: RES section {r!r} != pvt_preflight.sh {res.get(label)!r}")
-    expected_pnp = {label: t[0] for label, t in CORNER_SECTIONS.items()}
-    for rel in LEGACY_PNP_SCRIPTS:
-        text = (sim_dir / rel).read_text(encoding="utf-8")
-        legacy = parse_shell_map(text, "PNP_SECTION_OF")
-        if legacy != expected_pnp:
-            problems.append(f"{rel}: PNP_SECTION_OF {legacy} != CORNER_SECTIONS {expected_pnp}")
     return problems
 
 
