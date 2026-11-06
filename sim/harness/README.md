@@ -240,7 +240,7 @@ Two notes on that table, because they are the reason the disposition is safe
 rather than merely convenient:
 
 - **The box-TC evidence is already formed from 6-s.f. `.meas` values.**
-  `closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh` reads each point's settled
+  `closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh` (removed in #438; see git history) read each point's settled
   `vref` through `extract_measure '^v_vref_3ms'` — a `.measure` line — so its
   per-point record carries `vref_3ms_v` at 6 s.f. (`1.04758e+00`), and
   `box_tc` is computed from those values. Reproducing the committed `typ`/2.97

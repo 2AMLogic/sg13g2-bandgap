@@ -2,7 +2,7 @@
 * co-simulated closed-loop box-method TC testbench (issue #222, follow-on
 * to #86/#134). Generated from
 * sim/closed-loop-vref-pvt-boxtc/testbench/tb_closed_loop_vref_boxtc.spice.tmpl
-* by sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh -- do not edit a
+* by sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh (removed in #438; see git history) -- do not edit a
 * generated netlist-snapshots/*.spice file directly, edit this template and
 * re-run the sweep. Full rationale is in
 * sim/closed-loop-vref-pvt-boxtc/README.md.
@@ -464,7 +464,7 @@ meas tran v_sns2_v find v(sns2) at=3m
 meas tran v_det_v find v(det) at=3m
 meas tran i_mkfb_v find i(Vmkfb) at=3m
 * The claim under test: vref at two separated time points, so
-* run_pvt_sweep.sh can confirm it has stopped moving (a real DC value, not
+* run_pvt_sweep.sh (removed in #438; see git history) can confirm it has stopped moving (a real DC value, not
 * a still-slewing snapshot) before reporting it.
 meas tran v_vref_2ms find v(vref) at=2m
 meas tran v_vref_3ms find v(vref) at=3m
@@ -474,7 +474,7 @@ meas tran v_vref_3ms find v(vref) at=3m
 * directly -- no subtraction needed. design/bandgap_core.sch's own header
 * derives R1 from an ASSUMED VBE(Q3)~=0.75V that was never simulated; this
 * measures the real value at the same two time points as vref above, so
-* run_pvt_sweep.sh can confirm it too has settled before reporting it.
+* run_pvt_sweep.sh (removed in #438; see git history) can confirm it too has settled before reporting it.
 meas tran v_vbeq3_2ms find v(cb3) at=2m
 meas tran v_vbeq3_3ms find v(cb3) at=3m
 .endc

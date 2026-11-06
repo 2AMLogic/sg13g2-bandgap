@@ -403,9 +403,10 @@ Two harnesses exist in this tree, but only one is an entry point:
 
 - **`sim/<exp>/run_pvt_sweep.sh`** — the original: a serial bash loop invoking
   `ngspice -b` once per PVT point. Every record minted before the `klt sim`
-  harness was minted this way. It is kept as the readable point-definition
-  reference for each bench (the `klt sim` harness parses some of these scripts
-  and the record-specs cite them) and is **not** an entry point for new runs.
+  harness was minted this way. The scripts for the SG13G2 experiments that have a `run_klt_sim.sh` twin
+  were deleted in #438 (recoverable from git history); the scripts that remain
+  are the point-definition reference for benches with no twin yet and are
+  **not** an entry point for new runs.
 - **`klt sim` + `sim/harness/klt_sim_evidence.py`** — the entry point for every
   new run (decision record
   [0015](../spec/decision-records/0015-sim-evidence-artifact-store.md): the

@@ -131,7 +131,7 @@ render_netlist() {
   sns2_seed="$(lookup_seed "${corner}" "${temp}" "${VDD}" sns2_final_v)"
   vref_seed="$(lookup_seed "${corner}" "${temp}" "${VDD}" vref_final_v)"
   if [[ -z "${fb_seed}" || -z "${sns1_seed}" || -z "${sns2_seed}" || -z "${vref_seed}" ]]; then
-    echo "run_trim_mc.sh: no PASS seed row for ${corner}/${temp}C/${VDD}V in ${SEED_CSV} -- run sim/closed-loop-startup/run_pvt_sweep.sh first." >&2
+    echo "run_trim_mc.sh: no PASS seed row for ${corner}/${temp}C/${VDD}V in ${SEED_CSV} -- run sim/closed-loop-startup/run_klt_sim.sh first." >&2
     exit 3
   fi
 
