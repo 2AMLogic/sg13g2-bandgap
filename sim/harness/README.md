@@ -158,7 +158,7 @@ this section is the disclosure and the arithmetic behind that disposition.
 Both paths, same host, same corner (typ / 27 °C / 3.30 V), same engine
 (ngspice 46):
 
-| quantity | `core-open-loop-bias/run_pvt_sweep.sh` (`.op` print) | `klt sim` (`.meas`) | resolution lost |
+| quantity | legacy `core-open-loop-bias/run_pvt_sweep.sh` (`.op` print; SG13CMOS5L twin removed in #443, recoverable from git history) | `klt sim` (`.meas`) | resolution lost |
 |---|---|---|---|
 | `vref_v` | `1.052707e+00` | `1.05271e+00` | 10 µV |
 | `r1_ohm` | `6.605704e+04` | `6.60571e+04` | 0.1 Ω |
@@ -211,7 +211,7 @@ The exact value is `2.0001/3.0001 = 0.666677777…`. So:
   printed.
 - It **is** the `.meas` card, which is the only measurement form `klt sim`'s
   request schema can express — there is no `print`/`wrdata`/rawfile extraction
-  form. `core-open-loop-bias/run_pvt_sweep.sh` gets seven figures because it
+  form. legacy `core-open-loop-bias/run_pvt_sweep.sh` (SG13CMOS5L twin removed in #443, recoverable from git history) got seven figures because it
   scrapes the `.op` print block (`grep -E '^v\(vref\)' | awk '{print $3}'`),
   and its derived columns are recomputed in `awk` at `%.6e` from those.
 
@@ -478,7 +478,7 @@ a change, use a new work dir. Tests (`test_harness_transformers.py`,
 The four `sim/sg13cmos5l-*` experiments (core-open-loop-bias,
 startup-trip-point, closed-loop-startup, closed-loop-startup-pex) have
 `run_klt_sim.sh`, a request template, a bench body and a record spec each,
-converted from their legacy `run_pvt_sweep.sh` loops with the same grids and
+converted from their legacy `run_pvt_sweep.sh` loops (removed in #443, recoverable from git history) with the same grids and
 measurements. The SG13CMOS5L-specific parts live in
 [`cmos5l_klt.py`](cmos5l_klt.py) (corner mapping, request/body
 instantiation, shard merge with an explicit expected grid, the legacy

@@ -105,21 +105,16 @@ class MappingTests(TempDirCase):
             {k: v[1:] for k, v in kcb.CORNER_SECTIONS.items()},
         )
 
-    def test_drift_from_a_legacy_script_is_caught(self) -> None:
+    def test_drift_from_pvt_preflight_is_caught(self) -> None:
         sim = self.tmp / "sim"
         (sim / "lib").mkdir(parents=True)
-        (sim / "lib" / "pvt_preflight.sh").write_text(
-            (SIM_DIR / "lib" / "pvt_preflight.sh").read_text(encoding="utf-8"), encoding="utf-8")
-        for rel in ck.LEGACY_PNP_SCRIPTS:
-            text = (SIM_DIR / rel).read_text(encoding="utf-8")
-            if rel.startswith("sg13cmos5l-closed-loop-startup/"):
-                text = text.replace("[sf]=typ", "[sf]=bcs")
-            path = sim / rel
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(text, encoding="utf-8")
+        text = (SIM_DIR / "lib" / "pvt_preflight.sh").read_text(encoding="utf-8")
+        drifted = text.replace("[bcs]=mos_ff", "[bcs]=mos_ss")
+        self.assertNotEqual(drifted, text)
+        (sim / "lib" / "pvt_preflight.sh").write_text(drifted, encoding="utf-8")
         problems = ck.check_legacy_mapping(sim)
         self.assertEqual(len(problems), 1)
-        self.assertIn("closed-loop-startup/run_pvt_sweep.sh", problems[0])
+        self.assertIn("bcs: MOS section", problems[0])
 
     def fake_models(self, drop: str | None = None) -> Path:
         models = self.tmp / "models"
