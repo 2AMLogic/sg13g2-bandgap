@@ -8,11 +8,11 @@
     },
     "2": {
       "file": "layout/bandgap_top/drc_report.json",
-      "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930"
+      "content_hash": "sha256:3e32887b8d2230bb96fb94bc06a7c4f78ce604e1e45a8465f22ceb57feeffdc4"
     },
     "3": {
       "file": "layout/bandgap_top/drc_report.json",
-      "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930"
+      "content_hash": "sha256:3e32887b8d2230bb96fb94bc06a7c4f78ce604e1e45a8465f22ceb57feeffdc4"
     },
     "4": "layout/bandgap_top/lvs_report.runset.json",
     "8": {

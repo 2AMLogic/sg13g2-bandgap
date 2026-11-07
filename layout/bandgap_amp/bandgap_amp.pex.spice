@@ -4,6 +4,7 @@
 * - coupling: vertical overlap (crossover) unconditionally -- where one net's conductor on an adjacent metal level sits directly over another *distinct* net's conductor, that overlap area is charged between the two nets instead of to ground (issue #760) -- plus lateral (same-layer, sidewall) coupling, but only for a net pair naming one of the caller's declared `--critical-net` nets (issue #976): facing-edge length within that layer's own minimum-spacing lookback is charged between the two nets, *additively* (not deducted from either net's substrate fringe term, unlike the vertical case -- a known simplification). Any same-layer pair with neither side named `--critical-net`, and fringe shielding in general, are still not modelled
 * - resistance: single lumped series resistance per net, distributed as a star across that net's device terminals (issue #592) -- not a per-segment, distributed RC ladder, *unless* `--distributed-rc` names this net via `--critical-net` (issue #977, Epic #709 Phase 2b): then the net's terminals are ordered along their approximate physical spread and its total R/C is broken into a chain of per-segment resistors (segment length proportional to inter-terminal distance) with a ground capacitor at each terminal node (proportional to its adjacent segment length/2), instead of one star hub -- still an approximation (terminal position is a device-placement proxy, not true per-segment routing geometry), but a strictly finer-grained one than the single-hub star
 * - frequency: quasi-static -- one frequency-independent R and C per net; no skin effect, no distributed transmission-line behavior
+.GLOBAL vsubs
 
 * cell bandgap_amp
 * pin D1
@@ -31,12 +32,12 @@ M$5 TAIL__t0 IN_P__t0 D1__t2 VDD__t0 pfet L=1U W=20U AS=8P AD=8P PS=40.8U
 M$6 TAIL__t1 IN_N__t0 D2__t0 VDD__t7 pfet L=1U W=20U AS=8P AD=8P PS=40.8U
 + PD=40.8U
 * device instance $7 r0 *1 80,30 pfet
-M$7 VDD__t1 OUT__t0 TAIL__t2 VDD__t2 pfet L=1U W=10U AS=4P AD=4P PS=20.8U
+M$7 VDD__t2 OUT__t0 TAIL__t2 VDD__t1 pfet L=1U W=10U AS=4P AD=4P PS=20.8U
 + PD=20.8U
 * device instance $8 r0 *1 110,30 pfet
-M$8 VDD__t6 PN__t2 PN__t0 VDD__t4 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$8 VDD__t4 PN__t2 PN__t0 VDD__t6 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $9 r0 *1 140,30 pfet
-M$9 VDD__t5 PN__t1 OUT__t1 VDD__t3 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$9 VDD__t3 PN__t1 OUT__t1 VDD__t5 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance D1_t0 r0 *1 0,0 
 RD1_t0 D1__t0 D1 22.251200155
 * device instance D1_t1 r0 *1 0,0 
