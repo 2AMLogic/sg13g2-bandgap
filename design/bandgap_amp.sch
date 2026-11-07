@@ -73,11 +73,11 @@ v {xschem version=3.4.8RC file_version=1.3
 *           not to "tail", so the source-bulk junction (bulk=vdd,
 *           source=tail <= vdd) stays reverse-biased by construction.
 *   MN1/MN2 sg13_hv_nmos diode-connected loads on each input-pair drain
-*           (d1, d2 respectively) -- w=10u l=1u, matched to each other so
+*           (d1, d2 respectively) -- w=40u l=4u (issue #303: was 10u/1u; same W/L, 16x the area), matched to each other so
 *           d1/d2 sit at the same voltage and the input pair sees no
 *           systematic Vds imbalance (the same symmetry argument
 *           sky130-bandgap's original placeholder amp header makes).
-*   MN3     sg13_hv_nmos, gate=d1 (mirrors MN1 1:1, w=10u l=1u), drain=out.
+*   MN3     sg13_hv_nmos, gate=d1 (mirrors MN1 1:1, w=40u l=4u), drain=out.
 *           Sinks I(MP1) out of the output node directly.
 *   MN4/MP3/MP4
 *           sg13_hv_nmos MN4 (gate=d2, mirrors MN2 1:1) pulls down an
@@ -168,7 +168,7 @@ N 1620 0 1640 0 {}
 C {lab_pin.sym} 1640 0 0 0 {name=l19 lab=vdd}
 N 1620 30 1640 50 {}
 C {lab_pin.sym} 1640 50 0 0 {name=l20 lab=out}
-C {sg13g2_pr/sg13_hv_nmos.sym} 0 400 0 0 {name=MN1 model=sg13_hv_nmos w=10u l=1u ng=1 m=1}
+C {sg13g2_pr/sg13_hv_nmos.sym} 0 400 0 0 {name=MN1 model=sg13_hv_nmos w=40u l=4u ng=1 m=1}
 N 20 370 40 350 {}
 C {lab_pin.sym} 40 350 0 0 {name=l21 lab=d1}
 N -20 400 -40 400 {}
@@ -177,7 +177,7 @@ N 20 400 40 400 {}
 C {lab_pin.sym} 40 400 0 0 {name=l23 lab=vss}
 N 20 430 40 450 {}
 C {lab_pin.sym} 40 450 0 0 {name=l24 lab=vss}
-C {sg13g2_pr/sg13_hv_nmos.sym} 400 400 0 0 {name=MN2 model=sg13_hv_nmos w=10u l=1u ng=1 m=1}
+C {sg13g2_pr/sg13_hv_nmos.sym} 400 400 0 0 {name=MN2 model=sg13_hv_nmos w=40u l=4u ng=1 m=1}
 N 420 370 440 350 {}
 C {lab_pin.sym} 440 350 0 0 {name=l25 lab=d2}
 N 380 400 360 400 {}
@@ -186,7 +186,7 @@ N 420 400 440 400 {}
 C {lab_pin.sym} 440 400 0 0 {name=l27 lab=vss}
 N 420 430 440 450 {}
 C {lab_pin.sym} 440 450 0 0 {name=l28 lab=vss}
-C {sg13g2_pr/sg13_hv_nmos.sym} 800 400 0 0 {name=MN3 model=sg13_hv_nmos w=10u l=1u ng=1 m=1}
+C {sg13g2_pr/sg13_hv_nmos.sym} 800 400 0 0 {name=MN3 model=sg13_hv_nmos w=40u l=4u ng=1 m=1}
 N 820 370 840 350 {}
 C {lab_pin.sym} 840 350 0 0 {name=l29 lab=out}
 N 780 400 760 400 {}
@@ -195,7 +195,7 @@ N 820 400 840 400 {}
 C {lab_pin.sym} 840 400 0 0 {name=l31 lab=vss}
 N 820 430 840 450 {}
 C {lab_pin.sym} 840 450 0 0 {name=l32 lab=vss}
-C {sg13g2_pr/sg13_hv_nmos.sym} 1200 400 0 0 {name=MN4 model=sg13_hv_nmos w=10u l=1u ng=1 m=1}
+C {sg13g2_pr/sg13_hv_nmos.sym} 1200 400 0 0 {name=MN4 model=sg13_hv_nmos w=40u l=4u ng=1 m=1}
 N 1220 370 1240 350 {}
 C {lab_pin.sym} 1240 350 0 0 {name=l33 lab=pn}
 N 1180 400 1160 400 {}

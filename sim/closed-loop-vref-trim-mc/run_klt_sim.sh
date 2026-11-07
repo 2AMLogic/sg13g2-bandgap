@@ -18,6 +18,15 @@
 #   4. assemble the per-draw CSV, digest and negative-control gate; a failed or
 #      timed-out deck is a verify-FAIL row, a unit that never came back refuses
 #      the whole record (a partial draw set is never recorded).
+# KLT_SIM_CAMPAIGN selects the campaign (default `trim`, the above):
+#   attrib  -- the controlled mismatch decomposition of the UNTRIMMED 27 C vref (issue #303):
+#              17 variants x N draws x 1 deck (a group's mismatch off via mm_ok=0), one stage;
+#              `--record` writes records/<id>.{md,csv} + <id>-draws.csv. KLT_SIM_LABEL names the
+#              core in the record (as-built | resized).
+#   trim    -- the trim-domain campaign (fit, code*, verify, assemble).
+#   reaim   -- trim with the DR-0014 code-offset rule applied to code* (issue #303):
+#              KLT_SIM_REAIM_RULE=<rule.json from `trim_mc_klt.py rule`>, KLT_SIM_FIT_FROM=<the
+#              plain campaign's work dir>, whose fit stage is reused (same dies, same fit decks).
 # The old run_trim_mc.sh loops `ngspice -b` and is kept as the point-definition
 # reference only: it must not be run as a grid on a dispatch host.
 #
@@ -74,7 +83,7 @@ tm_prepare() {
     --local-pdk-root "${PDK_ROOT}" --local-osdi-dir "${OSDI_DIR}" \
     --batch-pdk-root "${BATCH_PDK_ROOT}" --batch-osdi-dir "${BATCH_OSDI_DIR}" \
     --provision "${BATCH_PROVISION_SCRIPT}" --capacity-wait-s "${CAPACITY_WAIT_S}" \
-    --seed "${SEED}" --n "${N}" "$@"
+    --seed "${SEED}" --n "${N}" ${KLT_SIM_VARIANTS:+--variants "${KLT_SIM_VARIANTS}"} "$@"
 }
 
 tm_sanity() {
@@ -114,7 +123,64 @@ if rep.get("refused_codes") or bad:
 PY
 }
 
+tm_attrib() {
+  echo "run_klt_sim.sh: sanity gate before dispatch"
+  tm_sanity
+  tm_prepare attrib
+  tm_stage attrib
+  python3 "${TM_PY}" assemble-attrib --work "${WORK}" --artifacts "${WORK}/artifacts-attrib" \
+    --seed "${SEED}" --n "${N}" --job-log "${WORK}/klt-stderr.log" \
+    --draws-out "${WORK}/attrib-draws.csv" --report-out "${WORK}/attrib-report.json"
+  echo "                 mint evidence with: KLT_SIM_CAMPAIGN=attrib KLT_SIM_WORK=${WORK} run_klt_sim.sh --record"
+}
+
+tm_attrib_record() {
+  local rid
+  rid="$(date -u +%Y%m%d-%H%M%S)-$(git -C "${REPO_ROOT}" rev-parse --short HEAD)-attrib"
+  python3 "${TM_PY}" record-attrib --report "${WORK}/attrib-report.json" --template "${TEMPLATE}" \
+    --records-dir "${EXP_DIR}/records" --record-id "${rid}" --label "${KLT_SIM_LABEL:-as-built}" \
+    --template-rel "sim/closed-loop-vref-trim-mc/testbench/$(basename "${TEMPLATE}")" \
+    --dut-sha "${DUT_SHA}" --seed "${SEED}" --timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  cp "${WORK}/attrib-draws.csv" "${EXP_DIR}/records/${rid}-draws.csv"
+  echo "run_klt_sim.sh: per-draw data -> records/${rid}-draws.csv"
+}
+
+# tm_reaim: the trim campaign with DR-0014's code-offset rule applied to code*. The fit stage
+# is REUSED from the plain campaign (KLT_SIM_FIT_FROM: same dies, same fit decks, same fit
+# artifacts), so the only difference between the two records is the verify code.
+tm_reaim() {
+  : "${KLT_SIM_FIT_FROM:?KLT_SIM_FIT_FROM=<plain campaign work dir> is required}"
+  : "${KLT_SIM_REAIM_RULE:?KLT_SIM_REAIM_RULE=<rule.json> is required}"
+  [[ -d "${KLT_SIM_FIT_FROM}/artifacts-fit" ]] || { echo "run_klt_sim.sh: no fit stage in ${KLT_SIM_FIT_FROM}" >&2; exit 3; }
+  echo "run_klt_sim.sh: sanity gate before dispatch"
+  tm_sanity
+  [[ -e "${WORK}/artifacts-fit" ]] || ln -s "${KLT_SIM_FIT_FROM}/artifacts-fit" "${WORK}/artifacts-fit"
+  cp "${KLT_SIM_FIT_FROM}/manifest-fit.json" "${WORK}/manifest-fit.json"
+  cp "${KLT_SIM_REAIM_RULE}" "${WORK}/rule.json"
+  python3 "${TM_PY}" codes --work "${WORK}" --artifacts "${WORK}/artifacts-fit" --n "${N}" --rule "${WORK}/rule.json"
+  tm_prepare verify --codes "${WORK}/codes.json"
+  tm_stage verify
+  python3 "${TM_PY}" assemble --work "${WORK}" --artifacts "${WORK}/artifacts-verify" \
+    --fit-artifacts "${WORK}/artifacts-fit" --template "${TEMPLATE}" --seed-csv "${SEED_CSV}" \
+    --msense-w "${MSENSE_W}" --dut-sha "${DUT_SHA}" --pdk "${PDK}" \
+    --local-pdk-root "${PDK_ROOT}" --local-osdi-dir "${OSDI_DIR}" \
+    --seed "${SEED}" --n "${N}" --klt-version "${KLT_VERSION_DECL}" --job-log "${WORK}/klt-stderr.log" \
+    --draws-out "${WORK}/draws.csv" --report-out "${WORK}/report-assembled.json"
+  echo "run_klt_sim.sh: assembled report at ${WORK}/report-assembled.json"
+  echo "                 mint evidence with: KLT_SIM_WORK=${WORK} KLT_SIM_N=${N} run_klt_sim.sh --record"
+}
+
 tm_batch() {
+  if [[ "${KLT_SIM_CAMPAIGN:-trim}" == reaim ]]; then
+    [[ -x "${BATCH_PROVISION_SCRIPT}" ]] || { echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2; exit 3; }
+    tm_reaim
+    return
+  fi
+  if [[ "${KLT_SIM_CAMPAIGN:-trim}" == attrib ]]; then
+    [[ -x "${BATCH_PROVISION_SCRIPT}" ]] || { echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2; exit 3; }
+    tm_attrib
+    return
+  fi
   if [[ ! -x "${BATCH_PROVISION_SCRIPT}" ]]; then
     echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2
     echo "             (KLT_BATCH_PROVISION_SCRIPT) -- see klt sim docs, 'Batch backend'." >&2
@@ -140,10 +206,12 @@ tm_batch() {
 }
 
 tm_record() {
+  if [[ "${KLT_SIM_CAMPAIGN:-trim}" == attrib ]]; then tm_attrib_record; return; fi
   local rid
   rid="$(date -u +%Y%m%d-%H%M%S)-$(git -C "${REPO_ROOT}" rev-parse --short HEAD)"
   python3 "${TM_PY}" spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
-    --msense-w "${MSENSE_W}" --n "${N}" -o "${WORK}/record-spec.json"
+    --msense-w "${MSENSE_W}" --n "${N}" -o "${WORK}/record-spec.json" \
+    ${KLT_SIM_REAIM_RULE:+--rule "${KLT_SIM_REAIM_RULE}"}
   # The adapter exits 1 when a point is graded FAIL (the 3-sigma claim gate fails at the
   # mismatch points, as in the committed #229 record): the record is still minted.
   ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
