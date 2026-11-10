@@ -6,12 +6,11 @@
 #   sim/closed-loop-vref-mc/run_klt_sim.sh --batch    # 6 points x N draws, on the fleet
 #   sim/closed-loop-vref-mc/run_klt_sim.sh --record   # mint evidence (KLT_SIM_WORK=<batch dir>)
 #
-# KLT_SIM_N (default 300) and KLT_SIM_SEED (default 20260909, run_mc.sh's) size the
-# campaign. Each draw is the template run_mc.sh rendered (testbench/*.spice.tmpl,
+# KLT_SIM_N (default 300) and KLT_SIM_SEED (default 20260909, the removed run_mc.sh's) size the
+# campaign. Each draw is the template the removed run_mc.sh rendered (testbench/*.spice.tmpl,
 # unchanged), `.options rndseed = SEED + draw_index` included, shipped byte-for-byte
-# by klt's `decks` requests; sim/harness/vref_mc_klt.py owns the rest, with run_mc.sh's
-# parse rules. The old run_mc.sh loops `ngspice -b` and is kept as the point-definition
-# reference only: it must not be run as a grid on a dispatch host.
+# by klt's `decks` requests; sim/harness/vref_mc_klt.py owns the rest, with the removed
+# run_mc.sh's parse rules. That script looped `ngspice -b`; it was removed after 1e3baf2f; see git history.
 #
 # --sanity is the AC1 seed-parity probe (a few decks, never a grid): KLT_SIM_PROBE
 # (default 3) nominal draws, backend KLT_SIM_SANITY_BACKEND (default batch), compared

@@ -21,8 +21,8 @@ everything else.
                           for sim/harness/klt_sim_evidence.py;
 * `spec`                  fills the record spec's `msense_w`.
 
-Every parse rule is a line-for-line port of run_trim_mc.sh (kept as the
-point-definition reference; it must not be run as a grid on a dispatch host).
+Every parse rule is a line-for-line port of run_trim_mc.sh (the legacy
+script, removed after 1e3baf2f; see git history).
 A deck that failed or timed out becomes a FAIL row, as in the script; a unit
 that never came back at all (no result tree) refuses the whole record: a
 partial draw set is never recorded. No simulator is launched from here.
