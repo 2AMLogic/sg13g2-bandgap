@@ -134,12 +134,12 @@ instead commits, per `<record-id>`:
   netlist/log files of its own.
 
 No per-draw `ngspice` log or per-draw netlist is committed anywhere; the
-scratch working directory `run_mc.sh` generates them in is deleted on exit
+scratch working directory the removed `run_mc.sh` generated them in is deleted on exit
 (`mktemp -d` + `trap ... EXIT`), whether the run succeeds or fails.
 
 ## Negative control (hard gate, not just reported)
 
-`run_mc.sh` computes the negative control's `vref` min/max **before**
+The removed `run_mc.sh` computed the negative control's `vref` min/max **before**
 writing the record, and `exit 1`s with a loud, explicit error — rather than
 writing a record — if that spread is not *exactly* zero (bit-identical
 across every draw). The same rndseed sequence that produces a real,
@@ -172,29 +172,12 @@ strict convention.
 
 ## Running
 
-```bash
-export PDK_ROOT=/path/to/ihp-open-pdk
-export PDK=ihp-sg13g2
-sim/tools/build-osdi.sh                                          # one-time
-sim/closed-loop-vref-mc/run_mc.sh --seed 20260909 --n 300 --parallel 8
-```
-
-Requires a committed `../closed-loop-startup/records/*.csv` to exist (see
-"Method" above) — already true in this repo; no separate
-`closed-loop-startup` run is required first. `--seed`/`--n`/`--parallel`
-all default (`20260909`/`300`/`8`) if omitted; re-running with the same
-`--seed`/`--n` reproduces `records/<record-id>-draws.csv` bit-for-bit
-(confirmed: the digest and per-draw CSVs are pure functions of the seeded
-`ngspice` draws, the live `design/netlist/*.spice` DUTs and the pinned PDK
-— only `<record-id>`'s own timestamp/git-sha prefix differs run to run).
-`--parallel` only affects wall-clock time (bounded `xargs -P`/`-n2`
-concurrency over independent single-`.op` `ngspice` processes) — it does
-not affect which draws run or their results.
+The legacy `run_mc.sh` (a hand-launched `ngspice -b` loop) was removed after 1e3baf2f; see git history. The campaign runs
+through `klt sim`; see the next section.
 
 ## Running on the `klt sim` fleet (issue #403, Part of #273)
 
-`run_mc.sh` loops `ngspice -b` and **must not be run as a grid on a dispatch
-host**; it is kept as the point-definition reference. The campaign runs as
+The legacy `run_mc.sh` was removed after 1e3baf2f; see git history. The campaign runs as
 
 ```bash
 sim/closed-loop-vref-mc/run_klt_sim.sh --sanity   # seed-parity probe (3 decks, never a grid)
@@ -204,14 +187,14 @@ KLT_SIM_WORK=<batch dir> sim/closed-loop-vref-mc/run_klt_sim.sh --record
 
 ### Seed parity: how per-draw seeding maps to `klt sim`
 
-`run_mc.sh` seeds draw *i* as `.options rndseed = SEED + i` (line 140), written
+`run_mc.sh` seeded draw *i* as `.options rndseed = SEED + i` (line 140), written
 at netlist level so it is read before any `agauss()` is evaluated. The mapping
 chosen here is the `decks` transport: each draw is the template rendered
-exactly as `run_mc.sh` renders it, with that line included, and klt ships it
+exactly as `run_mc.sh` rendered it, with that line included, and klt ships it
 byte-for-byte (`sim/harness/vref_mc_klt.py prepare`, requests of 100 draws).
 The seeding rule is therefore reproduced by construction, not re-derived:
 
-- Rendering is byte-identical to `run_mc.sh`'s sed pipeline (checked for draws
+- Rendering is byte-identical to the removed `run_mc.sh`'s sed pipeline (checked for draws
   0 and 2 of the nominal point; `.options rndseed=20260909` / `20260911`).
 - `monte_carlo` alone could not express this: it derived each sample's seed by
   a SHA-256 construction (upstream gap 2AMLogic/klayout-tools#4173, now

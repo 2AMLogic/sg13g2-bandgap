@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """`klt sim` decks plumbing for sim/closed-loop-vref-mc (issue #403, Part of #273).
 
+The legacy run_mc.sh named below was removed after 1e3baf2f; see git history.
 The untrimmed-vref mismatch Monte Carlo is 6 points x N seeded `.op` draws.
 Each draw is a pre-composed deck (the template run_mc.sh rendered, with
 `.options rndseed = SEED + draw_index` written at parse time), shipped

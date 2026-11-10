@@ -263,8 +263,8 @@ then). Still unconverted (every experiment without `run_klt_sim.sh`):
 (all `run_pvt_sweep.sh` writers), plus six that use other runners and are
 equally unable to mint new records: `closed-loop-offset`
 (`run_offset_check.sh`), `closed-loop-vref-boxtc-pretrim-aidsfree`
-(`run_one_point.sh`), `closed-loop-vref-mc` (`run_mc.sh`),
-`closed-loop-vref-trim-mc` (`run_trim_mc.sh`), `trim-coverage`
+(`run_one_point.sh`), `closed-loop-vref-mc` (`run_mc.sh`, removed after 1e3baf2f; see git history),
+`closed-loop-vref-trim-mc` (`run_trim_mc.sh`, removed after 1e3baf2f; see git history), `trim-coverage`
 (`run_trim_coverage.sh`), `trim-knob-jacobian` (`run_knob_jacobian.sh`).
 
 The writer **fails closed**: with `$KLT_ARTIFACT_BROKER` unset, `klt`
