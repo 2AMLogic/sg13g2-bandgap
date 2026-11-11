@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 8,
+  "summary": "aggregated characterization report for all seven spec-table rows (Output reference as nominal/untrimmed/trimmed lines) at audited commit 2a0f04d7: each row carries bound, verdict, binding corner, statistical flag, newest committed record and a current-or-predates-the-netlist freshness mark; every quoted number spot-checked against its committed CSV; pass attests report completeness and citation honesty, not that every row meets its bound",
+  "source": "README.md",
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:5eaa2b18a5545a8f6a57d019323c53313dc5ece7b6b92fd63732e650da369d7a",
+      "path": "README.md"
+    }
+  }
+}

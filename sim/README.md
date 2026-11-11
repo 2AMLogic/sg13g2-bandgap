@@ -66,7 +66,7 @@ stays open): (1) provisioning of the pinned CMOS5L subtree, a compatible
 SG13G2 sibling and compiled models on the permitted batch backend (the
 fleet's batch image pin currently lists SG13G2 only, as observed
 2026-10-12; no local-grid exception applies); (2) conversion of the four
-CMOS5L experiments from their legacy `run_pvt_sweep.sh` loops to the
+CMOS5L experiments from their legacy `run_pvt_sweep.sh` loops (since removed, issue #443) to the
 `sim/harness/` batch harness; (3) confirming the startup PEX deck/extraction
 binding at the new pin. Then the four experiments are re-run as new
 append-only evidence and compared with the old results. A record's own `## PDK`
@@ -150,7 +150,8 @@ sim/
   are corner-swept from `cornerPNP.lib` instead of `cornerHBT.lib`, with
   section names `typ`/`bcs`/`wcs` (no `hbt_` prefix, and — like
   `cornerHBT.lib` — no skewed `sf`/`fs`-equivalent section, so every
-  `sim/sg13cmos5l-*/run_pvt_sweep.sh` falls those two grid points back to
+  `CORNER_SECTIONS` in `sim/harness/cmos5l_klt.py` (formerly the removed
+  `sim/sg13cmos5l-*/run_pvt_sweep.sh`) falls those two grid points back to
   `typ` the same way SG13G2's shared `HBT_SECTION_OF` map already does; see
   `sim/pdk-sg13cmos5l.json` `"bipolar_device_note"`). Every other device
   family's corner-lib section vocabulary (`cornerMOShv.lib`, `cornerRES.lib`,
@@ -262,8 +263,8 @@ then). Still unconverted (every experiment without `run_klt_sim.sh`):
 (all `run_pvt_sweep.sh` writers), plus six that use other runners and are
 equally unable to mint new records: `closed-loop-offset`
 (`run_offset_check.sh`), `closed-loop-vref-boxtc-pretrim-aidsfree`
-(`run_one_point.sh`), `closed-loop-vref-mc` (`run_mc.sh`),
-`closed-loop-vref-trim-mc` (`run_trim_mc.sh`), `trim-coverage`
+(`run_one_point.sh`), `closed-loop-vref-mc` (`run_mc.sh`, removed after 1e3baf2f; see git history),
+`closed-loop-vref-trim-mc` (`run_trim_mc.sh`, removed after 1e3baf2f; see git history), `trim-coverage`
 (`run_trim_coverage.sh`), `trim-knob-jacobian` (`run_knob_jacobian.sh`).
 
 The writer **fails closed**: with `$KLT_ARTIFACT_BROKER` unset, `klt`
@@ -403,9 +404,10 @@ Two harnesses exist in this tree, but only one is an entry point:
 
 - **`sim/<exp>/run_pvt_sweep.sh`** — the original: a serial bash loop invoking
   `ngspice -b` once per PVT point. Every record minted before the `klt sim`
-  harness was minted this way. It is kept as the readable point-definition
-  reference for each bench (the `klt sim` harness parses some of these scripts
-  and the record-specs cite them) and is **not** an entry point for new runs.
+  harness was minted this way. The scripts for the SG13G2 experiments that have a `run_klt_sim.sh` twin
+  were deleted in #438 (recoverable from git history); the scripts that remain
+  are the point-definition reference for benches with no twin yet and are
+  **not** an entry point for new runs.
 - **`klt sim` + `sim/harness/klt_sim_evidence.py`** — the entry point for every
   new run (decision record
   [0015](../spec/decision-records/0015-sim-evidence-artifact-store.md): the

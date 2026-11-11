@@ -60,8 +60,8 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   remedy is a new dated report, not an edit to this one. See
   `manifests/README.md` → "Item-8 dependency drift".
 
-- `2026-11-characterization-report/` — issue #427 (T1 checklist item 8): the
-  current aggregated characterization report, replacing the October one. The
+- `2026-11-characterization-report/` — **superseded by `2026-11-04-characterization-report/`** (below; kept untouched as history). Issue #427 (T1 checklist item 8): the
+  aggregated characterization report, replacing the October one. The
   October report was superseded when the `klt sim` re-mints of
   `sim/trim-coverage` (`20261030-061206-03e62489`) and
   `sim/closed-loop-vref-trim-mc` (`20261030-070305-03e62489`, fleet-run,
@@ -72,3 +72,14 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   the October report: `README.md`, `spotcheck.py`, `envelope.json`
   (cited by `manifests/sg13g2-bandgap.json` for item 8) and
   `dependencies.json` (#315).
+
+- `2026-11-04-characterization-report/` — issue #403 (T1 checklist item 8): the
+  current aggregated characterization report, replacing the earlier November
+  one. It was superseded when the `klt sim` re-mint of
+  `sim/closed-loop-vref-mc` (`20261104-201955-2a0f04d7`, trim-bearing core at
+  code 128) became that experiment's newest record and the #273 waiver for the
+  pre-trim record was deleted. Stamped at audited commit `2a0f04d7`; the
+  untrimmed +/-16% line is still met (worst-case total 15.31%, binding corner
+  now wcs/125 C). Same shape as the earlier reports: `README.md`,
+  `spotcheck.py`, `envelope.json` (cited by `manifests/sg13g2-bandgap.json` for
+  item 8) and `dependencies.json` (#315).

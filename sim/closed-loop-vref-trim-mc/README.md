@@ -20,8 +20,7 @@ This bench is the **trimmed-line Monte Carlo** evidence for the **Trim** row
 [DR-0014](../../spec/decision-records/0014-trim-row-keep-1-point.md), which cites
 this bench for the trimmed +/-0.5% line). Its deterministic counterpart,
 the ladder's range/resolution, is [`../trim-coverage/`](../trim-coverage/README.md).
-`run_trim_mc.sh` loops `ngspice -b` and must not be run as a grid on a dispatch
-host; it is kept as the point-definition reference. The campaign runs through
+The legacy `run_trim_mc.sh` (a hand-launched `ngspice -b` loop) was removed after 1e3baf2f; see git history. The campaign runs through
 [`run_klt_sim.sh`](run_klt_sim.sh) (issue #423, below).
 
 ## What this testbench claims, and what it does not
@@ -122,7 +121,7 @@ KLT_SIM_WORK=<batch dir> sim/closed-loop-vref-trim-mc/run_klt_sim.sh --record
 campaign; `KLT_SIM_WORK` names the work directory (re-run with the same one to
 resume). The decks are the template above, rendered by
 [`sim/harness/trim_mc_klt.py`](../harness/trim_mc_klt.py) with the substitutions
-`run_trim_mc.sh` made, and shipped byte-for-byte by klt's pre-composed `decks`
+the removed `run_trim_mc.sh` made, and shipped byte-for-byte by klt's pre-composed `decks`
 requests (`corners` + `monte_carlo` cannot express this: `corners.params`
 cannot vary the code per sample, and the die identity comes from the
 parse-time `.options rndseed` in each deck). Because the verify decks need each
@@ -217,14 +216,12 @@ expected kind of result here: the gate is not relaxed to make it pass. The bipol
 model's 10 % one-sigma emitter-area draw (independent of `Nx`), a property of the model rather than
 of the silicon.
 
-## Cold start (legacy loop, reference only)
+## Cold start (legacy loop, removed)
 
-```bash
-export PDK_ROOT=/path/to/ihp-open-pdk   # parent of ihp-sg13g2/
-export PDK=ihp-sg13g2
-sim/tools/build-osdi.sh                 # one-time
-sim/closed-loop-vref-trim-mc/run_trim_mc.sh --seed 20260930 --n 300   # NOT on a dispatch host
-```
+The legacy `run_trim_mc.sh` cold-start loop was removed after 1e3baf2f; see git history; the campaign runs
+through `run_klt_sim.sh` above.
+
+The notes below describe what the removed loop required.
 
 Requires at least one committed `sim/closed-loop-startup/records/*.csv`
 (per-corner `.nodeset` seeds). Writes append-only evidence under

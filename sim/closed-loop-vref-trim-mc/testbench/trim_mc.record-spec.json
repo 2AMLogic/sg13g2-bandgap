@@ -39,6 +39,6 @@
     "Harness decision + batch-fleet status: sim/harness/README.md",
     "Runner: sim/closed-loop-vref-trim-mc/run_klt_sim.sh",
     "Per-draw data: records/<id>-draws.csv (sim/harness/trim_mc_klt.py assemble)",
-    "Legacy point definitions: sim/closed-loop-vref-trim-mc/run_trim_mc.sh (reference only)"
+    "Legacy point definitions: run_trim_mc.sh, removed after 1e3baf2f; see git history"
   ]
 }

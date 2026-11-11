@@ -44,6 +44,6 @@
     "Harness decision + batch-fleet status: sim/harness/README.md",
     "Runner: sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh",
     "Per-point closed-loop verdict: sim/harness/enrich_pvt_report.py",
-    "Legacy point definitions: sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh (reference only)"
+    "Legacy point definitions: sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh (removed in #438; see git history)"
   ]
 }

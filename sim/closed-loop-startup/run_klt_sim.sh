@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # sg13g2-bandgap -- closed-loop-startup (schematic DUT) on the `klt sim` harness (issue #414,
-# part of #412). Replaces hand-running run_pvt_sweep.sh, whose `ngspice -b` grid
+# part of #412). Replaces hand-running run_pvt_sweep.sh (removed in #438; see git history), whose `ngspice -b` grid
 # dispatch hosts forbid.
 #
 #   sim/closed-loop-startup/run_klt_sim.sh --sanity  # one local corner, vs the newest committed record

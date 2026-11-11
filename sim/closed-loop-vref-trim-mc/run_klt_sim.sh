@@ -9,7 +9,7 @@
 #
 # KLT_SIM_N (default 300, >= 300 per the issue's Test Plan) and KLT_SIM_SEED
 # (default 20260930) size the campaign. Each draw's six decks are the template
-# run_trim_mc.sh rendered (testbench/*.spice.tmpl, unchanged), shipped
+# the removed run_trim_mc.sh rendered (testbench/*.spice.tmpl, unchanged), shipped
 # byte-for-byte by klt's `decks` requests; sim/harness/trim_mc_klt.py owns the
 # rest. Two stages, because stage 2 depends on stage 1:
 #   1. FIT     per (point, draw): codes 0/1/255 at 27 C        -> klt sim --batch-set
@@ -27,8 +27,7 @@
 #   reaim   -- trim with the DR-0014 code-offset rule applied to code* (issue #303):
 #              KLT_SIM_REAIM_RULE=<rule.json from `trim_mc_klt.py rule`>, KLT_SIM_FIT_FROM=<the
 #              plain campaign's work dir>, whose fit stage is reused (same dies, same fit decks).
-# The old run_trim_mc.sh loops `ngspice -b` and is kept as the point-definition
-# reference only: it must not be run as a grid on a dispatch host.
+# The old run_trim_mc.sh looped `ngspice -b`; it was removed after 1e3baf2f; see git history.
 #
 # SANITY GATE. Two draw-0/code-0/27 C decks run on the local backend (two units,
 # not a grid): negctrl must land on the committed record's fit0 (the gate: no

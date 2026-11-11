@@ -29,8 +29,8 @@ everything else.
 * `rule`                  fits the re-aim code-offset rule from a plain-trim draws CSV
                           and `prepare --stage reaim` renders the verify decks at it.
 
-Every parse rule is a line-for-line port of run_trim_mc.sh (kept as the
-point-definition reference; it must not be run as a grid on a dispatch host).
+Every parse rule is a line-for-line port of run_trim_mc.sh (the legacy
+script, removed after 1e3baf2f; see git history).
 A deck that failed or timed out becomes a FAIL row, as in the script; a unit
 that never came back at all (no result tree) refuses the whole record: a
 partial draw set is never recorded. No simulator is launched from here.

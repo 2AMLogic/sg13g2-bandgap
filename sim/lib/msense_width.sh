@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Shared MSENSE-width extraction, sourced (not executed) by any experiment
 # script that needs the live XMSENSE transistor's w= value from a startup
-# netlist -- currently sim/closed-loop-iq/run_pvt_sweep.sh,
-# sim/closed-loop-psrr/run_pvt_sweep.sh,
+# netlist -- currently sim/closed-loop-iq/run_pvt_sweep.sh (removed in #438; likewise closed-loop-psrr and closed-loop-startup below),
+# sim/closed-loop-psrr/run_pvt_sweep.sh (removed in #438),
 # sim/closed-loop-vref-pvt/run_pvt_sweep.sh,
-# sim/closed-loop-startup/run_pvt_sweep.sh,
+# sim/closed-loop-startup/run_pvt_sweep.sh (removed in #438),
 # sim/loop-gain-phase-margin/run_pvt_sweep.sh,
 # sim/startup-core-handover/run_pvt_sweep.sh,
 # sim/closed-loop-offset/run_offset_check.sh and
-# sim/sg13cmos5l-closed-loop-startup/run_pvt_sweep.sh (the only one of the
+# sim/sg13cmos5l-closed-loop-startup/run_pvt_sweep.sh (removed in #443, recoverable
+# from git history; the only one of the
 # eight reading design/sg13cmos5l/netlist/bandgap_startup.spice instead of
 # design/netlist/bandgap_startup.spice). Extracted in issue #105 because this
 # 5-line grep/parse block was duplicated byte-for-byte across all eight --

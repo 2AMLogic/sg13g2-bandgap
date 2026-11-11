@@ -148,7 +148,7 @@ differences from `../closed-loop-vref-pvt/`'s own template:
 3. **Iq is reported as a magnitude.** `Vvdd` is an independent voltage
    source, so ngspice's passive sign convention reports `i(Vvdd)` negative
    while it delivers (rather than absorbs) current to the circuit —
-   `run_pvt_sweep.sh` takes the absolute value before writing the CSV, the
+   `run_pvt_sweep.sh` (removed in #438) takes the absolute value before writing the CSV, the
    same sign-handling convention this template's own `i(Vmkfb)` measurement
    already needs.
 
@@ -230,8 +230,7 @@ job ids in the report's `environment.remote`; a partial grid is refused by the
 shard merger and cannot be recorded. The DUT is the schematic, carried in
 `testbench/*.body.spice.tmpl`; the request, record spec and the verdict pass
 (`sim/harness/enrich_supply_bench_report.py`) are alongside. On a dispatch
-host a multi-corner grid must go through `--batch`: `run_pvt_sweep.sh` is kept
-as the point-definition reference only and must not be run as a grid there.
+host a multi-corner grid must go through `--batch`: `run_pvt_sweep.sh` (removed in #438) was deleted in #438 (recoverable from git history); there is no local grid runner.
 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.

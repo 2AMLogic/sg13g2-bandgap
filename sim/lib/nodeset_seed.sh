@@ -2,7 +2,7 @@
 # Shared nodeset-seed provenance lookup, sourced (not executed) by any
 # experiment script that needs sim/closed-loop-startup's own per-corner
 # DC-bias .nodeset seed values -- currently
-# sim/closed-loop-psrr/run_pvt_sweep.sh, sim/loop-gain-phase-margin/
+# sim/closed-loop-psrr/run_pvt_sweep.sh (removed in #438), sim/loop-gain-phase-margin/
 # run_pvt_sweep.sh and sim/closed-loop-offset/run_offset_check.sh.
 # Extracted in issue #99 because this block was duplicated byte-for-byte
 # across the first two scripts (the same shape of duplication
@@ -44,7 +44,7 @@ SEED_CSV="$(ls -1 "${SIM_DIR}/closed-loop-startup/records/"*.csv 2>/dev/null | s
 if [[ -z "${SEED_CSV}" || ! -f "${SEED_CSV}" ]]; then
   echo "${caller_name}: no sim/closed-loop-startup/records/*.csv found -- this" >&2
   echo "${caller_name}: experiment needs that experiment's DC-bias seed values." >&2
-  echo "${caller_name}: run sim/closed-loop-startup/run_pvt_sweep.sh first." >&2
+  echo "${caller_name}: run sim/closed-loop-startup/run_klt_sim.sh first." >&2
   exit 3
 fi
 echo "${caller_name}: nodeset seeds sourced from ${SEED_CSV}"
