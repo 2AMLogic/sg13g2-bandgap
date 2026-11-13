@@ -151,10 +151,19 @@ pex_batch_dispatch() {
   echo "run_klt_sim.sh: sanity gate before dispatch"
   "${SCRIPT_DIR}/run_klt_sim.sh" --sanity
 
+  # --pdk-root is the SUBMITTING host's root, --osdi the runner image's baked
+  # one, and they are deliberately different (#387). klt 0.9 stages a netlist
+  # body's `.lib <file> <section>` cards (klayout-tools#4097): a target under
+  # this host's own $PDK_ROOT is rewritten to `$PDK_ROOT/<rel>` for the runner
+  # to expand against its baked root, while a submitter-local absolute path
+  # outside every PDK root is REFUSED at submit -- and so, since klt 0.9, is
+  # the image's `/opt/pdk/...` spelling the bridge used to write. The `pre_osdi`
+  # lines in the body's `.control` block are not a staged directive and klt
+  # never touches them, so those stay the runner's baked path.
   local gen=(python3 "${HARNESS_DIR}/gen_pex_batch_requests.py"
     --request-template "${EXP_DIR}/testbench/${STEM}.request.json.tmpl"
     --body-template "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
-    --pdk-root "${BATCH_PDK_ROOT}" --provision-script "${BATCH_PROVISION_SCRIPT}"
+    --pdk-root "${PDK_ROOT}" --provision-script "${BATCH_PROVISION_SCRIPT}"
     --pdk "${PDK}" --work "${WORK}"
     --osdi "${BATCH_PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi")
   [[ -n "${VDDS[*]-}" ]] && gen+=(--supplies "${VDDS[@]}")

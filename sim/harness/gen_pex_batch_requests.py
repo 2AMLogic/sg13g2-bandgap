@@ -38,7 +38,12 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--request-template", required=True)
     ap.add_argument("--body-template", required=True)
-    ap.add_argument("--pdk-root", required=True)
+    ap.add_argument("--pdk-root", required=True,
+                    help="the SUBMITTING host's PDK_ROOT: the per-family `.lib` cards "
+                         "appended to each body name their file under it, and klt "
+                         "rewrites such a target to `$PDK_ROOT/<rel>` for the runner to "
+                         "expand against its baked root (klayout-tools#4097). Naming the "
+                         "runner's baked root here instead is refused at submit")
     ap.add_argument("--provision-script", required=True)
     ap.add_argument("--pdk", required=True)
     ap.add_argument("--work", required=True)
@@ -83,9 +88,10 @@ def main() -> None:
             text += f"""
 * Batch mode only (issue #278 per-process bridge): the two families the
 * request's single models.lib (klt 0.5.0 on the runner) cannot reach, as
-* selection-form `.lib` cards against the image's baked PDK root. Same
-* CORNER_SECTIONS entry the request's models.lib selects the HBT family
-* from. {where}{'.' if vdd is not None else ''}
+* selection-form `.lib` cards under the SUBMITTING host's PDK root -- klt
+* rewrites each to `$PDK_ROOT/<rel>` and the runner expands it against its
+* own baked root (klayout-tools#4097, issue #387). Same CORNER_SECTIONS entry
+* the request's models.lib selects the HBT family from. {where}{'.' if vdd is not None else ''}
 .lib "{models_dir}/cornerMOShv.lib" {mos}
 .lib "{models_dir}/cornerRES.lib" {res}
 """
