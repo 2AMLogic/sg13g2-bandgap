@@ -38,16 +38,20 @@
       "19/0"
     ],
     "layers_in_stream_without_rules": [
+      "1/20",
       "5/1",
       "7/0",
+      "7/21",
       "8/1",
       "8/25",
       "10/1",
       "10/25",
       "14/0",
+      "26/0",
       "28/0",
       "31/0",
       "33/0",
+      "44/0",
       "63/0",
       "111/0",
       "128/0",
@@ -100,7 +104,12 @@
       "via4.space.1",
       "via4.width.1"
     ],
-    "voltage_domain_warnings": [],
+    "voltage_domain_warnings": [
+      {
+        "marker": "44/0",
+        "description": "ThickGateOx (44/0) marks sg13g2's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base). EXTRACTION_DECK models it for MOS device recognition/model binding (issue #1231: sg13_hv_nmos/sg13_hv_pmos under --pdk); this curated deck's DRC rules still apply the general-case ('-LV') thresholds to geometry regardless of ThickGateOx's presence (e.g. the Gat.a1/Gat.a2 channel-length-specific GatPoly widths, not transcribed in this deck yet)."
+      }
+    ],
     "deck_scope": [
       "Act",
       "Cnt",
@@ -255,18 +264,18 @@
     "nothing_checked_reasons": []
   },
   "provenance": {
-    "klt_version": "0.6.0+geb7e7c6ace30",
+    "klt_version": "0.6.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:f9771af83c67c59da0f5f305b487b5f842de12e3f37e1307d1057e2c095478a0",
-      "released": false
+      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "released": true
     },
     "input": {
-      "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
+      "content_hash": "sha256:3e32887b8d2230bb96fb94bc06a7c4f78ce604e1e45a8465f22ceb57feeffdc4",
       "role": "layout"
     },
-    "klayout_version_mismatch": false
+    "klayout_version_mismatch": true
   }
 }

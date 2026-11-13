@@ -170,7 +170,15 @@ def _split_hub(node: str) -> tuple[str, str]:
 def _device_cards(pex_text: str) -> list[list[str]]:
     cards = []
     for card in dpw.dump(pex_text, devices=True, wires=False).splitlines():
-        cards.append(card.split())
+        toks = card.split()
+        if toks[0][0].upper() == "R" and len(toks) > 5 and "=" not in toks[4]:
+            # The runset-driven extractor writes a resistor as
+            # `R$n a b bulk <ohms> <model> L= W=`; older extractions wrote
+            # `X$n a b bulk <model> r=<ohms> L= W=`. Same device, same
+            # terminals -- normalise to the X form the rest of the generator
+            # reads.
+            toks = ["X" + toks[0][1:], *toks[1:4], toks[5], f"r={toks[4]}", *toks[6:]]
+        cards.append(toks)
     return cards
 
 
