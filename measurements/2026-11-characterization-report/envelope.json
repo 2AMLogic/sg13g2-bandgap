@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 8,
+  "summary": "aggregated characterization report for all seven spec-table rows (Output reference as nominal/untrimmed/trimmed lines) at audited commit e2d2b1c4, superseding the October 2026 report after #383's re-extraction of bandgap_top.pex.spice and bandgap_startup.pex.spice forced a re-run of the three PEX experiments that cite them (issue #387): each row carries bound, verdict, binding corner, statistical flag, newest committed record and a current-or-predates-the-netlist freshness mark; every quoted number spot-checked against its committed CSV; PSRR @ DC is now reported as measured unmet by 0.0033 dB, where the October report had it met by 0.0013 dB; pass attests report completeness and citation honesty, not that every row meets its bound",
+  "source": "README.md",
+  "provenance": {
+    "klt_version": "0.7.1.dev1743+g7ee09483b748",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:8d25d320543ef2cbe03c15453a174b18e2682ef4995a8f5d6445956c1993e76f",
+      "path": "README.md"
+    }
+  }
+}

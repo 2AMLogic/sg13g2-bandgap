@@ -41,8 +41,9 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   its specific committed `sim/` evidence record — all nine citations
   re-verified most-current at `main`@`77820fc` — with headline numbers
   re-derived from the records' own CSVs.
-- `2026-10-characterization-report/` — issue #300 (T1 checklist item 8): the
-  current aggregated characterization report, replacing the September one.
+- `2026-10-characterization-report/` — **superseded by `2026-11-characterization-report/`** (below; kept untouched as history).
+  Issue #300 (T1 checklist item 8): the aggregated characterization report that
+  replaced the September one.
   One entry per row of the spec table as it stands at the audited commit
   `b89f4c5f` (seven rows; Output reference reported as its nominal,
   untrimmed and trimmed lines), each with bound, verdict, binding corner,
@@ -59,3 +60,22 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   `check_report_dependencies.py` fails when any of them moves, and the
   remedy is a new dated report, not an edit to this one. See
   `manifests/README.md` → "Item-8 dependency drift".
+- `2026-11-characterization-report/` — issue #387 (T1 checklist item 8): the
+  current aggregated characterization report, replacing the October one. PR
+  #383 re-extracted `layout/bandgap_top/bandgap_top.pex.spice` and
+  `layout/bandgap_startup/bandgap_startup.pex.spice`, which staled the
+  October report's audited DUT hashes; the three experiments citing them
+  (`closed-loop-psrr-pex`, `closed-loop-zout-pex`, `startup-trip-point-pex`)
+  were therefore **re-run** on the new extraction — 45-point PVT grids on the
+  batch fleet via `klt sim`, each record binding the extraction bytes it
+  consumed — rather than re-hashed. Every other row is carried over from the
+  October report and re-verified against the same committed CSVs. **One
+  verdict changed**: PSRR @ DC, which the October report recorded as met by
+  0.0013 dB, now reads 59.9967 dB at its worst corner and is reported as
+  measured unmet by 0.0033 dB (44/45 points above 60 dB); the bound is not
+  relaxed and the disposition is unsettled (#303). The other two re-runs are
+  flat to printed precision. `envelope.json` is the `generic` evidence
+  envelope `manifests/sg13g2-bandgap.json` cites for item 8, pinned to the
+  report's sha256; `dependencies.json` (#315) is its audited dependency
+  inventory, and CI's `check_report_dependencies.py` fails when any input
+  moves. See `manifests/README.md` → "Item-8 dependency drift".

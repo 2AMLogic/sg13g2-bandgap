@@ -1,5 +1,28 @@
 # startup-trip-point-pex
 
+> **Current record (issue #387, `records/20261113-145230-7c46e66b.{md,csv}`):**
+> the 45-point PVT grid re-run against `layout/bandgap_startup/
+> bandgap_startup.pex.spice` as PR #383 re-extracted it (#380), and the first
+> record from this experiment's `klt sim` runner rather than the legacy local
+> loop. 45/45 PASS; trip point 0.422561 to 0.667305 V, strictly inside
+> (0, vdd) at every point.
+>
+> **It is identical to the 2026-09-05 record at printed precision.**
+> `vtrip_v`, `det_off_v` and `fb_off_v` match at all 45 points; `det_on_v`
+> differs by at most 5 uV. #383 re-drew the PDK runset's recognition layers
+> in the HV MOS and `npn13G2` helpers, which permuted which `VSS__t*` hub tag
+> each device's body terminal lands on and gave the `rhigh` card its `L`/`W`
+> geometry, but conserved every wire R/C *value* — so a bench that reads
+> those values, as this one does, should not move, and does not. The hub-tag
+> permutation is why `run_klt_sim.sh` gates every run on the body's wire
+> values still being *present* in the committed extraction (by value, not by
+> tag) rather than on the tags matching.
+>
+> The record also binds the `bandgap_startup.pex.spice` bytes it simulated in
+> its `Extraction sources` field, so the next re-extraction stales it
+> mechanically. That retired this experiment's `extraction-sources` waiver
+> (#309), which is deleted from `sim/evidence-freshness-waivers.json`.
+
 > **Resolved (issue #176, `records/20260905-033740-fe97115.{md,csv}` —
 > the current record):** the stale-wire-parasitics warning this section
 > used to carry (from #173's poly-resistor serpentine fold) is fixed, and
@@ -252,6 +275,44 @@ sim/startup-trip-point-pex/run_pvt_sweep.sh
 Same 45-point grid, same four pass criteria, same output layout as
 `sim/startup-trip-point/` — see that experiment's README and
 `sim/README.md` for the full conventions.
+
+### Or through `klt sim` — the only way to run the grid on a dispatch host (issue #387)
+
+`run_pvt_sweep.sh` above hand-launches 45 `ngspice -b` runs in a shell loop,
+which the fleet's dispatch hosts forbid. `run_klt_sim.sh` expresses the same
+grid as a `klt sim` request so it goes to the batch fleet instead, on the
+shared PEX driver (`sim/harness/pex_runner.sh`) the other PEX experiments
+use:
+
+```bash
+export PDK_ROOT=/path/to/ihp-open-pdk PDK=ihp-sg13g2
+sim/tools/build-osdi.sh                              # once, local OSDI models
+sim/startup-trip-point-pex/run_klt_sim.sh --sanity   # one local corner, vs the committed typ/27C/3.30V row
+sim/startup-trip-point-pex/run_klt_sim.sh --batch    # the 45-point grid, on the fleet
+KLT_SIM_WORK=<the --batch work dir> \
+  sim/startup-trip-point-pex/run_klt_sim.sh --record  # mint the evidence record
+```
+
+Three things differ from the legacy loop, and are documented in the runner's
+own header:
+
+- The DUT body is the legacy **hybrid** netlist (the extracted devices
+  re-encoded as X-subckt calls), not `gen_pex_netlist_body.py` output —
+  that generator has no standalone `bandgap_startup` cell. Every mode
+  therefore first checks the body's wire R/C values against the committed
+  `bandgap_startup.pex.spice` (`check_wires`), so a re-extraction cannot be
+  simulated stale in silence.
+- The dc sweep's stop value and two `.meas` levels scale with the supply, so
+  the grid is one request per (process × supply), with the supply pinned —
+  15 fleet jobs of 3 temperatures each.
+- The six-criteria verdict is not expressible as a limit on one measurement,
+  so it is applied per point by `cmos5l_klt.py enrich --kind trip-point`
+  (the same formula as `sim/lib/pvt_verdict_common.sh`).
+
+`--batch` runs the local `--sanity` corner first as a gate: no grid is
+dispatched until one local typ/27 °C/3.30 V point lands inside a band around
+the committed record's row (a band, not an equality — a refreshed extraction
+is allowed to move the figures a little).
 
 ## Cross-bench observation: decision record 0003's margin bug — before/after issue #32
 

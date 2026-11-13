@@ -138,11 +138,12 @@ The binding used here:
   spec/GDS freshness anchors are what `check_evidence_formats.py`
   re-derives.
 
-- **Item 8 (Characterization report) — cited: `measurements/2026-10-characterization-report/envelope.json`**
-  (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
-  `README.md` beside it, pinned to that report's sha256). The report is
-  [`measurements/2026-10-characterization-report/README.md`](../measurements/2026-10-characterization-report/README.md),
-  stamped at the audited commit `b89f4c5f`: one entry per row of the
+- **Item 8 (Characterization report) — cited: `measurements/2026-11-characterization-report/envelope.json`**
+  (#387, replacing #300's October citation; `generic` envelope, `t1_item: 8`,
+  `provenance.input.path` = `README.md` beside it, pinned to that report's
+  sha256). The report is
+  [`measurements/2026-11-characterization-report/README.md`](../measurements/2026-11-characterization-report/README.md),
+  stamped at the audited commit `e2d2b1c4`: one entry per row of the
   `README.md` target-spec table (the Output-reference row as its nominal,
   untrimmed and trimmed lines), each with bound, verdict, binding corner,
   whether the verdict is statistical, the newest committed `sim/` record
@@ -151,24 +152,32 @@ The binding used here:
   **What an item 8 `met` means here — and what it does not.** It means the
   report exists, is current at the stamped commit and cites its evidence. It
   is **not** a statement that every spec row passes: the report itself
-  records the trimmed ±0.5% line as measured unmet (3σ ≈ 2.6%), the PSRR
-  row as met by 0.0013 dB, and four records as stale against the
-  trim-bearing netlist (`sim/evidence-freshness-waivers.json`). Whether the
-  block conforms to its spec is item 5's question, and item 5 stays unmet.
+  records the trimmed ±0.5% line as measured unmet (3σ ≈ 2.6%), the PSRR @ DC
+  row as measured **unmet** by 0.0033 dB (59.9967 dB at bcs/125 °C/3.63 V,
+  where October's record read 60.0013 dB), and four records as stale against
+  the trim-bearing netlist (`sim/evidence-freshness-waivers.json`). The
+  November report's item-8 verdict is `met` and the T1 count is unchanged at
+  5/11 precisely because this row grades report currency and citation
+  honesty, not circuit performance. Whether the block conforms to its spec is
+  item 5's question, and item 5 stays unmet.
   **The pin binds the report, not the envelope**: the grader re-hashes the
   report file, so editing the report without regenerating the envelope and
   this manifest's pin fails `check_signoff_manifest.py` (the exact-bytes
   freshness is tested, not assumed). The pin alone would not notice the
   report's *dependencies* moving while its bytes stay put, so since #315 the
   report also carries a machine-readable dependency inventory,
-  [`dependencies.json`](../measurements/2026-10-characterization-report/dependencies.json),
+  [`dependencies.json`](../measurements/2026-11-characterization-report/dependencies.json),
   checked by `.github/scripts/check_report_dependencies.py` (see "Item-8
   dependency drift" below): a change to an audited DUT netlist, a spec-table
   bound, a quoted decision-record status, or a newer record in a summarized
-  experiment now fails CI even though the pin still matches (#303 is the
-  change expected to trigger it). The September report
-  (`2026-09-characterization-report/`) is superseded and kept as history; it
-  is not required to track newer inputs.
+  experiment now fails CI even though the pin still matches. **That is what
+  happened**: PR #383 re-extracted `bandgap_top.pex.spice` and
+  `bandgap_startup.pex.spice`, the October inventory's `dut[5]`/`dut[6]`
+  stopped matching, and the remedy the checker prescribes — a new dated
+  report with the three affected experiments re-run, a new inventory,
+  envelope, pin and re-minted verdict — is #387's November report. The
+  September and October reports are superseded and kept as history; neither
+  is required to track newer inputs.
 
 Items deliberately left **uncited** (they render `unmet` / `no_evidence`,
 which is the honest machine-readable gap — repo evidence exists for several
