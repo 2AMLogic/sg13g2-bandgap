@@ -130,6 +130,62 @@ Same corner-label vocabulary and section pairing as
 × temperature `{-40, -20, 0, 27, 50, 75, 100, 125} °C` × supply
 `{2.97, 3.30, 3.63} V` = **120 points**.
 
+## Why the refresh is still outstanding (issue #402, measured 2026-11-13)
+
+The newest committed record below is still the **pre-trim** 2026-09-21 run,
+held by the standing #273 evidence-freshness waiver. #402 set out to
+discharge it by re-running all 120 points on the batch fleet, with the 15
+per-(corner, supply) requests submitted concurrently rather than one
+blocking `klt sim` after another (which projected to 7+ h). The concurrent
+submission now exists and works — `sim/harness/submission_identity.sh`'s
+`si_set_*` helpers hand the whole campaign to one `klt sim --batch-set` —
+but the grid still does not complete, for a reason that is **not**
+submission serialization:
+
+- **The 100 °C point exceeds the fleet's per-job wall-clock ceiling.** All
+  three `typ` requests (2.97 / 3.30 / 3.63 V) came back 7/8, each with its
+  100 °C corner graded `error` / `timeout` at the request's
+  `options.timeout_s` of 1800 s. Reproducible, same point every time.
+- **The point is not non-convergent — it is just slow.** A single-corner
+  local debug probe of `typ`/100 °C/2.97 V (one corner is the one thing the
+  dispatch hosts may run locally) **passed**, settled, in **3643 s**:
+  `vref_3ms = 1.04385 V`, `vref_settle_delta = 0`. ngspice logs
+  `singular matrix: check nodes xxtrim.t155 and xxtrim.t241` and recovers
+  through dynamic gmin stepping — the 255 interior ladder nodes the #264
+  aids-free trim-bearing DUT adds, with `rshunt`/`gmin` deliberately
+  dropped. The cost is wall clock, not correctness.
+- **3643 s does not fit.** 2am's sim fleet caps a job at
+  `BATCH_MAX_JOB_SECONDS=3600`, and `klt sim` requires
+  `timeout_s x units + 120 s` to stay under it, so the largest `timeout_s`
+  this bench can legally request for a one-corner shard is **3480 s**. The
+  axis is already sharded as far as it goes (`remote.hosts: 8` = one fleet
+  job per temperature), so the template's usual advice — "raise the shard
+  count, not the ceiling" — has no remaining shard to add.
+
+So the grid currently tops out around 105/120, with the missing points
+exactly the hot end. That is **not** recorded as a refresh: `vmax` in the
+box `(vmax - vmin) / (165 * v27)` sits at 50–75 °C in most groups of the
+superseded record, so a box computed without the 100 °C point is a lower
+bound on the box, not the box, and would be a weaker claim than the waiver
+it replaced. Nothing here is a reason to re-add the convergence aids: #264
+dropped them because they cost a measured 37 mV of settled `vref` on this
+ladder, which is a wrong answer rather than a slow one.
+
+A separate, smaller finding from the same session, already handled in the
+runner's defaults: at 3 requests in flight the campaign's own 24 simultaneous
+shard launches ran the shared fleet to 384 vCPU against `BATCH_MAX_VCPU=224`
+and lost about half its shards to exhausted capacity waits. 2 requests × 3
+shard jobs each (`PEX_BATCH_MAX_IN_FLIGHT` / `KLT_SIM_MAX_CONCURRENT_JOBS`,
+now the committed defaults) lost none. Worth knowing before anyone retries
+this grid with a bigger number.
+
+Two things would unblock it, neither of them a change to this repo: a
+higher per-job ceiling on the sim fleet (a 2am `infra/aws/` change), or a
+materially faster hot-corner solve. Until one lands, the #273 waiver stays.
+A future attempt should pass `klt sim --fail-fast-probe`, which calibrates
+on the first corner and aborts up front, rather than discovering this after
+a 1800 s timeout per shard.
+
 ## Results summary (this repo's own committed record)
 
 Record [`records/20260921-194249-77820fc.md`](records/20260921-194249-77820fc.md):
@@ -186,16 +242,38 @@ is a finding to record and investigate, not to tune away.
 ```bash
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
-sim/tools/build-osdi.sh              # one-time: build the OSDI models
-sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh
+sim/tools/build-osdi.sh                                      # one-time: build the OSDI models
+sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh --sanity       # one local corner, vs the sanity anchor
+sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh --batch        # the 120-point grid, on the fleet (resumable)
+sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh --record       # mint the record from the merged report
 ```
 
-`JOBS=N` (default 1) runs the 120 independent per-point `ngspice` batch
-processes with bounded N-way concurrency — a wall-clock-only knob with the
-same contract `../closed-loop-vref-mc/`'s `--parallel` established: it does
-not change which points run, their results, or the records' emission order
-(each point writes its own row file; the CSV is assembled in grid order
-after every point settles).
+The grid runs through the `klt sim` batch harness (`sim/harness/README.md`,
+the #275 decision), not the `run_pvt_sweep.sh` shell loop that minted the
+2026-09-21 record — that script was removed in #438 and is recoverable from
+git history only. Its `JOBS=N` wall-clock knob went with it: the 120 points
+are no longer `ngspice` processes on the invoking host at all, so there is
+nothing local to fan out. The fleet-side equivalents are the request's
+`remote.hosts` (8 — one fleet job per temperature point) and
+`PEX_BATCH_MAX_IN_FLIGHT` / `KLT_SIM_MAX_CONCURRENT_JOBS` (how many of the
+15 requests, and how many of each request's 8 shard jobs, are in flight at
+once). Like `JOBS`, none of them changes which points run or what they
+measure — they trade wall clock against the fleet's shared vCPU budget, and
+overshooting it loses shards rather than finishing sooner (see "Why the
+refresh is still outstanding" above). The runner defaults them to the pair
+measured to lose no shards, **2** requests × **3** shard jobs; both are
+overridable, but the fleet is shared and 3 × 8 = 24 simultaneous jobs
+already overran it.
 
-See `sim/README.md` for the append-only `records/`/`corners/`/
-`netlist-snapshots/` convention every experiment in this tree follows.
+`--batch` is resumable in two independent senses: a shard whose committed
+submission identity still matches its inputs is not re-submitted
+(`sim/harness/submission_identity.py`, #332), and `KLT_SIM_SET_RESUME=1`
+re-attaches each in-flight request to the fleet jobs its previous run
+recorded instead of relaunching them. Point `KLT_SIM_WORK` at the same
+directory to pick a campaign back up.
+
+See `sim/README.md` for the append-only `records/` convention every
+experiment in this tree follows; since #379 (DR-0015) a new run's raw logs
+and per-point netlist snapshots live in the fleet artifact store under a
+committed `manifests/artifacts/` manifest rather than in committed
+`corners/` / `netlist-snapshots/` directories.
