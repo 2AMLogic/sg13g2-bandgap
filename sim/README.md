@@ -265,7 +265,8 @@ equally unable to mint new records: `closed-loop-offset`
 (`run_offset_check.sh`), `closed-loop-vref-boxtc-pretrim-aidsfree`
 (`run_one_point.sh`), `closed-loop-vref-mc` (`run_mc.sh`, removed after 1e3baf2f; see git history),
 `closed-loop-vref-trim-mc` (`run_trim_mc.sh`, removed after 1e3baf2f; see git history), `trim-coverage`
-(`run_trim_coverage.sh`), `trim-knob-jacobian` (`run_knob_jacobian.sh`).
+(`run_trim_coverage.sh`, removed after 29036349; see git history),
+`trim-knob-jacobian` (`run_knob_jacobian.sh`).
 
 The writer **fails closed**: with `$KLT_ARTIFACT_BROKER` unset, `klt`
 lacking `artifact put` (it needs klayout-tools `7e3561f` or later), or an

@@ -45,6 +45,6 @@
     "Harness decision + batch-fleet status: sim/harness/README.md",
     "Runner: sim/trim-coverage/run_klt_sim.sh",
     "Ladder-coverage analysis: records/<id>-analysis.csv (sim/harness/trim_coverage_klt.py analysis)",
-    "Legacy point definitions: sim/trim-coverage/run_trim_coverage.sh (reference only)"
+    "Legacy point definitions: sim/trim-coverage/run_trim_coverage.sh (removed in #452; see git history)"
   ]
 }

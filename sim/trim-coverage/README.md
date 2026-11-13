@@ -90,8 +90,9 @@ cited by DR-0014 or the signoff manifest, and is not part of this row.
 
 The dispatch hosts forbid `ngspice -b` loops, so the 169-point grid
 (15 groups x 11 codes at 27 C + 4 step-temperature probes) runs on the Spot
-batch fleet through `klt sim`; `run_trim_coverage.sh` is the point-definition
-reference only. `run_klt_sim.sh --sanity | --batch | --record` follows the
+batch fleet through `klt sim`. The legacy `run_trim_coverage.sh` (a
+hand-launched `ngspice -b` loop) was removed after 29036349; see git history.
+`run_klt_sim.sh --sanity | --batch | --record` follows the
 [`closed-loop-vref-pvt-boxtc`](../closed-loop-vref-pvt-boxtc/run_klt_sim.sh)
 pattern; the grid is 17 requests (one per process x supply at 27 C, plus the two
 probe temperatures), each sweeping the trim code natively through
@@ -102,15 +103,12 @@ netlist, both in the body template: the OSDI `pre_osdi` `.control` block, and
 (`corners.params` only addresses top-level `.param`s; the strap decode reads it
 unchanged). The sanity gate pins typ/27C/3.30V code 128 to the committed record.
 
-## Cold start (legacy loop, reference only)
+## Cold start (legacy loop, removed)
 
-```bash
-export PDK_ROOT=/path/to/ihp-open-pdk   # parent of ihp-sg13g2/
-export PDK=ihp-sg13g2
-sim/tools/build-osdi.sh                 # one-time
-sim/trim-coverage/run_trim_coverage.sh             # sequential
-JOBS=8 sim/trim-coverage/run_trim_coverage.sh      # bounded parallel
-```
+The legacy `run_trim_coverage.sh` cold-start loop was removed after 29036349;
+see git history. The grid runs through `run_klt_sim.sh` above.
+
+The notes below describe what the removed loop required.
 
 Requires at least one committed `sim/closed-loop-startup/records/*.csv`
 (per-corner `.nodeset` DC-bias seeds). Writes append-only evidence under
