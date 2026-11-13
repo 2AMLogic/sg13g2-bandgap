@@ -37,6 +37,14 @@ set -euo pipefail
 EXP="closed-loop-vref-pvt-boxtc"
 STEM="closed_loop_vref_pvt_boxtc"
 VDDS=(2.97 3.30 3.63)
+# The 15 requests are independent, so --batch submits them as one
+# `klt sim --batch-set` instead of 15 blocking round-trips (issue #402):
+# sequentially the first request alone had not returned after ~30 min and the
+# grid projected to 7+ h, which is why this DUT carried a #273 evidence-
+# freshness waiver. Each request still shards to 8 fleet jobs (`remote.hosts`),
+# so the bound is deliberately well under 15: it is concurrency on a
+# vCPU-budgeted fleet, and a burst comes back `batch_no_capacity`.
+PEX_BATCH_MAX_IN_FLIGHT="${PEX_BATCH_MAX_IN_FLIGHT:-5}"
 source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_runner.sh"
 source "${HARNESS_DIR}/pex_vref_runner.sh"
 

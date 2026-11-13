@@ -1374,5 +1374,179 @@ class PexMergeCallTests(TempDirCase):
             self.assertNotIn("merge_batch_shards.py", text.replace("(sim/harness/merge_batch_shards.py)", ""))
 
 
+# --------------------------------------------------------------------------
+# submission_identity.sh si_set_* -- concurrent `klt sim --batch-set` dispatch
+# --------------------------------------------------------------------------
+
+#: mock `klt --batch-set`: records the invocation, writes one per-member
+#: report where the real client writes it (<outdir>/<request stem>/report.json)
+#: and prints the aggregate envelope. Runs no simulator and touches no fleet.
+#: MOCK_SKIP (a request stem) omits that member's report, standing in for a
+#: member the set could not run.
+MOCK_KLT_SET = """#!/usr/bin/env bash
+if [[ "$1" == "--version" ]]; then echo "mock-klt 1.0"; exit 0; fi
+args=("$@"); outdir=""; requests=(); collecting=0
+for ((i = 0; i < ${#args[@]}; i++)); do
+  case "${args[$i]}" in
+    --batch-set) collecting=1 ;;
+    -o) outdir="${args[$((i + 1))]}"; collecting=0 ;;
+    --*) collecting=0 ;;
+    *) [[ ${collecting} -eq 1 ]] && requests+=("${args[$i]}") ;;
+  esac
+done
+printf '%s\n' "${args[@]}" >> "${MOCK_COUNT}"
+for req in "${requests[@]}"; do
+  stem="$(basename "${req}" .json)"
+  [[ "${stem}" == "${MOCK_SKIP:-}" ]] && continue
+  mkdir -p "${outdir}/${stem}"
+  printf '{"status": "pass", "corners": [{"corner_id": "%s", "artifacts": {"deck": "%s/%s/deck.cir"}}]}\n' \
+    "${stem}" "${outdir}" "${stem}" > "${outdir}/${stem}/report.json"
+done
+echo '{"schema_version": 1, "status": "pass", "requests": []}'
+"""
+
+SHARDS = ("typ", "bcs")
+
+
+class SetDispatchTests(TempDirCase):
+    """si_set_add / si_set_dispatch: the 15 independent requests of a PVT
+    campaign go to ONE `klt sim --batch-set` (issue #402) instead of one
+    blocking `klt sim` each, without loosening the #332 identity contract.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.klt = self.write("bin/klt", MOCK_KLT_SET)
+        self.klt.chmod(0o755)
+        self.count = self.tmp / "count.txt"
+        self.work = self.tmp / "work"
+        self.work.mkdir()
+        self.tmpl = self.write("tmpl/body.tmpl", "* template v1\n")
+        self.make_inputs()
+
+    def make_inputs(self, body_extra: str = "") -> None:
+        for label in SHARDS:
+            body = self.work / f"body-{label}.spice"
+            body.write_text(self.tmpl.read_text() + body_extra, encoding="utf-8")
+            (self.work / f"request-{label}.json").write_text(
+                json.dumps({"netlist": str(body), "corners": {"temperature_c": [27]}}),
+                encoding="utf-8",
+            )
+
+    def dispatch(self, in_flight: int = 2, **env) -> subprocess.CompletedProcess:
+        adds = "; ".join(
+            f'si_set_add request-{label}.json report-{label}.json "{label}"'
+            for label in SHARDS
+        )
+        script = (
+            f'set -euo pipefail; WORK="{self.work}"; HARNESS_DIR="{HARNESS}"; '
+            f'KLT_BIN="{self.klt}"; '
+            f'IDENT_ARGS=(--declare "klt_version=mock" --extra "{self.tmpl}"); '
+            f'source "{HARNESS}/submission_identity.sh"; '
+            f'si_set_reset; {adds}; si_set_dispatch batch-set {in_flight}'
+        )
+        e = {**os.environ, "MOCK_COUNT": str(self.count)}
+        e.pop(si.ENV_ALLOW_LEGACY, None)
+        e.pop(si.ENV_REDISPATCH, None)
+        e.update(env)
+        return subprocess.run(["bash", "-c", script], capture_output=True, text=True, env=e)
+
+    def invocations(self) -> list[list[str]]:
+        if not self.count.exists():
+            return []
+        text = self.count.read_text()
+        return [block.splitlines() for block in text.split("--batch-set\n")[1:]]
+
+    def test_one_invocation_carries_every_shard(self) -> None:
+        r = self.dispatch()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        # The whole campaign is ONE client run, not one per shard.
+        self.assertEqual(len(self.invocations()), 1, self.count.read_text())
+        argv = self.count.read_text().split()
+        for label in SHARDS:
+            self.assertIn(f"request-{label}.json", argv)
+        self.assertIn("--max-in-flight", argv)
+        self.assertIn("--wait-for-capacity", argv)
+
+    def test_member_reports_are_harvested_and_bound(self) -> None:
+        r = self.dispatch()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        for label in SHARDS:
+            report = self.work / f"report-{label}.json"
+            # Copied to the per-shard path the fixup/merge steps read...
+            self.assertTrue(report.is_file(), f"{label} report not harvested")
+            self.assertEqual(
+                json.loads(report.read_text())["corners"][0]["corner_id"], f"request-{label}"
+            )
+            # ...and bound to the inputs it was submitted with (#332).
+            self.assertTrue(si.sidecar_path(report).is_file(), f"{label} left unbound")
+
+    def test_capacity_wait_is_always_passed(self) -> None:
+        # The fleet is vCPU-budgeted: a submit that does not wait out
+        # `batch_no_capacity` fails the campaign instead of queueing.
+        self.dispatch()
+        argv = self.count.read_text().split()
+        self.assertEqual(argv[argv.index("--wait-for-capacity") + 1], "600")
+        # A completed shard is not re-submitted, so clear the results first.
+        self.count.unlink()
+        for label in SHARDS:
+            report = self.work / f"report-{label}.json"
+            report.unlink()
+            si.sidecar_path(report).unlink()
+        self.dispatch(**{"KLT_SIM_CAPACITY_WAIT_S": "900"})
+        argv = self.count.read_text().split()
+        self.assertEqual(argv[argv.index("--wait-for-capacity") + 1], "900")
+
+    def test_unchanged_rerun_submits_nothing(self) -> None:
+        self.assertEqual(self.dispatch().returncode, 0)
+        self.count.unlink()
+        self.make_inputs()  # regeneration is byte-identical
+        r = self.dispatch()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.invocations(), [])  # nothing re-submitted
+        self.assertIn("nothing to submit", r.stdout)
+
+    def test_changed_inputs_refuse_rather_than_reuse(self) -> None:
+        self.assertEqual(self.dispatch().returncode, 0)
+        self.make_inputs(body_extra=".param x=1\n")
+        r = self.dispatch()
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+        self.assertIn("different inputs", r.stderr)
+
+    def test_missing_member_report_is_reported_and_left_unbound(self) -> None:
+        # A member the set could not run must not be silently bound to a
+        # stale/absent report -- the merge is what refuses a partial grid,
+        # and a resume has to re-dispatch exactly this shard.
+        r = self.dispatch(**{"MOCK_SKIP": "request-typ"})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("the set returned no report", r.stderr)
+        self.assertFalse((self.work / "report-typ.json").exists())
+        self.assertFalse(si.sidecar_path(self.work / "report-typ.json").is_file())
+        # ...while its siblings still land.
+        self.assertTrue(si.sidecar_path(self.work / "report-bcs.json").is_file())
+
+
+class SetDispatchWiringTests(unittest.TestCase):
+    """The shared driver offers the concurrent path, and the 120-point
+    box-TC campaign (#402, the DUT whose sequential run was 7+ h) opts in.
+    """
+
+    def test_driver_dispatches_a_set_when_opted_in(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        self.assertIn("PEX_BATCH_MAX_IN_FLIGHT", driver)
+        self.assertIn("si_set_dispatch", driver)
+        self.assertIn("si_shard", driver)  # the default path is still there
+
+    def test_boxtc_runner_opts_in(self) -> None:
+        runner = (SIM_DIR / "closed-loop-vref-pvt-boxtc" / "run_klt_sim.sh").read_text()
+        self.assertIn("PEX_BATCH_MAX_IN_FLIGHT", runner)
+
+    def test_every_batch_submit_waits_out_a_capacity_refusal(self) -> None:
+        helper = (SIM_DIR / "harness" / "submission_identity.sh").read_text()
+        for fn in ("si_shard", "si_set_dispatch"):
+            body = helper.split(f"{fn}() {{", 1)[1]
+            self.assertIn("--wait-for-capacity", body.split("\n}\n", 1)[0], fn)
+
+
 if __name__ == "__main__":
     unittest.main()

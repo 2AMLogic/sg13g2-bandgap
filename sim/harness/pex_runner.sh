@@ -12,6 +12,10 @@
 #   BODY_TEMPLATE  (optional, a schematic-DUT bench) the body template --
 #          typically the experiment's own with placeholders pre-filled --
 #          that --batch hands the request generator
+#   PEX_BATCH_MAX_IN_FLIGHT  (optional) submit --batch's per-variant requests
+#          concurrently, as one `klt sim --batch-set` with this many in
+#          flight, instead of one blocking `klt sim` per request (#402);
+#          PEX_BATCH_SET_OUTDIR (default `batch-set`) names its output dir
 # Sourcing validates the CLI mode (positional args pass through), resolves
 # klt / the PDK / the OSDI models, and sets: MODE SCRIPT_DIR SIM_DIR REPO_ROOT
 # HARNESS_DIR EXP_DIR KLT_BIN PDK_ROOT OSDI_DIR BATCH_PDK_ROOT BATCH_LIB_ROOT
@@ -161,18 +165,37 @@ pex_batch_dispatch() {
 
   # Each request's body includes the generated PEX body by its bare staged
   # name; klt stages the include closure from the body's own directory.
+  #
+  # PEX_BATCH_MAX_IN_FLIGHT set (the experiment opts in): the whole campaign
+  # goes to one `klt sim --batch-set` with that many requests in flight at
+  # once, so the shards run concurrently on the fleet rather than one fleet
+  # round-trip after another (issue #402). Unset: the historical one-request-
+  # at-a-time path, unchanged.
+  if [[ -n "${PEX_BATCH_MAX_IN_FLIGHT:-}" ]]; then
+    si_set_reset
+  fi
   for label in "${CORNER_LABELS[@]}"; do
     if [[ -n "${VDDS[*]-}" ]]; then
       for vdd in "${VDDS[@]}"; do
         vid="-$(echo "${vdd}" | tr '.' 'p')"
-        si_shard "request-${label}${vid}.json" "report-${label}${vid}.json" \
-          "artifacts-${label}${vid}" "${label}/${vdd}V (3 points, one fleet job)"
+        if [[ -n "${PEX_BATCH_MAX_IN_FLIGHT:-}" ]]; then
+          si_set_add "request-${label}${vid}.json" "report-${label}${vid}.json" \
+            "${label}/${vdd}V"
+        else
+          si_shard "request-${label}${vid}.json" "report-${label}${vid}.json" \
+            "artifacts-${label}${vid}" "${label}/${vdd}V (3 points, one fleet job)"
+        fi
       done
+    elif [[ -n "${PEX_BATCH_MAX_IN_FLIGHT:-}" ]]; then
+      si_set_add "request-${label}.json" "report-${label}.json" "${label}"
     else
       si_shard "request-${label}.json" "report-${label}.json" "artifacts-${label}" \
         "${label} (one fleet job)"
     fi
   done
+  if [[ -n "${PEX_BATCH_MAX_IN_FLIGHT:-}" ]]; then
+    si_set_dispatch "${PEX_BATCH_SET_OUTDIR:-batch-set}" "${PEX_BATCH_MAX_IN_FLIGHT}" || true
+  fi
 
   for label in "${CORNER_LABELS[@]}"; do
     for v in "${VDDS[@]-}"; do
