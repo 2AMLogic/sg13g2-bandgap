@@ -30,6 +30,13 @@
 # budget and KLT_SIM_CAPACITY_RETRIES (default 4) the set's `--capacity-retries`:
 # the batch fleet is vCPU-budgeted, so a burst is refused with
 # `batch_no_capacity` unless the submit is told to wait it out.
+# KLT_SIM_MAX_CONCURRENT_JOBS (optional) bounds how many of a MEMBER's own
+# shard jobs run at once. The real bound on a campaign is the fleet's shared
+# vCPU budget, not the client: `remote.hosts` shards one request into that
+# many single-corner jobs, so MAX_IN_FLIGHT x hosts jobs are wanted at once
+# and a burst past the budget is refused. Capping both keeps the campaign
+# inside the budget instead of losing the overflow shards to an exhausted
+# capacity wait.
 # KLT_SIM_SET_RESUME=1 adds `--resume`, re-attaching each member to the shard
 # jobs its previous run recorded instead of relaunching them.
 # All paths are relative to WORK. See sim/harness/submission_identity.py.
@@ -88,12 +95,14 @@ si_set_add() {  # REQUEST REPORT DESC
 
 si_set_dispatch() {  # OUTDIR MAX_IN_FLIGHT
   local outdir="$1" in_flight="$2" rc=0 i stem member
-  local -a resume=()
+  local -a resume=() concurrent=()
   if [[ ${#SI_SET_REQUESTS[@]} -eq 0 ]]; then
     echo "run_klt_sim.sh: every shard is already complete; nothing to submit"
     return 0
   fi
   [[ "${KLT_SIM_SET_RESUME:-}" == 1 ]] && resume=(--resume)
+  [[ -n "${KLT_SIM_MAX_CONCURRENT_JOBS:-}" ]] && \
+    concurrent=(--max-concurrent-jobs "${KLT_SIM_MAX_CONCURRENT_JOBS}")
   echo "run_klt_sim.sh: submitting ${#SI_SET_REQUESTS[@]} request(s) concurrently" \
        "(--batch-set, at most ${in_flight} in flight):"
   printf '  - %s\n' "${SI_SET_DESCS[@]}"
@@ -105,7 +114,8 @@ si_set_dispatch() {  # OUTDIR MAX_IN_FLIGHT
       --max-in-flight "${in_flight}" \
       --wait-for-capacity "${KLT_SIM_CAPACITY_WAIT_S:-600}" \
       --capacity-retries "${KLT_SIM_CAPACITY_RETRIES:-4}" \
-      "${resume[@]}" --format json -o "${outdir}" > "${outdir}.json" ) || rc=$?
+      "${concurrent[@]}" "${resume[@]}" \
+      --format json -o "${outdir}" > "${outdir}.json" ) || rc=$?
   [[ ${rc} -eq 0 ]] || echo "run_klt_sim.sh: --batch-set exited ${rc};" \
     "per-member status is in ${WORK}/${outdir}.json" >&2
 

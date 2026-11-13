@@ -1497,6 +1497,21 @@ class SetDispatchTests(TempDirCase):
         argv = self.count.read_text().split()
         self.assertEqual(argv[argv.index("--wait-for-capacity") + 1], "900")
 
+    def test_member_shard_concurrency_is_bounded_when_asked(self) -> None:
+        # The fleet's shared vCPU budget, not the client, is what a campaign
+        # actually runs out of: MAX_IN_FLIGHT x `remote.hosts` jobs are wanted
+        # at once and the overflow is refused, so both bounds must be settable.
+        self.dispatch()
+        self.assertNotIn("--max-concurrent-jobs", self.count.read_text().split())
+        self.count.unlink()
+        for label in SHARDS:
+            report = self.work / f"report-{label}.json"
+            report.unlink()
+            si.sidecar_path(report).unlink()
+        self.dispatch(**{"KLT_SIM_MAX_CONCURRENT_JOBS": "3"})
+        argv = self.count.read_text().split()
+        self.assertEqual(argv[argv.index("--max-concurrent-jobs") + 1], "3")
+
     def test_unchanged_rerun_submits_nothing(self) -> None:
         self.assertEqual(self.dispatch().returncode, 0)
         self.count.unlink()
