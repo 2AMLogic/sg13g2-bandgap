@@ -16,8 +16,8 @@
     },
     "4": "layout/bandgap_top/lvs_report.runset.json",
     "8": {
-      "file": "measurements/2026-11-04-characterization-report/envelope.json",
-      "content_hash": "sha256:5eaa2b18a5545a8f6a57d019323c53313dc5ece7b6b92fd63732e650da369d7a"
+      "file": "measurements/2026-11-13-characterization-report/envelope.json",
+      "content_hash": "sha256:814c3a20ce1ec2845e4b75fee6b76466f31e8abe931703bfb778babc4f7bb34f"
     },
     "10": {
       "file": "manifests/evidence/hygiene.json",

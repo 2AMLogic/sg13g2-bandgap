@@ -73,8 +73,9 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   (cited by `manifests/sg13g2-bandgap.json` for item 8) and
   `dependencies.json` (#315).
 
-- `2026-11-04-characterization-report/` — issue #403 (T1 checklist item 8): the
-  current aggregated characterization report, replacing the earlier November
+- `2026-11-04-characterization-report/` — **superseded by
+  `2026-11-13-characterization-report/`** (below; kept untouched as history).
+  Issue #403 (T1 checklist item 8): replaced the earlier November
   one. It was superseded when the `klt sim` re-mint of
   `sim/closed-loop-vref-mc` (`20261104-201955-2a0f04d7`, trim-bearing core at
   code 128) became that experiment's newest record and the #273 waiver for the
@@ -83,3 +84,17 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   now wcs/125 C). Same shape as the earlier reports: `README.md`,
   `spotcheck.py`, `envelope.json` (cited by `manifests/sg13g2-bandgap.json` for
   item 8) and `dependencies.json` (#315).
+
+- `2026-11-13-characterization-report/` — issue #415 (T1 checklist item 8): the
+  current aggregated characterization report, replacing the 4 Nov one. It
+  rotated because the `klt sim` batch re-mint of the schematic PSRR grid
+  (`sim/closed-loop-psrr/records/20261113-085406-9d568b91`, 45 points in 15
+  fleet jobs) became that experiment's newest record. Stamped at audited
+  commit `9d568b91`. **No verdict or quoted number changed**: the new grid
+  reproduces the 2026-10-01 local sweep it replaces figure-for-figure (same
+  45/45 PASS, same 59.685..100.400 dB range, same worst point 59.6849 dB at
+  bcs/125 C/3.63 V, agreeing to within 6e-6 relative on every PSRR column), so
+  `spotcheck.py`'s output is byte-identical to the 4 Nov report's. Same shape
+  as the earlier reports: `README.md`, `spotcheck.py`, `envelope.json` (cited
+  by `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
+  (#315).
