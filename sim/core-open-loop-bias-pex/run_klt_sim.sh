@@ -55,32 +55,10 @@ python3 "${SIM_DIR}/tools/gen_pex_netlist_body.py" \
   --sources-out "${WORK}/extraction-sources.json" -o "${WORK}/pex_body.inc"
 
 check_anchors() {  # $1 = report json, $2 = mode label
-  python3 - "$1" "${ANCHOR_VREF_V}" "${ANCHOR_TOL_V}" "${ANCHOR_R1_OHM}" "${ANCHOR_TOL_OHM}" "$2" <<'PY'
-import json, pathlib, sys
-report = json.loads(pathlib.Path(sys.argv[1]).read_text())
-anchor_v, tol_v, anchor_r, tol_r, mode = sys.argv[2:7]
-if report["status"] != "pass":
-    raise SystemExit(f"sanity gate ({mode}): klt sim graded the run {report['status']!r}")
-(corner,) = report["corners"]
-got = {m["name"]: m.get("value") for m in corner["measurements"]}
-ok = True
-for name, anchor, tol in (("vref_v", float(anchor_v), float(tol_v)),
-                          ("r1_ohm", float(anchor_r), float(tol_r))):
-    value = got.get(name)
-    if value is None:
-        raise SystemExit(f"sanity gate ({mode}): measurement {name} did not come back")
-    delta = abs(value - anchor)
-    verdict = "ok" if delta <= tol else "FAIL"
-    print(f"  sanity {name:8s} = {value!r} (anchor {anchor}, delta {delta:.3g}) {verdict}")
-    if delta > tol:
-        ok = False
-if not ok:
-    raise SystemExit(
-        f"sanity gate ({mode}): off #272's one-point anchor -- the bench, not "
-        "the extraction, is wrong (issue #278's sanity-gate item)"
-    )
-print(f"  sanity gate ({mode}): PASS")
-PY
+  python3 "${HARNESS_DIR}/sanity_anchors.py" "$1" --mode "$2" \
+    --anchor "vref_v=${ANCHOR_VREF_V}:${ANCHOR_TOL_V}" \
+    --anchor "r1_ohm=${ANCHOR_R1_OHM}:${ANCHOR_TOL_OHM}" \
+    --hint "off #272's one-point anchor -- the bench, not the extraction, is wrong (issue #278's sanity-gate item)"
 }
 
 case "${MODE}" in

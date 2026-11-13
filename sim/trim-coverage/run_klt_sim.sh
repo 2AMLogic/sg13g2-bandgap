@@ -96,26 +96,9 @@ PY
     ( cd "${WORK}" && "${KLT_BIN}" sim request.json --backend local --format json \
         -o artifacts > report.json ) || true
   fi
-  python3 - "${WORK}/report.json" "${ANCHOR_VREF_V}" "${ANCHOR_TOL_V}" <<'PY'
-import json, pathlib, sys
-report = json.loads(pathlib.Path(sys.argv[1]).read_text())
-anchor_v, tol_v = float(sys.argv[2]), float(sys.argv[3])
-if report.get("status") != "pass":
-    raise SystemExit(f"sanity gate: klt sim graded the run {report.get('status')!r}: "
-                     f"{[c.get('diagnostics') for c in report.get('corners', [])]}")
-(corner,) = report["corners"]
-got = {m["name"]: m.get("value") for m in corner["measurements"]}
-value = got.get("vref_v")
-if value is None:
-    raise SystemExit("sanity gate: vref_v did not come back")
-delta = abs(value - anchor_v)
-print(f"  sanity vref(code 128) = {value!r} (anchor {anchor_v}, delta {delta:.3g}) "
-      f"{'ok' if delta <= tol_v else 'FAIL'}")
-if delta > tol_v:
-    raise SystemExit("sanity gate: off the committed typ/27C/3.30V code-128 record -- "
-                     "the bench is wrong; no grid is dispatched")
-print("  sanity gate: PASS")
-PY
+  python3 "${HARNESS_DIR}/sanity_anchors.py" "${WORK}/report.json" \
+    --anchor "vref_v=${ANCHOR_VREF_V}:${ANCHOR_TOL_V}" \
+    --hint "off the committed typ/27C/3.30V code-128 record -- the bench is wrong"
 }
 
 tc_batch() {

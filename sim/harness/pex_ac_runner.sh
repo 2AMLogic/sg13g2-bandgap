@@ -7,7 +7,8 @@
 #   ANCHOR_NAME     the measurement name gated on (e.g. zout_dc_db)
 #   ANCHOR_DB / ANCHOR_DB_TOL   its sanity band (dB)
 #   ANCHOR_VREF_OP_V / ANCHOR_VREF_TOL_V   the vref_op band (V)
-# set, then call `pex_ac_main`.
+# set, then call `pex_ac_main`. The gate itself is
+# sim/harness/sanity_anchors.py (issue #458); these are its anchor values.
 
 # --- node seeds: sim/closed-loop-startup's newest committed record ----------
 SEED_CSV="$(ls -t "${SIM_DIR}"/closed-loop-startup/records/*.csv \
@@ -21,31 +22,10 @@ SEEDS_OF() {  # $1 corner label, $2 vdd -> prints fb sns1 sns2 vref seeds (27C r
 }
 
 check_anchors() {  # $1 = enriched report json
-  python3 - "$1" "${ANCHOR_NAME}" "${ANCHOR_DB}" "${ANCHOR_DB_TOL}" \
-                 "${ANCHOR_VREF_OP_V}" "${ANCHOR_VREF_TOL_V}" <<'PY'
-import json, pathlib, sys
-r = json.loads(pathlib.Path(sys.argv[1]).read_text())
-name_db = sys.argv[2]
-a_db, t_db, a_v, t_v = (float(x) for x in sys.argv[3:7])
-if r["status"] != "pass":
-    raise SystemExit(f"sanity gate: run graded {r['status']!r}")
-(corner,) = r["corners"]
-got = {m["name"]: m.get("value") for m in corner["measurements"]}
-ok = True
-for name, anchor, tol, unit in ((name_db, a_db, t_db, "dB"),
-                                ("vref_op_v", a_v, t_v, "V")):
-    value = got.get(name)
-    if value is None:
-        raise SystemExit(f"sanity gate: {name} did not come back")
-    delta = abs(value - anchor)
-    print(f"  sanity {name:11s} = {value:.4f} (anchor {anchor}, delta {delta:.3g} {unit}) "
-          f"{'ok' if delta <= tol else 'FAIL'}")
-    if delta > tol:
-        ok = False
-if not ok:
-    raise SystemExit("sanity gate: off the committed record's band (issue #278's sanity-gate item)")
-print("  sanity gate: PASS")
-PY
+  python3 "${HARNESS_DIR}/sanity_anchors.py" "$1" \
+    --anchor "${ANCHOR_NAME}=${ANCHOR_DB}:${ANCHOR_DB_TOL}" \
+    --anchor "vref_op_v=${ANCHOR_VREF_OP_V}:${ANCHOR_VREF_TOL_V}" \
+    --hint "off the committed record's band (issue #278's sanity-gate item)"
 }
 
 pex_ac_main() {

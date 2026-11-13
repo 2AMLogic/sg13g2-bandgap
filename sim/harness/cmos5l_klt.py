@@ -493,43 +493,6 @@ def enrich(report: dict, kind: str, cwd: Path | None = None) -> dict:
     return report
 
 
-def check_anchors(report: dict, anchors: list[tuple[str, float, float]], mode: str = "local") -> list[str]:
-    """Sanity-gate problems for a one-corner report vs committed anchors.
-
-    `anchors` are `(measurement, value, abs_tol)` taken from the experiment's
-    newest committed legacy record at typ/27C/3.30V. A missing measurement,
-    a non-pass grade or a value off its anchor is a problem; an empty list is
-    the only pass.
-    """
-    problems: list[str] = []
-    if report.get("status") != "pass":
-        problems.append(f"sanity gate ({mode}): klt sim graded the run {report.get('status')!r}")
-    corners = report.get("corners") or []
-    if len(corners) != 1:
-        return problems + [f"sanity gate ({mode}): expected exactly one corner, got {len(corners)}"]
-    got = {m["name"]: m.get("value") for m in corners[0].get("measurements", [])}
-    for name, anchor, tol in anchors:
-        value = got.get(name)
-        if value is None:
-            problems.append(f"sanity gate ({mode}): measurement {name} did not come back")
-            continue
-        delta = abs(value - anchor)
-        if delta > tol:
-            problems.append(
-                f"sanity gate ({mode}): {name} = {value!r} is {delta:.3g} from anchor {anchor} (tol {tol})"
-            )
-    return problems
-
-
-def parse_anchor(text: str) -> tuple[str, float, float]:
-    try:
-        name, rest = text.split("=", 1)
-        value, tol = rest.split(":", 1)
-        return name, float(value), float(tol)
-    except ValueError:
-        raise SystemExit(f"cmos5l_klt.py: bad --anchor {text!r} (want name=value:tol)") from None
-
-
 def augment_spec(spec: dict, msense_w: str | None) -> dict:
     """Record-spec copy with the per-run `msense_w` column (closed-loop-startup).
 
@@ -587,10 +550,6 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("report")
     p.add_argument("-o", "--output", required=True)
 
-    p = sub.add_parser("check-anchors", help="sanity gate: one-corner report vs committed anchors")
-    p.add_argument("report")
-    p.add_argument("--anchor", action="append", required=True, metavar="NAME=VALUE:TOL")
-
     p = sub.add_parser("spec", help="write the record-spec copy the adapter consumes")
     p.add_argument("spec")
     p.add_argument("--msense-w")
@@ -639,14 +598,6 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  {c.get('corner_id')}: {c['status']} {diag[:100]}")
         print(f"enriched: {report['status']} passed={report['passed']} "
               f"failed={report['failed']} errored={report['errored']}")
-        return 0
-    if args.cmd == "check-anchors":
-        problems = check_anchors(json.loads(Path(args.report).read_text(encoding="utf-8")),
-                                 [parse_anchor(a) for a in args.anchor])
-        if problems:
-            raise SystemExit("\n".join(problems) + "\n  -- the bench, not the PDK pin, is the first suspect "
-                             "(issue #337 sanity gate); no grid is dispatched")
-        print("  sanity gate: PASS")
         return 0
     if args.cmd == "spec":
         spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))

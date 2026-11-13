@@ -410,7 +410,7 @@ derived columns and the closed-loop verdict
 `sim/harness/enrich_ac_report.py`), and mints one record through the
 adapter. Each runner is resumable (a passing per-variant report is never
 re-submitted) and gates the grid behind a one-local-corner sanity anchor
-(#278's own sanity-gate item).
+(#278's own sanity-gate item, `sim/harness/sanity_anchors.py` -- below).
 
 Two ngspice findings this work established, recorded so the next bench
 does not re-derive them (both verified on ngspice 46):
@@ -473,6 +473,44 @@ image, a klt build with an unchanged version string, or the PDK files behind
 a change, use a new work dir. Tests (`test_harness_transformers.py`,
 `ResumeIdentityTests`) use a mock `klt` and run no simulator.
 
+## The `--sanity` anchor gate, once (issue #458)
+
+Every runner above gates grid dispatch on the same decision: **one local
+typ/27C/3.30V corner must land within an absolute tolerance of the
+experiment's newest committed record before any grid is submitted.** That
+decision has exactly one implementation,
+[`sanity_anchors.py`](sanity_anchors.py), which the runners call as a CLI:
+
+```bash
+python3 sim/harness/sanity_anchors.py <report.json> \
+    --anchor vref_v=1.052999:0.0002 --anchor r1_ohm=66123:10 \
+    [--magnitude] [--mode local] [--hint "where the anchor came from"]
+```
+
+`name=value:tol` is the spelling the runners' own `ANCHORS` arrays already
+used. Exit 0 with `sanity gate: PASS` is the only answer that permits a
+dispatch; a non-pass grade, a corner count other than one, a measurement that
+did not come back, or a value off its anchor lists every problem and exits
+non-zero. `--magnitude` compares `|value|` with the anchor, which only the
+supply benches need (ngspice's passive sign convention reports `i(Vvdd)`
+negative while the supply delivers current); `--mode` labels the gate's lines
+for a runner that gates in more than one place; `--hint` names the record or
+issue each experiment's anchor came from. The gate reads a report and writes
+no evidence, so it is not part of any record's provenance.
+
+It was previously implemented six times -- five inline `python3 - <<'PY'`
+heredocs in the runners plus `cmos5l_klt.py`'s tested `check_anchors()` -- and
+the copies had drifted: a 0- or 2-corner report died with a raw `ValueError`,
+a report with no `status` key died with a `KeyError`, only one copy printed the
+corner diagnostics behind a non-pass grade, and only one compared magnitudes.
+The surviving implementation keeps the strictest behaviour of each. Anchor
+**values and tolerances were not touched** by the consolidation. Tests:
+`AnchorTests` and `AnchorCallSiteTests` in
+[`test_cmos5l_harness.py`](test_cmos5l_harness.py), which also assert that no
+runner re-implements the comparison. The Monte Carlo draw-0 gate in
+`trim_mc_klt.py` is a different decision (a committed draw, not a PVT corner)
+and stays where it is.
+
 ## SG13CMOS5L experiments on the harness (issue #337, Part of #322)
 
 The four `sim/sg13cmos5l-*` experiments (core-open-loop-bias,
@@ -482,7 +520,7 @@ converted from their legacy `run_pvt_sweep.sh` loops (removed in #443, recoverab
 measurements. The SG13CMOS5L-specific parts live in
 [`cmos5l_klt.py`](cmos5l_klt.py) (corner mapping, request/body
 instantiation, shard merge with an explicit expected grid, the legacy
-verdicts, the sanity-anchor gate) and [`cmos5l_runner.sh`](cmos5l_runner.sh)
+verdicts) and [`cmos5l_runner.sh`](cmos5l_runner.sh)
 (the shared runner body); the generic mechanics are reused unchanged
 (`klt_sim_evidence.py`, `merge_batch_shards.py`, `fixup_batch_report.py`,
 `submission_identity.*`). Two small shared-code changes:
@@ -580,6 +618,10 @@ Four files, three of which are the experiment's own:
    `extra_columns`.
 4. **Runner** (`sim/<exp>/run_klt_sim.sh`) — generates the bundle, substitutes
    the body/request paths, calls `klt sim`, calls the adapter. `probe/run_probe.sh`
-   is the worked example.
+   is the worked example. Gate the grid by calling
+   [`sanity_anchors.py`](sanity_anchors.py) with this experiment's
+   `--anchor name=value:tol` arguments — do **not** write a new comparison
+   (issue #458: the same four steps had been written out six times and had
+   drifted). The runner's job is to name the anchors, not to compare them.
 
 `sim/harness/probe/` holds a complete instance of all four.

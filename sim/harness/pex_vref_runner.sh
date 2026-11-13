@@ -5,30 +5,13 @@
 # pex_runner.sh, with
 #   ANCHOR_VREF_V / ANCHOR_TOL_V   the sanity band on typ/27C/3.30V vref_3ms
 # set, define `pex_record_companion` (run after the record is minted, to write
-# the experiment's TC companion CSV), then call `pex_vref_main`.
+# the experiment's TC companion CSV), then call `pex_vref_main`. The gate
+# itself is sim/harness/sanity_anchors.py (issue #458).
 
 check_anchors() {  # $1 = report json
-  python3 - "$1" "${ANCHOR_VREF_V}" "${ANCHOR_TOL_V}" <<'PY'
-import json, pathlib, sys
-report = json.loads(pathlib.Path(sys.argv[1]).read_text())
-anchor_v, tol_v = float(sys.argv[2]), float(sys.argv[3])
-if report["status"] != "pass":
-    raise SystemExit(f"sanity gate: klt sim graded the run {report['status']!r}")
-(corner,) = report["corners"]
-got = {m["name"]: m.get("value") for m in corner["measurements"]}
-value = got.get("vref_3ms_v")
-if value is None:
-    raise SystemExit("sanity gate: vref_3ms_v did not come back")
-delta = abs(value - anchor_v)
-print(f"  sanity vref_3ms = {value!r} (anchor {anchor_v}, delta {delta:.3g}) "
-      f"{'ok' if delta <= tol_v else 'FAIL'}")
-if delta > tol_v:
-    raise SystemExit(
-        "sanity gate: off the schematic twin's committed typ/27C/3.30V band -- "
-        "the bench, not the extraction, is wrong (issue #278's sanity-gate item)"
-    )
-print("  sanity gate: PASS")
-PY
+  python3 "${HARNESS_DIR}/sanity_anchors.py" "$1" \
+    --anchor "vref_3ms_v=${ANCHOR_VREF_V}:${ANCHOR_TOL_V}" \
+    --hint "off the schematic twin's committed typ/27C/3.30V band -- the bench, not the extraction, is wrong (issue #278's sanity-gate item)"
 }
 
 pex_vref_main() {
