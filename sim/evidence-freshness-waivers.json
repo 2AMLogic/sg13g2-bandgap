@@ -30,13 +30,6 @@
       "reason": "closed-loop-vref-pvt-pex-boxtc 2026-09-21 record: extracted-layout DUT on the pre-trim geometry. #272 delivered the missing precondition (trim-bearing re-layout + re-extraction); the 120-point transient re-run is deferred to #275 -- it is the most harness-bound of the five (120 points at up to 600 s each), and #275 records the resident-vector `save`-card and solver-option requirements it will need. Delete this entry when that re-run lands. Hash rebased by #275: D2 now resolves the metal-option trim ladder before comparing (the behavioural RS0-RS7 straps and the XXTRIM call model a mask option, not silicon, and are excluded from the DUT signature -- the same convention layout/lvs_reference.py's convert_with_metal_options applies to the LVS reference), so these snapshots' recorded signature changed from 88fbebb94b0d... to fc1118a5a72f... with no change to the snapshots themselves. The staleness being waived is unchanged: these records still ran against the pre-trim DUT."
     },
     {
-      "report": "sim/closed-loop-psrr-pex/records/20261004-030337-5553d523.md",
-      "check": "extraction-sources",
-      "recorded_hash": "sha256:1cce06b91f8cd34c531c10d93046d5a685a224008cb5e865feda156e61e58da9",
-      "issue": "#309",
-      "reason": "Legacy PEX record minted before extraction-source binding existed (#309): it records no hashes of the extraction netlists it consumed, and none are invented here. Parasitic freshness of this record is therefore UNCHECKED. Delete this entry when a genuine re-run (the PEX re-runs tracked in #278/#275) lands a record carrying an 'Extraction sources' field; appending that newer record also expires it."
-    },
-    {
       "report": "sim/closed-loop-vref-pvt-pex-boxtc/records/20260921-195122-77820fc.md",
       "check": "extraction-sources",
       "recorded_hash": "sha256:086d90c84bbd1ab95b14b5b3f105604232fbc325062bff9a0d8e3ecb2b300692",
@@ -51,13 +44,6 @@
       "reason": "Legacy PEX record minted before extraction-source binding existed (#309): it records no hashes of the extraction netlists it consumed, and none are invented here. Parasitic freshness of this record is therefore UNCHECKED. Delete this entry when a genuine re-run (the PEX re-runs tracked in #278/#275) lands a record carrying an 'Extraction sources' field; appending that newer record also expires it."
     },
     {
-      "report": "sim/closed-loop-zout-pex/records/20261004-030338-5553d523.md",
-      "check": "extraction-sources",
-      "recorded_hash": "sha256:fd563f5529e0f6349496e016c05381fd481c1df0d866d1c8c4cefef12df8d5fd",
-      "issue": "#309",
-      "reason": "Legacy PEX record minted before extraction-source binding existed (#309): it records no hashes of the extraction netlists it consumed, and none are invented here. Parasitic freshness of this record is therefore UNCHECKED. Delete this entry when a genuine re-run (the PEX re-runs tracked in #278/#275) lands a record carrying an 'Extraction sources' field; appending that newer record also expires it."
-    },
-    {
       "report": "sim/core-open-loop-bias-pex/records/20261003-235104-1a04906d.md",
       "check": "extraction-sources",
       "recorded_hash": "sha256:2db9a4ff61e7443d898a40f8b7698ed45c1a4fcd8e537608fdca28401a1af1d5",
@@ -68,13 +54,6 @@
       "report": "sim/sg13cmos5l-closed-loop-startup-pex/records/20260905-033836-fe97115.md",
       "check": "extraction-sources",
       "recorded_hash": "sha256:a526fec66b37b0f783aa3e2d2bb579082359cedaa817124acbe30fbbb510eff0",
-      "issue": "#309",
-      "reason": "Legacy PEX record minted before extraction-source binding existed (#309): it records no hashes of the extraction netlists it consumed, and none are invented here. Parasitic freshness of this record is therefore UNCHECKED. Delete this entry when a genuine re-run (the PEX re-runs tracked in #278/#275) lands a record carrying an 'Extraction sources' field; appending that newer record also expires it."
-    },
-    {
-      "report": "sim/startup-trip-point-pex/records/20260905-033740-fe97115.md",
-      "check": "extraction-sources",
-      "recorded_hash": "sha256:c1ea93d4e79dc7033804f0985a3d004e8e19c9d77712fd23c670facddb629ab0",
       "issue": "#309",
       "reason": "Legacy PEX record minted before extraction-source binding existed (#309): it records no hashes of the extraction netlists it consumed, and none are invented here. Parasitic freshness of this record is therefore UNCHECKED. Delete this entry when a genuine re-run (the PEX re-runs tracked in #278/#275) lands a record carrying an 'Extraction sources' field; appending that newer record also expires it."
     }
