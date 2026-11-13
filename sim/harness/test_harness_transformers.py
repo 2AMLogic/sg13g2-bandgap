@@ -1540,6 +1540,44 @@ class SetDispatchTests(TempDirCase):
         # ...while its siblings still land.
         self.assertTrue(si.sidecar_path(self.work / "report-bcs.json").is_file())
 
+    def test_a_previous_runs_member_report_is_never_harvested_again(self) -> None:
+        # The same regression, into a work dir that has ALREADY been used --
+        # the resumable case this harness exists for. `--batch-set` writes its
+        # member reports into <outdir>/<stem>/ and does not clear them, so a
+        # member it cannot run this time leaves the previous run's file
+        # sitting there. Harvesting it would `commit` old measurements under
+        # the identity si_set_add just `begin`-ed for the CURRENT inputs: a
+        # verified binding of a stale report to a new DUT (#332).
+        self.assertEqual(self.dispatch().returncode, 0)
+        member = self.work / "batch-set" / "request-typ" / "report.json"
+        self.assertTrue(member.is_file(), "first run left no member report to go stale")
+        first = (self.work / "report-typ.json").read_text()
+
+        self.make_inputs(body_extra=".param x=1\n")  # the DUT body changes
+        r = self.dispatch(**{si.ENV_REDISPATCH: "1", "MOCK_SKIP": "request-typ"})
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("the set returned no report", r.stderr)
+        # Cleared before the submit, so "no report" is not satisfied by last
+        # time's file...
+        self.assertFalse(member.is_file(), "stale member report survived the submit")
+        # ...the shard is left unbound (`begin` dropped the old sidecar and
+        # nothing re-published it), so a resume re-dispatches exactly it...
+        self.assertFalse(
+            si.sidecar_path(self.work / "report-typ.json").is_file(),
+            "stale report was bound to the new inputs",
+        )
+        self.assertEqual((self.work / "report-typ.json").read_text(), first)
+        # ...while the sibling that DID run is harvested and bound as usual.
+        bcs = self.work / "report-bcs.json"
+        self.assertTrue(si.sidecar_path(bcs).is_file())
+        self.assertEqual(
+            si.check(
+                self.work / "request-bcs.json", bcs, [self.tmpl], {"klt_version": "mock"}
+            )[0],
+            si.EXIT_REUSE,
+        )
+
 
 class SetDispatchWiringTests(unittest.TestCase):
     """The shared driver offers the concurrent path, and the 120-point
@@ -1555,6 +1593,18 @@ class SetDispatchWiringTests(unittest.TestCase):
     def test_boxtc_runner_opts_in(self) -> None:
         runner = (SIM_DIR / "closed-loop-vref-pvt-boxtc" / "run_klt_sim.sh").read_text()
         self.assertIn("PEX_BATCH_MAX_IN_FLIGHT", runner)
+
+    def test_boxtc_runner_defaults_to_the_measured_concurrency(self) -> None:
+        # The out-of-the-box invocation must be the configuration that was
+        # measured to complete, not one measured to lose shards: the fleet is
+        # shared and vCPU-budgeted, and 3 requests x 8 shard jobs overran it
+        # (384 vCPU vs BATCH_MAX_VCPU=224, ~half the campaign's shards lost).
+        # 2 x 3 lost none. Both stay overridable from the environment.
+        runner = (SIM_DIR / "closed-loop-vref-pvt-boxtc" / "run_klt_sim.sh").read_text()
+        self.assertIn('PEX_BATCH_MAX_IN_FLIGHT="${PEX_BATCH_MAX_IN_FLIGHT:-2}"', runner)
+        self.assertIn(
+            'KLT_SIM_MAX_CONCURRENT_JOBS="${KLT_SIM_MAX_CONCURRENT_JOBS:-3}"', runner
+        )
 
     def test_every_batch_submit_waits_out_a_capacity_refusal(self) -> None:
         helper = (SIM_DIR / "harness" / "submission_identity.sh").read_text()

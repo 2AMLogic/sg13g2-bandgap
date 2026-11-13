@@ -171,6 +171,14 @@ it replaced. Nothing here is a reason to re-add the convergence aids: #264
 dropped them because they cost a measured 37 mV of settled `vref` on this
 ladder, which is a wrong answer rather than a slow one.
 
+A separate, smaller finding from the same session, already handled in the
+runner's defaults: at 3 requests in flight the campaign's own 24 simultaneous
+shard launches ran the shared fleet to 384 vCPU against `BATCH_MAX_VCPU=224`
+and lost about half its shards to exhausted capacity waits. 2 requests × 3
+shard jobs each (`PEX_BATCH_MAX_IN_FLIGHT` / `KLT_SIM_MAX_CONCURRENT_JOBS`,
+now the committed defaults) lost none. Worth knowing before anyone retries
+this grid with a bigger number.
+
 Two things would unblock it, neither of them a change to this repo: a
 higher per-job ceiling on the sim fleet (a 2am `infra/aws/` change), or a
 materially faster hot-corner solve. Until one lands, the #273 waiver stays.
@@ -252,7 +260,10 @@ nothing local to fan out. The fleet-side equivalents are the request's
 once). Like `JOBS`, none of them changes which points run or what they
 measure — they trade wall clock against the fleet's shared vCPU budget, and
 overshooting it loses shards rather than finishing sooner (see "Why the
-refresh is still outstanding" below).
+refresh is still outstanding" above). The runner defaults them to the pair
+measured to lose no shards, **2** requests × **3** shard jobs; both are
+overridable, but the fleet is shared and 3 × 8 = 24 simultaneous jobs
+already overran it.
 
 `--batch` is resumable in two independent senses: a shard whose committed
 submission identity still matches its inputs is not re-submitted

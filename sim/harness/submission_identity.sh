@@ -106,6 +106,22 @@ si_set_dispatch() {  # OUTDIR MAX_IN_FLIGHT
   echo "run_klt_sim.sh: submitting ${#SI_SET_REQUESTS[@]} request(s) concurrently" \
        "(--batch-set, at most ${in_flight} in flight):"
   printf '  - %s\n' "${SI_SET_DESCS[@]}"
+  # Clear any member report an EARLIER run of this work dir left behind.
+  # si_shard gets this for free -- `> "${report}"` truncates before the submit,
+  # so a submit that writes nothing leaves an empty file and `commit` refuses.
+  # The set writes its member reports itself and never clears them: a member it
+  # does not run this time (a capacity-exhausted or any other SimError returns
+  # before the write; an all-or-nothing preflight refusal writes nothing at
+  # all) leaves the previous run's file in place, and the harvest below would
+  # copy it and `commit` it under the identity si_set_add just `begin`-ed for
+  # the CURRENT inputs -- old measurements attested to a new DUT (#332).
+  # Removing them first makes "the set returned no report" mean exactly that.
+  # Resume-safe: `--resume` re-attaches through <stem>/batch-shards.json and
+  # <stem>/checkpoint.json; report.json is pure output, never an input to it.
+  for i in "${!SI_SET_REQUESTS[@]}"; do
+    stem="$(basename "${SI_SET_REQUESTS[$i]}" .json)"
+    rm -f "${WORK}/${outdir}/${stem}/report.json"
+  done
   # One client, N requests: the fleet does the work. A member that errors or
   # measures a failure is reported and kept (the merge is what refuses a
   # partial grid), so a non-zero exit here is not fatal on its own.

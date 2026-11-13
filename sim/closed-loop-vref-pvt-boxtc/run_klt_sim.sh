@@ -41,10 +41,18 @@ VDDS=(2.97 3.30 3.63)
 # `klt sim --batch-set` instead of 15 blocking round-trips (issue #402):
 # sequentially the first request alone had not returned after ~30 min and the
 # grid projected to 7+ h, which is why this DUT carried a #273 evidence-
-# freshness waiver. Each request still shards to 8 fleet jobs (`remote.hosts`),
-# so the bound is deliberately well under 15: it is concurrency on a
-# vCPU-budgeted fleet, and a burst comes back `batch_no_capacity`.
-PEX_BATCH_MAX_IN_FLIGHT="${PEX_BATCH_MAX_IN_FLIGHT:-5}"
+# freshness waiver.
+#
+# Both bounds below default to the pair this campaign was MEASURED to complete
+# with (2026-11-13, see the README). The fleet is shared and vCPU-budgeted, so
+# the limit is not the client: each request shards to 8 fleet jobs
+# (`remote.hosts`), and in-flight x hosts jobs are wanted at once.
+# 3 x 8 = 24 ran the fleet to 384 vCPU against `BATCH_MAX_VCPU=224` and lost
+# about half the campaign's shards to exhausted capacity waits; 2 members x 3
+# shards each lost none. Raise either one and the overflow is refused with
+# `batch_no_capacity` rather than finishing sooner. Both stay overridable.
+PEX_BATCH_MAX_IN_FLIGHT="${PEX_BATCH_MAX_IN_FLIGHT:-2}"
+KLT_SIM_MAX_CONCURRENT_JOBS="${KLT_SIM_MAX_CONCURRENT_JOBS:-3}"
 source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_runner.sh"
 source "${HARNESS_DIR}/pex_vref_runner.sh"
 
