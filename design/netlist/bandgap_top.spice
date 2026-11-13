@@ -51,10 +51,10 @@ XMP1 d1 in_p tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
 XMP2 d2 in_n tail vdd sg13_hv_pmos w=20u l=1u ng=1 m=1
 XMP3 pn pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
 XMP4 out pn vdd vdd sg13_hv_pmos w=10u l=1u ng=1 m=1
-XMN1 d1 d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
-XMN2 d2 d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
-XMN3 out d1 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
-XMN4 pn d2 vss vss sg13_hv_nmos w=10u l=1u ng=1 m=1
+XMN1 d1 d1 vss vss sg13_hv_nmos w=40u l=4u ng=1 m=1
+XMN2 d2 d2 vss vss sg13_hv_nmos w=40u l=4u ng=1 m=1
+XMN3 out d1 vss vss sg13_hv_nmos w=40u l=4u ng=1 m=1
+XMN4 pn d2 vss vss sg13_hv_nmos w=40u l=4u ng=1 m=1
 .ends
 
 

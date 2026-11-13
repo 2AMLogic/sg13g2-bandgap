@@ -1,0 +1,26 @@
+{
+  "k0": 3.25,
+  "k1": -0.02,
+  "form": "m = round(k0 + k1*code_star)",
+  "fitted_on": "nominal (typ mismatch) only; bcs/wcs out of sample",
+  "n_fit_dies": 298,
+  "knob_a_shape": [
+    0.7745765313955281,
+    1.0,
+    1.3331968681234287
+  ],
+  "jacobian_csv": "sim/trim-knob-jacobian/records/20261002-131827-d770c09a.csv",
+  "draws_csv": "sim/closed-loop-vref-trim-mc/records/20261030-140458-19b1416e-draws.csv",
+  "projected_three_sigma_pct": {
+    "no_rule": 1.1443767960427815,
+    "rule": 0.8861275674506716
+  },
+  "projected_mean_plus_3sd_pct": {
+    "no_rule": 1.7449868951159702,
+    "rule": 1.451401218872331
+  },
+  "dr0014_rule": {
+    "k0": 8.0,
+    "k1": -0.06
+  }
+}
