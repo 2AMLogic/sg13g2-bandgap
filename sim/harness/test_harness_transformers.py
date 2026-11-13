@@ -354,8 +354,26 @@ class FixupTests(TempDirCase):
             text, '.lib "/home/u/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerMOSlv.lib" mos_tt\n'
         )
 
+    def test_bare_runner_pdk_root_rewritten_to_local(self) -> None:
+        # The runner's generated corner deck writes its `.lib` target BARE, so a
+        # quoted-only rewrite leaves the runner path in place and the adapter
+        # then refuses the snapshot (#387).
+        _, text = self.run_fixup(
+            ".lib /opt/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib hbt_typ\n"
+        )
+        self.assertEqual(
+            text, ".lib /home/u/pdk/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib hbt_typ\n"
+        )
+
     def test_other_includes_untouched(self) -> None:
         deck = '.include "/somewhere/else.cir"\n.include "/opt/pdkx/foo.lib"\n'
+        _, text = self.run_fixup(deck)
+        self.assertEqual(text, deck)
+
+    def test_bare_other_pdk_prefix_untouched(self) -> None:
+        # The bare rewrite must still be a path-component match, not a substring:
+        # `/opt/pdkx` is a different root.
+        deck = ".lib /opt/pdkx/ihp-sg13g2/models/cornerHBT.lib hbt_typ\n"
         _, text = self.run_fixup(deck)
         self.assertEqual(text, deck)
 

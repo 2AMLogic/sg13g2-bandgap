@@ -12,9 +12,9 @@ nothing to splice and the record ships a device-less snapshot.
 This module rewrites, for one report:
 
 * every deck's runner-side netlist include to a local body copy,
-* every `/opt/pdk` reference (deck `.lib` lines and, in the body copy, the
-  two family `.lib` cards the bridge appended) to the local PDK_ROOT, which
-  the adapter then relativizes to `${PDK_ROOT}` in the committed snapshot,
+* every `/opt/pdk` reference, quoted or bare (the deck's own `.lib` card is
+  written unquoted) to the local PDK_ROOT, which the adapter then relativizes
+  to `${PDK_ROOT}` in the committed snapshot,
 * each corner's `artifacts.deck` to the patched copy.
 
 The body copy is a RECORD-side artifact only -- the submission bodies keep
@@ -66,7 +66,14 @@ def fixup(
             continue
         text = deck_path.read_text(encoding="utf-8")
         text = _RUNNER_INCLUDE_RE.sub(lambda m: f"{m.group(1)}{body}{m.group(2)}", text)
-        text = text.replace(f'"{runner_pdk_root}/', f'"{local_pdk_root}/')
+        # Quoted and bare alike: the runner's generated corner deck writes its
+        # own `.lib <models.lib> <section>` card UNQUOTED, so a quoted-only
+        # rewrite left that one card pointing at the runner's root -- which
+        # klt_sim_evidence.py then refuses as an unresolved include, because the
+        # path is neither a local file nor under this host's PDK_ROOT (#387). The
+        # trailing separator keeps this a path-component match, so a sibling root
+        # (`/opt/pdkx`) is not caught by a prefix that happens to overlap.
+        text = text.replace(f"{runner_pdk_root}/", f"{local_pdk_root}/")
         # The runner's deck writes the include bare (no quotes); handle that
         # spelling too.
         text = re.sub(
