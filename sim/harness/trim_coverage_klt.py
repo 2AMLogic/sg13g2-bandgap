@@ -23,7 +23,8 @@ without touching them:
 * `spec` expands the record spec's per-label columns over the code labels;
 * `analysis` computes the ladder-coverage gates (resolution, range, binary
   weights, curvature, monotonicity) per group from the minted record's CSV,
-  a line-for-line port of run_trim_coverage.sh's awk block.
+  a line-for-line port of run_trim_coverage.sh's awk block (that legacy
+  script was removed after 29036349; see git history).
 
 Pure JSON/CSV transforms plus request/body text substitution: no simulator
 is launched from here.

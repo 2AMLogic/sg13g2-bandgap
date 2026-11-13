@@ -13,8 +13,8 @@
 # supply and the .nodeset seeds are baked into a per-variant body (the seeds
 # differ per variant); the runner image's single-models.lib carries one process
 # per request (klayout-tools#2668). Mechanics: sim/harness/trim_coverage_klt.py.
-# The old run_trim_coverage.sh is kept as the point-definition reference only:
-# it must not be run as a grid on a dispatch host.
+# The old run_trim_coverage.sh looped `ngspice -b`; it was removed after
+# 29036349; see git history.
 #
 # SANITY GATE. One typ/27C/3.30V/code-128 point must land on the newest
 # committed record's vref (1.047278 V); no grid is dispatched before it does.
