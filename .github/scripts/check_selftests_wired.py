@@ -9,27 +9,27 @@ in the code it covers reaches `main` unseen. This lists every git-tracked
 `.github/workflows/hygiene.yml`. Full-path match on purpose: a bare basename
 would let `foo/test_x.py` mask an unwired `bar/test_x.py`.
 
-Stdlib only; needs `git` on PATH. Exit 0 = all wired, 1 = orphan(s) found.
+Stdlib only, plus the sibling `_ci_common.py` scaffolding; needs `git` on PATH.
+Exit 0 = all wired, 1 = orphan(s) found, 2 = git failure (from
+`_ci_common.tracked_files`).
 """
 
 from __future__ import annotations
 
 import argparse
-import subprocess
 import sys
 from pathlib import Path, PurePosixPath
+
+from _ci_common import tracked_files
 
 WORKFLOW = ".github/workflows/hygiene.yml"
 
 
 def tracked_selftests(root: Path) -> list[str]:
-    out = subprocess.run(
-        ["git", "-C", str(root), "ls-files", "-z"],
-        check=True, capture_output=True, text=True,
-    ).stdout
+    """The tracked `test_*.py` paths, at any depth, sorted."""
     return sorted(
-        p for p in out.split("\0")
-        if p and PurePosixPath(p).name.startswith("test_") and p.endswith(".py")
+        p for p in tracked_files(root)
+        if PurePosixPath(p).name.startswith("test_") and p.endswith(".py")
     )
 
 
