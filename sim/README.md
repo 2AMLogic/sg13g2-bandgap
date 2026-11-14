@@ -257,8 +257,8 @@ runner is converted when a re-run is needed (file one issue per experiment
 then). Still unconverted (every experiment without `run_klt_sim.sh`):
 `closed-loop-vref-pvt`, `closed-loop-vref-boxtc-trim`,
 `core-open-loop-bias`, `loop-gain-phase-margin`,
-`startup-core-handover`, `startup-time-to-release`,
-`startup-trip-point`, `startup-trip-point-pex`
+`startup-core-handover`, `startup-trip-point`,
+`startup-trip-point-pex`
 (all `run_pvt_sweep.sh` writers; `loop-gain-phase-margin` also has a
 `klt sim` trim-axis runner, `run_klt_trim_axis.sh`, but it stores no
 artifact manifest and so is equally unable to mint new records), plus three
