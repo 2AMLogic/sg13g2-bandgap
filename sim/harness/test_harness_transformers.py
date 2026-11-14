@@ -567,6 +567,193 @@ class EnrichSupplyBenchTests(unittest.TestCase):
         self.assertEqual(c["diagnostics"][0]["code"], "derived_columns_missing")
 
 
+class EnrichStartupReleaseLadderTests(unittest.TestCase):
+    """enrich_supply_bench_report, `--bench startup_release` (issue #468).
+
+    The checkpoint-ladder mode: per-checkpoint verdicts, `dvsns_<N>u_v` at
+    every checkpoint, and `release_time_us` under the suffix-of-PASS rule
+    `sim/startup-time-to-release/README.md` defines. The reference
+    implementation these replace is that bench's own
+    `run_pvt_sweep.sh` (lines 108-163), which stays in the tree.
+    """
+
+    LADDER = (100, 200, 2000)
+
+    @staticmethod
+    def ladder_corner(
+        checkpoints: tuple[int, ...] = LADDER,
+        cid: str = "typ/3.30V/27C",
+        status: str = "pass",
+        **over: float | None,
+    ) -> dict:
+        """A ladder corner whose every checkpoint PASSes, plus `over`.
+
+        `over` keys are measurement names (`det_200u_v`, ...); a `None` value
+        drops that measurement, which is how a non-convergent corner's
+        unprinted `meas` line is modelled.
+        """
+        values: dict[str, float | None] = {}
+        for checkpoint in checkpoints:
+            values[f"det_{checkpoint}u_v"] = 0.10      # <= 0.2 * 3.30
+            values[f"i_mkfb_{checkpoint}u_a"] = 1e-9   # <= 50 nA
+            values[f"fb_{checkpoint}u_v"] = 1.0        # inside [0.05, 3.25]
+            values[f"sns1_{checkpoint}u_v"] = 0.700
+            values[f"sns2_{checkpoint}u_v"] = 0.695    # dvsns 5 mV <= 20 mV
+        values.update(over)
+        return {
+            "corner_id": cid,
+            "status": status,
+            "measurements": [
+                {"name": k, "value": v} for k, v in values.items() if v is not None
+            ],
+        }
+
+    def run_one(self, **kwargs) -> dict:
+        corner = self.ladder_corner(**kwargs)
+        return esb.enrich({"status": "pass", "corners": [corner]}, "startup_release")["corners"][0]
+
+    # -- the ladder is read off the report, never hardcoded (issue #210) ----
+
+    def test_ladder_is_read_off_det_measurement_names_and_sorted_numerically(self) -> None:
+        corner = self.ladder_corner(checkpoints=(100, 900, 1000, 2000))
+        corner["measurements"].append({"name": "det_early_v", "value": 0.3})
+        # numeric sort, not lexical: a lexical sort would put 1000 before 900
+        self.assertEqual(esb.ladder_checkpoints(corner), [100, 900, 1000, 2000])
+
+    def test_a_report_with_no_ladder_is_refused(self) -> None:
+        corner = {"corner_id": "typ/3.30V/27C", "status": "pass",
+                  "measurements": [{"name": "fb_final_v", "value": 1.0}]}
+        c = esb.enrich({"status": "pass", "corners": [corner]}, "startup_release")["corners"][0]
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["code"], "derived_columns_missing")
+
+    # -- the ladder walk ---------------------------------------------------
+
+    def test_ladder_walk_derives_dvsns_at_every_checkpoint(self) -> None:
+        c = self.run_one()
+        got = meas(c)
+        self.assertEqual(c["status"], "pass", c.get("diagnostics"))
+        for checkpoint in self.LADDER:
+            self.assertAlmostEqual(got[f"dvsns_{checkpoint}u_v"], 0.005, places=12)
+        derived = [m for m in c["measurements"] if m["name"].startswith("dvsns_")]
+        self.assertEqual(len(derived), len(self.LADDER))
+        self.assertTrue(all(m["spice"].startswith("derived: ") for m in derived))
+
+    def test_checkpoint_verdicts_trajectory_spelling(self) -> None:
+        c = self.run_one(det_200u_v=3.0)
+        self.assertEqual(meas(c)["checkpoint_verdicts"], "100u:PASS;200u:FAIL;2000u:PASS")
+
+    # -- release_time_us: a suffix-of-PASS rule ----------------------------
+
+    def test_release_time_is_the_first_checkpoint_of_the_all_pass_suffix(self) -> None:
+        self.assertEqual(meas(self.run_one())["release_time_us"], 100)
+        # not released at 100u, released from 200u onward
+        self.assertEqual(meas(self.run_one(det_100u_v=3.0))["release_time_us"], 200)
+
+    def test_transient_pass_then_regression_is_not_reported_as_early_release(self) -> None:
+        """The whole point of the suffix rule: 100u PASSes but 200u does not."""
+        c = self.run_one(det_200u_v=3.0)
+        self.assertEqual(meas(c)["release_time_us"], 2000)  # NOT 100
+
+    def test_not_released_when_the_final_checkpoint_fails(self) -> None:
+        c = self.run_one(det_2000u_v=3.0)
+        self.assertEqual(meas(c)["release_time_us"], esb.NOT_RELEASED)
+        self.assertEqual(c["status"], "fail")
+        self.assertIn("never_released", c["diagnostics"][0]["message"])
+        self.assertIn("startup_not_released", c["diagnostics"][0]["message"])
+
+    def test_release_time_helper_is_pure_and_total(self) -> None:
+        self.assertEqual(esb.release_time_us([(100, "PASS"), (200, "PASS")]), 100)
+        self.assertEqual(esb.release_time_us([(100, "FAIL"), (200, "PASS")]), 200)
+        self.assertEqual(esb.release_time_us([(100, "PASS"), (200, "FAIL")]), esb.NOT_RELEASED)
+        self.assertEqual(esb.release_time_us([]), esb.NOT_RELEASED)
+
+    # -- a MISSING checkpoint ---------------------------------------------
+
+    def test_missing_checkpoint_is_named_and_fails_the_corner(self) -> None:
+        """A corner that did not converge that far leaves a `meas` line unprinted."""
+        c = self.run_one(sns2_200u_v=None)
+        got = meas(c)
+        self.assertEqual(got["checkpoint_verdicts"], "100u:PASS;200u:MISSING;2000u:PASS")
+        self.assertNotIn("dvsns_200u_v", got)        # no operands, no derived column
+        self.assertIn("dvsns_100u_v", got)           # the rest of the ladder still walks
+        self.assertEqual(c["status"], "fail")
+        self.assertIn("checkpoint_missing at 200u", c["diagnostics"][0]["message"])
+
+    def test_missing_checkpoint_does_not_break_the_later_suffix(self) -> None:
+        """Documented divergence from the legacy bash, which reported NOT_RELEASED here.
+
+        `run_pvt_sweep.sh` let a MISSING checkpoint pass through its
+        running-start tracker without resetting it, so `PASS;MISSING;PASS`
+        reported `NOT_RELEASED`. The rule README.md states -- the earliest
+        checkpoint with an all-PASS suffix -- gives 2000u. The corner is
+        graded `fail` either way, so only the reported number differs.
+        """
+        c = self.run_one(sns2_200u_v=None)
+        self.assertEqual(meas(c)["release_time_us"], 2000)
+        self.assertEqual(c["status"], "fail")
+
+    # -- the criteria are pvt_closed_loop_verdict's, per checkpoint ---------
+
+    def assert_checkpoint_verdict(self, expected: str, **over: float) -> None:
+        got = meas(self.run_one(**over))
+        self.assertEqual(got["checkpoint_verdicts"].split(";")[0], f"100u:{expected}")
+
+    def test_startup_release_uses_corner_vdd_at_each_checkpoint(self) -> None:
+        self.assert_checkpoint_verdict("PASS", det_100u_v=0.65)   # 0.2 * 3.30 = 0.66
+        self.assert_checkpoint_verdict("FAIL", det_100u_v=0.67)
+        self.assert_checkpoint_verdict("FAIL", i_mkfb_100u_a=-60e-9)
+        self.assert_checkpoint_verdict("PASS", i_mkfb_100u_a=-40e-9)  # magnitude
+        # the same det at a 3.63 V corner is released (0.726 V threshold)
+        got = meas(self.run_one(cid="typ/3.63V/27C", det_100u_v=0.67))
+        self.assertEqual(got["checkpoint_verdicts"].split(";")[0], "100u:PASS")
+
+    def test_loop_closure_and_rail_window_boundaries(self) -> None:
+        self.assert_checkpoint_verdict("PASS", sns1_100u_v=0.7199, sns2_100u_v=0.700)
+        self.assert_checkpoint_verdict("FAIL", sns1_100u_v=0.7201, sns2_100u_v=0.700)
+        self.assert_checkpoint_verdict("FAIL", fb_100u_v=0.049)
+        self.assert_checkpoint_verdict("PASS", fb_100u_v=0.051)
+        self.assert_checkpoint_verdict("FAIL", fb_100u_v=3.30 - 0.049)
+
+    def test_constants_are_the_shared_closed_loop_ones(self) -> None:
+        self.assertEqual(
+            (epr.DET_RELEASE_FRAC, epr.I_MKFB_RELEASE_A, epr.DVSNS_CLOSE_V, epr.FB_RAIL_MARGIN_V),
+            (0.2, 50e-9, 0.020, 0.05),
+        )
+
+    # -- supply resolution -------------------------------------------------
+
+    def test_unresolvable_supply_is_refused_rather_than_graded(self) -> None:
+        """The release threshold IS a fraction of vdd; without it there is no verdict."""
+        c = self.run_one(cid="typ/novdd/27C")
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["code"], "derived_columns_missing")
+        self.assertIn("supply not resolvable", c["diagnostics"][0]["message"])
+
+    def test_non_pass_corner_is_not_regraded(self) -> None:
+        c = self.run_one(status="error")
+        self.assertEqual(c["status"], "error")
+        self.assertNotIn("release_time_us", meas(c))
+
+    def test_top_level_counts_recomputed(self) -> None:
+        report = esb.enrich(
+            {
+                "status": "pass",
+                "passed": 99,
+                "corners": [
+                    self.ladder_corner(),
+                    self.ladder_corner(cid="wcs/2.97V/125C", det_2000u_v=3.0),
+                    self.ladder_corner(cid="bcs/3.63V/-40C", status="error"),
+                ],
+            },
+            "startup_release",
+        )
+        self.assertEqual(
+            {k: report[k] for k in ("corner_count", "passed", "failed", "errored", "status")},
+            {"corner_count": 3, "passed": 1, "failed": 1, "errored": 1, "status": "fail"},
+        )
+
+
 class CornerIdTests(unittest.TestCase):
     def test_grammar_and_cell_spellings(self) -> None:
         self.assertEqual(
@@ -648,6 +835,51 @@ class RecordShapeTests(unittest.TestCase):
         self.assertEqual(list(rows[0]), list(rows[1]))  # one header for every row
         self.assertEqual((rows[1]["status"], rows[1]["iq_a"], rows[1]["trim"]), ("FAIL", "", ""))
         self.assertEqual((rows[2]["status"], rows[2]["temp_c"]), ("FAIL", "-40"))
+
+    def test_categorical_cells_are_written_verbatim(self) -> None:
+        """A derived column need not be a number (issue #468).
+
+        `startup-time-to-release`'s `release_time_us` is a checkpoint in
+        microseconds **or** the string `NOT_RELEASED`, and `checkpoint_verdicts`
+        is a `<N>u:<PASS|FAIL|MISSING>` trajectory -- both spellings its legacy
+        `run_pvt_sweep.sh` CSV already used. Six-significant-figure formatting
+        would raise on either, so the mint would die on the first
+        non-convergent corner.
+        """
+        self.assertEqual(kse._cell(1.234567891), "1.234568e+00")
+        self.assertEqual(kse._cell(100), "1.000000e+02")
+        self.assertEqual(kse._cell(None), "")
+        self.assertEqual(kse._cell("NOT_RELEASED"), "NOT_RELEASED")
+        self.assertEqual(kse._cell("100u:PASS;200u:MISSING"), "100u:PASS;200u:MISSING")
+
+    def test_categorical_measurements_ride_through_build_csv(self) -> None:
+        report = {
+            "corners": [
+                {
+                    "process": "typ", "temperature_c": 27, "supply_v": {"Vvdd": 3.3},
+                    "status": "pass",
+                    "measurements": [
+                        {"name": "release_time_us", "value": 100},
+                        {"name": "checkpoint_verdicts", "value": "100u:PASS;2000u:PASS"},
+                    ],
+                },
+                {
+                    "process": "wcs", "temperature_c": 125, "supply_v": {"Vvdd": 2.97},
+                    "status": "fail",
+                    "measurements": [
+                        {"name": "release_time_us", "value": "NOT_RELEASED"},
+                        {"name": "checkpoint_verdicts", "value": "100u:FAIL;2000u:MISSING"},
+                    ],
+                },
+            ]
+        }
+        names = kse.measurement_names(report)
+        rows, passed = kse.build_csv(report, {"pass_requires": names}, names)
+        self.assertEqual(passed, 1)
+        self.assertEqual(rows[0]["release_time_us"], "1.000000e+02")
+        self.assertEqual(rows[0]["checkpoint_verdicts"], "100u:PASS;2000u:PASS")
+        self.assertEqual(rows[1]["release_time_us"], "NOT_RELEASED")
+        self.assertEqual(rows[1]["status"], "FAIL")
 
 
 class InlineDeckTests(TempDirCase):

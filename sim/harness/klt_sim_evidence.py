@@ -311,6 +311,28 @@ def corner_passed(corner: dict, required: list[str]) -> bool:
     return all(got.get(name) is not None for name in required)
 
 
+def _cell(value: object) -> str:
+    """One measurement cell: six significant figures, or the value verbatim.
+
+    Every measurement a `klt sim` report carries is numeric, and six
+    significant figures is this repo's committed-record convention for all of
+    them. An enricher may also derive a *categorical* column, which has no
+    such rendering: `sim/startup-time-to-release`'s `release_time_us` is a
+    checkpoint in microseconds **or** the string `NOT_RELEASED`, and its
+    `checkpoint_verdicts` is a `<N>u:<PASS|FAIL|MISSING>` trajectory -- both
+    spellings the legacy `run_pvt_sweep.sh` CSV already used, so a reader
+    comparing the two records sees the same vocabulary. A non-numeric value is
+    written as its own text rather than crashing the mint (issue #468).
+    """
+    if value is None:
+        return ""
+    if isinstance(value, bool):  # a bool is an int in Python; it is not a measurement
+        return str(value)
+    if isinstance(value, (int, float)):
+        return f"{value:.6e}"
+    return str(value)
+
+
 def build_csv(report: dict, spec: dict, names: list[str]) -> tuple[list[dict], int]:
     extra = spec.get("extra_columns") or {}
     rows: list[dict] = []
@@ -328,8 +350,7 @@ def build_csv(report: dict, spec: dict, names: list[str]) -> tuple[list[dict], i
         }
         got = {m["name"]: m.get("value") for m in corner.get("measurements", [])}
         for name in names:
-            value = got.get(name)
-            row[name] = "" if value is None else f"{value:.6e}"
+            row[name] = _cell(got.get(name))
         rows.append(row)
     return rows, passed
 

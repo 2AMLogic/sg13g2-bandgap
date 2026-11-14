@@ -167,14 +167,53 @@ independently-committed `t=2ms` record (same DUT, same fixture, same
 corner — the two experiments should agree to solver-noise precision; a
 divergence would mean one of the two testbenches has a bug worth chasing).
 
+**Two differences in a record minted by `run_klt_sim.sh`** rather than by the
+legacy `run_pvt_sweep.sh`, both cosmetic rather than semantic:
+
+- Every checkpoint's raw values are carried, not only the final one — the
+  `klt sim` adapter writes one column per measurement the request asked for, so
+  the CSV holds `det_<N>u_v`/`i_mkfb_<N>u_a`/`fb_<N>u_v`/`sns1_<N>u_v`/
+  `sns2_<N>u_v` plus the derived `dvsns_<N>u_v` at all eleven checkpoints. The
+  legacy CSV restated only `t=2ms`. `checkpoint_verdicts` still carries the
+  trajectory in one cell, so the quick read is unchanged.
+- `release_time_us` is rendered in the harness's six-significant-figure form
+  (`1.000000e+02`, not `100`) because it is a quantity and that is how the
+  adapter renders every quantity. `NOT_RELEASED` is still the literal string —
+  it is categorical, and `checkpoint_verdicts` likewise rides through verbatim.
+
 ## Running
 
 ```bash
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
-sim/tools/build-osdi.sh              # one-time: build the OSDI models
-sim/startup-time-to-release/run_pvt_sweep.sh
+sim/tools/build-osdi.sh                                 # one-time: build the OSDI models
+sim/startup-time-to-release/run_klt_sim.sh --sanity      # one local typ/27C/3.30V corner vs the newest record
+sim/startup-time-to-release/run_klt_sim.sh --batch       # the 45-point grid via `klt sim` on the batch fleet
+sim/startup-time-to-release/run_klt_sim.sh --record      # mint records/ from the enriched report
 ```
+
+`run_klt_sim.sh` is the cold-start path (issue #468, on the harness described in
+`sim/harness/README.md`; it follows [`../closed-loop-startup/run_klt_sim.sh`](../closed-loop-startup/run_klt_sim.sh)
+and shares its driver, `sim/harness/pex_runner.sh` + `supply_bench_runner.sh`).
+`--sanity` is a single local corner and must land on the newest committed
+record's 2 ms values — `det_2000u_v` 0.00854001 V and `fb_2000u_v` 2.49682 V;
+`release_time_us` is deliberately **not** an anchor, because it reads `100` on
+all 45 rows of that record (the ladder floor) and so would pass on a badly
+wrong bench. `--batch` runs that gate first, then submits the grid as 15
+requests (5 processes × 3 supplies, 3 temperatures each) and records the batch
+job ids in the report's `environment.remote`; a partial grid is refused by the
+shard merger and cannot be recorded. The DUT is the schematic, carried in
+`testbench/startup_time_to_release.body.spice.tmpl`; the request (which is where
+the checkpoint ladder is declared), the record spec and the verdict pass
+(`sim/harness/enrich_supply_bench_report.py --bench startup_release`) are
+alongside.
+
+**On a dispatch host a multi-corner grid must go through `--batch`.**
+`run_pvt_sweep.sh` is still in the tree as the point-definition reference this
+bench's records were minted from, but it is a local `ngspice -b` grid and can no
+longer mint evidence: `.github/scripts/check_evidence_formats.py` refuses a
+record dated `20261023` or later that carries no artifact manifest, and only the
+`klt sim` path writes one.
 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.
