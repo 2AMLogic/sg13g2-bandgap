@@ -6,6 +6,70 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+## Archives
+
+- [2026-09](work_log/WORK_LOG_2026-09.md)
+
+### 2026-11-14
+
+- **PR #462**: sim: gate every grid dispatch through one anchor-check implementation
+- **Issue #458** (closed): Consolidate six copies of the --sanity anchor gate into one tested harness helper
+
+### 2026-11-13
+
+- **PR #461**: docs: drop seven converted experiments from sim/README.md unconverted list
+- **PR #457**: sim: submit batch campaign shards concurrently via klt --batch-set
+- **PR #456**: sim: drop two uncalled awk helpers from pvt_sed_common.sh
+- **PR #455**: chore(sim): remove legacy run_trim_coverage.sh hand-launched ngspice loop
+- **PR #453**: sim: record closed-loop-psrr 45-point batch grid
+- **Issue #459** (closed): Remove seven converted experiments from the 'Still unconverted' list in sim/README.md
+- **Issue #454** (closed): Remove dead is_new_max() and latest_records_csv() from sim/lib/pvt_sed_common.sh
+- **Issue #452** (closed): Remove legacy run_trim_coverage.sh: superseded by run_klt_sim.sh
+- **Issue #415** (closed): sim: add klt sim wrapper for schematic closed-loop-psrr (Part of #412)
+
+### 2026-11-12
+
+- **PR #451**: Bump Repo Skills 0.25.10 -> 0.26.1
+
+### 2026-11-10
+
+- **PR #450**: chore(sim): remove legacy run_mc.sh and run_trim_mc.sh ngspice loops
+- **Issue #448** (closed): Remove legacy run_mc.sh / run_trim_mc.sh: superseded by run_klt_sim.sh
+- **Issue #371** (closed): Live --batch run of the shared PEX runner driver (sim/harness/pex_runner.sh)
+
+### 2026-11-07
+
+- **PR #449**: Bump Repo Skills 0.25.1 -> 0.25.10
+
+### 2026-11-06
+
+- **PR #447**: ci: run orphaned harness self-tests in hygiene and guard against new orphans
+- **PR #446**: chore(sim): delete 9 legacy run_pvt_sweep.sh superseded by run_klt_sim.sh
+- **PR #445**: chore(sim): remove 4 SG13CMOS5L legacy run_pvt_sweep.sh runners
+- **Issue #444** (closed): ci: run the three orphaned sim/harness self-tests in hygiene.yml, and guard against new orphans
+- **Issue #443** (closed): Remove 4 SG13CMOS5L legacy run_pvt_sweep.sh runners (split from #438)
+- **Issue #441** (closed): Classify the sg13cmos5l bandgap_amp netlist port-order drift (committed vs schematic)
+- **Issue #438** (closed): Remove 13 legacy run_pvt_sweep.sh runners superseded by run_klt_sim.sh
+
+### 2026-11-04
+
+- **PR #439**: feat(sim): run closed-loop-vref-mc on the klt sim fleet with a trim-bearing record
+- **Issue #403** (closed): sim: closed-loop-vref-mc klt sim monte_carlo seeding design and 1800-draw refresh (Part of #273)
+- **Issue #299** (closed): signoff: bind T1 items 9 and 10 (and re-bind item 1) to audited artifacts (klayout-tools#2718 landed)
+
+### 2026-11-01
+
+- **PR #437**: Bump Repo Skills 0.24.7 -> 0.25.1
+
+### 2026-10-30
+
+- **PR #434**: measurements: re-mint trim records on the fleet and add the November characterization report
+- **PR #433**: fix: write PEX batch .lib cards under the submitting PDK root
+- **PR #425**: sim: run the trim-domain mismatch Monte Carlo on klt sim decks
+- **Issue #432** (closed): pex_runner.sh: stop emitting absolute /opt/pdk .lib paths in batch requests (klt 0.8.x refuses them)
+- **Issue #427** (closed): Re-mint trim-coverage and trim-mc records and publish a new dated characterization report
+- **Issue #423** (closed): sim: add klt sim decks wrapper for closed-loop-vref-trim-mc (split from #416)
+
 ### 2026-10-29
 
 - **Issue #416** (closed): sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412)
@@ -238,41 +302,3 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 - **Issue #118** (closed): Recurring redispatch-race churn on #4 (loom-daemon, cf. rjwalters/loom#6685)
 - **Issue #26** (closed): Decide evidence-log verbosity policy for sim/ records (6.4 MB per sweep after OSDI conversion)
 
-### 2026-09-12
-
-- **PR #218**: fix: normalize GraphQL/REST merge-state shapes in dep-recheck-fingerprint.sh
-- **Issue #217** (closed): dep-recheck-fingerprint.sh produces non-deterministic CONCLUSION_HASH for an unchanged blocked PR (spam on #125)
-
-### 2026-09-10
-
-- **Issue #167** (closed): Champion: Merge-Risk Hold Digest
-
-### 2026-09-09
-
-- **PR #216**: sim: add closed-loop-vref-mc device-mismatch Monte Carlo campaign
-- **Issue #215** (closed): sim: untrimmed `vref` mismatch Monte Carlo (`hbt_typ_mismatch` + `mos_tt_mismatch` + `res_typ_mismatch`, seeded, N≥300, negative control) — T1 item 6 evidence for the ±1 % untrimmed Output-reference row
-
-### 2026-09-08
-
-- **PR #203**: refactor(sim): dedupe trip-point verdict awk block into sim/lib/pvt_verdict_common.sh
-- **PR #205**: refactor(sim): extend abs_diff() to 10 remaining inline call sites
-- **PR #208**: refactor(sim): use abs_diff() helper in run_offset_check.sh (#206)
-- **PR #209**: refactor: dedupe _shift/_assert_column_pitch into _klayout_builder_base
-- **PR #212**: refactor(layout): dedupe poly-resistor core geometry into _klayout_builder_base
-- **PR #213**: refactor(sim): derive startup-time-to-release checkpoint ladder from template
-- **Issue #211** (closed): Dedupe poly-resistor leg/bbox geometry: identical arithmetic in common.py and common_sg13cmos5l.py
-- **Issue #210** (closed): Dedupe startup-time-to-release checkpoint ladder: hardcoded in both run_pvt_sweep.sh and its .spice.tmpl
-- **Issue #207** (closed): Dedupe _shift() / _assert_column_pitch() across the two bandgap_top generate.py modules
-- **Issue #206** (closed): Extend abs_diff() to the one remaining inline call site in sim/closed-loop-offset/run_offset_check.sh
-- **Issue #204** (closed): Extend abs_diff() to 10 remaining inline call sites in run_pvt_sweep.sh
-- **Issue #202** (closed): Dedupe trip-point verdict awk block into sim/lib/pvt_verdict_common.sh
-
-### 2026-09-07
-
-- **PR #197**: refactor(sim): dedupe .measure grep/awk extraction idiom into sim/lib
-- **PR #199**: refactor(sim): dedupe .op voltage-extraction idiom into sim/lib
-- **PR #201**: refactor(sim): dedupe cross-bench comparison idioms in *-pex run_pvt_sweep.sh into sim/lib
-- **Issue #200** (closed): Consolidate duplicated cross-bench comparison idioms in *-pex run_pvt_sweep.sh scripts
-- **Issue #198** (closed): sim: dedupe .op voltage-extraction idiom across 3 run_pvt_sweep.sh scripts
-- **Issue #196** (closed): sim: dedupe .measure grep/awk extraction idiom across run_pvt_sweep.sh into sim/lib
-- **Issue #55** (closed): Champion: Merge-Risk Hold Digest
