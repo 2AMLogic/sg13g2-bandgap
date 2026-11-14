@@ -14,7 +14,7 @@
 #   KIND       core-open-loop | trip-point | closed-loop (sim/harness/cmos5l_klt.py)
 #   FAMILIES   pnp,mos,res | mos,res -- the corner families the bench instantiates
 #   ANCHORS    bash array of `name=value:tol` sanity anchors (committed legacy
-#              record, typ/27C/3.30V)
+#              record, typ/27C/3.30V), gated by sim/harness/sanity_anchors.py
 #   MSENSE_NETLIST   (optional) design netlist whose XMSENSE w= the body takes
 #
 # WHY THIS SHAPE (same reasoning as the SG13G2 siblings, sim/harness/README.md):
@@ -145,7 +145,8 @@ cmos5l_sanity() {
     "${MSENSE_ARGS[@]}"
   "${KLT_BIN}" sim "${WORK}/request.json" --backend local --format json \
     -o "${WORK}/artifacts" > "${WORK}/report.json"
-  python3 "${CMOS5L_PY}" check-anchors "${WORK}/report.json" "${ANCHOR_ARGS[@]}"
+  python3 "${HARNESS_DIR}/sanity_anchors.py" "${WORK}/report.json" "${ANCHOR_ARGS[@]}" \
+    --hint "the bench, not the PDK pin, is the first suspect (issue #337 sanity gate)"
 }
 
 cmos5l_batch() {

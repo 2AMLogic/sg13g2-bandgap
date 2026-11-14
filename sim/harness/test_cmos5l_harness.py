@@ -41,6 +41,7 @@ import enrich_pvt_report as epr  # noqa: E402
 import klt_corner_bundle as kcb  # noqa: E402
 import klt_sim_evidence as kse  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
+import sanity_anchors as sa  # noqa: E402
 from test_evidence_store import FakeStore  # noqa: E402
 
 SIM_DIR = Path(__file__).resolve().parents[1]
@@ -600,34 +601,118 @@ class BakedSupplyTests(TempDirCase):
 
 
 class AnchorTests(unittest.TestCase):
+    """The one `--sanity` anchor gate (issue #458), shared by every runner.
+
+    `sanity_anchors.check_anchors` is the single implementation the five
+    former heredoc copies now call through `sanity_anchors.py`'s CLI, so these
+    cases cover every runner's gate, not only the SG13CMOS5L family's.
+    """
+
     ANCHORS = [("vref_v", 1.2, 0.001), ("r1_ohm", 8.0e4, 100.0)]
+    GATE = SIM_DIR / "harness" / "sanity_anchors.py"
 
     def report(self, **meas: float | None) -> dict:
         return {"status": "pass", "corners": [corner({"vref_v": 1.2, "r1_ohm": 8.0e4, **meas})]}
 
+    def check(self, report: dict, anchors=None, **kw) -> tuple[list[str], list[str]]:
+        return sa.check_anchors(report, self.ANCHORS if anchors is None else anchors, **kw)
+
     def test_pass(self) -> None:
-        self.assertEqual(ck.check_anchors(self.report(), self.ANCHORS), [])
+        lines, problems = self.check(self.report())
+        self.assertEqual(problems, [])
+        self.assertEqual(len(lines), 2)
+        self.assertTrue(all(line.endswith(" ok") for line in lines), lines)
 
     def test_off_anchor_fails(self) -> None:
-        problems = ck.check_anchors(self.report(vref_v=1.21), self.ANCHORS)
+        lines, problems = self.check(self.report(vref_v=1.21))
         self.assertEqual(len(problems), 1)
         self.assertIn("vref_v", problems[0])
+        # the per-anchor operator lines the heredoc copies printed are kept,
+        # and both anchors are still reported when one of them fails
+        self.assertEqual(len(lines), 2)
+        self.assertIn("FAIL", lines[0])
+        self.assertTrue(lines[1].endswith(" ok"), lines[1])
 
     def test_missing_measurement_fails(self) -> None:
-        problems = ck.check_anchors(self.report(r1_ohm=None), self.ANCHORS)
+        lines, problems = self.check(self.report(r1_ohm=None))
         self.assertTrue(any("r1_ohm did not come back" in p for p in problems), problems)
+        self.assertEqual(len(lines), 1)
 
     def test_non_pass_and_wrong_corner_count_fail(self) -> None:
         bad = self.report()
         bad["status"] = "fail"
-        self.assertTrue(ck.check_anchors(bad, self.ANCHORS))
+        self.assertTrue(self.check(bad)[1])
         two = {"status": "pass", "corners": [corner({"vref_v": 1.2}), corner({"vref_v": 1.2}, t=85)]}
-        self.assertTrue(any("exactly one corner" in p for p in ck.check_anchors(two, self.ANCHORS)))
+        self.assertTrue(any("exactly one corner" in p for p in self.check(two)[1]))
+
+    def test_malformed_report_does_not_traceback(self) -> None:
+        """What the heredoc copies died on: a 0-corner report and no `status`.
+
+        Copies 1-5 unpacked `(corner,) = report["corners"]` (a raw ValueError
+        on 0 or 2 corners) and four of them indexed `report["status"]` (a
+        KeyError). The shared gate reports both as problems instead.
+        """
+        for report in ({"status": "pass", "corners": []}, {}, {"corners": None}):
+            with self.subTest(report=report):
+                _, problems = self.check(report)
+                self.assertTrue(any("exactly one corner" in p for p in problems), problems)
+
+    def test_magnitude_compares_absolute_values(self) -> None:
+        """`--magnitude`: ngspice reports i(Vvdd) negative (supply_bench_runner.sh)."""
+        anchors = [("iq_avg_a", 2.80682e-05, 2.8e-8)]
+        negative = {"status": "pass", "corners": [corner({"iq_avg_a": -2.80682e-05})]}
+        self.assertEqual(self.check(negative, anchors, magnitude=True)[1], [])
+        self.assertTrue(self.check(negative, anchors)[1], "signed compare must reject it")
+        off = {"status": "pass", "corners": [corner({"iq_avg_a": -2.9e-05})]}
+        self.assertTrue(self.check(off, anchors, magnitude=True)[1])
+
+    def test_mode_labels_the_messages(self) -> None:
+        lines, problems = self.check(self.report(vref_v=1.21), mode="local")
+        self.assertTrue(all(p.startswith("sanity gate (local):") for p in problems), problems)
+        self.assertEqual(self.check(self.report(vref_v=1.21))[1][0][:12], "sanity gate:")
+        self.assertEqual(len(lines), 2)
 
     def test_anchor_parsing(self) -> None:
-        self.assertEqual(ck.parse_anchor("vref_v=1.2:0.001"), ("vref_v", 1.2, 0.001))
-        with self.assertRaises(SystemExit):
-            ck.parse_anchor("vref_v=1.2")
+        self.assertEqual(sa.parse_anchor("vref_v=1.2:0.001"), ("vref_v", 1.2, 0.001))
+        self.assertEqual(sa.parse_anchor("iq_avg_a=2.80682e-05:2.8e-8"),
+                         ("iq_avg_a", 2.80682e-05, 2.8e-8))
+        for bad in ("vref_v=1.2", "vref_v:1.2", "vref_v=x:0.1", "vref_v=1.2:x"):
+            with self.subTest(bad=bad), self.assertRaises(SystemExit):
+                sa.parse_anchor(bad)
+
+    # ---- the CLI the runners actually call -------------------------------
+
+    def gate(self, report: dict, *args: str) -> subprocess.CompletedProcess:
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "report.json"
+            path.write_text(json.dumps(report), encoding="utf-8")
+            return subprocess.run([sys.executable, str(self.GATE), str(path), *args],
+                                  capture_output=True, text=True, check=False)
+
+    def test_cli_passes_and_prints_the_gate_line(self) -> None:
+        r = self.gate(self.report(), "--anchor", "vref_v=1.2:0.001", "--anchor", "r1_ohm=8.0e4:100")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("sanity gate: PASS", r.stdout)
+        self.assertIn("sanity vref_v", r.stdout)
+
+    def test_cli_fails_closed_with_the_hint(self) -> None:
+        r = self.gate(self.report(vref_v=1.5), "--anchor", "vref_v=1.2:0.001",
+                      "--hint", "off #272's one-point anchor")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertNotIn("PASS", r.stdout)
+        self.assertIn("off #272's one-point anchor", r.stderr)
+        self.assertIn("no grid is dispatched", r.stderr)
+
+    def test_cli_mode_and_magnitude(self) -> None:
+        negative = {"status": "pass", "corners": [corner({"iq_avg_a": -2.80682e-05})]}
+        anchor = ("--anchor", "iq_avg_a=2.80682e-05:2.8e-8")
+        r = self.gate(negative, *anchor, "--magnitude", "--mode", "local")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("sanity gate (local): PASS", r.stdout)
+        self.assertNotEqual(self.gate(negative, *anchor).returncode, 0)
+
+    def test_cli_requires_an_anchor(self) -> None:
+        self.assertNotEqual(self.gate(self.report()).returncode, 0)
 
     def test_runner_anchors_equal_the_newest_legacy_records(self) -> None:
         for exp, row_key in (("sg13cmos5l-core-open-loop-bias", None), ("sg13cmos5l-startup-trip-point", None),
@@ -649,6 +734,48 @@ class AnchorTests(unittest.TestCase):
                     self.assertLessEqual(abs(legacy - float(value)), 1e-5 * max(1.0, abs(legacy)),
                                          f"{name}: legacy {legacy} vs anchor {value}")
                     self.assertGreater(float(tol), 0)
+
+
+class AnchorCallSiteTests(unittest.TestCase):
+    """Every runner's gate goes through the one implementation (issue #458).
+
+    The five former heredoc copies are gone and no runner re-implements the
+    comparison; each one shells out to `sanity_anchors.py` with `--anchor`
+    arguments built from its committed anchor values.
+    """
+
+    #: the runners and family helpers that own a `--sanity` anchor gate
+    GATE_OWNERS = (
+        "harness/pex_ac_runner.sh",
+        "harness/pex_vref_runner.sh",
+        "harness/supply_bench_runner.sh",
+        "harness/cmos5l_runner.sh",
+        "core-open-loop-bias-pex/run_klt_sim.sh",
+        "trim-coverage/run_klt_sim.sh",
+    )
+
+    def test_every_gate_calls_the_shared_cli(self) -> None:
+        for rel in self.GATE_OWNERS:
+            with self.subTest(rel=rel):
+                text = (SIM_DIR / rel).read_text()
+                self.assertIn("sanity_anchors.py", text)
+                self.assertIn("--anchor ", text)
+
+    def test_no_runner_reimplements_the_comparison(self) -> None:
+        """No heredoc gate left: the tells are the unpack and the delta compare."""
+        for path in sorted(SIM_DIR.glob("*/run_klt_sim.sh")) + sorted(SIM_DIR.glob("harness/*_runner.sh")):
+            with self.subTest(path=path.name):
+                text = path.read_text()
+                self.assertNotIn('(corner,) = report["corners"]', text)
+                self.assertNotIn('(corner,) = r["corners"]', text)
+                self.assertNotIn("sanity gate: PASS", text)
+
+    def test_only_the_supply_benches_compare_magnitudes(self) -> None:
+        """Copy 3's magnitude switch is carried over, and only there."""
+        users = [path.name for path in sorted(SIM_DIR.glob("harness/*_runner.sh"))
+                 + sorted(SIM_DIR.glob("*/run_klt_sim.sh"))
+                 if "--magnitude" in path.read_text()]
+        self.assertEqual(users, ["supply_bench_runner.sh"])
 
 
 # --------------------------------------------------------------------------
