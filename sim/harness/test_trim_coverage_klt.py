@@ -13,6 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import trim_coverage_klt as tc  # noqa: E402
+import trim_mc_klt as tm  # noqa: E402
 
 
 def corner(label, code, vdd, temp=27, status="pass", **meas):
@@ -182,6 +183,27 @@ class MergeTests(unittest.TestCase):
                 tc.merge(type("A", (), {"manifest": str(work / "m.tsv"), "work": str(work),
                                         "expect_grid": str(work / "g.json"),
                                         "output": str(work / "o.json")}))
+
+
+class SharedSeamTests(unittest.TestCase):
+    """Issue #463: load_seeds is trim_mc_klt's, not a second copy here. The two
+    copies parsed the same committed startup-seed CSV, so a drift between them
+    would silently seed two campaigns' decks differently."""
+
+    def test_load_seeds_is_not_re_implemented(self):
+        self.assertIs(tc.load_seeds, tm.load_seeds)
+
+    def test_only_pass_rows_are_kept_keyed_by_corner_temp_vdd(self):
+        with tempfile.TemporaryDirectory() as d:
+            csv_path = Path(d) / "s.csv"
+            with csv_path.open("w", newline="") as fh:
+                w = csv.writer(fh)
+                w.writerow(["corner_label", "temp_c", "vdd_v", "status", "fb_final_v"])
+                w.writerow(["typ", "27", "3.30", "PASS", "2.0"])
+                w.writerow(["wcs", "-40", "2.97", "FAIL", "9.9"])
+            seeds = tc.load_seeds(str(csv_path))
+            self.assertEqual(list(seeds), [("typ", "27", "3.30")])
+            self.assertEqual(seeds[("typ", "27", "3.30")]["fb_final_v"], "2.0")
 
 
 if __name__ == "__main__":

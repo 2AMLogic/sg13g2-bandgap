@@ -43,7 +43,10 @@ CORNER_OF = {"nominal": "typ", "negctrl": "typ", "bcs": "bcs", "wcs": "wcs"}
 MODE_OF = {"nominal": "mismatch", "negctrl": "negctrl", "bcs": "mismatch", "wcs": "mismatch"}
 DIGEST_LABEL_OF = {"nominal": "typ_mismatch", "negctrl": "typ_negctrl",
                    "bcs": "bcs_mismatch", "wcs": "wcs_mismatch"}
-# sim/lib/pvt_preflight.sh
+# sim/lib/pvt_preflight.sh -- the one copy of the corner -> model-section mapping
+# for this harness family: vref_mc_klt.py imports these three maps (and
+# sections_for below) rather than restating them, so a PDK section rename lands
+# in both Monte Carlo campaigns at once. Issue #463.
 HBT = {"typ": "hbt_typ", "bcs": "hbt_bcs", "wcs": "hbt_wcs"}
 MOS = {"typ": "mos_tt", "bcs": "mos_ff", "wcs": "mos_ss"}
 RES = {"typ": "res_typ", "bcs": "res_bcs", "wcs": "res_wcs"}
@@ -76,10 +79,20 @@ SEED_FIELDS = (("@@FB_SEED@@", "fb_final_v"), ("@@SNS1_SEED@@", "sns1_final_v"),
 
 # --------------------------------------------------------------- rendering
 
-def sections(point: str) -> tuple[str, str, str]:
-    corner = CORNER_OF[point]
-    suffix = "_mismatch" if MODE_OF[point] == "mismatch" else ""
+def sections_for(corner: str, mode: str) -> tuple[str, str, str]:
+    """The (HBT, MOS, resistor) section triple for one corner and mismatch mode.
+
+    Corner and mode are explicit arguments, not a point label, so the sibling
+    harnesses can share this derivation while each still resolves a point
+    against its OWN CORNER_OF/MODE_OF -- the point sets differ (four trim
+    points here, six in vref_mc_klt.py). Issue #463.
+    """
+    suffix = "_mismatch" if mode == "mismatch" else ""
     return HBT[corner] + suffix, MOS[corner] + suffix, RES[corner] + suffix
+
+
+def sections(point: str) -> tuple[str, str, str]:
+    return sections_for(CORNER_OF[point], MODE_OF[point])
 
 
 def fit_id(point: str, draw: int, code: int) -> str:
