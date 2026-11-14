@@ -19,21 +19,21 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
-- **#415**: sim: add klt sim wrapper for schematic closed-loop-psrr (Part of #412)
+- **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
+- **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412)
+- **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
-- **#416**: sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412)
-- **#423**: sim: add klt sim decks wrapper for closed-loop-vref-trim-mc (split from #416)
 
 ## PRs Awaiting Review
 
@@ -51,24 +51,21 @@ _None._
 
 Issues carrying `loom:curated`.
 
-- **#299**: signoff: bind T1 items 9 and 10 (and re-bind item 1) to audited artifacts (klayout-tools#2718 landed) *(curated)*
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6) *(curated)*
 - **#322**: Re-stamp SG13CMOS5L PDK pin from klayout-tools (IHP-Open-PDK dev f7bca326) *(curated)*
 - **#335**: sim: provision SG13CMOS5L pin on the permitted batch backend (Part of #322) *(curated)*
-- **#371**: Live --batch run of the shared PEX runner driver (sim/harness/pex_runner.sh) *(curated)*
 - **#379**: Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact) *(curated)*
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures) *(curated)*
 - **#387**: Re-audit characterization report after PR #383 changed the layout PEX netlists *(curated)*
 - **#402**: sim: refresh closed-loop-vref-pvt-boxtc (120 points) via concurrent klt sim shard submission (Part of #273) *(curated)*
-- **#403**: sim: closed-loop-vref-mc klt sim monte_carlo seeding design and 1800-draw refresh (Part of #273) *(curated)*
 - **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)*
-- **#415**: sim: add klt sim wrapper for schematic closed-loop-psrr (Part of #412) *(curated)*
-- **#416**: sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412) *(curated)*
-- **#423**: sim: add klt sim decks wrapper for closed-loop-vref-trim-mc (split from #416) *(curated)*
+- **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(curated)*
+- **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-_None._
+- **#460**: Remove two logic-free awk wrappers (zout_summary.awk, psrr_summary.awk) left behind by the klt sim conversion *(hermit)*
+- **#463**: Dedupe the Monte Carlo klt-sim harnesses: PDK corner-section maps, sections(), make_ctx() and load_seeds() re-typed instead of imported *(hermit)*
 
 ## Epics
 
@@ -80,12 +77,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
-| Important | 1 |
-| Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 3 |
+| Important | 3 |
+| Ready (`loom:issue`) | 1 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 14 |
-| Architect / Hermit proposals | 0 |
+| Curated | 10 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
