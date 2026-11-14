@@ -45,44 +45,9 @@ ANCHOR_VREF_V="1.04728"
 ANCHOR_TOL_V="0.005"
 
 pex_record_companion() {
-  # Box-method TC companion per (corner, vdd) group -- same formula,
-  # disclosure and justification policy as the committed records (box =
-  # (vmax-vmin)/(span*v27), span = 165 C over the -40..125 grid).
-  CSV="$(ls -t "${EXP_DIR}"/records/*.csv | grep -v -e '-boxtc.csv' -e '-tc.csv' | head -1)"
-  python3 - "${CSV}" "${CSV%.csv}-boxtc.csv" <<'PY'
-import csv, pathlib, sys
-src, dst = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
-rows = list(csv.DictReader(src.open()))
-groups: dict[tuple[str, str], list[dict]] = {}
-for r in rows:
-    groups.setdefault((r["corner_label"], r["vdd_v"]), []).append(r)
-with dst.open("w", newline="") as fh:
-    w = csv.writer(fh, lineterminator="\n")
-    w.writerow(["corner_label", "vdd_v", "n_pass", "n_grid", "vmin_v", "vmin_temp_c",
-                "vmax_v", "vmax_temp_c", "vref_27c_v", "box_tc_ppm_per_c",
-                "endpoint_tc_ppm_per_c"])
-    for corner in ("typ", "bcs", "wcs", "sf", "fs"):
-        for vdd in ("2.97", "3.30", "3.63"):
-            grp = [r for r in groups.get((corner, vdd), [])
-                   if r["status"] == "PASS"]
-            n_grid = len(groups.get((corner, vdd), []))
-            if not grp:
-                continue
-            pts = [(float(r["temp_c"]), float(r["vref_3ms_v"])) for r in grp]
-            v27 = next((v for t, v in pts if t == 27), None)
-            if v27 is None:
-                continue
-            (tmin, vmin), (tmax, vmax) = min(pts, key=lambda p: p[1]), max(pts, key=lambda p: p[1])
-            box = 1e6 * (vmax - vmin) / (165 * v27)
-            row = [corner, vdd, len(grp), n_grid, f"{vmin:.5g}", int(tmin),
-                   f"{vmax:.5g}", int(tmax), f"{v27:.5g}", f"{box:.3f}"]
-            vn40 = next((v for t, v in pts if t == -40), None)
-            v125 = next((v for t, v in pts if t == 125), None)
-            row.append(f"{1e6 * (v125 - vn40) / (165 * v27):.3f}"
-                       if vn40 is not None and v125 is not None else "")
-            w.writerow(row)
-print(f"boxtc companion: {dst}")
-PY
+  # The box-method derivation is shared with this bench's twin:
+  # sim/harness/pex_vref_runner.sh's pex_boxtc_companion (issue #465).
+  pex_boxtc_companion
 }
 
 pex_vref_main

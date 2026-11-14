@@ -12,15 +12,18 @@ nothing under sim/ is written.
 
 from __future__ import annotations
 
+import csv
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import boxtc_companion as bxc  # noqa: E402
 import enrich_pvt_report as epr  # noqa: E402
 import enrich_supply_bench_report as esb  # noqa: E402
 import extraction_binding as xb  # noqa: E402
@@ -1612,6 +1615,226 @@ class SetDispatchWiringTests(unittest.TestCase):
             body = helper.split(f"{fn}() {{", 1)[1]
             self.assertIn("--wait-for-capacity", body.split("\n}\n", 1)[0], fn)
 
+
+# --------------------------------------------------------------------------
+# boxtc_companion: the box-method TC derivation (issue #465). It used to be
+# typed twice, inline, in the two benches that share it -- and
+# spec/decision-records/0010-box-method-tc-evidence.md ratifies its output as
+# this block's TC evidence, with the design sitting ON the 20 ppm/degC stretch
+# line. So the derivation gets a golden test against the committed records it
+# produced, unit coverage of the parts a correction would touch, and a guard
+# that the duplication cannot come back.
+# --------------------------------------------------------------------------
+
+#: The two box-method benches and the committed record each minted.
+BOXTC_BENCHES = {
+    "closed-loop-vref-pvt-boxtc": "20260921-194249-77820fc",
+    "closed-loop-vref-pvt-pex-boxtc": "20260921-195122-77820fc",
+}
+
+
+def boxtc_rows(points: list[tuple], corner: str = "typ", vdd: str = "3.30") -> list[dict]:
+    """Record rows for one (corner, vdd) group from `(temp_c, vref, status)`."""
+    return [
+        {"corner_label": corner, "vdd_v": vdd, "temp_c": f"{t}",
+         "vref_3ms_v": repr(v), "status": s}
+        for t, v, s in points
+    ]
+
+
+#: A grid whose extremes are INTERIOR points, so the box method and the
+#: endpoint method cannot agree: vref peaks at 50 C and bottoms at 0 C, while
+#: -40 C and 125 C sit between them.
+INTERIOR_EXTREMA = [
+    (-40, 1.0400, "PASS"), (0, 1.0300, "PASS"), (27, 1.0500, "PASS"),
+    (50, 1.0600, "PASS"), (125, 1.0450, "PASS"),
+]
+
+
+class BoxTcGoldenTests(unittest.TestCase):
+    """The derivation still reproduces the committed evidence, byte for byte."""
+
+    def test_committed_companions_regenerate_byte_identically(self) -> None:
+        # The acceptance test for the de-duplication (#465): both benches'
+        # committed -boxtc.csv must come back out of the shared module
+        # unchanged. Read-only on sim/ -- output goes to a temp dir.
+        for exp, stem in BOXTC_BENCHES.items():
+            with self.subTest(exp=exp):
+                records = SIM_DIR / exp / "records"
+                want = (records / f"{stem}-boxtc.csv").read_text()
+                with tempfile.TemporaryDirectory() as tmp:
+                    got = Path(tmp) / "companion.csv"
+                    bxc.write_companion(records / f"{stem}.csv", got)
+                    self.assertEqual(got.read_text(), want)
+
+    def test_committed_companions_are_not_rewritten(self) -> None:
+        # sim/*/records/ is append-only evidence: deriving must never write
+        # back into it. Guards the module against an EXP_DIR-relative default.
+        for exp, stem in BOXTC_BENCHES.items():
+            with self.subTest(exp=exp):
+                committed = SIM_DIR / exp / "records" / f"{stem}-boxtc.csv"
+                before = committed.stat().st_mtime_ns, committed.read_bytes()
+                with tempfile.TemporaryDirectory() as tmp:
+                    bxc.write_companion(
+                        SIM_DIR / exp / "records" / f"{stem}.csv",
+                        Path(tmp) / "companion.csv",
+                    )
+                self.assertEqual(
+                    (committed.stat().st_mtime_ns, committed.read_bytes()), before
+                )
+
+
+class BoxTcFormulaTests(unittest.TestCase):
+    """The parts of the derivation a correction would land on."""
+
+    def one(self, points: list[tuple], **kw) -> list:
+        rows = bxc.companion_rows(boxtc_rows(points, **kw))
+        self.assertEqual(len(rows), 1, rows)
+        return rows[0]
+
+    def test_box_is_the_worst_case_spread_not_the_endpoint_slope(self) -> None:
+        # The whole point of the box method: the extremes are wherever they
+        # fall on the grid, not at its ends. Here they are interior, so a
+        # regression to an endpoint derivation changes the reported number.
+        row = self.one(INTERIOR_EXTREMA)
+        _, _, _, _, vmin, tmin, vmax, tmax, v27, box, endpoint = row
+        self.assertEqual((float(vmin), tmin), (1.03, 0))
+        self.assertEqual((float(vmax), tmax), (1.06, 50))
+        self.assertAlmostEqual(float(box), 1e6 * (1.06 - 1.03) / (165 * 1.05), places=3)
+        # ... and the endpoint figure is carried alongside, not instead of it.
+        self.assertAlmostEqual(
+            float(endpoint), 1e6 * (1.045 - 1.040) / (165 * 1.05), places=3
+        )
+        self.assertNotAlmostEqual(float(box), float(endpoint), places=1)
+
+    def test_span_is_the_165_degree_grid(self) -> None:
+        # The committed records disclose a 165 degC span (-40..125). It is the
+        # formula's denominator, so it is a named constant, not a literal
+        # repeated per copy.
+        self.assertEqual(bxc.SPAN_C, 165)
+        row = self.one([(-40, 1.0, "PASS"), (27, 1.0, "PASS"), (125, 1.1, "PASS")])
+        self.assertAlmostEqual(float(row[9]), 1e6 * 0.1 / (165 * 1.0), places=3)
+
+    def test_failing_points_are_excluded_from_the_number_but_disclosed(self) -> None:
+        # A FAIL point must not set vmin/vmax -- it never converged -- but
+        # n_grid still reports it, so n_pass/n_grid discloses the coverage
+        # behind the figure.
+        row = self.one([
+            (-40, 0.5, "FAIL"), (0, 1.04, "PASS"), (27, 1.05, "PASS"),
+            (125, 1.06, "PASS"),
+        ])
+        self.assertEqual((row[2], row[3]), (3, 4))        # n_pass, n_grid
+        self.assertEqual(float(row[4]), 1.04)             # vmin, not the 0.5 FAIL
+        self.assertEqual(row[10], "")                     # -40 C absent: no endpoint
+
+    def test_group_without_a_passing_27c_point_is_omitted(self) -> None:
+        # v27 is the denominator. Without it the derivation has no value, so
+        # the group is omitted rather than reported from a substitute.
+        for points in (
+            [(-40, 1.04, "PASS"), (125, 1.06, "PASS")],                  # no 27 C
+            [(-40, 1.04, "PASS"), (27, 1.05, "FAIL"), (125, 1.06, "PASS")],
+        ):
+            with self.subTest(points=points):
+                self.assertEqual(bxc.companion_rows(boxtc_rows(points)), [])
+
+    def test_group_with_no_passing_point_is_omitted(self) -> None:
+        self.assertEqual(
+            bxc.companion_rows(boxtc_rows([(27, 1.05, "FAIL")])), []
+        )
+
+    def test_absent_group_is_skipped_not_reported_empty(self) -> None:
+        rows = bxc.companion_rows(boxtc_rows(INTERIOR_EXTREMA, corner="wcs", vdd="2.97"))
+        self.assertEqual([(r[0], r[1]) for r in rows], [("wcs", "2.97")])
+
+    def test_rows_follow_the_committed_grid_order(self) -> None:
+        # Row order is part of the committed CSV's shape: corner-major over
+        # (typ, bcs, wcs, sf, fs) x (2.97, 3.30, 3.63).
+        rows: list[dict] = []
+        for corner in reversed(bxc.CORNERS):
+            for vdd in reversed(bxc.VDDS):
+                rows += boxtc_rows(INTERIOR_EXTREMA, corner=corner, vdd=vdd)
+        got = [(r[0], r[1]) for r in bxc.companion_rows(rows)]
+        self.assertEqual(got, [(c, v) for c in bxc.CORNERS for v in bxc.VDDS])
+
+    def test_header_matches_the_committed_companions(self) -> None:
+        for exp, stem in BOXTC_BENCHES.items():
+            with self.subTest(exp=exp):
+                committed = (SIM_DIR / exp / "records" / f"{stem}-boxtc.csv").read_text()
+                self.assertEqual(committed.splitlines()[0], ",".join(bxc.HEADER))
+
+    def test_companion_is_newline_terminated_not_crlf(self) -> None:
+        # csv.writer defaults to \r\n; the committed records are \n.
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dst = Path(tmp) / "r.csv", Path(tmp) / "c.csv"
+            with src.open("w", newline="") as fh:
+                w = csv.writer(fh, lineterminator="\n")
+                w.writerow(["corner_label", "vdd_v", "temp_c", "vref_3ms_v", "status"])
+                for t, v, s in INTERIOR_EXTREMA:
+                    w.writerow(["typ", "3.30", t, v, s])
+            bxc.write_companion(src, dst)
+            self.assertNotIn(b"\r", dst.read_bytes())
+
+
+class BoxTcSeamTests(TempDirCase):
+    """The shell side: one shared implementation, and it stays shared."""
+
+    def test_both_box_benches_delegate_to_the_shared_companion(self) -> None:
+        for exp in BOXTC_BENCHES:
+            with self.subTest(exp=exp):
+                script = (SIM_DIR / exp / "run_klt_sim.sh").read_text()
+                hook = script.split("pex_record_companion() {", 1)[1].split("\n}\n", 1)[0]
+                self.assertIn("pex_boxtc_companion", hook)
+                # The formula must not be re-typed here -- that is the
+                # duplication #465 removed. No inline heredoc, no formula.
+                self.assertNotIn("python3 - ", hook)
+                self.assertNotIn("1e6", hook)
+                self.assertNotIn("csv.writer", hook)
+                self.assertIn('source "${HARNESS_DIR}/pex_vref_runner.sh"', script)
+
+    def test_the_shared_companion_defers_the_formula_to_the_module(self) -> None:
+        runner = (SIM_DIR / "harness" / "pex_vref_runner.sh").read_text()
+        body = runner.split("pex_boxtc_companion() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("boxtc_companion.py", body)
+        self.assertNotIn("1e6", body)
+        # The input filter is the box benches' own: it drops both companion
+        # kinds. The three hooks' filters differ on purpose (#465).
+        self.assertIn("grep -v -e '-boxtc.csv' -e '-tc.csv'", body)
+
+    def test_the_endpoint_bench_keeps_its_own_different_body(self) -> None:
+        # closed-loop-vref-pvt-pex supplies a genuinely different derivation
+        # to the same hook (endpoint method, -tc.csv, 6 columns). Collapsing
+        # it into the box companion would change committed evidence.
+        script = (SIM_DIR / "closed-loop-vref-pvt-pex" / "run_klt_sim.sh").read_text()
+        hook = script.split("pex_record_companion() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertNotIn("pex_boxtc_companion", hook)
+        self.assertIn("-tc.csv", hook)
+        self.assertNotIn("-boxtc.csv", hook)
+
+    def test_shared_companion_picks_the_record_over_its_own_companions(self) -> None:
+        # `ls -t` picks the newest CSV, so a companion derived by an earlier
+        # run -- which is newer than the record -- must be filtered out, or
+        # the derivation would consume its own output.
+        records = self.tmp / "records"
+        records.mkdir()
+        exp, stem = next(iter(BOXTC_BENCHES.items()))
+        committed = SIM_DIR / exp / "records"
+        (records / f"{stem}.csv").write_bytes((committed / f"{stem}.csv").read_bytes())
+        # Companions, all newer than the record, all of which must be skipped.
+        for name in (f"{stem}-boxtc.csv", f"{stem}-tc.csv",
+                     f"{stem}-vs-schematic-boxtc.csv"):
+            (records / name).write_text("corner_label,garbage\nbad,row\n")
+            os.utime(records / name, (time.time() + 10, time.time() + 10))
+        script = (
+            f'set -euo pipefail; HARNESS_DIR="{SIM_DIR / "harness"}"; '
+            f'EXP_DIR="{self.tmp}"; '
+            f'source "$HARNESS_DIR/pex_vref_runner.sh"; pex_boxtc_companion'
+        )
+        r = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (records / f"{stem}-boxtc.csv").read_text(),
+            (committed / f"{stem}-boxtc.csv").read_text(),
+        )
 
 if __name__ == "__main__":
     unittest.main()

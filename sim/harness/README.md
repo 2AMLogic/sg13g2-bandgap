@@ -511,6 +511,52 @@ runner re-implements the comparison. The Monte Carlo draw-0 gate in
 `trim_mc_klt.py` is a different decision (a committed draw, not a PVT corner)
 and stays where it is.
 
+## The box-method TC companion, once (issue #465)
+
+The two box-TC benches -- `closed-loop-vref-pvt-boxtc` (schematic) and
+`closed-loop-vref-pvt-pex-boxtc` (extracted) -- derive the same quantity the
+same way from their minted record: per `(corner, vdd)` group, over the PASS
+points of the 8-point temperature grid,
+
+```
+box_tc_ppm_per_c = 1e6 * (vref_3ms_max - vref_3ms_min) / (165 * vref_3ms(27 C))
+```
+
+written as an 11-column `records/<id>-boxtc.csv` companion. That derivation
+has exactly one implementation, [`boxtc_companion.py`](boxtc_companion.py),
+which the shared shell seam calls as a CLI:
+
+```bash
+python3 sim/harness/boxtc_companion.py <records/id.csv> <records/id-boxtc.csv>
+```
+
+`pex_vref_runner.sh`'s `pex_boxtc_companion` picks the newest minted record
+(skipping the companions an earlier run derived from it) and invokes the
+module; each bench's `pex_record_companion` hook is a one-line delegation to
+it. **The hook itself stays per-experiment**, because the derivations
+genuinely differ: `closed-loop-vref-pvt-pex` supplies the *endpoint* method
+to the same hook (6 columns, `-tc.csv`, rows keyed by exact
+`(corner, vdd, temp)`), and the three hooks' input filters differ on purpose.
+Only the two identical bodies were collapsed.
+
+It was previously implemented twice -- byte-identical 40-line
+`python3 - <<'PY'` heredocs, one per bench, the second pasted in *after* the
+shared driver existed. Both copies are live, and
+[`../../spec/decision-records/0010-box-method-tc-evidence.md`](../../spec/decision-records/0010-box-method-tc-evidence.md)
+ratifies their output as this row's TC evidence: pre-layout worst 19.765
+ppm/°C (`wcs`/3.30 V), post-layout worst 20.137 ppm/°C (`bcs`/3.63 V) -- the
+design sits *on* the 20 ppm/°C stretch line, so the number is decided at the
+third decimal place, and the two benches are compared against each other
+(`*-vs-schematic-boxtc.csv`). A correction to one copy would silently have
+left the other bench reporting the old derivation. **No value, span, filter
+or rounding was touched** by the consolidation: both committed companions
+regenerate byte-identically from the module, which is the acceptance test and
+is kept as a golden test. Tests: `BoxTcGoldenTests`, `BoxTcFormulaTests` and
+`BoxTcSeamTests` in
+[`test_harness_transformers.py`](test_harness_transformers.py), the last of
+which also asserts that neither bench re-implements the formula and that the
+endpoint bench keeps its own body.
+
 ## SG13CMOS5L experiments on the harness (issue #337, Part of #322)
 
 The four `sim/sg13cmos5l-*` experiments (core-open-loop-bias,
