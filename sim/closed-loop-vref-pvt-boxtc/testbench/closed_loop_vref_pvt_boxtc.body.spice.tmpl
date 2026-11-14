@@ -27,7 +27,15 @@ pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
 * stiffness aids; rshunt/gmin are deliberately ABSENT (~0.55 uA leak out of the
 * output branch through the trim ladder's interior nodes = ~37 mV of settled
 * vref at code 128). tnom=27 is klt's own default and the legacy bench's value.
-.options reltol=5e-3
+* klu (issue #469): switch the direct linear solver from the ngspice default
+* (SPARSE 1.3) to KLU -- same equations and tolerances, a different
+* factorization of the same matrix, so answer-preserving by construction.
+* Measured on the hot corner the SPARSE default could not fit in a fleet job
+* (typ/100C/2.97V): 3643 s on SPARSE 1.3 vs 211 s on KLU, vref_3ms identical
+* at 6 significant figures (1.04385 V, vref_settle_delta = 0). See
+* sim/closed-loop-vref-pvt-boxtc/README.md "Hot-corner solve time" for the
+* measurement table.
+.options reltol=5e-3 klu
 
 * Resident-vector save: ~700 nodes x 60000 timesteps trips ngspice's startup
 * allocation check. Every vector measured is listed; nothing else is needed.
