@@ -41,6 +41,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import klt_corner_bundle as bundle  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
+from trim_mc_klt import load_seeds  # noqa: E402
 
 CODES = (0, 1, 2, 4, 8, 16, 32, 64, 128, 129, 255)
 VDDS = (2.97, 3.30, 3.63)
@@ -80,15 +81,6 @@ def point_id(label: str, code: int, temp: float, vdd: float) -> str:
 def expected_points() -> list[str]:
     return [point_id(label, code, temp, vdd)
             for label, vdd, temp, codes in shard_plan() for code in codes]
-
-
-def load_seeds(seed_csv: str) -> dict:
-    seeds: dict = {}
-    with open(seed_csv, newline="") as fh:
-        for row in csv.DictReader(fh):
-            if row["status"] == "PASS":
-                seeds[(row["corner_label"], row["temp_c"], row["vdd_v"])] = row
-    return seeds
 
 
 def seed_row(seeds: dict, label: str, temp: int, vdd: float, seed_csv: str) -> dict:
