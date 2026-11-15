@@ -7,7 +7,13 @@ open PDK — designed by AI agents driving
 open-source xschem + ngspice flow.
 
 **Status: schematic captured and simulated across PVT; layout DRC-clean;
-LVS `match` on `bandgap_startup`, still `mismatch` on `bandgap_core`.** The
+LVS still open — curated deck: `match` on `bandgap_amp` and
+`bandgap_startup`, `mismatch` on `bandgap_core` and `bandgap_top`; PDK
+runset on `bandgap_top`: `mismatch`, no MOS or HBT recognized (#380, #381).**
+The evidence-ladder verdict of record is
+[`manifests/sg13g2-bandgap.signoff.json`](manifests/sg13g2-bandgap.signoff.json):
+its `t1_met_count` reads 5 of 11 T1 items met
+([`docs/design-evidence-tiers.md`](docs/design-evidence-tiers.md)). The
 `klt` resolver gap that once blocked this repo closed on 2026-08-05
 ([klayout-tools#522](https://github.com/2AMLogic/klayout-tools/issues/522)),
 and a curated SG13G2 DRC/LVS starter deck now ships with klayout-tools
@@ -15,11 +21,12 @@ and a curated SG13G2 DRC/LVS starter deck now ships with klayout-tools
 [#911](https://github.com/2AMLogic/klayout-tools/pull/911)); design work has
 proceeded since. `spec/`, `design/`, `sim/`, and `layout/` are all populated,
 including pre- and post-layout (PEX) PVT sweeps and committed `klt drc` /
-`klt lvs` reports. The current open blockers are `bandgap_core`'s three
-`NPN13G2` devices, which the curated extraction deck cannot recognise at all
-because SiGe HBT recognition was investigated and permanently declined
-upstream
-([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/pull/1242)),
+`klt lvs` reports. The current open blockers are LVS — the `bandgap_top`
+PDK-runset report that T1 item 4 cites recognises no MOS or HBT at all
+(#380, #381), and the curated deck's `bandgap_core` `mismatch` is its three
+`NPN13G2` devices, which it cannot recognise because SiGe HBT recognition
+was investigated and permanently declined upstream
+([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/pull/1242)) —
 and the core resizing and trim re-aiming needed to meet the ratified trimmed
 Output-reference line (issue #303). The trim network itself landed in #229;
 the remaining accuracy gap requires design work. The earlier
@@ -193,9 +200,12 @@ ratified (see decision records above), five of six rows two-key reviewed
 clean and the Output-reference row re-cast by the two-key-gated record 0011
 (#221) rather than blocking the other five; schematic simulated across PVT,
 pre- and post-layout (PEX);
-layout DRC-clean, with LVS `match` on `bandgap_startup` and `mismatch` on
-`bandgap_core` (three unrecognised `NPN13G2` devices, klayout-tools#1242,
-permanent).**
+layout DRC-clean, with curated-deck LVS `match` on `bandgap_amp` and
+`bandgap_startup` and `mismatch` on `bandgap_core` and `bandgap_top`
+(three unrecognised `NPN13G2` devices, klayout-tools#1242, permanent), and
+the `bandgap_top` PDK-runset LVS that T1 item 4 cites still `mismatch` —
+no MOS or HBT recognized (#380, #381). Verdict of record:
+`manifests/sg13g2-bandgap.signoff.json`, `t1_met_count` 5 of 11.**
 
 ## Chipalooza
 
@@ -221,7 +231,7 @@ spec/          ratified spec + decision records
 design/        schematics / netlists (xschem)
 sim/           testbenches + PVT corner results (ngspice)
 layout/        GDS + DRC/LVS reports (klayout-tools driven)
-measurements/  silicon characterization (empty until tape-out)
+measurements/  supplementary quantitative analysis (characterization reports, design studies); no silicon yet
 ```
 
 ## Reproducing the results
