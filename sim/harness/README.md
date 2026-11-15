@@ -569,7 +569,13 @@ instantiation, shard merge with an explicit expected grid, the legacy
 verdicts) and [`cmos5l_runner.sh`](cmos5l_runner.sh)
 (the shared runner body); the generic mechanics are reused unchanged
 (`klt_sim_evidence.py`, `merge_batch_shards.py`, `fixup_batch_report.py`,
-`submission_identity.*`). Two small shared-code changes:
+`submission_identity.*`). Since #481 the runner preamble itself is shared
+too: [`klt_sim_preamble.sh`](klt_sim_preamble.sh) holds the mode check,
+directory/klt/PDK/OSDI resolution, work-dir mint, batch defaults and
+resume-safety scaffold that `pex_runner.sh` and `cmos5l_runner.sh` had
+retyped, and the batch defaults + resume scaffold keep their --batch-only
+timing on the CMOS5L side. Every SG13CMOS5L-specific block stayed at its
+call site. Two small shared-code changes:
 `klt_corner_bundle.render_bundle` takes optional `libs`/`sections` for other
 family sets (default unchanged), and `enrich_pvt_report.inject_baked_supply`
 was factored out of `enrich` (behaviour unchanged, tested).
