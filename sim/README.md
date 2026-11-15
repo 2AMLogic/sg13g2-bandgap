@@ -255,7 +255,7 @@ are legacy too and still commit bytes, so they **cannot mint new records**:
 (`run_klt_sim.sh`) for new evidence. An experiment that has only a legacy
 runner is converted when a re-run is needed (file one issue per experiment
 then). Still unconverted (every experiment without `run_klt_sim.sh`):
-`closed-loop-vref-pvt`, `closed-loop-vref-boxtc-trim`,
+`closed-loop-vref-boxtc-trim`,
 `core-open-loop-bias`, `loop-gain-phase-margin`,
 `startup-core-handover`, `startup-time-to-release`,
 `startup-trip-point`, `startup-trip-point-pex`
