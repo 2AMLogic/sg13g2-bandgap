@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """Shared scaffolding for `.github/scripts`' CI evidence checkers.
 
-Not an entry point itself -- imported by all four `check_*.py` checkers
-(`check_evidence_formats`, `check_signoff_manifest`, `check_report_dependencies`,
-`check_design_source_dependencies`), which independently redefined the same
-`Report` collector, `sha256_file()` helper, manifest discovery and end-of-run
-printout before this module existed (issues #260, #342).
+Not an entry point itself -- imported by the `check_*.py` checkers, which
+independently redefined the same `Report` collector, `sha256_file()` helper,
+manifest discovery and end-of-run printout before this module existed (issues
+#260, #342). A new checker imports what it needs from here rather than
+re-typing it; `check_artifact_manifests.py` and `check_selftests_wired.py`
+landed after the extraction and were folded in by issue #475. Deliberately no
+caller census here: a count goes stale the next time a checker is added, which
+is what #475 found.
 
 What is shared:
 
 - `Report` -- problem/note collector with an end-of-run `finish()` printout.
-  `check_signoff_manifest.py` and the two dependency checkers construct
-  `Report(annotate=True)` so each problem also prints immediately as a GitHub
-  Actions inline annotation (``::error::<msg>``); `check_evidence_formats.py`
-  defers everything to the end-of-run printout and uses the `Report()` default.
+  Most callers construct `Report(annotate=True)` so each problem also prints
+  immediately as a GitHub Actions inline annotation (``::error::<msg>``);
+  `check_evidence_formats.py` defers everything to the end-of-run printout and
+  uses the `Report()` default.
 - `sha256_file()` -- bare hex digest, streamed in 1 MiB chunks;
   `sha256_prefixed()` -- the same with a `"sha256:"` prefix, the form the
   manifests' `content_hash` pins use.
@@ -21,9 +24,12 @@ What is shared:
   pin format, repo-relative path containment, and the containment -> pin-format
   -> existence -> hash-match sequence the two dependency checkers share. Each
   checker words its own MISSING/CHANGED message from the returned kind.
-- `add_manifest_args()` / `resolve_root()` / `discover_manifests()` -- the
-  `--root`/`--manifest` options and block-manifest discovery shared by the
-  three manifest-driven checkers.
+- `add_root_arg()` / `add_manifest_args()` / `resolve_root()` /
+  `discover_manifests()` -- the `--root`/`--manifest` options and
+  block-manifest discovery. A checker that reads block manifests takes both
+  options; one that only needs a repo root takes `add_root_arg()` alone.
+- `tracked_files()` -- the committed tree as repo-relative paths, for the
+  checkers that read what git tracks rather than what is on disk.
 """
 
 from __future__ import annotations
@@ -31,6 +37,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -139,9 +146,14 @@ def check_pin(root: Path, rel: Any, pin: Any, what: str, report: Report,
     return True, ""
 
 
+def add_root_arg(parser: argparse.ArgumentParser) -> None:
+    """Add the `--root` option `resolve_root()` reads."""
+    parser.add_argument("--root", default=None, help="repo root (default: this script's repo)")
+
+
 def add_manifest_args(parser: argparse.ArgumentParser) -> None:
     """Add the `--root` / `--manifest` options shared by the manifest checkers."""
-    parser.add_argument("--root", default=None, help="repo root (default: this script's repo)")
+    add_root_arg(parser)
     parser.add_argument("--manifest", default=None, help="block manifest (default: auto-detect)")
 
 
@@ -166,3 +178,24 @@ def discover_manifests(args: argparse.Namespace) -> "tuple[Path, list[Path]] | N
         print(f"::error::no block manifest found under {manifests_dir}")
         return None
     return root, paths
+
+
+def tracked_files(root: Path) -> list[str]:
+    """Every git-tracked path under `root`, repo-relative, in `ls-files` order.
+
+    A git failure is the checkers' documented exit 2, not a traceback. The
+    message names the script the operator ran rather than this module -- the
+    Python form of `sim/lib/nodeset_seed.sh`'s `caller_name` convention, since
+    a shared helper that blamed `_ci_common.py` would misattribute the failure.
+    """
+    who = Path(sys.argv[0]).name or "_ci_common.py"
+    try:
+        proc = subprocess.run(["git", "-C", str(root), "ls-files", "-z"],
+                              capture_output=True, check=False)
+    except OSError as exc:
+        raise SystemExit(f"{who}: cannot run git: {exc}") from None
+    if proc.returncode != 0:
+        print(f"{who}: git ls-files failed: "
+              f"{proc.stderr.decode('utf-8', 'replace').strip()}", file=sys.stderr)
+        raise SystemExit(2)
+    return [p.decode("utf-8", "surrogateescape") for p in proc.stdout.split(b"\0") if p]

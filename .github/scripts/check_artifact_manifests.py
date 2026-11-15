@@ -26,7 +26,8 @@ bytes with `klt artifact verify <manifest>` from a fleet worker.
 
 Usage: python3 .github/scripts/check_artifact_manifests.py [--root DIR]
 Exit status: 0 ok, 1 a problem was found (all printed), 2 git failure.
-Stdlib only; needs `git` on PATH.
+Stdlib only, plus the sibling `_ci_common.py` scaffolding (itself stdlib-only);
+needs `git` on PATH.
 """
 
 from __future__ import annotations
@@ -35,9 +36,9 @@ import argparse
 import json
 import posixpath
 import re
-import subprocess
-import sys
 from pathlib import Path
+
+from _ci_common import Report, add_root_arg, resolve_root, tracked_files
 
 MANIFEST_DIR = "manifests/artifacts/"
 README = "manifests/artifacts/README.md"
@@ -129,30 +130,20 @@ def manifest_problems(manifest, bench: str, rid: str) -> list[str]:
     return problems
 
 
-def tracked_files(root: Path) -> list[str]:
-    try:
-        proc = subprocess.run(["git", "-C", str(root), "ls-files", "-z"],
-                              capture_output=True, check=False)
-    except OSError as exc:
-        raise SystemExit(f"check_artifact_manifests.py: cannot run git: {exc}") from None
-    if proc.returncode != 0:
-        print(f"check_artifact_manifests.py: git ls-files failed: "
-              f"{proc.stderr.decode('utf-8', 'replace').strip()}", file=sys.stderr)
-        raise SystemExit(2)
-    return [p.decode("utf-8", "surrogateescape") for p in proc.stdout.split(b"\0") if p]
+def check(root: Path, report: Report) -> tuple[int, int]:
+    """Report the tracked tree's problems; return `(manifest_count, entry_count)`.
 
-
-def check(root: Path) -> tuple[list[str], int, int]:
-    """Return `(problems, manifest_count, entry_count)` for the tracked tree."""
+    Every message is composed through `report.fail(path, ...)`, so each one
+    still reads `<repo-relative path>: <what is wrong>` as before.
+    """
     tracked = tracked_files(root)
     tracked_set = set(tracked)
-    problems: list[str] = []
     manifests = entries = 0
 
     for path in tracked:
         if path.startswith(SCRATCH_PREFIX):
-            problems.append(f"{path}: the scratch directory {SCRATCH_PREFIX} holds a new run's "
-                            "raw outputs and must never be committed")
+            report.fail(path, f"the scratch directory {SCRATCH_PREFIX} holds a new run's "
+                              "raw outputs and must never be committed")
     for path in tracked:
         if not path.startswith("manifests/") or not (root / path).is_file():
             continue
@@ -161,8 +152,8 @@ def check(root: Path) -> tuple[list[str], int, int]:
         except (OSError, UnicodeDecodeError):
             continue  # binary or unreadable files cannot name a bucket in text
         if STORAGE_RE.search(text):
-            problems.append(f"{path}: names a storage location (s3:// or arn:aws:); a manifest "
-                            "carries logical artifact: uris only")
+            report.fail(path, "names a storage location (s3:// or arn:aws:); a manifest "
+                              "carries logical artifact: uris only")
 
     for path in sorted(p for p in tracked if p.startswith(MANIFEST_DIR)):
         if path == README:
@@ -170,43 +161,40 @@ def check(root: Path) -> tuple[list[str], int, int]:
         m = MANIFEST_RE.match(path)
         full = root / path
         if m is None or full.is_symlink():
-            problems.append(f"{path}: only <bench>-<run-id>.manifest.json files (and README.md) "
-                            "belong in manifests/artifacts/")
+            report.fail(path, "only <bench>-<run-id>.manifest.json files (and README.md) "
+                              "belong in manifests/artifacts/")
             continue
         try:
             manifest = json.loads(full.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
-            problems.append(f"{path}: not valid JSON: {exc}")
+            report.fail(path, f"not valid JSON: {exc}")
             continue
         found = manifest_problems(manifest, m.group("bench"), m.group("rid"))
-        problems += [f"{path}: {p}" for p in found]
+        for problem in found:
+            report.fail(path, problem)
         if found:
             continue
         manifests += 1
         for entry in manifest["entries"]:
             entries += 1
             if entry["name"] in tracked_set:
-                problems.append(
-                    f"{path}: {entry['name']} is committed in the tree; stored evidence bytes "
-                    "must not also be committed (no blob fallback)")
-    return problems, manifests, entries
+                report.fail(path, f"{entry['name']} is committed in the tree; stored evidence "
+                                  "bytes must not also be committed (no blob fallback)")
+    return manifests, entries
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--root", default=None, help="repo root (default: this script's repo)")
+    add_root_arg(parser)
     args = parser.parse_args(argv)
-    root = Path(args.root).resolve() if args.root else Path(__file__).resolve().parents[2]
-    problems, manifests, entries = check(root)
-    if problems:
-        for problem in problems:
-            print(f"::error::{problem}")
-        print(f"FAIL: {len(problems)} problem(s) in the artifact manifests under {root}",
-              file=sys.stderr)
-        return 1
-    print(f"OK: {manifests} artifact manifest(s), {entries} stored object(s) checked "
-          "(schema only; run `klt artifact verify` to check the bytes)")
-    return 0
+    root = resolve_root(args)
+    report = Report(annotate=True)
+    manifests, entries = check(root, report)
+    return report.finish(
+        "artifact manifest",
+        f"OK: {manifests} artifact manifest(s), {entries} stored object(s) checked "
+        "(schema only; run `klt artifact verify` to check the bytes)",
+    )
 
 
 if __name__ == "__main__":
