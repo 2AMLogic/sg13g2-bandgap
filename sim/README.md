@@ -763,8 +763,10 @@ whichever of those trackers owns them.
   experiment here uses.
 - **[`closed-loop-vref-pvt-boxtc/`](closed-loop-vref-pvt-boxtc/README.md)**
   — the **box-method TC** measurement (issue #222) the two-key review of
-  the TC row demanded: the same co-simulated closed-loop topology and
-  byte-identical per-point netlist `closed-loop-vref-pvt` uses, swept on
+  the TC row demanded: the same co-simulated closed-loop topology and a
+  per-point netlist byte-identical to `closed-loop-vref-pvt`'s except the
+  direct linear solver (this bench pins `klu`, measured answer-preserving —
+  issue #469), swept on
   the 8-temperature grid {-40,-20,0,27,50,75,100,125} °C (120 points)
   instead of the official 3-point grid, so
   `(vmax−vmin)/(vref(27 °C)·165 °C)` reads the interior extremum the
