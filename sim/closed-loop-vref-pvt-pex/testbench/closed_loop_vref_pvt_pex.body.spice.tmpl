@@ -1,6 +1,10 @@
 * sg13g2-bandgap -- closed-loop vref/TC PEX bench body for the `klt sim`
-* harness (issue #278, the remaining half of #275). Instantiated by
-* sim/closed-loop-vref-pvt-pex/run_klt_sim.sh, which substitutes @@OSDI_DIR@@,
+* harness (issue #278, the remaining half of #275); also the box-method-TC
+* twin's DUT wrapper, shared verbatim (same extraction, different grid --
+* issue #472). Instantiated by sim/closed-loop-vref-pvt-pex/run_klt_sim.sh
+* and, via its BODY_TEMPLATE override, the twin's
+* sim/closed-loop-vref-pvt-pex-boxtc/run_klt_sim.sh -- which substitute
+* @@OSDI_DIR@@,
 * @@VDD@@ (per supply -- the ramp's target is part of the fixture, so the
 * supply axis cannot ride the request's `alter` channel the way the core
 * bench's plain DC rail does) and @@PEX_BODY@@. The DUT half -- every
