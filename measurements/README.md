@@ -4,6 +4,14 @@ Supplementary quantitative analysis that doesn't fit `sim/`'s per-experiment
 append-only evidence convention (multi-run comparisons, design-space
 searches, dominant-error-regime writeups) — see the repo README for scope.
 
+- `lib/` — shared helper code for the dated reports, the `measurements`
+  analogue of `sim/lib/` (#484). Currently `spotcheck_common.py`: the
+  re-derivation bodies (CSV readers plus one printing function per spec
+  area) that each characterization report's `spotcheck.py` used to carry
+  as a ~201-line copy. A report's script pins its own record paths and
+  calls into the module, so a rotation changes two paths instead of
+  copying 201 lines; like `spotcheck.py` itself it is a companion script,
+  not one of the hashed report artifacts.
 - `2026-08-tc-retune/` — issue #134: the TC-row gap analysis (per-corner
   measured-vs-drafted table), the slope-vs-curvature dominant-error-regime
   analysis, and the resistor-ratio retune (`R1`: 694.5um -> 511um) that
