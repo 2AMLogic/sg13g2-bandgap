@@ -32,7 +32,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from trim_mc_klt import BAD_LOG, SEED_FIELDS, Results, load_seeds, op_value  # noqa: E402
+from trim_mc_klt import (BAD_LOG, SEED_FIELDS, Results, make_ctx,  # noqa: E402
+                         op_value, sections_for)
 
 POINTS = ("nominal", "negctrl", "bcs_n40", "bcs_125", "wcs_n40", "wcs_125")
 CORNER_OF = {"nominal": "typ", "negctrl": "typ", "bcs_n40": "bcs", "bcs_125": "bcs",
@@ -40,9 +41,10 @@ CORNER_OF = {"nominal": "typ", "negctrl": "typ", "bcs_n40": "bcs", "bcs_125": "b
 TEMP_OF = {"nominal": 27, "negctrl": 27, "bcs_n40": -40, "bcs_125": 125,
            "wcs_n40": -40, "wcs_125": 125}
 MODE_OF = {p: ("negctrl" if p == "negctrl" else "mismatch") for p in POINTS}
-HBT = {"typ": "hbt_typ", "bcs": "hbt_bcs", "wcs": "hbt_wcs"}
-MOS = {"typ": "mos_tt", "bcs": "mos_ff", "wcs": "mos_ss"}
-RES = {"typ": "res_typ", "bcs": "res_bcs", "wcs": "res_wcs"}
+# The corner -> model-section maps (HBT/MOS/RES) live in trim_mc_klt and are
+# reached only through its sections_for (issue #463): one copy of that mapping
+# for the family. `sections` below still resolves the point against THIS
+# module's own CORNER_OF/MODE_OF, which is a different, 6-point set.
 VDD = "3.30"
 UNIT_TIMEOUT_S = 300
 DRAWS_PER_REQUEST = 100
@@ -61,9 +63,7 @@ def digest_label(point: str) -> str:
 
 
 def sections(point: str) -> tuple[str, str, str]:
-    c = CORNER_OF[point]
-    s = "_mismatch" if MODE_OF[point] == "mismatch" else ""
-    return HBT[c] + s, MOS[c] + s, RES[c] + s
+    return sections_for(CORNER_OF[point], MODE_OF[point])
 
 
 def unit_id(point: str, draw: int) -> str:
@@ -93,15 +93,6 @@ def render_deck(template: str, ctx: dict, point: str, draw: int) -> str:
     if left:
         raise SystemExit(f"deck template has unfilled placeholders: {left}")
     return text
-
-
-def make_ctx(a: argparse.Namespace, local: bool) -> dict:
-    return {
-        "seeds": load_seeds(a.seed_csv), "seed_csv": a.seed_csv, "seed": a.seed, "pdk": a.pdk,
-        "pdk_root": a.local_pdk_root if local else a.batch_pdk_root,
-        "osdi_dir": a.local_osdi_dir if local else a.batch_osdi_dir,
-        "msense_w": a.msense_w, "dut_sha": a.dut_sha,
-    }
 
 
 def request_for(entries: list[dict], a: argparse.Namespace, backend: str | None) -> dict:
