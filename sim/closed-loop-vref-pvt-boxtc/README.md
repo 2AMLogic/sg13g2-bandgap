@@ -5,8 +5,11 @@ Closed-loop **box-method temperature-coefficient characterization** (issue
 `bandgap_core` + `bandgap_amp` + `bandgap_startup` closed-loop topology
 [`../closed-loop-vref-pvt/`](../closed-loop-vref-pvt/README.md) uses — the
 per-point netlist is **byte-identical from the `.lib` line down** (device
-set, fixture, solver options, every `.measure`); this experiment's only
-difference is the **temperature grid** its driver sweeps.
+set, fixture, every `.measure`) except the direct linear solver: this bench
+pins `klu`, a deliberate, measured answer-preserving departure (issue #469,
+[Hot-corner solve time](#hot-corner-solve-time-issue-469-measured-2026-11-14)).
+This experiment's other difference is the **temperature grid** its driver
+sweeps.
 
 ## Why this experiment exists
 
@@ -219,10 +222,10 @@ points every candidate at the per-timestep solve.
 construction — same equations, same tolerances, a different direct
 factorization of the same matrix (ngspice 47 ships compiled with KLU; the
 default is SPARSE 1.3, which is what every committed log of this bench
-shows). The measurement confirms it: `vref_3ms` is bit-identical to the
-baseline at 6 significant figures, `vref_settle_delta = 0`, and the corner
-grades `pass`. The remaining candidates from the issue's ranked list were
-not spent: they are accuracy knobs (`trtol`, `method=gear`) or a weaker
+shows). The measurement confirms it: `vref_3ms` is identical to the
+baseline to the reported precision (1.04385 V), `vref_settle_delta = 0`,
+and the corner grades `pass`. The remaining candidates from the issue's
+ranked list were not spent: they are accuracy knobs (`trtol`, `method=gear`) or a weaker
 version of the same lever (`tran` initial step / `tmax`), and none can beat
 a 17× answer-preserving win for the purpose #402 needs. The
 `singular matrix` recovery this corner is known for still occurs under KLU

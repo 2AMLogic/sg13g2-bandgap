@@ -18,7 +18,11 @@
 #
 # SANITY GATE. One local typ/27C/3.30V corner must land on the committed
 # sim/closed-loop-vref-pvt record's vref_3ms (1.04728 V): the two benches share
-# the DUT, fixture, solver options and measurement, so the band is tight.
+# the DUT, fixture and measurement; the solver options are shared except this
+# bench's `klu` direct solver (issue #469). The band stays tight because that
+# divergence was measured to move neither corner (sanity delta 0 here,
+# vref_3ms identical to the reported precision on the hot corner -- README
+# "Hot-corner solve time"), not because the options are identical.
 #
 # HOST SETUP seen on 2026-10-25 (issue #273), needed until the runner image and
 # the dispatch hosts' klt agree:
