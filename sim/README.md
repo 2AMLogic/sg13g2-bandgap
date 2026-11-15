@@ -255,7 +255,7 @@ are legacy too and still commit bytes, so they **cannot mint new records**:
 (`run_klt_sim.sh`) for new evidence. An experiment that has only a legacy
 runner is converted when a re-run is needed (file one issue per experiment
 then). Still unconverted (every experiment without `run_klt_sim.sh`):
-`closed-loop-vref-pvt`, `closed-loop-vref-boxtc-trim`,
+`closed-loop-vref-boxtc-trim`,
 `core-open-loop-bias`, `loop-gain-phase-margin`,
 `startup-core-handover`, `startup-time-to-release`,
 `startup-trip-point`, `startup-trip-point-pex`
@@ -763,8 +763,10 @@ whichever of those trackers owns them.
   experiment here uses.
 - **[`closed-loop-vref-pvt-boxtc/`](closed-loop-vref-pvt-boxtc/README.md)**
   — the **box-method TC** measurement (issue #222) the two-key review of
-  the TC row demanded: the same co-simulated closed-loop topology and
-  byte-identical per-point netlist `closed-loop-vref-pvt` uses, swept on
+  the TC row demanded: the same co-simulated closed-loop topology and a
+  per-point netlist byte-identical to `closed-loop-vref-pvt`'s except the
+  direct linear solver (this bench pins `klu`, measured answer-preserving —
+  issue #469), swept on
   the 8-temperature grid {-40,-20,0,27,50,75,100,125} °C (120 points)
   instead of the official 3-point grid, so
   `(vmax−vmin)/(vref(27 °C)·165 °C)` reads the interior extremum the

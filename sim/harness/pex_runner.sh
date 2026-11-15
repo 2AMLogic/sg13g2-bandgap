@@ -9,9 +9,13 @@
 #   EXP    experiment directory name        STEM   testbench file stem
 #   VDDS   (optional) per-supply body variants; leave unset when the bench
 #          sweeps the supply natively (see pex_merge_call.sh)
-#   BODY_TEMPLATE  (optional, a schematic-DUT bench) the body template --
-#          typically the experiment's own with placeholders pre-filled --
-#          that --batch hands the request generator
+#   BODY_TEMPLATE  (optional) the body template -- defaults to the
+#          experiment's own ${EXP_DIR}/testbench/${STEM}.body.spice.tmpl.
+#          Set BEFORE sourcing to make the submission identity below hash
+#          the override too (the shared-wrapper case, issue #472); the
+#          schematic benches assign it after sourcing instead, handing
+#          --batch a pre-filled WORK copy, and keep the identity on their
+#          own committed template
 #   PEX_BATCH_MAX_IN_FLIGHT  (optional) submit --batch's per-variant requests
 #          concurrently, as one `klt sim --batch-set` with this many in
 #          flight, instead of one blocking `klt sim` per request (#402);
@@ -52,11 +56,18 @@ klt_sim_require_osdi SG13G2_OSDI_DIR " -- run sim/tools/build-osdi.sh." || exit 
 BATCH_LIB_ROOT="${PDK_ROOT}"
 klt_sim_batch_defaults
 
+# One body template for all three uses below -- the identity declaration's
+# --extra, the sanity instantiation and the batch request generator.
+# Default: the experiment's own per-stem committed template; an experiment
+# whose DUT wrapper is byte-identical to a sibling's points the override at
+# that shared template instead (issue #472).
+BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"
+
 klt_sim_resume_scaffold
 IDENT_ARGS+=(
   --declare "batch_lib_root=submitter-pdk-root"
   --extra "${EXP_DIR}/testbench/${STEM}.request.json.tmpl"
-  --extra "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
+  --extra "${BODY_TEMPLATE}"
   --extra "${BATCH_PROVISION_SCRIPT}"
   --extra "${HARNESS_DIR}/klt_corner_bundle.py"
   --extra "${SIM_DIR}/tools/gen_pex_netlist_body.py")
@@ -71,7 +82,7 @@ pex_instantiate_body() {
   local args=(-e "s|@@OSDI_DIR@@|${1}|g" -e "s|@@PEX_BODY@@|${2}|g") kv
   shift 2
   for kv in "$@"; do args+=(-e "s|@@${kv%%=*}@@|${kv#*=}|g"); done
-  sed "${args[@]}" "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
+  sed "${args[@]}" "${BODY_TEMPLATE}"
 }
 
 # pex_sanity_local [CORNERS_JSON]  (needs body.spice in WORK)
@@ -115,7 +126,7 @@ pex_batch_dispatch() {
 
   local gen=(python3 "${HARNESS_DIR}/gen_pex_batch_requests.py"
     --request-template "${EXP_DIR}/testbench/${STEM}.request.json.tmpl"
-    --body-template "${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"
+    --body-template "${BODY_TEMPLATE}"
     --lib-root "${BATCH_LIB_ROOT}" --provision-script "${BATCH_PROVISION_SCRIPT}"
     --pdk "${PDK}" --work "${WORK}"
     --osdi "${BATCH_PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi")

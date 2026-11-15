@@ -6,9 +6,12 @@
 * convention as the legacy bench). The DUT half below is carried over verbatim
 * from tb_closed_loop_iq.spice.tmpl (the legacy `run_pvt_sweep.sh` (removed in #438; see git history) bench, kept as the
 * point-definition reference): trim-bearing bandgap_core at trim_code=128,
-* bandgap_amp, bandgap_startup, wired as design/bandgap_top.sch. It is the same
-* DUT, fixture and solver options as sim/closed-loop-vref-pvt-boxtc's body;
-* only the supply hold (3m) and the saved vectors differ.
+* bandgap_amp, bandgap_startup, wired as design/bandgap_top.sch. It is the
+* same DUT and fixture as sim/closed-loop-vref-pvt-boxtc's body, and the
+* solver options are the same except that body's klu direct-solver pin
+* (issue #469, measured answer-preserving on that bench; this body keeps
+* the ngspice SPARSE default); only the supply hold (3m) and the saved
+* vectors differ.
 *
 * `klt sim` netlist-body convention: a circuit BODY. No `.lib`, no `.temp`, no
 * `.options temp=`, no analysis card, no `.end` -- the corner bundle, the

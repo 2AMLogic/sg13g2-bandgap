@@ -5,8 +5,11 @@ Closed-loop **box-method temperature-coefficient characterization** (issue
 `bandgap_core` + `bandgap_amp` + `bandgap_startup` closed-loop topology
 [`../closed-loop-vref-pvt/`](../closed-loop-vref-pvt/README.md) uses — the
 per-point netlist is **byte-identical from the `.lib` line down** (device
-set, fixture, solver options, every `.measure`); this experiment's only
-difference is the **temperature grid** its driver sweeps.
+set, fixture, every `.measure`) except the direct linear solver: this bench
+pins `klu`, a deliberate, measured answer-preserving departure (issue #469,
+[Hot-corner solve time](#hot-corner-solve-time-issue-469-measured-2026-11-14)).
+This experiment's other difference is the **temperature grid** its driver
+sweeps.
 
 ## Why this experiment exists
 
@@ -179,12 +182,79 @@ shard jobs each (`PEX_BATCH_MAX_IN_FLIGHT` / `KLT_SIM_MAX_CONCURRENT_JOBS`,
 now the committed defaults) lost none. Worth knowing before anyone retries
 this grid with a bigger number.
 
-Two things would unblock it, neither of them a change to this repo: a
-higher per-job ceiling on the sim fleet (a 2am `infra/aws/` change), or a
-materially faster hot-corner solve. Until one lands, the #273 waiver stays.
-A future attempt should pass `klt sim --fail-fast-probe`, which calibrates
-on the first corner and aborts up front, rather than discovering this after
-a 1800 s timeout per shard.
+Two things would unblock it: a higher per-job ceiling on the sim fleet (a
+2am `infra/aws/` change), or a materially faster hot-corner solve. The
+second has now landed — issue #469 measured the candidates and adopted the
+KLU direct linear solver (next section), which takes the hot corner from
+3643 s to 211 s, inside even the template's existing `timeout_s` of 1800 s.
+Until #402 re-runs the grid on the fleet and mints a new record, the #273
+waiver stays. A future attempt should pass `klt sim --fail-fast-probe`,
+which calibrates on the first corner and aborts up front, rather than
+discovering this after a 1800 s timeout per shard.
+
+## Hot-corner solve time (issue #469, measured 2026-11-14)
+
+The 100 °C point is slow, not non-convergent, and the cost is wall clock in
+the transient — so the fix attempted here was on the solver-options side
+only. All probes below are one-corner local runs of typ / 100 °C / 2.97 V
+through the committed templates (scratch `klt sim` request, `--timeout-s
+5400` override, `/usr/bin/time -v` wall clock), on a dispatch host with
+ngspice 47 (compiled with KLU) and klt 0.9.2.dev1029; row 0 is the 2026-11-13
+probe recorded above, re-quoted for comparison. No convergence aid
+(`rshunt`/`gmin`) was touched and `reltol` stayed at `5e-3` throughout.
+
+**Where the time goes (split probe).** Re-running the same corner with the
+transient truncated to the supply ramp (`50n 200u`, row 1) took **325 s** of
+the 3643 s total: roughly 91% of the wall clock sits in the post-ramp
+settled transient (200 µs → 3 ms), and the cost scales with simulated time
+rather than being concentrated in one stiff event. That rules out the
+operating-point/`.nodeset` family up front (the t=0 solve is the all-zero
+rails solution the PWL ramp intends, and the ramp itself is cheap), and
+points every candidate at the per-timestep solve.
+
+| # | setting | tran window | wall (s) | `vref_3ms` (V) | settle Δ (V) | verdict |
+|---|---------|-------------|---------:|----------------|--------------|---------|
+| 0 | baseline — ngspice default solver (SPARSE 1.3), 2026-11-13 probe | `50n 3m` | 3643 | 1.04385 | 0 | incumbent: exceeds the 3480 s largest legal one-corner `timeout_s` |
+| 1 | split probe — same options, truncated window | `50n 200u` | 325 | n/a | n/a | timing probe only (klt grades it `error` because the `at=2m/3m` measurements fall outside the truncated window — expected, see above) |
+| 2 | `.options … klu` — KLU direct linear solver | `50n 3m` | **211** | 1.04385 | 0 | **adopted**: 17× vs baseline, answer identical at 6 significant figures |
+
+**Why KLU is the adopted candidate.** It is answer-preserving by
+construction — same equations, same tolerances, a different direct
+factorization of the same matrix (ngspice 47 ships compiled with KLU; the
+default is SPARSE 1.3, which is what every committed log of this bench
+shows). The measurement confirms it: `vref_3ms` is identical to the
+baseline to the reported precision (1.04385 V), `vref_settle_delta = 0`,
+and the corner grades `pass`. The remaining candidates from the issue's
+ranked list were not spent: they are accuracy knobs (`trtol`, `method=gear`) or a weaker
+version of the same lever (`tran` initial step / `tmax`), and none can beat
+a 17× answer-preserving win for the purpose #402 needs. The
+`singular matrix` recovery this corner is known for still occurs under KLU
+(check node `xxtrim.t251`) and recovers as before; under klt 0.9.2 grading
+it is recorded as a `warning`-severity diagnostic and the corner still
+grades `pass`.
+
+**What landed.** `.options … klu` on both decks —
+`testbench/closed_loop_vref_pvt_boxtc.body.spice.tmpl` (the `klt sim`
+bench) and `testbench/tb_closed_loop_vref_boxtc.spice.tmpl` (the
+point-definition reference, kept in step) — plus a measured-timing note in
+the request template's `_comment` block. Both acceptance bands were
+checked on the edited templates:
+
+- hot corner (row 2): `vref_3ms = 1.04385 V`, within 0.0005 V of the
+  committed SPARSE answer, settle delta 0, 211 s < 3480 s;
+- reference corner (`run_klt_sim.sh --sanity`, typ / 27 °C / 3.30 V):
+  `sanity vref_3ms_v = 1.04728 (anchor 1.04728, delta 0) ok` — sanity gate
+  PASS, 161 s.
+
+`timeout_s: 1800` in the request template now covers the whole grid
+including the 100 °C points (211 s ≪ 1800 s), so #402 needs **no**
+`timeout_s` raise to complete the refresh — only the re-run itself. One
+precondition for that re-run: the fleet runner's ngspice must also be
+KLU-capable (the measurement above pins only this host's ngspice 47; the
+committed 2026-09-21 logs show SPARSE 1.3 but no version banner). If it is
+not, the option is ignored and the 100 °C points time out exactly as
+before — `klt sim --fail-fast-probe` (already recommended above) surfaces
+that on the first corner instead of after a shard campaign.
 
 ## Results summary (this repo's own committed record)
 
