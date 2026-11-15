@@ -522,9 +522,10 @@ points of the 8-point temperature grid,
 box_tc_ppm_per_c = 1e6 * (vref_3ms_max - vref_3ms_min) / (165 * vref_3ms(27 C))
 ```
 
-written as an 11-column `records/<id>-boxtc.csv` companion. That derivation
-has exactly one implementation, [`boxtc_companion.py`](boxtc_companion.py),
-which the shared shell seam calls as a CLI:
+written as an 11-column `records/<id>-boxtc.csv` companion. For the two
+benches on the PEX runner seam that derivation has exactly one
+implementation, [`boxtc_companion.py`](boxtc_companion.py), which the shared
+shell seam calls as a CLI:
 
 ```bash
 python3 sim/harness/boxtc_companion.py <records/id.csv> <records/id-boxtc.csv>
@@ -537,7 +538,11 @@ it. **The hook itself stays per-experiment**, because the derivations
 genuinely differ: `closed-loop-vref-pvt-pex` supplies the *endpoint* method
 to the same hook (6 columns, `-tc.csv`, rows keyed by exact
 `(corner, vdd, temp)`), and the three hooks' input filters differ on purpose.
-Only the two identical bodies were collapsed.
+Only the two identical bodies were collapsed. One third copy of the
+derivation is known and stays: `closed-loop-vref-boxtc-trim` carries its own
+awk body in its `run_pvt_sweep.sh` (that bench does not source
+`pex_vref_runner.sh`, so the seam cannot reach it); `BoxTcSeamTests`
+cross-checks its span, PASS filter and rounding against the module instead.
 
 It was previously implemented twice -- byte-identical 40-line
 `python3 - <<'PY'` heredocs, one per bench, the second pasted in *after* the

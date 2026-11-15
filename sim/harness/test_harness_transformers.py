@@ -15,6 +15,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -1809,6 +1810,76 @@ class BoxTcSeamTests(TempDirCase):
         self.assertNotIn("pex_boxtc_companion", hook)
         self.assertIn("-tc.csv", hook)
         self.assertNotIn("-boxtc.csv", hook)
+
+    def test_the_trim_bench_box_derivation_matches_the_module(self) -> None:
+        # closed-loop-vref-boxtc-trim carries a third copy of the box
+        # derivation: an awk body inside run_pvt_sweep.sh, which does not
+        # source pex_vref_runner.sh, so the pex_boxtc_companion seam cannot
+        # reach it (#474; delegating it is out of scope there). The copy is
+        # load-bearing -- its -boxtc.csv feeds the trim-induced-TC gate that
+        # DR-0013 cites -- so a correction applied to boxtc_companion.py
+        # alone would silently leave the bench reporting the old derivation.
+        # Until the bench delegates, this tripwire makes that divergence red.
+        script = (SIM_DIR / "closed-loop-vref-boxtc-trim" / "run_pvt_sweep.sh").read_text()
+
+        # The span is parsed from the bench and compared to the module's:
+        # restating 165 on both sides would check nothing.
+        span = re.search(r"TEMP_SPAN_C[ \t]*=[ \t]*([0-9]+)", script)
+        self.assertIsNotNone(
+            span,
+            "TEMP_SPAN_C= is gone from the trim bench; its awk span must "
+            "still equal boxtc_companion.SPAN_C "
+            f"({bxc.SPAN_C}). boxtc_companion.py is the one place to "
+            "correct the box derivation.")
+        self.assertEqual(
+            int(span.group(1)), bxc.SPAN_C,
+            f"the trim bench's box span (TEMP_SPAN_C={span.group(1)}) no "
+            f"longer equals boxtc_companion.SPAN_C ({bxc.SPAN_C}): correct "
+            "boxtc_companion.py first, then this bench.")
+        self.assertIn(
+            '-v span="${TEMP_SPAN_C}"', script,
+            "the trim bench's awk no longer takes its span from "
+            "TEMP_SPAN_C; boxtc_companion.py is the one place to correct "
+            "the box derivation.")
+
+        # The box awk itself: same formula shape and PASS filter as the
+        # module's group loop.
+        awk_m = re.search(r"'(.*?)' \"\$\{CSV_OUT\}\"",
+                          script.split('-v span="${TEMP_SPAN_C}"', 1)[1],
+                          re.DOTALL)
+        self.assertIsNotNone(
+            awk_m,
+            "the trim bench's box-TC awk is gone or no longer writes to "
+            "${CSV_OUT}; boxtc_companion.py is the one place to correct "
+            "the box derivation.")
+        awk_prog = awk_m.group(1)
+        self.assertIn(
+            "1e6 * (vmax - vmin) / (span * v27)", awk_prog,
+            "the trim bench's box formula drifted from the module's "
+            "1e6 * (vmax - vmin) / (span * v27); boxtc_companion.py is the "
+            "one place to correct the derivation.")
+        self.assertIn(
+            '$scol == "PASS"', awk_prog,
+            "the trim bench's box derivation dropped the PASS-point filter; "
+            "boxtc_companion.py is the one place to correct the derivation.")
+
+        # Same rounding the module emits: %.5g voltages, %d integer
+        # temperatures and counts, %.3f box_tc_ppm_per_c -- positionally, in
+        # the companion header's column order.
+        fmt = re.search(r'printf "([^"]+)"', awk_prog)
+        self.assertIsNotNone(
+            fmt,
+            "the trim bench's box printf is gone; its companion rounding "
+            "must match boxtc_companion.py's emission.")
+        convs = fmt.group(1).split("\\n")[0].split(",")
+        self.assertEqual(
+            convs,
+            ["%s", "%s", "%s", "%d", "%d",
+             "%.5g", "%d", "%.5g", "%d", "%.5g", "%.3f"],
+            "the trim bench's companion rounding drifted from "
+            "boxtc_companion.py's (%.5g voltages, %d temperatures/counts, "
+            "%.3f box_tc_ppm_per_c): correct boxtc_companion.py first, "
+            "then this bench.")
 
     def test_shared_companion_picks_the_record_over_its_own_companions(self) -> None:
         # `ls -t` picks the newest CSV, so a companion derived by an earlier
