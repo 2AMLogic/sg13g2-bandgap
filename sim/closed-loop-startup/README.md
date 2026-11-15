@@ -244,3 +244,55 @@ host a multi-corner grid must go through `--batch`: `run_pvt_sweep.sh` (removed 
 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.
+
+## Solve time under KLU (issue #489, measured 2026-11-15)
+
+Issue #469 adopted the KLU direct linear solver on
+[`../closed-loop-vref-pvt-boxtc/`](../closed-loop-vref-pvt-boxtc/README.md)
+after a measured 17× hot-corner win there (3643 s → 211 s on
+typ/100 °C/2.97 V), and #488 then had to carve this bench's body out of the
+cross-bench solver-options claim. Before inverting that claim back, the
+question this issue asks is whether `klu` buys *this* bench anything: same
+DUT and fixture as the boxtc body, `reltol=5e-3` kept, on a comparable long
+transient (`tran 50n 2m`). Both corners the issue names were timed under the
+ngspice default (SPARSE 1.3) and under `.options … klu`: one local corner
+per setting through the committed templates (`run_klt_sim.sh --sanity` for
+the sanity corner, whose anchor bands the driver enforces itself; a scratch
+one-corner `klt sim` request for the hot corner, the method the boxtc README
+documents), on a dispatch host with ngspice 47 (compiled with KLU) and klt
+0.9.3.dev3. Each run's solver was confirmed from its own
+`Using … Direct Linear Solver` log line (never inferred from the option
+being present); wall is the corner's engine wall clock from the `klt sim`
+report. No evidence record was minted or touched — this is a timing
+measurement, not a claim refresh.
+
+| corner | setting | wall (s) | `vref_final_v` (V) | `fb_final_v` (V) | verdict |
+|---|---|---:|---|---|---|
+| typ / 27 °C / 3.30 V (sanity) | SPARSE 1.3 (default) | 110.2 | 1.04728 | 2.49682 | sanity gate PASS, delta 0 |
+| typ / 27 °C / 3.30 V (sanity) | `.options … klu` | 105.2 | 1.04728 | 2.49682 | answers identical; parity |
+| typ / 125 °C / 2.97 V (hot) | SPARSE 1.3 (default) | 107.8 | 1.04201 | 2.22558 | matches the committed CSV row exactly |
+| typ / 125 °C / 2.97 V (hot) | `.options … klu` | 235.3 | 1.04201 | 2.22558 | answers identical; 2.18× slower |
+
+Answer preservation: the sanity corner lands on both anchors
+(`vref_final_v 1.04728 ± 0.0005`, `fb_final_v 2.49682 ± 0.005`) with delta 0
+under **both** solvers; the hot corner reproduces the committed
+`20261001-083332-e5507b2` typ/125 °C/2.97 V row (`vref_final_v = 1.04201`,
+`fb_final_v = 2.22558`) to all 6 reported significant figures under both
+solvers.
+
+**Verdict: not adopted.** On this bench KLU is a net loss: 2.18× *slower* on
+the hot corner (235.3 s vs 107.8 s) and parity on the mild one. The 2 ms
+hold keeps every measured corner cheap on the default solver — the worst
+run here is 110 s, 6% of the request's `timeout_s` of 1800 s — so there is
+no solve-time problem for a different factorization to solve, and the
+boxtc precedent (17×) does not carry: that bench's cost was concentrated in
+one 100 °C stiff region its grid is built around, and this bench's grid has
+no measured region where KLU comes out ahead. The templates keep the ngspice
+SPARSE default and no deck changed: the body template's cross-bench solver
+claim (its lines 9–14) stays exactly as #469/#488 left it — shared with
+boxtc except that body's `klu` pin, this body on the SPARSE default — which
+this measurement confirms is the right trade for this bench. The
+`singular matrix` recovery diagnostic occurs identically under both solvers
+(one warning per run on the hot corner, recovered; the corner grades `pass`
+with identical answers). Single local corner per setting; the parity cell
+carries ordinary run-to-run noise, immaterial to the verdict.
