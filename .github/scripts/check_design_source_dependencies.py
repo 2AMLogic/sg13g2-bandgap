@@ -60,6 +60,7 @@ from _ci_common import (
     Report,
     add_manifest_args,
     check_pin,
+    cited_envelopes,
     contained,
     discover_manifests,
     sha256_prefixed,
@@ -244,44 +245,22 @@ def active_attestations(root: Path, manifest_paths: list[Path],
                         report: Report) -> list[tuple[Path, Path]]:
     """(envelope, attestation) for every item-1 citation."""
     out = []
-    for manifest_path in manifest_paths:
-        try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            report.problem(f"{manifest_path.name}: unreadable manifest: {exc}")
+    for envelope_path, envelope, rel, where in cited_envelopes(
+            root, manifest_paths, ITEM_ID, report):
+        source = envelope.get("source") if isinstance(envelope, dict) else None
+        if not isinstance(source, str) or not source.strip():
+            report.problem(f"{where}: envelope {rel} names no 'source' attestation")
             continue
-        entry = (manifest.get("evidence") or {}).get(ITEM_ID) if isinstance(manifest, dict) else None
-        if entry is None:
-            report.note(f"{manifest_path.name}: no item-{ITEM_ID} citation; nothing to check")
+        attest = contained(
+            root, str(envelope_path.parent.relative_to(root.resolve()) / source),
+            "attestation", report, where,
+        )
+        if attest is None:
             continue
-        for e in entry if isinstance(entry, list) else [entry]:
-            where = f"{manifest_path.name} evidence['{ITEM_ID}']"
-            rel = e if isinstance(e, str) else (e.get("file") if isinstance(e, dict) else None)
-            envelope_path = contained(root, rel, "cited envelope", report, where)
-            if envelope_path is None:
-                continue
-            if not envelope_path.is_file():
-                report.problem(f"{where}: cited envelope {rel} does not exist")
-                continue
-            try:
-                envelope = json.loads(envelope_path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError as exc:
-                report.problem(f"{where}: cited envelope {rel} is not valid JSON: {exc}")
-                continue
-            source = envelope.get("source") if isinstance(envelope, dict) else None
-            if not isinstance(source, str) or not source.strip():
-                report.problem(f"{where}: envelope {rel} names no 'source' attestation")
-                continue
-            attest = contained(
-                root, str(envelope_path.parent.relative_to(root.resolve()) / source),
-                "attestation", report, where,
-            )
-            if attest is None:
-                continue
-            if not attest.is_file():
-                report.problem(f"{where}: MISSING -- attestation {source} does not exist")
-                continue
-            out.append((envelope_path, attest))
+        if not attest.is_file():
+            report.problem(f"{where}: MISSING -- attestation {source} does not exist")
+            continue
+        out.append((envelope_path, attest))
     return out
 
 

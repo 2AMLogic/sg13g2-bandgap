@@ -21,6 +21,11 @@ What is shared:
   pin format, repo-relative path containment, and the containment -> pin-format
   -> existence -> hash-match sequence the two dependency checkers share. Each
   checker words its own MISSING/CHANGED message from the returned kind.
+- `cited_envelopes()` -- the manifest -> evidence[<item>] -> cited envelope
+  walk the two dependency checkers share: JSON-read the block manifest,
+  normalise the citation (bare path, `{file, ...}` object, singular or list),
+  resolve it through `contained()`, check existence and JSON-parse the
+  envelope. Each caller extracts its own target path from the parsed envelope.
 - `add_manifest_args()` / `resolve_root()` / `discover_manifests()` -- the
   `--root`/`--manifest` options and block-manifest discovery shared by the
   three manifest-driven checkers.
@@ -30,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import sys
 from pathlib import Path
@@ -137,6 +143,47 @@ def check_pin(root: Path, rel: Any, pin: Any, what: str, report: Report,
     if sha256_prefixed(path) != pin:
         return False, "changed"
     return True, ""
+
+
+def cited_envelopes(root: Path, manifest_paths: list[Path], item_id: str,
+                    report: Report) -> "list[tuple[Path, Any, Any, str]]":
+    """(envelope path, parsed envelope, cited rel, `where` label) per item-<id> citation.
+
+    Walks each block manifest's `evidence[<item_id>]` citation -- a bare
+    envelope path or a `{file, ...}` object, singular or list -- resolving and
+    JSON-parsing the cited envelope. Malformed citations, unreadable manifests
+    and unparseable envelopes are reported (with these four messages) and
+    skipped; each surviving tuple is ready for the caller to extract its own
+    target path from (the report's `provenance.input`, the attestation's
+    `source`, ...).
+    """
+    out = []
+    for manifest_path in manifest_paths:
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            report.problem(f"{manifest_path.name}: unreadable manifest: {exc}")
+            continue
+        entry = (manifest.get("evidence") or {}).get(item_id) if isinstance(manifest, dict) else None
+        if entry is None:
+            report.note(f"{manifest_path.name}: no item-{item_id} citation; nothing to check")
+            continue
+        for e in entry if isinstance(entry, list) else [entry]:
+            where = f"{manifest_path.name} evidence['{item_id}']"
+            rel = e if isinstance(e, str) else (e.get("file") if isinstance(e, dict) else None)
+            envelope_path = contained(root, rel, "cited envelope", report, where)
+            if envelope_path is None:
+                continue
+            if not envelope_path.is_file():
+                report.problem(f"{where}: cited envelope {rel} does not exist")
+                continue
+            try:
+                envelope = json.loads(envelope_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                report.problem(f"{where}: cited envelope {rel} is not valid JSON: {exc}")
+                continue
+            out.append((envelope_path, envelope, rel, where))
+    return out
 
 
 def add_manifest_args(parser: argparse.ArgumentParser) -> None:
