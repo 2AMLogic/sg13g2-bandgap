@@ -12,8 +12,9 @@ LVS still open — curated deck: `match` on `bandgap_amp` and
 runset on `bandgap_top`: `mismatch`, no MOS or HBT recognized (#380, #381).**
 The evidence-ladder verdict of record is
 [`manifests/sg13g2-bandgap.signoff.json`](manifests/sg13g2-bandgap.signoff.json):
-its `t1_met_count` reads 5 of 11 T1 items met
-([`docs/design-evidence-tiers.md`](docs/design-evidence-tiers.md)). The
+its `t1_met_count` reads 5 of 11 T1 items met (`klayout-tools`'
+[`docs/design-evidence-tiers.md`](https://github.com/2AMLogic/klayout-tools/blob/main/docs/design-evidence-tiers.md)).
+The
 `klt` resolver gap that once blocked this repo closed on 2026-08-05
 ([klayout-tools#522](https://github.com/2AMLogic/klayout-tools/issues/522)),
 and a curated SG13G2 DRC/LVS starter deck now ships with klayout-tools
