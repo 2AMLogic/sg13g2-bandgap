@@ -166,6 +166,11 @@ def cited_envelopes(root: Path, manifest_paths: list[Path], item_id: str,
     walk's per citation; each yielded tuple is ready for the caller to extract
     its own target path from (the report's `provenance.input`, the
     attestation's `source`, ...).
+    Callers must consume the generator to completion: the walk's four
+    diagnostics are emitted lazily as the generator advances, so a caller
+    that `break`s early -- or never iterates the call at all -- silently
+    loses the diagnostics for every manifest it never reached, and those
+    manifests' defects go unreported.
     """
     for manifest_path in manifest_paths:
         try:
