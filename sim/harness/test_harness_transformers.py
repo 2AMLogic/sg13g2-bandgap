@@ -1615,6 +1615,45 @@ class SetDispatchWiringTests(unittest.TestCase):
             body = helper.split(f"{fn}() {{", 1)[1]
             self.assertIn("--wait-for-capacity", body.split("\n}\n", 1)[0], fn)
 
+    def test_pex_boxtc_runner_overrides_the_body_template_before_sourcing_the_driver(self) -> None:
+        assignment = (
+            'BODY_TEMPLATE="${_here}/../closed-loop-vref-pvt-pex/testbench/'
+            'closed_loop_vref_pvt_pex.body.spice.tmpl"'
+        )
+        runner = (SIM_DIR / "closed-loop-vref-pvt-pex-boxtc" / "run_klt_sim.sh").read_text()
+        self.assertIn(assignment, runner)
+        source_line = 'source "${_here}/../harness/pex_runner.sh"'
+        self.assertIn(source_line, runner)
+        # The ordering is the contract: the override only reaches the
+        # submission identity when it precedes the source line.
+        self.assertLess(runner.index(assignment), runner.index(source_line))
+
+    def test_pex_driver_resolves_the_body_template_only_at_the_default(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        occurrences = [
+            line
+            for line in driver.splitlines()
+            if "${STEM}.body.spice.tmpl" in line and not line.lstrip().startswith("#")
+        ]
+        self.assertEqual(
+            occurrences,
+            ['BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"'],
+        )
+
+    def test_shared_pex_body_template_exists_and_the_per_stem_copy_does_not(self) -> None:
+        shared = (
+            SIM_DIR / "closed-loop-vref-pvt-pex"
+            / "testbench" / "closed_loop_vref_pvt_pex.body.spice.tmpl"
+        )
+        self.assertTrue(shared.is_file(), shared)
+        # Stem-exact on purpose: the non-PEX closed-loop-vref-pvt-boxtc bench
+        # legitimately keeps its own ..._boxtc.body.spice.tmpl on main.
+        per_stem = (
+            SIM_DIR / "closed-loop-vref-pvt-pex-boxtc"
+            / "testbench" / "closed_loop_vref_pvt_pex_boxtc.body.spice.tmpl"
+        )
+        self.assertFalse(per_stem.exists(), per_stem)
+
 
 # --------------------------------------------------------------------------
 # boxtc_companion: the box-method TC derivation (issue #465). It used to be

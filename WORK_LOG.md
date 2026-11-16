@@ -12,7 +12,10 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-14
 
+- **PR #471**: refactor(sim): one home for the box-method TC derivation
+- **PR #466**: docs: roadmap as of 2026-11-13
 - **PR #462**: sim: gate every grid dispatch through one anchor-check implementation
+- **Issue #465** (closed): Dedupe the box-method TC companion: pex_record_companion() is byte-identical in two experiments, with a shared runner already sourced by both
 - **Issue #458** (closed): Consolidate six copies of the --sanity anchor gate into one tested harness helper
 
 ### 2026-11-13

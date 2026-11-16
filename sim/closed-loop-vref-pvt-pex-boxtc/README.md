@@ -214,9 +214,12 @@ What changed about how this experiment's evidence is minted:
   netlists on every run (hub tags read off each device card, the merged
   tap net renamed to `tn0`, the 255 ladder units under their `XRU<n>`
   names for D2, the three subckts are flattened through the design netlist's own instance lines, and the `FB|OUT`/`IN_N|SNS1`/`IN_P|SNS2` merged label nets are renamed to their schematic names `fb`/`sns1`/`sns2`). The hand-transcribed
-  `testbench/*.spice.tmpl` files remain for history; the bench body
-  (`testbench/*.body.spice.tmpl`) now carries only fixtures and includes
-  the generated DUT.
+  `testbench/*.spice.tmpl` files remain for history; the bench body --
+  since issue #472 the sibling's committed
+  `sim/closed-loop-vref-pvt-pex/testbench/closed_loop_vref_pvt_pex.body.spice.tmpl`,
+  shared verbatim (same extraction, different grid) via the runner's
+  `BODY_TEMPLATE` override -- carries only fixtures and includes the
+  generated DUT.
 - **The grid runs as per-process x supply `klt sim --backend batch` requests**
   (one fleet job each), merged deterministically
   (`sim/harness/merge_batch_shards.py`) before the adapter mints one

@@ -35,7 +35,14 @@ set -euo pipefail
 EXP="closed-loop-vref-pvt-pex-boxtc"
 STEM="closed_loop_vref_pvt_pex_boxtc"
 VDDS=(2.97 3.30 3.63)
-source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_runner.sh"
+# One DUT wrapper, two owners (issue #472): this bench's body template was
+# byte-identical to its sibling's except the provenance comment, so both
+# experiments share sim/closed-loop-vref-pvt-pex's committed template --
+# same extraction, different grid. Set BEFORE sourcing: pex_runner.sh bakes
+# it into the submission identity's --extra as well as the instantiation.
+_here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BODY_TEMPLATE="${_here}/../closed-loop-vref-pvt-pex/testbench/closed_loop_vref_pvt_pex.body.spice.tmpl"
+source "${_here}/../harness/pex_runner.sh"
 source "${HARNESS_DIR}/pex_vref_runner.sh"
 
 # Sanity anchor: sim/closed-loop-vref-pvt's newest committed record,
