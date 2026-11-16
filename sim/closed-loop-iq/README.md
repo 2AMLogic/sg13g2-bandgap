@@ -271,12 +271,13 @@ solvers; the hot corner reproduces the committed
 solvers.
 
 **Verdict: not adopted.** KLU is answer-preserving here exactly as it was on
-the boxtc bench, but this bench has no hole for it to fill: no measured
-corner is anywhere near the request's `timeout_s` of 1800 s — the boxtc
-100 °C point that drove its 17× adoption ran to 3643 s, past its cap, and
-this bench stays inside the cap at any plausible wall clock on this host
-(see the noise caveat below) — so there is no solve-time problem for a
-different factorization to relieve. The templates keep
+the boxtc bench, but this bench has no hole for it to fill: the committed
+grid completed all 45 points inside the request's `timeout_s` of 1800 s on
+the fleet — record `20261001-092257-4fe07ea` marks 45/45 points PASS under
+these templates — and that cap is a fleet limit, not a property of this
+host, so there is no measured solve-time problem for a different
+factorization to relieve. The boxtc contrast still holds: its 100 °C point
+that drove the 17× adoption there ran to 3643 s, past its cap. The templates keep
 the ngspice SPARSE default and no deck changed: the body template's
 cross-bench solver claim (its lines 9–14) stays exactly as #469/#488 left
 it — shared with boxtc except that body's `klu` pin, this body on the
@@ -289,5 +290,6 @@ identical re-run of the recorded-133.9 s sanity/SPARSE configuration did
 not finish within a 900 s cap (load average 43–63 on 16 cores), so a
 single-run wall clock here carries run-to-run spread larger than any delta
 in the table. No per-cell delta above therefore supports a solver
-attribution — the wall-clock column is descriptive only, and the verdict
-rests on the timeout-fraction ground above, which is immune to that noise.
+attribution — the wall-clock column is descriptive only, and no wall clock
+in the table, nor any fraction derived from one, carries weight on this
+host; the verdict rests on the committed grid above instead.
