@@ -161,6 +161,32 @@ def boxtc_trim(rec):
     say("box TC complete groups only", f"{len(complete)} groups; max {max(box(complete)):.3f}")
 
 
+def vref_pvt_boxtc(rec):
+    r = rows(rec + ".csv")
+    ok = [x for x in r if x["status"] == "PASS"]
+    v = [f(x, "vref_3ms_v") for x in ok]
+    nom = [x for x in r if x["corner_label"] == "typ" and x["temp_c"] == "27" and x["vdd_v"] == "3.30"][0]
+    say("box-TC grid sch trim-bearing", f"{len(ok)}/{len(r)} PASS; vref {min(v):.5f}..{max(v):.5f} V; "
+        f"vs 1.050 V: {100*(min(v)/1.05-1):+.2f}%..{100*(max(v)/1.05-1):+.2f}%; "
+        f"nominal typ/27C/3.30V {f(nom,'vref_3ms_v'):.5f} V ({100*(f(nom,'vref_3ms_v')/1.05-1):+.3f}%); "
+        f"max settle delta {max(f(x,'vref_settle_delta_v') for x in ok):.2g} V")
+    g = rows(rec + "-boxtc.csv")
+    box = [f(x, "box_tc_ppm_per_c") for x in g]
+    w = max(g, key=lambda x: f(x, "box_tc_ppm_per_c"))
+    say("box TC trim-bearing 120-point grid, code 128", f"{len(g)} groups, complete: {sum(x['n_pass']==x['n_grid'] for x in g)}/{len(g)}; "
+        f"{min(box):.2f}..{max(box):.2f} ppm/C; < 20: {sum(c<20 for c in box)}; < 50: {sum(c<50 for c in box)}; "
+        f"worst {f(w,'box_tc_ppm_per_c'):.2f} at {w['corner_label']}/{w['vdd_v']}V")
+    ep = [f(x, "endpoint_tc_ppm_per_c") for x in g]
+    say("box TC trim-bearing 120-point grid endpoint TC", f"{len(g)} groups; {min(ep):.1f}..{max(ep):.1f} ppm/C; "
+        f"max |TC| {max(abs(c) for c in ep):.1f}")
+    vm = sum(x["vmin_temp_c"] == "125" for x in g)
+    vt = {}
+    for x in g:
+        vt.setdefault(x["vmax_temp_c"], []).append(x["corner_label"])
+    say("box TC trim-bearing 120-point grid extrema", f"vmin at 125 C in {vm}/{len(g)} groups; vmax at "
+        + ", ".join(f"{t} C ({'/'.join(sorted(set(cs)))})" for t, cs in sorted(vt.items(), key=lambda kv: float(kv[0]))))
+
+
 def pretrim_history(endpoint_tc_rec, sch_boxtc_rec, pex_boxtc_rec, aidsfree_rec):
     t = [f(x, "tc_ppm_per_c") for x in rows(endpoint_tc_rec + ".csv")]
     say("PEX pre-trim endpoint TC (STALE)", f"{min(t):.1f}..{max(t):.1f} ppm/C over {len(t)} groups")
