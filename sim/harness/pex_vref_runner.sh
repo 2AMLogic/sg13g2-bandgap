@@ -5,7 +5,9 @@
 # pex_runner.sh, with
 #   ANCHOR_VREF_V / ANCHOR_TOL_V   the sanity band on typ/27C/3.30V vref_3ms
 # set, define `pex_record_companion` (run after the record is minted, to write
-# the experiment's TC companion CSV), then call `pex_vref_main`. The gate
+# the experiment's TC companion CSV), then call `pex_vref_main` (or, for the schematic twins that have no
+# extraction, `schematic_vref_main`, which needs MSENSE_W from
+# sim/lib/msense_width.sh). The gate
 # itself is sim/harness/sanity_anchors.py (issue #458).
 #
 # All four vref benches delegate their companion hook: the two box-method
@@ -63,6 +65,30 @@ pex_vref_main() {
     ;;
   --record)
     pex_record_mint "${WORK}/report-enriched.json"
+    pex_record_companion
+    ;;
+  esac
+}
+
+# (Shared by the schematic benches, issue #512.) pex_vref_main generates the PEX body and states the extraction; the
+# schematic has neither, so this is its body-less twin.
+schematic_vref_main() {
+  case "${MODE}" in
+  --sanity)
+    pex_instantiate_body "${OSDI_DIR}" "unused" VDD=3.30 MSENSE_W="${MSENSE_W}" > "${WORK}/body.spice"
+    pex_sanity_local
+    check_anchors "${WORK}/report.json"
+    ;;
+  --batch)
+    pex_batch_dispatch --supply-word "ramp target"
+    python3 "${HARNESS_DIR}/enrich_pvt_report.py" "${WORK}/report-merged.json" \
+      -o "${WORK}/report-enriched.json"
+    ;;
+  --record)
+    ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
+        --report "${WORK}/report-enriched.json" \
+        --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
+        --experiment "${EXP_DIR}" )
     pex_record_companion
     ;;
   esac

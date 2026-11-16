@@ -83,28 +83,4 @@ pex_record_companion() {
   pex_boxtc_companion
 }
 
-# pex_vref_main generates the PEX body and states the extraction; the
-# schematic has neither, so this is its body-less twin.
-schematic_vref_main() {
-  case "${MODE}" in
-  --sanity)
-    pex_instantiate_body "${OSDI_DIR}" "unused" VDD=3.30 MSENSE_W="${MSENSE_W}" > "${WORK}/body.spice"
-    pex_sanity_local
-    check_anchors "${WORK}/report.json"
-    ;;
-  --batch)
-    pex_batch_dispatch --supply-word "ramp target"
-    python3 "${HARNESS_DIR}/enrich_pvt_report.py" "${WORK}/report-merged.json" \
-      -o "${WORK}/report-enriched.json"
-    ;;
-  --record)
-    ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
-        --report "${WORK}/report-enriched.json" \
-        --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
-        --experiment "${EXP_DIR}" )
-    pex_record_companion
-    ;;
-  esac
-}
-
 schematic_vref_main
