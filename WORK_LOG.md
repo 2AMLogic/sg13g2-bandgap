@@ -12,6 +12,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-16
 
+- **PR #529**: fix(sim): derive trim bench WORST_NEAR span label and headroom prose from constants
+- **Issue #527** (closed): Two more box-TC record-prose literals in the trim bench sit outside #517's fix (headroom pct, WORST_NEAR span)
 - **PR #526**: fix(sim): derive box-TC trim record span prose from span constants
 - **Issue #517** (closed): The box span's prose restatements (165) sit outside #474's tripwire, including one that lands in minted evidence
 - **PR #511**: docs: record cited_envelopes() full-consumption contract in its docstring
