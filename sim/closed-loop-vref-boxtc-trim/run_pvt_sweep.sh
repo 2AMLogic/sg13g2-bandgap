@@ -304,7 +304,7 @@ for point in "${GRID[@]}"; do
 done
 
 # Box-method TC per (corner x code, vdd) group over the 8-temp .op grid
-# (same formula as sim/closed-loop-vref-pvt-boxtc).
+# (same formula as sim/harness/boxtc_companion.py).
 BOXT_OUT="${RECORDS_DIR}/${RECORD_ID}-boxtc.csv"
 echo "corner_label,trim_code,vdd_v,n_pass,n_grid,vmin_v,vmin_temp_c,vmax_v,vmax_temp_c,vref_27c_v,box_tc_ppm_per_c" > "${BOXT_OUT}"
 ALL_CODE_LABELS=("${NEAR_CODES[@]}" "${FAR_CODES[@]}")

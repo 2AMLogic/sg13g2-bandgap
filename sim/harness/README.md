@@ -522,9 +522,10 @@ points of the 8-point temperature grid,
 box_tc_ppm_per_c = 1e6 * (vref_3ms_max - vref_3ms_min) / (165 * vref_3ms(27 C))
 ```
 
-written as an 11-column `records/<id>-boxtc.csv` companion. That derivation
-has exactly one implementation, [`boxtc_companion.py`](boxtc_companion.py),
-which the shared shell seam calls as a CLI:
+written as an 11-column `records/<id>-boxtc.csv` companion. For the two
+benches on the PEX runner seam that derivation has exactly one
+implementation, [`boxtc_companion.py`](boxtc_companion.py), which the shared
+shell seam calls as a CLI:
 
 ```bash
 python3 sim/harness/boxtc_companion.py <records/id.csv> <records/id-boxtc.csv>
@@ -533,12 +534,18 @@ python3 sim/harness/boxtc_companion.py <records/id.csv> <records/id-boxtc.csv>
 `pex_vref_runner.sh`'s `pex_boxtc_companion` picks the newest minted record
 (skipping the companions an earlier run derived from it) and invokes the
 module; each bench's `pex_record_companion` hook is a one-line delegation to
-it. The endpoint-method benches delegate the same way to their own module:
-[`tc_companion.py`](tc_companion.py) behind `pex_vref_runner.sh`'s
-`pex_endpoint_tc_companion` (issue #496). The two *methods* remain distinct
-derivations -- box = worst-case spread, endpoint = two-point slope -- each
-with its own module, helper and companion file; only the duplicated bodies
-were collapsed.
+it. **The hook itself stays per-experiment**, because the three hooks'
+input filters differ on purpose. The endpoint-method benches delegate the
+same way to their own module: [`tc_companion.py`](tc_companion.py) behind
+`pex_vref_runner.sh`'s `pex_endpoint_tc_companion` (issue #496). The two
+*methods* remain distinct derivations -- box = worst-case spread, endpoint
+= two-point slope -- each with its own module, helper and companion file;
+only the duplicated bodies were collapsed. One third copy of the box
+derivation is known and stays: `closed-loop-vref-boxtc-trim` carries its
+own awk body in its `run_pvt_sweep.sh` (that bench does not source
+`pex_vref_runner.sh`, so the seam cannot reach it); `BoxTcSeamTests`
+cross-checks its span, PASS filter and rounding against the module
+instead.
 
 It was previously implemented twice -- byte-identical 40-line
 `python3 - <<'PY'` heredocs, one per bench, the second pasted in *after* the
