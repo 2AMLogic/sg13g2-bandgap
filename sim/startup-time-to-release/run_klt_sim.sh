@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # sg13g2-bandgap -- startup-time-to-release (schematic DUT) on the `klt sim` harness
 # (issue #468, part of #412). Replaces hand-running run_pvt_sweep.sh, whose local
-# `ngspice -b` grid dispatch hosts forbid -- that script STAYS in place as the
-# point-definition reference (it is this bench's own history), but it can no
-# longer mint a record: `.github/scripts/check_evidence_formats.py` refuses a
-# record dated 20261023 or later without an artifact manifest, and only this
-# path writes one.
+# `ngspice -b` grid dispatch hosts forbid -- that script is deleted (#520; git
+# history keeps it as the point-definition reference, this bench's own history).
+# It was already barred from minting a record:
+# `.github/scripts/check_evidence_formats.py` refuses a record dated 20261023 or
+# later without an artifact manifest, and only this path writes one.
 #
 #   sim/startup-time-to-release/run_klt_sim.sh --sanity  # one local corner, vs the newest committed record
 #   sim/startup-time-to-release/run_klt_sim.sh --batch   # the 45-point grid, on the batch fleet
