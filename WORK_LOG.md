@@ -12,6 +12,16 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-16
 
+- **PR #508**: evidence: trim-bearing 120-point box-TC record, retire the #273 waiver
+- **PR #504**: test: tripwire the trim bench's awk box-TC copy to boxtc_companion
+- **PR #501**: docs: record measured KLU-vs-SPARSE solve times for closed-loop-iq and closed-loop-startup
+- **PR #494**: refactor: hoist the duplicated klt-sim runner preamble into one shared file
+- **PR #482**: feat(sim): klt sim wrapper for startup-time-to-release, with a ladder enricher mode
+- **Issue #489** (closed): Consider the KLU direct solver on the sibling klt sim benches that share the boxtc DUT
+- **Issue #481** (closed): Hoist the duplicated klt-sim runner preamble shared by pex_runner.sh and cmos5l_runner.sh
+- **Issue #474** (closed): A third box-method TC implementation survives #465: closed-loop-vref-boxtc-trim's awk copy
+- **Issue #468** (closed): sim: add a klt sim wrapper for startup-time-to-release (Startup row)
+- **Issue #402** (closed): sim: refresh closed-loop-vref-pvt-boxtc (120 points) via concurrent klt sim shard submission (Part of #273)
 - **PR #509**: refactor: share the endpoint-method TC companion via sim/harness/tc_companion.py
 - **PR #498**: refactor(sim): hoist SEED_FIELDS and load_seeds into one shared seed_deck module
 - **PR #490**: refactor: drop last hand-rolled MSENSE parse; de-enumerate sim/lib caller headers
