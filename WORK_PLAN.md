@@ -28,20 +28,20 @@ _None._
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
-- **#487**: render_deck() in the two MC harnesses carries 11 more byte-identical lines, and the 3-line half already has a factored helper in trim_coverage_klt
-- **#510**: sim/harness: a TC companion that derives zero rows should be loud, not a header-only CSV
 - **#515**: closed-loop-vref-pvt-boxtc README quotes a per-100 °C-point timing range the committed record cannot source
 - **#516**: No gate re-derives the characterization reports' committed "Spot-check output" blocks
 - **#519**: Remove closed-loop-vref-pvt run_pvt_sweep.sh: superseded by the new run_klt_sim.sh twin
 - **#520**: Remove startup-time-to-release run_pvt_sweep.sh: superseded by its run_klt_sim.sh twin
 - **#524**: Docs nit: name the generic KLT_SIM_BATCH_PDK_ROOT in run_klt_trim_axis.sh's Environment header; re-wrap sim/harness/README.md:634
 - **#530**: The trim bench's array-valued constants (NEAR_CODES, FAR_CODES, FAR_CORNERS, FAR_VDDS, TEMPS count) are still restated as record prose
+- **#536**: TC companions leave a header-only CSV on disk when main() refuses (#510 residual)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
+- **#487**: render_deck() in the two MC harnesses carries 11 more byte-identical lines, and the 3-line half already has a factored helper in trim_coverage_klt
 
 ## PRs Awaiting Review
 
@@ -69,11 +69,11 @@ Issues carrying `loom:curated`.
 - **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(curated)*
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)*
 - **#487**: render_deck() in the two MC harnesses carries 11 more byte-identical lines, and the 3-line half already has a factored helper in trim_coverage_klt *(curated)*
-- **#510**: sim/harness: a TC companion that derives zero rows should be loud, not a header-only CSV *(curated)*
 - **#515**: closed-loop-vref-pvt-boxtc README quotes a per-100 °C-point timing range the committed record cannot source *(curated)*
 - **#516**: No gate re-derives the characterization reports' committed "Spot-check output" blocks *(curated)*
 - **#524**: Docs nit: name the generic KLT_SIM_BATCH_PDK_ROOT in run_klt_trim_axis.sh's Environment header; re-wrap sim/harness/README.md:634 *(curated)*
 - **#530**: The trim bench's array-valued constants (NEAR_CODES, FAR_CODES, FAR_CORNERS, FAR_VDDS, TEMPS count) are still restated as record prose *(curated)*
+- **#536**: TC companions leave a header-only CSV on disk when main() refuses (#510 residual) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -91,8 +91,8 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 3 |
-| Ready (`loom:issue`) | 9 |
-| In Progress (`loom:building`) | 1 |
+| Ready (`loom:issue`) | 8 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
 | Curated | 15 |
