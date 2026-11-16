@@ -12,6 +12,9 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-16
 
+- **PR #538**: chore(sim): delete startup-time-to-release run_pvt_sweep.sh, superseded by run_klt_sim.sh
+- **Issue #520** (closed): Remove startup-time-to-release run_pvt_sweep.sh: superseded by its run_klt_sim.sh twin
+
 - **PR #535**: fix(harness): TC companions refuse an empty derivation instead of exiting 0
 - **Issue #510** (closed): sim/harness: a TC companion that derives zero rows should be loud, not a header-only CSV
 - **PR #529**: fix(sim): derive trim bench WORST_NEAR span label and headroom prose from constants
