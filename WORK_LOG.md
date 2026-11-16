@@ -10,6 +10,17 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-16
+
+- **PR #509**: refactor: share the endpoint-method TC companion via sim/harness/tc_companion.py
+- **PR #498**: refactor(sim): hoist SEED_FIELDS and load_seeds into one shared seed_deck module
+- **PR #490**: refactor: drop last hand-rolled MSENSE parse; de-enumerate sim/lib caller headers
+- **PR #499**: fix: yield cited_envelopes() lazily so walk diagnostics interleave with each caller's tail
+- **Issue #496** (closed): sim/harness: factor the endpoint-method TC companion into a shared helper (and fix its vdd_v formatting)
+- **Issue #486** (closed): Hoist the triplicated nodeset-seed loader and SEED_FIELDS token map into one harness module
+- **Issue #473** (closed): Drop the last hand-rolled MSENSE-width parse and fix sim/lib/msense_width.sh's stale caller list
+- **Issue #493** (closed): _ci_common.cited_envelopes() batches its diagnostics ahead of each caller's tail, reordering multi-problem failure output
+
 ### 2026-11-15
 
 - **PR #495**: pex: share one vref DUT body template between the pex and pex-boxtc benches
@@ -26,6 +37,12 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 - **Issue #475** (closed): Dedupe .github/scripts: check_artifact_manifests.py re-grows _ci_common's Report, resolve_root and ls-files reader
 - **Issue #478** (closed): layout/README.md: consolidate the three colliding "Reproducing" sections — neither SG13G2 recipe regenerates all four cells
 - **Issue #463** (closed): Dedupe the Monte Carlo klt-sim harnesses: PDK corner-section maps, sections(), make_ctx() and load_seeds() re-typed instead of imported
+- **PR #497**: docs: align README status, maturity ladder and measurements/ line with committed evidence
+- **PR #505**: refactor: extract shared spotcheck bodies into measurements/lib/spotcheck_common.py
+- **PR #506**: test: pin the shared PEX body-template contract in SetDispatchWiringTests
+- **Issue #470** (closed): docs: bring the README status and maturity-ladder lines in line with the signoff verdict
+- **Issue #484** (closed): Deduplicate the characterization reports' spotcheck.py: 186 of 201 lines are identical in all four copies
+- **Issue #502** (closed): Harness tests do not pin the shared PEX body-template contract (#472 / PR #495)
 
 ### 2026-11-14
 
