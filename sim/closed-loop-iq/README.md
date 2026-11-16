@@ -259,9 +259,9 @@ measurement, not a claim refresh.
 | corner | setting | wall (s) | `fb_v` (V) | `iq_avg_a` (A) | verdict |
 |---|---|---:|---|---|---|
 | typ / 27 °C / 3.30 V (sanity) | SPARSE 1.3 (default) | 133.9 | 2.49682 | 2.80682e-05 | sanity gate PASS, delta 0 |
-| typ / 27 °C / 3.30 V (sanity) | `.options … klu` | 168.8 | 2.49682 | 2.80682e-05 | answers identical; 1.26× slower |
+| typ / 27 °C / 3.30 V (sanity) | `.options … klu` | 168.8 | 2.49682 | 2.80682e-05 | answers identical |
 | typ / 125 °C / 2.97 V (hot) | SPARSE 1.3 (default) | 249.6 | 2.22558 | 3.62959e-05 | matches the committed CSV row exactly |
-| typ / 125 °C / 2.97 V (hot) | `.options … klu` | 153.7 | 2.22558 | 3.62959e-05 | answers identical; 1.62× faster |
+| typ / 125 °C / 2.97 V (hot) | `.options … klu` | 153.7 | 2.22558 | 3.62959e-05 | answers identical |
 
 Answer preservation: the sanity corner lands on both anchors (`iq_avg_a
 2.80682e-05 ± 2.8e-8`, `fb_v 2.49682 ± 0.005`) with delta 0 under **both**
@@ -271,19 +271,23 @@ solvers; the hot corner reproduces the committed
 solvers.
 
 **Verdict: not adopted.** KLU is answer-preserving here exactly as it was on
-the boxtc bench, but this bench has no hole for it to fill. The hot corner
-costs 250 s on the default solver — 14% of the request's `timeout_s` of
-1800 s — so unlike the boxtc 100 °C point nothing is anywhere near a
-timeout; the 1.62× hot-corner win is bought with a 1.26× loss on the mild
-corner; and a 45-point grid spends most of its points in the mild regime
-(only the 125 °C third looks like the hot corner), so the two measured
-corners extrapolate to roughly a wash across the grid. The templates keep
+the boxtc bench, but this bench has no hole for it to fill: no measured
+corner is anywhere near the request's `timeout_s` of 1800 s — the boxtc
+100 °C point that drove its 17× adoption ran to 3643 s, past its cap, and
+this bench stays inside the cap at any plausible wall clock on this host
+(see the noise caveat below) — so there is no solve-time problem for a
+different factorization to relieve. The templates keep
 the ngspice SPARSE default and no deck changed: the body template's
 cross-bench solver claim (its lines 9–14) stays exactly as #469/#488 left
 it — shared with boxtc except that body's `klu` pin, this body on the
-SPARSE default — which this measurement confirms is the right trade for
+SPARSE default — which this measurement supports as the right trade for
 this bench. The `singular matrix` recovery diagnostic the hot corner is
 known for occurs identically under both solvers (one warning per run,
 recovered; the corner grades `pass` with identical answers). Single local
-corner per setting; the near-parity cells carry ordinary run-to-run noise,
-immaterial to the verdict.
+corner per setting, on a contended dispatch host: during review, an
+identical re-run of the recorded-133.9 s sanity/SPARSE configuration did
+not finish within a 900 s cap (load average 43–63 on 16 cores), so a
+single-run wall clock here carries run-to-run spread larger than any delta
+in the table. No per-cell delta above therefore supports a solver
+attribution — the wall-clock column is descriptive only, and the verdict
+rests on the timeout-fraction ground above, which is immune to that noise.
