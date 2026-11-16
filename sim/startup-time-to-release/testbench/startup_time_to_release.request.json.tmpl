@@ -1,0 +1,273 @@
+{
+  "_comment": [
+    "sg13g2-bandgap -- `klt sim` request template for startup-time-to-release (issue #468, part of #412). Same per-(process, supply) instantiation as sim/closed-loop-startup/testbench/closed_loop_startup.request.json.tmpl (issue #414); the DUT is the schematic (design/netlist/bandgap_{core,amp,startup}.spice, carried verbatim in the body).",
+    "The 45-point grid (5 processes x 3 temperatures x 3 supplies) runs as 15 requests of 3 temperatures each: the runner image's single-models.lib channel carries one process per request (klayout-tools#2668), and the PWL ramp is this bench's convergence path so the supply axis cannot ride `corners.supply_v` (`alter` would clobber it). The temperature axis rides `corners.temperature_c` natively.",
+    "THE CHECKPOINT LADDER LIVES HERE. This is the one thing that makes this bench not a duplicate of closed-loop-startup: `measurements[]` below samples the five release-criteria signals (det, i_mkfb, fb, sns1, sns2) at eleven fixed times -- 100 200 300 400 500 600 700 800 900 1000 2000 us -- instead of one final checkpoint, plus the two t=20us `*_early` points the legacy template also carries. 11 x 5 + 2 = 57 entries, one per `meas tran` line of testbench/tb_startup_time_to_release.spice.tmpl, which stays in place as the point-definition reference.",
+    "Single source of truth for the ladder (issue #210): the legacy bench derived it from its template's own `.meas` block rather than hardcoding it, and that property is preserved -- sim/harness/enrich_supply_bench_report.py --bench startup_release reads the ladder back off the `det_<N>u_v` measurement names in the report this request produces, so adding or removing a checkpoint here is the only edit needed and the two can never drift.",
+    "Measurement naming: ngspice `.meas` names in the legacy template are `v_det_<N>u` / `i_mkfb_<N>u`; this repo's klt records name the same quantity `det_<N>u_v` / `i_mkfb_<N>u_a` (the legacy CSV's own column spelling, and the convention sim/closed-loop-startup's request already follows). The record spec's `pass_requires` and run_klt_sim.sh's sanity anchors use these same names.",
+    "Every column is a single-vector `.meas ... at=<t>` over a resident `.save` vector. The derived dvsns_<N>u_v columns, the per-checkpoint verdicts and release_time_us are applied by sim/harness/enrich_supply_bench_report.py, the same practice the committed records use. Values arrive at 6 significant figures.",
+    "The supply is held from 200 us to 2 ms (the same window the legacy bench and sim/closed-loop-startup use), so the 2000u checkpoint is directly comparable with closed-loop-startup's own t=2ms record.",
+    "`remote.hosts: 3` = one fleet job per temperature point (the box-TC wrapper's measured split, scaled to this grid; not separately measured here)."
+  ],
+  "engine": "ngspice",
+  "netlist": "@@BODY@@",
+  "netlist_source": "schematic",
+  "models": {
+    "lib": "@@CORNER_BUNDLE@@"
+  },
+  "corners": {
+    "process": [
+      "typ",
+      "bcs",
+      "wcs",
+      "sf",
+      "fs"
+    ],
+    "temperature_c": [
+      -40,
+      27,
+      125
+    ]
+  },
+  "analysis": {
+    "kind": "tran",
+    "args": "50n 2m"
+  },
+  "measurements": [
+    {
+      "name": "det_early_v",
+      "spice": ".meas tran det_early_v find v(det) at=20u"
+    },
+    {
+      "name": "fb_early_v",
+      "spice": ".meas tran fb_early_v find v(fb) at=20u"
+    },
+    {
+      "name": "det_100u_v",
+      "spice": ".meas tran det_100u_v find v(det) at=100u"
+    },
+    {
+      "name": "i_mkfb_100u_a",
+      "spice": ".meas tran i_mkfb_100u_a find i(Vmkfb) at=100u"
+    },
+    {
+      "name": "fb_100u_v",
+      "spice": ".meas tran fb_100u_v find v(fb) at=100u"
+    },
+    {
+      "name": "sns1_100u_v",
+      "spice": ".meas tran sns1_100u_v find v(sns1) at=100u"
+    },
+    {
+      "name": "sns2_100u_v",
+      "spice": ".meas tran sns2_100u_v find v(sns2) at=100u"
+    },
+    {
+      "name": "det_200u_v",
+      "spice": ".meas tran det_200u_v find v(det) at=200u"
+    },
+    {
+      "name": "i_mkfb_200u_a",
+      "spice": ".meas tran i_mkfb_200u_a find i(Vmkfb) at=200u"
+    },
+    {
+      "name": "fb_200u_v",
+      "spice": ".meas tran fb_200u_v find v(fb) at=200u"
+    },
+    {
+      "name": "sns1_200u_v",
+      "spice": ".meas tran sns1_200u_v find v(sns1) at=200u"
+    },
+    {
+      "name": "sns2_200u_v",
+      "spice": ".meas tran sns2_200u_v find v(sns2) at=200u"
+    },
+    {
+      "name": "det_300u_v",
+      "spice": ".meas tran det_300u_v find v(det) at=300u"
+    },
+    {
+      "name": "i_mkfb_300u_a",
+      "spice": ".meas tran i_mkfb_300u_a find i(Vmkfb) at=300u"
+    },
+    {
+      "name": "fb_300u_v",
+      "spice": ".meas tran fb_300u_v find v(fb) at=300u"
+    },
+    {
+      "name": "sns1_300u_v",
+      "spice": ".meas tran sns1_300u_v find v(sns1) at=300u"
+    },
+    {
+      "name": "sns2_300u_v",
+      "spice": ".meas tran sns2_300u_v find v(sns2) at=300u"
+    },
+    {
+      "name": "det_400u_v",
+      "spice": ".meas tran det_400u_v find v(det) at=400u"
+    },
+    {
+      "name": "i_mkfb_400u_a",
+      "spice": ".meas tran i_mkfb_400u_a find i(Vmkfb) at=400u"
+    },
+    {
+      "name": "fb_400u_v",
+      "spice": ".meas tran fb_400u_v find v(fb) at=400u"
+    },
+    {
+      "name": "sns1_400u_v",
+      "spice": ".meas tran sns1_400u_v find v(sns1) at=400u"
+    },
+    {
+      "name": "sns2_400u_v",
+      "spice": ".meas tran sns2_400u_v find v(sns2) at=400u"
+    },
+    {
+      "name": "det_500u_v",
+      "spice": ".meas tran det_500u_v find v(det) at=500u"
+    },
+    {
+      "name": "i_mkfb_500u_a",
+      "spice": ".meas tran i_mkfb_500u_a find i(Vmkfb) at=500u"
+    },
+    {
+      "name": "fb_500u_v",
+      "spice": ".meas tran fb_500u_v find v(fb) at=500u"
+    },
+    {
+      "name": "sns1_500u_v",
+      "spice": ".meas tran sns1_500u_v find v(sns1) at=500u"
+    },
+    {
+      "name": "sns2_500u_v",
+      "spice": ".meas tran sns2_500u_v find v(sns2) at=500u"
+    },
+    {
+      "name": "det_600u_v",
+      "spice": ".meas tran det_600u_v find v(det) at=600u"
+    },
+    {
+      "name": "i_mkfb_600u_a",
+      "spice": ".meas tran i_mkfb_600u_a find i(Vmkfb) at=600u"
+    },
+    {
+      "name": "fb_600u_v",
+      "spice": ".meas tran fb_600u_v find v(fb) at=600u"
+    },
+    {
+      "name": "sns1_600u_v",
+      "spice": ".meas tran sns1_600u_v find v(sns1) at=600u"
+    },
+    {
+      "name": "sns2_600u_v",
+      "spice": ".meas tran sns2_600u_v find v(sns2) at=600u"
+    },
+    {
+      "name": "det_700u_v",
+      "spice": ".meas tran det_700u_v find v(det) at=700u"
+    },
+    {
+      "name": "i_mkfb_700u_a",
+      "spice": ".meas tran i_mkfb_700u_a find i(Vmkfb) at=700u"
+    },
+    {
+      "name": "fb_700u_v",
+      "spice": ".meas tran fb_700u_v find v(fb) at=700u"
+    },
+    {
+      "name": "sns1_700u_v",
+      "spice": ".meas tran sns1_700u_v find v(sns1) at=700u"
+    },
+    {
+      "name": "sns2_700u_v",
+      "spice": ".meas tran sns2_700u_v find v(sns2) at=700u"
+    },
+    {
+      "name": "det_800u_v",
+      "spice": ".meas tran det_800u_v find v(det) at=800u"
+    },
+    {
+      "name": "i_mkfb_800u_a",
+      "spice": ".meas tran i_mkfb_800u_a find i(Vmkfb) at=800u"
+    },
+    {
+      "name": "fb_800u_v",
+      "spice": ".meas tran fb_800u_v find v(fb) at=800u"
+    },
+    {
+      "name": "sns1_800u_v",
+      "spice": ".meas tran sns1_800u_v find v(sns1) at=800u"
+    },
+    {
+      "name": "sns2_800u_v",
+      "spice": ".meas tran sns2_800u_v find v(sns2) at=800u"
+    },
+    {
+      "name": "det_900u_v",
+      "spice": ".meas tran det_900u_v find v(det) at=900u"
+    },
+    {
+      "name": "i_mkfb_900u_a",
+      "spice": ".meas tran i_mkfb_900u_a find i(Vmkfb) at=900u"
+    },
+    {
+      "name": "fb_900u_v",
+      "spice": ".meas tran fb_900u_v find v(fb) at=900u"
+    },
+    {
+      "name": "sns1_900u_v",
+      "spice": ".meas tran sns1_900u_v find v(sns1) at=900u"
+    },
+    {
+      "name": "sns2_900u_v",
+      "spice": ".meas tran sns2_900u_v find v(sns2) at=900u"
+    },
+    {
+      "name": "det_1000u_v",
+      "spice": ".meas tran det_1000u_v find v(det) at=1000u"
+    },
+    {
+      "name": "i_mkfb_1000u_a",
+      "spice": ".meas tran i_mkfb_1000u_a find i(Vmkfb) at=1000u"
+    },
+    {
+      "name": "fb_1000u_v",
+      "spice": ".meas tran fb_1000u_v find v(fb) at=1000u"
+    },
+    {
+      "name": "sns1_1000u_v",
+      "spice": ".meas tran sns1_1000u_v find v(sns1) at=1000u"
+    },
+    {
+      "name": "sns2_1000u_v",
+      "spice": ".meas tran sns2_1000u_v find v(sns2) at=1000u"
+    },
+    {
+      "name": "det_2000u_v",
+      "spice": ".meas tran det_2000u_v find v(det) at=2000u"
+    },
+    {
+      "name": "i_mkfb_2000u_a",
+      "spice": ".meas tran i_mkfb_2000u_a find i(Vmkfb) at=2000u"
+    },
+    {
+      "name": "fb_2000u_v",
+      "spice": ".meas tran fb_2000u_v find v(fb) at=2000u"
+    },
+    {
+      "name": "sns1_2000u_v",
+      "spice": ".meas tran sns1_2000u_v find v(sns1) at=2000u"
+    },
+    {
+      "name": "sns2_2000u_v",
+      "spice": ".meas tran sns2_2000u_v find v(sns2) at=2000u"
+    }
+  ],
+  "options": {
+    "timeout_s": 1800,
+    "keep_artifacts": true
+  },
+  "remote": {
+    "hosts": 3
+  }
+}
