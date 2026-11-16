@@ -32,7 +32,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from seed_deck import SEED_FIELDS  # noqa: E402
+from seed_deck import SEED_FIELDS, fill_deck, seed_row  # noqa: E402
 from trim_mc_klt import (BAD_LOG, Results, make_ctx,  # noqa: E402
                          op_value, sections_for)
 
@@ -74,9 +74,7 @@ def unit_id(point: str, draw: int) -> str:
 def render_deck(template: str, ctx: dict, point: str, draw: int) -> str:
     """The template filled exactly as run_mc.sh's pass 1 fills it."""
     corner, temp = CORNER_OF[point], TEMP_OF[point]
-    row = ctx["seeds"].get((corner, str(temp), VDD))
-    if row is None:
-        raise SystemExit(f"no PASS seed row for {corner}/{temp}C/{VDD}V in {ctx['seed_csv']}")
+    row = seed_row(ctx["seeds"], corner, temp, VDD, ctx["seed_csv"])
     hbt, mos, res = sections(point)
     mapping = {
         "@@PDK_ROOT@@": ctx["pdk_root"], "@@PDK@@": ctx["pdk"], "@@OSDI_DIR@@": ctx["osdi_dir"],
@@ -87,13 +85,7 @@ def render_deck(template: str, ctx: dict, point: str, draw: int) -> str:
         "@@MISMATCH_MODE@@": MODE_OF[point], "@@DUT_GIT_SHA@@": ctx["dut_sha"],
     }
     mapping.update({token: row[field] for token, field in SEED_FIELDS})
-    text = template
-    for token, value in mapping.items():
-        text = text.replace(token, value)
-    left = sorted({w for w in text.split() if w.startswith("@@") and w.endswith("@@")})
-    if left:
-        raise SystemExit(f"deck template has unfilled placeholders: {left}")
-    return text
+    return fill_deck(template, mapping)
 
 
 def request_for(entries: list[dict], a: argparse.Namespace, backend: str | None) -> dict:

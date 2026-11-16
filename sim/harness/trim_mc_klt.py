@@ -40,7 +40,7 @@ from pathlib import Path
 
 # The deck's nodeset-seed contract lives in seed_deck.py (with the deck-template
 # side of it, sim/*/testbench/*.tmpl's @@*_SEED@@ tokens); issue #486.
-from seed_deck import SEED_FIELDS, load_seeds
+from seed_deck import SEED_FIELDS, fill_deck, load_seeds, seed_row
 
 POINTS = ("nominal", "negctrl", "bcs", "wcs")
 CORNER_OF = {"nominal": "typ", "negctrl": "typ", "bcs": "bcs", "wcs": "wcs"}
@@ -109,9 +109,7 @@ def render_deck(template: str, ctx: dict, point: str, draw: int, temp: int, code
                 stage: str) -> str:
     """The template filled exactly as run_trim_mc.sh's render_netlist() fills it."""
     corner = CORNER_OF[point]
-    row = ctx["seeds"].get((corner, str(temp), VDD))
-    if row is None:
-        raise SystemExit(f"no PASS seed row for {corner}/{temp}C/{VDD}V in {ctx['seed_csv']}")
+    row = seed_row(ctx["seeds"], corner, temp, VDD, ctx["seed_csv"])
     hbt, mos, res = sections(point)
     mapping = {
         "@@PDK_ROOT@@": ctx["pdk_root"], "@@PDK@@": ctx["pdk"], "@@OSDI_DIR@@": ctx["osdi_dir"],
@@ -123,13 +121,7 @@ def render_deck(template: str, ctx: dict, point: str, draw: int, temp: int, code
         "@@DUT_GIT_SHA@@": ctx["dut_sha"],
     }
     mapping.update({token: row[field] for token, field in SEED_FIELDS})
-    text = template
-    for token, value in mapping.items():
-        text = text.replace(token, value)
-    left = sorted({w for w in text.split() if w.startswith("@@") and w.endswith("@@")})
-    if left:
-        raise SystemExit(f"deck template has unfilled placeholders: {left}")
-    return text
+    return fill_deck(template, mapping)
 
 
 def make_ctx(a: argparse.Namespace, local: bool) -> dict:
