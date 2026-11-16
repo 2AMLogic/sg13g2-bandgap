@@ -24,7 +24,10 @@ the extrema of `vref_3ms_v` across the temperature grid and `SPAN_C` is the
 two-endpoint slope: the endpoint figure is carried alongside, in
 `endpoint_tc_ppm_per_c`, from the -40 and 125 degC points when both passed.
 A group with no PASS point, or whose PASS points miss 27 degC, is omitted --
-the derivation has no denominator there.
+the derivation has no denominator there. When *every* group is omitted --
+the record carried rows but none matched the grid -- `main()` exits
+non-zero and names the keys the record carried: empty evidence must be
+loud, not a header-only companion reporting success (issue #510).
 
 This is the box-method companion only. The endpoint method -- a two-point
 slope over the -40/125 degC endpoints (6 columns, `-tc.csv`, rows keyed by
@@ -100,6 +103,18 @@ def companion_rows(rows: list[dict]) -> list[list]:
     return out
 
 
+def key_summary(rows: list[dict], fields: tuple[str, ...]) -> str:
+    """The distinct keys `rows` carry, slash-joined over `fields`, sorted.
+
+    A diagnostic for the empty-companion refusal in `main()`: names the
+    `(corner, vdd[, temp])` keys a record actually carried, so a grid whose
+    keys stopped matching is visible in the run log instead of silently
+    deriving nothing (issue #510).
+    """
+    seen = sorted({tuple(str(r.get(f)) for f in fields) for r in rows})
+    return " ".join("/".join(key) for key in seen)
+
+
 def write_companion(src: Path, dst: Path) -> list[list]:
     """Derive `dst` from the minted record `src`; returns the rows written."""
     with src.open() as fh:
@@ -118,7 +133,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("record", type=Path, help="the minted record CSV")
     ap.add_argument("companion", type=Path, help="the -boxtc.csv to write")
     args = ap.parse_args(argv)
-    write_companion(args.record, args.companion)
+    body = write_companion(args.record, args.companion)
+    if not body:
+        # The derivation read the record and produced no number: a
+        # header-only CSV must not be blessed with exit 0 (#510).
+        with args.record.open() as fh:
+            rows = list(csv.DictReader(fh))
+        if not rows:
+            raise SystemExit(
+                f"boxtc companion: {args.record} carries no rows; "
+                f"{args.companion} is header-only")
+        raise SystemExit(
+            f"boxtc companion: {args.companion} is header-only: every "
+            f"(corner, vdd) group missed the grid; keys the record carried: "
+            f"{key_summary(rows, ('corner_label', 'vdd_v'))}")
     print(f"boxtc companion: {args.companion}")
     return 0
 

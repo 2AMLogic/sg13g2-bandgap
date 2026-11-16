@@ -12,7 +12,9 @@ nothing under sim/ is written.
 
 from __future__ import annotations
 
+import contextlib
 import csv
+import io
 import json
 import os
 import re
@@ -2400,6 +2402,117 @@ class EndpointTcSeamTests(TempDirCase):
             (records / f"{stem}-tc.csv").read_text(),
             (committed / f"{stem}-tc.csv").read_text(),
         )
+
+
+# --------------------------------------------------------------------------
+# Loud failure when a derivation omits every group (issue #510). Both
+# companions key their grid axes by the record's own strings (#496's
+# pass-through convention) and omit any group whose key misses the grid, so
+# a drifted key used to mint a header-only CSV and exit 0 -- empty evidence
+# published as if it were derived. main() must refuse instead: non-zero
+# exit, stderr naming the keys the record actually carried.
+# --------------------------------------------------------------------------
+
+
+def write_record(path: Path, fieldnames: list[str], rows: list[dict]) -> None:
+    with path.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=fieldnames, lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+
+
+def run_main(main_fn, argv: list[str]) -> tuple[object, str]:
+    """Run a companion `main()`; `None` means it returned (exit 0).
+
+    The modules fail the repo's way (`sanity_anchors.py`): `SystemExit`
+    carrying the diagnostic as its `code` -- at top level the interpreter
+    prints it to stderr and exits 1, so the returned string is the message
+    a run log would carry.
+    """
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err):
+        try:
+            main_fn(argv)
+        except SystemExit as exc:
+            return exc, str(exc.code)
+    return None, err.getvalue()
+
+
+RECORD_FIELDS = ["corner_label", "vdd_v", "temp_c", "vref_3ms_v", "status"]
+
+
+class EndpointTcLoudEmptyTests(TempDirCase):
+    """tc_companion.main() refuses an empty derivation (#510)."""
+
+    def test_key_miss_exits_nonzero_naming_the_record_keys(self) -> None:
+        # The issue's own example: `temperature_c` arrives as a string, so
+        # temp_c renders "-40.0" and matches none of TEMPS -- every group
+        # is omitted. The refusal must say what the record carried.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
+        write_record(src, RECORD_FIELDS, [
+            {"corner_label": "typ", "vdd_v": "3.30", "temp_c": f"{t}.0",
+             "vref_3ms_v": repr(1.047), "status": "PASS"}
+            for t in (-40, 27, 125)
+        ])
+        exc, err = run_main(tcc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "key-miss record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertIn("header-only", err)
+        for key in ("typ/3.30/-40.0", "typ/3.30/27.0", "typ/3.30/125.0"):
+            self.assertIn(key, err)
+
+    def test_empty_record_is_a_distinct_refusal(self) -> None:
+        # A record with a header and no rows read: also no evidence, but a
+        # different defect than a key miss, and the message says which.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
+        write_record(src, RECORD_FIELDS, [])
+        exc, err = run_main(tcc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "empty record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertIn("no rows", err)
+        self.assertNotIn("keys the record carried", err)
+
+    def test_a_deriving_record_still_exits_zero(self) -> None:
+        # The check must not turn a healthy derivation into a failure.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
+        write_record(src, RECORD_FIELDS, endpoint_rows(
+            [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]))
+        exc, err = run_main(tcc.main, [str(src), str(dst)])
+        self.assertIsNone(exc, err)
+        self.assertEqual(dst.read_text().splitlines()[0], ",".join(tcc.HEADER))
+
+
+class BoxTcLoudEmptyTests(TempDirCase):
+    """boxtc_companion.main() refuses an empty derivation (#510)."""
+
+    def test_key_miss_exits_nonzero_naming_the_record_keys(self) -> None:
+        # The box module keys groups by (corner, vdd) and matches
+        # temperature numerically, so a drifted vdd empties every group.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
+        write_record(src, RECORD_FIELDS,
+                     boxtc_rows(INTERIOR_EXTREMA, vdd="3.31"))
+        exc, err = run_main(bxc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "key-miss record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertIn("header-only", err)
+        self.assertIn("typ/3.31", err)
+
+    def test_empty_record_is_a_distinct_refusal(self) -> None:
+        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
+        write_record(src, RECORD_FIELDS, [])
+        exc, err = run_main(bxc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "empty record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertIn("no rows", err)
+        self.assertNotIn("keys the record carried", err)
+
+    def test_a_deriving_record_still_exits_zero(self) -> None:
+        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
+        write_record(src, RECORD_FIELDS, boxtc_rows(INTERIOR_EXTREMA))
+        exc, err = run_main(bxc.main, [str(src), str(dst)])
+        self.assertIsNone(exc, err)
+        self.assertEqual(dst.read_text().splitlines()[0], ",".join(bxc.HEADER))
+
 
 if __name__ == "__main__":
     unittest.main()
