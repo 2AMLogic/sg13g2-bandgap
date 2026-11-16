@@ -371,7 +371,7 @@ for corner in "${FAR_CORNERS[@]}"; do
 done
 
 WORST_BOX=$(awk -F, 'NR>1 && $4==$5 && $11+0 > m { m = $11+0; line = $1"/"$3"V = "sprintf("%.1f", $11)" ppm/C" } END { print line }' "${BOXT_OUT}")
-WORST_NEAR=$(awk -F, 'NR>1 && $3=="near" && $7+0 > m { m=$7+0; line = $1"/"$2"V @code"$5" vs 128: +"sprintf("%.2f", $7)" ppm/C ("$8"% over 98C, cap "$9")" } END { print line }' "${DELT_OUT}")
+WORST_NEAR=$(awk -F, -v s="${TRIM_TC_SPAN_C}" 'NR>1 && $3=="near" && $7+0 > m { m=$7+0; line = $1"/"$2"V @code"$5" vs 128: +"sprintf("%.2f", $7)" ppm/C ("$8"% over "s"C, cap "$9")" } END { print line }' "${DELT_OUT}")
 
 {
   echo "# Record ${RECORD_ID}"
@@ -390,7 +390,7 @@ WORST_NEAR=$(awk -F, 'NR>1 && $3=="near" && $7+0 > m { m=$7+0; line = $1"/"$2"V 
   echo "  as sim/closed-loop-vref-pvt-boxtc at codes {127, 128, 129} (the"
   echo "  +/-1-code band, full corner x supply grid) and gates the"
   echo "  +/-1-code delta vs the code-128 baseline at ${GATE_DELTA_PPM_CAP} ppm/C (the"
-  echo "  ~0.175% headroom DR-0011's budget carries, over the ${TRIM_TC_SPAN_C} C span"
+  echo "  ~${TRIM_TC_HEADROOM_PCT}% headroom DR-0011's budget carries, over the ${TRIM_TC_SPAN_C} C span"
   echo "  from the 27 C trim point). Codes {0, 64, 192, 255} on"
   echo "  {typ, bcs, wcs}/3.30 V bound the TC-vs-code sensitivity slope"
   echo "  and its saturation (reported, ungated). NOT a claim against a"
