@@ -97,7 +97,7 @@
     "Harness decision + batch-fleet status: sim/harness/README.md",
     "Runner: sim/startup-time-to-release/run_klt_sim.sh",
     "Per-checkpoint verdict, release_time_us and the dvsns columns: sim/harness/enrich_supply_bench_report.py (--bench startup_release)",
-    "Legacy point definitions (still in the tree, cannot mint new records): sim/startup-time-to-release/run_pvt_sweep.sh",
+    "Legacy point definitions (script deleted in #520, kept in git history, cannot mint new records): sim/startup-time-to-release/run_pvt_sweep.sh",
     "2 ms cross-validation against the same DUT: sim/closed-loop-startup/"
   ]
 }
