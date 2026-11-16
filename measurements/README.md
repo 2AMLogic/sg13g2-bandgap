@@ -93,8 +93,9 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   `spotcheck.py`, `envelope.json` (cited by `manifests/sg13g2-bandgap.json` for
   item 8) and `dependencies.json` (#315).
 
-- `2026-11-13-characterization-report/` — issue #415 (T1 checklist item 8): the
-  current aggregated characterization report, replacing the 4 Nov one. It
+- `2026-11-13-characterization-report/` — **superseded by
+  `2026-11-16-characterization-report/`** (below; kept untouched as history).
+  Issue #415 (T1 checklist item 8): replaced the 4 Nov one. It
   rotated because the `klt sim` batch re-mint of the schematic PSRR grid
   (`sim/closed-loop-psrr/records/20261113-085406-9d568b91`, 45 points in 15
   fleet jobs) became that experiment's newest record. Stamped at audited
@@ -105,4 +106,21 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   `spotcheck.py`'s output is byte-identical to the 4 Nov report's. Same shape
   as the earlier reports: `README.md`, `spotcheck.py`, `envelope.json` (cited
   by `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
+  (#315).
+
+- `2026-11-16-characterization-report/` — issue #402 (T1 checklist item 8):
+  the current aggregated characterization report, replacing the 13 Nov one. It
+  rotated because the trim-bearing 120-point box-method TC grid
+  (`sim/closed-loop-vref-pvt-boxtc/records/20261116-024010-dc056b4c`, one
+  `klt sim --batch-set`, 120 fleet jobs, 62 min) became that experiment's
+  newest record and its pre-trim #273 waiver was deleted. Stamped at audited
+  commit `00acddae`. **Unlike the previous two rotations this one is not
+  provenance-only**: the DUT behind the moved record changed (pre-trim core →
+  trim-bearing at code 128, aids-free + KLU), so the bench's quoted TC
+  numbers move (box 8.90–19.77 → 20.20–38.62 ppm/°C; endpoint
+  −14.4…+18.1 → −37.3…−14.1 ppm/°C) while the Temp coefficient verdict does
+  not (target met, stretch not met; disposition stays with #269's
+  `sim/closed-loop-vref-boxtc-trim`). Same shape as the earlier reports:
+  `README.md`, `spotcheck.py`, `envelope.json` (cited by
+  `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
   (#315).

@@ -133,64 +133,97 @@ Same corner-label vocabulary and section pairing as
 × temperature `{-40, -20, 0, 27, 50, 75, 100, 125} °C` × supply
 `{2.97, 3.30, 3.63} V` = **120 points**.
 
-## Why the refresh is still outstanding (issue #402, measured 2026-11-13)
+## Trim-bearing DUT refresh (issue #402)
 
-The newest committed record below is still the **pre-trim** 2026-09-21 run,
-held by the standing #273 evidence-freshness waiver. #402 set out to
-discharge it by re-running all 120 points on the batch fleet, with the 15
-per-(corner, supply) requests submitted concurrently rather than one
-blocking `klt sim` after another (which projected to 7+ h). The concurrent
-submission now exists and works — `sim/harness/submission_identity.sh`'s
-`si_set_*` helpers hand the whole campaign to one `klt sim --batch-set` —
-but the grid still does not complete, for a reason that is **not**
-submission serialization:
+**DUT.** The core netlist this bench inlines device-for-device is
+#229's trim-bearing `design/netlist/bandgap_core.spice`, ladder pinned at
+code **128** — the same DUT every #264 refresh adopted (see
+[`../closed-loop-vref-pvt/`](../closed-loop-vref-pvt/README.md)'s refresh
+section for the ladder's device-for-device description). The template has
+carried that core since the #273 `klt sim` conversion (PR #398); what this
+bench was missing was the **record** — until now, the newest committed
+record below was still the pre-trim 2026-09-21 run, held by the standing
+#273 evidence-freshness waiver.
 
-- **The 100 °C point exceeds the fleet's per-job wall-clock ceiling.** All
-  three `typ` requests (2.97 / 3.30 / 3.63 V) came back 7/8, each with its
-  100 °C corner graded `error` / `timeout` at the request's
-  `options.timeout_s` of 1800 s. Reproducible, same point every time.
-- **The point is not non-convergent — it is just slow.** A single-corner
-  local debug probe of `typ`/100 °C/2.97 V (one corner is the one thing the
-  dispatch hosts may run locally) **passed**, settled, in **3643 s**:
-  `vref_3ms = 1.04385 V`, `vref_settle_delta = 0`. ngspice logs
-  `singular matrix: check nodes xxtrim.t155 and xxtrim.t241` and recovers
-  through dynamic gmin stepping — the 255 interior ladder nodes the #264
-  aids-free trim-bearing DUT adds, with `rshunt`/`gmin` deliberately
-  dropped. The cost is wall clock, not correctness.
-- **3643 s does not fit.** 2am's sim fleet caps a job at
-  `BATCH_MAX_JOB_SECONDS=3600`, and `klt sim` requires
-  `timeout_s x units + 120 s` to stay under it, so the largest `timeout_s`
-  this bench can legally request for a one-corner shard is **3480 s**. The
-  axis is already sharded as far as it goes (`remote.hosts: 8` = one fleet
-  job per temperature), so the template's usual advice — "raise the shard
-  count, not the ceiling" — has no remaining shard to add.
+**Solver options.** Aids-free (`rshunt`/`gmin` dropped, `reltol=5e-3` +
+`tran 50n` kept) like every #264 bench, plus this bench's own `klu` direct
+linear solver — #469's measured answer-preserving departure, 17× on the hot
+corner (see [Hot-corner solve time](#hot-corner-solve-time-issue-469-measured-2026-11-14)
+below).
 
-So the grid currently tops out around 105/120, with the missing points
-exactly the hot end. That is **not** recorded as a refresh: `vmax` in the
-box `(vmax - vmin) / (165 * v27)` sits at 50–75 °C in most groups of the
-superseded record, so a box computed without the 100 °C point is a lower
-bound on the box, not the box, and would be a weaker claim than the waiver
-it replaced. Nothing here is a reason to re-add the convergence aids: #264
-dropped them because they cost a measured 37 mV of settled `vref` on this
-ladder, which is a wrong answer rather than a slow one.
+**Result** (record
+[`records/20261116-024010-dc056b4c.md`](records/20261116-024010-dc056b4c.md),
+120/120 points PASS, 120 fleet jobs listed in the run's
+`environment.remote`):
 
-A separate, smaller finding from the same session, already handled in the
-runner's defaults: at 3 requests in flight the campaign's own 24 simultaneous
-shard launches ran the shared fleet to 384 vCPU against `BATCH_MAX_VCPU=224`
-and lost about half its shards to exhausted capacity waits. 2 requests × 3
-shard jobs each (`PEX_BATCH_MAX_IN_FLIGHT` / `KLT_SIM_MAX_CONCURRENT_JOBS`,
-now the committed defaults) lost none. Worth knowing before anyone retries
-this grid with a bigger number.
+| quantity | pre-trim (`20260921-194249-77820fc`) | trim-bearing, code 128, aids-free + KLU (`20261116-024010-dc056b4c`) |
+|---|---|---|
+| `vref_3ms_v` @ `typ`/27 °C/3.30 V | 1.04947 V | **1.04728 V** (−2.19 mV, −0.21%) |
+| box TC, worst group | `wcs`/3.30 V = 19.77 ppm/°C | **`bcs`/3.63 V = 38.62 ppm/°C** |
+| box TC, 15-group range | 8.90–19.77 ppm/°C | 20.20–38.62 ppm/°C |
+| endpoint TC, 15-group range | −14.4 … +18.1 ppm/°C | **−37.3 … −14.1 ppm/°C** |
+| box extrema positions | `vmin` @ 125 °C in 14/15 groups (`wcs` at −40 °C), `vmax` @ 0–75 °C | `vmin` @ 125 °C in all 15 groups; `vmax` @ 0 °C (`typ`/`sf`/`fs`), −20 °C (`bcs`), 27 °C (`wcs`) |
+| points PASS | 120/120 | 120/120 |
 
-Two things would unblock it: a higher per-job ceiling on the sim fleet (a
-2am `infra/aws/` change), or a materially faster hot-corner solve. The
-second has now landed — issue #469 measured the candidates and adopted the
-KLU direct linear solver (next section), which takes the hot corner from
-3643 s to 211 s, inside even the template's existing `timeout_s` of 1800 s.
-Until #402 re-runs the grid on the fleet and mints a new record, the #273
-waiver stays. A future attempt should pass `klt sim --fail-fast-probe`,
-which calibrates on the first corner and aborts up front, rather than
-discovering this after a 1800 s timeout per shard.
+The −2.19 mV nominal move is the same delta, to the digit, that the #264
+twin measured on the identical DUT swap. The TC rows move by more, and that
+is expected, not a regression: **read them as the trim-bearing aids-free
+DUT's own numbers, with the disposition attached elsewhere.** The endpoint
+range −37.3 … −14.1 ppm/°C is the twin refresh's endpoint range repeated —
+two separately-written benches agreeing — and the 20.20–38.62 ppm/°C box
+range sits inside
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md)'s
+independent 20.2–45.7 ppm/°C box-method band for the same core. The
+ratified `< 20 ppm/°C` stretch is not met by the box method on this DUT;
+that disposition is **#269's** (the ratified box-TC row's evidence lives in
+`../closed-loop-vref-boxtc-trim/`), and nothing in `spec/` is edited here.
+The "Results summary" and "§4b cross-check" sections below read the
+superseded pre-trim record and are left standing as that record's reading
+(`sim/` evidence is append-only); their §4b agreement statements apply to
+the pre-trim DUT the §4b scratch scan also ran.
+
+**Batch path used** (disclosure): `run_klt_sim.sh --batch` handed all 15
+per-(corner, supply) requests to **one** `klt sim --batch-set` (in-flight
+2, 3 shard jobs per request, `--wait-for-capacity 600` — the committed
+defaults), which ran **120 spot fleet jobs** (c7i/m7i/m6i.4xlarge,
+`runner_compatibility: match`, runner klt 0.9.0 vs client 0.9.3.dev16) to
+completion in a **62-minute** wall clock, individual jobs 79–120 s —
+including every 100 °C point at 74–99 s, against the 3643 s the pre-KLU
+hot corner needed. The fleet runner's ngspice is KLU-capable and **engaged
+KLU on every corner**: all **120/120** harvested corner logs carry ngspice's
+`Using KLU as Direct Linear Solver` line, and the runner environment
+capture reads `ngspice-47 … Compiled with KLU Direct Linear Solver`. The
+`#273` freshness waiver for the 2026-09-21 record is deleted.
+
+## Why the 2026-11-13 refresh attempt topped out (superseded history)
+
+The refresh above landed; this section is the measured history of the one
+attempt that did not, kept because the "Hot-corner solve time" section
+below quotes its row 0. On 2026-11-13, with the concurrent submission in
+place but before #469's KLU adoption, all three `typ` requests came back
+7/8 with their 100 °C corner graded `error`/`timeout` at the request's
+`options.timeout_s` of 1800 s — reproducibly, the same point every time. A
+single-corner local debug probe of `typ`/100 °C/2.97 V **passed** and
+settled in **3643 s** (`vref_3ms = 1.04385 V`, settle delta 0): ngspice
+logs `singular matrix` on the 255 interior ladder nodes and recovers
+through dynamic gmin stepping — slow, not wrong. But 3643 s does not fit a
+fleet job (`BATCH_MAX_JOB_SECONDS=3600`, so the largest legal one-corner
+`timeout_s` is 3480 s), and the axis was already sharded as far as it goes
+(`remote.hosts: 8` = one fleet job per temperature), so the grid topped out
+around 105/120 with exactly the hot end missing. That was **not** recorded:
+`vmax` sits at 50–75 °C in most groups of the pre-trim record, so a box
+computed without the 100 °C point is a lower bound on the box, not the box
+— a weaker claim than the waiver it would have replaced.
+
+The same session also measured the campaign's own fleet overrun: at 3
+requests in flight the 24 simultaneous shard launches took the shared fleet
+to 384 vCPU against `BATCH_MAX_VCPU=224` and lost about half its shards to
+exhausted capacity waits; the committed defaults (2 requests × 3 shard
+jobs) lost none — see [Running](#running) below. #469's KLU adoption (17×
+on the hot corner) is what made the refresh above possible. Nothing here is
+a reason to re-add the convergence aids: #264 dropped them for a measured
+37 mV settled-`vref` error on this ladder, which is a wrong answer rather
+than a slow one.
 
 ## Hot-corner solve time (issue #469, measured 2026-11-14)
 
@@ -329,8 +362,8 @@ nothing local to fan out. The fleet-side equivalents are the request's
 15 requests, and how many of each request's 8 shard jobs, are in flight at
 once). Like `JOBS`, none of them changes which points run or what they
 measure — they trade wall clock against the fleet's shared vCPU budget, and
-overshooting it loses shards rather than finishing sooner (see "Why the
-refresh is still outstanding" above). The runner defaults them to the pair
+overshooting it loses shards rather than finishing sooner (see the
+superseded-history section above). The runner defaults them to the pair
 measured to lose no shards, **2** requests × **3** shard jobs; both are
 overridable, but the fleet is shared and 3 × 8 = 24 simultaneous jobs
 already overran it.
