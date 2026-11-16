@@ -348,6 +348,37 @@ def main() -> int:
     case("case 26: no item-8 citation at all passes with a note",
          passes=True, fragment="no item-8 citation", cite=False)
 
+    # Case 27 is an ordering regression (#493), so it cannot use `case()`:
+    # it asserts the relative order of two problems, not a substring. The
+    # fixture's first manifest (alphabetically) cites an envelope with no
+    # `provenance.input`, failing in the caller's tail; its second manifest
+    # cites an envelope that does not exist, failing inside the walk. The two
+    # diagnostics must interleave per citation -- tail first -- which only
+    # holds while `cited_envelopes()` yields lazily; an eager list reports
+    # every walk diagnostic before any tail diagnostic.
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
+        build_fixture(t)
+        env_rel = f"{REPORT_DIR}/envelope.json"
+        env = json.loads((t / env_rel).read_text())
+        env.pop("provenance")
+        (t / env_rel).write_text(json.dumps(env))
+        write(t, "manifests/other-block.json", json.dumps(
+            {"block": "other-block", "kind": "analog",
+             "evidence": {"8": f"{REPORT_DIR}/nope.json"}}))
+        proc = run_checker(t)
+        out = proc.stdout + proc.stderr
+        tail_msg = f"envelope {env_rel} names no provenance.input.path report"
+        walk_msg = f"cited envelope {REPORT_DIR}/nope.json does not exist"
+        ok = tail_msg in out and walk_msg in out and out.index(tail_msg) < out.index(walk_msg)
+        print(f"  {'ok  ' if ok else 'FAIL'} "
+              "case 27: walk and tail diagnostics interleave per citation")
+        if not ok:
+            print(f"       rc={proc.returncode}")
+            print("       stdout:", proc.stdout.strip()[:600])
+            print("       stderr:", proc.stderr.strip()[:600])
+        failures += not ok
+
     if failures:
         print(f"\n{failures} case(s) failed", file=sys.stderr)
         return 1

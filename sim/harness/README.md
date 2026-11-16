@@ -533,11 +533,12 @@ python3 sim/harness/boxtc_companion.py <records/id.csv> <records/id-boxtc.csv>
 `pex_vref_runner.sh`'s `pex_boxtc_companion` picks the newest minted record
 (skipping the companions an earlier run derived from it) and invokes the
 module; each bench's `pex_record_companion` hook is a one-line delegation to
-it. **The hook itself stays per-experiment**, because the derivations
-genuinely differ: `closed-loop-vref-pvt-pex` supplies the *endpoint* method
-to the same hook (6 columns, `-tc.csv`, rows keyed by exact
-`(corner, vdd, temp)`), and the three hooks' input filters differ on purpose.
-Only the two identical bodies were collapsed.
+it. The endpoint-method benches delegate the same way to their own module:
+[`tc_companion.py`](tc_companion.py) behind `pex_vref_runner.sh`'s
+`pex_endpoint_tc_companion` (issue #496). The two *methods* remain distinct
+derivations -- box = worst-case spread, endpoint = two-point slope -- each
+with its own module, helper and companion file; only the duplicated bodies
+were collapsed.
 
 It was previously implemented twice -- byte-identical 40-line
 `python3 - <<'PY'` heredocs, one per bench, the second pasted in *after* the
@@ -555,7 +556,51 @@ is kept as a golden test. Tests: `BoxTcGoldenTests`, `BoxTcFormulaTests` and
 `BoxTcSeamTests` in
 [`test_harness_transformers.py`](test_harness_transformers.py), the last of
 which also asserts that neither bench re-implements the formula and that the
-endpoint bench keeps its own body.
+two TC companions stay separate derivations.
+
+## The endpoint-method TC companion, once (issue #496)
+
+The two endpoint-TC benches -- `closed-loop-vref-pvt` (schematic) and
+`closed-loop-vref-pvt-pex` (extracted) -- derive the same quantity the same
+way from their minted record: per `(corner, vdd)` group, the two-point slope
+over the -40 and 125 °C endpoints of the 165 °C grid,
+
+```
+tc_ppm_per_c = 1e6 * (vref_3ms(125 C) - vref_3ms(-40 C)) / (165 * vref_3ms(27 C))
+```
+
+written as a 6-column `records/<id>-tc.csv` companion. That derivation has
+exactly one implementation, [`tc_companion.py`](tc_companion.py), which the
+shared shell seam calls as a CLI:
+
+```bash
+python3 sim/harness/tc_companion.py <records/id.csv> <records/id-tc.csv>
+```
+
+`pex_vref_runner.sh`'s `pex_endpoint_tc_companion` picks the newest minted
+record (skipping the companions an earlier run derived from it) and invokes
+the module; each bench's `pex_record_companion` hook is a one-line delegation
+to it. The companion is informal evidence on purpose -- no `status` column,
+no `.md` sibling, not the ratified TC row the box method carries -- so
+nothing validates it in CI, which is why the golden test is load-bearing.
+
+It was previously implemented twice -- inline `python3 - <<'PY'` heredocs in
+each bench's hook, re-rendering the record's values through Python floats.
+That re-render was never exercised, and it diverged from the convention every
+committed companion was minted under in three ways at once: `vdd_v` as `3.3`
+instead of `3.30`, voltages re-rendered at 6 decimals instead of the record's
+own 5, and CRLF line endings from `csv.writer`'s default. The convention is
+**pass-through of the record's own strings** -- the legacy
+`run_pvt_sweep.sh` minter echoed the record's fields verbatim and formatted
+only `tc` -- so the module keys rows by the record's
+`(corner_label, vdd_v, temp_c)` strings and passes every value but `tc`
+through unchanged. **No committed evidence changed**: all six companions
+regenerate byte-identically from the module, which is the acceptance test and
+is kept as a golden test. Tests: `EndpointTcGoldenTests`,
+`EndpointTcFormulaTests` and `EndpointTcSeamTests` in
+[`test_harness_transformers.py`](test_harness_transformers.py), the last of
+which also asserts that both endpoint benches delegate and that the two TC
+companions stay separate derivations.
 
 ## SG13CMOS5L experiments on the harness (issue #337, Part of #322)
 
@@ -569,7 +614,13 @@ instantiation, shard merge with an explicit expected grid, the legacy
 verdicts) and [`cmos5l_runner.sh`](cmos5l_runner.sh)
 (the shared runner body); the generic mechanics are reused unchanged
 (`klt_sim_evidence.py`, `merge_batch_shards.py`, `fixup_batch_report.py`,
-`submission_identity.*`). Two small shared-code changes:
+`submission_identity.*`). Since #481 the runner preamble itself is shared
+too: [`klt_sim_preamble.sh`](klt_sim_preamble.sh) holds the mode check,
+directory/klt/PDK/OSDI resolution, work-dir mint, batch defaults and
+resume-safety scaffold that `pex_runner.sh` and `cmos5l_runner.sh` had
+retyped, and the batch defaults + resume scaffold keep their --batch-only
+timing on the CMOS5L side. Every SG13CMOS5L-specific block stayed at its
+call site. Two small shared-code changes:
 `klt_corner_bundle.render_bundle` takes optional `libs`/`sections` for other
 family sets (default unchanged), and `enrich_pvt_report.inject_baked_supply`
 was factored out of `enrich` (behaviour unchanged, tested).

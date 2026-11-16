@@ -38,12 +38,19 @@ import re
 import sys
 from pathlib import Path
 
+# The deck's nodeset-seed contract lives in seed_deck.py (with the deck-template
+# side of it, sim/*/testbench/*.tmpl's @@*_SEED@@ tokens); issue #486.
+from seed_deck import SEED_FIELDS, load_seeds
+
 POINTS = ("nominal", "negctrl", "bcs", "wcs")
 CORNER_OF = {"nominal": "typ", "negctrl": "typ", "bcs": "bcs", "wcs": "wcs"}
 MODE_OF = {"nominal": "mismatch", "negctrl": "negctrl", "bcs": "mismatch", "wcs": "mismatch"}
 DIGEST_LABEL_OF = {"nominal": "typ_mismatch", "negctrl": "typ_negctrl",
                    "bcs": "bcs_mismatch", "wcs": "wcs_mismatch"}
-# sim/lib/pvt_preflight.sh
+# sim/lib/pvt_preflight.sh -- the one copy of the corner -> model-section mapping
+# for this harness family: vref_mc_klt.py imports these three maps (and
+# sections_for below) rather than restating them, so a PDK section rename lands
+# in both Monte Carlo campaigns at once. Issue #463.
 HBT = {"typ": "hbt_typ", "bcs": "hbt_bcs", "wcs": "hbt_wcs"}
 MOS = {"typ": "mos_tt", "bcs": "mos_ff", "wcs": "mos_ss"}
 RES = {"typ": "res_typ", "bcs": "res_bcs", "wcs": "res_wcs"}
@@ -70,16 +77,24 @@ DIGEST_HEADER = ["corner_label", "hbt_section", "mos_section", "res_section", "t
 
 BAD_LOG = re.compile(r"Unable to find definition of model|couldn't be loaded|Unknown model type|"
                      r"Simulation interrupted", re.IGNORECASE)
-SEED_FIELDS = (("@@FB_SEED@@", "fb_final_v"), ("@@SNS1_SEED@@", "sns1_final_v"),
-               ("@@SNS2_SEED@@", "sns2_final_v"), ("@@VREF_SEED@@", "vref_final_v"))
 
 
 # --------------------------------------------------------------- rendering
 
-def sections(point: str) -> tuple[str, str, str]:
-    corner = CORNER_OF[point]
-    suffix = "_mismatch" if MODE_OF[point] == "mismatch" else ""
+def sections_for(corner: str, mode: str) -> tuple[str, str, str]:
+    """The (HBT, MOS, resistor) section triple for one corner and mismatch mode.
+
+    Corner and mode are explicit arguments, not a point label, so the sibling
+    harnesses can share this derivation while each still resolves a point
+    against its OWN CORNER_OF/MODE_OF -- the point sets differ (four trim
+    points here, six in vref_mc_klt.py). Issue #463.
+    """
+    suffix = "_mismatch" if mode == "mismatch" else ""
     return HBT[corner] + suffix, MOS[corner] + suffix, RES[corner] + suffix
+
+
+def sections(point: str) -> tuple[str, str, str]:
+    return sections_for(CORNER_OF[point], MODE_OF[point])
 
 
 def fit_id(point: str, draw: int, code: int) -> str:
@@ -88,15 +103,6 @@ def fit_id(point: str, draw: int, code: int) -> str:
 
 def verify_id(point: str, draw: int, temp: int, code: int) -> str:
     return f"verify_{point}_{draw}_t{temp}_c{code}"
-
-
-def load_seeds(seed_csv: str) -> dict:
-    seeds: dict = {}
-    with open(seed_csv, newline="") as fh:
-        for row in csv.DictReader(fh):
-            if row["status"] == "PASS":
-                seeds[(row["corner_label"], row["temp_c"], row["vdd_v"])] = row
-    return seeds
 
 
 def render_deck(template: str, ctx: dict, point: str, draw: int, temp: int, code: int,

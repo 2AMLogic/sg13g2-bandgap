@@ -32,6 +32,7 @@ import klt_sim_evidence as kse  # noqa: E402
 from test_evidence_store import FakeStore  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
 import submission_identity as si  # noqa: E402
+import tc_companion as tcc  # noqa: E402
 
 
 class TempDirCase(unittest.TestCase):
@@ -1847,6 +1848,45 @@ class SetDispatchWiringTests(unittest.TestCase):
             body = helper.split(f"{fn}() {{", 1)[1]
             self.assertIn("--wait-for-capacity", body.split("\n}\n", 1)[0], fn)
 
+    def test_pex_boxtc_runner_overrides_the_body_template_before_sourcing_the_driver(self) -> None:
+        assignment = (
+            'BODY_TEMPLATE="${_here}/../closed-loop-vref-pvt-pex/testbench/'
+            'closed_loop_vref_pvt_pex.body.spice.tmpl"'
+        )
+        runner = (SIM_DIR / "closed-loop-vref-pvt-pex-boxtc" / "run_klt_sim.sh").read_text()
+        self.assertIn(assignment, runner)
+        source_line = 'source "${_here}/../harness/pex_runner.sh"'
+        self.assertIn(source_line, runner)
+        # The ordering is the contract: the override only reaches the
+        # submission identity when it precedes the source line.
+        self.assertLess(runner.index(assignment), runner.index(source_line))
+
+    def test_pex_driver_resolves_the_body_template_only_at_the_default(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        occurrences = [
+            line
+            for line in driver.splitlines()
+            if "${STEM}.body.spice.tmpl" in line and not line.lstrip().startswith("#")
+        ]
+        self.assertEqual(
+            occurrences,
+            ['BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"'],
+        )
+
+    def test_shared_pex_body_template_exists_and_the_per_stem_copy_does_not(self) -> None:
+        shared = (
+            SIM_DIR / "closed-loop-vref-pvt-pex"
+            / "testbench" / "closed_loop_vref_pvt_pex.body.spice.tmpl"
+        )
+        self.assertTrue(shared.is_file(), shared)
+        # Stem-exact on purpose: the non-PEX closed-loop-vref-pvt-boxtc bench
+        # legitimately keeps its own ..._boxtc.body.spice.tmpl on main.
+        per_stem = (
+            SIM_DIR / "closed-loop-vref-pvt-pex-boxtc"
+            / "testbench" / "closed_loop_vref_pvt_pex_boxtc.body.spice.tmpl"
+        )
+        self.assertFalse(per_stem.exists(), per_stem)
+
 
 # --------------------------------------------------------------------------
 # boxtc_companion: the box-method TC derivation (issue #465). It used to be
@@ -1881,6 +1921,28 @@ INTERIOR_EXTREMA = [
     (-40, 1.0400, "PASS"), (0, 1.0300, "PASS"), (27, 1.0500, "PASS"),
     (50, 1.0600, "PASS"), (125, 1.0450, "PASS"),
 ]
+
+
+#: The endpoint benches and the newest committed record/companion pair each
+#: carries -- the golden-test inputs for the endpoint derivation (issue #496).
+TC_BENCHES = {
+    "closed-loop-vref-pvt": "20261001-085908-e5507b2",
+    "closed-loop-vref-pvt-pex": "20260905-114438-8abe2aa",
+}
+
+
+def endpoint_rows(points: list[tuple], corner: str = "typ",
+                  vdd: str = "3.30") -> list[dict]:
+    """Record rows for one (corner, vdd) group from `(temp_c, vref_3ms_v)`.
+
+    `vref` may be a float or an already-rendered string -- the way the
+    minted records carry it (`1.04695e+00`).
+    """
+    return [
+        {"corner_label": corner, "vdd_v": vdd, "temp_c": f"{t}",
+         "vref_3ms_v": v if isinstance(v, str) else repr(v)}
+        for t, v in points
+    ]
 
 
 class BoxTcGoldenTests(unittest.TestCase):
@@ -2029,18 +2091,21 @@ class BoxTcSeamTests(TempDirCase):
         self.assertIn("boxtc_companion.py", body)
         self.assertNotIn("1e6", body)
         # The input filter is the box benches' own: it drops both companion
-        # kinds. The three hooks' filters differ on purpose (#465).
+        # kinds. The two helpers' filters differ on purpose (#496): the
+        # endpoint helper drops -vs-schematic instead.
         self.assertIn("grep -v -e '-boxtc.csv' -e '-tc.csv'", body)
 
     def test_the_endpoint_bench_keeps_its_own_different_body(self) -> None:
-        # closed-loop-vref-pvt-pex supplies a genuinely different derivation
-        # to the same hook (endpoint method, -tc.csv, 6 columns). Collapsing
-        # it into the box companion would change committed evidence.
+        # Reframed for #496: its premise -- the endpoint bench re-types its
+        # own endpoint-method body -- became false by design when that body
+        # moved into sim/harness/tc_companion.py. What remains true is the
+        # separation it guarded: the endpoint bench delegates to the
+        # *endpoint* companion, never the box one.
         script = (SIM_DIR / "closed-loop-vref-pvt-pex" / "run_klt_sim.sh").read_text()
         hook = script.split("pex_record_companion() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("pex_endpoint_tc_companion", hook)
         self.assertNotIn("pex_boxtc_companion", hook)
-        self.assertIn("-tc.csv", hook)
-        self.assertNotIn("-boxtc.csv", hook)
+        self.assertNotIn("boxtc_companion", hook)
 
     def test_shared_companion_picks_the_record_over_its_own_companions(self) -> None:
         # `ls -t` picks the newest CSV, so a companion derived by an earlier
@@ -2066,6 +2131,203 @@ class BoxTcSeamTests(TempDirCase):
         self.assertEqual(
             (records / f"{stem}-boxtc.csv").read_text(),
             (committed / f"{stem}-boxtc.csv").read_text(),
+        )
+
+
+class EndpointTcGoldenTests(unittest.TestCase):
+    """The endpoint derivation still reproduces the committed evidence."""
+
+    def test_committed_companions_regenerate_byte_identically(self) -> None:
+        # The acceptance test for the de-duplication (#496): both benches'
+        # committed -tc.csv must come back out of the shared module
+        # unchanged, byte for byte -- including the header and the absence
+        # of CRLF. Read-only on sim/ -- output goes to a temp dir.
+        for exp, stem in TC_BENCHES.items():
+            with self.subTest(exp=exp):
+                records = SIM_DIR / exp / "records"
+                want = (records / f"{stem}-tc.csv").read_text()
+                with tempfile.TemporaryDirectory() as tmp:
+                    got = Path(tmp) / "companion.csv"
+                    tcc.write_companion(records / f"{stem}.csv", got)
+                    self.assertEqual(got.read_text(), want)
+
+    def test_committed_companions_are_not_rewritten(self) -> None:
+        # sim/*/records/ is append-only evidence: deriving must never write
+        # back into it. Guards the module against an EXP_DIR-relative default.
+        for exp, stem in TC_BENCHES.items():
+            with self.subTest(exp=exp):
+                committed = SIM_DIR / exp / "records" / f"{stem}-tc.csv"
+                before = committed.stat().st_mtime_ns, committed.read_bytes()
+                with tempfile.TemporaryDirectory() as tmp:
+                    tcc.write_companion(
+                        SIM_DIR / exp / "records" / f"{stem}.csv",
+                        Path(tmp) / "companion.csv",
+                    )
+                self.assertEqual(
+                    (committed.stat().st_mtime_ns, committed.read_bytes()), before
+                )
+
+
+class EndpointTcFormulaTests(unittest.TestCase):
+    """The parts of the derivation a correction would land on."""
+
+    def one(self, points: list[tuple], **kw) -> list:
+        rows = tcc.companion_rows(endpoint_rows(points, **kw))
+        self.assertEqual(len(rows), 1, rows)
+        return rows[0]
+
+    def test_tc_is_the_two_endpoint_slope(self) -> None:
+        # 1e6 * (v125 - vn40) / (165 * v27): the grid's endpoints, not the
+        # box method's worst-case spread -- interior extrema must not move
+        # the number. (The INTERIOR_EXTREMA grid, without status: the
+        # endpoint derivation does not read it.)
+        row = self.one([(-40, 1.0400), (0, 1.0300), (27, 1.0500),
+                        (50, 1.0600), (125, 1.0450)])
+        self.assertEqual(row[:2], ["typ", "3.30"])
+        self.assertAlmostEqual(
+            float(row[5]), 1e6 * (1.045 - 1.04) / (165 * 1.05), places=3)
+        self.assertNotAlmostEqual(
+            float(row[5]), 1e6 * (1.06 - 1.03) / (165 * 1.05), places=1)
+
+    def test_values_pass_through_verbatim_not_rerendered(self) -> None:
+        # The committed convention: the record's own strings are echoed, not
+        # re-rendered through Python floats -- vdd_v as `3.30`, voltages at
+        # the record's precision. This is exactly the regression the inline
+        # hook this module replaces would have minted (#496).
+        row = self.one([(-40, "1.04695e+00"), (27, "1.04705e+00"),
+                        (125, "1.04201e+00")])
+        self.assertEqual(row, ["typ", "3.30", "1.04695e+00", "1.04705e+00",
+                               "1.04201e+00", "-28.594"])
+
+    def test_span_is_the_165_degree_grid(self) -> None:
+        # The committed companions disclose a 165 degC span (-40..125). It
+        # is the formula's denominator, so it is a named constant, not a
+        # literal repeated per copy.
+        self.assertEqual(tcc.SPAN_C, 165)
+        row = self.one([(-40, 1.04), (27, 1.05), (125, 1.14)])
+        self.assertAlmostEqual(float(row[5]), 1e6 * 0.1 / (165 * 1.05),
+                               places=3)
+
+    def test_group_missing_an_endpoint_temperature_is_omitted(self) -> None:
+        # No denominator (27 C), or a missing slope endpoint: the derivation
+        # has no value, so the group is omitted rather than reported from a
+        # substitute or a crash (the old hook's
+        # `except (KeyError, ValueError): continue`).
+        for points in (
+            [(-40, 1.047), (125, 1.042)],        # no 27 C: no denominator
+            [(27, 1.047), (125, 1.042)],         # no -40 C
+            [(-40, 1.047), (27, 1.047)],         # no 125 C
+        ):
+            with self.subTest(points=points):
+                self.assertEqual(tcc.companion_rows(endpoint_rows(points)), [])
+
+    def test_unparseable_voltage_is_omitted_not_crashed(self) -> None:
+        self.assertEqual(
+            tcc.companion_rows(
+                endpoint_rows([(-40, 1.047), (27, "not-a-number"),
+                               (125, 1.042)])
+            ),
+            [],
+        )
+
+    def test_rows_follow_the_committed_grid_order(self) -> None:
+        # Row order is part of the committed CSV's shape: corner-major over
+        # (typ, bcs, wcs, sf, fs) x (2.97, 3.30, 3.63).
+        rows: list[dict] = []
+        for corner in reversed(tcc.CORNERS):
+            for vdd in reversed(tcc.VDDS):
+                rows += endpoint_rows([(-40, 1.04695), (27, 1.04705),
+                                       (125, 1.04201)],
+                                      corner=corner, vdd=vdd)
+        got = [(r[0], r[1]) for r in tcc.companion_rows(rows)]
+        self.assertEqual(got, [(c, v) for c in tcc.CORNERS for v in tcc.VDDS])
+
+    def test_header_matches_the_committed_companions(self) -> None:
+        for exp, stem in TC_BENCHES.items():
+            with self.subTest(exp=exp):
+                committed = (SIM_DIR / exp / "records" / f"{stem}-tc.csv").read_text()
+                self.assertEqual(committed.splitlines()[0], ",".join(tcc.HEADER))
+
+    def test_companion_is_newline_terminated_not_crlf(self) -> None:
+        # csv.writer defaults to \r\n; the committed companions are \n. The
+        # inline hook this module replaces had exactly this bug (#496).
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dst = Path(tmp) / "r.csv", Path(tmp) / "c.csv"
+            with src.open("w", newline="") as fh:
+                w = csv.writer(fh, lineterminator="\n")
+                w.writerow(["corner_label", "vdd_v", "temp_c", "vref_3ms_v"])
+                for t, v in [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]:
+                    w.writerow(["typ", "3.30", t, repr(v)])
+            tcc.write_companion(src, dst)
+            self.assertNotIn(b"\r", dst.read_bytes())
+
+
+class EndpointTcSeamTests(TempDirCase):
+    """The shell side: one shared implementation, and it stays shared."""
+
+    ENDPOINT_BENCHES = ("closed-loop-vref-pvt", "closed-loop-vref-pvt-pex")
+
+    def test_both_endpoint_benches_delegate_to_the_shared_companion(self) -> None:
+        for exp in self.ENDPOINT_BENCHES:
+            with self.subTest(exp=exp):
+                script = (SIM_DIR / exp / "run_klt_sim.sh").read_text()
+                hook = script.split("pex_record_companion() {", 1)[1].split("\n}\n", 1)[0]
+                self.assertIn("pex_endpoint_tc_companion", hook)
+                # The formula must not be re-typed here -- that is the
+                # duplication #496 removed. No inline heredoc, no formula.
+                self.assertNotIn("python3 - ", hook)
+                self.assertNotIn("1e6", hook)
+                self.assertNotIn("csv.writer", hook)
+                self.assertIn('source "${HARNESS_DIR}/pex_vref_runner.sh"', script)
+
+    def test_the_shared_companion_defers_the_formula_to_the_module(self) -> None:
+        runner = (SIM_DIR / "harness" / "pex_vref_runner.sh").read_text()
+        body = runner.split("pex_endpoint_tc_companion() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("tc_companion.py", body)
+        self.assertNotIn("1e6", body)
+        # The input filter is the endpoint benches' own: it drops the
+        # companion kind and the extracted benches' -vs-schematic artifacts
+        # (a no-op on the schematic twin). The two helpers' filters differ
+        # on purpose (#496).
+        self.assertIn("grep -v -e '-tc.csv' -e '-vs-schematic'", body)
+
+    def test_the_two_tc_companions_stay_separate_derivations(self) -> None:
+        # The endpoint and box methods must not collapse into one module or
+        # one helper: different column sets, different companions, and a
+        # ratified decision record behind one of them (#465).
+        runner = (SIM_DIR / "harness" / "pex_vref_runner.sh").read_text()
+        endpoint = runner.split("pex_endpoint_tc_companion() {", 1)[1].split("\n}\n", 1)[0]
+        box = runner.split("pex_boxtc_companion() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("${HARNESS_DIR}/tc_companion.py", endpoint)
+        self.assertIn("-tc.csv", endpoint)
+        self.assertNotIn("boxtc_companion", endpoint)
+        self.assertIn("${HARNESS_DIR}/boxtc_companion.py", box)
+        self.assertIn("-boxtc.csv", box)
+        self.assertNotIn("${HARNESS_DIR}/tc_companion.py", box)
+
+    def test_shared_companion_picks_the_record_over_its_own_companions(self) -> None:
+        # `ls -t` picks the newest CSV, so a companion derived by an earlier
+        # run -- which is newer than the record -- must be filtered out, or
+        # the derivation would consume its own output.
+        records = self.tmp / "records"
+        records.mkdir()
+        exp, stem = next(iter(TC_BENCHES.items()))
+        committed = SIM_DIR / exp / "records"
+        (records / f"{stem}.csv").write_bytes((committed / f"{stem}.csv").read_bytes())
+        # Companions, all newer than the record, all of which must be skipped.
+        for name in (f"{stem}-tc.csv", f"{stem}-vs-schematic.csv"):
+            (records / name).write_text("corner_label,garbage\nbad,row\n")
+            os.utime(records / name, (time.time() + 10, time.time() + 10))
+        script = (
+            f'set -euo pipefail; HARNESS_DIR="{SIM_DIR / "harness"}"; '
+            f'EXP_DIR="{self.tmp}"; '
+            f'source "$HARNESS_DIR/pex_vref_runner.sh"; pex_endpoint_tc_companion'
+        )
+        r = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (records / f"{stem}-tc.csv").read_text(),
+            (committed / f"{stem}-tc.csv").read_text(),
         )
 
 if __name__ == "__main__":

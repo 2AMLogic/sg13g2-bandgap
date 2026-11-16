@@ -122,7 +122,7 @@ layer the real PCells draw, but faithful on the two specific facts this
 issue's acceptance criteria asked to check (the `Nx` multi-stripe geometry,
 and `pnpMPA`'s pin count/naming).
 
-## What this layout is / is not
+## What this layout is / is not (SG13G2)
 
 - **Is**: a floorplan-level layout that instantiates one shape group per
   schematic device (`M1`/`M2`/`M3`, `Q1`/`Q2`/`Q3`, `R1`/`R2` in
@@ -493,32 +493,17 @@ is why the one-point probe above lands at 66,123 Ω rather than at `r_ohm`'s
 `pex_extract_report.json`; treat `r_ohm` on a short segment as a lower bound
 until #2652 lands.
 
-### Reproducing
+### Reproducing the trim ladder
 
-```bash
-cd layout
-python3 bandgap_core/generate.py        # 255-unit ladder + straps at TRIM_CODE
-python3 bandgap_top/generate.py         # must run after the leaf
-cd ..
-python3 layout/lvs_reference.py         # per-code reference netlists
-
-cd layout/bandgap_core
-klt drc  --deck sg13g2 bandgap_core.gds --format json > drc_report.json
-klt lvs  lvs_request.json               --format json > lvs_report.json
-klt extract --deck sg13g2 --parasitics bandgap_core.gds \
-  -o bandgap_core.pex.spice --format json > pex_extract_report.json
-# then the same three for layout/bandgap_top/
-
-cd ../..
-python3 layout/bandgap_core/probe/make_probe_netlist.py   # tracks the extraction
-layout/bandgap_core/probe/run_probe.sh                    # ~0.3 s sanity probe
-```
-
-Every one of those outputs is **deterministic**: re-running the block above
-against an unchanged tree reproduces both `.gds` files byte-for-byte and
-every `drc_report.json` / `lvs_report.json` / `pex_extract_report.json` /
-`*.pex.spice` exactly (verified on `klt 0.6.0+geb7e7c6ace30`,
-KLayout 0.30.12).
+This section needs no recipe of its own: "Reproducing (SG13G2)" below is the
+complete one, and it minted every verdict and measurement above. Two of its
+steps are load-bearing *for the mask option* specifically —
+`bandgap_core/generate.py` closes the straps at its own `TRIM_CODE`
+constant, so changing that constant re-mints the mask and everything
+downstream of it ("The straps are a mask option, and that decides everything
+else" above), and `layout/lvs_reference.py` must run before `klt lvs` to
+resolve that code into the reference netlist ("LVS: three real pieces of
+friction, all filed upstream" above, item 1).
 
 ## Folded (serpentine) resistors (issue #173)
 
@@ -719,44 +704,61 @@ the same checkout `spec/porting-plan.md` cites), not invented:
 | `EXTBlock.drawing` | 111/0 |
 | `SalBlock.drawing` | 28/0 |
 
-## Reproducing
+## Reproducing (SG13G2)
+
+**The one complete SG13G2 build recipe**: all four cells (`bandgap_amp`,
+`bandgap_core`, `bandgap_startup`, `bandgap_top` — the set `git ls-files
+'layout/*/generate.py' | grep -v cmos5l` returns), then the reference
+netlists, then the three `klt` steps per cell. The SG13CMOS5L port has its
+own: "Reproducing (SG13CMOS5L)" below. Neither recipe covers the other's
+cells.
+
+**Run all four, in dependency order, whenever you touch a leaf generator.**
+`bandgap_top/generate.py:242-244` *instances the three already-committed leaf
+GDS files* rather than redrawing them, so it must run after the leaves, not
+in the same loop — and **nothing in CI catches a partial re-run**: every
+freshness check binds a *report* to the GDS committed beside it, nothing
+binds `bandgap_top.gds` to the leaf GDS files it read, so an edited leaf plus
+a subset regeneration lands with `hygiene` green and a top cell that no
+longer matches its own leaves (see "Evidence freshness, enforced in CI"
+below).
 
 ```bash
 cd layout
-python3 bandgap_core/generate.py
+python3 bandgap_amp/generate.py
+python3 bandgap_core/generate.py        # 255-unit ladder + straps at TRIM_CODE
 python3 bandgap_startup/generate.py
+# bandgap_top reads the three leaf GDS files above as cell instances,
+# so it must run after them, not in the same loop:
+python3 bandgap_top/generate.py
+cd ..
+
+python3 layout/lvs_reference.py         # per-code reference netlists
+
+cd layout/bandgap_core                  # then ../bandgap_amp, etc.
+klt drc  --deck sg13g2 bandgap_core.gds --format json > drc_report.json
+klt lvs  lvs_request.json               --format json > lvs_report.json
+klt extract --deck sg13g2 --parasitics bandgap_core.gds \
+  -o bandgap_core.pex.spice --format json > pex_extract_report.json
+# then the same three per cell, substituting that cell's own file names
+
+cd ../..
+python3 layout/bandgap_core/probe/make_probe_netlist.py   # tracks the extraction
+layout/bandgap_core/probe/run_probe.sh                    # ~0.3 s sanity probe
 ```
 
 (`uv run --with klayout python3 ...` if `klayout` is not already on the
-active interpreter's path — matching `gf180-bandgap`'s convention.) Output
-is byte-for-byte deterministic (`SaveLayoutOptions.gds2_write_timestamps =
-False`), so re-running leaves `git diff` empty — verified for this issue.
+active interpreter's path — matching `gf180-bandgap`'s convention.)
 
-```bash
-klt cells layout/bandgap_core/bandgap_core.gds --format json
-klt stats layout/bandgap_core/bandgap_core.gds --format json
-klt layers layout/bandgap_core/bandgap_core.gds --format json
-```
+Every one of those outputs is **deterministic**: re-running the block above
+against an unchanged tree reproduces all four `.gds` files byte-for-byte
+(`SaveLayoutOptions.gds2_write_timestamps = False`, so re-running leaves
+`git diff` empty) and every `drc_report.json` / `lvs_report.json` /
+`pex_extract_report.json` / `*.pex.spice` exactly (verified on
+`klt 0.6.0+geb7e7c6ace30`, KLayout 0.30.12).
 
-`bandgap_core.gds`: 1 top cell (`bandgap_core`), bbox
-`(-5.4, -3.1)`–`(185.4, 71.675)` µm as of issue #272's trim ladder (it was
-`(-5.4, -3.1)`–`(137.478, 70.623)` after issue #173's fold, and
-`(511.5, 61.4)` before it, when `R1` was a straight 511 µm bar that
-dominated the bounding box on its own — see "Trim ladder layout (issue
-#272)" and "Folded (serpentine) resistors" above,
-`measurements/2026-09-resistor-fold/`, and `TRIM_X0`'s own comment in
-`bandgap_core/generate.py` for why the ladder grew the cell rightward). The
-`EmWind.drawing` (33/0) layer carries exactly 10 shapes — `Q1` (`Nx=1`) + `Q2`
-(`Nx=8`) + `Q3` (`Nx=1`) = 10, matching the schematic's `Nx` values exactly,
-confirming the per-stripe geometry described below.
-
-(Re-read from the committed GDS 2026-09-04 by
-[`measurements/2026-09-layout-area/`](../measurements/2026-09-layout-area/README.md).
-The three counts above previously cited the pre-retune geometry — `105`
-shapes / `13` layer combinations / a `694.7` µm right edge — which the
-`R1`: 694.5 µm -> 511 µm retune of #134/#139 superseded without this
-paragraph being refreshed. The `EmWind.drawing` claim was re-verified at the
-same time and was, and is, correct.)
+The read-only `klt cells`/`stats`/`layers` queries are quoted with the
+geometry facts they produced, under each cell's own section below.
 
 ## Tooling-friction findings (`spec/porting-plan.md` §7, items 2 and 3)
 
@@ -782,8 +784,9 @@ framing at the *layout* level, not just the SPICE-subckt level.
 the PCell's own `stepX = 1.85 µm` pitch and its default `le`/`we` emitter-
 window size), and `bandgap_core.gds`'s `Q2` instance (`Nx=8`) draws 8
 separate `EmWind` windows at that pitch — visible in the committed GDS
-itself, not just asserted in this README (see "Reproducing" above: `klt
-layers` reports exactly 10 `EmWind` shapes across `Q1`+`Q2`+`Q3`).
+itself, not just asserted in this README (see "Cell: `bandgap_core`"
+below: `klt layers` reports exactly 10 `EmWind` shapes across
+`Q1`+`Q2`+`Q3`).
 
 **One caveat, not glossed over**: "independently-placeable" needs a second
 qualifier. Within **one** PCell instantiation, the Nx stripes are real,
@@ -855,7 +858,7 @@ engine both run against `klt`'s own pip-installed, declarative
 IHP-Open-PDK v0.3.0 checkout is that deck's own build-time provenance
 source, not a runtime dependency of running it.
 
-### DRC — clean
+### DRC — clean (SG13G2)
 
 | Cell | Report | Status | Deck (content hash) |
 | --- | --- | --- | --- |
@@ -863,8 +866,8 @@ source, not a runtime dependency of running it.
 | `bandgap_startup` | `layout/bandgap_startup/drc_report.json` | `clean`, 0 violations | `sg13g2`, `sha256:894326a4...` (refreshed, issue #155, same deck build issue #152 already moved both cells to) |
 
 The 26 `cont.width.1` violations this issue's own informational run
-originally found (see "What this layout is / is not" above) were fixed by
-widening the narrow axis of every simplified `Cont` pad in
+originally found (see "What this layout is / is not (SG13G2)" above) were
+fixed by widening the narrow axis of every simplified `Cont` pad in
 `draw_npn13g2`/`draw_hv_mos` (`layout/common.py`) from 0.15 µm to 0.18 µm —
 0.02 µm clear of the curated deck's real 0.16 µm `Cnt.a` minimum-width
 floor, verified against `ihp-sg13g2/libs.tech/klayout/tech/drc/rule_decks/
@@ -1292,6 +1295,38 @@ above:
    observation" section for the before/after numbers.
 
 ---
+
+## Cell: `bandgap_core`
+
+Geometry read directly from the committed GDS by the read-only `klt`
+queries, not asserted:
+
+```bash
+klt cells layout/bandgap_core/bandgap_core.gds --format json
+klt stats layout/bandgap_core/bandgap_core.gds --format json
+klt layers layout/bandgap_core/bandgap_core.gds --format json
+```
+
+`bandgap_core.gds`: 1 top cell (`bandgap_core`), bbox
+`(-5.4, -3.1)`–`(185.4, 71.675)` µm as of issue #272's trim ladder (it was
+`(-5.4, -3.1)`–`(137.478, 70.623)` after issue #173's fold, and
+`(511.5, 61.4)` before it, when `R1` was a straight 511 µm bar that
+dominated the bounding box on its own — see "Trim ladder layout (issue
+#272)" and "Folded (serpentine) resistors" above,
+`measurements/2026-09-resistor-fold/`, and `TRIM_X0`'s own comment in
+`bandgap_core/generate.py` for why the ladder grew the cell rightward). The
+`EmWind.drawing` (33/0) layer carries exactly 10 shapes — `Q1` (`Nx=1`) + `Q2`
+(`Nx=8`) + `Q3` (`Nx=1`) = 10, matching the schematic's `Nx` values exactly,
+confirming the per-stripe geometry described in "1. `npn13G2`'s `Nx`
+parameter: a real, independently-drawn multi-stripe layout" above.
+
+(Re-read from the committed GDS 2026-09-04 by
+[`measurements/2026-09-layout-area/`](../measurements/2026-09-layout-area/README.md).
+The three counts above previously cited the pre-retune geometry — `105`
+shapes / `13` layer combinations / a `694.7` µm right edge — which the
+`R1`: 694.5 µm -> 511 µm retune of #134/#139 superseded without this
+paragraph being refreshed. The `EmWind.drawing` claim was re-verified at the
+same time and was, and is, correct.)
 
 ## Cell: `bandgap_amp` (issue #169, body-tie LVS fix #184)
 
@@ -1816,7 +1851,7 @@ cells (`layout/*/` holding a `<dirname>.gds`), silently exempting every new
 report from the format/freshness checks — the opposite of what committing
 them is for.
 
-## Reproducing
+## Reproducing (SG13CMOS5L)
 
 ```bash
 for cell in core amp startup; do
@@ -1886,8 +1921,9 @@ see "Q2: 8 parallel unit devices" below; **not** the single `w=8u l=2u`
 device this cell originally drew, which exceeded the PCell's own `maxW`).
 Top cell `sg13cmos5l_bandgap_core`, bbox `(-10.0, -3.21)`–`(830.5, 61.7)` µm
 (widened from `(-8.48, -3.21)`–`(830.2, 61.7)`: three new boundary port pads
-for `sns1`/`sns2`/`vref`, issue #76 -- see "Boundary ports" below; before
-that, widened from `(800.2, 61.7)` for `X_M3`/`R1`/`Q3` shifting right,
+for `sns1`/`sns2`/`vref`, issue #76 -- see this cell's own "Boundary
+ports" section below; before that, widened from `(800.2, 61.7)` for
+`X_M3`/`R1`/`Q3` shifting right,
 150 -> 180, to make room for Q2's 8-unit row), 1188 polygons across 12
 layer/datatype combinations.
 
@@ -1905,7 +1941,7 @@ folded block's top clears the mirror row's own NWell/ThickGateOx bottom edge
 left at 50 it would have merged into `R1`'s own conductor and shorted `sns2`
 to `vref`. See `measurements/2026-09-resistor-fold/`.
 
-### Boundary ports for `bandgap_top` assembly (issue #76)
+### Boundary ports for `bandgap_top` assembly (issue #76) — `sg13cmos5l-bandgap_core`
 
 `fb` and `vdd` were already flush with this cell's own bounding box;
 `sns1`, `sns2` and `vref` were plain interior columns, so each now gets a
@@ -1972,9 +2008,10 @@ One-to-one with `design/sg13cmos5l/netlist/bandgap_amp.spice` (schematic from
 `sg13_hv_pmos` `w=20u l=1u`, `MN1`–`MN4` `sg13_hv_nmos` `w=10u l=1u`. Top
 cell `sg13cmos5l_bandgap_amp`, bbox `(-7.0, -1.24)`–`(77.0, 41.7)` µm
 (widened from `(-5.27, -1.24)`–`(75.62, 41.7)`: two new boundary port pads
-for `in_p`/`in_n`, issue #76 -- see "Boundary ports" below), 759 polygons
-across 9 layer/datatype combinations. **The first CMOS5L cell in this repo
-whose bounding box is set by its own devices** rather than by a straight,
+for `in_p`/`in_n`, issue #76 -- see this cell's own "Boundary ports"
+section below), 759 polygons across 9 layer/datatype combinations. **The
+first CMOS5L cell in this repo whose bounding box is set by its own
+devices** rather than by a straight,
 unfolded resistor bar — it has no resistor.
 
 **The NMOS primitive landed here.** `bandgap_core` is all-PMOS, so
@@ -2009,7 +2046,7 @@ the input pair sitting directly above its own diode-connected load so
 `MP3 -pn- MP4 -out- MTAIL`, which puts the mirror pair adjacent (one shared
 gate bar again). See `generate.py`'s own floorplan sketch.
 
-### Boundary ports for `bandgap_top` assembly (issue #76)
+### Boundary ports for `bandgap_top` assembly (issue #76) — `sg13cmos5l-bandgap_amp`
 
 `vdd` (top rail), `vss` (bottom rail) and `out` were already flush with this
 cell's own bounding box; `in_p`/`in_n` were interior poly gate taps
@@ -2064,7 +2101,7 @@ boundary-port escape (added for the `bandgap_top` assembly, see below) does
 cross `det`'s Metal1 lane, and that one crossing is resolved in poly rather
 than on a second metal.
 
-### Boundary ports for `bandgap_top` assembly (issue #76)
+### Boundary ports for `bandgap_top` assembly (issue #76) — `sg13cmos5l-bandgap_startup`
 
 `vdd` (`RPU`'s own left head) and `vss` (the merged NMOS source rail) already
 sat flush against this cell's own edges; `sns1`/`fb` were interior gate tabs
@@ -2208,7 +2245,7 @@ committed `extract_report.json` records `net_count: 13`, `pin_count: 13` —
 `device_count` (17) and `device_counts` are still unchanged from this
 paragraph's own re-verification.)
 
-### DRC — clean
+### DRC — clean (`sg13cmos5l-bandgap_top`)
 
 | Cell | Report | Status | Deck (content hash) |
 | --- | --- | --- | --- |
@@ -3359,11 +3396,11 @@ above), so nothing further is owed upstream on this cause; the residual
 `vsubs`/anonymous-well bodies in these reports are now this repo's own
 missing tie geometry, tracked here rather than as an upstream gap.
 
-## What this layout is / is not
+## What this layout is / is not (SG13CMOS5L)
 
-Everything the SG13G2 section's "What this layout is / is not" says applies
-here too (simplified representative footprints, not PCell-exact stacks;
-no guard rings, fill or seal ring;
+Everything the SG13G2 section's "What this layout is / is not (SG13G2)" says
+applies here too (simplified representative footprints, not PCell-exact
+stacks; no guard rings, fill or seal ring;
 no analog matching structures — no common-centroid mirror interdigitation, no
 dummy devices). Two CMOS5L-specific additions:
 

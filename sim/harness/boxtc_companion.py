@@ -26,10 +26,11 @@ two-endpoint slope: the endpoint figure is carried alongside, in
 A group with no PASS point, or whose PASS points miss 27 degC, is omitted --
 the derivation has no denominator there.
 
-This is the box-method companion only. `sim/closed-loop-vref-pvt-pex`
-supplies a genuinely different endpoint-method body to the same hook
-(6 columns, `-tc.csv`, rows keyed by exact `(corner, vdd, temp)`); it is not
-this derivation and does not belong here.
+This is the box-method companion only. The endpoint method -- a two-point
+slope over the -40/125 degC endpoints (6 columns, `-tc.csv`, rows keyed by
+exact `(corner, vdd, temp)`) -- is a different derivation with a different
+column set, and lives in `tc_companion.py` beside this module (issue #496);
+it is not this derivation and does not belong here.
 
 Usage (the shell side is `pex_boxtc_companion` in
 sim/harness/pex_vref_runner.sh, which picks the newest minted record):

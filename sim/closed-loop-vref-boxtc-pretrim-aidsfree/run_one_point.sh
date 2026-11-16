@@ -52,6 +52,7 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck disable=SC2034  # REPO_ROOT is consumed by the sourced sim/lib/*.sh
 REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
 EXPERIMENT_DIR="${SCRIPT_DIR}"
 
@@ -88,12 +89,9 @@ fi
 # whole point (see README.md "Why a historical DUT").
 DUT_GIT_SHA="d83f7c4"
 
-MSENSE_LINE="$(grep -E '^XMSENSE ' "${REPO_ROOT}/design/netlist/bandgap_startup.spice")"
-MSENSE_W="$(echo "${MSENSE_LINE}" | grep -oE 'w=[0-9.]+u' | head -1 | sed -e 's/w=//')"
-if [[ -z "${MSENSE_W}" ]]; then
-  echo "run_one_point.sh: could not parse XMSENSE's w= from design/netlist/bandgap_startup.spice" >&2
-  exit 3
-fi
+# shellcheck source=../lib/msense_width.sh
+source "${SIM_DIR}/lib/msense_width.sh"
+read_msense_width "design/netlist/bandgap_startup.spice"
 
 SNAPSHOTS_OUT="${EXPERIMENT_DIR}/netlist-snapshots/${RECORD_ID}"
 CORNERS_OUT="${EXPERIMENT_DIR}/corners/${RECORD_ID}"
