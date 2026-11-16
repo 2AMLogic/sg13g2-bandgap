@@ -12,6 +12,10 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-16
 
+- **PR #523**: refactor: route the standalone batch submitters through klt_sim_batch_defaults
+- **PR #521**: refactor: share schematic_vref_main in the vref PEX runner
+- **Issue #512** (closed): Dedupe sim wrapper leftovers after #465: endpoint-method TC companion and schematic_vref_main are each copy-pasted across two benches
+- **Issue #503** (closed): run_klt_trim_axis.sh keeps a third copy of the batch provision-script default
 - **PR #508**: evidence: trim-bearing 120-point box-TC record, retire the #273 waiver
 - **PR #504**: test: tripwire the trim bench's awk box-TC copy to boxtc_companion
 - **PR #501**: docs: record measured KLU-vs-SPARSE solve times for closed-loop-iq and closed-loop-startup
