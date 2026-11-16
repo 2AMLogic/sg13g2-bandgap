@@ -38,6 +38,10 @@ import re
 import sys
 from pathlib import Path
 
+# The deck's nodeset-seed contract lives in seed_deck.py (with the deck-template
+# side of it, sim/*/testbench/*.tmpl's @@*_SEED@@ tokens); issue #486.
+from seed_deck import SEED_FIELDS, load_seeds
+
 POINTS = ("nominal", "negctrl", "bcs", "wcs")
 CORNER_OF = {"nominal": "typ", "negctrl": "typ", "bcs": "bcs", "wcs": "wcs"}
 MODE_OF = {"nominal": "mismatch", "negctrl": "negctrl", "bcs": "mismatch", "wcs": "mismatch"}
@@ -73,8 +77,6 @@ DIGEST_HEADER = ["corner_label", "hbt_section", "mos_section", "res_section", "t
 
 BAD_LOG = re.compile(r"Unable to find definition of model|couldn't be loaded|Unknown model type|"
                      r"Simulation interrupted", re.IGNORECASE)
-SEED_FIELDS = (("@@FB_SEED@@", "fb_final_v"), ("@@SNS1_SEED@@", "sns1_final_v"),
-               ("@@SNS2_SEED@@", "sns2_final_v"), ("@@VREF_SEED@@", "vref_final_v"))
 
 
 # --------------------------------------------------------------- rendering
@@ -101,15 +103,6 @@ def fit_id(point: str, draw: int, code: int) -> str:
 
 def verify_id(point: str, draw: int, temp: int, code: int) -> str:
     return f"verify_{point}_{draw}_t{temp}_c{code}"
-
-
-def load_seeds(seed_csv: str) -> dict:
-    seeds: dict = {}
-    with open(seed_csv, newline="") as fh:
-        for row in csv.DictReader(fh):
-            if row["status"] == "PASS":
-                seeds[(row["corner_label"], row["temp_c"], row["vdd_v"])] = row
-    return seeds
 
 
 def render_deck(template: str, ctx: dict, point: str, draw: int, temp: int, code: int,

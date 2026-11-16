@@ -41,7 +41,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import klt_corner_bundle as bundle  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
-from trim_mc_klt import load_seeds  # noqa: E402
+from seed_deck import SEED_FIELDS, load_seeds  # noqa: E402
 
 CODES = (0, 1, 2, 4, 8, 16, 32, 64, 128, 129, 255)
 VDDS = (2.97, 3.30, 3.63)
@@ -57,9 +57,6 @@ DET_RELEASE_FRAC = 0.2
 I_MKFB_RELEASE_A = 50e-9
 DVSNS_CLOSE_V = 0.020
 FB_RAIL_MARGIN_V = 0.05
-
-SEED_FIELDS = (("@@FB_SEED@@", "fb_final_v"), ("@@SNS1_SEED@@", "sns1_final_v"),
-               ("@@SNS2_SEED@@", "sns2_final_v"), ("@@VREF_SEED@@", "vref_final_v"))
 
 
 def shard_plan() -> list[tuple[str, float, int, tuple[int, ...]]]:
