@@ -33,6 +33,7 @@ Human-approved issues ready for implementation (`loom:issue`).
 - **#515**: closed-loop-vref-pvt-boxtc README quotes a per-100 °C-point timing range the committed record cannot source
 - **#516**: No gate re-derives the characterization reports' committed "Spot-check output" blocks
 - **#519**: Remove closed-loop-vref-pvt run_pvt_sweep.sh: superseded by the new run_klt_sim.sh twin
+- **#520**: Remove startup-time-to-release run_pvt_sweep.sh: superseded by its run_klt_sim.sh twin
 - **#524**: Docs nit: name the generic KLT_SIM_BATCH_PDK_ROOT in run_klt_trim_axis.sh's Environment header; re-wrap sim/harness/README.md:634
 - **#530**: The trim bench's array-valued constants (NEAR_CODES, FAR_CODES, FAR_CORNERS, FAR_VDDS, TEMPS count) are still restated as record prose
 
@@ -41,7 +42,6 @@ Human-approved issues ready for implementation (`loom:issue`).
 Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
-- **#520**: Remove startup-time-to-release run_pvt_sweep.sh: superseded by its run_klt_sim.sh twin
 
 ## PRs Awaiting Review
 
@@ -91,8 +91,8 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 0 |
 | Important | 3 |
-| Ready (`loom:issue`) | 8 |
-| In Progress (`loom:building`) | 2 |
+| Ready (`loom:issue`) | 9 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
 | Curated | 15 |
