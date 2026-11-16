@@ -41,6 +41,7 @@ Human-approved issues ready for implementation (`loom:issue`).
 Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
+- **#520**: Remove startup-time-to-release run_pvt_sweep.sh: superseded by its run_klt_sim.sh twin
 
 ## PRs Awaiting Review
 
@@ -78,7 +79,6 @@ Issues carrying `loom:curated`.
 
 - **#460**: Remove two logic-free awk wrappers (zout_summary.awk, psrr_summary.awk) left behind by the klt sim conversion *(hermit)*
 - **#480**: Collapse the sg13cmos5l-bandgap_top duplicate extraction pair: extract_report.json and pex_extract_report.json differ only in one string *(hermit)*
-- **#520**: Remove startup-time-to-release run_pvt_sweep.sh: superseded by its run_klt_sim.sh twin *(hermit)*
 
 ## Epics
 
@@ -92,10 +92,10 @@ _None._
 | Very important | 0 |
 | Important | 3 |
 | Ready (`loom:issue`) | 8 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
 | Curated | 15 |
-| Architect / Hermit proposals | 3 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
