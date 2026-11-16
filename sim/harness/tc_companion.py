@@ -29,7 +29,10 @@ the record's fields verbatim and formatted only `tc`. So every value but
 voltages as the record's own `1.04695e+00`), and rows are keyed by the
 record's `(corner_label, vdd_v, temp_c)` strings. A group missing any of
 the three temperature points, or carrying an unparseable value, is omitted
--- the derivation has no number there.
+-- the derivation has no number there. When *every* group is omitted --
+the record carried rows but none matched the grid -- `main()` exits
+non-zero and names the keys the record carried: empty evidence must be
+loud, not a header-only companion reporting success (issue #510).
 
 Usage (the shell side is `pex_endpoint_tc_companion` in
 sim/harness/pex_vref_runner.sh, which picks the newest minted record):
@@ -43,6 +46,8 @@ import argparse
 import csv
 import sys
 from pathlib import Path
+
+from boxtc_companion import key_summary
 
 #: The -40..125 degC grid both endpoint benches sweep, in degC. The committed
 #: companions' disclosure names it; it is the formula's denominator span.
@@ -106,7 +111,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("record", type=Path, help="the minted record CSV")
     ap.add_argument("companion", type=Path, help="the -tc.csv to write")
     args = ap.parse_args(argv)
-    write_companion(args.record, args.companion)
+    body = write_companion(args.record, args.companion)
+    if not body:
+        # The derivation read the record and produced no number: a
+        # header-only CSV must not be blessed with exit 0 (#510).
+        with args.record.open() as fh:
+            rows = list(csv.DictReader(fh))
+        if not rows:
+            raise SystemExit(
+                f"tc companion: {args.record} carries no rows; "
+                f"{args.companion} is header-only")
+        raise SystemExit(
+            f"tc companion: {args.companion} is header-only: every "
+            f"(corner, vdd, temp) group missed the grid; keys the record "
+            f"carried: {key_summary(rows, ('corner_label', 'vdd_v', 'temp_c'))}")
     print(f"tc companion: {args.companion}")
     return 0
 
