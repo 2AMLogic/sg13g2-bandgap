@@ -78,15 +78,21 @@ fi
 # The `klt` that submits. Batch mode needs one carrying the batch backend
 # (0.6.0+); local mode works with the PyPI 0.5.0 the dispatch hosts ship.
 KLT_BIN="${KLT_SIM_PROBE_KLT:-klt}"
-# The runner image's baked PDK root (2am batch-image-pins.env BAKED_PDK_ROOT)
-# and the provision script `klt` shells out to on this host.
-BATCH_PDK_ROOT="${KLT_SIM_PROBE_BATCH_PDK_ROOT:-/opt/pdk}"
-BATCH_PROVISION_SCRIPT="${KLT_BATCH_PROVISION_SCRIPT:-${HOME}/GitHub/2am/infra/aws/batch-fleet-provision.sh}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HARNESS_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SIM_DIR="$(cd "${HARNESS_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
+
+# The runner image's baked PDK root (2am batch-image-pins.env BAKED_PDK_ROOT)
+# and the provision script `klt` shells out to on this host come from the
+# shared batch defaults (issue #503); KLT_SIM_PROBE_BATCH_PDK_ROOT stays this
+# probe's own PDK-root override name, ahead of the generic
+# KLT_SIM_BATCH_PDK_ROOT. The preamble is function definitions only -- no
+# mode/PDK/work-dir resolution runs at source time.
+# shellcheck source=../klt_sim_preamble.sh
+source "${HARNESS_DIR}/klt_sim_preamble.sh"
+klt_sim_batch_defaults KLT_SIM_PROBE_BATCH_PDK_ROOT
 
 # Committed anchor: sim/core-open-loop-bias/records/20261001-082455-f748685.csv,
 # row `typ,hbt_typ,mos_tt,res_typ,27,3.30,PASS,...`. The trim-bearing

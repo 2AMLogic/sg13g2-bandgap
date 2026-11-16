@@ -94,8 +94,13 @@ klt_sim_require_osdi() {  # OVERRIDE_VAR [MISSING_HINT]
 # BAKED_PDK_ROOT) and the provision script `klt` shells out to on this host.
 # BATCH_PDK_ROOT is the runner root for what klt does NOT rewrite: the OSDI
 # paths in the body's `.control` block, and the paths in a returned report.
-klt_sim_batch_defaults() {
-  BATCH_PDK_ROOT="${KLT_SIM_BATCH_PDK_ROOT:-/opt/pdk}"
+klt_sim_batch_defaults() {  # [PDK_ROOT_OVERRIDE_VAR]
+  # PDK_ROOT_OVERRIDE_VAR (optional) names the caller's own PDK-root override
+  # variable, consulted ahead of the generic KLT_SIM_BATCH_PDK_ROOT: the
+  # standalone submitters (probe/run_probe.sh, run_klt_trim_axis.sh, issue
+  # #503) each document a per-script override name and pass it here instead of
+  # being silently retired by the shared function.
+  BATCH_PDK_ROOT="${!1:-${KLT_SIM_BATCH_PDK_ROOT:-/opt/pdk}}"
   BATCH_PROVISION_SCRIPT="${KLT_BATCH_PROVISION_SCRIPT:-${HOME}/GitHub/2am/infra/aws/batch-fleet-provision.sh}"
 }
 
