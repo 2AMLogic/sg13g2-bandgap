@@ -168,7 +168,9 @@ corner — the two experiments should agree to solver-noise precision; a
 divergence would mean one of the two testbenches has a bug worth chasing).
 
 **Two differences in a record minted by `run_klt_sim.sh`** rather than by the
-legacy `run_pvt_sweep.sh`, both cosmetic rather than semantic:
+legacy `run_pvt_sweep.sh` (deleted, #520 -- git history keeps the script, and
+the committed records it minted still carry the old form), both cosmetic
+rather than semantic:
 
 - Every checkpoint's raw values are carried, not only the final one — the
   `klt sim` adapter writes one column per measurement the request asked for, so
@@ -209,11 +211,12 @@ the checkpoint ladder is declared), the record spec and the verdict pass
 alongside.
 
 **On a dispatch host a multi-corner grid must go through `--batch`.**
-`run_pvt_sweep.sh` is still in the tree as the point-definition reference this
-bench's records were minted from, but it is a local `ngspice -b` grid and can no
-longer mint evidence: `.github/scripts/check_evidence_formats.py` refuses a
-record dated `20261023` or later that carries no artifact manifest, and only the
-`klt sim` path writes one.
+The legacy `run_pvt_sweep.sh` -- the local `ngspice -b` grid this bench's
+records were minted from -- is deleted (#520; git history keeps it as the
+point-definition reference). It was already barred from minting evidence:
+`.github/scripts/check_evidence_formats.py` refuses a record dated `20261023`
+or later that carries no artifact manifest, and only the `klt sim` path
+(`run_klt_sim.sh`) writes one.
 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.
