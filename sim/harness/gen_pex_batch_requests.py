@@ -9,14 +9,11 @@ corner set spans three per-device-family files, klayout-tools#2668); with
 variant, optionally seeded from a committed record (--seed-csv).
 """
 import argparse
-import csv
 import json
 import pathlib
 
 import klt_corner_bundle as bundle
-
-SEED_FIELDS = (("@@FB_SEED@@", "fb_final_v"), ("@@SNS1_SEED@@", "sns1_final_v"),
-               ("@@SNS2_SEED@@", "sns2_final_v"), ("@@VREF_SEED@@", "vref_final_v"))
+from seed_deck import SEED_FIELDS, load_seeds
 
 
 def seed_row(seeds: dict, label: str, vdd: float, seed_csv: str) -> dict:
@@ -53,12 +50,7 @@ def main() -> None:
     ap.add_argument("--seed-csv", default=None)
     a = ap.parse_args()
 
-    seeds: dict = {}
-    if a.seed_csv:
-        with open(a.seed_csv) as fh:
-            for row in csv.DictReader(fh):
-                if row["status"] == "PASS":
-                    seeds[(row["corner_label"], row["temp_c"], row["vdd_v"])] = row
+    seeds = load_seeds(a.seed_csv) if a.seed_csv else {}
 
     body_tmpl = pathlib.Path(a.body_template)
     base = json.loads(pathlib.Path(a.request_template).read_text())

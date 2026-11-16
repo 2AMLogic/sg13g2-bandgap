@@ -32,7 +32,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from trim_mc_klt import (BAD_LOG, SEED_FIELDS, Results, make_ctx,  # noqa: E402
+from seed_deck import SEED_FIELDS  # noqa: E402
+from trim_mc_klt import (BAD_LOG, Results, make_ctx,  # noqa: E402
                          op_value, sections_for)
 
 POINTS = ("nominal", "negctrl", "bcs_n40", "bcs_125", "wcs_n40", "wcs_125")
