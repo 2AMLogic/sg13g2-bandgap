@@ -50,29 +50,9 @@ ANCHOR_VREF_V="1.04728"
 ANCHOR_TOL_V="0.0005"
 
 pex_record_companion() {
-  # Informal TC companion (endpoint method, same disclaimer as the
-  # committed records): derived from the adapter's minted CSV.
-  CSV="$(ls -t "${EXP_DIR}"/records/*.csv | grep -v -e '-tc.csv' | head -1)"
-  python3 - "${CSV}" "${CSV%.csv}-tc.csv" <<'PY'
-import csv, pathlib, sys
-src, dst = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
-rows = list(csv.DictReader(src.open()))
-by = {(r["corner_label"], float(r["vdd_v"]), int(float(r["temp_c"]))): r for r in rows}
-with dst.open("w", newline="") as fh:
-    w = csv.writer(fh)
-    w.writerow(["corner_label", "vdd_v", "vref_neg40_v", "vref_27_v", "vref_125_v", "tc_ppm_per_c"])
-    for corner in ("typ", "bcs", "wcs", "sf", "fs"):
-        for vdd in (2.97, 3.30, 3.63):
-            try:
-                n40 = float(by[(corner, vdd, -40)]["vref_3ms_v"])
-                v27 = float(by[(corner, vdd, 27)]["vref_3ms_v"])
-                p125 = float(by[(corner, vdd, 125)]["vref_3ms_v"])
-            except (KeyError, ValueError):
-                continue
-            tc = 1e6 * (p125 - n40) / (165 * v27)
-            w.writerow([corner, f"{vdd}", f"{n40:.6e}", f"{v27:.6e}", f"{p125:.6e}", f"{tc:.3f}"])
-print(f"tc companion: {dst}")
-PY
+  # The endpoint-method derivation is shared with this bench's twin:
+  # sim/harness/pex_vref_runner.sh's pex_endpoint_tc_companion (issue #496).
+  pex_endpoint_tc_companion
 }
 
 # pex_vref_main generates the PEX body and states the extraction; the

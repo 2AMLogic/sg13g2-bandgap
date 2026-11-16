@@ -8,10 +8,14 @@
 # the experiment's TC companion CSV), then call `pex_vref_main`. The gate
 # itself is sim/harness/sanity_anchors.py (issue #458).
 #
-# The companion stays a per-experiment hook because the derivations genuinely
-# differ -- closed-loop-vref-pvt-pex writes the endpoint method (`-tc.csv`).
-# The two box-method benches do NOT differ, so they delegate to the shared
-# `pex_boxtc_companion` below instead of re-typing the formula (issue #465).
+# All four vref benches delegate their companion hook: the two box-method
+# benches to the shared `pex_boxtc_companion` below (issue #465), and the two
+# endpoint-method benches to the shared `pex_endpoint_tc_companion` (issue
+# #496), instead of re-typing the formula. The two *methods* remain distinct
+# derivations -- box = worst-case spread (`-boxtc.csv`,
+# sim/harness/boxtc_companion.py), endpoint = two-point slope (`-tc.csv`,
+# sim/harness/tc_companion.py) -- each with its own module, helper and
+# companion file.
 
 check_anchors() {  # $1 = report json
   python3 "${HARNESS_DIR}/sanity_anchors.py" "$1" \
@@ -28,6 +32,18 @@ pex_boxtc_companion() {
   # the companions a previous run derived from it.
   CSV="$(ls -t "${EXP_DIR}"/records/*.csv | grep -v -e '-boxtc.csv' -e '-tc.csv' | head -1)"
   python3 "${HARNESS_DIR}/boxtc_companion.py" "${CSV}" "${CSV%.csv}-boxtc.csv"
+}
+
+pex_endpoint_tc_companion() {
+  # Endpoint-method TC companion per (corner, vdd) group -- the two-point
+  # slope over the -40/125 C endpoints, same disclaimer as the committed
+  # records. The derivation itself lives in sim/harness/tc_companion.py,
+  # which the harness self-test covers; this picks the newest minted record,
+  # skipping the companions a previous run derived from it. The
+  # -vs-schematic exclusion is a no-op on the schematic bench: only the
+  # extracted benches mint those.
+  CSV="$(ls -t "${EXP_DIR}"/records/*.csv | grep -v -e '-tc.csv' -e '-vs-schematic' | head -1)"
+  python3 "${HARNESS_DIR}/tc_companion.py" "${CSV}" "${CSV%.csv}-tc.csv"
 }
 
 pex_vref_main() {
