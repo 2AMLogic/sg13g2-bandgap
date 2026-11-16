@@ -49,7 +49,7 @@ class GridTests(unittest.TestCase):
 
     def test_missing_seed_row_refused(self):
         with self.assertRaises(SystemExit):
-            tc.seed_row({}, "typ", 27, 3.30, "s.csv")
+            tc.seed_row({}, "typ", 27, "3.30", "s.csv")
 
 
 class EnrichTests(unittest.TestCase):

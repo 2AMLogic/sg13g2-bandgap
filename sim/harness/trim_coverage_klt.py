@@ -41,7 +41,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import klt_corner_bundle as bundle  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
-from seed_deck import SEED_FIELDS, load_seeds  # noqa: E402
+from seed_deck import SEED_FIELDS, fill_deck, load_seeds, seed_row  # noqa: E402
 
 CODES = (0, 1, 2, 4, 8, 16, 32, 64, 128, 129, 255)
 VDDS = (2.97, 3.30, 3.63)
@@ -80,29 +80,12 @@ def expected_points() -> list[str]:
             for label, vdd, temp, codes in shard_plan() for code in codes]
 
 
-def seed_row(seeds: dict, label: str, temp: int, vdd: float, seed_csv: str) -> dict:
-    row = seeds.get((label, str(temp), f"{vdd:.2f}"))
-    if row is None:
-        raise SystemExit(f"no PASS seed row for {label}/{temp}C/{vdd:.2f}V in {seed_csv}")
-    return row
-
-
-def fill(text: str, mapping: dict[str, str]) -> str:
-    for token, value in mapping.items():
-        text = text.replace(token, value)
-    return text
-
-
 def body_text(template: str, osdi: str, label: str, vdd: float, temp: int,
               msense_w: str, seeds: dict, seed_csv: str) -> str:
-    row = seed_row(seeds, label, temp, vdd, seed_csv)
+    row = seed_row(seeds, label, temp, f"{vdd:.2f}", seed_csv)
     mapping = {"@@OSDI_DIR@@": osdi, "@@VDD@@": f"{vdd}", "@@MSENSE_W@@": msense_w}
     mapping.update({token: row[field] for token, field in SEED_FIELDS})
-    text = fill(template, mapping)
-    left = sorted({w for w in text.split() if w.startswith("@@") and w.endswith("@@")})
-    if left:
-        raise SystemExit(f"body template has unfilled placeholders: {left}")
-    return text
+    return fill_deck(template, mapping, "body")
 
 
 def prepare(a: argparse.Namespace) -> None:
