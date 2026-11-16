@@ -10,9 +10,29 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-15
+
+- **PR #495**: pex: share one vref DUT body template between the pex and pex-boxtc benches
+- **PR #491**: sim: add the klt sim wrapper for closed-loop-vref-pvt
+- **PR #488**: sim: adopt KLU direct solver on closed-loop-vref-pvt-boxtc (3643s -> 211s hot corner)
+- **PR #492**: refactor: dedupe the manifest-to-envelope citation resolver into _ci_common
+- **PR #479**: refactor(ci): fold two checkers into _ci_common's shared scaffolding
+- **PR #476**: refactor: give the MC harness family one copy of its corner-section mapping
+- **PR #485**: docs(layout): one complete SG13G2 build recipe, unique section headings
+- **Issue #472** (closed): Dedupe the PEX vref DUT wrapper: closed_loop_vref_pvt_pex_boxtc.body.spice.tmpl is byte-identical to its sibling, and the harness already has the BODY_TEMPLATE override
+- **Issue #467** (closed): sim: add a klt sim wrapper for closed-loop-vref-pvt (Output-reference nominal row)
+- **Issue #469** (closed): sim: get the box-TC 100 C corner to solve inside the batch job limit (unblocks #402)
+- **Issue #477** (closed): Dedupe .github/scripts: the two dependency checkers each carry the same manifest-to-envelope citation resolver
+- **Issue #475** (closed): Dedupe .github/scripts: check_artifact_manifests.py re-grows _ci_common's Report, resolve_root and ls-files reader
+- **Issue #478** (closed): layout/README.md: consolidate the three colliding "Reproducing" sections — neither SG13G2 recipe regenerates all four cells
+- **Issue #463** (closed): Dedupe the Monte Carlo klt-sim harnesses: PDK corner-section maps, sections(), make_ctx() and load_seeds() re-typed instead of imported
+
 ### 2026-11-14
 
+- **PR #471**: refactor(sim): one home for the box-method TC derivation
+- **PR #466**: docs: roadmap as of 2026-11-13
 - **PR #462**: sim: gate every grid dispatch through one anchor-check implementation
+- **Issue #465** (closed): Dedupe the box-method TC companion: pex_record_companion() is byte-identical in two experiments, with a shared runner already sourced by both
 - **Issue #458** (closed): Consolidate six copies of the --sanity anchor gate into one tested harness helper
 
 ### 2026-11-13

@@ -45,6 +45,7 @@ import json
 import re
 import subprocess
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -153,18 +154,19 @@ def check_pin(root: Path, rel: Any, pin: Any, what: str, report: Report,
 
 
 def cited_envelopes(root: Path, manifest_paths: list[Path], item_id: str,
-                    report: Report) -> "list[tuple[Path, Any, Any, str]]":
+                    report: Report) -> "Iterator[tuple[Path, Any, Any, str]]":
     """(envelope path, parsed envelope, cited rel, `where` label) per item-<id> citation.
 
     Walks each block manifest's `evidence[<item_id>]` citation -- a bare
     envelope path or a `{file, ...}` object, singular or list -- resolving and
     JSON-parsing the cited envelope. Malformed citations, unreadable manifests
     and unparseable envelopes are reported (with these four messages) and
-    skipped; each surviving tuple is ready for the caller to extract its own
-    target path from (the report's `provenance.input`, the attestation's
-    `source`, ...).
+    skipped. A generator, so each surviving tuple is yielded as soon as its
+    citation passes and the caller's own diagnostics interleave with the
+    walk's per citation; each yielded tuple is ready for the caller to extract
+    its own target path from (the report's `provenance.input`, the
+    attestation's `source`, ...).
     """
-    out = []
     for manifest_path in manifest_paths:
         try:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -189,8 +191,7 @@ def cited_envelopes(root: Path, manifest_paths: list[Path], item_id: str,
             except json.JSONDecodeError as exc:
                 report.problem(f"{where}: cited envelope {rel} is not valid JSON: {exc}")
                 continue
-            out.append((envelope_path, envelope, rel, where))
-    return out
+            yield (envelope_path, envelope, rel, where)
 
 
 def add_root_arg(parser: argparse.ArgumentParser) -> None:

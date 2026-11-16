@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Shared nodeset-seed provenance lookup, sourced (not executed) by any
-# experiment script that needs sim/closed-loop-startup's own per-corner
-# DC-bias .nodeset seed values -- currently
-# sim/closed-loop-psrr/run_pvt_sweep.sh (removed in #438), sim/loop-gain-phase-margin/
-# run_pvt_sweep.sh and sim/closed-loop-offset/run_offset_check.sh.
+# Shared nodeset-seed provenance lookup, sourced (not executed) by the
+# experiment scripts that need sim/closed-loop-startup's own per-corner
+# DC-bias .nodeset seed values; `git grep nodeset_seed` for the current set.
 # Extracted in issue #99 because this block was duplicated byte-for-byte
 # across the first two scripts (the same shape of duplication
 # sim/lib/pvt_preflight.sh was extracted to fix in issue #28); issue #101
