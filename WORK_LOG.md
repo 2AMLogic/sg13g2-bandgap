@@ -12,6 +12,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-16
 
+- **PR #526**: fix(sim): derive box-TC trim record span prose from span constants
+- **Issue #517** (closed): The box span's prose restatements (165) sit outside #474's tripwire, including one that lands in minted evidence
+- **PR #511**: docs: record cited_envelopes() full-consumption contract in its docstring
+- **Issue #500** (closed): cited_envelopes()'s docstring does not record the full-consumption contract its generator conversion introduced
+- **Issue #273** (closed): Finish the #264 refresh: closed-loop-vref-mc (1800 draws) and closed-loop-vref-pvt-boxtc (120 transient points)
 - **PR #523**: refactor: route the standalone batch submitters through klt_sim_batch_defaults
 - **PR #521**: refactor: share schematic_vref_main in the vref PEX runner
 - **Issue #512** (closed): Dedupe sim wrapper leftovers after #465: endpoint-method TC companion and schematic_vref_main are each copy-pasted across two benches
