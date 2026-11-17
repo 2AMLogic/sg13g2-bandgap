@@ -394,12 +394,16 @@ netlist matches the trim-bearing schematic" checkable rather than asserted.
 | cell | DRC | LVS | extraction |
 | --- | --- | --- | --- |
 | `bandgap_core` | `clean`, 0 violations | `mismatch`, 8 findings / **4 error-severity** — the same four as pre-#272 (`Q1`–`Q3` `device.unmatched` plus their class-level topology entry, the permanent bipolar-recognition cause); devices **263/263** matched, nets 253/257 | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C |
-| `bandgap_top` | `clean`, 0 violations | `mismatch`, 10 findings / **4 error-severity** — the same four as pre-#272, same bipolar cause (the 6 → 4 drop was issue #185's `bandgap_amp` body ties, 2026-09-05, not this change); devices **275/275** matched, nets 257/261 | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C |
+| `bandgap_top` | `violations`, 120 under the `require_containment` deck (first refresh of this report beyond the klt 0.6-era deck, #556): `metal2.enclosing.via1.1` 39 + `via1.width.1` 48 — amp's own 12+12 closed by #556, the rest are the other leaves'/top's own landings, tracked in #557 — plus `nwell.enclosing.nactiv.1` 11, `metal1.enclosing.cont.1` 18, `cont.ongrid.1` 4, all pre-existing (identical on the pre- and post-#556 GDS apart from the −12/−12) | `mismatch`, 1023 findings / **1019 error-severity** under klt 0.9.3's deck — was 10 / **4** (the four bipolar-recognition errors below) under the deck this row previously cited; the delta is deck/engine drift, proven identical on the unmodified committed GDS, re-baseline tracked in #558; devices 17/275 matched, nets 5/261 | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C |
 
 Every error-severity finding on both cells is the bipolar-recognition cause
 already documented under "Permanent blockers" below. **No new error class
 appeared** — 255 new devices, 248 new nets, and the extra findings are all
 `severity: "warning"` disclosures (the two new ones are discussed next).
+(That sentence describes the klt 0.6-era counts this table used to carry;
+under the klt 0.9.3 refresh cited in `bandgap_top`'s row above, the
+error-severity population is dominated by the deck-drift mismatch set of
+#558, not only the four bipolar errors.)
 
 ### LVS: three real pieces of friction, all filed upstream
 
@@ -1375,8 +1379,15 @@ both this cell's own `tail` riser and `bandgap_top`'s own composed-level
 `generate.py`'s own `_route()` "vdd tap ring" comment for the full
 column/window derivation.
 
-**DRC**: `klt drc --deck sg13g2` reports `status: "clean"`, 0 violations
-(`layout/bandgap_amp/drc_report.json`).
+**DRC**: `klt drc --deck sg13g2` reports `status: "violations"`, 5 — all
+`nwell.enclosing.nactiv.1`, pre-existing and tracked in #557
+(`layout/bandgap_amp/drc_report.json`). This report's #556 refresh was the
+first under the deck's `require_containment` rules (klayout-tools#6174):
+it surfaced 12 `metal2.enclosing.via1.1` (each Via1 centred on a Metal2
+end edge, half the cut outside) and 12 `via1.width.1` (0.25 um cuts on
+the deck's fixed 0.19), both closed in #556 by drawing 0.19 um vias and
+extending every via-bearing Metal2 route end by `VIA/2 + 0.05` um
+(`generate.py`'s `VIA_CAP`).
 
 **LVS**: issue #169 itself scoped LVS *fixing* out (mirroring #11's own
 floorplan-first sequencing before #12's LVS pass) -- but this repo's own

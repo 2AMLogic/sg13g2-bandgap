@@ -127,9 +127,17 @@ TRUNK_W = 0.3
 # so the extra width leaves generous metal1.enclosing.via1.1 margin at that
 # landing point without needing a separate widened "landing pad" shape.
 CROSS_TRUNK_W = 0.6
-VIA = 0.25
+VIA = 0.19
 METAL2_W = 0.35
 VIA_ENCLOSE = 0.05
+# Metal2 end-cap overhang past a Via1 landing (issue #556): every Via1 in
+# this cell sits at an *end* of a Metal2 riser/jog, and route_v/route_h
+# draw bars that stop exactly at the given end coordinate -- so each
+# via-bearing end is extended by half the cut plus VIA_ENCLOSE, keeping
+# the whole via inside Metal2 with 0.05um to spare (was 12x
+# metal2.enclosing.via1.1, half of each cut outside). VIA itself is the
+# deck's fixed via1.width.1 size (0.19um, was 12x via1.width.1 at 0.25).
+VIA_CAP = VIA / 2 + VIA_ENCLOSE
 
 PMOS_Y = 30.0
 NMOS_Y = 0.0
@@ -152,7 +160,8 @@ JOG_PN = 17.0
 # change):
 #
 #   - amp's own "tail" riser (this file's own "tail (bottom band)" section
-#     above) runs Metal2 at column x=80 (MTAIL_X) from y~=29.275 up through
+#     above) runs Metal2 at column x=80 (MTAIL_X) from y~=29.13 (via centre
+#     29.275 less the Metal2 end cap, issue #556) up through
 #     TAIL_JOG_Y +/- METAL2_W/2 = 32.175 -- blocked the whole way at that
 #     column, and blocked for y in [TAIL_JOG_Y - METAL2_W/2, TAIL_JOG_Y +
 #     METAL2_W/2] = [31.825, 32.175] at every column in [20, 80] (its own
@@ -314,10 +323,10 @@ def _route(
     # module comment for the full derivation), then back down via1 at
     # TAP_HOP_X_END, landing inside the vdd bar drawn just above.
     via1_tap(b, TAP_HOP_X_START, tap_y_center, size=VIA)
-    route_v(b, L_METAL2, TAP_HOP_X_START, tap_y_center, TAP_HOP_Y, width=METAL2_W)
+    route_v(b, L_METAL2, TAP_HOP_X_START, tap_y_center - VIA_CAP, TAP_HOP_Y, width=METAL2_W)
     route_h(b, L_METAL2, TAP_HOP_Y, TAP_HOP_X_START, TAP_HOP_X_END, width=TAP_HOP_W_UM)
     vdd_landing_y = (vdd_y_lo + vdd_y_hi) / 2
-    route_v(b, L_METAL2, TAP_HOP_X_END, TAP_HOP_Y, vdd_landing_y, width=METAL2_W)
+    route_v(b, L_METAL2, TAP_HOP_X_END, TAP_HOP_Y, vdd_landing_y - VIA_CAP, width=METAL2_W)
     via1_tap(b, TAP_HOP_X_END, vdd_landing_y, size=VIA)
 
     # -- tail (top band): MP1/MP2's own source pads -- contiguous, one
@@ -339,11 +348,11 @@ def _route(
     mtail_x = (mtail["drain_pad"][0] + mtail["drain_pad"][2]) / 2
     mtail_via_y = (mtail["drain_pad"][1] + mtail["drain_pad"][3]) / 2
     via1_tap(b, mtail_x, mtail_via_y, size=VIA)
-    route_v(b, L_METAL2, mtail_x, mtail_via_y, tail_jog_y, width=METAL2_W)
+    route_v(b, L_METAL2, mtail_x, mtail_via_y - VIA_CAP, tail_jog_y, width=METAL2_W)
     tail_bar_x = (mp1["source_pad"][0] + mp2["source_pad"][2]) / 2
     route_h(b, L_METAL2, tail_jog_y, mtail_x, tail_bar_x, width=METAL2_W)
     tail_landing_y = (tail_y_lo + tail_y_hi) / 2
-    route_v(b, L_METAL2, tail_bar_x, tail_jog_y, tail_landing_y, width=METAL2_W)
+    route_v(b, L_METAL2, tail_bar_x, tail_jog_y, tail_landing_y - VIA_CAP, width=METAL2_W)
     via1_tap(b, tail_bar_x, tail_landing_y, size=VIA)
 
     # -- d1: MP1.drain -> straight Metal1 trunk -> MN1.source (aligned
@@ -386,8 +395,8 @@ def _route(
     mn3_tab_x = (mn3_tab[0] + mn3_tab[2]) / 2
     mn3_tab_y = (mn3_tab[1] + mn3_tab[3]) / 2
     via1_tap(b, mn3_tab_x, mn3_tab_y, size=VIA)
-    route_v(b, L_METAL2, mn3_tab_x, mn3_tab_y, JOG_D1, width=METAL2_W)
-    route_h(b, L_METAL2, JOG_D1, mn3_tab_x, d1_x, width=METAL2_W)
+    route_v(b, L_METAL2, mn3_tab_x, mn3_tab_y - VIA_CAP, JOG_D1, width=METAL2_W)
+    route_h(b, L_METAL2, JOG_D1, mn3_tab_x, d1_x - VIA_CAP, width=METAL2_W)
     via1_tap(b, d1_x, JOG_D1, size=VIA)
 
     # -- MN4.gate (d2) -> d2 trunk: Metal2 riser/jog/riser, jog=JOG_D2. --
@@ -395,8 +404,8 @@ def _route(
     mn4_tab_x = (mn4_tab[0] + mn4_tab[2]) / 2
     mn4_tab_y = (mn4_tab[1] + mn4_tab[3]) / 2
     via1_tap(b, mn4_tab_x, mn4_tab_y, size=VIA)
-    route_v(b, L_METAL2, mn4_tab_x, mn4_tab_y, JOG_D2, width=METAL2_W)
-    route_h(b, L_METAL2, JOG_D2, mn4_tab_x, d2_x, width=METAL2_W)
+    route_v(b, L_METAL2, mn4_tab_x, mn4_tab_y - VIA_CAP, JOG_D2, width=METAL2_W)
+    route_h(b, L_METAL2, JOG_D2, mn4_tab_x, d2_x - VIA_CAP, width=METAL2_W)
     via1_tap(b, d2_x, JOG_D2, size=VIA)
 
     # -- MTAIL.gate (out) -> out trunk: Metal2 riser/jog/riser,
@@ -405,8 +414,8 @@ def _route(
     mtail_tab_x = (mtail_out_tab[0] + mtail_out_tab[2]) / 2
     mtail_tab_y = (mtail_out_tab[1] + mtail_out_tab[3]) / 2
     via1_tap(b, mtail_tab_x, mtail_tab_y, size=VIA)
-    route_v(b, L_METAL2, mtail_tab_x, mtail_tab_y, JOG_OUT, width=METAL2_W)
-    route_h(b, L_METAL2, JOG_OUT, mtail_tab_x, out_x, width=METAL2_W)
+    route_v(b, L_METAL2, mtail_tab_x, mtail_tab_y + VIA_CAP, JOG_OUT, width=METAL2_W)
+    route_h(b, L_METAL2, JOG_OUT, mtail_tab_x, out_x + VIA_CAP, width=METAL2_W)
     via1_tap(b, out_x, JOG_OUT, size=VIA)
 
     # -- pn (metal leg): MP3's own tie point -> MN4.source, Metal2
@@ -415,11 +424,11 @@ def _route(
     pn_tie_x = (mp3["drain_pad"][0] + mp3["drain_pad"][2]) / 2
     pn_tie_y = (mp3["drain_pad"][1] + mp3["drain_pad"][3]) / 2
     via1_tap(b, pn_tie_x, pn_tie_y, size=VIA)
-    route_v(b, L_METAL2, pn_tie_x, pn_tie_y, JOG_PN, width=METAL2_W)
+    route_v(b, L_METAL2, pn_tie_x, pn_tie_y + VIA_CAP, JOG_PN, width=METAL2_W)
     mn4_source_x = (mn4["source_pad"][0] + mn4["source_pad"][2]) / 2
     route_h(b, L_METAL2, JOG_PN, pn_tie_x, mn4_source_x, width=METAL2_W)
     mn4_source_y = (mn4["source_pad"][1] + mn4["source_pad"][3]) / 2
-    route_v(b, L_METAL2, mn4_source_x, JOG_PN, mn4_source_y, width=METAL2_W)
+    route_v(b, L_METAL2, mn4_source_x, JOG_PN, mn4_source_y - VIA_CAP, width=METAL2_W)
     via1_tap(b, mn4_source_x, mn4_source_y, size=VIA)
 
 

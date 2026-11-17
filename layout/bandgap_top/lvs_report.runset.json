@@ -1,7 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 3,
   "engine": "klayout-runset",
-  "layout": "bandgap_top.gds",
+  "layout": {
+    "path": "layout/bandgap_top/bandgap_top.gds",
+    "scope": "repo"
+  },
   "reference": "bandgap_top.lvs_reference.runset.spice",
   "top": "bandgap_top",
   "reference_top": "BANDGAP_TOP",
@@ -18,6 +21,7 @@
     "instance_count": 0,
     "expected_nets": null,
     "unchecked_expected_pins": [],
+    "excluded_pins": [],
     "findings": [],
     "finding_count": 0
   },
@@ -397,16 +401,18 @@
   ],
   "environment": {
     "engine": "klayout-runset",
-    "engine_version": "0.30.3",
-    "klayout_binary": "/tmp/kl352/root/usr/bin/klayout",
+    "engine_version": "0.30.12",
+    "klayout_binary": "/usr/bin/klayout",
     "netgen_binary": null,
-    "layout_sha256": "0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
+    "layout_sha256": "acf9e01db001fd9bbe94b0cc622e4e7193d45340093eaf464d1cc4aa80c2831a",
     "reference_sha256": "d7ba0837a1e04d14dc164020c5f3745d08c097dd98506b97054b6b652f9ca7cd",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.7.1.dev1743+g7ee09483b748",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.9.3.dev517+gc6ecffcb8e56",
+    "klt_git_commit": "c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2.lvs",
@@ -414,14 +420,15 @@
       "released": null
     },
     "input": {
-      "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
+      "content_hash": "sha256:acf9e01db001fd9bbe94b0cc622e4e7193d45340093eaf464d1cc4aa80c2831a",
       "role": "layout"
     },
     "runset": {
       "deck_file": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/klayout/tech/lvs/sg13g2.lvs",
       "deck_vars": {},
       "content_hash": "sha256:e01bcb1ec5858e8069bade8f7fd7ec28c1026fc2fd0590e8f611d3398a5bbbd7",
-      "klayout_application_version": "0.30.3",
+      "klayout_application_version": "0.30.12",
+      "exit_status": 0,
       "engine_error_lines": []
     }
   },
