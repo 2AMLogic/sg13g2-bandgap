@@ -32,7 +32,10 @@ the three temperature points, or carrying an unparseable value, is omitted
 -- the derivation has no number there. When *every* group is omitted --
 the record carried rows but none matched the grid -- `main()` exits
 non-zero and names the keys the record carried: empty evidence must be
-loud, not a header-only companion reporting success (issue #510).
+loud, not a header-only companion reporting success (issue #510). The
+refused run leaves no header-only file on disk either (issue #536): the
+companion path is removed if this run created it, or restored
+byte-identically if an earlier run's derivation was already there.
 
 Usage (the shell side is `pex_endpoint_tc_companion` in
 sim/harness/pex_vref_runner.sh, which picks the newest minted record):
@@ -111,10 +114,23 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("record", type=Path, help="the minted record CSV")
     ap.add_argument("companion", type=Path, help="the -tc.csv to write")
     args = ap.parse_args(argv)
+    # write_companion() truncates `dst` before the derivation is known to
+    # be empty, so capture what the path held first: the refusal below
+    # either removes the file this run wrote or puts the prior bytes back,
+    # and never leaves a header-only artifact behind (#536).
+    prior = args.companion.read_bytes() if args.companion.exists() else None
     body = write_companion(args.record, args.companion)
     if not body:
         # The derivation read the record and produced no number: a
-        # header-only CSV must not be blessed with exit 0 (#510).
+        # header-only CSV must not be blessed with exit 0 (#510), and it
+        # must not stay on disk either (#536) -- records/ is append-only
+        # evidence, and a header-only -tc.csv is one `git add -A` away
+        # from being committed as if it were derived. Remove what this
+        # run wrote; restore what an earlier run's derivation held.
+        if prior is None:
+            args.companion.unlink(missing_ok=True)
+        else:
+            args.companion.write_bytes(prior)
         with args.record.open() as fh:
             rows = list(csv.DictReader(fh))
         if not rows:
