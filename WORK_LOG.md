@@ -12,6 +12,14 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-17
 
+- **PR #552**: fix(harness): companions remove the refused CSV instead of leaving it header-only
+- **PR #551**: fix: derive boxtc-trim mint block's shared-grid literals from CORNER_LABELS/VDDS
+- **PR #548**: fix: derive boxtc-trim mint block's grid cardinality from TEMPS
+- **PR #547**: docs: source the 100 °C fleet-timing claim to the committed record
+- **Issue #549** (closed): boxtc-trim mint block still restates two shared-grid cardinalities as literals ("5 transient validation points", the {typ,bcs,wcs,sf,fs} x {2.97,3.30,3.63} V grid)
+- **Issue #544** (closed): Trim bench mint block still restates the TEMPS cardinality as "8-temperature grid" (sixth instance, missed by #530's table)
+- **Issue #536** (closed): TC companions leave a header-only CSV on disk when main() refuses (#510 residual)
+- **Issue #515** (closed): closed-loop-vref-pvt-boxtc README quotes a per-100 °C-point timing range the committed record cannot source
 - **PR #543**: fix(sim): derive boxtc-trim record grid prose from array constants
 - **PR #542**: docs: document batch PDK-root precedence in trim-axis env header; reflow harness README
 - **Issue #530** (closed): The trim bench's array-valued constants (NEAR_CODES, FAR_CODES, FAR_CORNERS, FAR_VDDS, TEMPS count) are still restated as record prose
