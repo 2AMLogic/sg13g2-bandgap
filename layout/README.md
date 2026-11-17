@@ -401,10 +401,11 @@ cause already documented under "Permanent blockers" below — its row still cite
 its 0.6.0-era mint, and refreshing it under the standard is a follow-up to the
 upstream fix. On `bandgap_top` the re-minted verdict **does carry new error
 classes**: 1018 of the 1019 error-severity findings are the resistor-pairing
-regression (`device.unmatched` 517, `net.unmatched` 500 — klayout-tools#6313)
+regression (514 `device.unmatched`, 500 `net.unmatched` — klayout-tools#6313)
 plus the permanent bipolar-recognition cause (the 3 `NPN13G2` reference-device
-entries and their class-level topology entry, unchanged from the retired
-report). The 1019th is the only error that is neither — and the only
+`device.unmatched` entries and their class-level topology entry — 4 findings,
+unchanged from the retired report). The 1019th is the only error that is
+neither — and the only
 design-relevant one: a `device.property` error ("matched device parameter `r`
 differs") on the `rhigh` pull-up — `X3_RPU` in the reference, `$275` in the
 layout — with extracted `r` 1999501.7 Ω against the reference netlist's
@@ -740,8 +741,10 @@ delta, and the layout is correct**:
   (`klt lvs --format json lvs_request.json`): `bandgap_startup` returns
   `status: "match"`, `error_count: 0`; `bandgap_top`'s `device.property`
   count goes 1 → **0** (1022 findings / 1018 errors remain, exactly the
-  out-of-scope causes: 517+500 resistor-class pairing regression,
-  klayout-tools#6313, plus the permanent bipolar topology entry).
+  out-of-scope causes: 514 `device.unmatched` + 500 `net.unmatched`
+  resistor-class pairing regression, klayout-tools#6313, plus the permanent
+  bipolar-recognition cause — 3 more `device.unmatched` and 1 class-level
+  topology entry).
 - **No upstream issue.** The deck's #2652 change is a fidelity *improvement*
   — it moves extraction onto the PDK's own annotated value — not a gap, so
   the friction protocol does not apply.
