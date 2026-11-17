@@ -2460,6 +2460,10 @@ class EndpointTcLoudEmptyTests(TempDirCase):
         self.assertIn("header-only", err)
         for key in ("typ/3.30/-40.0", "typ/3.30/27.0", "typ/3.30/125.0"):
             self.assertIn(key, err)
+        # And the refusal leaves no header-only artifact on disk (#536):
+        # records/ is append-only evidence, and a companion whose body is
+        # empty is one `git add -A` away from being committed as derived.
+        self.assertFalse(dst.exists(), "refused run left the companion on disk")
 
     def test_empty_record_is_a_distinct_refusal(self) -> None:
         # A record with a header and no rows read: also no evidence, but a
@@ -2471,6 +2475,25 @@ class EndpointTcLoudEmptyTests(TempDirCase):
         self.assertNotEqual(exc.code, 0)
         self.assertIn("no rows", err)
         self.assertNotIn("keys the record carried", err)
+        self.assertFalse(dst.exists(), "refused run left the companion on disk")
+
+    def test_a_refusal_restores_a_preexisting_companion_intact(self) -> None:
+        # Edge #536 leaves to the Builder: the companion path already holds
+        # an earlier good derivation when a rerun refuses. write_companion()
+        # has truncated it by the time the refusal is known, so main() must
+        # put the prior bytes back: a refused run leaves the path exactly as
+        # it found it -- no header-only shell, no destroyed prior evidence.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
+        write_record(src, RECORD_FIELDS, endpoint_rows(
+            [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]))
+        exc, err = run_main(tcc.main, [str(src), str(dst)])
+        self.assertIsNone(exc, err)
+        prior = dst.read_bytes()
+        write_record(src, RECORD_FIELDS, [])
+        exc, err = run_main(tcc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "empty record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertEqual(dst.read_bytes(), prior)
 
     def test_a_deriving_record_still_exits_zero(self) -> None:
         # The check must not turn a healthy derivation into a failure.
@@ -2496,6 +2519,10 @@ class BoxTcLoudEmptyTests(TempDirCase):
         self.assertNotEqual(exc.code, 0)
         self.assertIn("header-only", err)
         self.assertIn("typ/3.31", err)
+        # And the refusal leaves no header-only artifact on disk (#536):
+        # records/ is append-only evidence, and a companion whose body is
+        # empty is one `git add -A` away from being committed as derived.
+        self.assertFalse(dst.exists(), "refused run left the companion on disk")
 
     def test_empty_record_is_a_distinct_refusal(self) -> None:
         src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
@@ -2505,6 +2532,24 @@ class BoxTcLoudEmptyTests(TempDirCase):
         self.assertNotEqual(exc.code, 0)
         self.assertIn("no rows", err)
         self.assertNotIn("keys the record carried", err)
+        self.assertFalse(dst.exists(), "refused run left the companion on disk")
+
+    def test_a_refusal_restores_a_preexisting_companion_intact(self) -> None:
+        # Edge #536 leaves to the Builder: the companion path already holds
+        # an earlier good derivation when a rerun refuses. write_companion()
+        # has truncated it by the time the refusal is known, so main() must
+        # put the prior bytes back: a refused run leaves the path exactly as
+        # it found it -- no header-only shell, no destroyed prior evidence.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
+        write_record(src, RECORD_FIELDS, boxtc_rows(INTERIOR_EXTREMA))
+        exc, err = run_main(bxc.main, [str(src), str(dst)])
+        self.assertIsNone(exc, err)
+        prior = dst.read_bytes()
+        write_record(src, RECORD_FIELDS, [])
+        exc, err = run_main(bxc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "empty record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertEqual(dst.read_bytes(), prior)
 
     def test_a_deriving_record_still_exits_zero(self) -> None:
         src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
