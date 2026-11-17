@@ -10,8 +10,18 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-17
+
+- **PR #543**: fix(sim): derive boxtc-trim record grid prose from array constants
+- **PR #542**: docs: document batch PDK-root precedence in trim-axis env header; reflow harness README
+- **Issue #530** (closed): The trim bench's array-valued constants (NEAR_CODES, FAR_CODES, FAR_CORNERS, FAR_VDDS, TEMPS count) are still restated as record prose
+- **Issue #524** (closed): Docs nit: name the generic KLT_SIM_BATCH_PDK_ROOT in run_klt_trim_axis.sh's Environment header; re-wrap sim/harness/README.md:634
+
 ### 2026-11-16
 
+- **PR #540**: refactor: hoist seed_row and fill_deck into seed_deck.py
+- **PR #513**: chore(loom): resync installed Loom to v0.19.1302
+- **Issue #487** (closed): render_deck() in the two MC harnesses carries 11 more byte-identical lines, and the 3-line half already has a factored helper in trim_coverage_klt
 - **PR #538**: chore(sim): delete startup-time-to-release run_pvt_sweep.sh, superseded by run_klt_sim.sh
 - **Issue #520** (closed): Remove startup-time-to-release run_pvt_sweep.sh: superseded by its run_klt_sim.sh twin
 
