@@ -29,7 +29,9 @@
 #
 # Environment: KLT_TRIM_AXIS_WORK (scratch dir, default mktemp),
 # KLT_TRIM_AXIS_ONLY (space-separated subset of point names, batch mode),
-# KLT_BATCH_PROVISION_SCRIPT, KLT_TRIM_AXIS_BATCH_PDK_ROOT (default /opt/pdk).
+# KLT_BATCH_PROVISION_SCRIPT, KLT_TRIM_AXIS_BATCH_PDK_ROOT,
+# KLT_SIM_BATCH_PDK_ROOT (KLT_TRIM_AXIS_BATCH_PDK_ROOT takes precedence;
+# both fall back to /opt/pdk).
 set -euo pipefail
 
 MODE="${1:-}"

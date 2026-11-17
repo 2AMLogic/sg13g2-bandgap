@@ -631,7 +631,8 @@ source it as well: `probe/run_probe.sh` and
 `sim/loop-gain-phase-margin/run_klt_trim_axis.sh` call only
 `klt_sim_batch_defaults`, passing their documented per-script PDK-root
 override name (`KLT_SIM_PROBE_BATCH_PDK_ROOT`,
-`KLT_TRIM_AXIS_BATCH_PDK_ROOT`) as the function's optional argument. Every SG13CMOS5L-specific block stayed at its
+`KLT_TRIM_AXIS_BATCH_PDK_ROOT`) as the function's optional argument.
+Every SG13CMOS5L-specific block stayed at its
 call site. Two small shared-code changes:
 `klt_corner_bundle.render_bundle` takes optional `libs`/`sections` for other
 family sets (default unchanged), and `enrich_pvt_report.inject_baked_supply`
