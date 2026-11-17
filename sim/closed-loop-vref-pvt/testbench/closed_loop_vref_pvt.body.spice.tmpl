@@ -5,10 +5,9 @@
 * path, so the supply axis cannot ride the request's `alter` channel) and
 * @@MSENSE_W@@ (read from design/netlist/bandgap_startup.spice, same convention
 * as the legacy bench). The DUT half below is carried over verbatim from
-* tb_closed_loop_vref.spice.tmpl (the legacy `run_pvt_sweep.sh` bench, kept as
-* the point-definition reference -- it still exists but is a legacy writer
-* that cannot mint new records and must not be run as a grid on a dispatch
-* host): trim-bearing bandgap_core at trim_code=128, bandgap_amp,
+* tb_closed_loop_vref.spice.tmpl (the legacy `run_pvt_sweep.sh` (removed in
+* #519; see git history) bench, kept as the point-definition reference):
+* trim-bearing bandgap_core at trim_code=128, bandgap_amp,
 * bandgap_startup, wired as design/bandgap_top.sch. This is the schematic twin
 * of sim/closed-loop-vref-pvt-pex and shares its driver (sim/harness/
 * pex_runner.sh + pex_vref_runner.sh's anchor check).

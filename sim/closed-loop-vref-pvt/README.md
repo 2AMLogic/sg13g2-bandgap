@@ -246,13 +246,10 @@ sim/closed-loop-vref-pvt/run_klt_sim.sh --record     # mint the record from the 
 
 The grid runs through the `klt sim` batch harness (`sim/harness/README.md`,
 the #275 decision; wrapper added by issue #467), not the `run_pvt_sweep.sh`
-shell loop that minted the records through 2026-10-01 — that script is a
-legacy writer (`.github/scripts/check_evidence_formats.py` refuses any
-record it mints dated 20261023 or later) and its `ngspice -b` per-point
-loop is exactly what dispatch hosts forbid, so it stays as the
-point-definition reference only. Its `JOBS=N` wall-clock knob has no
-successor here: the 45 points are no longer `ngspice` processes on the
-invoking host at all. `--batch` dispatches through the shared
+shell loop that minted the records through 2026-10-01 — that script was
+removed in #519 and is recoverable from git history only. Its `JOBS=N`
+wall-clock knob has no successor here: the 45 points are no longer `ngspice`
+processes on the invoking host at all. `--batch` dispatches through the shared
 `pex_batch_dispatch` (one request per process x supply, merged before the
 adapter) and inherits the harness's `--wait-for-capacity` handling; a
 failed dispatch is reported, never re-run as a local grid. The local

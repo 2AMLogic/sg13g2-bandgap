@@ -12,9 +12,9 @@
 # anchor check): the grid runs as 15 requests (5 processes x 3 supplies) of
 # 3 temperatures each, merged deterministically before the adapter. The DUT
 # is the schematic, carried verbatim in the body template, so there is no
-# extraction and no generated body. The legacy run_pvt_sweep.sh still exists
-# as the point-definition reference only: it is a legacy writer that cannot
-# mint new records and must not be run as a grid on a dispatch host.
+# extraction and no generated body. The old run_pvt_sweep.sh (removed in
+# #519; see git history) is kept as the point-definition reference only: it
+# must not be run as a grid on a dispatch host.
 #
 # SANITY GATE. One local typ/27C/3.30V corner must land on this bench's own
 # committed record's vref_3ms (1.04728 V, 20261001-085908-e5507b2): same
