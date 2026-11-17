@@ -216,7 +216,7 @@ def _sg13g2_rhigh_ohms(w_um: float, l_um: float) -> float:
         ( 1.6e-4 / @w + 1360.0 * ( (@b + 1)* @l
          + ( 1.081*( @w - 0.04e-6 ) + 0.18e-6 )*@b ) / ( @w - 0.04e-6 ) ) / @m
 
-    with ``b=0`` (``design/sg13g2/bandgap_startup.sch``'s ``RPU`` is drawn
+    with ``b=0`` (``design/bandgap_startup.sch``'s ``RPU`` is drawn
     straight, ``b=0`` -- the 32-leg serpentine in the layout is a floorplan
     fold that conserves the drawn marked-core length exactly, see
     ``layout/README.md``'s folded-resistors section) and ``m=1``, i.e. a
