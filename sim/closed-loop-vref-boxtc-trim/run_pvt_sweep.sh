@@ -394,7 +394,7 @@ WORST_NEAR=$(awk -F, -v s="${TRIM_TC_SPAN_C}" 'NR>1 && $3=="near" && $7+0 > m { 
   echo "  trim-induced TC comes from the sub-code mis-aim (+/-1/2 LSB"
   echo "  quantization + <~0.4 LSB chord-fit aim), i.e. <=~1 code off"
   echo "  null. This bench measures the box-method TC"
-  echo "  ((vmax-vmin)/(vref(27C)*${TEMP_SPAN_C} C)) on the same 8-temperature grid"
+  echo "  ((vmax-vmin)/(vref(27C)*${TEMP_SPAN_C} C)) on the same ${#TEMPS[@]}-temperature grid"
   echo "  as sim/closed-loop-vref-pvt-boxtc at codes $(fmt_set "${NEAR_CODES[@]}") (the"
   echo "  +/-1-code band, full corner x supply grid) and gates the"
   echo "  +/-1-code delta vs the code-128 baseline at ${GATE_DELTA_PPM_CAP} ppm/C (the"
