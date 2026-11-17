@@ -4,6 +4,7 @@
 * - coupling: vertical overlap (crossover) unconditionally -- where one net's conductor on an adjacent metal level sits directly over another *distinct* net's conductor, that overlap area is charged between the two nets instead of to ground (issue #760) -- plus lateral (same-layer, sidewall) coupling, but only for a net pair naming one of the caller's declared `--critical-net` nets (issue #976): facing-edge length within that layer's own minimum-spacing lookback is charged between the two nets, *additively* (not deducted from either net's substrate fringe term, unlike the vertical case -- a known simplification). Any same-layer pair with neither side named `--critical-net`, and fringe shielding in general, are still not modelled
 * - resistance: single lumped series resistance per net, distributed as a star across that net's device terminals (issue #592) -- not a per-segment, distributed RC ladder, *unless* `--distributed-rc` names this net via `--critical-net` (issue #977, Epic #709 Phase 2b): then the net's terminals are ordered along their approximate physical spread and its total R/C is broken into a chain of per-segment resistors (segment length proportional to inter-terminal distance) with a ground capacitor at each terminal node (proportional to its adjacent segment length/2), instead of one star hub -- still an approximation (terminal position is a device-placement proxy, not true per-segment routing geometry), but a strictly finer-grained one than the single-hub star
 * - frequency: quasi-static -- one frequency-independent R and C per net; no skin effect, no distributed transmission-line behavior
+* - substrate tie: 1e+12 ohm to ground -- the substrate is capacitively floating in transient analysis (DC reference only); see --substrate-tie-ohms
 .GLOBAL vsubs
 
 * cell bandgap_core
@@ -297,620 +298,621 @@ M$5 VDD__t10 FB VREF__t2 VDD__t8 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
 M$6 VDD__t11 FB VREF__t3 VDD__t9 pfet L=1U W=1U AS=0.4P AD=0.4P PS=2.8U PD=2.8U
 * device instance $7 r0 *1 141,1.715 rppd
 X$7 T001|T003|T007|T015|T031|T063|T127|TN0__t0
-+ T001|T003|T007|T015|T031|T063|T127|TN0__t1 vsubs rppd r=445.9 L=3.43U W=2U
++ T001|T003|T007|T015|T031|T063|T127|TN0__t1 vsubs rppd r=479.566301097 L=3.43U
++ W=2U
 * device instance $8 r0 *1 143.7,1.715 rppd
-X$8 T030__t1 T029__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$8 T030__t1 T029__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $9 r0 *1 146.4,1.715 rppd
-X$9 T030__t0 T001|T003|T007|T015|T031|T063|T127|TN0__t6 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$9 T030__t0 T001|T003|T007|T015|T031|T063|T127|TN0__t6 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $10 r0 *1 149.1,1.715 rppd
-X$10 T060__t1 T059__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$10 T060__t1 T059__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $11 r0 *1 151.8,1.715 rppd
-X$11 T060__t0 T061__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$11 T060__t0 T061__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $12 r0 *1 154.5,1.715 rppd
-X$12 T090__t1 T089__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$12 T090__t1 T089__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $13 r0 *1 157.2,1.715 rppd
-X$13 T090__t0 T091__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$13 T090__t0 T091__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $14 r0 *1 159.9,1.715 rppd
-X$14 T120__t1 T119__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$14 T120__t1 T119__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $15 r0 *1 162.6,1.715 rppd
-X$15 T120__t0 T121__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$15 T120__t0 T121__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $16 r0 *1 165.3,1.715 rppd
-X$16 T150__t1 T149__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$16 T150__t1 T149__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $17 r0 *1 168,1.715 rppd
-X$17 T150__t0 T151__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$17 T150__t0 T151__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $18 r0 *1 170.7,1.715 rppd
-X$18 T180__t1 T179__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$18 T180__t1 T179__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $19 r0 *1 173.4,1.715 rppd
-X$19 T180__t0 T181__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$19 T180__t0 T181__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $20 r0 *1 176.1,1.715 rppd
-X$20 T210__t1 T209__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$20 T210__t1 T209__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $21 r0 *1 178.8,1.715 rppd
-X$21 T210__t0 T211__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$21 T210__t0 T211__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $22 r0 *1 181.5,1.715 rppd
-X$22 T240__t1 T239__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$22 T240__t1 T239__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $23 r0 *1 184.2,1.715 rppd
-X$23 T240__t0 T241__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$23 T240__t0 T241__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $24 r0 *1 141,6.345 rppd
-X$24 T001|T003|T007|T015|T031|T063|T127|TN0__t13 T002__t0 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$24 T001|T003|T007|T015|T031|T063|T127|TN0__t13 T002__t0 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $25 r0 *1 143.7,6.345 rppd
-X$25 T029__t1 T028__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$25 T029__t1 T028__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $26 r0 *1 146.4,6.345 rppd
-X$26 T001|T003|T007|T015|T031|T063|T127|TN0__t12 T032__t0 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$26 T001|T003|T007|T015|T031|T063|T127|TN0__t12 T032__t0 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $27 r0 *1 149.1,6.345 rppd
-X$27 T059__t1 T058__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$27 T059__t1 T058__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $28 r0 *1 151.8,6.345 rppd
-X$28 T061__t1 T062__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$28 T061__t1 T062__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $29 r0 *1 154.5,6.345 rppd
-X$29 T089__t1 T088__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$29 T089__t1 T088__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $30 r0 *1 157.2,6.345 rppd
-X$30 T091__t1 T092__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$30 T091__t1 T092__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $31 r0 *1 159.9,6.345 rppd
-X$31 T119__t1 T118__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$31 T119__t1 T118__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $32 r0 *1 162.6,6.345 rppd
-X$32 T121__t1 T122__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$32 T121__t1 T122__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $33 r0 *1 165.3,6.345 rppd
-X$33 T149__t1 T148__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$33 T149__t1 T148__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $34 r0 *1 168,6.345 rppd
-X$34 T151__t1 T152__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$34 T151__t1 T152__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $35 r0 *1 170.7,6.345 rppd
-X$35 T179__t1 T178__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$35 T179__t1 T178__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $36 r0 *1 173.4,6.345 rppd
-X$36 T181__t1 T182__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$36 T181__t1 T182__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $37 r0 *1 176.1,6.345 rppd
-X$37 T209__t1 T208__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$37 T209__t1 T208__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $38 r0 *1 178.8,6.345 rppd
-X$38 T211__t1 T212__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$38 T211__t1 T212__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $39 r0 *1 181.5,6.345 rppd
-X$39 T239__t1 T238__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$39 T239__t1 T238__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $40 r0 *1 184.2,6.345 rppd
-X$40 T241__t1 T242__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$40 T241__t1 T242__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $41 r0 *1 141,10.975 rppd
-X$41 T002__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t8 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$41 T002__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t8 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $42 r0 *1 143.7,10.975 rppd
-X$42 T028__t1 T027__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$42 T028__t1 T027__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $43 r0 *1 146.4,10.975 rppd
-X$43 T032__t1 T033__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$43 T032__t1 T033__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $44 r0 *1 149.1,10.975 rppd
-X$44 T058__t1 T057__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$44 T058__t1 T057__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $45 r0 *1 151.8,10.975 rppd
-X$45 T062__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t7 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$45 T062__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t7 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $46 r0 *1 154.5,10.975 rppd
-X$46 T088__t1 T087__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$46 T088__t1 T087__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $47 r0 *1 157.2,10.975 rppd
-X$47 T092__t1 T093__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$47 T092__t1 T093__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $48 r0 *1 159.9,10.975 rppd
-X$48 T118__t1 T117__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$48 T118__t1 T117__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $49 r0 *1 162.6,10.975 rppd
-X$49 T122__t1 T123__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$49 T122__t1 T123__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $50 r0 *1 165.3,10.975 rppd
-X$50 T148__t1 T147__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$50 T148__t1 T147__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $51 r0 *1 168,10.975 rppd
-X$51 T152__t1 T153__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$51 T152__t1 T153__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $52 r0 *1 170.7,10.975 rppd
-X$52 T178__t1 T177__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$52 T178__t1 T177__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $53 r0 *1 173.4,10.975 rppd
-X$53 T182__t1 T183__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$53 T182__t1 T183__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $54 r0 *1 176.1,10.975 rppd
-X$54 T208__t1 T207__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$54 T208__t1 T207__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $55 r0 *1 178.8,10.975 rppd
-X$55 T212__t1 T213__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$55 T212__t1 T213__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $56 r0 *1 181.5,10.975 rppd
-X$56 T238__t1 T237__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$56 T238__t1 T237__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $57 r0 *1 184.2,10.975 rppd
-X$57 T242__t1 T243__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$57 T242__t1 T243__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $58 r0 *1 141,15.605 rppd
-X$58 T001|T003|T007|T015|T031|T063|T127|TN0__t15 T004__t0 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$58 T001|T003|T007|T015|T031|T063|T127|TN0__t15 T004__t0 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $59 r0 *1 143.7,15.605 rppd
-X$59 T027__t1 T026__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$59 T027__t1 T026__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $60 r0 *1 146.4,15.605 rppd
-X$60 T033__t1 T034__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$60 T033__t1 T034__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $61 r0 *1 149.1,15.605 rppd
-X$61 T057__t1 T056__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$61 T057__t1 T056__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $62 r0 *1 151.8,15.605 rppd
-X$62 T001|T003|T007|T015|T031|T063|T127|TN0__t14 T064__t0 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$62 T001|T003|T007|T015|T031|T063|T127|TN0__t14 T064__t0 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $63 r0 *1 154.5,15.605 rppd
-X$63 T087__t1 T086__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$63 T087__t1 T086__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $64 r0 *1 157.2,15.605 rppd
-X$64 T093__t1 T094__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$64 T093__t1 T094__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $65 r0 *1 159.9,15.605 rppd
-X$65 T117__t1 T116__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$65 T117__t1 T116__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $66 r0 *1 162.6,15.605 rppd
-X$66 T123__t1 T124__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$66 T123__t1 T124__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $67 r0 *1 165.3,15.605 rppd
-X$67 T147__t1 T146__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$67 T147__t1 T146__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $68 r0 *1 168,15.605 rppd
-X$68 T153__t1 T154__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$68 T153__t1 T154__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $69 r0 *1 170.7,15.605 rppd
-X$69 T177__t1 T176__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$69 T177__t1 T176__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $70 r0 *1 173.4,15.605 rppd
-X$70 T183__t1 T184__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$70 T183__t1 T184__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $71 r0 *1 176.1,15.605 rppd
-X$71 T207__t1 T206__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$71 T207__t1 T206__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $72 r0 *1 178.8,15.605 rppd
-X$72 T213__t1 T214__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$72 T213__t1 T214__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $73 r0 *1 181.5,15.605 rppd
-X$73 T237__t1 T236__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$73 T237__t1 T236__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $74 r0 *1 184.2,15.605 rppd
-X$74 T243__t1 T244__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$74 T243__t1 T244__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $75 r0 *1 141,20.235 rppd
-X$75 T004__t1 T005__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$75 T004__t1 T005__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $76 r0 *1 143.7,20.235 rppd
-X$76 T026__t1 T025__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$76 T026__t1 T025__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $77 r0 *1 146.4,20.235 rppd
-X$77 T034__t1 T035__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$77 T034__t1 T035__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $78 r0 *1 149.1,20.235 rppd
-X$78 T056__t1 T055__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$78 T056__t1 T055__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $79 r0 *1 151.8,20.235 rppd
-X$79 T064__t1 T065__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$79 T064__t1 T065__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $80 r0 *1 154.5,20.235 rppd
-X$80 T086__t1 T085__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$80 T086__t1 T085__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $81 r0 *1 157.2,20.235 rppd
-X$81 T094__t1 T095__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$81 T094__t1 T095__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $82 r0 *1 159.9,20.235 rppd
-X$82 T116__t1 T115__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$82 T116__t1 T115__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $83 r0 *1 162.6,20.235 rppd
-X$83 T124__t1 T125__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$83 T124__t1 T125__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $84 r0 *1 165.3,20.235 rppd
-X$84 T146__t1 T145__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$84 T146__t1 T145__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $85 r0 *1 168,20.235 rppd
-X$85 T154__t1 T155__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$85 T154__t1 T155__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $86 r0 *1 170.7,20.235 rppd
-X$86 T176__t1 T175__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$86 T176__t1 T175__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $87 r0 *1 173.4,20.235 rppd
-X$87 T184__t1 T185__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$87 T184__t1 T185__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $88 r0 *1 176.1,20.235 rppd
-X$88 T206__t1 T205__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$88 T206__t1 T205__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $89 r0 *1 178.8,20.235 rppd
-X$89 T214__t1 T215__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$89 T214__t1 T215__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $90 r0 *1 181.5,20.235 rppd
-X$90 T236__t1 T235__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$90 T236__t1 T235__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $91 r0 *1 184.2,20.235 rppd
-X$91 T244__t1 T245__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$91 T244__t1 T245__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $92 r0 *1 141,24.865 rppd
-X$92 T005__t1 T006__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$92 T005__t1 T006__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $93 r0 *1 143.7,24.865 rppd
-X$93 T025__t1 T024__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$93 T025__t1 T024__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $94 r0 *1 146.4,24.865 rppd
-X$94 T035__t1 T036__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$94 T035__t1 T036__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $95 r0 *1 149.1,24.865 rppd
-X$95 T055__t1 T054__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$95 T055__t1 T054__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $96 r0 *1 151.8,24.865 rppd
-X$96 T065__t1 T066__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$96 T065__t1 T066__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $97 r0 *1 154.5,24.865 rppd
-X$97 T085__t1 T084__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$97 T085__t1 T084__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $98 r0 *1 157.2,24.865 rppd
-X$98 T095__t1 T096__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$98 T095__t1 T096__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $99 r0 *1 159.9,24.865 rppd
-X$99 T115__t1 T114__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$99 T115__t1 T114__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $100 r0 *1 162.6,24.865 rppd
-X$100 T125__t1 T126__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$100 T125__t1 T126__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $101 r0 *1 165.3,24.865 rppd
-X$101 T145__t1 T144__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$101 T145__t1 T144__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $102 r0 *1 168,24.865 rppd
-X$102 T155__t1 T156__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$102 T155__t1 T156__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $103 r0 *1 170.7,24.865 rppd
-X$103 T175__t1 T174__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$103 T175__t1 T174__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $104 r0 *1 173.4,24.865 rppd
-X$104 T185__t1 T186__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$104 T185__t1 T186__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $105 r0 *1 176.1,24.865 rppd
-X$105 T205__t1 T204__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$105 T205__t1 T204__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $106 r0 *1 178.8,24.865 rppd
-X$106 T215__t1 T216__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$106 T215__t1 T216__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $107 r0 *1 181.5,24.865 rppd
-X$107 T235__t1 T234__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$107 T235__t1 T234__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $108 r0 *1 184.2,24.865 rppd
-X$108 T245__t1 T246__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$108 T245__t1 T246__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $109 r0 *1 141,29.495 rppd
-X$109 T006__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t9 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$109 T006__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t9 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $110 r0 *1 143.7,29.495 rppd
-X$110 T024__t1 T023__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$110 T024__t1 T023__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $111 r0 *1 146.4,29.495 rppd
-X$111 T036__t1 T037__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$111 T036__t1 T037__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $112 r0 *1 149.1,29.495 rppd
-X$112 T054__t1 T053__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$112 T054__t1 T053__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $113 r0 *1 151.8,29.495 rppd
-X$113 T066__t1 T067__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$113 T066__t1 T067__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $114 r0 *1 154.5,29.495 rppd
-X$114 T084__t1 T083__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$114 T084__t1 T083__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $115 r0 *1 157.2,29.495 rppd
-X$115 T096__t1 T097__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$115 T096__t1 T097__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $116 r0 *1 159.9,29.495 rppd
-X$116 T114__t1 T113__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$116 T114__t1 T113__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $117 r0 *1 162.6,29.495 rppd
-X$117 T126__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t5 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$117 T126__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t5 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $118 r0 *1 165.3,29.495 rppd
-X$118 T144__t1 T143__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$118 T144__t1 T143__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $119 r0 *1 168,29.495 rppd
-X$119 T156__t1 T157__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$119 T156__t1 T157__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $120 r0 *1 170.7,29.495 rppd
-X$120 T174__t1 T173__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$120 T174__t1 T173__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $121 r0 *1 173.4,29.495 rppd
-X$121 T186__t1 T187__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$121 T186__t1 T187__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $122 r0 *1 176.1,29.495 rppd
-X$122 T204__t1 T203__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$122 T204__t1 T203__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $123 r0 *1 178.8,29.495 rppd
-X$123 T216__t1 T217__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$123 T216__t1 T217__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $124 r0 *1 181.5,29.495 rppd
-X$124 T234__t1 T233__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$124 T234__t1 T233__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $125 r0 *1 184.2,29.495 rppd
-X$125 T246__t1 T247__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$125 T246__t1 T247__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $126 r0 *1 141,34.125 rppd
-X$126 T001|T003|T007|T015|T031|T063|T127|TN0__t11 T008__t0 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$126 T001|T003|T007|T015|T031|T063|T127|TN0__t11 T008__t0 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $127 r0 *1 143.7,34.125 rppd
-X$127 T023__t1 T022__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$127 T023__t1 T022__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $128 r0 *1 146.4,34.125 rppd
-X$128 T037__t1 T038__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$128 T037__t1 T038__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $129 r0 *1 149.1,34.125 rppd
-X$129 T053__t1 T052__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$129 T053__t1 T052__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $130 r0 *1 151.8,34.125 rppd
-X$130 T067__t1 T068__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$130 T067__t1 T068__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $131 r0 *1 154.5,34.125 rppd
-X$131 T083__t1 T082__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$131 T083__t1 T082__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $132 r0 *1 157.2,34.125 rppd
-X$132 T097__t1 T098__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$132 T097__t1 T098__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $133 r0 *1 159.9,34.125 rppd
-X$133 T113__t1 T112__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$133 T113__t1 T112__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $134 r0 *1 162.6,34.125 rppd
-X$134 T001|T003|T007|T015|T031|T063|T127|TN0__t10 T128__t0 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$134 T001|T003|T007|T015|T031|T063|T127|TN0__t10 T128__t0 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $135 r0 *1 165.3,34.125 rppd
-X$135 T143__t1 T142__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$135 T143__t1 T142__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $136 r0 *1 168,34.125 rppd
-X$136 T157__t1 T158__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$136 T157__t1 T158__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $137 r0 *1 170.7,34.125 rppd
-X$137 T173__t1 T172__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$137 T173__t1 T172__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $138 r0 *1 173.4,34.125 rppd
-X$138 T187__t1 T188__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$138 T187__t1 T188__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $139 r0 *1 176.1,34.125 rppd
-X$139 T203__t1 T202__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$139 T203__t1 T202__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $140 r0 *1 178.8,34.125 rppd
-X$140 T217__t1 T218__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$140 T217__t1 T218__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $141 r0 *1 181.5,34.125 rppd
-X$141 T233__t1 T232__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$141 T233__t1 T232__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $142 r0 *1 184.2,34.125 rppd
-X$142 T247__t1 T248__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$142 T247__t1 T248__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $143 r0 *1 49,40.725 rppd
-X$143 SNS2__t2 CB2__t0 vsubs rppd r=10751 L=82.7U W=2U
+X$143 SNS2__t2 CB2__t0 vsubs rppd r=10753.8434696 L=82.7U W=2U
 * device instance $144 r0 *1 109.8,37.56 rppd
-X$144 VREF__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t2 vsubs rppd r=4836
-+ L=37.2U W=2U
+X$144 VREF__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t2 vsubs rppd
++ r=4856.53539382 L=37.2U W=2U
 * device instance $145 r0 *1 141,38.755 rppd
-X$145 T008__t1 T009__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$145 T008__t1 T009__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $146 r0 *1 143.7,38.755 rppd
-X$146 T022__t1 T021__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$146 T022__t1 T021__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $147 r0 *1 146.4,38.755 rppd
-X$147 T038__t1 T039__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$147 T038__t1 T039__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $148 r0 *1 149.1,38.755 rppd
-X$148 T052__t1 T051__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$148 T052__t1 T051__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $149 r0 *1 151.8,38.755 rppd
-X$149 T068__t1 T069__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$149 T068__t1 T069__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $150 r0 *1 154.5,38.755 rppd
-X$150 T082__t1 T081__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$150 T082__t1 T081__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $151 r0 *1 157.2,38.755 rppd
-X$151 T098__t1 T099__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$151 T098__t1 T099__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $152 r0 *1 159.9,38.755 rppd
-X$152 T112__t1 T111__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$152 T112__t1 T111__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $153 r0 *1 162.6,38.755 rppd
-X$153 T128__t1 T129__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$153 T128__t1 T129__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $154 r0 *1 165.3,38.755 rppd
-X$154 T142__t1 T141__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$154 T142__t1 T141__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $155 r0 *1 168,38.755 rppd
-X$155 T158__t1 T159__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$155 T158__t1 T159__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $156 r0 *1 170.7,38.755 rppd
-X$156 T172__t1 T171__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$156 T172__t1 T171__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $157 r0 *1 173.4,38.755 rppd
-X$157 T188__t1 T189__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$157 T188__t1 T189__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $158 r0 *1 176.1,38.755 rppd
-X$158 T202__t1 T201__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$158 T202__t1 T201__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $159 r0 *1 178.8,38.755 rppd
-X$159 T218__t1 T219__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$159 T218__t1 T219__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $160 r0 *1 181.5,38.755 rppd
-X$160 T232__t1 T231__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$160 T232__t1 T231__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $161 r0 *1 184.2,38.755 rppd
-X$161 T248__t1 T249__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$161 T248__t1 T249__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $162 r0 *1 141,43.385 rppd
-X$162 T009__t1 T010__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$162 T009__t1 T010__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $163 r0 *1 143.7,43.385 rppd
-X$163 T021__t1 T020__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$163 T021__t1 T020__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $164 r0 *1 146.4,43.385 rppd
-X$164 T039__t1 T040__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$164 T039__t1 T040__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $165 r0 *1 149.1,43.385 rppd
-X$165 T051__t1 T050__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$165 T051__t1 T050__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $166 r0 *1 151.8,43.385 rppd
-X$166 T069__t1 T070__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$166 T069__t1 T070__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $167 r0 *1 154.5,43.385 rppd
-X$167 T081__t1 T080__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$167 T081__t1 T080__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $168 r0 *1 157.2,43.385 rppd
-X$168 T099__t1 T100__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$168 T099__t1 T100__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $169 r0 *1 159.9,43.385 rppd
-X$169 T111__t1 T110__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$169 T111__t1 T110__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $170 r0 *1 162.6,43.385 rppd
-X$170 T129__t1 T130__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$170 T129__t1 T130__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $171 r0 *1 165.3,43.385 rppd
-X$171 T141__t1 T140__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$171 T141__t1 T140__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $172 r0 *1 168,43.385 rppd
-X$172 T159__t1 T160__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$172 T159__t1 T160__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $173 r0 *1 170.7,43.385 rppd
-X$173 T171__t1 T170__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$173 T171__t1 T170__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $174 r0 *1 173.4,43.385 rppd
-X$174 T189__t1 T190__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$174 T189__t1 T190__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $175 r0 *1 176.1,43.385 rppd
-X$175 T201__t1 T200__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$175 T201__t1 T200__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $176 r0 *1 178.8,43.385 rppd
-X$176 T219__t1 T220__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$176 T219__t1 T220__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $177 r0 *1 181.5,43.385 rppd
-X$177 T231__t1 T230__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$177 T231__t1 T230__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $178 r0 *1 184.2,43.385 rppd
-X$178 T249__t1 T250__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$178 T249__t1 T250__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $179 r0 *1 141,48.015 rppd
-X$179 T010__t1 T011__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$179 T010__t1 T011__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $180 r0 *1 143.7,48.015 rppd
-X$180 T020__t1 T019__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$180 T020__t1 T019__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $181 r0 *1 146.4,48.015 rppd
-X$181 T040__t1 T041__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$181 T040__t1 T041__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $182 r0 *1 149.1,48.015 rppd
-X$182 T050__t1 T049__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$182 T050__t1 T049__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $183 r0 *1 151.8,48.015 rppd
-X$183 T070__t1 T071__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$183 T070__t1 T071__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $184 r0 *1 154.5,48.015 rppd
-X$184 T080__t1 T079__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$184 T080__t1 T079__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $185 r0 *1 157.2,48.015 rppd
-X$185 T100__t1 T101__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$185 T100__t1 T101__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $186 r0 *1 159.9,48.015 rppd
-X$186 T110__t1 T109__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$186 T110__t1 T109__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $187 r0 *1 162.6,48.015 rppd
-X$187 T130__t1 T131__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$187 T130__t1 T131__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $188 r0 *1 165.3,48.015 rppd
-X$188 T140__t1 T139__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$188 T140__t1 T139__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $189 r0 *1 168,48.015 rppd
-X$189 T160__t1 T161__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$189 T160__t1 T161__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $190 r0 *1 170.7,48.015 rppd
-X$190 T170__t1 T169__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$190 T170__t1 T169__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $191 r0 *1 173.4,48.015 rppd
-X$191 T190__t1 T191__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$191 T190__t1 T191__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $192 r0 *1 176.1,48.015 rppd
-X$192 T200__t1 T199__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$192 T200__t1 T199__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $193 r0 *1 178.8,48.015 rppd
-X$193 T220__t1 T221__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$193 T220__t1 T221__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $194 r0 *1 181.5,48.015 rppd
-X$194 T230__t1 T229__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$194 T230__t1 T229__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $195 r0 *1 184.2,48.015 rppd
-X$195 T250__t1 T251__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$195 T250__t1 T251__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $196 r0 *1 141,52.645 rppd
-X$196 T011__t1 T012__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$196 T011__t1 T012__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $197 r0 *1 143.7,52.645 rppd
-X$197 T019__t1 T018__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$197 T019__t1 T018__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $198 r0 *1 146.4,52.645 rppd
-X$198 T041__t1 T042__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$198 T041__t1 T042__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $199 r0 *1 149.1,52.645 rppd
-X$199 T049__t1 T048__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$199 T049__t1 T048__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $200 r0 *1 151.8,52.645 rppd
-X$200 T071__t1 T072__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$200 T071__t1 T072__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $201 r0 *1 154.5,52.645 rppd
-X$201 T079__t1 T078__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$201 T079__t1 T078__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $202 r0 *1 157.2,52.645 rppd
-X$202 T101__t1 T102__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$202 T101__t1 T102__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $203 r0 *1 159.9,52.645 rppd
-X$203 T109__t1 T108__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$203 T109__t1 T108__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $204 r0 *1 162.6,52.645 rppd
-X$204 T131__t1 T132__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$204 T131__t1 T132__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $205 r0 *1 165.3,52.645 rppd
-X$205 T139__t1 T138__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$205 T139__t1 T138__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $206 r0 *1 168,52.645 rppd
-X$206 T161__t1 T162__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$206 T161__t1 T162__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $207 r0 *1 170.7,52.645 rppd
-X$207 T169__t1 T168__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$207 T169__t1 T168__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $208 r0 *1 173.4,52.645 rppd
-X$208 T191__t1 T192__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$208 T191__t1 T192__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $209 r0 *1 176.1,52.645 rppd
-X$209 T199__t1 T198__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$209 T199__t1 T198__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $210 r0 *1 178.8,52.645 rppd
-X$210 T221__t1 T222__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$210 T221__t1 T222__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $211 r0 *1 181.5,52.645 rppd
-X$211 T229__t1 T228__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$211 T229__t1 T228__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $212 r0 *1 184.2,52.645 rppd
-X$212 T251__t1 T252__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$212 T251__t1 T252__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $213 r0 *1 141,57.275 rppd
-X$213 T012__t1 T013__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$213 T012__t1 T013__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $214 r0 *1 143.7,57.275 rppd
-X$214 T018__t1 T017__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$214 T018__t1 T017__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $215 r0 *1 146.4,57.275 rppd
-X$215 T042__t1 T043__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$215 T042__t1 T043__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $216 r0 *1 149.1,57.275 rppd
-X$216 T048__t1 T047__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$216 T048__t1 T047__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $217 r0 *1 151.8,57.275 rppd
-X$217 T072__t1 T073__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$217 T072__t1 T073__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $218 r0 *1 154.5,57.275 rppd
-X$218 T078__t1 T077__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$218 T078__t1 T077__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $219 r0 *1 157.2,57.275 rppd
-X$219 T102__t1 T103__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$219 T102__t1 T103__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $220 r0 *1 159.9,57.275 rppd
-X$220 T108__t1 T107__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$220 T108__t1 T107__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $221 r0 *1 162.6,57.275 rppd
-X$221 T132__t1 T133__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$221 T132__t1 T133__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $222 r0 *1 165.3,57.275 rppd
-X$222 T138__t1 T137__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$222 T138__t1 T137__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $223 r0 *1 168,57.275 rppd
-X$223 T162__t1 T163__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$223 T162__t1 T163__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $224 r0 *1 170.7,57.275 rppd
-X$224 T168__t1 T167__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$224 T168__t1 T167__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $225 r0 *1 173.4,57.275 rppd
-X$225 T192__t1 T193__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$225 T192__t1 T193__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $226 r0 *1 176.1,57.275 rppd
-X$226 T198__t1 T197__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$226 T198__t1 T197__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $227 r0 *1 178.8,57.275 rppd
-X$227 T222__t1 T223__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$227 T222__t1 T223__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $228 r0 *1 181.5,57.275 rppd
-X$228 T228__t1 T227__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$228 T228__t1 T227__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $229 r0 *1 184.2,57.275 rppd
-X$229 T252__t1 T253__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$229 T252__t1 T253__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $230 r0 *1 141,61.905 rppd
-X$230 T013__t1 T014__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$230 T013__t1 T014__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $231 r0 *1 143.7,61.905 rppd
-X$231 T017__t1 T016__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$231 T017__t1 T016__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $232 r0 *1 146.4,61.905 rppd
-X$232 T043__t1 T044__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$232 T043__t1 T044__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $233 r0 *1 149.1,61.905 rppd
-X$233 T047__t1 T046__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$233 T047__t1 T046__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $234 r0 *1 151.8,61.905 rppd
-X$234 T073__t1 T074__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$234 T073__t1 T074__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $235 r0 *1 154.5,61.905 rppd
-X$235 T077__t1 T076__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$235 T077__t1 T076__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $236 r0 *1 157.2,61.905 rppd
-X$236 T103__t1 T104__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$236 T103__t1 T104__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $237 r0 *1 159.9,61.905 rppd
-X$237 T107__t1 T106__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$237 T107__t1 T106__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $238 r0 *1 162.6,61.905 rppd
-X$238 T133__t1 T134__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$238 T133__t1 T134__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $239 r0 *1 165.3,61.905 rppd
-X$239 T137__t1 T136__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$239 T137__t1 T136__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $240 r0 *1 168,61.905 rppd
-X$240 T163__t1 T164__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$240 T163__t1 T164__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $241 r0 *1 170.7,61.905 rppd
-X$241 T167__t1 T166__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$241 T167__t1 T166__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $242 r0 *1 173.4,61.905 rppd
-X$242 T193__t1 T194__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$242 T193__t1 T194__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $243 r0 *1 176.1,61.905 rppd
-X$243 T197__t1 T196__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$243 T197__t1 T196__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $244 r0 *1 178.8,61.905 rppd
-X$244 T223__t1 T224__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$244 T223__t1 T224__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $245 r0 *1 181.5,61.905 rppd
-X$245 T227__t1 T226__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$245 T227__t1 T226__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $246 r0 *1 184.2,61.905 rppd
-X$246 T253__t1 T254__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$246 T253__t1 T254__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $247 r0 *1 141,66.535 rppd
-X$247 T014__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t3 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$247 T014__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t3 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $248 r0 *1 143.7,66.535 rppd
-X$248 T016__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t4 vsubs rppd r=445.9
-+ L=3.43U W=2U
+X$248 T016__t1 T001|T003|T007|T015|T031|T063|T127|TN0__t4 vsubs rppd
++ r=479.566301097 L=3.43U W=2U
 * device instance $249 r0 *1 146.4,66.535 rppd
-X$249 T044__t1 T045__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$249 T044__t1 T045__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $250 r0 *1 149.1,66.535 rppd
-X$250 T046__t1 T045__t1 vsubs rppd r=445.9 L=3.43U W=2U
+X$250 T046__t1 T045__t1 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $251 r0 *1 151.8,66.535 rppd
-X$251 T074__t1 T075__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$251 T074__t1 T075__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $252 r0 *1 154.5,66.535 rppd
-X$252 T076__t1 T075__t1 vsubs rppd r=445.9 L=3.43U W=2U
+X$252 T076__t1 T075__t1 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $253 r0 *1 157.2,66.535 rppd
-X$253 T104__t1 T105__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$253 T104__t1 T105__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $254 r0 *1 159.9,66.535 rppd
-X$254 T106__t1 T105__t1 vsubs rppd r=445.9 L=3.43U W=2U
+X$254 T106__t1 T105__t1 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $255 r0 *1 162.6,66.535 rppd
-X$255 T134__t1 T135__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$255 T134__t1 T135__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $256 r0 *1 165.3,66.535 rppd
-X$256 T136__t1 T135__t1 vsubs rppd r=445.9 L=3.43U W=2U
+X$256 T136__t1 T135__t1 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $257 r0 *1 168,66.535 rppd
-X$257 T164__t1 T165__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$257 T164__t1 T165__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $258 r0 *1 170.7,66.535 rppd
-X$258 T166__t1 T165__t1 vsubs rppd r=445.9 L=3.43U W=2U
+X$258 T166__t1 T165__t1 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $259 r0 *1 173.4,66.535 rppd
-X$259 T194__t1 T195__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$259 T194__t1 T195__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $260 r0 *1 176.1,66.535 rppd
-X$260 T196__t1 T195__t1 vsubs rppd r=445.9 L=3.43U W=2U
+X$260 T196__t1 T195__t1 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $261 r0 *1 178.8,66.535 rppd
-X$261 T224__t1 T225__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$261 T224__t1 T225__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $262 r0 *1 181.5,66.535 rppd
-X$262 T226__t1 T225__t1 vsubs rppd r=445.9 L=3.43U W=2U
+X$262 T226__t1 T225__t1 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $263 r0 *1 184.2,66.535 rppd
-X$263 T254__t1 CB3__t0 vsubs rppd r=445.9 L=3.43U W=2U
+X$263 T254__t1 CB3__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance CB2_t0 r0 *1 0,0 
-RCB2_t0 CB2__t0 CB2 23.0085
+RCB2_t0 CB2__t0 CB2 23.024
 * device instance CB2 r0 *1 0,0 
-CCB2 CB2 vsubs 7.410176e-15
+CCB2 CB2 vsubs 7.41581e-15
 * device instance CB3_t0 r0 *1 0,0 
-RCB3_t0 CB3__t0 CB3 38.9336
+RCB3_t0 CB3__t0 CB3 38.9487
 * device instance CB3 r0 *1 0,0 
-CCB3 CB3 vsubs 1.1944554e-14
+CCB3 CB3 vsubs 1.1950188e-14
 * device instance SNS1_t0 r0 *1 0,0 
 RSNS1_t0 SNS1__t0 SNS1 15.1283
 * device instance SNS1 r0 *1 0,0 
 CSNS1 SNS1 vsubs 4.244144e-15
 * device instance SNS2_t0 r0 *1 0,0 
-RSNS2_t0 SNS2__t0 SNS2 2.90615946028
+RSNS2_t0 SNS2__t0 SNS2 2.91618268835
 * device instance SNS2_t1 r0 *1 0,0 
-RSNS2_t1 SNS2__t1 SNS2 3.23273985549
+RSNS2_t1 SNS2__t1 SNS2 3.24388944631
 * device instance SNS2_t2 r0 *1 0,0 
-RSNS2_t2 SNS2__t2 SNS2 4.44400068423
+RSNS2_t2 SNS2__t2 SNS2 4.45932786534
 * device instance SNS2 r0 *1 0,0 
-CSNS2 SNS2 vsubs 3.29176e-15
+CSNS2 SNS2 vsubs 3.302774e-15
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t0 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t0
 + T001|T003|T007|T015|T031|T063|T127|TN0__t0
-+ T001|T003|T007|T015|T031|T063|T127|TN0 2.11437307947
++ T001|T003|T007|T015|T031|T063|T127|TN0 2.11090126715
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t1 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t1
 + T001|T003|T007|T015|T031|T063|T127|TN0__t1
-+ T001|T003|T007|T015|T031|T063|T127|TN0 2.11437307947
++ T001|T003|T007|T015|T031|T063|T127|TN0 2.11090126715
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t2 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t2
 + T001|T003|T007|T015|T031|T063|T127|TN0__t2
-+ T001|T003|T007|T015|T031|T063|T127|TN0 3.64129851262
++ T001|T003|T007|T015|T031|T063|T127|TN0 3.63531948028
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t3 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t3
 + T001|T003|T007|T015|T031|T063|T127|TN0__t3
-+ T001|T003|T007|T015|T031|T063|T127|TN0 4.27764381987
++ T001|T003|T007|T015|T031|T063|T127|TN0 4.27061990501
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t4 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t4
 + T001|T003|T007|T015|T031|T063|T127|TN0__t4
-+ T001|T003|T007|T015|T031|T063|T127|TN0 4.26794100965
++ T001|T003|T007|T015|T031|T063|T127|TN0 4.26093302685
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t5 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t5
 + T001|T003|T007|T015|T031|T063|T127|TN0__t5
-+ T001|T003|T007|T015|T031|T063|T127|TN0 1.93726691506
++ T001|T003|T007|T015|T031|T063|T127|TN0 1.93408591204
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t6 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t6
 + T001|T003|T007|T015|T031|T063|T127|TN0__t6
-+ T001|T003|T007|T015|T031|T063|T127|TN0 2.1083668847
++ T001|T003|T007|T015|T031|T063|T127|TN0 2.10490493459
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t7 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t7
 + T001|T003|T007|T015|T031|T063|T127|TN0__t7
-+ T001|T003|T007|T015|T031|T063|T127|TN0 1.41433371914
++ T001|T003|T007|T015|T031|T063|T127|TN0 1.41201137533
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t8 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t8
 + T001|T003|T007|T015|T031|T063|T127|TN0__t8
-+ T001|T003|T007|T015|T031|T063|T127|TN0 1.22032207139
++ T001|T003|T007|T015|T031|T063|T127|TN0 1.21831829578
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t9 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t9
 + T001|T003|T007|T015|T031|T063|T127|TN0__t9
-+ T001|T003|T007|T015|T031|T063|T127|TN0 0.695110670243
++ T001|T003|T007|T015|T031|T063|T127|TN0 0.693969294669
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t10 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t10
 + T001|T003|T007|T015|T031|T063|T127|TN0__t10
-+ T001|T003|T007|T015|T031|T063|T127|TN0 2.12935702113
++ T001|T003|T007|T015|T031|T063|T127|TN0 2.1258606051
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t11 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t11
 + T001|T003|T007|T015|T031|T063|T127|TN0__t11
-+ T001|T003|T007|T015|T031|T063|T127|TN0 1.1244274397
++ T001|T003|T007|T015|T031|T063|T127|TN0 1.12258112361
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t12 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t12
 + T001|T003|T007|T015|T031|T063|T127|TN0__t12
-+ T001|T003|T007|T015|T031|T063|T127|TN0 1.65770478058
++ T001|T003|T007|T015|T031|T063|T127|TN0 1.65498282014
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t13 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t13
 + T001|T003|T007|T015|T031|T063|T127|TN0__t13
-+ T001|T003|T007|T015|T031|T063|T127|TN0 1.66533712449
++ T001|T003|T007|T015|T031|T063|T127|TN0 1.66260263169
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t14 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t14
 + T001|T003|T007|T015|T031|T063|T127|TN0__t14
-+ T001|T003|T007|T015|T031|T063|T127|TN0 1.06265803038
++ T001|T003|T007|T015|T031|T063|T127|TN0 1.06091314001
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0_t15 r0 *1 0,0 
 RT001_T003_T007_T015_T031_T063_T127_TN0_t15
 + T001|T003|T007|T015|T031|T063|T127|TN0__t15
-+ T001|T003|T007|T015|T031|T063|T127|TN0 0.786185842119
++ T001|T003|T007|T015|T031|T063|T127|TN0 0.784894920608
 * device instance T001_T003_T007_T015_T031_T063_T127_TN0 r0 *1 0,0 
 CT001_T003_T007_T015_T031_T063_T127_TN0 T001|T003|T007|T015|T031|T063|T127|TN0
-+ vsubs 2.4940372e-14
++ vsubs 2.4956079e-14
 * device instance T002_t0 r0 *1 0,0 
 RT002_t0 T002__t0 T002 0.0275
 * device instance T002_t1 r0 *1 0,0 
@@ -2420,15 +2422,15 @@ RVDD_t11 VDD__t11 VDD 4.84817878788
 * device instance VDD r0 *1 0,0 
 CVDD VDD vsubs 1.314593e-14
 * device instance VREF_t0 r0 *1 0,0 
-RVREF_t0 VREF__t0 VREF 3.57709687719
+RVREF_t0 VREF__t0 VREF 3.58499902552
 * device instance VREF_t1 r0 *1 0,0 
-RVREF_t1 VREF__t1 VREF 5.43572144145
+RVREF_t1 VREF__t1 VREF 5.4477294688
 * device instance VREF_t2 r0 *1 0,0 
-RVREF_t2 VREF__t2 VREF 1.81190714715
+RVREF_t2 VREF__t2 VREF 1.81590982293
 * device instance VREF_t3 r0 *1 0,0 
-RVREF_t3 VREF__t3 VREF 5.6978745342
+RVREF_t3 VREF__t3 VREF 5.71046168275
 * device instance VREF r0 *1 0,0 
-CVREF VREF vsubs 5.041482e-15
+CVREF VREF vsubs 5.052496e-15
 * device instance VSS r0 *1 0,0 
 RVSS VSS VSS__par 7.5152
 * device instance VSS r0 *1 0,0 

@@ -393,30 +393,28 @@ netlist matches the trim-bearing schematic" checkable rather than asserted.
 
 | cell | DRC | LVS | extraction |
 | --- | --- | --- | --- |
-| `bandgap_core` | `clean`, 0 violations | `mismatch`, 8 findings / **4 error-severity** — the same four as pre-#272 (`Q1`–`Q3` `device.unmatched` plus their class-level topology entry, the permanent bipolar-recognition cause); devices **263/263** matched, nets 253/257 | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C |
-| `bandgap_top` | `clean`, 0 violations | `mismatch`, 1023 findings / **1019 error-severity** — re-minted 2026-11-17 under the evidence-standard pin `klt 0.8.0` (DR-0016, issue #558); the retired 0.6.0-minted report read 10 findings / **4 error-severity** (the same four as pre-#272, same bipolar cause) with devices **275/275** matched and nets 257/261, and is not reproducible under any PyPI-installable pin. The delta is the deck's resistor-class pairing regression between 0.6.0 and 0.8.0 — layout-side class `rppd` no longer pairs with reference-side `RPPD`, so every MOS device still matches but zero resistors do (filed upstream as klayout-tools#6313); devices **17/275** matched, nets 5/261 | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C |
+| `bandgap_core` | `violations`, 24 — 18 `metal1.enclosing.cont.1` + 6 `nwell.enclosing.nactiv.1`, both **pre-existing** classes the containment deck newly sees (tracked #572/#571, filed from #557); every Via1 class is **0** — `metal2.enclosing.via1.1` and `via1.width.1` fixed in #557 (the retired `clean`/0 verdict cited a 16-rule 0.6.0-deck mint that could not see any of these rule classes). Minted `klt 0.9.3.dev663`, 36 rules | `mismatch`, 1025 findings / **1022 error-severity** — re-minted 2026-11-17 under `klt 0.9.3.dev663` (#557) against the current (#563) reference, retiring the 0.6.0-era mint (8 findings / 4 error-severity, devices 263/263): the resistor-class pairing regression the 0.8.0 re-mint showed at top (klayout-tools#6313 — layout-side `rppd` no longer pairs with reference-side `RPPD`) now shows at core too — 517 `device.unmatched` + 504 `net.unmatched` + the bipolar-recognition topology entry; devices **6/263** matched, nets **2/257** | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C |
+| `bandgap_top` | `clean`, 0 violations with **33 markers waived** cell-scoped (`drc_waivers.json`, each naming its tracking issue: 11 `nwell.enclosing.nactiv.1` → #571, 18 `metal1.enclosing.cont.1` → #572, 4 `cont.ongrid.1` → #573 — every waived marker instance-attributed to a leaf cell, none in top's own geometry); every Via1 class is **0** in the assembled GDS (`metal2.enclosing.via1.1` / `via1.width.1` fixed in #557 across core and top's own landings; amp's share was #556). Minted `klt 0.9.3.dev663`, 36 rules (the retired `clean`/0 cited a 16-rule 0.6.0-deck mint) | `mismatch`, 1022 findings / **1018 error-severity** — re-minted 2026-11-17 under `klt 0.9.3.dev663` (#557) against the current (#563) reference; the 0.8.0 re-mint it retires read 1023/1019. Cause unchanged: the resistor-class pairing regression (517 `device.unmatched` + 500 `net.unmatched`, klayout-tools#6313) plus the bipolar-recognition topology entry; devices **18/275** matched, nets **7/261**. The retired report's one design-relevant error — the `device.property` +4.2% `rhigh` delta (#563) — stays gone: no resistor reaches parameter comparison while the pairing regression lives, and the reference now carries #563's symbol-formula value (`1999501.7` Ω), so the two reference-hash waivers of #563/#561 self-expired in #557 | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C |
 
-On `bandgap_core` every error-severity finding is still the bipolar-recognition
-cause already documented under "Permanent blockers" below — its row still cites
-its 0.6.0-era mint, and refreshing it under the standard is a follow-up to the
-upstream fix. On `bandgap_top` the re-minted verdict **does carry new error
-classes**: 1018 of the 1019 error-severity findings are the resistor-pairing
-regression (514 `device.unmatched`, 500 `net.unmatched` — klayout-tools#6313)
-plus the permanent bipolar-recognition cause (the 3 `NPN13G2` reference-device
-`device.unmatched` entries and their class-level topology entry — 4 findings,
-unchanged from the retired report). The 1019th is the only error that is
-neither — and the only
-design-relevant one: a `device.property` error ("matched device parameter `r`
-differs") on the `rhigh` pull-up — `X3_RPU` in the reference, `$275` in the
-layout — with extracted `r` 1999501.7 Ω against the reference netlist's
-1919368.0 Ω (**+4.2%**). The device still pairs; only the parameter differs,
-and whether that delta is an extraction/reference-modelling difference or a
-real sizing discrepancy is **untraced** (issue #563 — do not attribute it to
-the deck without tracing it). The warning-severity disclosures also changed
-in kind between the two mints, not just in count: the retired report's
-`device.bulk_reconciled` 2 + `device.parameter_excluded` 4 (parameters
-`A`/`P`, total 6 warnings) became `device.bulk_reconciled` 2 +
-`device.geometry_not_compared` 2 (total 4).
+Both 2026-11-17 LVS re-mints were made under `klt 0.9.3.dev663` (#557), the
+same build whose deck first carried the `require_containment` rules — the
+evidence-standard pin `klayout-tools==0.8.0` (DR-0016) cannot see those rules
+at all, so a pin-minted DRC would not exercise this issue's own fix; this is
+the same tension #559 accepted for `bandgap_amp`'s reports, and the verdict
+of record in `manifests/` is still graded under the pin (which reads the
+committed envelopes' `status` fields, deck-independently). Under dev663
+**every error-severity LVS finding in both cells is one of the two
+already-documented, filed-upstream causes** — the resistor-class pairing
+regression (klayout-tools#6313: 517 `device.unmatched` + 500/504
+`net.unmatched`) and the permanent bipolar-recognition cause (the topology
+entry) — there is no third class, and none is design-caused. The two
+reference-hash waivers that #563 recorded against the then-stale
+`bandgap_startup`/`bandgap_top` LVS reports self-expired in #557: both
+reports were re-minted against the current reference, and both cells' LVS
+verdicts are unchanged in kind (`bandgap_startup` stays `match`/0 errors,
+now with 3 warning-severity disclosures instead of 2 —
+`device.geometry_not_compared` joins, mirroring the warning-set change
+already recorded for the 0.8.0 top re-mint below).
 
 ### LVS: three real pieces of friction, all filed upstream
 
@@ -758,10 +756,11 @@ delta, and the layout is correct**:
   committed netlist for nothing. Revisit when klayout-tools#6313 is fixed.
 - **Freshness:** the two committed reports that recorded the retired flat
   reference (`bandgap_startup/lvs_report.json`,
-  `bandgap_top/lvs_report.json`) are now stale by construction and waived
-  in `layout/evidence-freshness-waivers.json`, tracking #561 (the DR-0016
-  re-mint backlog); the waivers self-expire when those reports re-mint
-  against this reference.
+  `bandgap_top/lvs_report.json`) were stale by construction and waived in
+  `layout/evidence-freshness-waivers.json`, tracking #561 (the DR-0016
+  re-mint backlog); both waivers **self-expired in #557**, which re-minted
+  both reports against this reference (startup stays `match`/0 errors; top
+  stays `mismatch` under the pairing regression — see the verdict table).
 - The `R`/`L`/`W` compared-parameter set and `parameter_tolerance` are
   untouched — the finding is resolved by fixing the stale side, not by
   hiding the comparison.
@@ -837,17 +836,25 @@ layout/bandgap_core/probe/run_probe.sh                    # ~0.3 s sanity probe
 (`uv run --with klayout python3 ...` if `klayout` is not already on the
 active interpreter's path — matching `gf180-bandgap`'s convention.)
 
+One per-cell deviation since #557: `bandgap_top`'s DRC line carries the
+assembled block's cell-scoped waivers — from `layout/bandgap_top/`:
+`klt drc --deck sg13g2 bandgap_top.gds --waivers drc_waivers.json
+--format json > drc_report.json` (see "Via1 landings under the containment
+deck (issues #556 and #557)" below for why the file exists). No other cell
+waives anything.
+
 Every one of those outputs is **deterministic**: re-running the block above
 against an unchanged tree reproduces all four `.gds` files byte-for-byte
 (`SaveLayoutOptions.gds2_write_timestamps = False`, so re-running leaves
 `git diff` empty) and every `drc_report.json` / `lvs_report.json` /
-`pex_extract_report.json` / `*.pex.spice` exactly (verified on
-`klt 0.6.0+geb7e7c6ace30`, KLayout 0.30.12). That determinism claim still
-holds for the DRC/PEX artifacts as minted; `bandgap_top`'s
-`lvs_report.json` was separately re-minted on 2026-11-17 under the
-evidence-standard pin `klt 0.8.0` (DR-0016) because the 0.6.0-minted
-verdict is not reproducible under any PyPI-installable pin — see the
-verdict table above and DR-0016 for the measured comparison.
+`pex_extract_report.json` / `*.pex.spice` exactly *for a given `klt`
+build*. The 2026-11-17 #557 refresh re-minted `bandgap_core`,
+`bandgap_startup` and `bandgap_top` under `klt 0.9.3.dev663` (the build
+whose deck first carries the `require_containment` rules this issue's fix
+is measured against — the PyPI pin of DR-0016 cannot see those rules, the
+same tension #559 accepted for `bandgap_amp`); `bandgap_amp`'s committed
+reports remain its own #559 `dev517` mint and stay fresh, since its
+generator and GDS are byte-identical across the refresh.
 
 The read-only `klt cells`/`stats`/`layers` queries are quoted with the
 geometry facts they produced, under each cell's own section below.
@@ -1281,11 +1288,17 @@ Waivers **self-expire**: once the evidence is regenerated, the recorded hash no
 longer matches and the checker fails until the entry is deleted — so a waiver
 cannot quietly outlive the problem it describes.
 
-`layout/evidence-freshness-waivers.json` is **empty** as of issue #272: every
-`layout/` report is fresh against the GDS committed beside it. (It held two
-`pex_extract_report.json` entries under #56 at one point, when the PEX leg had
-last been extracted at `f940680`/PR #39 against a GDS since regenerated at
-`bf9051c`/PR #45 — that is closed.)
+`layout/evidence-freshness-waivers.json` is **empty** as of issue #557
+(2026-11-17): every `layout/` report is fresh against the GDS committed
+beside it. (It held two `pex_extract_report.json` entries under #56 at one
+point, when the PEX leg had last been extracted at `f940680`/PR #39 against
+a GDS since regenerated at `bf9051c`/PR #45 — that is closed. It then held
+the two #563 reference-hash waivers for `bandgap_startup`/`bandgap_top`'s
+LVS reports, tracking #561; #557 re-minted both reports against the current
+reference and the waivers self-expired and were deleted. The *deck-gap*
+waivers #557 introduced live in a different file,
+`layout/bandgap_top/drc_waivers.json`, which waives DRC *markers*, not
+stale reports — see "Via1 landings under the containment deck" below.)
 
 **The five `sim/` waivers are a different file and a different question.**
 `sim/evidence-freshness-waivers.json` still waives the five `*-pex`
@@ -1388,6 +1401,42 @@ above:
 
 ---
 
+## Via1 landings under the containment deck (issues #556 and #557)
+
+The curated `sg13g2` deck's `require_containment` rules (klayout-tools#6174)
+added `metal2.enclosing.via1.1` ("every Via1 must lie fully inside Metal2")
+and, with it, made the deck's `via1.width.1` matter as a **fixed** 0.19 µm
+cut size rather than a floor. Every Via1 in this block's SG13G2 cells sits
+at an *end* of a Metal2 riser/jog/strap bar, and `route_h`/`route_v` draw
+bars that stop exactly at the given end coordinate — so each via-bearing
+end left half the cut outside Metal2, and every cut at the old 0.25 µm
+default violated `via1.width.1`. #556 fixed `bandgap_amp` (12 + 12
+markers); #557 fixed the remaining three cells the same way, per cell:
+
+| cell | `metal2.enclosing.via1.1` before → after | `via1.width.1` before → after | where the fix lives |
+| --- | --- | --- | --- |
+| `bandgap_amp` | 12 → 0 | 12 → 0 | #556 (its own `generate.py` `VIA_CAP`) |
+| `bandgap_core` | 9 → 0 | 17 → 0 | #557: `VIA = 0.19`, `VIA_CAP = VIA/2 + 0.05`; end caps in `_draw_trim_straps` (each strap bar overshoots both via-bearing ends), `_riser`, `_tie_and_riser`, `_tie_and_riser_over_top`, and the `tn0` pad-side bar |
+| `bandgap_startup` | 0 → 0 | 0 → 0 | none needed — its generator draws no `via1_tap` at all (its only markers are the 4 `cont.ongrid.1` of #573) |
+| `bandgap_top` (own shapes) | 30 → 0 | 31 → 0 | #557: `_riser_up` overshoots the riser's pad-end start and bus-side end by `VIA_CAP`, caps a jogged leg's landing via with its own `METAL2_W`-square Metal2 island (the jog must stay Metal1 — see `bandgap_top/generate.py`'s "leaf-internal Metal2 crossings" comment — so the cap is a same-net landing, not a reroute), and lands `vref` at the pad's own centre so its via *merges* with `bandgap_core`'s own vref drain via (at 0.19 µm the old 0.25-touching pair became a 0.06 µm `via1.space.1` violation) |
+
+The assembled `bandgap_top.gds` verdict is `clean` with **33 markers
+waived** cell-scoped via `drc_waivers.json` — the three pre-existing,
+non-Via1 classes the containment deck newly surfaces in the leaves
+(`nwell.enclosing.nactiv.1` ×11 → #571, `metal1.enclosing.cont.1` ×18 →
+#572, `cont.ongrid.1` ×4 → #573), none of them in top's own geometry and
+none touched by the Via1 fix. The leaf cells' own reports carry their
+markers unwaived, like `bandgap_amp`'s #559 report already did. The block
+manifest's DRC-clean citation (`manifests/sg13g2-bandgap.json` items 2/3)
+pins the waivered-clean assembled envelope, and the verdict of record
+survives the change at 5/11.
+
+`layout/common.py`'s `via1_tap` docstring also stopped claiming the deck
+had no Metal2-encloses-Via1 rule and that `via1.width.1` was a floor —
+both #559 Judge-review corrections landed here, with the 0.25 default kept
+(so the SG13CMOS5L builds that share the module are not silently
+re-sized).
+
 ## Cell: `bandgap_core`
 
 Geometry read directly from the committed GDS by the read-only `klt`
@@ -1468,7 +1517,7 @@ both this cell's own `tail` riser and `bandgap_top`'s own composed-level
 column/window derivation.
 
 **DRC**: `klt drc --deck sg13g2` reports `status: "violations"`, 5 — all
-`nwell.enclosing.nactiv.1`, pre-existing and tracked in #557
+`nwell.enclosing.nactiv.1`, pre-existing and tracked in #571
 (`layout/bandgap_amp/drc_report.json`). This report's #556 refresh was the
 first under the deck's `require_containment` rules (klayout-tools#6174):
 it surfaced 12 `metal2.enclosing.via1.1` (each Via1 centred on a Metal2

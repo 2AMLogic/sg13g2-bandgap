@@ -1,6 +1,9 @@
 {
-  "schema_version": 2,
-  "file": "bandgap_top.gds",
+  "schema_version": 3,
+  "file": {
+    "path": "layout/bandgap_top/bandgap_top.gds",
+    "scope": "repo"
+  },
   "deck": "sg13g2",
   "dbu_um": 0.001,
   "status": "clean",
@@ -13,15 +16,23 @@
   "coverage": {
     "deck_layers": [
       "1/0",
+      "1/20",
       "5/0",
       "6/0",
+      "7/0",
+      "7/21",
       "8/0",
       "10/0",
+      "14/0",
       "19/0",
       "29/0",
       "30/0",
+      "31/0",
+      "32/0",
+      "36/0",
       "49/0",
       "50/0",
+      "63/0",
       "66/0",
       "67/0",
       "125/0",
@@ -33,22 +44,22 @@
       "1/0",
       "5/0",
       "6/0",
+      "7/0",
       "8/0",
       "10/0",
-      "19/0"
+      "14/0",
+      "19/0",
+      "31/0",
+      "63/0"
     ],
     "layers_in_stream_without_rules": [
       "5/1",
-      "7/0",
       "8/1",
       "8/25",
       "10/1",
       "10/25",
-      "14/0",
       "28/0",
-      "31/0",
       "33/0",
-      "63/0",
       "111/0",
       "128/0",
       "128/1"
@@ -57,31 +68,56 @@
       "activ.enclosing.cont.1",
       "activ.space.1",
       "activ.width.1",
+      "cont.ongrid.1",
       "cont.space.1",
       "cont.width.1",
       "gatpoly.enclosing.cont.1",
       "gatpoly.separation.activ.1",
       "gatpoly.space.1",
       "gatpoly.width.1",
+      "metal1.enclosing.cont.1",
       "metal1.enclosing.via1.1",
       "metal1.space.1",
       "metal1.width.1",
+      "metal2.enclosing.via1.1",
       "metal2.space.1",
       "metal2.width.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
+      "nwell.enclosing.pactiv.1",
+      "nwell.enclosing.pactiv.dig.1",
+      "nwell.enclosing.pactiv.hv.1",
+      "nwell.space.1",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
+      "nwell.space.pactiv.1",
+      "nwell.space.pactiv.dig.1",
+      "nwell.space.pactiv.hv.1",
+      "nwell.width.1",
+      "psd.area.1",
+      "psd.space.1",
+      "psd.width.1",
       "via1.space.1",
       "via1.width.1"
     ],
     "rules_skipped": [
       "metal2.enclosing.via2.1",
+      "metal3.enclosing.via2.1",
       "metal3.enclosing.via3.1",
       "metal3.space.1",
       "metal3.width.1",
+      "metal4.enclosing.via3.1",
       "metal4.enclosing.via4.1",
       "metal4.space.1",
       "metal4.width.1",
+      "metal5.enclosing.mim.1",
       "metal5.enclosing.topvia1.1",
+      "metal5.enclosing.via4.1",
       "metal5.space.1",
       "metal5.width.1",
+      "mim.enclosing.topvia1.1",
       "topmetal1.enclosing.topvia1.1",
       "topmetal1.enclosing.topvia2.1",
       "topmetal1.space.1",
@@ -101,15 +137,27 @@
       "via4.width.1"
     ],
     "voltage_domain_warnings": [],
+    "unchecked_rules": [
+      {
+        "rule": "NW.b1",
+        "layer": "31/0",
+        "description": "NW.b1 (min. PWell width between NWell regions of different nets, 1.80 um) is net-aware and this engine has no net-aware spacing check; wells on different nets closer than 1.80 um are not flagged. Only the geometric nwell.space.1 (0.62 um) ran."
+      }
+    ],
+    "marker_blind_layers_in_stream": [],
     "deck_scope": [
       "Act",
       "Cnt",
+      "Cont upper-landing containment (curated)",
       "Gat",
       "M1",
       "M2",
       "M3",
       "M4",
       "M5",
+      "MIM",
+      "NW",
+      "Offgrid",
       "TM1",
       "TM2",
       "TV1",
@@ -117,7 +165,28 @@
       "V1",
       "V2",
       "V3",
-      "V4"
+      "V4",
+      "Via1 upper-landing containment (curated)",
+      "Via2 upper-landing containment (curated)",
+      "Via3 upper-landing containment (curated)",
+      "Via4 upper-landing containment (curated)",
+      "pSD"
+    ],
+    "unmodeled_rules": [
+      "LU.a",
+      "LU.c",
+      "LU.c1",
+      "LU.d",
+      "LU.d1",
+      "Pad.a1",
+      "Pad.aR",
+      "Pad.bR",
+      "Pad.d",
+      "Pad.d1R",
+      "Pad.dR",
+      "Pad.gR",
+      "Pad.jR",
+      "Pad.kR"
     ],
     "schema_version": 1,
     "known": true,
@@ -125,17 +194,37 @@
       "activ.enclosing.cont.1",
       "activ.space.1",
       "activ.width.1",
+      "cont.ongrid.1",
       "cont.space.1",
       "cont.width.1",
       "gatpoly.enclosing.cont.1",
       "gatpoly.separation.activ.1",
       "gatpoly.space.1",
       "gatpoly.width.1",
+      "metal1.enclosing.cont.1",
       "metal1.enclosing.via1.1",
       "metal1.space.1",
       "metal1.width.1",
+      "metal2.enclosing.via1.1",
       "metal2.space.1",
       "metal2.width.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
+      "nwell.enclosing.pactiv.1",
+      "nwell.enclosing.pactiv.dig.1",
+      "nwell.enclosing.pactiv.hv.1",
+      "nwell.space.1",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
+      "nwell.space.pactiv.1",
+      "nwell.space.pactiv.dig.1",
+      "nwell.space.pactiv.hv.1",
+      "nwell.width.1",
+      "psd.area.1",
+      "psd.space.1",
+      "psd.width.1",
       "via1.space.1",
       "via1.width.1"
     ],
@@ -143,6 +232,10 @@
     "inapplicable": [
       {
         "id": "metal2.enclosing.via2.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.enclosing.via2.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -158,6 +251,10 @@
         "reason": "no_applicable_geometry"
       },
       {
+        "id": "metal4.enclosing.via3.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "metal4.enclosing.via4.1",
         "reason": "no_applicable_geometry"
       },
@@ -170,7 +267,15 @@
         "reason": "no_applicable_geometry"
       },
       {
+        "id": "metal5.enclosing.mim.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "metal5.enclosing.topvia1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal5.enclosing.via4.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -179,6 +284,10 @@
       },
       {
         "id": "metal5.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "mim.enclosing.topvia1.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -254,19 +363,1180 @@
     "nothing_checked": false,
     "nothing_checked_reasons": []
   },
+  "waived_count": 33,
+  "waived_rule_counts": {
+    "cont.ongrid.1": 4,
+    "metal1.enclosing.cont.1": 18,
+    "nwell.enclosing.nactiv.1": 11
+  },
+  "waived": [
+    {
+      "rule": "cont.ongrid.1",
+      "description": "Cont vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layer": "Cont.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_startup",
+      "source_path": [
+        "bandgap_startup"
+      ],
+      "bbox": {
+        "left": 251772,
+        "bottom": 57700,
+        "right": 251772,
+        "top": 57700
+      },
+      "polygon": null,
+      "waiver_justification": "pre-existing off-grid Cont (all 4 markers come from startup's instance, the only findings that cell has); tracked in #573"
+    },
+    {
+      "rule": "cont.ongrid.1",
+      "description": "Cont vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layer": "Cont.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_startup",
+      "source_path": [
+        "bandgap_startup"
+      ],
+      "bbox": {
+        "left": 251772,
+        "bottom": 57900,
+        "right": 251772,
+        "top": 57900
+      },
+      "polygon": null,
+      "waiver_justification": "pre-existing off-grid Cont (all 4 markers come from startup's instance, the only findings that cell has); tracked in #573"
+    },
+    {
+      "rule": "cont.ongrid.1",
+      "description": "Cont vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layer": "Cont.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_startup",
+      "source_path": [
+        "bandgap_startup"
+      ],
+      "bbox": {
+        "left": 252772,
+        "bottom": 57700,
+        "right": 252772,
+        "top": 57700
+      },
+      "polygon": null,
+      "waiver_justification": "pre-existing off-grid Cont (all 4 markers come from startup's instance, the only findings that cell has); tracked in #573"
+    },
+    {
+      "rule": "cont.ongrid.1",
+      "description": "Cont vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layer": "Cont.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_startup",
+      "source_path": [
+        "bandgap_startup"
+      ],
+      "bbox": {
+        "left": 252772,
+        "bottom": 57900,
+        "right": 252772,
+        "top": 57900
+      },
+      "polygon": null,
+      "waiver_justification": "pre-existing off-grid Cont (all 4 markers come from startup's instance, the only findings that cell has); tracked in #573"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 50850,
+        "bottom": 52320,
+        "right": 51150,
+        "top": 52500
+      },
+      "polygon": [
+        [
+          50850,
+          52320
+        ],
+        [
+          50850,
+          52500
+        ],
+        [
+          51150,
+          52500
+        ],
+        [
+          51150,
+          52320
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 50850,
+        "bottom": 53500,
+        "right": 51150,
+        "top": 53680
+      },
+      "polygon": [
+        [
+          50850,
+          53500
+        ],
+        [
+          50850,
+          53680
+        ],
+        [
+          51150,
+          53680
+        ],
+        [
+          51150,
+          53500
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 52700,
+        "bottom": 52320,
+        "right": 53000,
+        "top": 52500
+      },
+      "polygon": [
+        [
+          52700,
+          52320
+        ],
+        [
+          52700,
+          52500
+        ],
+        [
+          53000,
+          52500
+        ],
+        [
+          53000,
+          52320
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 52700,
+        "bottom": 53500,
+        "right": 53000,
+        "top": 53680
+      },
+      "polygon": [
+        [
+          52700,
+          53500
+        ],
+        [
+          52700,
+          53680
+        ],
+        [
+          53000,
+          53680
+        ],
+        [
+          53000,
+          53500
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 54550,
+        "bottom": 52320,
+        "right": 54850,
+        "top": 52500
+      },
+      "polygon": [
+        [
+          54550,
+          52320
+        ],
+        [
+          54550,
+          52500
+        ],
+        [
+          54850,
+          52500
+        ],
+        [
+          54850,
+          52320
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 54550,
+        "bottom": 53500,
+        "right": 54850,
+        "top": 53680
+      },
+      "polygon": [
+        [
+          54550,
+          53500
+        ],
+        [
+          54550,
+          53680
+        ],
+        [
+          54850,
+          53680
+        ],
+        [
+          54850,
+          53500
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 56400,
+        "bottom": 52320,
+        "right": 56700,
+        "top": 52500
+      },
+      "polygon": [
+        [
+          56400,
+          52320
+        ],
+        [
+          56400,
+          52500
+        ],
+        [
+          56700,
+          52500
+        ],
+        [
+          56700,
+          52320
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 56400,
+        "bottom": 53500,
+        "right": 56700,
+        "top": 53680
+      },
+      "polygon": [
+        [
+          56400,
+          53500
+        ],
+        [
+          56400,
+          53680
+        ],
+        [
+          56700,
+          53680
+        ],
+        [
+          56700,
+          53500
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 58250,
+        "bottom": 52320,
+        "right": 58550,
+        "top": 52500
+      },
+      "polygon": [
+        [
+          58250,
+          52320
+        ],
+        [
+          58250,
+          52500
+        ],
+        [
+          58550,
+          52500
+        ],
+        [
+          58550,
+          52320
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 58250,
+        "bottom": 53500,
+        "right": 58550,
+        "top": 53680
+      },
+      "polygon": [
+        [
+          58250,
+          53500
+        ],
+        [
+          58250,
+          53680
+        ],
+        [
+          58550,
+          53680
+        ],
+        [
+          58550,
+          53500
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 60100,
+        "bottom": 52320,
+        "right": 60400,
+        "top": 52500
+      },
+      "polygon": [
+        [
+          60100,
+          52320
+        ],
+        [
+          60100,
+          52500
+        ],
+        [
+          60400,
+          52500
+        ],
+        [
+          60400,
+          52320
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 60100,
+        "bottom": 53500,
+        "right": 60400,
+        "top": 53680
+      },
+      "polygon": [
+        [
+          60100,
+          53500
+        ],
+        [
+          60100,
+          53680
+        ],
+        [
+          60400,
+          53680
+        ],
+        [
+          60400,
+          53500
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 61950,
+        "bottom": 52320,
+        "right": 62250,
+        "top": 52500
+      },
+      "polygon": [
+        [
+          61950,
+          52320
+        ],
+        [
+          61950,
+          52500
+        ],
+        [
+          62250,
+          52500
+        ],
+        [
+          62250,
+          52320
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 61950,
+        "bottom": 53500,
+        "right": 62250,
+        "top": 53680
+      },
+      "polygon": [
+        [
+          61950,
+          53500
+        ],
+        [
+          61950,
+          53680
+        ],
+        [
+          62250,
+          53680
+        ],
+        [
+          62250,
+          53500
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 63800,
+        "bottom": 52320,
+        "right": 64100,
+        "top": 52500
+      },
+      "polygon": [
+        [
+          63800,
+          52320
+        ],
+        [
+          63800,
+          52500
+        ],
+        [
+          64100,
+          52500
+        ],
+        [
+          64100,
+          52320
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 63800,
+        "bottom": 53500,
+        "right": 64100,
+        "top": 53680
+      },
+      "polygon": [
+        [
+          63800,
+          53500
+        ],
+        [
+          63800,
+          53680
+        ],
+        [
+          64100,
+          53680
+        ],
+        [
+          64100,
+          53500
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 121850,
+        "bottom": 52320,
+        "right": 122150,
+        "top": 52500
+      },
+      "polygon": [
+        [
+          121850,
+          52320
+        ],
+        [
+          121850,
+          52500
+        ],
+        [
+          122150,
+          52500
+        ],
+        [
+          122150,
+          52320
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 121850,
+        "bottom": 53500,
+        "right": 122150,
+        "top": 53680
+      },
+      "polygon": [
+        [
+          121850,
+          53500
+        ],
+        [
+          121850,
+          53680
+        ],
+        [
+          122150,
+          53680
+        ],
+        [
+          122150,
+          53500
+        ]
+      ],
+      "waiver_justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_amp",
+      "source_path": [
+        "bandgap_amp"
+      ],
+      "bbox": {
+        "left": -388,
+        "bottom": 31490,
+        "right": 388,
+        "top": 31590
+      },
+      "polygon": [
+        [
+          -170,
+          31490
+        ],
+        [
+          170,
+          31490
+        ],
+        [
+          -388,
+          31590
+        ],
+        [
+          388,
+          31590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, amp's own share of the 11 at top; tracked in #571"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": -388,
+        "bottom": 76490,
+        "right": 388,
+        "top": 76590
+      },
+      "polygon": [
+        [
+          -170,
+          76490
+        ],
+        [
+          170,
+          76490
+        ],
+        [
+          -388,
+          76590
+        ],
+        [
+          388,
+          76590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, core's own share of the 11 at top; tracked in #571"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_amp",
+      "source_path": [
+        "bandgap_amp"
+      ],
+      "bbox": {
+        "left": 39612,
+        "bottom": 31490,
+        "right": 40388,
+        "top": 31590
+      },
+      "polygon": [
+        [
+          39830,
+          31490
+        ],
+        [
+          40170,
+          31490
+        ],
+        [
+          39612,
+          31590
+        ],
+        [
+          40388,
+          31590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, amp's own share of the 11 at top; tracked in #571"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 44612,
+        "bottom": 76490,
+        "right": 45388,
+        "top": 76590
+      },
+      "polygon": [
+        [
+          44830,
+          76490
+        ],
+        [
+          45170,
+          76490
+        ],
+        [
+          44612,
+          76590
+        ],
+        [
+          45388,
+          76590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, core's own share of the 11 at top; tracked in #571"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 56612,
+        "bottom": 76490,
+        "right": 57388,
+        "top": 76590
+      },
+      "polygon": [
+        [
+          56830,
+          76490
+        ],
+        [
+          57170,
+          76490
+        ],
+        [
+          56612,
+          76590
+        ],
+        [
+          57388,
+          76590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, core's own share of the 11 at top; tracked in #571"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_amp",
+      "source_path": [
+        "bandgap_amp"
+      ],
+      "bbox": {
+        "left": 79612,
+        "bottom": 31490,
+        "right": 80388,
+        "top": 31590
+      },
+      "polygon": [
+        [
+          79830,
+          31490
+        ],
+        [
+          80170,
+          31490
+        ],
+        [
+          79612,
+          31590
+        ],
+        [
+          80388,
+          31590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, amp's own share of the 11 at top; tracked in #571"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_amp",
+      "source_path": [
+        "bandgap_amp"
+      ],
+      "bbox": {
+        "left": 109612,
+        "bottom": 31490,
+        "right": 110388,
+        "top": 31590
+      },
+      "polygon": [
+        [
+          109830,
+          31490
+        ],
+        [
+          110170,
+          31490
+        ],
+        [
+          109612,
+          31590
+        ],
+        [
+          110388,
+          31590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, amp's own share of the 11 at top; tracked in #571"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 109612,
+        "bottom": 76490,
+        "right": 110388,
+        "top": 76590
+      },
+      "polygon": [
+        [
+          109830,
+          76490
+        ],
+        [
+          110170,
+          76490
+        ],
+        [
+          109612,
+          76590
+        ],
+        [
+          110388,
+          76590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, core's own share of the 11 at top; tracked in #571"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 121612,
+        "bottom": 76490,
+        "right": 122388,
+        "top": 76590
+      },
+      "polygon": [
+        [
+          121830,
+          76490
+        ],
+        [
+          122170,
+          76490
+        ],
+        [
+          121612,
+          76590
+        ],
+        [
+          122388,
+          76590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, core's own share of the 11 at top; tracked in #571"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_core",
+      "source_path": [
+        "bandgap_core"
+      ],
+      "bbox": {
+        "left": 133612,
+        "bottom": 76490,
+        "right": 134388,
+        "top": 76590
+      },
+      "polygon": [
+        [
+          133830,
+          76490
+        ],
+        [
+          134170,
+          76490
+        ],
+        [
+          133612,
+          76590
+        ],
+        [
+          134388,
+          76590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, core's own share of the 11 at top; tracked in #571"
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_top",
+      "source_cell": "bandgap_amp",
+      "source_path": [
+        "bandgap_amp"
+      ],
+      "bbox": {
+        "left": 139612,
+        "bottom": 31490,
+        "right": 140388,
+        "top": 31590
+      },
+      "polygon": [
+        [
+          139830,
+          31490
+        ],
+        [
+          140170,
+          31490
+        ],
+        [
+          139612,
+          31590
+        ],
+        [
+          140388,
+          31590
+        ]
+      ],
+      "waiver_justification": "pre-existing NWell/Activ enclosure, amp's own share of the 11 at top; tracked in #571"
+    }
+  ],
+  "unused_waivers": [],
+  "source_cell_rollup": [
+    {
+      "source_cell": "bandgap_amp",
+      "rule": "nwell.enclosing.nactiv.1",
+      "count": 0,
+      "waived_count": 5
+    },
+    {
+      "source_cell": "bandgap_core",
+      "rule": "metal1.enclosing.cont.1",
+      "count": 0,
+      "waived_count": 18
+    },
+    {
+      "source_cell": "bandgap_core",
+      "rule": "nwell.enclosing.nactiv.1",
+      "count": 0,
+      "waived_count": 6
+    },
+    {
+      "source_cell": "bandgap_startup",
+      "rule": "cont.ongrid.1",
+      "count": 0,
+      "waived_count": 4
+    }
+  ],
   "provenance": {
-    "klt_version": "0.6.0+geb7e7c6ace30",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.9.3.dev663+g22ab2a8756c7",
+    "klt_git_commit": "22ab2a8756c79a5d09778a08f58822fd65031207",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@22ab2a8756c79a5d09778a08f58822fd65031207",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:f9771af83c67c59da0f5f305b487b5f842de12e3f37e1307d1057e2c095478a0",
+      "content_hash": "sha256:d407265de045dc59cecc28793f70ac9734069a6fb8bae06daa9b9f2e04961602",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
+      "content_hash": "sha256:47cd7c7558ce561abc7121e2edbb592f32fd1ea4a54a7b6af0b76592670ba868",
       "role": "layout"
     },
-    "klayout_version_mismatch": false
+    "klayout_version_mismatch": true,
+    "waivers": {
+      "file": "drc_waivers.json",
+      "content_hash": "sha256:ee71cc0254883ab6fd3862155dec4ddc297e4337f50bae214f27305ecd10a057"
+    }
   }
 }
