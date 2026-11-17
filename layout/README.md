@@ -695,6 +695,74 @@ both columns are clear and both bridges are gone. The one riser that *would*
 now land inside the folded block (`vdd`, whose terminal is the block's
 bottom-left corner) escapes sideways into the empty amp-startup gap instead.
 
+### `rhigh` `RPU`: the 0.8.0 deck's `r` delta traced, layout confirmed correct (issue #563)
+
+The 2026-11-17 DR-0016 re-mint of `bandgap_top/lvs_report.json` under
+`klt 0.8.0` (deck content `sha256:1c95db40...`, PR #560) carried this repo's
+first `device.property` LVS error: the matched `rhigh` pull-up (`X3_RPU`
+reference / `$275` layout, `RPU` in `bandgap_startup`) with extracted
+`r = 1999501.6667 Ω` against the reference netlist's `1919368.0 Ω`
+(**+4.2%**). Traced to root cause — it is a **deck-generation modelling
+delta, and the layout is correct**:
+
+- **The layout did not change.** `environment.layout_sha256` is
+  `0e74bd77...` in both the retired 0.6.0 mint and the 0.8.0 re-mint, and
+  the delta reproduces on the standalone cell (`klt extract` on
+  `bandgap_startup.gds` under 0.8.0 → `r=1999501.66667`), so it is not a
+  `bandgap_top` assembly or drawn-sizing effect.
+- **The old deck agreed with the reference because both were flat.** The
+  0.6.0 deck (`f9771af8...`) declared `rhigh` with a bare
+  `sheet_rho_ohm_sq=1360.0` — `R = L/W · 1360`, and the reference value was
+  computed the same flat way (`1360 × 1411.3 / 1 = 1919368.0` exactly, the
+  `_RES_SHEET_OHM_PER_SQ` approximation this file's own generator docstring
+  flagged as "approximate, not a calibrated PDK model value").
+- **klayout-tools#2652 (in 0.8.0) upgraded the deck to the PDK's own symbol
+  formula.** The 0.8.0 deck adds `end_term_ohm_um=160.0` and
+  `width_offset_um=-0.04` to `rhigh`, transcribing
+  `ihp-sg13g2/libs.tech/xschem/sg13g2_pr/rhigh.sym`'s (IHP-Open-PDK v0.3.0)
+  `value=` expression `1.6e-4/@w + 1360.0·((@b+1)·@l + (1.081·(@w−0.04µm) +
+  0.18µm)·@b)/(@w−0.04µm)` — with `RPU`'s own parameters (`w=1u l=1411.3u
+  m=1 b=0`, `design/netlist/bandgap_startup.spice`):
+  `1.6e-4/1µm + 1360 × 1411.3µm/(1µm − 0.04µm) = 160 + 1360 × 1411.3/0.96 =
+  1999501.6667 Ω` — the extract, to the fourth decimal, and exactly what
+  the schematic's own symbol annotates. The 80133.7 Ω delta decomposes as
+  the `w/(w−0.04)` width correction (+79,973.7 Ω) plus the end/contact term
+  (+160 Ω) — the "≈58.9 µm of extra length" reading of the pre-trace
+  numbers was the same delta seen through the flat model.
+- **Disposition: reference value/sheet updated from the PDK, no layout
+  change.** `layout/lvs_reference.py` now evaluates SG13G2 `rhigh` through
+  that same `.sym` formula (`_sg13g2_rhigh_ohms`, issue #563) instead of
+  the flat sheet table; the constants are identical to the SG13CMOS5L
+  sibling `_cmos5l_rhigh_ohms` has carried since issue #74 — same IHP
+  resistor family — so the `sg13cmos5l_bandgap_startup` variant's `RPU`
+  (same geometry) already modelled the term pair and its reference file
+  regenerates byte-identical. Verified live under the 0.8.0 pin
+  (`klt lvs --format json lvs_request.json`): `bandgap_startup` returns
+  `status: "match"`, `error_count: 0`; `bandgap_top`'s `device.property`
+  count goes 1 → **0** (1022 findings / 1018 errors remain, exactly the
+  out-of-scope causes: 517+500 resistor-class pairing regression,
+  klayout-tools#6313, plus the permanent bipolar topology entry).
+- **No upstream issue.** The deck's #2652 change is a fidelity *improvement*
+  — it moves extraction onto the PDK's own annotated value — not a gap, so
+  the friction protocol does not apply.
+- **`rppd` carries the same latent delta, deliberately not changed.** The
+  0.8.0 deck gives `rppd` the same treatment (`end_term_ohm_um=70.0`,
+  `width_offset_um=+0.006` from `rppd.sym`), so the flat `rppd` reference
+  values would show the same class of delta *if* they were compared — but
+  no `rppd` device reaches parameter comparison under 0.8.0 (the pairing
+  regression keeps all 257 of `bandgap_top`'s unmatched), and changing
+  reference values no current evidence exercises would churn every cell's
+  committed netlist for nothing. Revisit when klayout-tools#6313 is fixed.
+- **Freshness:** the two committed reports that recorded the retired flat
+  reference (`bandgap_startup/lvs_report.json`,
+  `bandgap_top/lvs_report.json`) are now stale by construction and waived
+  in `layout/evidence-freshness-waivers.json`, tracking #561 (the DR-0016
+  re-mint backlog); the waivers self-expire when those reports re-mint
+  against this reference.
+- The `R`/`L`/`W` compared-parameter set and `parameter_tolerance` are
+  untouched — the finding is resolved by fixing the stale side, not by
+  hiding the comparison.
+
 
 ## Layer numbers
 

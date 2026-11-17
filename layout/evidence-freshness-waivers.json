@@ -1,4 +1,19 @@
 {
   "_comment": "Known-stale evidence, waived explicitly rather than silently. .github/scripts/check_evidence_formats.py fails on any report whose recorded input hash no longer matches the committed input ('staleness is failure', klayout-tools docs/design-evidence-tiers.md). An entry here downgrades one such failure to a loud note -- and only that one: the waiver names the exact report, the exact check, and the exact stale hash. It SELF-EXPIRES: once the evidence is regenerated, the recorded_hash below no longer matches and the checker fails until the entry is deleted. Every entry must name a tracking issue. Waiving without one is a schema error, not a judgement call.",
-  "waivers": []
+  "waivers": [
+    {
+      "report": "layout/bandgap_startup/lvs_report.json",
+      "check": "reference netlist",
+      "recorded_hash": "sha256:583ce6ff76c4b0f843de90dab4532f66076069e554be1f21af2cd3a4e24551c6",
+      "issue": "#561",
+      "reason": "This 0.3.0-minted report compared against the retired flat rhigh reference value (1919368.0 ohm = 1360*L/W). Issue #563 traced the 0.8.0 deck's +4.2% rhigh extraction delta (klayout-tools#2652 transcribes rhigh.sym's end term 1.6e-4 ohm*m and width offset -0.04 um) and updated layout/lvs_reference.py to evaluate the PDK's own symbol formula, changing RPU's reference value to 1999501.7 ohm. Verified live under klt 0.8.0: this cell reaches status match / error_count 0 against the updated reference. Stale until the DR-0016 backlog re-mint (#561) lands."
+    },
+    {
+      "report": "layout/bandgap_top/lvs_report.json",
+      "check": "reference netlist",
+      "recorded_hash": "sha256:0824952e8a5588a211039e13442f020b0299a714378c8a9c9d17561edc83a89e",
+      "issue": "#561",
+      "reason": "This report (0.6.0 mint on main; re-minted 0.8.0 on PR #560's branch against the same reference file) compared against the retired flat rhigh reference value. Issue #563 traced the 0.8.0 deck's +4.2% rhigh extraction delta to klayout-tools#2652's rhigh.sym transcription and updated layout/lvs_reference.py to the PDK's own symbol formula (X3_RPU reference value 1919368.0 -> 1999501.7 ohm). Verified live under klt 0.8.0: the device.property rhigh finding goes 1 -> 0; the 1018 remaining errors are the out-of-scope pairing regression (klayout-tools#6313) plus the permanent bipolar topology entry. Stale until the DR-0016 backlog re-mint (#561) lands."
+    }
+  ]
 }
