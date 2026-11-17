@@ -380,6 +380,7 @@ done
 
 WORST_BOX=$(awk -F, 'NR>1 && $4==$5 && $11+0 > m { m = $11+0; line = $1"/"$3"V = "sprintf("%.1f", $11)" ppm/C" } END { print line }' "${BOXT_OUT}")
 WORST_NEAR=$(awk -F, -v s="${TRIM_TC_SPAN_C}" 'NR>1 && $3=="near" && $7+0 > m { m=$7+0; line = $1"/"$2"V @code"$5" vs 128: +"sprintf("%.2f", $7)" ppm/C ("$8"% over "s"C, cap "$9")" } END { print line }' "${DELT_OUT}")
+VDD_SET="$(fmt_set "${VDDS[@]}")"
 
 {
   echo "# Record ${RECORD_ID}"
@@ -428,10 +429,10 @@ WORST_NEAR=$(awk -F, -v s="${TRIM_TC_SPAN_C}" 'NR>1 && $3=="near" && $7+0 > m { 
   echo "  compiler provenance pinned in \`sim/pdk.json\` (\"osdi_toolchain\")."
   echo "- **ngspice**: \`${NGSPICE_VERSION}\`"
   echo "- **JOBS**: ${JOBS} (wall-clock concurrency only)."
-  echo "- **Corner matrix run**: {typ, bcs, wcs, sf, fs} x {2.97, 3.30,"
-  echo "  3.63} V x ${#TEMPS[@]} temperatures x codes $(fmt_set "${NEAR_CODES[@]}") (full grid)"
+  echo "- **Corner matrix run**: $(fmt_set "${CORNER_LABELS[@]}") x ${VDD_SET%,*},"
+  echo "  ${VDD_SET##*, } V x ${#TEMPS[@]} temperatures x codes $(fmt_set "${NEAR_CODES[@]}") (full grid)"
   echo "  + $(fmt_set "${FAR_CORNERS[@]}") x ${FAR_VDDS[*]} V x codes $(fmt_set "${FAR_CODES[@]}")"
-  echo "  + 5 transient validation points = ${total} points."
+  echo "  + ${#CORNER_LABELS[@]} transient validation points = ${total} points."
   echo "- **Result**: ${passed}/${total} points PASS. Worst box-method"
   echo "  group across complete groups: ${WORST_BOX}. Worst +/-1-code"
   echo "  trim-induced delta: ${WORST_NEAR};"
