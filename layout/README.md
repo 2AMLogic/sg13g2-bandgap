@@ -394,12 +394,28 @@ netlist matches the trim-bearing schematic" checkable rather than asserted.
 | cell | DRC | LVS | extraction |
 | --- | --- | --- | --- |
 | `bandgap_core` | `clean`, 0 violations | `mismatch`, 8 findings / **4 error-severity** — the same four as pre-#272 (`Q1`–`Q3` `device.unmatched` plus their class-level topology entry, the permanent bipolar-recognition cause); devices **263/263** matched, nets 253/257 | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C |
-| `bandgap_top` | `clean`, 0 violations | `mismatch`, 10 findings / **4 error-severity** — the same four as pre-#272, same bipolar cause (the 6 → 4 drop was issue #185's `bandgap_amp` body ties, 2026-09-05, not this change); devices **275/275** matched, nets 257/261 | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C |
+| `bandgap_top` | `clean`, 0 violations | `mismatch`, 1023 findings / **1019 error-severity** — re-minted 2026-11-17 under the evidence-standard pin `klt 0.8.0` (DR-0016, issue #558); the retired 0.6.0-minted report read 10 findings / **4 error-severity** (the same four as pre-#272, same bipolar cause) with devices **275/275** matched and nets 257/261, and is not reproducible under any PyPI-installable pin. The delta is the deck's resistor-class pairing regression between 0.6.0 and 0.8.0 — layout-side class `rppd` no longer pairs with reference-side `RPPD`, so every MOS device still matches but zero resistors do (filed upstream as klayout-tools#6313); devices **17/275** matched, nets 5/261 | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C |
 
-Every error-severity finding on both cells is the bipolar-recognition cause
-already documented under "Permanent blockers" below. **No new error class
-appeared** — 255 new devices, 248 new nets, and the extra findings are all
-`severity: "warning"` disclosures (the two new ones are discussed next).
+On `bandgap_core` every error-severity finding is still the bipolar-recognition
+cause already documented under "Permanent blockers" below — its row still cites
+its 0.6.0-era mint, and refreshing it under the standard is a follow-up to the
+upstream fix. On `bandgap_top` the re-minted verdict **does carry new error
+classes**: 1018 of the 1019 error-severity findings are the resistor-pairing
+regression (`device.unmatched` 517, `net.unmatched` 500 — klayout-tools#6313)
+plus the permanent bipolar-recognition cause (the 3 `NPN13G2` reference-device
+entries and their class-level topology entry, unchanged from the retired
+report). The 1019th is the only error that is neither — and the only
+design-relevant one: a `device.property` error ("matched device parameter `r`
+differs") on the `rhigh` pull-up — `X3_RPU` in the reference, `$275` in the
+layout — with extracted `r` 1999501.7 Ω against the reference netlist's
+1919368.0 Ω (**+4.2%**). The device still pairs; only the parameter differs,
+and whether that delta is an extraction/reference-modelling difference or a
+real sizing discrepancy is **untraced** (issue #563 — do not attribute it to
+the deck without tracing it). The warning-severity disclosures also changed
+in kind between the two mints, not just in count: the retired report's
+`device.bulk_reconciled` 2 + `device.parameter_excluded` 4 (parameters
+`A`/`P`, total 6 warnings) became `device.bulk_reconciled` 2 +
+`device.geometry_not_compared` 2 (total 4).
 
 ### LVS: three real pieces of friction, all filed upstream
 
@@ -755,7 +771,12 @@ against an unchanged tree reproduces all four `.gds` files byte-for-byte
 (`SaveLayoutOptions.gds2_write_timestamps = False`, so re-running leaves
 `git diff` empty) and every `drc_report.json` / `lvs_report.json` /
 `pex_extract_report.json` / `*.pex.spice` exactly (verified on
-`klt 0.6.0+geb7e7c6ace30`, KLayout 0.30.12).
+`klt 0.6.0+geb7e7c6ace30`, KLayout 0.30.12). That determinism claim still
+holds for the DRC/PEX artifacts as minted; `bandgap_top`'s
+`lvs_report.json` was separately re-minted on 2026-11-17 under the
+evidence-standard pin `klt 0.8.0` (DR-0016) because the 0.6.0-minted
+verdict is not reproducible under any PyPI-installable pin — see the
+verdict table above and DR-0016 for the measured comparison.
 
 The read-only `klt cells`/`stats`/`layers` queries are quoted with the
 geometry facts they produced, under each cell's own section below.
@@ -1427,7 +1448,11 @@ the restored gap). Nothing else in `_route` changed -- every startup riser
 there is written as `STARTUP_DX + local` and every bus spans its own riser
 set, which is exactly the parameterisation issue #173 introduced for this
 case. DRC stayed `clean`/0; LVS's `error_count` stayed 4 while matched
-devices went 20/20 -> **275/275** and matched nets 9/13 -> 257/261. See
+devices went 20/20 -> **275/275** and matched nets 9/13 -> 257/261. (Those
+LVS counts are as of the 0.6.0-minted report of the time; the 2026-11-17
+re-mint under the evidence-standard pin `klt 0.8.0` — DR-0016 — grades
+17/275 devices and 5/261 nets, an upstream deck regression, not a change to
+this assembly.) See
 "Trim ladder layout (issue #272)" above.
 
 **Connectivity**, one-to-one against `design/netlist/bandgap_top.spice`'s
@@ -1653,7 +1678,13 @@ the `mismatch` as benign: `bandgap_top` is **not** LVS-clean. Its remaining
 `mismatch` verdict now rests entirely on the one permanently-declined,
 already-documented leaf-level cause (`bandgap_core`'s `npn13G2` recognition
 gap, plus one inferred instance of it) -- as close to `bandgap_startup`'s
-own already-clean bar as this deck allows.
+own already-clean bar as this deck allows. (That "rests entirely" holds as
+of the 0.6.0-era mint this section narrates; the 2026-11-17 re-mint under
+the evidence-standard pin `klt 0.8.0` adds the upstream resistor-class
+pairing regression on top of it — 1023 findings, devices 17/275 — plus one
+`device.property` error the old report did not carry (`rhigh` `X3_RPU` `r`
++4.2%, untraced, issue #563); see the verdict table above and DR-0016. The
+bipolar cause itself is unchanged.)
 
 **Determinism**: `python3 layout/bandgap_top/generate.py` re-run leaves
 `git diff --stat` empty, as long as the three leaf GDS files it reads are
