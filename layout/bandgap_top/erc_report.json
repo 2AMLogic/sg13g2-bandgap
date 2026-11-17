@@ -4,7 +4,7 @@
     "path": "layout/bandgap_top/bandgap_top.gds",
     "scope": "repo"
   },
-  "spec": "erc-supply-spec.json",
+  "spec": "layout/bandgap_top/erc-supply-spec.json",
   "pdk": null,
   "findings_only": false,
   "gate_role": "GatPoly",
@@ -39,9 +39,9 @@
         },
         {
           "layer": "Metal2",
-          "step_area_um2": 48.860875,
-          "cumulative_area_um2": 105.348875,
-          "antenna_ratio": 5.267444,
+          "step_area_um2": 48.759375,
+          "cumulative_area_um2": 105.247375,
+          "antenna_ratio": 5.262369,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -77,9 +77,9 @@
         },
         {
           "layer": "Metal2",
-          "step_area_um2": 57.260875,
-          "cumulative_area_um2": 113.748875,
-          "antenna_ratio": 5.687444,
+          "step_area_um2": 57.159375,
+          "cumulative_area_um2": 113.647375,
+          "antenna_ratio": 5.682369,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -115,9 +115,9 @@
         },
         {
           "layer": "Metal2",
-          "step_area_um2": 47.277125,
-          "cumulative_area_um2": 217.164125,
-          "antenna_ratio": 5.429103,
+          "step_area_um2": 47.175625,
+          "cumulative_area_um2": 217.062625,
+          "antenna_ratio": 5.426566,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -153,9 +153,9 @@
         },
         {
           "layer": "Metal2",
-          "step_area_um2": 41.53275,
-          "cumulative_area_um2": 97.02675,
-          "antenna_ratio": 4.851337,
+          "step_area_um2": 41.43125,
+          "cumulative_area_um2": 96.92525,
+          "antenna_ratio": 4.846262,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -229,9 +229,9 @@
         },
         {
           "layer": "Metal2",
-          "step_area_um2": 43.262,
-          "cumulative_area_um2": 1631.9401,
-          "antenna_ratio": 1631.9401,
+          "step_area_um2": 43.1605,
+          "cumulative_area_um2": 1631.8386,
+          "antenna_ratio": 1631.8386,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -421,20 +421,10 @@
       "erc.net_connectivity:[\"VSS\"]"
     ],
     "skipped": [],
-    "inapplicable": [
-      {
-        "id": "erc.supply_short",
-        "missing": [
-          "--deck naming the PDK family, so the isolation layers can be measured",
-          "or assert ties[].isolation_boxes"
-        ],
-        "reason": "substrate_isolation_undecidable"
-      }
-    ],
+    "inapplicable": [],
     "unknown": [],
     "nothing_checked": false,
     "nothing_checked_reasons": [],
-    "missing_tie_checked": true,
     "checked_by_assertion": [],
     "checked_by_well_assertion": [],
     "layers_in_stream_without_declaration": [
@@ -452,14 +442,12 @@
   },
   "ties_disclosure": null,
   "provenance": {
-    "klt_version": "0.9.3.dev517+gc6ecffcb8e56",
-    "klt_git_commit": "c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
-    "klayout_version": "0.30.13",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": null,
     "input": {
-      "content_hash": "sha256:acf9e01db001fd9bbe94b0cc622e4e7193d45340093eaf464d1cc4aa80c2831a",
+      "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
       "role": "layout"
     },
     "spec": {
