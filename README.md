@@ -6,10 +6,13 @@ open PDK — designed by AI agents driving
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
 open-source xschem + ngspice flow.
 
-**Status: schematic captured and simulated across PVT; layout DRC-clean;
-LVS still open — curated deck: `match` on `bandgap_amp` and
-`bandgap_startup`, `mismatch` on `bandgap_core` and `bandgap_top`; PDK
-runset on `bandgap_top`: `mismatch`, no MOS or HBT recognized (#380, #381).**
+**Status: schematic captured and simulated across PVT; layout DRC —
+`bandgap_top` clean/0 violations, `bandgap_amp` `violations`/5 (all
+`nwell.enclosing.nactiv.1`, #557) per the committed reports as re-measured
+at `68581642` (2026-11-17); LVS still open — curated deck: `match` on
+`bandgap_amp` and `bandgap_startup`, `mismatch` on `bandgap_core` and
+`bandgap_top`; PDK runset on `bandgap_top`: `mismatch`, no MOS or HBT
+recognized (#380, #381).**
 The evidence-ladder verdict of record is
 [`manifests/sg13g2-bandgap.signoff.json`](manifests/sg13g2-bandgap.signoff.json):
 its `t1_met_count` reads 5 of 11 T1 items met (`klayout-tools`'
@@ -201,10 +204,18 @@ ratified (see decision records above), five of six rows two-key reviewed
 clean and the Output-reference row re-cast by the two-key-gated record 0011
 (#221) rather than blocking the other five; schematic simulated across PVT,
 pre- and post-layout (PEX);
-layout DRC-clean, with curated-deck LVS `match` on `bandgap_amp` and
-`bandgap_startup` and `mismatch` on `bandgap_core` and `bandgap_top`
-(three unrecognised `NPN13G2` devices, klayout-tools#1242, permanent), and
-the `bandgap_top` PDK-runset LVS that T1 item 4 cites still `mismatch` —
+layout DRC `clean`/0 violations on `bandgap_top` and `violations`/5 (all
+`nwell.enclosing.nactiv.1`, #557) on `bandgap_amp`, and curated-deck LVS
+`match` on `bandgap_amp` and `bandgap_startup`, `mismatch` on
+`bandgap_core` — its three unrecognised `NPN13G2` devices,
+klayout-tools#1242, permanent — and on `bandgap_top`, whose DR-0016
+re-mint reads 1023 findings / 1019 error-severity (as committed at
+`68581642`, 2026-11-17): the `NPN13G2` cause is only 4 of the 1019, and
+the rest is the deck's resistor-class pairing regression
+(klayout-tools#6313 — layout `rppd` no longer pairs with reference
+`RPPD`, so zero resistors match) plus one untraced `rhigh` parameter
+delta (#563); `layout/README.md` holds the itemized breakdown. The
+`bandgap_top` PDK-runset LVS that T1 item 4 cites is still `mismatch` —
 no MOS or HBT recognized (#380, #381). Verdict of record:
 `manifests/sg13g2-bandgap.signoff.json`, `t1_met_count` 5 of 11.**
 
