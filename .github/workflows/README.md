@@ -124,6 +124,23 @@ structure/hygiene that already exists in this repo today — nothing more.
   inventory/attestation mismatch. SG13CMOS5L and unrelated edits are ignored;
   a pass is not an export-equivalence proof and nothing is auto-refreshed.
 
+- **`.github/scripts/test_check_spotcheck_outputs.py`** then
+  **`.github/scripts/check_spotcheck_outputs.py`** (#516) — the spot-check
+  output gate. Each `measurements/*-characterization-report/` README commits
+  the stdout of its own `spotcheck.py` in the `## Reproducing the
+  spot-check` section as the evidence that the report's quoted numbers match
+  the committed CSVs; the checker re-runs every report's script (`python3
+  -I`, exactly the command the README documents — stdlib CSV re-reads, never
+  a simulator) and requires the committed block to match live stdout line
+  for line, failing with a named-report unified diff on any drift. Line
+  endings and a missing final newline are normalised; a changed digit is
+  not. This is what keeps an edit to the shared
+  `measurements/lib/spotcheck_common.py` (or a CSV re-mint, or a record
+  repoint) from silently invalidating a historical report nobody re-reads.
+  A report without a `spotcheck.py` is noted and skipped. Re-derivation
+  only: it never mints evidence and never edits a README — when it fails,
+  a human re-records honestly.
+
 All of these are plain bash/python3 scripts (stdlib only, no venv, no
 ngspice, no PDK), runnable locally the same way CI runs them:
 
@@ -140,6 +157,8 @@ python3 .github/scripts/test_check_report_dependencies.py
 python3 .github/scripts/check_report_dependencies.py
 python3 .github/scripts/test_check_design_source_dependencies.py
 python3 .github/scripts/check_design_source_dependencies.py
+python3 .github/scripts/test_check_spotcheck_outputs.py
+python3 .github/scripts/check_spotcheck_outputs.py
 ```
 
 ### The `signoff-manifest` job
