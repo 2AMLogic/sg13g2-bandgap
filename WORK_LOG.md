@@ -12,6 +12,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-17
 
+- **PR #554**: chore(loom): resync installed Loom to v0.19.1306
+- **PR #550**: chore(sim): remove closed-loop-vref-pvt run_pvt_sweep.sh, superseded by run_klt_sim.sh twin
+- **PR #546**: ci: gate characterization spot-check output blocks on live re-run
+- **Issue #519** (closed): Remove closed-loop-vref-pvt run_pvt_sweep.sh: superseded by the new run_klt_sim.sh twin
+- **Issue #516** (closed): No gate re-derives the characterization reports' committed "Spot-check output" blocks
 - **PR #552**: fix(harness): companions remove the refused CSV instead of leaving it header-only
 - **PR #551**: fix: derive boxtc-trim mint block's shared-grid literals from CORNER_LABELS/VDDS
 - **PR #548**: fix: derive boxtc-trim mint block's grid cardinality from TEMPS
