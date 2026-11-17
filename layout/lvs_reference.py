@@ -203,6 +203,61 @@ _CMOS5L_RES_OHMS = {
 }
 
 
+def _sg13g2_rhigh_ohms(w_um: float, l_um: float) -> float:
+    """SG13G2 ``rhigh`` resistance, evaluated with **that PDK's own** symbol
+    formula rather than the flat ``_RES_SHEET_OHM_PER_SQ`` approximation
+    (issue #563 -- the +4.2% ``device.property`` LVS finding on
+    ``bandgap_top``'s ``X3_RPU``).
+
+    Read verbatim from IHP-Open-PDK v0.3.0's
+    ``ihp-sg13g2/libs.tech/xschem/sg13g2_pr/rhigh.sym``'s ``value=``
+    expression::
+
+        ( 1.6e-4 / @w + 1360.0 * ( (@b + 1)* @l
+         + ( 1.081*( @w - 0.04e-6 ) + 0.18e-6 )*@b ) / ( @w - 0.04e-6 ) ) / @m
+
+    with ``b=0`` (``design/sg13g2/bandgap_startup.sch``'s ``RPU`` is drawn
+    straight, ``b=0`` -- the 32-leg serpentine in the layout is a floorplan
+    fold that conserves the drawn marked-core length exactly, see
+    ``layout/README.md``'s folded-resistors section) and ``m=1``, i.e. a
+    ``1.6e-4 ohm*m`` end/contact term plus 1360 ohm/sq over the
+    width-corrected ``w - 40 nm``. The constants are *identical* to the
+    SG13CMOS5L sibling :func:`_cmos5l_rhigh_ohms` transcribes -- same IHP
+    resistor family -- which is why the CMOS5L port already modelled this
+    term pair while the SG13G2 port did not.
+
+    Why the flat approximation had to retire for this flavour (the actual
+    #563 trace): ``klt``'s curated sg13g2 deck used to derive ``rhigh`` as a
+    bare ``L/W * 1360`` (deck content ``f9771af8...``, the generation
+    ``klt 0.6.0`` ships), which agreed with the flat reference value
+    (``1360 * 1411.3 / 1 = 1919368.0`` ohm). klayout-tools#2652 (in ``klt
+    0.8.0``, deck content ``1c95db40...``) upgraded the deck to transcribe
+    this same ``.sym`` expression -- ``end_term_ohm_um=160.0``,
+    ``width_offset_um=-0.04`` -- so the *extracted* value became
+    ``1.6e-4/1u + 1360*1411.3u/(1u-0.04u) = 1999501.666...`` ohm, +4.2% above
+    the flat reference and exactly what the schematic's own symbol
+    annotates. The layout was correct all along; the reference's flat sheet
+    approximation was the stale side, so ``rhigh`` now evaluates the PDK's
+    own formula here too. ``rppd``/``rsil`` stay on the flat table: no
+    committed report compares their ``r`` today (the 0.8.0 deck's
+    resistor-class pairing regression, klayout-tools#6313, keeps every
+    ``rppd`` from reaching parameter comparison), and updating them ahead of
+    that upstream fix would change reference values no current evidence
+    exercises.
+    """
+    w_m, l_m = w_um * 1e-6, l_um * 1e-6
+    return 1.6e-4 / w_m + 1360.0 * l_m / (w_m - 0.04e-6)
+
+
+#: ``pdk="sg13g2"`` resistor flavours promoted from the flat
+#: ``_RES_SHEET_OHM_PER_SQ`` approximation to the PDK's own ``.sym``
+#: ``value=`` formula, keyed by schematic model name. flavours absent from
+#: this table keep the flat sheet-resistance path below.
+_SG13G2_RES_OHMS = {
+    "rhigh": _sg13g2_rhigh_ohms,
+}
+
+
 def _res_element_line(
     instance: str,
     nodes: list[str],
@@ -367,7 +422,14 @@ def _convert_device_line(line: str, pdk: str) -> str:
         # `rppd`/`rhigh`).
         l_um = float(params["l"].rstrip("uU"))
         w_um = float(params["w"].rstrip("uU"))
-        r_ohm = _RES_SHEET_OHM_PER_SQ[model_lower] * (l_um / w_um)
+        # `rhigh` evaluates the PDK's own symbol formula (issue #563 -- see
+        # `_sg13g2_rhigh_ohms`); the other flavours stay on the flat sheet
+        # table.
+        r_ohm = (
+            _SG13G2_RES_OHMS[model_lower](w_um, l_um)
+            if model_lower in _SG13G2_RES_OHMS
+            else _RES_SHEET_OHM_PER_SQ[model_lower] * (l_um / w_um)
+        )
         return _res_element_line(instance, nodes, model_lower, params, r_ohm)
     else:
         raise ValueError(f"unrecognised device model {model!r} on line: {line}")

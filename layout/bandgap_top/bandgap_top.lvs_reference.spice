@@ -278,7 +278,7 @@ Mx2_MN1 d1 d1 vss vss nfet L=1U W=10U
 Mx2_MN2 d2 d2 vss vss nfet L=1U W=10U
 Mx2_MN3 FB,OUT d1 vss vss nfet L=1U W=10U
 Mx2_MN4 pn d2 vss vss nfet L=1U W=10U
-Rx3_RPU vdd det 1919368.0 rhigh L=1411.3U W=1U
+Rx3_RPU vdd det 1999501.7 rhigh L=1411.3U W=1U
 Mx3_MSENSE det IN_N,SNS1 vss vss nfet L=0.5U W=10U
 Mx3_MKFB FB,OUT det vss vss nfet L=0.5U W=2U
 .end
