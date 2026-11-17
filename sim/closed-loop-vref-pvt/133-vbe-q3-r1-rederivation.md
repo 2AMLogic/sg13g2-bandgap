@@ -189,8 +189,10 @@ needs.
 
 ## Reproducing
 
-Step 1 (committed): `sim/closed-loop-vref-pvt/run_pvt_sweep.sh` (see that
-experiment's own `README.md`).
+Step 1 (committed): the 45-point record was minted by
+`sim/closed-loop-vref-pvt/run_pvt_sweep.sh` (removed in #519; see git
+history) — this experiment's own `README.md` documents the current
+`run_klt_sim.sh` flow that replaced it.
 
 Step 3 (scratch, sim-only, not part of this repo): copy
 `sim/closed-loop-vref-pvt/testbench/tb_closed_loop_vref.spice.tmpl`, change

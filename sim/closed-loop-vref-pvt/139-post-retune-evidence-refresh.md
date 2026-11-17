@@ -136,12 +136,12 @@ in view, not against stale pre-retune numbers.
 ## Reproducing
 
 ```bash
-sim/closed-loop-vref-pvt/run_pvt_sweep.sh   # regenerates a fresh
-                                             # timestamped record against
-                                             # whatever design/netlist/*
-                                             # is currently checked out;
-                                             # see that script + this
-                                             # experiment's own README.md
+# The record above was minted by sim/closed-loop-vref-pvt/run_pvt_sweep.sh,
+# removed in #519 (see git history) — it cannot regenerate anything.
+# Fresh records now come from the klt twin this experiment's README.md
+# documents:
+sim/closed-loop-vref-pvt/run_klt_sim.sh --batch   # the 45-point grid, on the fleet
+sim/closed-loop-vref-pvt/run_klt_sim.sh --record  # mint the record from the merged report
 ```
 
 No re-run was needed for this document — the record cited above already
