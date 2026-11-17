@@ -142,6 +142,20 @@ jobs:
         # only; never runs xschem and never refreshes the attestation.
         run: python3 .github/scripts/check_design_source_dependencies.py
 
+      - name: Spot-check output-block checker self-test
+        # Issue #516: hermetic defect injection (drifted block digit, missing
+        # section/fence, unclosed fence, non-zero spotcheck exit, CRLF and
+        # decoy fences, skipped scriptless report).
+        run: python3 .github/scripts/test_check_spotcheck_outputs.py
+
+      - name: Characterization spot-check blocks match live output
+        # Issue #516: every measurements/*-characterization-report with a
+        # spotcheck.py must have its README's committed "Reproducing the
+        # spot-check" block re-derived by running that script (stdlib CSV
+        # re-reads, no simulator). Re-derives committed evidence only;
+        # never mints or rewrites it.
+        run: python3 .github/scripts/check_spotcheck_outputs.py
+
   signoff-manifest:
     # Re-derives the block's T1 verdict of record (issue #226): re-runs
     # `klt signoff --manifest` over the committed block manifest and requires
