@@ -1375,8 +1375,15 @@ both this cell's own `tail` riser and `bandgap_top`'s own composed-level
 `generate.py`'s own `_route()` "vdd tap ring" comment for the full
 column/window derivation.
 
-**DRC**: `klt drc --deck sg13g2` reports `status: "clean"`, 0 violations
-(`layout/bandgap_amp/drc_report.json`).
+**DRC**: `klt drc --deck sg13g2` reports `status: "violations"`, 5 — all
+`nwell.enclosing.nactiv.1`, pre-existing and tracked in #557
+(`layout/bandgap_amp/drc_report.json`). This report's #556 refresh was the
+first under the deck's `require_containment` rules (klayout-tools#6174):
+it surfaced 12 `metal2.enclosing.via1.1` (each Via1 centred on a Metal2
+end edge, half the cut outside) and 12 `via1.width.1` (0.25 um cuts on
+the deck's fixed 0.19), both closed in #556 by drawing 0.19 um vias and
+extending every via-bearing Metal2 route end by `VIA/2 + 0.05` um
+(`generate.py`'s `VIA_CAP`).
 
 **LVS**: issue #169 itself scoped LVS *fixing* out (mirroring #11's own
 floorplan-first sequencing before #12's LVS pass) -- but this repo's own

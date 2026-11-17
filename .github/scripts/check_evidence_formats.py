@@ -731,6 +731,26 @@ def _provenance_input_hash(data: dict) -> str | None:
     return input_.get("content_hash") if isinstance(input_, dict) else None
 
 
+def _resolve_cell_file(cell_dir: Path, value) -> Path | None:
+    """Resolve a report's file reference to a path under the tree, or None.
+
+    `klt` has emitted two forms for fields naming a sibling file (issue #556
+    hit this on LVS ``reference``): a plain filename string resolved against
+    the cell directory (older builds), and -- current -- a
+    ``{"path": ..., "scope": ...}`` object whose ``path`` is repo-relative
+    when ``scope`` is ``"repo"`` (the same convention
+    ``check_signoff_manifest.py`` already documents for artifact-anchored
+    envelopes, klayout-tools#2718). Both must keep freshness-checking.
+    """
+    if isinstance(value, str):
+        return cell_dir / value
+    if isinstance(value, dict) and isinstance(value.get("path"), str):
+        if value.get("scope") == "repo":
+            return cell_dir.parent.parent / value["path"]
+        return cell_dir / value["path"]
+    return None
+
+
 def check_layout(root: Path, report: Report) -> None:
     layout = root / "layout"
     if not layout.is_dir():
@@ -820,9 +840,14 @@ def check_layout(root: Path, report: Report) -> None:
                            waivers, used_waivers)
                 reference = data.get("reference")
                 if reference:
-                    check_hash(report, root, rel, "reference netlist",
-                               env.get("reference_sha256"), cell_dir / str(reference),
-                               waivers, used_waivers)
+                    ref_path = _resolve_cell_file(cell_dir, reference)
+                    if ref_path is None:
+                        report.fail(rel, "'reference' is neither a filename nor a "
+                                         "{path, scope} object — cannot freshness-check it")
+                    else:
+                        check_hash(report, root, rel, "reference netlist",
+                                   env.get("reference_sha256"), ref_path,
+                                   waivers, used_waivers)
                 else:
                     report.fail(rel, "missing 'reference' — the netlist compared against")
 

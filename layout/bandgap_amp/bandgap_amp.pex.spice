@@ -4,6 +4,8 @@
 * - coupling: vertical overlap (crossover) unconditionally -- where one net's conductor on an adjacent metal level sits directly over another *distinct* net's conductor, that overlap area is charged between the two nets instead of to ground (issue #760) -- plus lateral (same-layer, sidewall) coupling, but only for a net pair naming one of the caller's declared `--critical-net` nets (issue #976): facing-edge length within that layer's own minimum-spacing lookback is charged between the two nets, *additively* (not deducted from either net's substrate fringe term, unlike the vertical case -- a known simplification). Any same-layer pair with neither side named `--critical-net`, and fringe shielding in general, are still not modelled
 * - resistance: single lumped series resistance per net, distributed as a star across that net's device terminals (issue #592) -- not a per-segment, distributed RC ladder, *unless* `--distributed-rc` names this net via `--critical-net` (issue #977, Epic #709 Phase 2b): then the net's terminals are ordered along their approximate physical spread and its total R/C is broken into a chain of per-segment resistors (segment length proportional to inter-terminal distance) with a ground capacitor at each terminal node (proportional to its adjacent segment length/2), instead of one star hub -- still an approximation (terminal position is a device-placement proxy, not true per-segment routing geometry), but a strictly finer-grained one than the single-hub star
 * - frequency: quasi-static -- one frequency-independent R and C per net; no skin effect, no distributed transmission-line behavior
+* - substrate tie: 1e+12 ohm to ground -- the substrate is capacitively floating in transient analysis (DC reference only); see --substrate-tie-ohms
+.GLOBAL vsubs
 
 * cell bandgap_amp
 * pin D1
@@ -38,25 +40,25 @@ M$8 VDD__t6 PN__t2 PN__t0 VDD__t4 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $9 r0 *1 140,30 pfet
 M$9 VDD__t5 PN__t1 OUT__t1 VDD__t3 pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance D1_t0 r0 *1 0,0 
-RD1_t0 D1__t0 D1 22.251200155
+RD1_t0 D1__t0 D1 22.2365037024
 * device instance D1_t1 r0 *1 0,0 
-RD1_t1 D1__t1 D1 7.56616839856
+RD1_t1 D1__t1 D1 7.5611711025
 * device instance D1_t2 r0 *1 0,0 
-RD1_t2 D1__t2 D1 8.79506304785
+RD1_t2 D1__t2 D1 8.78925409256
 * device instance D1_t3 r0 *1 0,0 
-RD1_t3 D1__t3 D1 7.56616839856
+RD1_t3 D1__t3 D1 7.5611711025
 * device instance D1 r0 *1 0,0 
-CD1 D1 vsubs 1.6650158e-14
+CD1 D1 vsubs 1.6672186e-14
 * device instance D2_t0 r0 *1 0,0 
-RD2_t0 D2__t0 D2 9.68094774475
+RD2_t0 D2__t0 D2 9.67529263899
 * device instance D2_t1 r0 *1 0,0 
-RD2_t1 D2__t1 D2 8.5847146177
+RD2_t1 D2__t1 D2 8.57969987427
 * device instance D2_t2 r0 *1 0,0 
-RD2_t2 D2__t2 D2 25.3624230198
+RD2_t2 D2__t2 D2 25.3476076125
 * device instance D2_t3 r0 *1 0,0 
-RD2_t3 D2__t3 D2 8.5847146177
+RD2_t3 D2__t3 D2 8.57969987427
 * device instance D2 r0 *1 0,0 
-CD2 D2 vsubs 1.8465821e-14
+CD2 D2 vsubs 1.8487849e-14
 * device instance IN_N_t0 r0 *1 0,0 
 RIN_N_t0 IN_N__t0 IN_N 0.1294
 * device instance IN_N r0 *1 0,0 
@@ -66,49 +68,49 @@ RIN_P_t0 IN_P__t0 IN_P 0.1294
 * device instance IN_P r0 *1 0,0 
 CIN_P IN_P vsubs 6.3348e-17
 * device instance OUT_t0 r0 *1 0,0 
-ROUT_t0 OUT__t0 OUT 12.9020938379
+ROUT_t0 OUT__t0 OUT 12.8722956108
 * device instance OUT_t1 r0 *1 0,0 
-ROUT_t1 OUT__t1 OUT 6.99714280771
+ROUT_t1 OUT__t1 OUT 6.98098245006
 * device instance OUT_t2 r0 *1 0,0 
-ROUT_t2 OUT__t2 OUT 8.85076335434
+ROUT_t2 OUT__t2 OUT 8.83032193915
 * device instance OUT r0 *1 0,0 
-COUT OUT vsubs 1.0157386e-14
+COUT OUT vsubs 1.0179414e-14
 * device instance PN_t0 r0 *1 0,0 
-RPN_t0 PN__t0 PN 7.70258205833
+RPN_t0 PN__t0 PN 7.9209950872
 * device instance PN_t1 r0 *1 0,0 
-RPN_t1 PN__t1 PN 1.86815055391
+RPN_t1 PN__t1 PN 1.92112349438
 * device instance PN_t2 r0 *1 0,0 
-RPN_t2 PN__t2 PN 7.70258205833
+RPN_t2 PN__t2 PN 7.9209950872
 * device instance PN_t3 r0 *1 0,0 
-RPN_t3 PN__t3 PN 15.9614853294
+RPN_t3 PN__t3 PN 16.4140863312
 * device instance PN r0 *1 0,0 
-CPN PN vsubs 1.131071e-14
+CPN PN vsubs 1.1332738e-14
 * device instance TAIL_t0 r0 *1 0,0 
-RTAIL_t0 TAIL__t0 TAIL 19.17885
+RTAIL_t0 TAIL__t0 TAIL 19.10445
 * device instance TAIL_t1 r0 *1 0,0 
 RTAIL_t1 TAIL__t1 TAIL 0.001
 * device instance TAIL_t2 r0 *1 0,0 
-RTAIL_t2 TAIL__t2 TAIL 19.17885
+RTAIL_t2 TAIL__t2 TAIL 19.10445
 * device instance TAIL r0 *1 0,0 
-CTAIL TAIL vsubs 1.1332406e-14
+CTAIL TAIL vsubs 1.1354435e-14
 * device instance VDD_t0 r0 *1 0,0 
-RVDD_t0 VDD__t0 VDD 22.2144708333
+RVDD_t0 VDD__t0 VDD 22.1617375
 * device instance VDD_t1 r0 *1 0,0 
-RVDD_t1 VDD__t1 VDD 1.9040975
+RVDD_t1 VDD__t1 VDD 1.8995775
 * device instance VDD_t2 r0 *1 0,0 
-RVDD_t2 VDD__t2 VDD 1.9040975
+RVDD_t2 VDD__t2 VDD 1.8995775
 * device instance VDD_t3 r0 *1 0,0 
-RVDD_t3 VDD__t3 VDD 13.3286825
+RVDD_t3 VDD__t3 VDD 13.2970425
 * device instance VDD_t4 r0 *1 0,0 
-RVDD_t4 VDD__t4 VDD 5.7122925
+RVDD_t4 VDD__t4 VDD 5.6987325
 * device instance VDD_t5 r0 *1 0,0 
-RVDD_t5 VDD__t5 VDD 13.3286825
+RVDD_t5 VDD__t5 VDD 13.2970425
 * device instance VDD_t6 r0 *1 0,0 
-RVDD_t6 VDD__t6 VDD 5.7122925
+RVDD_t6 VDD__t6 VDD 5.6987325
 * device instance VDD_t7 r0 *1 0,0 
-RVDD_t7 VDD__t7 VDD 12.0592841667
+RVDD_t7 VDD__t7 VDD 12.0306575
 * device instance VDD r0 *1 0,0 
-CVDD VDD vsubs 1.7147484e-14
+CVDD VDD vsubs 1.7169512e-14
 * device instance VSS_t0 r0 *1 0,0 
 RVSS_t0 VSS__t0 VSS 10.6468558333
 * device instance VSS_t1 r0 *1 0,0 

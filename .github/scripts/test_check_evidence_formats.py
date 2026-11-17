@@ -336,6 +336,26 @@ def case_stale_lvs_reference(root: Path):
     return "lvs_report.json [reference netlist]"
 
 
+def case_lvs_reference_object_form(root: Path):
+    # klt >= 0.9 emits `reference` as a {"path", "scope": "repo"} object with
+    # a repo-relative path instead of a cell-relative filename string (issue
+    # #556) -- the freshness anchor must resolve through it unchanged.
+    edit_json(root / "layout/synth_cell/lvs_report.json",
+              lambda d: d.update(reference={
+                  "path": "layout/synth_cell/synth_cell.lvs_reference.spice",
+                  "scope": "repo"}))
+    return None
+
+
+def case_stale_lvs_reference_object_form(root: Path):
+    # Staleness detection must survive the same form change: same object
+    # reference, but the file it names has moved on since the run.
+    case_lvs_reference_object_form(root)
+    reference = root / "layout/synth_cell/synth_cell.lvs_reference.spice"
+    reference.write_bytes(reference.read_bytes() + b"* edited\n")
+    return "lvs_report.json [reference netlist]"
+
+
 def case_drc_status_contradiction(root: Path):
     edit_json(root / "layout/synth_cell/drc_report.json",
               lambda d: d.update(violation_count=7))
@@ -1026,6 +1046,8 @@ CASES = [
     ("experiment ships no cold-start run script", case_missing_run_script),
     ("DRC report is stale vs the committed GDS", case_stale_drc_input),
     ("LVS reference netlist edited after the run", case_stale_lvs_reference),
+    ("LVS reference in {path, scope} object form still resolves", case_lvs_reference_object_form),
+    ("LVS reference in object form still freshness-checks", case_stale_lvs_reference_object_form),
     ("DRC status contradicts its own violation count", case_drc_status_contradiction),
     ("LVS status contradicts its own mismatch count", case_lvs_status_contradiction),
     ("LVS zero mismatch_count must be a match verdict", case_lvs_zero_mismatches_not_match),
