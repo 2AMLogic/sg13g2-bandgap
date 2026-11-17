@@ -399,13 +399,23 @@ netlist matches the trim-bearing schematic" checkable rather than asserted.
 On `bandgap_core` every error-severity finding is still the bipolar-recognition
 cause already documented under "Permanent blockers" below — its row still cites
 its 0.6.0-era mint, and refreshing it under the standard is a follow-up to the
-upstream fix. On `bandgap_top` the re-minted verdict **does carry a new error
-class**: the 1019 error-severity findings are dominated by the resistor-pairing
-regression (`device.unmatched` 517, `net.unmatched` 500 — klayout-tools#6313);
-the 3 `NPN13G2` reference-device entries plus their class-level topology entry
-remain the permanent bipolar-recognition cause, and the warning-severity
-disclosures (`device.bulk_reconciled`, `device.geometry_not_compared`,
-`device.parameter_excluded`) are unchanged in kind.
+upstream fix. On `bandgap_top` the re-minted verdict **does carry new error
+classes**: 1018 of the 1019 error-severity findings are the resistor-pairing
+regression (`device.unmatched` 517, `net.unmatched` 500 — klayout-tools#6313)
+plus the permanent bipolar-recognition cause (the 3 `NPN13G2` reference-device
+entries and their class-level topology entry, unchanged from the retired
+report). The 1019th is the only error that is neither — and the only
+design-relevant one: a `device.property` error ("matched device parameter `r`
+differs") on the `rhigh` pull-up — `X3_RPU` in the reference, `$275` in the
+layout — with extracted `r` 1999501.7 Ω against the reference netlist's
+1919368.0 Ω (**+4.2%**). The device still pairs; only the parameter differs,
+and whether that delta is an extraction/reference-modelling difference or a
+real sizing discrepancy is **untraced** (issue #563 — do not attribute it to
+the deck without tracing it). The warning-severity disclosures also changed
+in kind between the two mints, not just in count: the retired report's
+`device.bulk_reconciled` 2 + `device.parameter_excluded` 4 (parameters
+`A`/`P`, total 6 warnings) became `device.bulk_reconciled` 2 +
+`device.geometry_not_compared` 2 (total 4).
 
 ### LVS: three real pieces of friction, all filed upstream
 
@@ -1664,8 +1674,10 @@ gap, plus one inferred instance of it) -- as close to `bandgap_startup`'s
 own already-clean bar as this deck allows. (That "rests entirely" holds as
 of the 0.6.0-era mint this section narrates; the 2026-11-17 re-mint under
 the evidence-standard pin `klt 0.8.0` adds the upstream resistor-class
-pairing regression on top of it — 1023 findings, devices 17/275 — see the
-verdict table above and DR-0016. The bipolar cause itself is unchanged.)
+pairing regression on top of it — 1023 findings, devices 17/275 — plus one
+`device.property` error the old report did not carry (`rhigh` `X3_RPU` `r`
++4.2%, untraced, issue #563); see the verdict table above and DR-0016. The
+bipolar cause itself is unchanged.)
 
 **Determinism**: `python3 layout/bandgap_top/generate.py` re-run leaves
 `git diff --stat` empty, as long as the three leaf GDS files it reads are

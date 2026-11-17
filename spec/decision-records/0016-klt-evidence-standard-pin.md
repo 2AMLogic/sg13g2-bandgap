@@ -40,12 +40,16 @@ Two traced facts narrow the decision:
    (klayout-tools#2823).
 2. **The LVS explosion is deck-generation drift, not a 0.9-only regression.**
    The CI pin itself already grades 1023/1019 — the committed 10/4 report is
-   not reproducible under *any* PyPI-installable pin. The signature is the
-   sg13g2 deck's resistor pairing: at 0.8.0+ every MOS device matches but
-   zero resistors do (layout-side class `rppd` vs reference-side `RPPD` no
-   longer pair), cascading into ~500 `net.unmatched`. Filed upstream as
+   not reproducible under *any* PyPI-installable pin. The dominant signature
+   is the sg13g2 deck's resistor pairing: at 0.8.0+ every MOS device matches
+   but zero resistors do (layout-side class `rppd` vs reference-side `RPPD`
+   no longer pair), cascading into ~500 `net.unmatched`; filed upstream as
    [klayout-tools#6313](https://github.com/2AMLogic/klayout-tools/issues/6313)
-   (sibling-deck analogue: klayout-tools#4424).
+   (sibling-deck analogue: klayout-tools#4424). One of the 1019 errors is
+   *not* that regression: a `device.property` error on the `rhigh` pull-up
+   (`X3_RPU`, extracted `r` 1999501.7 Ω vs the reference's 1919368.0 Ω,
+   +4.2%) that the retired report did not carry. This record does not
+   attribute it to the deck — untraced, tracked as issue #563.
 
 ## Decision
 
@@ -64,8 +68,10 @@ CI's `klayout-tools==` pin installs.** Concretely:
    this PR: 1023 findings / 1019 error-severity, devices 17/275, nets
    5/261, deck `1c95db40…`). The committed request document is unchanged.
    The old 10/4 report is retired as unreproducible under the standard, not
-   silently overwritten: the delta and its cause are this record and
-   klayout-tools#6313.
+   silently overwritten: the delta and its dominant cause are this record
+   and klayout-tools#6313 — except the one `device.property` error
+   (`rhigh`/`X3_RPU`, `r` +4.2%), which this record leaves **untraced** and
+   tracks separately as issue #563.
 3. `manifests/sg13g2-bandgap.signoff.json` already records build 0.8.0 and
    grades current under the pin; it stays. CI's pin stays 0.8.0.
 4. **Bump procedure unchanged:** raising the pin (this standard, CI's
