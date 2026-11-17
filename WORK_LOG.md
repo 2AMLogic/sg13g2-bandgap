@@ -12,6 +12,12 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-17
 
+- **PR #565**: docs: root README status block matches committed DRC/LVS reports after the DR-0016 re-mint
+- **PR #560**: evidence: re-mint bandgap_top LVS under pinned klt 0.8.0; add DR-0016 evidence standard
+- **PR #559**: fix(layout): enclose bandgap_amp Via1 landings in Metal2 at the deck's fixed 0.19 um
+- **Issue #564** (closed): docs: root README status block attributes bandgap_top's LVS mismatch to the 3 NPN13G2 devices — stale after the DR-0016 re-mint
+- **Issue #558** (closed): tool drift: top-level LVS findings explode 10/4 -> 1023/1019 under klt 0.9.3 deck; signoff manifest ROTTED on main
+- **Issue #556** (closed): layout: bandgap_amp has 12 Via1 shapes half outside Metal2 (metal2.enclosing.via1.1)
 - **PR #554**: chore(loom): resync installed Loom to v0.19.1306
 - **PR #550**: chore(sim): remove closed-loop-vref-pvt run_pvt_sweep.sh, superseded by run_klt_sim.sh twin
 - **PR #546**: ci: gate characterization spot-check output blocks on live re-run
