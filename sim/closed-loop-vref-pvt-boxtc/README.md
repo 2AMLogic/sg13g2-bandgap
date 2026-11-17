@@ -187,9 +187,12 @@ per-(corner, supply) requests to **one** `klt sim --batch-set` (in-flight
 2, 3 shard jobs per request, `--wait-for-capacity 600` — the committed
 defaults), which ran **120 spot fleet jobs** (c7i/m7i/m6i.4xlarge,
 `runner_compatibility: match`, runner klt 0.9.0 vs client 0.9.3.dev16) to
-completion in a **62-minute** wall clock, individual jobs 79–120 s —
-including every 100 °C point at 74–99 s, against the 3643 s the pre-KLU
-hot corner needed. The fleet runner's ngspice is KLU-capable and **engaged
+completion in a **62-minute** wall clock, individual jobs 79–120 s — every
+100 °C point completed inside a fleet job whose `elapsed_seconds` is in the
+committed 79–120 s set (all 120 jobs `exit_code: 0`; the fleet entries carry
+no corner label, so no finer per-point timing is reconstructible from the
+record), against the 3643 s the pre-KLU hot corner needed. The fleet
+runner's ngspice is KLU-capable and **engaged
 KLU on every corner**: all **120/120** harvested corner logs carry ngspice's
 `Using KLU as Direct Linear Solver` line, and the runner environment
 capture reads `ngspice-47 … Compiled with KLU Direct Linear Solver`. The
