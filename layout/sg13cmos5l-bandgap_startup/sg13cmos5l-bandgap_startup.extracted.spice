@@ -13,5 +13,5 @@ M$1 det sns1 vss vsubs nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 80,0 nfet
 M$2 fb det vss vsubs nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U PD=4.8U
 * device instance $3 r0 *1 22.386,29.852 rhigh
-R$3 vdd det vsubs 1919368 rhigh
+X$3 vdd det vsubs rhigh r=1999501.66667 L=1411.3U W=1U
 .ENDS sg13cmos5l_bandgap_startup
