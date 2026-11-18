@@ -364,12 +364,12 @@ numbers below are that script's own output:
 
 | quantity | pre-trim PEX (`core-open-loop-bias-pex` record `20260905-033431`) | trim-bearing PEX probe | trim-bearing schematic (#264, `core-open-loop-bias` record `20261001-082455`) |
 | --- | --- | --- | --- |
-| `vref` | 1.052841 V | **1.052999 V** | 1.052707 V |
+| `vref` | 1.052841 V | **1.053002 V** | 1.052707 V |
 | `R1_eff` | 66,092 Ω | **66,123 Ω** | 66,057 Ω |
-| `i_leg3` | 5.200783 µA | 5.200776 µA | 5.201476 µA |
+| `i_leg3` | 5.200783 µA | 5.200775 µA | 5.201476 µA |
 
-The refreshed extraction reproduces the pre-trim PEX point to **+0.158 mV
-(+0.015%)**, and the trim-bearing schematic point to +0.29 mV. The ladder
+The refreshed extraction reproduces the pre-trim PEX point to **+0.161 mV
+(+0.015%)**, and the trim-bearing schematic point to +0.30 mV. The ladder
 measures as 128 units independently of the device walk above:
 `(v(tn0) − v(cb3)) / (v(vref) − v(tn0))` = **12.630**, against the design's
 `128·R_unit / R1_base` = 12.64 nominal ratio (the 0.08% shortfall is the
@@ -393,34 +393,57 @@ netlist matches the trim-bearing schematic" checkable rather than asserted.
 
 | cell | DRC | LVS | extraction |
 | --- | --- | --- | --- |
-| `bandgap_core` | `clean`, 0 — re-minted 2026-11-18 under the **`klt 0.8.0` pin** (#561 step 2) on the post-#576 merged GDS (deck `sha256:1c95db40…`): the `nwell.enclosing.nactiv.1` class is closed at the source by #571's tap-margin fix (landed via #576/#579), and the pin's deck does not fire `metal1.enclosing.cont.1`. The `klt 0.9.3.dev980` mint it retires read `violations`, **18** — all `metal1.enclosing.cont.1`, the pre-existing #572 class the containment deck surfaces (filed from #557), real markers under the dev deck and simply out of the pin deck's scope — measured in #561 step 2, not assumed from either deck's rule list. Every Via1 class is **0** — `metal2.enclosing.via1.1` and `via1.width.1` closed by #574's Metal2-landing enclosures, composed into this GDS by the #579 rebase | `mismatch`, 7 findings / **4 error-severity** — minted under the **`klayout-tools==0.8.0` pin** (#561 step 1's reference; re-minted by #561 step 2 on the final merged GDS with identical counts), retiring the 0.9.3.dev663 mint (1025 findings / 1022 error-severity, devices 6/263, nets 2/257 — the resistor-class pairing cascade, klayout-tools#6313, reproduced under the pin before the fix: 517 `device.unmatched` + 504 `net.unmatched` + the bipolar topology entry). With the reference's 257 `rppd` values re-derived from IHP's own `rppd.sym` formula (`70.0e-6/w + 260.0·l/(w + 6.0e-9)`, six decimals — see `layout/lvs_reference.py`), every resistor pairs and passes `R`/`L`/`W` comparison: devices **263/263** matched, nets **253/257** matched, **zero resistor findings and zero `net.unmatched`**. The residual is exactly the permanent bipolar-recognition cause: 3 reference-side `NPN13G2` `device.unmatched` + the `NPN13G2` class topology entry (the curated deck recognises no bipolar class — first documented at top's 0.8.0 re-mint, DR-0016); plus 2 warning-severity disclosures (`device.bulk_reconciled`, `device.geometry_not_compared`) and the benign `nfet` topology note | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C — PEX re-minted under the pin by #561 step 2; the netlist is **byte-identical** to the post-#574 mint the #579 rebase kept (#571's well-margin growth is extraction-invariant), so the hash-pinned item-8 inventory is unchanged |
-| `bandgap_top` | `clean`, 0 violations with **0 markers waived** — re-minted 2026-11-18 under the **`klt 0.8.0` pin** (#561 step 2) on the post-#576 merged GDS. `drc_waivers.json` still carries the 22 cell-scoped entries (18 `metal1.enclosing.cont.1` → #572, 4 `cont.ongrid.1` → #573), every one now **inert**: those classes do not fire under the pin's deck (`sha256:1c95db40…`), and the 11 `nwell.enclosing.nactiv.1` markers #574's 33-marker waiver had carried are closed at the source by #571's tap-margin fix — none of the three classes is in top's own geometry, and the entries stay as the guard for any future deck that sees them, the same guard that caught them under the `klt 0.9.3.dev980` mint this re-mint retires (which read `clean`, 0 with all 22 waived; klayout 0.30.12, 36 rules). Every Via1 class is **0** (`metal2.enclosing.via1.1` / `via1.width.1` fixed in #557 across core and top's own landings; amp's share was #556), and the assembled GDS carries #556's amp via-fix refresh | `mismatch`, 8 findings / **4 error-severity** — minted under the **`klt 0.8.0` pin** (#561 step 1's re-derived reference; re-minted by #561 step 2 on the final merged GDS with identical counts): the pairing cascade is fixed at top — devices **275/275** matched, nets **257/261** matched, zero resistor findings — and the residual is exactly the permanent bipolar-recognition cause (3 reference-side `NPN13G2` `device.unmatched` + the class topology entry, 4 error-severity findings, unchanged in kind from every prior mint), plus 4 warning-severity disclosures (`device.bulk_reconciled` 2, `device.geometry_not_compared` 2). The reference-stale `dev663` 1022/1018 mint was retired earlier in #561 and the pre-#561 mints' one design-relevant error (the `device.property` +4.2% `rhigh` delta, #563) stays gone — with every resistor now pairing and passing `R`/`L`/`W` comparison under the `rppd.sym`-derived reference, the comparison actually reaches the resistors instead of drowning in `device.unmatched` | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C — PEX re-minted under the pin by #561 step 2; the netlist is **byte-identical** to the post-#574 mint the #579 rebase kept (extraction-invariant NWell growth), so the hash-pinned item-8 inventory is unchanged |
+| `bandgap_core` | `clean`, **0 violations** — re-minted 2026-11-18 under the **`klt 0.8.0` pin** (#561 step 2's all-pin standard; deck `sha256:1c95db40…`) on the #572 merged GDS: `nwell.enclosing.nactiv.1` is closed at the source by #571's tap-margin fix (landed via #576/#579) and every Via1 class is **0** (`metal2.enclosing.via1.1`/`via1.width.1` closed by #574, composed by the #579 rebase). The last class the containment deck surfaces, `metal1.enclosing.cont.1` ×18, is closed at the source by #572's Metal1 base-contact landing strips in `draw_npn13g2` (`layout/common.py`) — every Cont row now lands inside its own Metal1 strip (0.10 µm enclosure per side) — measured **18 → 0** under the containment deck itself (#557's mint and the #579 rebase carried the cell at 18; the `klt 0.9.3.dev1023` re-mint read 0), so the closure is real under the deck that sees the class; the pin's deck does not fire it, the deck difference #561 step 2 measured rather than assumed | `mismatch`, 7 findings / **4 error-severity** — re-minted 2026-11-18 under the **`klayout-tools==0.8.0` pin** (klayout 0.30.13) on the #572 merged GDS against #561 step 1's re-derived reference, with counts identical to the #579/#561-step-2 mints on the pre-#572 GDS — the landing strips are LVS-neutral exactly as #572's same-tool differential measured (finding-for-finding identical with vs without the fix): devices **263/263** matched (reference 266: the 3 reference-side `NPN13G2` `device.unmatched`), nets **253/257** matched, `category_error_counts` exactly `{device.unmatched: 3, topology: 1}` — the permanent bipolar-recognition cause (the curated deck recognises no bipolar class — first documented at top's 0.8.0 re-mint, DR-0016), plus 2 warning-severity disclosures (`device.bulk_reconciled`, `device.geometry_not_compared`) and the benign `nfet` topology note | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C — **re-minted under the 0.8.0 pin** against the #572 merged GDS (input-gds anchor fresh, so #571's core waiver self-expired and is deleted): same card counts as every post-#556 mint, values moved by the strips' mΩ/fF (see the one-point probe below) |
+| `bandgap_top` | `clean`, 0 violations with **0 markers waived** — re-minted 2026-11-18 under the **`klt 0.8.0` pin** (#561 step 2's standard) on the #572 re-assembled GDS, which composes #572's core fix into the #579 merged assembly. `drc_waivers.json` now carries **4 cell-scoped entries** (4 `cont.ongrid.1` → #573, all instance-attributed to `bandgap_startup`'s leaf, none in top's own geometry): per the file's own rule ("when a class is fixed, its waiver entries are deleted in the same PR") the 18 `metal1.enclosing.cont.1` → #572 entries are deleted in this PR — #572's landing closed that class at the source inside `bandgap_core` — shrinking the waived set 22 → 4. Neither remaining class fires under the pin's deck (`sha256:1c95db40…`), so the verdict reads clean with 0 markers waived and the 4 entries stay as the guard for any future deck that sees them (the retired `klt 0.9.3.dev980` mint read clean 0 with all 22 waived; the `dev1023` re-mint read clean 0 with 4 waived). Every Via1 class stays **0** (`metal2.enclosing.via1.1`/`via1.width.1` fixed in #557 across core and top's own landings; amp's share was #556) and `nwell.enclosing.nactiv.1` stays 0 (#571) | `mismatch`, 8 findings / **4 error-severity** — re-minted 2026-11-18 under the **`0.8.0` pin** on the #572 merged GDS against #561 step 1's re-derived reference, with counts identical in kind to the #579/#561-step-2 mints: devices **275/275** matched (reference 278: the 3 reference-side `NPN13G2` `device.unmatched`), nets **257/261** matched, `category_error_counts` exactly `{device.unmatched: 3, topology: 1}` — the permanent bipolar-recognition cause, unchanged in kind from every prior mint — plus 4 warning-severity disclosures (`device.bulk_reconciled` 2, `device.geometry_not_compared` 2) and zero resistor findings under the `rppd.sym`-derived reference. #572's core fix is LVS-neutral here too (the strips land Metal1 on Conts whose conductor nets already exist; extraction gains no devices and no net merges) | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C — the #561 step-2 pin re-mint kept through #572 (its netlist **byte-identical** to the post-#574 mint the #579 rebase kept, so the hash-pinned item-8 inventory is unchanged), input-gds anchor waived under #571 — see "PEX re-mint deferral" below: `bandgap_top.pex.spice` stays hash-pinned by the actively cited item-8 characterization report, `measurements/2026-11-18-characterization-report/` |
 
 Every report in this table — DRC, LVS, PEX, ERC — is minted under the
-evidence-standard pin `klayout-tools==0.8.0` itself (#561 step 2, 2026-11-18:
-the atomic DR-0016 §Decision-4 re-mint, run on the post-#576 merged tree and
-retiring the #557/#559 `dev663`/`dev517` mints *and* the #579-rebase
-`dev980` DRC mints). The deck-difference question was **settled by
-measurement**, not from either deck's rule list: the pin's deck
+evidence-standard pin `klayout-tools==0.8.0` itself (#561 step 2's atomic
+DR-0016 §Decision-4 re-mint set that standard on main, retiring the
+#557/#559 `dev663`/`dev517` mints *and* the #579-rebase `dev980` DRC mints;
+#572's merge onto it re-minted core/top DRC, top ERC and the core PEX pair
+on the #572 merged GDS under the same pin). The deck-difference question was
+**settled by measurement**, not from either deck's rule list: the pin's deck
 (`sha256:1c95db40…`) fires `nwell.enclosing.nactiv.1` (#571's class) at
 counts identical to the dev decks — amp 5, core 6, top 11 waived, measured
 against the pre-#576 GDS — while `metal1.enclosing.cont.1` (#572) and
-`cont.ongrid.1` (#573) do not fire under it. On the post-#576 GDS the #571
-class is closed at the source, so the re-minted DRC halves read `clean`, 0
-across all four cells (main's `dev980` mints read amp 0, core 18, top 0
-with 22 waived, startup 4 — the core/top counts being exactly the #572/#573
-markers the pin's deck cannot see). Those two classes' markers are real
-under the dev decks (tracked in #572/#573, and still guarded cell-scoped in
-`drc_waivers.json`); under the pin they are out of the deck's scope —
+`cont.ongrid.1` (#573) do not fire under it. On this tree the #571 class is
+closed at the source by the tap-margin fix and the #572 class is closed at
+the source by this PR's landing strips (18 → 0 under the containment deck
+that sees it), so the re-minted DRC halves read `clean`, 0 across all four
+cells; #573's markers remain real under the dev decks, still guarded
+cell-scoped in `drc_waivers.json`, and out of the pin deck's scope —
 recorded here as a deck difference, not a design change. `klt lvs`'s
 curated-deck extraction is unchanged 0.8.0 → 0.9.x for the resistor entries
 (#6313's closing note), so the LVS re-mints carry no such delta: both
-committed core/top LVS reports were already pin mints (the #579 rebase
-re-minted them on the merged GDS), #561 step 2 re-minted them again on the
-final tree with identical counts, and the #6313 pairing cascade stays
-*fixed*, not merely documented, at both cells. The verdict of record in
-`manifests/` was re-graded under the pin on the re-minted evidence and
-survives unchanged at T1 5/11.
+committed core/top LVS reports are pin mints on the #572 merged GDS — #572's
+re-mint reproduces the #579/#561-step-2 counts exactly, the Metal1
+base-contact landing strips being LVS-neutral at both cells — and the #6313
+pairing cascade stays *fixed*, not merely documented, at both cells. The
+verdict of record in `manifests/` was re-graded under the pin on the
+re-minted evidence and survives unchanged at T1 5/11.
+
+On `bandgap_core` the residual is exactly the permanent bipolar-recognition
+cause already documented under "Permanent blockers" below — and since #561
+step 1's reference re-derivation, nothing else. On `bandgap_top` the
+2026-11-17 `dev663` mint (and before it the 2026-11-17 pin mint of
+DR-0016/#558) had carried 1018–1019 error-severity findings dominated by
+the resistor-class pairing regression (klayout-tools#6313) plus the
+permanent bipolar-recognition cause, and the pin mint's one
+design-relevant error — the `device.property` +4.2% `rhigh` delta on the
+pull-up, `X3_RPU` in the reference vs `$275` in the layout — was traced to
+klayout-tools#2652's `rhigh.sym` transcription and closed by #563's
+reference fix, exactly as that issue's live verification predicted. #561
+step 1 then re-derived the 257 `rppd` reference values from `rppd.sym`
+itself (`RPU` now `1999501.666667` Ω), removing the pairing regression at
+its root: the #579 rebase's re-mint under the pin on the merged GDS reads
+**4 error-severity findings at both cells** (the 3 reference-side
+`NPN13G2` `device.unmatched` + the class topology entry), with every
+resistor paired and passing `R`/`L`/`W` comparison. #572's re-mint
+reproduces those same counts on the #572 merged GDS — the Metal1
+base-contact landing strips are LVS-neutral at both cells, so the pin
+mints stay at **4 error-severity findings** each with
+`category_error_counts` exactly `{device.unmatched: 3, topology: 1}`.
+
 Under the pre-#561 references **every error-severity LVS finding in both
 cells was one of the two already-documented, filed-upstream causes** — the
 resistor-class pairing regression (klayout-tools#6313: 517
@@ -823,13 +846,14 @@ delta, and the layout is correct**:
   hiding the comparison.
 
 
-## PEX re-mint deferral (issues #571/#579, 2026-11-18)
+## PEX re-mint deferral (issues #571/#579, 2026-11-18; narrowed to top-only by #572)
 
 Issue #571's tap-margin fix (`TAP_NWELL_MARGIN_UM` 0.1 → 0.3,
 `layout/common.py`) regenerated `bandgap_amp`/`bandgap_core`/`bandgap_top`
 and re-minted all three cells' `drc_report.json` (amp now **clean**, 0;
 core/top honestly carrying the pre-existing Cont class the containment deck
-surfaces — owned by #572/#573, with every Via1 class since closed by #574)
+surfaces — owned by #572/#573, with every Via1 class since closed by #574;
+#572 has since closed its class at the source, see the verdict table)
 and all three `lvs_report.json` (core under the DR-0016 `klt 0.8.0` pin;
 amp's verdict is `match`, 0 findings, reproducible under any build). The
 **PEX half is deferred, not skipped** — and the #579 rebase onto post-#574
@@ -838,9 +862,10 @@ main narrowed the deferral to a pure anchor re-pin: #574 re-extracted
 0.6.0-era mints this section originally described) and rotated the item-8
 characterization inventory onto the result
 (`measurements/2026-11-18-characterization-report/` pins the post-#574
-`bandgap_top.pex.spice` by hash), so the merged tree **keeps main's
+`bandgap_top.pex.spice` by hash), so the #579 merged tree **keeps main's
 post-#574 PEX netlists** and waives only their input-gds anchors, which
-name the pre-#571 GDS. Re-extracting the merged GDS would move no netlist
+name the pre-#571 GDS. Re-extracting that #579 merged GDS would move no
+netlist
 byte (#571's NWell growth is extraction-invariant), but would re-mint the
 reports under a different `klt` build and churn the hash-pinned item-8
 inventory for zero electrical change — the PEX re-runs stay tracked in
@@ -851,8 +876,8 @@ assumed:
   carries every #571 geometry change *except* the well-margin growth
   produces byte-identical extraction output to the full fix; the fix moves
   a well edge, and extraction reads no NWell geometry. This is exactly the
-  merged tree's situation: its GDS differs from main's post-#574 GDS (which
-  #574 extracted) by #571's well-margin growth and nothing else.
+  #579 merged tree's situation: its GDS differs from main's post-#574 GDS
+  (which #574 extracted) by #571's well-margin growth and nothing else.
 - **The pre-#574-era extraction delta is gone at the source.** The branch's
   original deferral rested on re-extracting moving 102 parasitic lines (the
   #556 routing refresh the 0.6.0-era committed netlist predated,
@@ -862,12 +887,28 @@ assumed:
   committed `bandgap_amp.pex.spice` is already the post-#556 geometry.
 
 The waiver entries self-expire when `pex_extract_report.json` re-mints
-against the merged GDS — and they did: **#561 step 2 ended this deferral**
-by re-extracting both cells on the merged GDS under the pin, and both
-netlists came out **byte-identical** to the kept post-#574 artifacts
-(predicted by the first bullet above, measured here), so the item-8
-inventory hash is unchanged and the two waiver entries were deleted with no
-netlist churn.
+against the merged GDS — and on main they did: **#561 step 2 ended this
+deferral** by re-extracting both cells on the merged GDS under the pin, and
+both netlists came out **byte-identical** to the kept post-#574 artifacts
+(predicted by the first bullet above, measured there), so the item-8
+inventory hash was unchanged and the two waiver entries were deleted with
+no netlist churn. **#572's merge then re-opened the top half of the
+deferral**: its Metal1 base-contact landing moves core geometry inside the
+assembly (real Metal1 the extraction reads — at core the same-pin re-mint
+moved `total_resistance_ohm` 219.26 → 224.14 and
+`total_capacitance_ff` 178.50 → 180.71 with every card count and the
+normalized netlist hash unchanged), so `bandgap_core`'s extraction pair was
+re-minted under the pin against the #572 merged GDS and that cell's anchor
+waiver self-expired and stays deleted — but `bandgap_top.pex.spice` is
+*not* free to re-mint: it is a `dut[]` entry of the actively cited item-8
+characterization report
+(`measurements/2026-11-18-characterization-report/dependencies.json` pins
+it by sha256), and #572's core fix sits inside that assembly, so the
+committed top report stays #561 step 2's pin mint, its input-gds anchor
+(that mint's recorded hash) is waived again under the same #571 deferral,
+and the top anchor waiver carries forward until #278/#275's re-runs rotate
+the inventory. `bandgap_startup`'s extraction is untouched by every issue
+in this chain (byte-identical GDS).
 
 
 ## Layer numbers
@@ -971,7 +1012,13 @@ layout report now reads exactly `0.8.0`. The SG13G2 `*.pex.spice` netlists
 re-minted byte-identically (so the kept post-#574 netlists — and the
 item-8 inventory hash that pins one — are unchanged); the measured verdict
 deltas are recorded in the verdict table above and the SG13CMOS5L section
-below.**
+below.** #572's Metal1 base-contact landing then re-minted the four
+reports whose inputs its geometry moves — core/top DRC, top ERC and the
+core PEX pair, plus the two core/top LVS layout anchors — on the #572
+merged GDS, under the same `0.8.0` pin (the standard is unchanged; the
+`dev1023` containment-deck mints its first pass carried were an artifact
+of resolving against pre-#586 main and are retired here), while top's PEX
+report stays #561 step 2's pin mint under the re-opened deferral.
 
 The read-only `klt cells`/`stats`/`layers` queries are quoted with the
 geometry facts they produced, under each cell's own section below.
@@ -1410,20 +1457,26 @@ Waivers **self-expire**: once the evidence is regenerated, the recorded hash no
 longer matches and the checker fails until the entry is deleted — so a waiver
 cannot quietly outlive the problem it describes.
 
-`layout/evidence-freshness-waivers.json` is **empty** as of #561 step 2
-(2026-11-18): every `layout/` report is fresh against the GDS and reference
-committed beside it and minted under the DR-0016 pin. The #579 rebase had
-left **three entries** here, all now self-expired and deleted by step 2's
-atomic re-mint: `bandgap_startup/lvs_report.json`'s "reference netlist"
-anchor under #561 (step 1 re-derived the reference bytes after that
-report's mint), plus the two `pex_extract_report.json` "input gds" anchors
-under #571 — main's post-#574 extractions named the pre-#571 GDS, and the
-merged GDS differs from that GDS only by #571's extraction-invariant
-NWell-margin growth, so the netlists were kept and their anchors waived
-(see "PEX re-mint deferral" below). Step 2 re-extracted both cells on the
-merged GDS under the pin and the netlists came out **byte-identical** to
-the kept post-#574 artifacts, so the item-8 inventory hash is unchanged and
-the deferral ended with zero netlist churn. (The file held two
+`layout/evidence-freshness-waivers.json` holds **one entry** as of #572's
+merge (2026-11-18): `bandgap_top/pex_extract_report.json`'s "input gds"
+anchor under #571. #561 step 2 had emptied the file — its atomic re-mint
+re-extracted both deferred cells byte-identically, self-expiring the three
+entries the #579 rebase had left (startup's "reference netlist" anchor
+under #561, plus the two #571 "input gds" anchors) — and #572 keeps two of
+those three deletions: startup's LVS is #561 step 2's fresh pin mint
+against its unchanged GDS and the current reference, and core's extraction
+pair was re-minted under the pin against the #572 merged GDS (the landing
+strips are real geometry the extraction reads, moving R/C values by
+mΩ/fF while every card count stays put), so its anchor is fresh. The top
+entry is **re-opened, not carried stale**: #572's core fix moves geometry
+inside the assembly, so the committed report — #561 step 2's pin mint,
+whose netlist is byte-identical to the post-#574 artifact — names main's
+pre-#572 GDS, and `bandgap_top.pex.spice` stays hash-pinned by the item-8
+characterization report, so the netlist is kept and its anchor waived
+(see "PEX re-mint deferral" below — the entry self-expires when the PEX
+re-mint tracked in #278/#275 regenerates the report against the merged
+GDS). Every other `layout/` report is fresh against the GDS and reference
+committed beside it. (The file held two
 `pex_extract_report.json` entries under #56 at one
 point, when the PEX leg had last been extracted at `f940680`/PR #39 against
 a GDS since regenerated at `bf9051c`/PR #45 — that is closed. It then held
@@ -1589,13 +1642,17 @@ touched by the Via1 fix. The waiver set shrank 33 → 22 in the #579 rebase
 deleted in the same PR"): the third class #574's waiver had carried,
 `nwell.enclosing.nactiv.1` ×11 → #571, is closed at the source by #571's
 tap-margin fix, and the merged GDS mints the class at 0 under both decks.
-Under the 0.8.0 pin's deck (#561 step 2) **none of the 22 remaining entries
-fire** — the verdict reads `clean`, 0 with **0 markers waived**: #572's 18
-`metal1.enclosing.cont.1` and #573's 4 `cont.ongrid.1` markers do not fire
-under `sha256:1c95db40…` (the retired `klt 0.9.3.dev980` mint read clean 0
-with all 22 waived), and the entries remain in the file as the guard for
-any future deck that sees them. The leaf cells' own reports carry their
-markers unwaived, like `bandgap_amp`'s #559 report already did. The block
+#572's Metal1 base-contact landing then closed `metal1.enclosing.cont.1`
+×18 the same way — the class mints 0 inside `bandgap_core` (18 → 0 under
+the containment deck that sees it), its 18 waiver entries are deleted in
+this PR, and the waived set shrinks 22 → **4** (`cont.ongrid.1` → #573
+only, all instance-attributed to `bandgap_startup`'s leaf). Under the
+0.8.0 pin's deck none of the remaining entries fire — the verdict reads
+`clean`, 0 with **0 markers waived** — and they remain in the file as the
+guard for any future deck that sees them (the retired `klt 0.9.3.dev980`
+mint read clean 0 with all 22 waived; the `dev1023` re-mint read clean 0
+with 4 waived). The leaf cells' own reports carry their markers unwaived,
+like `bandgap_amp`'s #559 report already did. The block
 manifest's DRC-clean citation (`manifests/sg13g2-bandgap.json` items 2/3)
 pins the waivered-clean assembled envelope, and the verdict of record
 survives the change at 5/11.
@@ -1858,14 +1915,15 @@ comparison is performed).
 
 **DRC**: `klt drc --deck sg13g2` reports `status: "clean"`, 0 violations
 with **0 markers waived** (`layout/bandgap_top/drc_report.json`, re-minted
-under the #561 step-2 `klt 0.8.0` pin on the post-#576 merged GDS).
-`drc_waivers.json` still carries the 22 cell-scoped entries (18
-`metal1.enclosing.cont.1` → #572, 4 `cont.ongrid.1` → #573; the
-`nwell.enclosing.nactiv.1` entries were deleted in the #579 rebase), every
-one of them inert under the pin's deck, which fires neither remaining class
-— under the retired `klt 0.9.3.dev980` mint this re-mint replaces, the same
-GDS read clean 0 with all 22 waived (see "Via1 landings under the
-containment deck" for the full disclosure).
+under the `klt 0.8.0` pin on the #572 merged GDS). `drc_waivers.json` now
+carries **4 cell-scoped entries** (4 `cont.ongrid.1` → #573; the
+`nwell.enclosing.nactiv.1` entries were deleted in the #579 rebase, and
+the 18 `metal1.enclosing.cont.1` entries in #572, which closed that class
+at the source inside `bandgap_core` — see "Via1 landings under the
+containment deck" for the full disclosure). Neither remaining class fires
+under the pin's deck — under the retired `klt 0.9.3.dev980` mint the
+pre-#572 GDS read clean 0 with all 22 waived, and under the `dev1023`
+re-mint the #572 GDS read clean 0 with 4 waived.
 
 **LVS**: run for the same CI-evidence-format-gate reason `bandgap_amp`'s own
 "LVS" section above explains -- committed as-is, not chased to `"match"`.
