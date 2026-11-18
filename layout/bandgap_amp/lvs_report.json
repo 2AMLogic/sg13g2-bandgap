@@ -1,14 +1,11 @@
 {
-  "schema_version": 3,
+  "schema_version": 2,
   "engine": "klayout",
   "layout": {
     "path": "layout/bandgap_amp/bandgap_amp.gds",
     "scope": "repo"
   },
-  "reference": {
-    "path": "layout/bandgap_amp/bandgap_amp.lvs_reference.spice",
-    "scope": "repo"
-  },
+  "reference": "bandgap_amp.lvs_reference.spice",
   "top": "bandgap_amp",
   "reference_top": ".TOP",
   "parameter_tolerance": null,
@@ -25,7 +22,6 @@
     "anchor_top_level_pins": null,
     "strict_top_level_pin_count": false,
     "compare_mos_flavour": false,
-    "ignore_mos_bulk": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -47,7 +43,6 @@
     "instance_count": 0,
     "expected_nets": null,
     "unchecked_expected_pins": [],
-    "excluded_pins": [],
     "findings": [],
     "finding_count": 0
   },
@@ -59,64 +54,7 @@
     "findings": [],
     "finding_count": 0
   },
-  "device_parameter_coverage": [
-    {
-      "class": "nfet",
-      "device_kind": "mos",
-      "layout_devices": 4,
-      "reference_devices": 4,
-      "compared": [
-        "L",
-        "W"
-      ],
-      "not_compared": [
-        {
-          "parameter": "AS",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "AD",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "PS",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "PD",
-          "reason": "secondary"
-        }
-      ]
-    },
-    {
-      "class": "pfet",
-      "device_kind": "mos",
-      "layout_devices": 5,
-      "reference_devices": 5,
-      "compared": [
-        "L",
-        "W"
-      ],
-      "not_compared": [
-        {
-          "parameter": "AS",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "AD",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "PS",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "PD",
-          "reason": "secondary"
-        }
-      ]
-    }
-  ],
+  "device_parameter_coverage": [],
   "mismatch_count": 0,
   "error_count": 0,
   "category_counts": {},
@@ -151,92 +89,72 @@
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.12",
+    "engine_version": "0.30.13",
     "netgen_binary": null,
     "layout_sha256": "219aa2a589fb85fb8f828f4656320cef48d42ef66f5f78d0773240861d364b10",
     "reference_sha256": "39b5d2a616d573457adf28c35b633ebb5daa0f66bcdf9fceacb8ecb126d9ebc9",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.9.3.dev980+g4cea37f245b0",
-    "klt_git_commit": "4cea37f245b0f61159431fd68cbf0349d67af74f",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@4cea37f245b0f61159431fd68cbf0349d67af74f",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:d407265de045dc59cecc28793f70ac9734069a6fb8bae06daa9b9f2e04961602",
-      "released": false
+      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
+      "released": true
     },
     "input": {
       "content_hash": "sha256:219aa2a589fb85fb8f828f4656320cef48d42ef66f5f78d0773240861d364b10",
       "role": "layout"
     },
-    "klayout_version_mismatch": false
+    "klayout_version_mismatch": true
   },
   "mismatches": [],
   "net_correspondence": [
     {
       "layout": "D1",
-      "layout_id": 0,
       "reference": "D1",
-      "reference_id": 3,
       "pin": true
     },
     {
       "layout": "D2",
-      "layout_id": 1,
       "reference": "D2",
-      "reference_id": 5,
       "pin": true
     },
     {
       "layout": "IN_N",
-      "layout_id": 4,
       "reference": "IN_N",
-      "reference_id": 6,
       "pin": true
     },
     {
       "layout": "IN_P",
-      "layout_id": 5,
       "reference": "IN_P",
-      "reference_id": 4,
       "pin": true
     },
     {
       "layout": "OUT",
-      "layout_id": 2,
       "reference": "OUT",
-      "reference_id": 1,
       "pin": true
     },
     {
       "layout": "PN",
-      "layout_id": 3,
       "reference": "PN",
-      "reference_id": 7,
       "pin": true
     },
     {
       "layout": "TAIL",
-      "layout_id": 6,
       "reference": "TAIL",
-      "reference_id": 0,
       "pin": true
     },
     {
       "layout": "VDD",
-      "layout_id": 7,
       "reference": "VDD",
-      "reference_id": 2,
       "pin": true
     },
     {
       "layout": "VSS",
-      "layout_id": 8,
       "reference": "VSS",
-      "reference_id": 8,
       "pin": true
     }
   ]

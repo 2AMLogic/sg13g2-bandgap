@@ -1,29 +1,106 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "engine": "klayout",
-  "layout": "sg13cmos5l-bandgap_startup.gds",
+  "layout": {
+    "path": "layout/sg13cmos5l-bandgap_startup/sg13cmos5l-bandgap_startup.gds",
+    "scope": "repo"
+  },
   "reference": "sg13cmos5l-bandgap_startup.lvs_reference.spice",
   "top": "sg13cmos5l_bandgap_startup",
   "reference_top": ".TOP",
   "parameter_tolerance": null,
   "options": {
     "combine_devices": false,
+    "combine_devices_per_circuit": null,
+    "combine_devices_max_attempts": 5,
     "flatten_layout": false,
     "flatten_reference": false,
     "netgen_setup": null,
-    "parameter_tolerance": null
+    "parameter_tolerance": null,
+    "compare_parameters": null,
+    "power_connectivity": null,
+    "anchor_top_level_pins": null,
+    "strict_top_level_pin_count": false,
+    "compare_mos_flavour": false,
+    "supply_nets": [
+      "GND",
+      "VCC",
+      "VDD",
+      "VGND",
+      "VPWR",
+      "VSS"
+    ],
+    "finfet_bulk": null
   },
+  "hints_applied": null,
+  "constant_nets_applied": null,
   "status": "mismatch",
+  "power_connectivity": {
+    "status": "unchecked",
+    "reason": "reference.form is 'plain-element', whose reference netlist carries its own power/ground pins and nets -- they take part in the ordinary compare, so this check (which exists to cover the signal-only 'gate-level-verilog' form) does not apply",
+    "power_pins": [],
+    "power_pins_derivation": null,
+    "instance_count": 0,
+    "expected_nets": null,
+    "unchecked_expected_pins": [],
+    "findings": [],
+    "finding_count": 0
+  },
+  "body_verification": {
+    "status": "unverified",
+    "reason": null,
+    "device_classes": [
+      "nfet"
+    ],
+    "device_count": 2,
+    "findings": [
+      {
+        "class": "nfet",
+        "device_count": 2
+      }
+    ],
+    "finding_count": 1
+  },
+  "device_parameter_coverage": [
+    {
+      "class": "rhigh",
+      "device_kind": "resistor",
+      "layout_devices": 1,
+      "reference_devices": 1,
+      "compared": [
+        "R"
+      ],
+      "not_compared": [
+        {
+          "parameter": "L",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "W",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "A",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "P",
+          "reason": "secondary"
+        }
+      ]
+    }
+  ],
   "mismatch_count": 17,
-  "error_count": 15,
+  "error_count": 14,
   "category_counts": {
     "device.body_unverified": 1,
-    "device.unmatched": 4,
+    "device.geometry_not_compared": 1,
+    "device.unmatched": 3,
     "net.unmatched": 11,
     "topology": 1
   },
   "category_error_counts": {
-    "device.unmatched": 4,
+    "device.unmatched": 3,
     "net.unmatched": 11
   },
   "counts": {
@@ -52,21 +129,26 @@
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.12",
+    "engine_version": "0.30.13",
+    "netgen_binary": null,
     "layout_sha256": "a18f8c052af3d66f9e988cd874d92e0379d034f25cf9ce187dc351ad19c368fa",
     "reference_sha256": "7f95fdc494ecbd440ea1d2ef113dd7a43bc1ee468ee8c11af07737ea8007cda5",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.3.0",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:5b5309ecd586f527d6df271384f18e8f1fcd528a09935544b46aed563b66a92e",
-      "released": false
+      "content_hash": "sha256:5a43b8eb0e1a4c228169cd33d820bf75ca5640812587f68c07f24f4aa2a1738f",
+      "released": true
     },
-    "input": null
+    "input": {
+      "content_hash": "sha256:a18f8c052af3d66f9e988cd874d92e0379d034f25cf9ce187dc351ad19c368fa",
+      "role": "layout"
+    },
+    "klayout_version_mismatch": true
   },
   "mismatches": [
     {
@@ -87,35 +169,31 @@
       "subcircuit": null
     },
     {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "layout",
+      "category": "device.geometry_not_compared",
+      "severity": "warning",
+      "description": "device class 'rhigh' is a resistor class, whose ['A', 'L', 'P', 'W'] parameter(s) KLayout declares *secondary*: kdb.NetlistComparer compares primary parameters only, so none of them took part in this compare and each is NOT verified -- this resistor's geometry could differ between the two sides by any amount and this run would still report 'match'. The compared parameter(s) were ['R']. Name them in options.compare_parameters to compare them (see docs/cli/lvs.md, 'device.geometry_not_compared')",
+      "side": "both",
       "net": null,
       "device": {
-        "layout": "\\$3",
+        "layout": null,
         "reference": null,
         "class": "rhigh"
       },
       "property": null,
-      "details": null,
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "device.unmatched",
-      "severity": "error",
-      "description": "device has no counterpart on the other side",
-      "side": "reference",
-      "net": null,
-      "device": {
-        "layout": null,
-        "reference": "PU",
-        "class": "RHIGH"
+      "details": {
+        "device_kind": "resistor",
+        "compared_parameters": [
+          "R"
+        ],
+        "not_compared_parameters": [
+          "A",
+          "L",
+          "P",
+          "W"
+        ],
+        "layout_devices": 1,
+        "reference_devices": 1
       },
-      "property": null,
-      "details": null,
       "circuit": null,
       "instance": null,
       "subcircuit": null
@@ -147,6 +225,23 @@
         "layout": "\\$2",
         "reference": "KFB",
         "class": "nfet"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "error",
+      "description": "device has no counterpart on the other side",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": "\\$3",
+        "reference": "PU",
+        "class": "rhigh"
       },
       "property": null,
       "details": null,
@@ -333,10 +428,14 @@
     {
       "category": "topology",
       "severity": "warning",
-      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'pfet'",
       "side": "layout",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "pfet"
+      },
       "property": null,
       "details": null,
       "circuit": null,
