@@ -8,8 +8,8 @@
   "top": "sg13cmos5l_bandgap_startup",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_startup.extracted.spice",
-  "netlist_sha256": "e34456811cb9bd11535892611af092a0014b21ada28ed125bbf22efb9274c219",
-  "netlist_normalized_sha256": "d14bf6751f4f834e6331519d8de342e2e891c4aae08c5d9caf57280f863823d6",
+  "netlist_sha256": "e75fc8c4c06a83f4aa1480828d84a746e4c71ff1e6910e50e4bd05abf17ffdb8",
+  "netlist_normalized_sha256": "174c16aa42681ceb9f54ff06bf30b06c04ab2a8422962f0e6cbfaeb3426eefcf",
   "status": "extracted",
   "device_count": 3,
   "net_count": 6,
@@ -122,12 +122,12 @@
       "label_positions_um": [
         {
           "text": "det",
-          "x_um": 44.272,
+          "x_um": 48.24,
           "y_um": 7.75
         },
         {
           "text": "det",
-          "x_um": 55.0,
+          "x_um": 59.0,
           "y_um": 0.52
         }
       ]
@@ -141,12 +141,12 @@
       "label_positions_um": [
         {
           "text": "fb",
-          "x_um": 80.0,
+          "x_um": 84.0,
           "y_um": 0.52
         },
         {
           "text": "fb",
-          "x_um": 84.15,
+          "x_um": 88.15,
           "y_um": 6.0
         }
       ]
@@ -160,12 +160,12 @@
       "label_positions_um": [
         {
           "text": "sns1",
-          "x_um": 48.0,
+          "x_um": 52.0,
           "y_um": -0.95
         },
         {
           "text": "sns1",
-          "x_um": 48.0,
+          "x_um": 52.0,
           "y_um": 0.0
         }
       ]
@@ -193,12 +193,12 @@
       "label_positions_um": [
         {
           "text": "vss",
-          "x_um": 55.0,
+          "x_um": 59.0,
           "y_um": -0.52
         },
         {
           "text": "vss",
-          "x_um": 80.0,
+          "x_um": 84.0,
           "y_um": -0.52
         }
       ]
@@ -221,9 +221,9 @@
   "unmodelled_poly": [
     {
       "bbox_um": {
-        "left": 79.65,
+        "left": 83.65,
         "bottom": 1.65,
-        "right": 80.35,
+        "right": 84.35,
         "top": 4.35
       },
       "reason": "unmarked"
@@ -256,7 +256,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:a18f8c052af3d66f9e988cd874d92e0379d034f25cf9ce187dc351ad19c368fa",
+      "content_hash": "sha256:38f98a4b307e5711cd29e01d8b934a8cec199b3a9ab477c0d80d34a5df76303c",
       "role": "layout"
     }
   },
@@ -270,14 +270,14 @@
   },
   "timing": {
     "stages": {
-      "read_layout": 0.001,
-      "device_extraction": 0.032,
+      "read_layout": 0.0,
+      "device_extraction": 0.011,
       "diagnostics": 0.0,
-      "netlist_write": 0.001,
+      "netlist_write": 0.0,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.234,
-    "unattributed_seconds": 0.2
+    "total_seconds": 0.093,
+    "unattributed_seconds": 0.081
   }
 }
