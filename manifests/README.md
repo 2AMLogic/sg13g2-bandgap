@@ -14,8 +14,8 @@ that produced it.
 - `sg13g2-bandgap.signoff.json` — the committed **verdict of record**: the
   exact output of `klt signoff --manifest manifests/sg13g2-bandgap.json
   --format json`.
-  As of the commit that last regenerated it (#300): **tier: none — 5/11 T1
-  items met** (items 1, 2, 3, 8, 10; read the count from the report's
+  As of the commit that last regenerated it (#576): **tier: none — 3/11 T1
+  items met** (items 1, 8, 10; read the count from the report's
   `t1_met_count`, not from this sentence). That is the honest state; an
   all-`unmet` manifest is a correct result, and nothing here inflates it.
 - `artifacts/` — **stored-run manifests** (issue #379, DR-0015): one
@@ -87,22 +87,33 @@ The binding used here:
   verdict (a superseded audit's inventory stays as history and is not checked).
   The attestation text's sentence that nothing re-validates the listed hashes
   predates this check and is left byte-identical so the envelope pin holds.
-- **Item 2 (Layout) — cited: `layout/bandgap_top/drc_report.json`**: proves
-  the committed GDS exists and was DRC-checkable at the pinned content hash;
-  the generator (`layout/bandgap_top/generate.py`) is committed and
-  deterministic.
-- **Item 3 (DRC clean) — cited: `layout/bandgap_top/drc_report.json`**:
-  `status: clean`, input hash pinned to the current committed GDS. **DRC
-  coverage disclosure (claimant-enforced, quoted from the citation's
-  `coverage` block):** the curated starter deck checks 16 chapters
-  (`deck_scope`: Act, Cnt, Gat, M1–M5, TM1, TM2, TV1, TV2, V1–V4); this run
-  skipped 27 carried rules (`rules_skipped`, all metal3+ / topmetal / topvia
-  width-space-enclosure rules — the block routes on M1/M2 only) and drew 14
-  layers the deck has no rule for (`layers_in_stream_without_rules`: 5/1,
-  7/0, 8/1, 8/25, 10/1, 10/25, 14/0, 28/0, 31/0, 33/0, 63/0, 111/0, 128/0,
-  128/1 — marker/label/implant layers, including the EXTBlock/pSD/SalBlock
-  resistor-recognition markers). A `met` here means "clean inside that
-  scope", not "no DRC-expressible defect exists".
+- **Item 2 (Layout) — citation now `null` (`unmet`, `check_failed`, #571)**:
+  the committed GDS still exists and regenerates byte-identically from the
+  deterministic generator (`layout/bandgap_top/generate.py`), but under the
+  containment deck the grader blocks the item on its critical metric
+  (`drc__error__count: 109`), so the regenerated manifest carries no
+  citation. The item returns to `met` only when that count is 0.
+- **Item 3 (DRC clean) — citation now `null` (`unmet`, `check_failed`,
+  #571)**: `layout/bandgap_top/drc_report.json` reads `status: violations`
+  — 109 markers (4 `cont.ongrid.1`, 18 `metal1.enclosing.cont.1`, 39
+  `metal2.enclosing.via1.1`, 48 `via1.width.1`: the pre-existing Via1/Cont
+  classes the #556/#557 family owns; zero `nwell.*`, that class closed by
+  #571's tap-margin fix, under which `bandgap_amp` mints `clean`/0), input
+  hash pinned to the current committed GDS — so the grader blocks on the
+  critical metric (`drc__error__count: 109`) and carries no citation.
+  **DRC coverage disclosure (claimant-enforced, quoted from the report's
+  `coverage` block):** the curated deck now checks 26 chapters
+  (`deck_scope`: Act, Cnt, Gat, M1–M5, MIM, NW, Offgrid, TM1, TM2, TV1,
+  TV2, V1–V4, pSD, plus the curated Cont/Via1–Via4 upper-landing
+  containment chapters); this run skipped 32 carried rules
+  (`rules_skipped`, all Via2+/metal3+/topmetal/topvia
+  width-space-enclosure rules — the block routes on M1/M2 with Cont/Via1
+  only) and drew 10 layers the deck has no rule for
+  (`layers_in_stream_without_rules`: 5/1, 8/1, 8/25, 10/1, 10/25, 28/0,
+  33/0, 111/0, 128/0, 128/1 — label/pin-purpose variants and marker
+  layers, including the EXTBlock/SalBlock/PolyRes resistor-recognition
+  markers and EmWind). A `met` here would mean "clean inside that scope",
+  not "no DRC-expressible defect exists".
 - **Item 4 (LVS clean) — cited unpinned: `layout/bandgap_top/lvs_report.json`**:
   grades `check_failed` — `status: mismatch`, honestly. Sole remaining cause
   on the SG13G2 cells: `bandgap_core`/`bandgap_top`'s three `NPN13G2`
