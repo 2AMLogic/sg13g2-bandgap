@@ -12,6 +12,21 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-18
 
+- **PR #617**: ci: report hygiene's base-diff gates on merge_group commits (merge queue step 1)
+- **PR #616**: fix: correct klu-retime README log claims and un-ignore measurements logs
+- **Issue #615** (closed): measurements/2026-11-klu-retime README promises per-run ngspice.log files that .gitignore's *.log rule silently dropped
+- **Issue #614** (closed): Merge queue: add the merge_group trigger to the required-check workflow(s)
+- **PR #613**: sim: adopt the klu direct solver on both supply benches (measured 1.44x/1.36x hot-corner wins)
+- **PR #612**: fix(layout): refresh bandgap_top leaf_inputs.json to the post-#572 core GDS hash
+- **PR #611**: refactor: hoist shared git capture and waiver-file preamble into _ci_common
+- **Issue #610** (closed): Dedupe .github/scripts: _git and the waiver-file loader are copied between check_report_regression and check_evidence_formats
+- **PR #608**: fix: report a malformed leaf sidecar entry instead of crashing the evidence checker
+- **Issue #607** (closed): main is red: bandgap_top leaf_inputs.json leaf binding stale after #588's hygiene run (non-waived STALE)
+- **Issue #595** (closed): check_evidence_formats: malformed leaf_inputs.json entry crashes with KeyError instead of the intended failure report
+- **PR #589**: fix(layout): put fold_plan's inter-leg gap on the 5 nm manufacturing grid
+- **Issue #573** (closed): layout: cont.ongrid.1 x4 in bandgap_startup under the current sg13g2 deck
+- **Issue #518** (closed): sim: re-time closed-loop-iq / closed-loop-startup under KLU on an uncontended host (#489 left the number undetermined)
+
 - **PR #593**: layout: bind assembly tops to the leaf GDS hashes they embed via leaf_inputs.json
 - **Issue #588** (closed): layout: bind bandgap_top.gds (and CMOS5L top) to the leaf GDS hashes it embedded — a stale leaf can hide in a committed top for weeks
 - **PR #605**: fix: fail closed on non-integer per-class counts in report regression guard
