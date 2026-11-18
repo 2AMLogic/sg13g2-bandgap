@@ -113,7 +113,7 @@ done
   echo "  before trusting this record on a different machine)."
   echo "- **OSDI models**: \`${OSDI_DIR}\` -- built by \`sim/tools/build-osdi.sh\`"
   echo "  from the PDK's own Verilog-A sources; compiler provenance is pinned"
-  echo "  in \`sim/pdk.json\` (\"osdi_toolchain\")."
+  echo "  via \`sim/tools/build-osdi.sh --print-pins\`."
   echo "- **ngspice**: \`${NGSPICE_VERSION}\`"
   echo "- **Corner matrix run**: process corner {typ, bcs, wcs, sf, fs} (HBT x"
   echo "  MOS-hv x resistor sections -- see README.md for the pairing) x"

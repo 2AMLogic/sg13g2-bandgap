@@ -961,7 +961,8 @@ package for `noble` (the same fetch-and-verify pattern already used for the
 `openvaf-r` compiler tarball), unpacks it unprivileged with `dpkg-deb -x`
 (no root or system install needed), and points `LD_LIBRARY_PATH` at it for
 its own `openvaf-r` invocations only. The pin (package URL, sha256,
-release codename) lives in `sim/pdk.json`'s
-`osdi_toolchain.libllvm21_deb`, alongside the `openvaf-r` asset pins. If
+release codename) is embedded in `build-osdi.sh` itself, alongside the
+`openvaf-r` asset pins; `sim/tools/build-osdi.sh --print-pins` prints them
+as JSON. If
 `dpkg-deb` is not on `PATH`, `build-osdi.sh` falls back to printing the
 exact copy-pasteable manual workaround rather than failing silently.
