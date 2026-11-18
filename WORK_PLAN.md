@@ -25,31 +25,33 @@ _None._
 
 ## Ready
 
-Human-approved issues ready for implementation (`loom:issue`).
+Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
-- **#572**: layout: metal1.enclosing.cont.1 x18 in bandgap_core under the require_containment sg13g2 deck
-- **#573**: layout: cont.ongrid.1 x4 in bandgap_startup under the current sg13g2 deck
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
-- **#557**: layout: remaining via1 end-cap/size defects in bandgap_core, bandgap_startup, bandgap_top under the current sg13g2 deck
+- **#561**: Evidence backlog: 20 committed layout reports predate the DR-0016 evidence standard (klt 0.8.0)
 - **#571**: layout: nwell.enclosing.nactiv.1 (amp 5, core 6, top 11) under the require_containment sg13g2 deck
+- **#572**: layout: metal1.enclosing.cont.1 x18 in bandgap_core under the require_containment sg13g2 deck
+- **#573**: layout: cont.ongrid.1 x4 in bandgap_startup under the current sg13g2 deck
+- **#579**: Rebase PR #576 (#571 tap-margin fix) onto post-#574 main: layout regen + evidence re-mint
+- **#582**: lvs_reference.py: the PDK symbol-formula resistor paths silently assume b=0 and m=1
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#574**: fix(layout): enclose core/top Via1 landings in Metal2 at the deck's fixed 0.19 um
+_None._
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#576**: fix(layout): raise TAP_NWELL_MARGIN_UM to the deck's 0.24um nwell.enclosing.nactiv.1 floor — closes #571, #579
 
 ## Proposed
 
@@ -64,11 +66,13 @@ Issues carrying `loom:curated`.
 - **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)* *(held)*
 - **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(curated)* *(held)*
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)* *(held)*
-- **#557**: layout: remaining via1 end-cap/size defects in bandgap_core, bandgap_startup, bandgap_top under the current sg13g2 deck *(curated)*
 - **#561**: Evidence backlog: 20 committed layout reports predate the DR-0016 evidence standard (klt 0.8.0) *(curated)*
 - **#571**: layout: nwell.enclosing.nactiv.1 (amp 5, core 6, top 11) under the require_containment sg13g2 deck *(curated)*
 - **#572**: layout: metal1.enclosing.cont.1 x18 in bandgap_core under the require_containment sg13g2 deck *(curated)*
 - **#573**: layout: cont.ongrid.1 x4 in bandgap_startup under the current sg13g2 deck *(curated)*
+- **#579**: Rebase PR #576 (#571 tap-margin fix) onto post-#574 main: layout regen + evidence re-mint *(curated)*
+- **#582**: lvs_reference.py: the PDK symbol-formula resistor paths silently assume b=0 and m=1 *(curated)*
+- **#584**: layout: bandgap_top/drc_waivers.json _comment cites #552 (unrelated) where it means #557 *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -86,11 +90,11 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 3 |
-| Ready (`loom:issue`) | 3 |
-| In Progress (`loom:building`) | 3 |
-| PRs awaiting review | 1 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 14 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
+| In Progress (`loom:building`) | 7 |
+| PRs awaiting review | 0 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 16 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
