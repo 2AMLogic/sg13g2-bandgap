@@ -326,7 +326,7 @@ def _res_element_line(
     ``.1f``'s half-milliare rounding is a ~7e-5 relative error on a
     480-ohm ``rppd`` and would lose the pairing all over again, while
     ``.6f``'s 5e-7 absolute rounding is below the threshold at every
-    magnitude this design's resistors reach (479.666002 ohm upward)."""
+    magnitude this design's resistors reach (479.566301 ohm upward)."""
     n1, n2, _sub = nodes
     return (
         f"{_element_name(instance, 'R')} {n1} {n2} {format(r_ohm, r_fmt)} "
