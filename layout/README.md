@@ -1954,7 +1954,8 @@ upstream per `CLAUDE.md`'s friction protocol, no design-specific detail:
 [`klayout-tools#1484`](https://github.com/2AMLogic/klayout-tools/issues/1484).
 
 **What's left, and why it is out of scope here.** `layout/bandgap_top/
-lvs_report.json` still reports `status: "mismatch"`, 6 findings -- issue
+lvs_report.json` still reports `status: "mismatch"`, **8 findings / 4
+error-severity** -- issue
 #184 resolved the one non-permanent, non-upstream-gated cause left
 (`bandgap_amp`'s own `MP1`/`MP2` body-tie simplification -- previously 2
 `device.unmatched`, class `pfet`, `X2_MP1`/`X2_MP2`, now gone entirely; see
@@ -1963,15 +1964,16 @@ remains is entirely the permanently-declined bipolar-recognition gap:
 
 | # | Findings | Cause | Status |
 |---|---|---|---|
-| 1 | 3 `device.unmatched`, class `NPN13G2` (`X1_Q1`/`X1_Q2`/`X1_Q3`) | `bandgap_core`'s permanently-declined `npn13G2` recognition gap (see "Permanent blockers" above) | already known, permanent |
-| 2 | 1 `topology`, "device class could not be mapped to a counterpart" | The report does not name the class, so this one is **inferred, not verified**: `bandgap_core`'s own leaf report shows the identical finding alongside its `NPN13G2` gap and nothing else unmapped, so cause 1 is the most plausible attribution here too | inferred |
+| 1 | 3 `device.unmatched`, class `NPN13G2` (reference-side; `bandgap_core`'s `Q1`–`Q3`) | `bandgap_core`'s permanently-declined `npn13G2` recognition gap (see "Permanent blockers" above) | already known, permanent |
+| 2 | 1 `topology`, "device class could not be mapped to a counterpart: 'NPN13G2'" | The current mint names the class outright, confirming what the 0.6.0-era mint left **inferred**: `bandgap_core`'s own leaf report shows the identical finding alongside its `NPN13G2` gap, so this is cause 1 at class level | confirmed |
 | -- | 2 `device.bulk_reconciled` (`severity: "warning"`, never affects `status`) | Cause A's own disclosure that the `rppd`/`rhigh` match rests on this request's `device_bulk` reconciliation (see above) | disclosure, not a defect |
+| -- | 2 `device.geometry_not_compared` (`severity: "warning"`, never affects `status`) | klt's own resistor-geometry disclosure (klayout-tools#2461, closed): the `rppd`/`rhigh` classes' `A`/`P` parameters are declared *secondary*, so `kdb.NetlistComparer` compares primary parameters only and the geometry dimensions take no part in the compare (see "LVS: three real pieces of friction" above) | disclosure, not a defect |
 
 Consistent with the rest of this file, none of the above is a reason to treat
 the `mismatch` as benign: `bandgap_top` is **not** LVS-clean. Its remaining
 `mismatch` verdict now rests entirely on the one permanently-declined,
 already-documented leaf-level cause (`bandgap_core`'s `npn13G2` recognition
-gap, plus one inferred instance of it) -- as close to `bandgap_startup`'s
+gap, plus its class-level topology entry) -- as close to `bandgap_startup`'s
 own already-clean bar as this deck allows. (That "rests entirely" holds as
 of the 0.6.0-era mint this section narrates; every mint since the
 2026-11-17 DR-0016 re-mint under the evidence-standard pin `klt 0.8.0`

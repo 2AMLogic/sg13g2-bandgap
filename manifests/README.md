@@ -157,11 +157,11 @@ The binding used here:
   `vss` (needs klayout-tools#2354). That residue is *not* resolved by #240's
   closure; either reopen that work or fix it when the port is next touched.
 
-- **Item 8 (Characterization report) — cited: `measurements/2026-11-13-characterization-report/envelope.json`**
+- **Item 8 (Characterization report) — cited: `measurements/2026-11-18-characterization-report/envelope.json`**
   (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
   `README.md` beside it, pinned to that report's sha256). The report is
-  [`measurements/2026-11-13-characterization-report/README.md`](../measurements/2026-11-13-characterization-report/README.md),
-  stamped at the audited commit `9d568b91`: one entry per row of the
+  [`measurements/2026-11-18-characterization-report/README.md`](../measurements/2026-11-18-characterization-report/README.md),
+  stamped at the audited commit `11a18b96`: one entry per row of the
   `README.md` target-spec table (the Output-reference row as its nominal,
   untrimmed and trimmed lines), each with bound, verdict, binding corner,
   whether the verdict is statistical, the newest committed `sim/` record
@@ -171,8 +171,11 @@ The binding used here:
   report exists, is current at the stamped commit and cites its evidence. It
   is **not** a statement that every spec row passes: the report itself
   records the trimmed ±0.5% line as measured unmet (3σ ≈ 2.4%), the PSRR
-  row as met by 0.0013 dB, and four records as stale against the
-  trim-bearing netlist (`sim/evidence-freshness-waivers.json`). Whether the
+  row as not met on current evidence (the post-layout grid that cleared it
+  by 0.0013 dB predates the current extraction), and five stale records:
+  two pre-trim-DUT records waived in
+  `sim/evidence-freshness-waivers.json`, plus three post-layout benches
+  disclosed against the pre-#557 extraction. Whether the
   block conforms to its spec is item 5's question, and item 5 stays unmet.
   **The pin binds the report, not the envelope**: the grader re-hashes the
   report file, so editing the report without regenerating the envelope and
@@ -180,7 +183,7 @@ The binding used here:
   freshness is tested, not assumed). The pin alone would not notice the
   report's *dependencies* moving while its bytes stay put, so since #315 the
   report also carries a machine-readable dependency inventory,
-  [`dependencies.json`](../measurements/2026-11-13-characterization-report/dependencies.json),
+  [`dependencies.json`](../measurements/2026-11-18-characterization-report/dependencies.json),
   checked by `.github/scripts/check_report_dependencies.py` (see "Item-8
   dependency drift" below): a change to an audited DUT netlist, a spec-table
   bound, a quoted decision-record status, or a newer record in a summarized
