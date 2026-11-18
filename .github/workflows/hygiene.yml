@@ -66,6 +66,13 @@ jobs:
         # PEX templates; the test proves the 255-unit ladder chain closes.
         run: python3 sim/tools/test_gen_pex_netlist_body.py
 
+      - name: LVS reference generator self-test
+        # Issue #582: the resistor symbol-formula paths assume b=0/m=1; the
+        # guard now enforces that (rejects bent/multiplied calls loudly) and
+        # each formula helper's value is pinned. White-box, stdlib only --
+        # lvs_reference imports no klayout.
+        run: python3 layout/test_lvs_reference.py
+
       - name: Loop-gain solve-quality gate self-test
         # Issue #297: the guard that stops numerically corrupted AC solves
         # (#289's 36.3 / 43.9 deg artifacts) from being recorded as evidence.
