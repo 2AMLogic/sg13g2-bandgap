@@ -7,7 +7,8 @@ Current repository work state, generated from GitHub labels by the Guide role.
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-_None._
+- **#593**: layout: bind assembly tops to the leaf GDS hashes they embed via leaf_inputs.json
+- **#596**: docs: document merge-time staleness hazard for layout evidence
 
 ## Very Important
 
@@ -34,12 +35,10 @@ Human-approved issues (`loom:issue`) ready for implementation — excluding held
 Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
-- **#561**: Evidence backlog: 20 committed layout reports predate the DR-0016 evidence standard (klt 0.8.0)
-- **#571**: layout: nwell.enclosing.nactiv.1 (amp 5, core 6, top 11) under the require_containment sg13g2 deck
-- **#572**: layout: metal1.enclosing.cont.1 x18 in bandgap_core under the require_containment sg13g2 deck
+- **#518**: sim: re-time closed-loop-iq / closed-loop-startup under KLU on an uncontended host (#489 left the number undetermined)
 - **#573**: layout: cont.ongrid.1 x4 in bandgap_startup under the current sg13g2 deck
-- **#579**: Rebase PR #576 (#571 tap-margin fix) onto post-#574 main: layout regen + evidence re-mint
-- **#582**: lvs_reference.py: the PDK symbol-formula resistor paths silently assume b=0 and m=1
+- **#587**: Layout evidence can go stale against a concurrently-merged GDS change, and PR CI never re-checks it
+- **#588**: layout: bind bandgap_top.gds (and CMOS5L top) to the leaf GDS hashes it embedded — a stale leaf can hide in a committed top for weeks
 
 ## PRs Awaiting Review
 
@@ -51,7 +50,8 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#576**: fix(layout): raise TAP_NWELL_MARGIN_UM to the deck's 0.24um nwell.enclosing.nactiv.1 floor — closes #571, #579
+- **#593**: layout: bind assembly tops to the leaf GDS hashes they embed via leaf_inputs.json — closes #588
+- **#596**: docs: document merge-time staleness hazard for layout evidence — closes #587
 
 ## Proposed
 
@@ -66,13 +66,10 @@ Issues carrying `loom:curated`.
 - **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)* *(held)*
 - **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(curated)* *(held)*
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)* *(held)*
-- **#561**: Evidence backlog: 20 committed layout reports predate the DR-0016 evidence standard (klt 0.8.0) *(curated)*
-- **#571**: layout: nwell.enclosing.nactiv.1 (amp 5, core 6, top 11) under the require_containment sg13g2 deck *(curated)*
-- **#572**: layout: metal1.enclosing.cont.1 x18 in bandgap_core under the require_containment sg13g2 deck *(curated)*
+- **#518**: sim: re-time closed-loop-iq / closed-loop-startup under KLU on an uncontended host (#489 left the number undetermined) *(curated)*
 - **#573**: layout: cont.ongrid.1 x4 in bandgap_startup under the current sg13g2 deck *(curated)*
-- **#579**: Rebase PR #576 (#571 tap-margin fix) onto post-#574 main: layout regen + evidence re-mint *(curated)*
-- **#582**: lvs_reference.py: the PDK symbol-formula resistor paths silently assume b=0 and m=1 *(curated)*
-- **#584**: layout: bandgap_top/drc_waivers.json _comment cites #552 (unrelated) where it means #557 *(curated)*
+- **#587**: Layout evidence can go stale against a concurrently-merged GDS change, and PR CI never re-checks it *(curated)*
+- **#588**: layout: bind bandgap_top.gds (and CMOS5L top) to the leaf GDS hashes it embedded — a stale leaf can hide in a committed top for weeks *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -87,14 +84,14 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 0 |
+| Operator merge-risk holds | 2 |
 | Very important | 0 |
 | Important | 3 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
-| In Progress (`loom:building`) | 7 |
+| In Progress (`loom:building`) | 5 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
-| Curated | 16 |
+| Approved PRs awaiting merge | 2 |
+| Curated | 13 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
