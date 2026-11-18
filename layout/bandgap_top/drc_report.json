@@ -359,7 +359,7 @@
     "klayout_version_mismatch": true,
     "waivers": {
       "file": "drc_waivers.json",
-      "content_hash": "sha256:fed744ad57b1fe9ccf14db337502b765da11848e87a767d4af38a5af3f755323"
+      "content_hash": "sha256:f50194af7fa91ca5f0e782d9ab4912c5ea2888f70feb22b149aa46b9ff786f23"
     }
   }
 }
