@@ -963,6 +963,6 @@ package for `noble` (the same fetch-and-verify pattern already used for the
 its own `openvaf-r` invocations only. The pin (package URL, sha256,
 release codename) is embedded in `build-osdi.sh` itself, alongside the
 `openvaf-r` asset pins; `sim/tools/build-osdi.sh --print-pins` prints them
-as JSON. If
-`dpkg-deb` is not on `PATH`, `build-osdi.sh` falls back to printing the
-exact copy-pasteable manual workaround rather than failing silently.
+as JSON. If `dpkg-deb` is not on `PATH`, `build-osdi.sh` falls back to
+printing the exact copy-pasteable manual workaround rather than failing
+silently.
