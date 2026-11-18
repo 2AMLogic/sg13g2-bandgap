@@ -89,14 +89,17 @@ TRUNK_W = 0.3
 #: How many serpentine legs ``RPU``'s 1411.3 um of ``rhigh`` conductor is
 #: folded into (issue #173). Chosen to make the folded block roughly square:
 #: with ``draw_poly_res``'s own ``RES_FOLD_GAP_UM`` (0.4) and ``w=1u`` the
-#: leg pitch is 1.4 um, so the block is ``(l/legs)`` tall by ``legs*1.4``
-#: wide and the two are equal at ``legs = sqrt(l / pitch) = sqrt(1411.3 /
-#: 1.4) = 31.7``. 32 rounds that to an **even** count, which is what puts
-#: both terminals on the block's bottom row (odd counts leave end B on top --
-#: see ``draw_poly_res``). Measured result: 44.4 um wide x 43.7 um tall,
-#: aspect 0.98, against the straight bar's 1411.3 x 1.
+#: leg pitch is ~1.5 um (``fold_plan`` searches only multiples of the 5 nm
+#: manufacturing grid, issue #573 -- for this resistor it lands at
+#: gap=0.54, pitch=1.54), so the block is ``(l/legs)`` tall by
+#: ``legs*pitch`` wide and the two are equal at
+#: ``legs = sqrt(l / pitch) = sqrt(1411.3 / 1.5) = ~30.7``. 32 rounds that
+#: to an **even** count, which is what puts both terminals on the block's
+#: bottom row (odd counts leave end B on top -- see ``draw_poly_res``).
+#: Measured result: 48.74 um wide x 43.58 um tall, aspect 1.12, against the
+#: straight bar's 1411.3 x 1.
 #:
-#: The block's *footprint* is ~``l * pitch`` (1975 um2) for **any** leg
+#: The block's *footprint* is ~``l * pitch`` (2175 um2) for **any** leg
 #: count -- folding trades aspect ratio, not area, and the area it does cost
 #: over the bare conductor is the inter-leg gap, which DRC requires. So this
 #: number is purely an aspect-ratio choice and nothing downstream depends on
@@ -131,7 +134,7 @@ def build() -> Builder:
         gate_net="det", source_net="fb", drain_net="vss",
     )
     # RPU (l=1411.3u) folded into RPU_LEGS serpentine legs (issue #173) --
-    # a ~44 x 44 um block instead of the 1.4 mm bar that used to
+    # a ~49 x 44 um block instead of the 1.4 mm bar that used to
     # single-handedly set this cell's bounding box. Placed above the compact
     # MSENSE/MKFB row; both its terminals come out on its own bottom row.
     rpu = draw_poly_res(

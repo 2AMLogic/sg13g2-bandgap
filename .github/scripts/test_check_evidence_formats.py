@@ -557,6 +557,23 @@ def case_waiver_without_issue(root: Path):
     return "missing required key(s): issue"
 
 
+def case_waiver_file_is_not_an_object(root: Path):
+    """A malformed waiver file is a schema failure, not a traceback (#610)."""
+    case_stale_drc_input(root)
+    (root / "layout/evidence-freshness-waivers.json").write_text(
+        json.dumps(["not an object"]), encoding="utf-8"
+    )
+    return "must be a JSON object with a 'waivers' list"
+
+
+def case_waiver_entry_is_not_an_object(root: Path):
+    case_stale_drc_input(root)
+    (root / "layout/evidence-freshness-waivers.json").write_text(
+        json.dumps({"waivers": ["not an object"]}), encoding="utf-8"
+    )
+    return "waiver entry is not an object"
+
+
 def case_waiver_silences_only_its_own_check(root: Path):
     """A waiver for the DRC input must not silence a stale LVS reference."""
     drc = json.loads((root / "layout/synth_cell/drc_report.json").read_text(encoding="utf-8"))
@@ -1222,6 +1239,8 @@ CASES = [
     ("erc_report.json rejects a status outside the vocabulary", case_erc_bad_status_token),
     ("erc_report.json is stale after its supply spec is edited", case_erc_stale_spec),
     ("waiver without a tracking issue is rejected", case_waiver_without_issue),
+    ("waiver file that is not an object is rejected", case_waiver_file_is_not_an_object),
+    ("waiver entry that is not an object is rejected", case_waiver_entry_is_not_an_object),
     ("waiver silences only its own check", case_waiver_silences_only_its_own_check),
     ("obsolete waiver self-expires", case_obsolete_waiver_self_expires),
     ("waiver that guards nothing is rejected", case_waiver_guards_nothing),

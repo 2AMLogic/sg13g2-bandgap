@@ -1,10 +1,4 @@
 {
-  "_comment": "Cell-scoped DRC waivers for bandgap_top's assembled verdict (issue #557). The curated sg13g2 deck's require_containment rules (klayout-tools#6174) surface pre-existing violation classes in this block's leaf cells that #556/#559/#557 deliberately did NOT fix — each class has its own tracking issue and is waived here so the assembled top-level report carries status clean with the waived markers disclosed in full (klt drc --waivers: waived markers leave violations[] and appear under waived[], all-waived runs report clean). Every waiver names its tracking issue; when a class is fixed, its waiver entries are deleted in the same PR — #571's tap-margin fix closed nwell.enclosing.nactiv.1 (11 markers at top: amp 5, core 6), so its two entries were deleted in the rebase PR for #579; #572's Metal1 base-contact landing closed metal1.enclosing.cont.1 (18 markers at top, all from core's instance), so its entry is deleted in this PR. source_cell must match exactly; top-level (source_cell null) markers are never waived by design.",
-  "waivers": [
-    {
-      "cell": "bandgap_startup",
-      "rule": "cont.ongrid.1",
-      "justification": "pre-existing off-grid Cont (all 4 markers come from startup's instance, the only findings that cell has); tracked in #573"
-    }
-  ]
+  "_comment": "Cell-scoped DRC waivers for bandgap_top's assembled verdict (issue #557). The curated sg13g2 deck's require_containment rules (klayout-tools#6174) surface pre-existing violation classes in this block's leaf cells that #556/#559/#557 deliberately did NOT fix — each class has its own tracking issue and is waived here so the assembled top-level report carries status clean with the waived markers disclosed in full (klt drc --waivers: waived markers leave violations[] and appear under waived[], all-waived runs report clean). Every waiver names its tracking issue; when a class is fixed, its waiver entries are deleted in the same PR — #571's tap-margin fix closed nwell.enclosing.nactiv.1 (11 markers at top: amp 5, core 6), so its two entries were deleted in the rebase PR for #579; #572's Metal1 base-contact landing closed metal1.enclosing.cont.1 (18 markers at top, all from core's instance), so its entry was deleted in #572's PR; #573's manufacturing-grid fold_plan fix closed cont.ongrid.1 (4 markers at top, all from startup's instance), so its entry is deleted in #573's PR. source_cell must match exactly; top-level (source_cell null) markers are never waived by design.",
+  "waivers": []
 }
