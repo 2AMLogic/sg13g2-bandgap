@@ -12,6 +12,17 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-18
 
+- **PR #599**: docs: disclose the 0.8.0 deck's Offgrid/containment scope narrowing in DR-0016
+- **PR #592**: test: pin _sg13g2_rppd_ohms at R1's (2u, 37.2u) in the lvs_reference self-test
+- **PR #586**: layout: re-mint all committed layout evidence under the klt 0.8.0 pin (#561 step 2)
+- **PR #583**: fix: enforce b=0/m=1 precondition of lvs_reference's formula resistor paths
+- **PR #576**: fix(layout): raise TAP_NWELL_MARGIN_UM to the deck's 0.24um nwell.enclosing.nactiv.1 floor
+- **Issue #597** (closed): DR-0016: disclose that the pinned 0.8.0 deck cannot see the containment rule families #572/#573 are filed against
+- **Issue #590** (closed): lvs_reference self-test: _sg13g2_rppd_ohms is the one formula helper whose value is not pinned
+- **Issue #582** (closed): lvs_reference.py: the PDK symbol-formula resistor paths silently assume b=0 and m=1
+- **Issue #579** (closed): Rebase PR #576 (#571 tap-margin fix) onto post-#574 main: layout regen + evidence re-mint
+- **Issue #571** (closed): layout: nwell.enclosing.nactiv.1 (amp 5, core 6, top 11) under the require_containment sg13g2 deck
+- **Issue #561** (closed): Evidence backlog: 20 committed layout reports predate the DR-0016 evidence standard (klt 0.8.0)
 - **PR #580**: layout: derive SG13G2 rppd reference values from the PDK's own rppd.sym formula (issue #561 step 1)
 - **PR #578**: fix(layout): drop double-applied CORE_DX in bandgap_top vref column x
 - **Issue #577** (closed): layout: bandgap_top's vref column double-applies CORE_DX (latent; harmless only while CORE_DX == 0)
