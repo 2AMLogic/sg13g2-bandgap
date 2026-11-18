@@ -4,8 +4,9 @@
 # Runs from the source root the runner unpacked; everything it produces goes
 # under measurements/2026-11-klu-retime/out (the job's declared output).
 set -euo pipefail
-cd "$(dirname "$0")/../../.." || exit 2
-exec python3 measurements/2026-11-klu-retime/retimer.py \
-  --out measurements/2026-11-klu-retime/out \
+here="$(cd "$(dirname "$0")" && pwd)"
+root="$(cd "$here/../.." && pwd)"
+exec python3 "$here/retimer.py" \
+  --out "$here/out" \
   --max-passes "${RETIME_MAX_PASSES:-8}" \
   --budget-s "${RETIME_BUDGET_S:-3240}"
