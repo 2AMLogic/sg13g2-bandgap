@@ -118,7 +118,7 @@ for arg in "$@"; do
     --check) CHECK_ONLY=1 ;;
     --force) FORCE=1 ;;
     --print-pins) print_pins; exit 0 ;;
-    -h|--help) sed -n '2,40p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n '2,/^set -euo pipefail/{/^set -euo/!p}' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "build-osdi.sh: unknown argument '${arg}'" >&2; exit 2 ;;
   esac
 done
