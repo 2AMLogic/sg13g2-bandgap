@@ -1450,6 +1450,29 @@ each entry self-expires when its own experiment re-runs. The one-point probe
 under "Trim ladder layout (issue #272)" above is what stands in for grid
 evidence until then — and is explicitly *not* committed as a record.
 
+### Re-mint quality: the regression guard (`layout/report-regression-waivers.json`)
+
+Freshness says a report was minted against *these* bytes; it says nothing
+about whether the mint is any *good* (issue #594: PR #591 moved
+`bandgap_core`'s LVS from 4 to 1022 error-severity findings and every checker
+stayed green, because the old report it replaced was never consulted).
+`.github/scripts/check_report_regression.py` closes that gap: every committed
+change to a `bandgap_*` cell's `lvs_report.json` / `drc_report.json` is
+compared against the same file at the merge base, and any worsened headline
+count fails the build — LVS `error_count` up, `counts.nets.matched` /
+`counts.devices.matched` down, any `category_error_counts` class up;
+DRC `violation_count` up or any `rule_counts` rule up (per-class, so a
+0 → 504 `net.unmatched` cascade is caught even when a total would mask it).
+A deliberate regression stays expressible: an entry in
+`layout/report-regression-waivers.json` names the exact report and, in
+`expected`, the exact new value of **every** regressed predicate, plus the
+mandatory tracking issue and reason — and it **self-expires** twice over,
+like the freshness waivers: on the next re-mint the named values no longer
+match, and on the first PR where the report stops regressing (or is never
+touched) the entry is unused/obsolete; either way the checker fails until
+the entry is deleted. The `sg13cmos5l-*` cells, `pex_extract_report.json`
+and `erc_report.json` are not guarded yet — widen `REPORT_RE` when wanted.
+
 ## Post-layout parasitic extraction (issue #14)
 
 Per this issue's own dependency text, LVS's `mismatch` status above is the
