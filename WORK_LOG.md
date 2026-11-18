@@ -12,6 +12,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-18
 
+- **PR #593**: layout: bind assembly tops to the leaf GDS hashes they embed via leaf_inputs.json
+- **Issue #588** (closed): layout: bind bandgap_top.gds (and CMOS5L top) to the leaf GDS hashes it embedded — a stale leaf can hide in a committed top for weeks
 - **PR #605**: fix: fail closed on non-integer per-class counts in report regression guard
 - **PR #604**: fix(layout): cite #557, not #552, in bandgap_top's DRC waiver comment
 - **PR #602**: docs: sync item-8 citation to the 2026-11-18 report and bandgap_top LVS prose to the committed 8-finding mint
