@@ -12,6 +12,9 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-18
 
+- **PR #580**: layout: derive SG13G2 rppd reference values from the PDK's own rppd.sym formula (issue #561 step 1)
+- **PR #578**: fix(layout): drop double-applied CORE_DX in bandgap_top vref column x
+- **Issue #577** (closed): layout: bandgap_top's vref column double-applies CORE_DX (latent; harmless only while CORE_DX == 0)
 - **PR #574**: fix(layout): enclose core/top Via1 landings in Metal2 at the deck's fixed 0.19 um
 - **Issue #557** (closed): layout: remaining via1 end-cap/size defects in bandgap_core, bandgap_startup, bandgap_top under the current sg13g2 deck
 

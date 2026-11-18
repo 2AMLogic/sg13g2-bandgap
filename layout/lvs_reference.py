@@ -305,6 +305,44 @@ _SG13G2_RES_OHMS = {
 }
 
 
+def _require_formula_preconditions(
+    model_lower: str, params: dict[str, str], line: str
+) -> None:
+    """Raise unless one formula-path resistor call says ``b=0`` and ``m=1``.
+
+    Every ``.sym`` ``value=`` expression the formula helpers transcribe
+    (:func:`_cmos5l_rppd_ohms`, :func:`_cmos5l_rhigh_ohms`,
+    :func:`_sg13g2_rhigh_ohms`, :func:`_sg13g2_rppd_ohms`) carries bend
+    (``@b``) and multiplier
+    (``@m``) terms the transcription drops -- valid **only** for ``b=0``
+    (no bends) and ``m=1`` (single device), the precondition each helper's
+    docstring records. Before issue #582 nothing enforced it: a future
+    bent or multiplied resistor would have silently gotten a reference
+    value wrong by exactly the dropped terms -- indistinguishable from the
+    deck noise issues #561/#563 and klayout-tools#6313 spent three rounds
+    disentangling -- so now it raises, naming the model, the parameter and
+    the offending line. Absent ``b``/``m`` take the allowed values (the
+    symbols' own defaults), and the comparison is float, not string, so
+    ``m=1.0`` is the allowed ``m=1`` too.
+    """
+    for name, allowed in (("b", "0"), ("m", "1")):
+        got = params.get(name, allowed)
+        try:
+            mismatch = float(got) != float(allowed)
+        except ValueError:
+            raise ValueError(
+                f"{model_lower} {name}={got} on line: {line} -- non-numeric "
+                f"{name}= value on a symbol-formula resistor call"
+            ) from None
+        if mismatch:
+            raise ValueError(
+                f"{model_lower} {name}={got} on line: {line} -- the symbol-formula "
+                f"resistor path is transcribed for {name}={allowed} only; extend "
+                f"the formula (the _cmos5l_*_ohms / _sg13g2_*_ohms helpers) "
+                f"before using it"
+            )
+
+
 def _res_element_line(
     instance: str,
     nodes: list[str],
@@ -430,7 +468,9 @@ def _convert_device_line(line: str, pdk: str) -> str:
         # (third, substrate-tie node dropped; model name written as
         # the positional model token so the reader assigns an RPPD /
         # RHIGH device class rather than the generic "RES"), but
-        # valued with CMOS5L's own per-flavour symbol formula.
+        # valued with CMOS5L's own per-flavour symbol formula -- which
+        # is transcribed for b=0/m=1 only, so enforce that before use.
+        _require_formula_preconditions(model_lower, params, line)
         l_um = float(params["l"].rstrip("uU"))
         w_um = float(params["w"].rstrip("uU"))
         r_ohm = _CMOS5L_RES_OHMS[model_lower](w_um, l_um)
@@ -485,8 +525,13 @@ def _convert_device_line(line: str, pdk: str) -> str:
         # on the flat sheet table. A formula flavour's value feeds a
         # compared `R` parameter on this PDK's requests, so it is written
         # at six decimals (see `_res_element_line`'s `r_fmt`); the flat
-        # values keep the historical one-decimal form.
+        # values keep the historical one-decimal form. Only the formula
+        # path carries the b=0/m=1 precondition the transcription
+        # assumes -- the flat sheet value does not depend on b or m at
+        # all, so it stays unguarded (issue #582).
         formula_path = model_lower in _SG13G2_RES_OHMS
+        if formula_path:
+            _require_formula_preconditions(model_lower, params, line)
         r_ohm = (
             _SG13G2_RES_OHMS[model_lower](w_um, l_um)
             if formula_path

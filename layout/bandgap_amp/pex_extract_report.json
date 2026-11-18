@@ -552,7 +552,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:00922ef0324bd7713c1a8fddfc278f7b62931b6c7725e0eebefe0f68660f0cdb",
+      "content_hash": "sha256:219aa2a589fb85fb8f828f4656320cef48d42ef66f5f78d0773240861d364b10",
       "role": "layout"
     }
   },
@@ -1571,14 +1571,14 @@
   },
   "timing": {
     "stages": {
-      "read_layout": 0.001,
-      "device_extraction": 0.016,
+      "read_layout": 0.0,
+      "device_extraction": 0.01,
       "diagnostics": 0.0,
       "netlist_write": 0.001,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.136,
-    "unattributed_seconds": 0.118
+    "total_seconds": 0.096,
+    "unattributed_seconds": 0.084
   }
 }
