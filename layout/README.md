@@ -393,26 +393,30 @@ netlist matches the trim-bearing schematic" checkable rather than asserted.
 
 | cell | DRC | LVS | extraction |
 | --- | --- | --- | --- |
-| `bandgap_core` | `clean`, 0 violations | `mismatch`, 8 findings / **4 error-severity** — the same four as pre-#272 (`Q1`–`Q3` `device.unmatched` plus their class-level topology entry, the permanent bipolar-recognition cause); devices **263/263** matched, nets 253/257 | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C |
-| `bandgap_top` | `clean`, 0 violations | `mismatch`, 1023 findings / **1019 error-severity** — re-minted 2026-11-17 under the evidence-standard pin `klt 0.8.0` (DR-0016, issue #558); the retired 0.6.0-minted report read 10 findings / **4 error-severity** (the same four as pre-#272, same bipolar cause) with devices **275/275** matched and nets 257/261, and is not reproducible under any PyPI-installable pin. The delta is the deck's resistor-class pairing regression between 0.6.0 and 0.8.0 — layout-side class `rppd` no longer pairs with reference-side `RPPD`, so every MOS device still matches but zero resistors do (filed upstream as klayout-tools#6313); devices **17/275** matched, nets 5/261 | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C |
+| `bandgap_core` | `violations`, 44 — re-minted 2026-11-18 under the current containment deck (issue #571): the retired 0.6.0 deck-mint read `clean`, 0, but that deck predates `require_containment` (klayout-tools#6174); the current deck surfaces 18 `metal1.enclosing.cont.1`, 9 `metal2.enclosing.via1.1` and 17 `via1.width.1` — the pre-existing Via1/Cont classes the #556/#557 family owns — and **0** `nwell.enclosing.nactiv.1`, that class being closed by #571's tap-margin fix | `mismatch`, 1025 findings / **1022 error-severity** — re-minted 2026-11-18 under the evidence-standard pin `klt 0.8.0` (DR-0016); the retired 0.6.0-minted report read 8 findings / **4 error-severity** (the same four as pre-#272, the permanent bipolar-recognition cause) with devices **263/263** matched and nets 253/257, and is not reproducible under any PyPI-installable pin — the delta is the same resistor-class pairing regression as `bandgap_top`'s (klayout-tools#6313): 517 `device.unmatched`, 504 `net.unmatched`, 2 `topology`, with 1 `device.bulk_reconciled` + 1 `device.geometry_not_compared` warning; devices **6/263** matched, nets 2/257 | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C (0.6.0-era mint, input-gds anchor waived under #571 pending the PEX re-mint — see "PEX re-mint deferral" below) |
+| `bandgap_top` | `violations`, 109 — re-minted 2026-11-18 (issue #571): 4 `cont.ongrid.1`, 18 `metal1.enclosing.cont.1`, 39 `metal2.enclosing.via1.1`, 48 `via1.width.1` — the pre-existing classes the #557/#556 family owns, with the composed GDS now also carrying #556's amp via-fix refresh that the previously committed assembly predated; **0** `nwell.enclosing.nactiv.1`, that class closed by #571's tap-margin fix (was 11) | `mismatch`, 1022 findings / **1018 error-severity** — re-minted again 2026-11-18 under the same `klt 0.8.0` pin after #571's re-compose: the `device.property` `rhigh` error below is **gone** now that the reference carries #563's symbol-formula value (exactly as that issue's live verification predicted), and matched nets/devices move 5→7 / 17→18; the 1018 remaining are the resistor-pairing regression (517 `device.unmatched`, 500 `net.unmatched` — klayout-tools#6313) plus the permanent bipolar-recognition cause (4 findings, unchanged) | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C (0.6.0-era mint, input-gds anchor waived under #571 pending the PEX re-mint — see "PEX re-mint deferral" below) |
 
 On `bandgap_core` every error-severity finding is still the bipolar-recognition
-cause already documented under "Permanent blockers" below — its row still cites
-its 0.6.0-era mint, and refreshing it under the standard is a follow-up to the
-upstream fix. On `bandgap_top` the re-minted verdict **does carry new error
-classes**: 1018 of the 1019 error-severity findings are the resistor-pairing
-regression (514 `device.unmatched`, 500 `net.unmatched` — klayout-tools#6313)
+cause already documented under "Permanent blockers" below, on top of the same
+resistor-pairing regression `bandgap_top` carries; its row now cites the
+2026-11-18 re-mint under the standard (issue #571) instead of deferring that
+refresh to a follow-up. On `bandgap_top` the 2026-11-17 re-mint under the
+evidence-standard pin `klt 0.8.0` (DR-0016, issue #558) had carried 1019
+error-severity findings, of which 1018 were the resistor-pairing regression
+(514 `device.unmatched`, 500 `net.unmatched` — klayout-tools#6313)
 plus the permanent bipolar-recognition cause (the 3 `NPN13G2` reference-device
 `device.unmatched` entries and their class-level topology entry — 4 findings,
-unchanged from the retired report). The 1019th is the only error that is
-neither — and the only
-design-relevant one: a `device.property` error ("matched device parameter `r`
+unchanged from the retired report), and the 1019th — the only design-relevant
+one — was a `device.property` error ("matched device parameter `r`
 differs") on the `rhigh` pull-up — `X3_RPU` in the reference, `$275` in the
 layout — with extracted `r` 1999501.7 Ω against the reference netlist's
-1919368.0 Ω (**+4.2%**). The device still pairs; only the parameter differs,
-and whether that delta is an extraction/reference-modelling difference or a
-real sizing discrepancy is **untraced** (issue #563 — do not attribute it to
-the deck without tracing it). The warning-severity disclosures also changed
+1919368.0 Ω (**+4.2%**), untraced at the time (issue #563). #563 traced that
+delta to klayout-tools#2652's `rhigh.sym` transcription and updated
+`layout/lvs_reference.py` to the PDK's own symbol formula; the 2026-11-18
+re-mint (issue #571) against the updated reference reads **1018** error-severity
+findings — the `rhigh` `device.property` error is gone, exactly as #563's live
+verification predicted — and matched nets/devices improve to 7/261 and 18/278.
+The warning-severity disclosures also changed
 in kind between the two mints, not just in count: the retired report's
 `device.bulk_reconciled` 2 + `device.parameter_excluded` 4 (parameters
 `A`/`P`, total 6 warnings) became `device.bulk_reconciled` 2 +
@@ -761,10 +765,50 @@ delta, and the layout is correct**:
   `bandgap_top/lvs_report.json`) are now stale by construction and waived
   in `layout/evidence-freshness-waivers.json`, tracking #561 (the DR-0016
   re-mint backlog); the waivers self-expire when those reports re-mint
-  against this reference.
+  against this reference. `bandgap_top/lvs_report.json` re-minted on
+  2026-11-18 (issue #571) against this reference, so its entry is deleted —
+  exactly the self-expiry the entry promised: its `device.property` `rhigh`
+  finding goes 1 → 0 under the updated reference, as #563's live
+  verification predicted. The `bandgap_startup` entry remains (that cell's
+  report is not yet re-minted; #561 still owns it).
 - The `R`/`L`/`W` compared-parameter set and `parameter_tolerance` are
   untouched — the finding is resolved by fixing the stale side, not by
   hiding the comparison.
+
+
+## PEX re-mint deferral (issue #571, 2026-11-18)
+
+Issue #571's tap-margin fix (`TAP_NWELL_MARGIN_UM` 0.1 → 0.3,
+`layout/common.py`) regenerated `bandgap_amp`/`bandgap_core`/`bandgap_top`
+and re-minted all three cells' `drc_report.json` (amp now **clean**, 0;
+core/top honestly carrying the pre-existing Via1/Cont classes the
+containment deck surfaces — owned by the #556/#557 family) and all three
+`lvs_report.json` (core under the DR-0016 `klt 0.8.0` pin; amp's verdict is
+`match`, 0 findings, reproducible under any build). The **PEX half is
+deferred, not skipped**: `bandgap_core`/`bandgap_top`'s committed
+`pex_extract_report.json` + `*.pex.spice` stay on their 0.6.0-era mints with
+their input-gds anchors waived under #571, because re-extracting would break
+the actively cited item-8 characterization inventory
+(`measurements/2026-11-16-characterization-report/` pins
+`bandgap_top.pex.spice` by hash), whose only sanctioned remedy is a new
+dated characterization report — the PEX re-runs tracked in #278/#275. Three
+facts make the deferral safe, each measured rather than assumed:
+
+- **The NWell fix is extraction-invariant.** Re-extracting a layout that
+  carries every #571 geometry change *except* the well-margin growth
+  produces byte-identical extraction output to the full fix; the fix moves
+  a well edge, and extraction reads no NWell geometry.
+- **The entire extraction delta versus the committed PEX is the pre-existing
+  top-level routing refresh** #556 drew and `d64246eb` reverted out of that
+  PR ("revert top-level regen pending #558 re-baseline"): re-extracting the
+  refreshed layout reproduces #556's own branch mint byte-for-byte
+  (`sha256:eac7901a...`), 102 parasitic lines moved by the 0.19 um vias and
+  `VIA_CAP` metal extensions, none by #571.
+- **`bandgap_amp`'s re-mint changed no extraction byte** under the fix — its
+  committed `bandgap_amp.pex.spice` is already the post-#556 geometry.
+
+The waiver entries self-expire when `pex_extract_report.json` re-mints
+against the refreshed GDS.
 
 
 ## Layer numbers
@@ -1467,9 +1511,16 @@ both this cell's own `tail` riser and `bandgap_top`'s own composed-level
 `generate.py`'s own `_route()` "vdd tap ring" comment for the full
 column/window derivation.
 
-**DRC**: `klt drc --deck sg13g2` reports `status: "violations"`, 5 — all
-`nwell.enclosing.nactiv.1`, pre-existing and tracked in #557
-(`layout/bandgap_amp/drc_report.json`). This report's #556 refresh was the
+**DRC**: `klt drc --deck sg13g2` reports `status: "clean"`, **0 violations**
+(`layout/bandgap_amp/drc_report.json`, re-minted 2026-11-18, issue #571). Up
+to that re-mint the report carried 5 violations, all
+`nwell.enclosing.nactiv.1` at each PMOS well-tie tap: the deck's
+`require_containment` rules (klayout-tools#6174) require NWell to enclose the
+tap's nSD-marked Activ by **0.24 um**, but `layout/common.py` extended the
+well only `TAP_NWELL_MARGIN_UM = 0.1` past the tap's outer edge. Issue #571
+raises that margin to 0.3 um, clearing the floor with slack; every marker was
+a 0.1 um-tall band between the tap's outer Activ edge and the well edge,
+which the fix removes. This report's #556 refresh was the
 first under the deck's `require_containment` rules (klayout-tools#6174):
 it surfaced 12 `metal2.enclosing.via1.1` (each Via1 centred on a Metal2
 end edge, half the cut outside) and 12 `via1.width.1` (0.25 um cuts on

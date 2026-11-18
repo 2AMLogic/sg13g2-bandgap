@@ -348,20 +348,30 @@ def draw_npn13g2(
 # channel net it does not belong to. The caller's own routing pass wires
 # the isolated tap to the real `body_net` elsewhere instead.
 #
-# No DRC rule in this curated deck's own `DECK` list constrains `NWell`,
-# `nSD`, or `pSD` directly (only `Activ`/`GatPoly`/`Cont`/`Metal1`+ carry
-# checks) -- so the only floors this geometry must clear are the ordinary
-# `Activ`/`Cont`/`Metal1` ones already cited throughout this module
-# (`activ.width.1` 0.15um, `activ.space.1` 0.21um,
+# The deck's `require_containment` regime (klayout-tools#6174) constrains
+# `NWell` directly: `nwell.width.1`/`nwell.space.1` 0.62um,
+# `nwell.enclosing.nactiv.1` 0.24um (the tap's own nSD-marked Activ must be
+# enclosed by >= 0.24um of its well -- issue #571),
+# `nwell.enclosing.pactiv.1` 0.31um (the PMOS channel activ) and
+# `nwell.space.nactiv.1`/`nwell.space.pactiv.1` 0.31um/0.24um against
+# outside activ -- so the tap margins below clear those in addition to the
+# ordinary `Activ`/`Cont`/`Metal1` floors already cited throughout this
+# module (`activ.width.1` 0.15um, `activ.space.1` 0.21um,
 # `activ.enclosing.cont.1`/`gatpoly.enclosing.cont.1` 0.07um, `cont.width.1`
-# 0.16um, `metal1.width.1` 0.16um) -- all satisfied with real margin below.
+# 0.16um, `metal1.width.1` 0.16um). Only `nSD`/`pSD` themselves remain
+# unconstrained by the curated deck's own `DECK` list.
 TAP_GAP_UM = 0.25
 TAP_ACTIV_UM = 0.34
 TAP_IMPLANT_MARGIN_UM = 0.1
 TAP_CONT_UM = 0.16
 TAP_BRIDGE_W_UM = 0.2
 TAP_BRIDGE_OVERLAP_UM = 0.05
-TAP_NWELL_MARGIN_UM = 0.1
+# >= the deck's `nwell.enclosing.nactiv.1` 0.24um floor (`require_containment`
+# regime, klayout-tools#6174): the NWell must enclose the tap's nSD-marked
+# Activ by 0.24um, so 0.1um produced 5/6/11 markers on amp/core/top (issue
+# #571). 0.3um clears the floor with 0.06um slack while staying far under
+# the 0.62um `nwell.space.1` well-to-well floor.
+TAP_NWELL_MARGIN_UM = 0.3
 
 
 def draw_hv_mos(
