@@ -193,8 +193,12 @@ def fold_plan(
     for the 32-leg RPU, up from the 1 nm search's 0.03 um). When ``legs`` is
     itself a multiple of :data:`GRID_NM` only every ``GRID_NM``-th residue is
     reachable, and a solution exists iff ``l`` is a multiple of
-    :data:`GRID_NM` nm -- in which case the aligned floor already divides
-    evenly, so the search returns exactly ``gap_min_um`` rounded up. The
+    :data:`GRID_NM` nm -- but the aligned floor need not divide evenly even
+    then: with ``legs = 5m`` the congruence is solvable in ``k`` modulo
+    ``m``, so the search may take up to ``legs / GRID_NM`` grid steps past
+    the aligned floor (measured worst case ``legs/GRID_NM - 1`` steps:
+    ``legs=15 l=300.0um -> 405 nm``, ``legs=30 l=300.0um -> 420 nm``; the
+    ``legs=5`` callers here do return the aligned floor itself). The
     resulting ``g`` is therefore always **at least** the DRC-driven minimum
     the caller asked for, never below it, and always on the grid.
 
