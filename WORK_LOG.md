@@ -12,6 +12,10 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-17
 
+- **PR #569**: docs: correct rhigh trace narrative (schematic path, unmatched split)
+- **PR #566**: layout: value SG13G2 rhigh reference from the PDK symbol formula, trace the 0.8.0 deck r delta
+- **Issue #568** (closed): docs: two precision fixes in the #563 rhigh trace narrative (wrong schematic path, unmatched-finding attribution)
+- **Issue #563** (closed): trace: bandgap_top rhigh X3_RPU `r` delta +4.2% (1999501.7 Ω layout vs 1919368.0 Ω reference) — the 1019th LVS error-severity finding
 - **PR #565**: docs: root README status block matches committed DRC/LVS reports after the DR-0016 re-mint
 - **PR #560**: evidence: re-mint bandgap_top LVS under pinned klt 0.8.0; add DR-0016 evidence standard
 - **PR #559**: fix(layout): enclose bandgap_amp Via1 landings in Metal2 at the deck's fixed 0.19 um
