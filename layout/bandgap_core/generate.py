@@ -152,6 +152,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from common import (  # noqa: E402
+    HBT_STEP_X_UM,
     L_GATPOLY,
     L_METAL1,
     L_METAL2,
@@ -666,8 +667,15 @@ def _route(
     _riser(b, sns2_drain, r2["end_a_pad"], jog_y=_pad_row(r2["end_a_pad"]))
 
     # -- cb2: R2.end_b, Q2.collector, Q2.base -- Q2's own collector/base tie
-    # (mirrors sns1's Q1 tie) plus a riser up to R2's far end.
-    cb2_x = (q2["collector_pad"][0] + q2["collector_pad"][2]) / 2 + 6.0
+    # (mirrors sns1's Q1 tie) plus a riser up to R2's far end. The offset is
+    # +3 stripe pitches (6.475 + 5.55 = 12.025um from stripe 0 = stripe
+    # index 6.5, the middle of the gap between stripes 6 and 7 this strap
+    # already ran through): `draw_npn13g2`'s Metal1 base-contact landing
+    # strips (issue #572) occupy each stripe's x-band, and this strap must
+    # keep `metal1.space.1`'s 0.18um floor clear of the nearest strip's
+    # edge -- at the old +6.0um the strap sat 0.075um from stripe 7's strip.
+    # Centred here it clears both neighbouring strips by 0.525um.
+    cb2_x = (q2["collector_pad"][0] + q2["collector_pad"][2]) / 2 + 3 * HBT_STEP_X_UM
     _tie_and_riser(b, q2, cb2_x, r2["end_b_pad"], jog_y=_pad_row(r2["end_b_pad"]))
 
     # -- vref: M3A-M3C.drain (tied together, issue #149), R1.end_a --

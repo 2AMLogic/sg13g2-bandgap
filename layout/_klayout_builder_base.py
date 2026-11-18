@@ -7,7 +7,54 @@ table and subclasses :class:`BuilderBase` to add its own drawing methods.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
+
 import klayout.db as kdb
+
+#: The leaf-hash sidecar an assembly top's generator writes beside its GDS
+#: (issue #588): ``{"schema_version": 1, "leaves": [{"path": ..., "sha256":
+#: ...}, ...]}``, binding the committed top to the exact bytes of each leaf
+#: GDS it read. ``.github/scripts/check_evidence_formats.py`` re-derives every
+#: hash on each push/PR, so an edited leaf plus a subset regeneration can no
+#: longer land ``hygiene``-green with a top that no longer matches its own
+#: leaves. The name is duplicated in the checker on purpose: the checker is
+#: deliberately independent of the producers it polices and must not import
+#: from ``layout/``.
+SIDECAR_NAME = "leaf_inputs.json"
+
+
+def write_leaf_inputs_sidecar(top_gds_path: str, leaf_gds_paths: list[str]) -> str:
+    """Write :data:`SIDECAR_NAME` beside ``top_gds_path``, hashing each leaf GDS.
+
+    Called from an assembly top's ``__main__`` block right after
+    ``builder.write(OUTPUT)`` with the same leaf paths ``build()`` just
+    ``layout.read()`` -- the recorded sha256 is therefore of the exact bytes
+    embedded into the top. Output is deterministic for unchanged leaves
+    (paths sorted, ``indent=2``, ``sort_keys=True``, one trailing newline),
+    so re-running the generator leaves ``git diff`` empty exactly as the GDS
+    itself does.
+
+    Returns the sidecar's path (printed by the caller beside the GDS line).
+    """
+    top_dir = os.path.dirname(os.path.abspath(top_gds_path))
+    entries = []
+    for leaf in leaf_gds_paths:
+        leaf_abs = os.path.abspath(leaf)
+        digest = hashlib.sha256()
+        with open(leaf_abs, "rb") as handle:
+            for chunk in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(chunk)
+        entries.append(
+            {"path": os.path.relpath(leaf_abs, top_dir), "sha256": digest.hexdigest()}
+        )
+    entries.sort(key=lambda entry: entry["path"])
+    sidecar = os.path.join(top_dir, SIDECAR_NAME)
+    with open(sidecar, "w", encoding="utf-8") as handle:
+        json.dump({"schema_version": 1, "leaves": entries}, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    return sidecar
 
 
 class BuilderBase:

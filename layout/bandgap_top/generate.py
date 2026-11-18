@@ -15,7 +15,10 @@ Run from the repo root::
 Output is byte-for-byte deterministic (GDSII header timestamps disabled via
 ``SaveLayoutOptions.gds2_write_timestamps = False``), so re-running leaves
 ``git diff`` empty (as long as the three leaf GDS files it reads are
-themselves unchanged).
+themselves unchanged). Since issue #588 the run also writes
+``leaf_inputs.json`` beside the GDS -- the sha256 of each leaf GDS read,
+re-derived by CI's freshness checker, so a top that no longer matches its
+own committed leaves cannot land green.
 
 Connectivity, one-to-one against ``design/netlist/bandgap_top.spice``'s own
 ``.subckt bandgap_top vdd vss vref`` line -- verified against that file's
@@ -220,7 +223,11 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 import klayout.db as kdb  # noqa: E402
-from _klayout_builder_base import _assert_column_pitch, _shift  # noqa: E402
+from _klayout_builder_base import (  # noqa: E402
+    _assert_column_pitch,
+    _shift,
+    write_leaf_inputs_sidecar,
+)
 from common import (  # noqa: E402
     L_METAL1,
     L_METAL2,
@@ -801,4 +808,8 @@ def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_s
 if __name__ == "__main__":
     builder = build()
     builder.write(OUTPUT)
+    # Issue #588: bind the committed top to the exact leaf GDS bytes it just
+    # embedded, so CI can catch an edited leaf plus a subset regeneration.
+    sidecar = write_leaf_inputs_sidecar(OUTPUT, [CORE_GDS, AMP_GDS, STARTUP_GDS])
     print(f"wrote {OUTPUT}: bbox={builder.cell.dbbox()}")
+    print(f"wrote {sidecar}")

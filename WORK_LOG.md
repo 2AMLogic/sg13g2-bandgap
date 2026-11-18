@@ -12,6 +12,16 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-18
 
+- **PR #605**: fix: fail closed on non-integer per-class counts in report regression guard
+- **PR #604**: fix(layout): cite #557, not #552, in bandgap_top's DRC waiver comment
+- **PR #602**: docs: sync item-8 citation to the 2026-11-18 report and bandgap_top LVS prose to the committed 8-finding mint
+- **PR #600**: ci: guard DRC/LVS re-mints against outcome regressions vs the merge base
+- **PR #591**: fix(layout): land Metal1 on draw_npn13g2's base-contact Cont rows
+- **Issue #601** (closed): check_report_regression: a non-integer per-class count is dropped silently, so the per-class comparison can read as a pass
+- **Issue #598** (closed): Docs drift in layout/README.md and manifests/README.md: wrong klayout version on the DRC/ERC mints, stale characterization-report date and top-LVS finding count
+- **Issue #594** (closed): Evidence ladder has no regression guard: a re-minted DRC/LVS report that gets worse passes every checker
+- **Issue #584** (closed): layout: bandgap_top/drc_waivers.json _comment cites #552 (unrelated) where it means #557
+- **Issue #572** (closed): layout: metal1.enclosing.cont.1 x18 in bandgap_core under the require_containment sg13g2 deck
 - **PR #599**: docs: disclose the 0.8.0 deck's Offgrid/containment scope narrowing in DR-0016
 - **PR #592**: test: pin _sg13g2_rppd_ohms at R1's (2u, 37.2u) in the lvs_reference self-test
 - **PR #586**: layout: re-mint all committed layout evidence under the klt 0.8.0 pin (#561 step 2)
@@ -408,12 +418,4 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - **PR #224**: ratification: run the two-key review of the target-spec table and record its outcome
 - **Issue #125** (closed): Cut the spec-ratification PR now that #13 is resolved (two-key mechanism)
-
-### 2026-09-15
-
-- **PR #219**: docs(spec): DR-0007 — keep sim/ evidence logs verbatim and uncompressed
-- **PR #220**: ratification: ratify target-spec table with current R1=511um/N=300-MC evidence (supersedes #128)
-- **Issue #150** (closed): PR #128's ratification evidence is stale relative to main's R1=511um TC retune (#139's fix didn't touch it)
-- **Issue #118** (closed): Recurring redispatch-race churn on #4 (loom-daemon, cf. rjwalters/loom#6685)
-- **Issue #26** (closed): Decide evidence-log verbosity policy for sim/ records (6.4 MB per sweep after OSDI conversion)
 

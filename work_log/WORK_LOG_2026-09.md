@@ -2,6 +2,14 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-15
+
+- **PR #219**: docs(spec): DR-0007 — keep sim/ evidence logs verbatim and uncompressed
+- **PR #220**: ratification: ratify target-spec table with current R1=511um/N=300-MC evidence (supersedes #128)
+- **Issue #150** (closed): PR #128's ratification evidence is stale relative to main's R1=511um TC retune (#139's fix didn't touch it)
+- **Issue #118** (closed): Recurring redispatch-race churn on #4 (loom-daemon, cf. rjwalters/loom#6685)
+- **Issue #26** (closed): Decide evidence-log verbosity policy for sim/ records (6.4 MB per sweep after OSDI conversion)
+
 ### 2026-09-12
 
 - **PR #218**: fix: normalize GraphQL/REST merge-state shapes in dep-recheck-fingerprint.sh

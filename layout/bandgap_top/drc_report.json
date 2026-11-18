@@ -338,9 +338,9 @@
   "waived": [],
   "unused_waivers": [
     {
-      "cell": "bandgap_core",
-      "rule": "metal1.enclosing.cont.1",
-      "justification": "pre-existing Cont/Metal1 enclosure (all 18 markers come from core's instance); tracked in #572"
+      "cell": "bandgap_startup",
+      "rule": "cont.ongrid.1",
+      "justification": "pre-existing off-grid Cont (all 4 markers come from startup's instance, the only findings that cell has); tracked in #573"
     }
   ],
   "provenance": {
@@ -353,13 +353,13 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:64fd71a403f6cfbe7d06fc25481a3ac3b6c47d9d95317eb4e6adea2183e2d02a",
+      "content_hash": "sha256:dd8c2dbc735e5f3cb8b97fc12b5177578b1998f70fa305df03c010a508e45ac9",
       "role": "layout"
     },
     "klayout_version_mismatch": true,
     "waivers": {
       "file": "drc_waivers.json",
-      "content_hash": "sha256:eafc6c7aaae00cebf3dda4f71be917e3e1e48b31b655937e2eaec82e65598f8c"
+      "content_hash": "sha256:f50194af7fa91ca5f0e782d9ab4912c5ea2888f70feb22b149aa46b9ff786f23"
     }
   }
 }

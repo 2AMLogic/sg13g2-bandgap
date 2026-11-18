@@ -56,7 +56,7 @@ structure/hygiene that already exists in this repo today — nothing more.
   (`enrich_pvt_report.py`), and corner-id formatting, 6-s.f. CSV cells,
   include inlining and `${PDK_ROOT}` redaction (`klt_sim_evidence.py`).
 - **`.github/scripts/check_evidence_formats.py`** — the evidence-format and
-  freshness gate. Four things, all headless and PDK-free:
+  freshness gate. Five things, all headless and PDK-free:
   1. **`sim/` record format** — every `sim/<slug>/records/<record-id>.md`
      against the convention `sim/README.md` documents: record-id grammar,
      required fields, the `.csv` sibling, the corner-id grammar, and the
@@ -76,6 +76,12 @@ structure/hygiene that already exists in this repo today — nothing more.
      GDS / reference netlist / extracted netlist. Known-stale reports are
      waived by name, with a tracking issue, in
      `layout/evidence-freshness-waivers.json`; see `layout/README.md`.
+     Assembly tops are additionally bound to the leaf GDS files they
+     embedded: each top's generator writes a `leaf_inputs.json` sidecar
+     recording every leaf's sha256 (issue #588), and the checker fails on a
+     stale leaf hash, a missing leaf, or a missing sidecar — waived through
+     the same mechanism. Leaves only: stale top-level routing is caught by
+     re-running the deterministic generator, not by CI.
   4. **`sim/` DUT freshness** — the same "staleness is failure" rule applied
      to simulation evidence. Each experiment's **newest** record is compared
      against the committed `design/**` netlist it names as its own
