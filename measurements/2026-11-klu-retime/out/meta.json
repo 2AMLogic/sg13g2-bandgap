@@ -1,0 +1,196 @@
+{
+  "started_utc": "2026-11-18T04:38:57.043702+00:00",
+  "purpose": "issue #518: SPARSE vs KLU wall-clock re-time, one serial repo-script job on one batch instance (operator ruling 2026-11-17)",
+  "cells": "iq/sanity,iq/hot,startup/sanity,startup/hot",
+  "ngspice_banner": [
+    "******",
+    "** ngspice-47 : Circuit level simulation program",
+    "** Compiled with KLU Direct Linear Solver"
+  ],
+  "ngspice_klu_built": true,
+  "klt_version": "klt 0.9.0",
+  "nproc": 16,
+  "cpu_model": "x86_64",
+  "loadavg_start": "0.36 0.08 0.03",
+  "instance_type": "m7i.4xlarge",
+  "instance_id": "i-062bd1105955734c9",
+  "ami_id": "ami-09c14f55df4958cbd",
+  "rs_commit": "17be349822d2669d11859b1feff1d7280001f8b1",
+  "rs_source_commit": "17be349822d2669d11859b1feff1d7280001f8b1",
+  "rs_src_sha256": "d35b26771302aecb187bbb820b32577430758932551dba7f293d55bacc1cfac8",
+  "pdk_pin": {
+    "_comment": "Pinned SG13G2 PDK revision this sim/ tree's committed evidence records were generated against. Every record under sim/*/records/*.md must trace to this file (or a later commit that bumps it) -- see sim/README.md 'PDK pin' section. Not consumed by tooling; kept as a plain, greppable fact sheet.",
+    "source": "IHP-GmbH/IHP-Open-PDK",
+    "fetch_method": "klayout-tools scripts/fetch-ihp-sg13g2.sh (2AMLogic/klayout-tools), same fetch this repo's design/README.md documents for schematic-entry work",
+    "release_tag": "v0.3.0",
+    "release_url": "https://github.com/IHP-GmbH/IHP-Open-PDK/archive/refs/tags/v0.3.0.tar.gz",
+    "tarball_sha256": "f6afb7a8d2adf3e40acd3fd2c7892fc93510e6f760565409a8df2b5b242254fc",
+    "pdk_root_layout": "PDK_ROOT/ihp-sg13g2 (open_pdks-shaped install, klt pdk find/list convention)",
+    "variant": "ihp-sg13g2",
+    "documented_tool_versions_from_pdk_versions_txt": {
+      "openvaf": "23.5.0",
+      "ngspice": "43",
+      "xschem": "3.4.6",
+      "note": "This PDK release's own versions.txt names openvaf 23.5.0 as the tool used to build its Verilog-A device models to OSDI. That upstream release ships source only (no binary assets), so this repo builds the same models with the PDK-preferred OpenVAF-Reloaded fork instead -- see osdi_toolchain below and sim/README.md 'OSDI device models'."
+    },
+    "osdi_toolchain": {
+      "_comment": "Provenance of the OSDI (Verilog-A compact model) binaries every MOS/resistor-instantiating testbench in this tree loads. sim/tools/build-osdi.sh is the executable source of truth; this block restates its pins as a greppable fact sheet, per this file's convention. Nothing under sim/ commits a .osdi binary: they are platform-specific shared libraries, rebuilt locally from the PDK's own Verilog-A sources.",
+      "approach": "source-compile the PDK's own Verilog-A models with a checksum-pinned prebuilt OpenVAF-Reloaded compiler",
+      "build_script": "sim/tools/build-osdi.sh",
+      "compiler_repo": "OpenVAF/OpenVAF-Reloaded",
+      "compiler_tag": "v24.0.1mob",
+      "compiler_invocation_name": "openvaf-r",
+      "compiler_asset_sha256": {
+        "openvaf-r-v24.0.1mob-macos-aarch64.tar.gz": "b59a6d7ffba0cdc2e3d3d27edb62d686cde72e7fbe9931f7bed6a4538c15e85e",
+        "openvaf-r-v24.0.1mob-macos-x86_64.tar.gz": "1635e728a81830326c06d4f81e96f2a8943e661b906d4046084c35ff7595f41e",
+        "openvaf-r-v24.0.1mob-linux-x86_64.tar.gz": "3297e32f68becf5e0d4709d7f731d7d26f87f88dc136041334677d3ab36279e3"
+      },
+      "asset_sha256_source": "GitHub release API digest field for the v24.0.1mob release, re-checked 2026-08-21",
+      "platform_actually_exercised": "macos-aarch64 (Darwin 26.6 / arm64) and, as of issue #14, linux-x86_64 (Ubuntu 24.04/noble) -- the windows pin is upstream-attested but not yet executed in this repo. linux-x86_64 needs a fix-up: the pinned openvaf-r-v24.0.1mob-linux-x86_64 release ships lib/libLLVM.so.21.1 as a dangling symlink to ../../x86_64-linux-gnu/libLLVM.so.21.1 -- it assumes the HOST provides a system-installed LLVM 21, which stock Ubuntu 24.04 does not (max system package is libllvm20). As of issue #31, sim/tools/build-osdi.sh handles this automatically on Linux/x86_64: it fetches + sha256-verifies the real libLLVM.so.21.1 from apt.llvm.org's libllvm21 .deb (extracted unprivileged via dpkg-deb -x) and points LD_LIBRARY_PATH at it for its own openvaf-r invocations -- no manual pre-step needed. See libllvm21_deb below for the pin.",
+      "libllvm21_deb": {
+        "_comment": "Linux/x86_64-only pin (issue #31): the real libLLVM.so.21 shared library sim/tools/build-osdi.sh fetches to work around the dangling symlink in the openvaf-r linux-x86_64 release (see platform_actually_exercised above).",
+        "url": "https://apt.llvm.org/noble/pool/main/l/llvm-toolchain-21/libllvm21_21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70_amd64.deb",
+        "sha256": "f1f058fff19f9d711c32b9efe5cd473dd2f0e7d5338d082fa5a25858322048cd",
+        "distro_release_codename": "noble",
+        "sha256_source": "apt.llvm.org, checked by direct curl + sha256sum against the pin, 2026-08-21"
+      },
+      "models_built": [
+        "psp103.osdi",
+        "psp103_nqs.osdi",
+        "r3_cmc.osdi",
+        "mosvar.osdi"
+      ],
+      "install_dir": "PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/osdi (PDK-install territory, not tracked in this repo)",
+      "compile_command": "openvaf-r -D__NGSPICE__ -o <install_dir>/<model>.osdi <model>.va, run from PDK_ROOT/ihp-sg13g2/libs.tech/verilog-a/<model_dir> -- the same flags and model list as the PDK's own libs.tech/verilog-a/openvaf-compile-va.sh",
+      "ngspice_actually_used": "ngspice-47 (homebrew), which has OSDI support compiled in; the PDK's versions.txt documents ngspice 43"
+    }
+  },
+  "max_passes": 8,
+  "min_passes": 3,
+  "budget_s": 3240,
+  "validate_tran": "",
+  "pdk_root": "/opt/pdk",
+  "msense_w": "10u",
+  "bodies_sha256": {
+    "iq/sanity/sparse": "d9cbf7e5b3ceb06bd26cab899f5a26469adfcabdaf97e4b6ec4476c0ddeef815",
+    "iq/sanity/klu": "fe1f1282e8a99aff3f4cda475a10a43bc8c34d1e42e0fa82f53a6ce3168dfd28",
+    "iq/hot/sparse": "e40274a2bf9c704c312cac151fd965c8704129a16cab8bd299578a025726d0bb",
+    "iq/hot/klu": "3360007ddb03bcb5f8477f228455d1f3c1b264484aad2c2e2d27cb73d311cbc8",
+    "startup/sanity/sparse": "a74f836f28a0cae16c81bacf85811ca320f10df741321719fc601dd675073843",
+    "startup/sanity/klu": "0a148157ac5e35cd8fc7b9cc76b2eb0bb7640f272e6c19c9e690a1d0b84f62ea",
+    "startup/hot/sparse": "52a5eab1a82cdedf4461d6825502b2b483c7a993e4673508bd6d25fbce97bbc1",
+    "startup/hot/klu": "3e1f4586b7b3574514811970ae63ac35f9e77d1ad735a8dae8c9ac690b8c3f13"
+  },
+  "tran_per_bench": {
+    "iq": "50n 3m",
+    "startup": "50n 2m"
+  },
+  "loadavg_end": "8.00 8.00 7.75",
+  "total_elapsed_s": 3175.7,
+  "summary": {
+    "iq/sanity/sparse": {
+      "n": 6,
+      "n_timed": 6,
+      "min": 79.0,
+      "median": 86.2,
+      "max": 95.6,
+      "spread": 16.6
+    },
+    "iq/sanity/klu": {
+      "n": 5,
+      "n_timed": 5,
+      "min": 76.0,
+      "median": 88.8,
+      "max": 90.0,
+      "spread": 14.0
+    },
+    "iq/hot/sparse": {
+      "n": 5,
+      "n_timed": 5,
+      "min": 107.2,
+      "median": 116.2,
+      "max": 119.7,
+      "spread": 12.5
+    },
+    "iq/hot/klu": {
+      "n": 5,
+      "n_timed": 5,
+      "min": 74.6,
+      "median": 86.6,
+      "max": 87.4,
+      "spread": 12.8
+    },
+    "startup/sanity/sparse": {
+      "n": 5,
+      "n_timed": 5,
+      "min": 53.1,
+      "median": 61.9,
+      "max": 63.7,
+      "spread": 10.6
+    },
+    "startup/sanity/klu": {
+      "n": 5,
+      "n_timed": 5,
+      "min": 50.3,
+      "median": 51.8,
+      "max": 60.2,
+      "spread": 9.9
+    },
+    "startup/hot/sparse": {
+      "n": 5,
+      "n_timed": 5,
+      "min": 69.0,
+      "median": 79.7,
+      "max": 82.2,
+      "spread": 13.2
+    },
+    "startup/hot/klu": {
+      "n": 5,
+      "n_timed": 5,
+      "min": 50.8,
+      "median": 51.9,
+      "max": 58.1,
+      "spread": 7.3
+    }
+  },
+  "solver_delta": {
+    "iq/sanity": {
+      "sparse_min_s": 79.0,
+      "klu_min_s": 76.0,
+      "delta_s": 3.0,
+      "ratio_s_over_k": 1.039,
+      "spread_sparse": 16.6,
+      "spread_klu": 14.0,
+      "resolved": false
+    },
+    "iq/hot": {
+      "sparse_min_s": 107.2,
+      "klu_min_s": 74.6,
+      "delta_s": 32.6,
+      "ratio_s_over_k": 1.437,
+      "spread_sparse": 12.5,
+      "spread_klu": 12.8,
+      "resolved": true
+    },
+    "startup/sanity": {
+      "sparse_min_s": 53.1,
+      "klu_min_s": 50.3,
+      "delta_s": 2.8,
+      "ratio_s_over_k": 1.056,
+      "spread_sparse": 10.6,
+      "spread_klu": 9.9,
+      "resolved": false
+    },
+    "startup/hot": {
+      "sparse_min_s": 69.0,
+      "klu_min_s": 50.8,
+      "delta_s": 18.2,
+      "ratio_s_over_k": 1.358,
+      "spread_sparse": 13.2,
+      "spread_klu": 7.3,
+      "resolved": true
+    }
+  },
+  "problems": [],
+  "validation_mode": false
+}

@@ -8,9 +8,10 @@
 * point-definition reference): trim-bearing bandgap_core at trim_code=128,
 * bandgap_amp, bandgap_startup, wired as design/bandgap_top.sch. It is the
 * same DUT and fixture as sim/closed-loop-vref-pvt-boxtc's body, and the
-* solver options are the same except that body's klu direct-solver pin
-* (issue #469, measured answer-preserving on that bench; this body keeps
-* the ngspice SPARSE default); only the supply hold (2m) and the saved
+* solver options are the same including that body's klu direct-solver pin
+* (issue #469 there; issue #518 here -- measured answer-preserving on this
+* bench, and ~1.36x on its hot corner; see measurements/2026-11-klu-retime/);
+* only the supply hold (2m) and the saved
 * vectors differ.
 *
 * `klt sim` netlist-body convention: a circuit BODY. No `.lib`, no `.temp`, no
@@ -31,7 +32,15 @@ pre_osdi @@OSDI_DIR@@/r3_cmc.osdi
 * stiffness aids; rshunt/gmin are deliberately ABSENT (~0.55 uA leak out of the
 * output branch through the trim ladder's interior nodes = ~37 mV of settled
 * vref at code 128). tnom=27 is klt's own default and the legacy bench's value.
-.options reltol=5e-3
+* klu (issue #518): switch the direct linear solver from the ngspice default
+* (SPARSE 1.3) to KLU -- same equations and tolerances, a different
+* factorization of the same matrix, so answer-preserving by construction.
+* Measured on one dedicated batch-fleet instance (5-6 repeats per cell):
+* answers identical at 6 significant figures on every run, and on this
+* bench's hot corner (typ/125C/2.97V) 69.0 s SPARSE vs 50.8 s KLU
+* (min-of-N, ~1.36x); the 27C sanity corner showed no resolved difference.
+* See measurements/2026-11-klu-retime/README.md.
+.options reltol=5e-3 klu
 
 * Resident-vector save: ~700 nodes x 60000 timesteps trips ngspice's startup
 * allocation check. Every vector measured is listed; nothing else is needed.

@@ -4,7 +4,16 @@
     "The 45-point grid (5 processes x 3 temperatures x 3 supplies) runs as 15 requests of 3 temperatures each: the runner image's single-models.lib channel carries one process per request (klayout-tools#2668), and the PWL ramp is this bench's convergence path so the supply axis cannot ride `corners.supply_v` (`alter` would clobber it). The temperature axis rides `corners.temperature_c` natively.",
     "Every column is a single-vector `.meas ... at=<t>` / `avg` over a resident `.save` vector. Derived columns, the closed-loop verdict and (iq) the magnitude of the supply current are applied by sim/harness/enrich_supply_bench_report.py, the same practice the committed records use. Values arrive at 6 significant figures.",
     "i(Vvdd) is reported by ngspice negative while the supply delivers current (passive sign convention); the enrichment pass takes the magnitude, as the legacy run_pvt_sweep.sh (removed in #438; see git history) did.",
-    "`remote.hosts: 3` = one fleet job per temperature point (the box-TC wrapper's measured split, scaled to this grid; not separately measured here)."
+    "`remote.hosts: 3` = one fleet job per temperature point (the box-TC wrapper's measured split, scaled to this grid; not separately measured here).",
+    "",
+    "Solver (issue #518): the body deck pins `.options ... klu` -- KLU, not",
+    "the ngspice default SPARSE 1.3, factorizes the matrix. Measured on one",
+    "dedicated batch-fleet instance, 5-6 repeats per cell",
+    "(measurements/2026-11-klu-retime/): answers identical at 6 significant",
+    "figures under both solvers, and on this bench's hot corner",
+    "(typ/125C/2.97V) KLU cut the engine wall ~1.44x (107.2 s -> 74.6 s,",
+    "min-of-N); the 27C sanity corner showed no resolved difference.",
+    "timeout_s 1800 is unchanged."
   ],
   "engine": "ngspice",
   "netlist": "@@BODY@@",

@@ -1,0 +1,21 @@
+{
+  "job_id": "rs-20261118T043815Z-17be3498-s00",
+  "state": "done",
+  "detail": "",
+  "instance_id": "i-062bd1105955734c9",
+  "instance_type": "m7i.4xlarge",
+  "availability_zone": "us-east-1c",
+  "region": "us-east-1",
+  "ami_id": "ami-09c14f55df4958cbd",
+  "lifecycle": "spot",
+  "spot": true,
+  "concurrency": "8",
+  "physical_cores": "8",
+  "vcpus": "16",
+  "tool": "repo-script",
+  "exit_code": "0",
+  "cpu_busy_fraction": "0.4956",
+  "started_at": "2026-11-18T04:38:46Z",
+  "updated_at": "2026-11-18T05:31:52Z",
+  "elapsed_seconds": 3186
+}
