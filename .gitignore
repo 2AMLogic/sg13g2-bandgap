@@ -8,6 +8,9 @@ __pycache__/
 # sim/ harness: per-corner ngspice logs under corners/ are committed evidence
 # (append-only record trail), so they escape the *.log rule.
 !sim/*/corners/**/*.log
+# measurements/: same — per-run ngspice logs are committed evidence; without
+# this negation the *.log rule silently dropped them at git add (issue #615).
+!measurements/**/*.log
 sim/build/
 # Issue #379 / DR-0015: a new run's raw outputs are staged here, stored with
 # `klt artifact put`, and never committed (CI fails if any path under it is tracked).
