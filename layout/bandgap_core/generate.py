@@ -170,11 +170,12 @@ TOP_CELL = "bandgap_core"
 OUTPUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bandgap_core.gds")
 
 # Routing widths/sizes -- comfortably clear of the curated sg13g2 deck's own
-# minimums (metal1.width.1/metal2.width.1: 0.16/0.20um; via1.width.1:
-# 0.19um) with margin, not razor-thin -- see layout/common.py's route_h/
-# route_v/via1_tap docstrings for the exact clearance each leaves.
+# minimums (metal1.width.1/metal2.width.1: 0.16/0.20um) with margin, not
+# razor-thin -- see layout/common.py's route_h/route_v/via1_tap docstrings
+# for the exact clearance each leaves. ``via1.width.1`` is not a minimum but
+# a *fixed* 0.19um cut size, so ``VIA`` is exactly that.
 TRUNK_W = 0.3
-VIA = 0.25
+VIA = 0.19
 # Metal2 riser/jog width -- wider than the 0.20um metal2.width.1 floor would
 # strictly require on a straight run, because a right-angle T-junction
 # between a vertical riser and a horizontal jog of the *same* nominal width
@@ -191,6 +192,15 @@ METAL2_W = 0.35
 # floor) with real margin -- a first pass that stopped the tie exactly at
 # the via's edge (zero enclosure) violated this rule (`klt drc` re-run).
 VIA_ENCLOSE = 0.05
+# Metal2 end-cap overhang past a Via1 landing (issue #557): every Via1 in
+# this cell sits at an *end* of a Metal2 riser/jog/strap bar, and
+# route_h/route_v draw bars that stop exactly at the given end coordinate
+# -- so each via-bearing end is extended by half the cut plus
+# VIA_ENCLOSE, keeping the whole via inside Metal2 with 0.05um to spare
+# (was 9x metal2.enclosing.via1.1, half of each cut outside). VIA itself
+# is the deck's fixed via1.width.1 size (0.19um, was 17x via1.width.1 at
+# 0.25). Same pattern bandgap_amp's #556 fix established.
+VIA_CAP = VIA / 2 + VIA_ENCLOSE
 
 # Serpentine fold counts (issue #173). Both resistors used to be drawn as
 # single straight bars whose length alone set this cell's bounding box --
@@ -548,10 +558,26 @@ def _draw_trim_straps(b: Builder, node_pad: dict) -> None:
         ax, ay = (pad_a[0] + pad_a[2]) / 2, (pad_a[1] + pad_a[3]) / 2
         bx, by = (pad_b[0] + pad_b[2]) / 2, (pad_b[1] + pad_b[3]) / 2
         via1_tap(b, ax, ay, size=VIA)
+        # Both vias sit at *ends* of the bar(s) drawn toward the other pad,
+        # and a bar stopping at a via centre leaves half the cut outside
+        # Metal2 (metal2.enclosing.via1.1, issue #557) -- so every
+        # via-bearing end overshoots the via centre by VIA_CAP. When only
+        # one bar exists (same column or same row), both of that bar's
+        # ends are via-bearing and both get the cap.
         if abs(bx - ax) > 1e-9:
-            route_h(b, L_METAL2, ay, ax, bx, width=TRIM_STRAP_W)
+            ax_end = ax + (-VIA_CAP if bx > ax else VIA_CAP)
+            bx_end = (
+                bx
+                if abs(by - ay) > 1e-9
+                else bx + (-VIA_CAP if ax > bx else VIA_CAP)
+            )
+            route_h(b, L_METAL2, ay, ax_end, bx_end, width=TRIM_STRAP_W)
         if abs(by - ay) > 1e-9:
-            route_v(b, L_METAL2, bx, ay, by, width=TRIM_STRAP_W)
+            ay_end = ay if abs(bx - ax) > 1e-9 else (
+                ay + (-VIA_CAP if by > ay else VIA_CAP)
+            )
+            by_end = by + (-VIA_CAP if ay > by else VIA_CAP)
+            route_v(b, L_METAL2, bx, ay_end, by_end, width=TRIM_STRAP_W)
         via1_tap(b, bx, by, size=VIA)
 
 
@@ -677,13 +703,15 @@ def _route(
     # VIA_ENCLOSE: a run that *stops* at the via's centre leaves zero
     # enclosure on that side, which `metal1.enclosing.via1.1` (0.01 um
     # floor) catches -- it did, on this issue's own first `klt drc` pass.
-    via_overrun = VIA / 2 + VIA_ENCLOSE
-    route_h(b, L_METAL1, TRIM_TN0_Y, tn0_x, TRIM_TN0_VIA_X + via_overrun, width=TN0_TRUNK_W)
+    route_h(b, L_METAL1, TRIM_TN0_Y, tn0_x, TRIM_TN0_VIA_X + VIA_CAP, width=TN0_TRUNK_W)
     via1_tap(b, TRIM_TN0_VIA_X, TRIM_TN0_Y, size=VIA)
     tn0_y = _pad_row(tn0_pad)
-    route_v(b, L_METAL2, TRIM_TN0_VIA_X, tn0_y, TRIM_TN0_Y + via_overrun, width=METAL2_W)
+    route_v(b, L_METAL2, TRIM_TN0_VIA_X, tn0_y, TRIM_TN0_Y + VIA_CAP, width=METAL2_W)
     tn0_target_x = (tn0_pad[0] + tn0_pad[2]) / 2
-    route_h(b, L_METAL2, tn0_y, TRIM_TN0_VIA_X, tn0_target_x, width=METAL2_W)
+    # The pad-side end of this bar is via-bearing too (issue #557): the
+    # node-0 via sits at its end, so the bar overshoots the via centre by
+    # VIA_CAP (was a metal2.enclosing.via1.1 half-cut).
+    route_h(b, L_METAL2, tn0_y, TRIM_TN0_VIA_X, tn0_target_x + VIA_CAP, width=METAL2_W)
     via1_tap(b, tn0_target_x, tn0_y, size=VIA)
 
     # -- cb3 (issue #272): the ladder's node-255 pad, Q3.collector,
@@ -726,7 +754,10 @@ def _riser(b: Builder, drain_pad: tuple[float, float, float, float], target_pad:
     via1_tap(b, x, via_y, size=VIA)
     route_v(b, L_METAL2, x, drain_pad[1], jog_y, width=METAL2_W)
     target_x = (target_pad[0] + target_pad[2]) / 2
-    route_h(b, L_METAL2, jog_y, x, target_x, width=METAL2_W)
+    # The target end is via-bearing (issue #557): overshoot the target
+    # via's centre by VIA_CAP -- a bar stopping at the centre left half the
+    # cut outside Metal2 (metal2.enclosing.via1.1).
+    route_h(b, L_METAL2, jog_y, x, target_x + (-VIA_CAP if target_x < x else VIA_CAP), width=METAL2_W)
     via1_tap(b, target_x, jog_y, size=VIA)
 
 
@@ -757,7 +788,10 @@ def _tie_and_riser_over_top(
     target_x = (target_pad[0] + target_pad[2]) / 2
     target_y = _pad_row(target_pad)
     route_h(b, L_METAL2, top_y, tie_x, target_x, width=METAL2_W)
-    route_v(b, L_METAL2, target_x, target_y, top_y, width=METAL2_W)
+    # The drop's pad end is via-bearing (issue #557): overshoot the target
+    # via's centre by VIA_CAP -- stopping at the centre left half the cut
+    # outside Metal2 (metal2.enclosing.via1.1).
+    route_v(b, L_METAL2, target_x, target_y + (-VIA_CAP if target_y < top_y else VIA_CAP), top_y, width=METAL2_W)
     via1_tap(b, target_x, target_y, size=VIA)
 
 
@@ -775,7 +809,10 @@ def _tie_and_riser(b: Builder, hbt: dict, tie_x: float, target_pad: tuple[float,
     via1_tap(b, tie_x, via_y, size=VIA)
     route_v(b, L_METAL2, tie_x, via_y_lo, jog_y, width=METAL2_W)
     target_x = (target_pad[0] + target_pad[2]) / 2
-    route_h(b, L_METAL2, jog_y, tie_x, target_x, width=METAL2_W)
+    # The target end is via-bearing (issue #557): overshoot the target
+    # via's centre by VIA_CAP -- a bar stopping at the centre left half the
+    # cut outside Metal2 (metal2.enclosing.via1.1).
+    route_h(b, L_METAL2, jog_y, tie_x, target_x + (-VIA_CAP if target_x < tie_x else VIA_CAP), width=METAL2_W)
     via1_tap(b, target_x, jog_y, size=VIA)
 
 

@@ -108,8 +108,9 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   by `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
   (#315).
 
-- `2026-11-16-characterization-report/` — issue #402 (T1 checklist item 8):
-  the current aggregated characterization report, replacing the 13 Nov one. It
+- `2026-11-16-characterization-report/` — **superseded by
+  `2026-11-18-characterization-report/`** (below; kept untouched as history).
+  Issue #402 (T1 checklist item 8): replaced the 13 Nov one. It
   rotated because the trim-bearing 120-point box-method TC grid
   (`sim/closed-loop-vref-pvt-boxtc/records/20261116-024010-dc056b4c`, one
   `klt sim --batch-set`, 120 fleet jobs, 62 min) became that experiment's
@@ -122,5 +123,23 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   not (target met, stretch not met; disposition stays with #269's
   `sim/closed-loop-vref-boxtc-trim`). Same shape as the earlier reports:
   `README.md`, `spotcheck.py`, `envelope.json` (cited by
+  `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
+  (#315).
+
+- `2026-11-18-characterization-report/` — issue #557 (T1 checklist item 8):
+  the current aggregated characterization report, replacing the 16 Nov one.
+  It rotated because this branch's Via1 containment fix re-minted the layout
+  evidence (GDS, DRC/LVS/PEX under `klt 0.9.3.dev663`), moving both audited
+  PEX DUT inputs (`bandgap_top.pex.spice`, `bandgap_startup.pex.spice`).
+  Stamped at audited commit `11a18b96`. **No `sim/` record moved and no
+  simulation was run**: the three post-layout benches (PSRR-PEX, Zout-PEX,
+  startup trip-point) are disclosed as predating the current extraction, and
+  the PSRR @ DC row's verdict moves with them — met with caveats becomes
+  **not met on current evidence** (the only record that cleared 60 dB,
+  post-layout 45/45 at 0.0013 dB margin, predates the re-extraction; the
+  current schematic grid reads 59.685 dB at its worst corner). The re-run
+  one-point core PEX probe reproduces its recorded point exactly (vref
+  1.052999 V, ratio 12.630). Same shape as the earlier reports: `README.md`,
+  `spotcheck.py`, `envelope.json` (cited by
   `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
   (#315).

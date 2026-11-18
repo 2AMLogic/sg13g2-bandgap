@@ -1,34 +1,34 @@
 {
- "block": "sg13g2-bandgap",
- "kind": "analog",
- "evidence": {
-  "1": {
-   "file": "manifests/evidence/design-sources.json",
-   "content_hash": "sha256:606c784aa5b05cd049f61cfd7b790587bec0c51a6b9654f02b25559924c2569f"
-  },
-  "2": {
-   "file": "layout/bandgap_top/drc_report.json",
-   "content_hash": "sha256:e09df1bb250dabd375745dc9eee1efedc2362445fbc2d028c9780deac622847e"
-  },
-  "3": {
-   "file": "layout/bandgap_top/drc_report.json",
-   "content_hash": "sha256:e09df1bb250dabd375745dc9eee1efedc2362445fbc2d028c9780deac622847e"
-  },
-  "4": "layout/bandgap_top/lvs_report.runset.json",
-  "8": {
-   "file": "measurements/2026-11-16-characterization-report/envelope.json",
-   "content_hash": "sha256:e22635cbe657b00083619371a8d5c3c0da4be93a872c09624d8acab518137446"
-  },
-  "10": {
-   "file": "manifests/evidence/hygiene.json",
-   "content_hash": "sha256:7a98b63f993f83dc83fe681b2e5348dbf9addc71f96bcedde80e2b345089628b"
-  },
-  "11": [
-   {
-    "file": "layout/bandgap_top/erc_report.json",
-    "content_hash": "sha256:e09df1bb250dabd375745dc9eee1efedc2362445fbc2d028c9780deac622847e"
-   },
-   "layout/bandgap_top/lvs_report.runset.json"
-  ]
- }
+  "block": "sg13g2-bandgap",
+  "kind": "analog",
+  "evidence": {
+    "1": {
+      "file": "manifests/evidence/design-sources.json",
+      "content_hash": "sha256:606c784aa5b05cd049f61cfd7b790587bec0c51a6b9654f02b25559924c2569f"
+    },
+    "2": {
+      "file": "layout/bandgap_top/drc_report.json",
+      "content_hash": "sha256:86f8140b915d0bc630669ed2f0b9ed3fcd452cdb92bb79356e1af69027f9f327"
+    },
+    "3": {
+      "file": "layout/bandgap_top/drc_report.json",
+      "content_hash": "sha256:86f8140b915d0bc630669ed2f0b9ed3fcd452cdb92bb79356e1af69027f9f327"
+    },
+    "4": "layout/bandgap_top/lvs_report.runset.json",
+    "8": {
+      "file": "measurements/2026-11-18-characterization-report/envelope.json",
+      "content_hash": "sha256:0c1a4c5ad5b2f60950ce9fe172bf5b9c3524eb1a409ad52a120eb8eb041618b1"
+    },
+    "10": {
+      "file": "manifests/evidence/hygiene.json",
+      "content_hash": "sha256:7a98b63f993f83dc83fe681b2e5348dbf9addc71f96bcedde80e2b345089628b"
+    },
+    "11": [
+      {
+        "file": "layout/bandgap_top/erc_report.json",
+        "content_hash": "sha256:86f8140b915d0bc630669ed2f0b9ed3fcd452cdb92bb79356e1af69027f9f327"
+      },
+      "layout/bandgap_top/lvs_report.runset.json"
+    ]
+  }
 }

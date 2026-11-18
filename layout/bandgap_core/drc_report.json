@@ -7,771 +7,605 @@
   "deck": "sg13g2",
   "dbu_um": 0.001,
   "status": "violations",
-  "violation_count": 23,
+  "violation_count": 18,
   "rule_counts": {
-    "nwell.enclosing.nactiv.1": 6,
-    "via1.width.1": 17
+    "metal1.enclosing.cont.1": 18
   },
   "metrics": {
-    "drc__error__count": 23
+    "drc__error__count": 18
   },
   "violations": [
     {
-      "rule": "nwell.enclosing.nactiv.1",
-      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
-      "check": "enclosed",
-      "layer": "Activ.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": -388,
-        "bottom": 23490,
-        "right": 388,
-        "top": 23590
+        "left": 50850,
+        "bottom": -680,
+        "right": 51150,
+        "top": -500
       },
       "polygon": [
         [
-          -170,
-          23490
+          50850,
+          -680
         ],
         [
-          170,
-          23490
+          50850,
+          -500
         ],
         [
-          -388,
-          23590
+          51150,
+          -500
         ],
         [
-          388,
-          23590
+          51150,
+          -680
         ]
       ]
     },
     {
-      "rule": "nwell.enclosing.nactiv.1",
-      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
-      "check": "enclosed",
-      "layer": "Activ.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 44612,
-        "bottom": 23490,
-        "right": 45388,
-        "top": 23590
+        "left": 50850,
+        "bottom": 500,
+        "right": 51150,
+        "top": 680
       },
       "polygon": [
         [
-          44830,
-          23490
+          50850,
+          500
         ],
         [
-          45170,
-          23490
+          50850,
+          680
         ],
         [
-          44612,
-          23590
+          51150,
+          680
         ],
         [
-          45388,
-          23590
+          51150,
+          500
         ]
       ]
     },
     {
-      "rule": "nwell.enclosing.nactiv.1",
-      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
-      "check": "enclosed",
-      "layer": "Activ.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 56612,
-        "bottom": 23490,
-        "right": 57388,
-        "top": 23590
+        "left": 52700,
+        "bottom": -680,
+        "right": 53000,
+        "top": -500
       },
       "polygon": [
         [
-          56830,
-          23490
+          52700,
+          -680
         ],
         [
-          57170,
-          23490
+          52700,
+          -500
         ],
         [
-          56612,
-          23590
+          53000,
+          -500
         ],
         [
-          57388,
-          23590
+          53000,
+          -680
         ]
       ]
     },
     {
-      "rule": "nwell.enclosing.nactiv.1",
-      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
-      "check": "enclosed",
-      "layer": "Activ.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 109612,
-        "bottom": 23490,
-        "right": 110388,
-        "top": 23590
+        "left": 52700,
+        "bottom": 500,
+        "right": 53000,
+        "top": 680
       },
       "polygon": [
         [
-          109830,
-          23490
+          52700,
+          500
         ],
         [
-          110170,
-          23490
+          52700,
+          680
         ],
         [
-          109612,
-          23590
+          53000,
+          680
         ],
         [
-          110388,
-          23590
+          53000,
+          500
         ]
       ]
     },
     {
-      "rule": "nwell.enclosing.nactiv.1",
-      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
-      "check": "enclosed",
-      "layer": "Activ.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 121612,
-        "bottom": 23490,
-        "right": 122388,
-        "top": 23590
+        "left": 54550,
+        "bottom": -680,
+        "right": 54850,
+        "top": -500
       },
       "polygon": [
         [
-          121830,
-          23490
+          54550,
+          -680
         ],
         [
-          122170,
-          23490
+          54550,
+          -500
         ],
         [
-          121612,
-          23590
+          54850,
+          -500
         ],
         [
-          122388,
-          23590
+          54850,
+          -680
         ]
       ]
     },
     {
-      "rule": "nwell.enclosing.nactiv.1",
-      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
-      "check": "enclosed",
-      "layer": "Activ.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 133612,
-        "bottom": 23490,
-        "right": 134388,
-        "top": 23590
+        "left": 54550,
+        "bottom": 500,
+        "right": 54850,
+        "top": 680
       },
       "polygon": [
         [
-          133830,
-          23490
+          54550,
+          500
         ],
         [
-          134170,
-          23490
+          54550,
+          680
         ],
         [
-          133612,
-          23590
+          54850,
+          680
         ],
         [
-          134388,
-          23590
+          54850,
+          500
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 42875,
-        "bottom": 33625,
-        "right": 43125,
-        "top": 33875
+        "left": 56400,
+        "bottom": -680,
+        "right": 56700,
+        "top": -500
       },
       "polygon": [
         [
-          42875,
-          33625
+          56400,
+          -680
         ],
         [
-          42875,
-          33875
+          56400,
+          -500
         ],
         [
-          43125,
-          33875
+          56700,
+          -500
         ],
         [
-          43125,
-          33625
+          56700,
+          -680
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 48875,
-        "bottom": 21150,
-        "right": 49125,
-        "top": 21400
+        "left": 56400,
+        "bottom": 500,
+        "right": 56700,
+        "top": 680
       },
       "polygon": [
         [
-          48875,
-          21150
+          56400,
+          500
         ],
         [
-          48875,
-          21400
+          56400,
+          680
         ],
         [
-          49125,
-          21400
+          56700,
+          680
         ],
         [
-          49125,
-          21150
+          56700,
+          500
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 54875,
-        "bottom": 33625,
-        "right": 55125,
-        "top": 33875
+        "left": 58250,
+        "bottom": -680,
+        "right": 58550,
+        "top": -500
       },
       "polygon": [
         [
-          54875,
-          33625
+          58250,
+          -680
         ],
         [
-          54875,
-          33875
+          58250,
+          -500
         ],
         [
-          55125,
-          33875
+          58550,
+          -500
         ],
         [
-          55125,
-          33625
+          58550,
+          -680
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 62900,
-        "bottom": 2600,
-        "right": 63150,
-        "top": 2850
+        "left": 58250,
+        "bottom": 500,
+        "right": 58550,
+        "top": 680
       },
       "polygon": [
         [
-          62900,
-          2600
+          58250,
+          500
         ],
         [
-          62900,
-          2850
+          58250,
+          680
         ],
         [
-          63150,
-          2850
+          58550,
+          680
         ],
         [
-          63150,
-          2600
+          58550,
+          500
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 104875,
-        "bottom": 33625,
-        "right": 105125,
-        "top": 33875
+        "left": 60100,
+        "bottom": -680,
+        "right": 60400,
+        "top": -500
       },
       "polygon": [
         [
-          104875,
-          33625
+          60100,
+          -680
         ],
         [
-          104875,
-          33875
+          60100,
+          -500
         ],
         [
-          105125,
-          33875
+          60400,
+          -500
         ],
         [
-          105125,
-          33625
+          60400,
+          -680
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 120125,
-        "bottom": 21150,
-        "right": 120375,
-        "top": 21400
+        "left": 60100,
+        "bottom": 500,
+        "right": 60400,
+        "top": 680
       },
       "polygon": [
         [
-          120125,
-          21150
+          60100,
+          500
         ],
         [
-          120125,
-          21400
+          60100,
+          680
         ],
         [
-          120375,
-          21400
+          60400,
+          680
         ],
         [
-          120375,
-          21150
+          60400,
+          500
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 124875,
-        "bottom": 2600,
-        "right": 125125,
-        "top": 2850
+        "left": 61950,
+        "bottom": -680,
+        "right": 62250,
+        "top": -500
       },
       "polygon": [
         [
-          124875,
-          2600
+          61950,
+          -680
         ],
         [
-          124875,
-          2850
+          61950,
+          -500
         ],
         [
-          125125,
-          2850
+          62250,
+          -500
         ],
         [
-          125125,
-          2600
+          62250,
+          -680
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 138375,
-        "bottom": 44875,
-        "right": 138625,
-        "top": 45125
+        "left": 61950,
+        "bottom": 500,
+        "right": 62250,
+        "top": 680
       },
       "polygon": [
         [
-          138375,
-          44875
+          61950,
+          500
         ],
         [
-          138375,
-          45125
+          61950,
+          680
         ],
         [
-          138625,
-          45125
+          62250,
+          680
         ],
         [
-          138625,
-          44875
+          62250,
+          500
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 140875,
-        "bottom": -375,
-        "right": 141125,
-        "top": -125
+        "left": 63800,
+        "bottom": -680,
+        "right": 64100,
+        "top": -500
       },
       "polygon": [
         [
-          140875,
-          -375
+          63800,
+          -680
         ],
         [
-          140875,
-          -125
+          63800,
+          -500
         ],
         [
-          141125,
-          -125
+          64100,
+          -500
         ],
         [
-          141125,
-          -375
+          64100,
+          -680
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 140875,
-        "bottom": 3555,
-        "right": 141125,
-        "top": 3805
+        "left": 63800,
+        "bottom": 500,
+        "right": 64100,
+        "top": 680
       },
       "polygon": [
         [
-          140875,
-          3555
+          63800,
+          500
         ],
         [
-          140875,
-          3805
+          63800,
+          680
         ],
         [
-          141125,
-          3805
+          64100,
+          680
         ],
         [
-          141125,
-          3555
+          64100,
+          500
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 140875,
-        "bottom": 12815,
-        "right": 141125,
-        "top": 13065
+        "left": 121850,
+        "bottom": -680,
+        "right": 122150,
+        "top": -500
       },
       "polygon": [
         [
-          140875,
-          12815
+          121850,
+          -680
         ],
         [
-          140875,
-          13065
+          121850,
+          -500
         ],
         [
-          141125,
-          13065
+          122150,
+          -500
         ],
         [
-          141125,
-          12815
+          122150,
+          -680
         ]
       ]
     },
     {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
       "cell": "bandgap_core",
       "source_cell": null,
       "source_path": null,
       "bbox": {
-        "left": 140875,
-        "bottom": 31335,
-        "right": 141125,
-        "top": 31585
+        "left": 121850,
+        "bottom": 500,
+        "right": 122150,
+        "top": 680
       },
       "polygon": [
         [
-          140875,
-          31335
+          121850,
+          500
         ],
         [
-          140875,
-          31585
+          121850,
+          680
         ],
         [
-          141125,
-          31585
+          122150,
+          680
         ],
         [
-          141125,
-          31335
-        ]
-      ]
-    },
-    {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
-      "cell": "bandgap_core",
-      "source_cell": null,
-      "source_path": null,
-      "bbox": {
-        "left": 140875,
-        "bottom": 68375,
-        "right": 141125,
-        "top": 68625
-      },
-      "polygon": [
-        [
-          140875,
-          68375
-        ],
-        [
-          140875,
-          68625
-        ],
-        [
-          141125,
-          68625
-        ],
-        [
-          141125,
-          68375
-        ]
-      ]
-    },
-    {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
-      "cell": "bandgap_core",
-      "source_cell": null,
-      "source_path": null,
-      "bbox": {
-        "left": 146275,
-        "bottom": 3555,
-        "right": 146525,
-        "top": 3805
-      },
-      "polygon": [
-        [
-          146275,
-          3555
-        ],
-        [
-          146275,
-          3805
-        ],
-        [
-          146525,
-          3805
-        ],
-        [
-          146525,
-          3555
-        ]
-      ]
-    },
-    {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
-      "cell": "bandgap_core",
-      "source_cell": null,
-      "source_path": null,
-      "bbox": {
-        "left": 151675,
-        "bottom": 12815,
-        "right": 151925,
-        "top": 13065
-      },
-      "polygon": [
-        [
-          151675,
-          12815
-        ],
-        [
-          151675,
-          13065
-        ],
-        [
-          151925,
-          13065
-        ],
-        [
-          151925,
-          12815
-        ]
-      ]
-    },
-    {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
-      "cell": "bandgap_core",
-      "source_cell": null,
-      "source_path": null,
-      "bbox": {
-        "left": 162475,
-        "bottom": 31335,
-        "right": 162725,
-        "top": 31585
-      },
-      "polygon": [
-        [
-          162475,
-          31335
-        ],
-        [
-          162475,
-          31585
-        ],
-        [
-          162725,
-          31585
-        ],
-        [
-          162725,
-          31335
-        ]
-      ]
-    },
-    {
-      "rule": "via1.width.1",
-      "description": "min/max Via1 size (fixed 0.19 x 0.19 um square)",
-      "check": "width",
-      "layer": "Via1.drawing",
-      "cell": "bandgap_core",
-      "source_cell": null,
-      "source_path": null,
-      "bbox": {
-        "left": 184075,
-        "bottom": 68375,
-        "right": 184325,
-        "top": 68625
-      },
-      "polygon": [
-        [
-          184075,
-          68375
-        ],
-        [
-          184075,
-          68625
-        ],
-        [
-          184325,
-          68625
-        ],
-        [
-          184325,
-          68375
+          122150,
+          500
         ]
       ]
     }
@@ -783,6 +617,7 @@
       "5/0",
       "6/0",
       "7/0",
+      "7/21",
       "8/0",
       "10/0",
       "14/0",
@@ -790,9 +625,11 @@
       "29/0",
       "30/0",
       "31/0",
+      "32/0",
       "36/0",
       "49/0",
       "50/0",
+      "63/0",
       "66/0",
       "67/0",
       "125/0",
@@ -809,7 +646,8 @@
       "10/0",
       "14/0",
       "19/0",
-      "31/0"
+      "31/0",
+      "63/0"
     ],
     "layers_in_stream_without_rules": [
       "5/1",
@@ -819,7 +657,6 @@
       "10/25",
       "28/0",
       "33/0",
-      "63/0",
       "111/0",
       "128/0",
       "128/1"
@@ -828,15 +665,18 @@
       "activ.enclosing.cont.1",
       "activ.space.1",
       "activ.width.1",
+      "cont.ongrid.1",
       "cont.space.1",
       "cont.width.1",
       "gatpoly.enclosing.cont.1",
       "gatpoly.separation.activ.1",
       "gatpoly.space.1",
       "gatpoly.width.1",
+      "metal1.enclosing.cont.1",
       "metal1.enclosing.via1.1",
       "metal1.space.1",
       "metal1.width.1",
+      "metal2.enclosing.via1.1",
       "metal2.space.1",
       "metal2.width.1",
       "nwell.enclosing.nactiv.1",
@@ -861,14 +701,17 @@
     ],
     "rules_skipped": [
       "metal2.enclosing.via2.1",
+      "metal3.enclosing.via2.1",
       "metal3.enclosing.via3.1",
       "metal3.space.1",
       "metal3.width.1",
+      "metal4.enclosing.via3.1",
       "metal4.enclosing.via4.1",
       "metal4.space.1",
       "metal4.width.1",
       "metal5.enclosing.mim.1",
       "metal5.enclosing.topvia1.1",
+      "metal5.enclosing.via4.1",
       "metal5.space.1",
       "metal5.width.1",
       "mim.enclosing.topvia1.1",
@@ -902,6 +745,7 @@
     "deck_scope": [
       "Act",
       "Cnt",
+      "Cont upper-landing containment (curated)",
       "Gat",
       "M1",
       "M2",
@@ -910,6 +754,7 @@
       "M5",
       "MIM",
       "NW",
+      "Offgrid",
       "TM1",
       "TM2",
       "TV1",
@@ -918,6 +763,10 @@
       "V2",
       "V3",
       "V4",
+      "Via1 upper-landing containment (curated)",
+      "Via2 upper-landing containment (curated)",
+      "Via3 upper-landing containment (curated)",
+      "Via4 upper-landing containment (curated)",
       "pSD"
     ],
     "unmodeled_rules": [
@@ -942,15 +791,18 @@
       "activ.enclosing.cont.1",
       "activ.space.1",
       "activ.width.1",
+      "cont.ongrid.1",
       "cont.space.1",
       "cont.width.1",
       "gatpoly.enclosing.cont.1",
       "gatpoly.separation.activ.1",
       "gatpoly.space.1",
       "gatpoly.width.1",
+      "metal1.enclosing.cont.1",
       "metal1.enclosing.via1.1",
       "metal1.space.1",
       "metal1.width.1",
+      "metal2.enclosing.via1.1",
       "metal2.space.1",
       "metal2.width.1",
       "nwell.enclosing.nactiv.1",
@@ -980,6 +832,10 @@
         "reason": "no_applicable_geometry"
       },
       {
+        "id": "metal3.enclosing.via2.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "metal3.enclosing.via3.1",
         "reason": "no_applicable_geometry"
       },
@@ -989,6 +845,10 @@
       },
       {
         "id": "metal3.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.enclosing.via3.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -1009,6 +869,10 @@
       },
       {
         "id": "metal5.enclosing.topvia1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal5.enclosing.via4.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -1097,18 +961,20 @@
     "nothing_checked_reasons": []
   },
   "provenance": {
-    "klt_version": "0.8.0",
-    "klayout_version": "0.30.13",
+    "klt_version": "0.9.3.dev980+g4cea37f245b0",
+    "klt_git_commit": "4cea37f245b0f61159431fd68cbf0349d67af74f",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@4cea37f245b0f61159431fd68cbf0349d67af74f",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
-      "released": true
+      "content_hash": "sha256:d407265de045dc59cecc28793f70ac9734069a6fb8bae06daa9b9f2e04961602",
+      "released": false
     },
     "input": {
-      "content_hash": "sha256:9fa0701b5a5d21567edbf7d2006c30193e5308f5ffd00a2e339b6d830d9d0f28",
+      "content_hash": "sha256:e89d43e96fdfa85c59ba2db2c3f68e8538d329d671a3a2b520fcf58dac20156f",
       "role": "layout"
     },
-    "klayout_version_mismatch": true
+    "klayout_version_mismatch": false
   }
 }

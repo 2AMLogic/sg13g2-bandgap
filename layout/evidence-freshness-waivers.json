@@ -4,16 +4,23 @@
     {
       "report": "layout/bandgap_startup/lvs_report.json",
       "check": "reference netlist",
-      "recorded_hash": "sha256:583ce6ff76c4b0f843de90dab4532f66076069e554be1f21af2cd3a4e24551c6",
+      "recorded_hash": "sha256:70df25b788a04136e0c15a2c6ac4d457b8adf0dce3110de0693c28611c1f9fcd",
       "issue": "#561",
-      "reason": "This 0.3.0-minted report compared against the retired flat rhigh reference value (1919368.0 ohm = 1360*L/W). Issue #563 traced the 0.8.0 deck's +4.2% rhigh extraction delta (klayout-tools#2652 transcribes rhigh.sym's end term 1.6e-4 ohm*m and width offset -0.04 um) and updated layout/lvs_reference.py to evaluate the PDK's own symbol formula, changing RPU's reference value to 1999501.7 ohm. Verified live under klt 0.8.0: this cell reaches status match / error_count 0 against the updated reference. Stale until the DR-0016 backlog re-mint (#561) lands."
+      "reason": "issue #561 step 1 re-derived the SG13G2 rppd/rhigh reference values from the PDK's own rppd.sym/rhigh.sym formulas, reformatting the formula-path values at six decimals; this report's verdict (match, 0 errors) is unaffected -- bandgap_startup carries no compare_parameters, so no compared value moved -- but its committed mint predates the new reference bytes. Re-mint is step 2 (the issue's atomic DR-0016 0.8.0 re-mint), which deletes this self-expiring entry. Carried unchanged through the #579 rebase, which re-minted core/top against the new reference but leaves startup's re-mint to #561."
     },
     {
       "report": "layout/bandgap_top/pex_extract_report.json",
       "check": "input gds",
-      "recorded_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
-      "issue": "#561",
-      "reason": "Issue #572 re-minted bandgap_top.gds (the core cell gained its HBT base-contact landing strips and the assembly picked up e8f227de, which had never been folded into the committed top GDS), which makes this 0.6.0-minted extraction report stale against the new GDS. It is deliberately NOT re-minted in #572: layout/bandgap_top/bandgap_top.pex.spice is a dut[] entry of the actively cited characterization report (measurements/2026-11-16-characterization-report, T1 item 8, manifest item 8) whose current-design claims (sim/closed-loop-psrr-pex, sim/closed-loop-zout-pex) were measured against exactly this netlist hash \u2014 check_report_dependencies.py enforces that pin, and refreshing it requires the new dated characterization report those PEX PVT re-runs produce (#275 owns the grids; the DR-0016 re-mint backlog is #561). #572 measured the re-extraction (kept out of the committed tree): same 275 devices, same 842R/261C/59CC card counts, values shifted by m\u03a9/fF from the base-contact metal, and the one-point probe on the re-extracted core shows vref within 3 uV of the committed extraction."
+      "recorded_hash": "sha256:47cd7c7558ce561abc7121e2edbb592f32fd1ea4a54a7b6af0b76592670ba868",
+      "issue": "#571",
+      "reason": "Issue #579's rebase of the #571 tap-margin fix onto post-#574 main regenerated bandgap_top.gds with both fixes composed (TAP_NWELL_MARGIN_UM 0.3 + #574's Via1 Metal2-landing enclosures), so the committed post-#574 extraction's input-gds anchor names the pre-#571 GDS. The NWell margin growth is proven extraction-invariant -- extraction reads no NWell geometry; re-extracting a layout that carries every #571 geometry change except the well-margin growth produces byte-identical extraction output (see layout/README.md 'PEX re-mint deferral') -- so main's post-#574 PEX netlist is kept as the honest artifact for the merged layout rather than re-minted, protecting the actively cited item-8 characterization inventory (measurements/2026-11-18-characterization-report/ pins bandgap_top.pex.spice by hash) from a needless re-mint under a different klt build. Waived until the PEX re-mint tracked in #278/#275 lands; the entry self-expires when pex_extract_report.json is regenerated against the merged GDS."
+    },
+    {
+      "report": "layout/bandgap_core/pex_extract_report.json",
+      "check": "input gds",
+      "recorded_hash": "sha256:f2594e0a5c6f1f542ff2228826f640eede066940061a21cf442fd01763a24adf",
+      "issue": "#571",
+      "reason": "Same deferral as bandgap_top's entry: issue #579's rebase regenerated bandgap_core.gds with #571's tap-margin fix composed onto #574's Via1 enclosures, and the committed post-#574 extraction's input-gds anchor names the pre-#571 GDS. The NWell fix is proven extraction-invariant (the fix only moves the well edge; re-extraction of a layout differing only in NWell margins is byte-identical), so main's post-#574 PEX netlist is kept for the merged layout and its anchor waived instead. Waived until the PEX re-mint tracked in #278/#275 lands; the entry self-expires when pex_extract_report.json is regenerated against the merged GDS."
     }
   ]
 }

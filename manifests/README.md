@@ -14,7 +14,8 @@ that produced it.
 - `sg13g2-bandgap.signoff.json` — the committed **verdict of record**: the
   exact output of `klt signoff --manifest manifests/sg13g2-bandgap.json
   --format json`.
-  As of the commit that last regenerated it (#300): **tier: none — 5/11 T1
+  As of the commit that last regenerated it (the #579 rebase of PR #576 onto
+  post-#574 main): **tier: none — 5/11 T1
   items met** (items 1, 2, 3, 8, 10; read the count from the report's
   `t1_met_count`, not from this sentence). That is the honest state; an
   all-`unmet` manifest is a correct result, and nothing here inflates it.
@@ -90,19 +91,33 @@ The binding used here:
 - **Item 2 (Layout) — cited: `layout/bandgap_top/drc_report.json`**: proves
   the committed GDS exists and was DRC-checkable at the pinned content hash;
   the generator (`layout/bandgap_top/generate.py`) is committed and
-  deterministic.
+  deterministic. The #579 rebase regenerated the GDS with #571's tap-margin
+  fix composed onto #574's Via1 Metal2-landing enclosures, and the item is
+  `met` again (it had regressed to `check_failed` on the pre-#574 branch,
+  whose assembled GDS still carried the Via1 classes).
 - **Item 3 (DRC clean) — cited: `layout/bandgap_top/drc_report.json`**:
-  `status: clean`, input hash pinned to the current committed GDS. **DRC
-  coverage disclosure (claimant-enforced, quoted from the citation's
-  `coverage` block):** the curated starter deck checks 16 chapters
-  (`deck_scope`: Act, Cnt, Gat, M1–M5, TM1, TM2, TV1, TV2, V1–V4); this run
-  skipped 27 carried rules (`rules_skipped`, all metal3+ / topmetal / topvia
-  width-space-enclosure rules — the block routes on M1/M2 only) and drew 14
-  layers the deck has no rule for (`layers_in_stream_without_rules`: 5/1,
-  7/0, 8/1, 8/25, 10/1, 10/25, 14/0, 28/0, 31/0, 33/0, 63/0, 111/0, 128/0,
-  128/1 — marker/label/implant layers, including the EXTBlock/pSD/SalBlock
-  resistor-recognition markers). A `met` here means "clean inside that
-  scope", not "no DRC-expressible defect exists".
+  `status: clean`, input hash pinned to the current committed GDS, with
+  **22 markers waived** cell-scoped (`drc_waivers.json`, each naming its
+  tracking issue: 18 `metal1.enclosing.cont.1` → #572, 4 `cont.ongrid.1` →
+  #573 — every waived marker instance-attributed to a leaf cell, none in
+  top's own geometry). The 11 `nwell.enclosing.nactiv.1` markers #574's
+  waiver carried are gone at the source: #571's tap-margin fix closed the
+  class, and per `drc_waivers.json`'s own rule the two entries naming it
+  were deleted in this rebase. Every Via1 class is **0** (#574's landings
+  fix, composed into this GDS).
+  **DRC coverage disclosure (claimant-enforced, quoted from the report's
+  `coverage` block):** the curated deck now checks 25 chapters
+  (`deck_scope`: Act, Cnt, Gat, M1–M5, MIM, NW, Offgrid, TM1, TM2, TV1,
+  TV2, V1–V4, pSD, plus the curated Cont/Via1–Via4 upper-landing
+  containment chapters); this run skipped 32 carried rules
+  (`rules_skipped`, all Via2+/metal3+/topmetal/topvia
+  width-space-enclosure rules — the block routes on M1/M2 with Cont/Via1
+  only) and drew 10 layers the deck has no rule for
+  (`layers_in_stream_without_rules`: 5/1, 8/1, 8/25, 10/1, 10/25, 28/0,
+  33/0, 111/0, 128/0, 128/1 — label/pin-purpose variants and marker
+  layers, including the EXTBlock/SalBlock/PolyRes resistor-recognition
+  markers and EmWind). A `met` here means "clean inside that scope",
+  not "no DRC-expressible defect exists".
 - **Item 4 (LVS clean) — cited unpinned: `layout/bandgap_top/lvs_report.json`**:
   grades `check_failed` — `status: mismatch`, honestly. Sole remaining cause
   on the SG13G2 cells: `bandgap_core`/`bandgap_top`'s three `NPN13G2`
@@ -118,8 +133,10 @@ The binding used here:
   report, unpinned):** grades `unmet` / `lvs_did_not_pass` (#411). The ERC
   half is complete and clean: `layout/bandgap_top/erc-supply-spec.json`
   (SG13G2 stackup GatPoly/Metal1/Metal2, `Cont` + `Via1`, `VDD`/`VSS` as
-  supplies, one n-well `ties[]` entry) run with the 0.8.0 pin reports
-  `erc_status: "clean"` with zero findings — each supply resolves to
+  supplies, one n-well `ties[]` entry) re-minted under the containment-deck
+  build (`klt 0.9.3.dev980`, klayout 0.30.12 — the same build as the cell's
+  DRC/ERC mint on the #571 branch) against the rebase's regenerated GDS
+  reports `erc_status: "clean"` with zero findings — each supply resolves to
   exactly one island, and all 7 gates and the n-well tie were *checked*
   (`erc_coverage.checked`). The envelope's top-level `status` reads
   `not_checked` (exit 4) only because no `--pdk` antenna table is supplied;
