@@ -67,10 +67,9 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 from pathlib import Path
 
-from _ci_common import Report
+from _ci_common import Report, git_out, load_waiver_entries
 
 WAIVER_FILE = "layout/report-regression-waivers.json"
 WAIVER_REQUIRED_KEYS = ("report", "expected", "issue", "reason")
@@ -100,50 +99,20 @@ def _int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
-def _git(root: Path, *args: str) -> tuple[int, str]:
-    proc = subprocess.run(
-        ["git", "-C", str(root), *args], capture_output=True, text=True, check=False
-    )
-    return proc.returncode, proc.stdout.strip()
-
-
 # --- waiver file --------------------------------------------------------------
 
 
 def load_waivers(root: Path, report: Report, waiver_file: str = WAIVER_FILE) -> dict[str, dict]:
     """Parse the regression-waiver file, keying valid entries by report path.
 
-    Mirrors `check_evidence_formats.py::load_waivers`: every schema defect is a
-    reported failure (not a silent skip), the tracking issue must be
-    `#<number>`, and `expected` must be a non-empty mapping of known predicate
-    keys to integer values.
+    The file/JSON/shape/required-key/issue-number preamble is
+    `_ci_common.load_waiver_entries`; specific to the regression schema are
+    the checks below: `report` must name a report this checker guards,
+    `expected` must be a non-empty mapping of known predicate keys to integer
+    values, and one entry per report.
     """
-    path = root / waiver_file
-    if not path.is_file():
-        return {}
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        report.fail(waiver_file, f"is not valid JSON: {exc}")
-        return {}
-    if not isinstance(raw, dict) or not isinstance(raw.get("waivers"), list):
-        report.fail(waiver_file, "must be a JSON object with a 'waivers' list")
-        return {}
     waivers: dict[str, dict] = {}
-    for entry in raw["waivers"]:
-        if not isinstance(entry, dict):
-            report.fail(waiver_file, f"waiver entry is not an object: {entry!r}")
-            continue
-        missing = [k for k in WAIVER_REQUIRED_KEYS if not entry.get(k)]
-        if missing:
-            report.fail(waiver_file, f"waiver entry missing required key(s): {', '.join(missing)}")
-            continue
-        if not re.match(r"^#\d+$", str(entry["issue"])):
-            report.fail(
-                waiver_file,
-                f"waiver for {entry['report']} has issue {entry['issue']!r}; expected '#<number>'",
-            )
-            continue
+    for entry in load_waiver_entries(root, report, waiver_file, WAIVER_REQUIRED_KEYS):
         rel = entry["report"]
         if not isinstance(rel, str) or not REPORT_RE.match(rel):
             report.fail(
@@ -337,19 +306,19 @@ def regressions(
 
 
 def check_regression(root: Path, base_ref: str, required: bool, report: Report) -> None:
-    code, _ = _git(root, "rev-parse", "--git-dir")
+    code, _ = git_out(root, "rev-parse", "--git-dir")
     if code != 0:
         message = "not a git checkout — report regression check cannot run"
         report.fail("regression", message) if required else report.note(f"SKIP: {message}")
         return
 
-    code, base = _git(root, "merge-base", base_ref, "HEAD")
+    code, base = git_out(root, "merge-base", base_ref, "HEAD")
     if code != 0 or not base:
         message = f"no merge base with {base_ref} — report regression check cannot run"
         report.fail("regression", message) if required else report.note(f"SKIP: {message}")
         return
 
-    code, out = _git(root, "diff", "--name-status", "--diff-filter=ADMRC", f"{base}...HEAD")
+    code, out = git_out(root, "diff", "--name-status", "--diff-filter=ADMRC", f"{base}...HEAD")
     if code != 0:
         message = f"git diff against {base[:12]} failed"
         report.fail("regression", message) if required else report.note(f"SKIP: {message}")
@@ -398,7 +367,7 @@ def check_regression(root: Path, base_ref: str, required: bool, report: Report) 
         except (OSError, json.JSONDecodeError) as exc:
             report.fail(path, f"working-tree copy does not parse as JSON: {exc}")
             continue
-        code, base_text = _git(root, "show", f"{base}:{path}")
+        code, base_text = git_out(root, "show", f"{base}:{path}")
         if code != 0:
             report.fail(path, f"git show {base[:12]}:{path} failed — the merge-base "
                               "revision cannot be read; the comparison cannot run")
