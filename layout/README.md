@@ -1964,7 +1964,7 @@ remains is entirely the permanently-declined bipolar-recognition gap:
 
 | # | Findings | Cause | Status |
 |---|---|---|---|
-| 1 | 3 `device.unmatched`, class `NPN13G2` (reference-side; `bandgap_core`'s `Q1`–`Q3`) | `bandgap_core`'s permanently-declined `npn13G2` recognition gap (see "Permanent blockers" above) | already known, permanent |
+| 1 | 3 `device.unmatched`, class `NPN13G2` (reference-side: `X1_Q1`/`X1_Q2`/`X1_Q3`, i.e. `bandgap_core`'s `Q1`–`Q3`) | `bandgap_core`'s permanently-declined `npn13G2` recognition gap (see "Permanent blockers" above) | already known, permanent |
 | 2 | 1 `topology`, "device class could not be mapped to a counterpart: 'NPN13G2'" | The current mint names the class outright, confirming what the 0.6.0-era mint left **inferred**: `bandgap_core`'s own leaf report shows the identical finding alongside its `NPN13G2` gap, so this is cause 1 at class level | confirmed |
 | -- | 2 `device.bulk_reconciled` (`severity: "warning"`, never affects `status`) | Cause A's own disclosure that the `rppd`/`rhigh` match rests on this request's `device_bulk` reconciliation (see above) | disclosure, not a defect |
 | -- | 2 `device.geometry_not_compared` (`severity: "warning"`, never affects `status`) | klt's own resistor-geometry disclosure (klayout-tools#2461, closed): the `rppd`/`rhigh` classes' `A`/`P` parameters are declared *secondary*, so `kdb.NetlistComparer` compares primary parameters only and the geometry dimensions take no part in the compare (see "LVS: three real pieces of friction" above) | disclosure, not a defect |

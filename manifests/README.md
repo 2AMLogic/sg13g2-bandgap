@@ -188,9 +188,11 @@ The binding used here:
   dependency drift" below): a change to an audited DUT netlist, a spec-table
   bound, a quoted decision-record status, or a newer record in a summarized
   experiment now fails CI even though the pin still matches (#303 is the
-  change expected to trigger it). The four earlier reports
+  change expected to trigger it). The six earlier reports
   (`2026-09-characterization-report/`, `2026-10-characterization-report/`,
-  `2026-11-characterization-report/`, `2026-11-04-characterization-report/`)
+  `2026-11-characterization-report/`, `2026-11-04-characterization-report/`,
+  `2026-11-13-characterization-report/`,
+  `2026-11-16-characterization-report/`)
   are superseded and kept as history; none is required to track newer inputs.
 
 Items deliberately left **uncited** (they render `unmet` / `no_evidence`,
