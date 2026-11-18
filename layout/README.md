@@ -947,12 +947,20 @@ cells.
 **Run all four, in dependency order, whenever you touch a leaf generator.**
 `bandgap_top/generate.py:242-244` *instances the three already-committed leaf
 GDS files* rather than redrawing them, so it must run after the leaves, not
-in the same loop — and **nothing in CI catches a partial re-run**: every
-freshness check binds a *report* to the GDS committed beside it, nothing
-binds `bandgap_top.gds` to the leaf GDS files it read, so an edited leaf plus
-a subset regeneration lands with `hygiene` green and a top cell that no
-longer matches its own leaves (see "Evidence freshness, enforced in CI"
-below).
+in the same loop. A partial re-run used to be silent: every freshness check
+bound a *report* to the GDS committed beside it, nothing bound
+`bandgap_top.gds` to the leaf GDS files it read, so an edited leaf plus a
+subset regeneration landed with `hygiene` green and a top cell that no
+longer matched its own leaves — found live in #573's control experiment and
+closed by #588: the top's generator now writes
+`bandgap_top/leaf_inputs.json` binding the committed top to the exact
+sha256 of each leaf GDS it read, CI re-derives every hash (see "Evidence
+freshness, enforced in CI" below), and a stale leaf fails the build naming
+the leaf. The binding covers the **leaves** only: a top whose *own*
+inter-cell routing has drifted from its generator source is still caught
+only by re-running the byte-deterministic generator itself, not by CI —
+re-running generators in `hygiene` was deliberately rejected to keep that
+job stdlib-only and klayout-free (issue #588).
 
 ```bash
 cd layout
@@ -960,7 +968,8 @@ python3 bandgap_amp/generate.py
 python3 bandgap_core/generate.py        # 255-unit ladder + straps at TRIM_CODE
 python3 bandgap_startup/generate.py
 # bandgap_top reads the three leaf GDS files above as cell instances,
-# so it must run after them, not in the same loop:
+# so it must run after them, not in the same loop (it also rewrites
+# bandgap_top/leaf_inputs.json, the leaf-hash sidecar CI freshness-checks):
 python3 bandgap_top/generate.py
 cd ..
 
@@ -1434,14 +1443,30 @@ consumed —
 | `lvs_report.json` | `environment.reference_sha256` | `<cell>.lvs_reference.spice` |
 | `pex_extract_report.json` | `provenance.input.content_hash` | `<cell>.gds` |
 | `pex_extract_report.json` | `netlist_sha256` | `<cell>.pex.spice` |
+| `leaf_inputs.json` (each assembly top) | `leaves[].sha256` | the listed leaf `<cell>.gds` files |
 
-— and `.github/scripts/check_evidence_formats.py` re-derives all five on every
+— and `.github/scripts/check_evidence_formats.py` re-derives all six on every
 push and PR. A mismatch fails the build. The checker also asserts each report is
 internally consistent (a `clean` DRC has zero violations, a `match` LVS has zero
 mismatches) and that the DRC report still enumerates its deck coverage gaps —
 but it deliberately does **not** demand a particular verdict. This repo's LVS
 legitimately reads `mismatch` for the reasons documented above; CI's job is to
 keep that verdict honest and fresh, not to demand one the deck cannot produce.
+
+**The last row is the assembly-top leaf binding (issue #588).** A top's
+`generate.py` does not redraw its leaves — it reads the committed leaf GDS
+files and instances them — so a top regenerated after an edited leaf kept
+every per-report anchor above green while no longer matching its own leaves.
+Each assembly generator (`bandgap_top`, `sg13cmos5l-bandgap_top`) therefore
+writes `leaf_inputs.json` beside its GDS recording the sha256 of every leaf
+GDS it read; the checker fails when a leaf's hash differs, when a listed
+leaf is missing, and when a top GDS has no sidecar at all. A genuinely
+stale binding is waived through the same
+`layout/evidence-freshness-waivers.json` mechanism as any report anchor
+(`report` = the sidecar's path, `check` = `leaf <path>`), and self-expires
+the same way. Stated limit, not hidden: the sidecar binds the *leaves*
+only — stale top-level routing is caught by re-running the deterministic
+generator, which CI does not do.
 
 ### Known-stale evidence: `layout/evidence-freshness-waivers.json`
 
@@ -2281,7 +2306,9 @@ for cell in core amp startup; do
   uv run --with klayout python3 "layout/sg13cmos5l-bandgap_$cell/generate.py"
 done
 # bandgap_top (issue #81) reads the three leaf GDS files above as cell
-# instances, so it must run after them, not in the same loop:
+# instances, so it must run after them, not in the same loop (it also
+# rewrites sg13cmos5l-bandgap_top/leaf_inputs.json, the leaf-hash sidecar
+# CI freshness-checks, issue #588):
 uv run --with klayout python3 layout/sg13cmos5l-bandgap_top/generate.py
 
 python3 layout/lvs_reference.py            # regenerates every reference netlist
@@ -2295,6 +2322,9 @@ klt extract --deck sg13cmos5l sg13cmos5l-bandgap_core.gds \
 
 Output is byte-for-byte deterministic (`SaveLayoutOptions.gds2_write_timestamps
 = False`), so re-running `generate.py` leaves `git diff` empty — verified.
+Since issue #588 the top's run also writes `leaf_inputs.json` beside its GDS
+— the sha256 of each leaf GDS read, re-derived by CI's freshness checker —
+so a top that no longer matches its own committed leaves cannot land green.
 
 `klt` versions used for the reports in this section: **`0.3.0+gc27f7eccf49c`**
 and **`0.3.0+g07b1f04f29f2`** (both KLayout `0.30.11`), split by which cell's

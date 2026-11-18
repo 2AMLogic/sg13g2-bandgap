@@ -1,0 +1,17 @@
+{
+  "leaves": [
+    {
+      "path": "../bandgap_amp/bandgap_amp.gds",
+      "sha256": "219aa2a589fb85fb8f828f4656320cef48d42ef66f5f78d0773240861d364b10"
+    },
+    {
+      "path": "../bandgap_core/bandgap_core.gds",
+      "sha256": "e89d43e96fdfa85c59ba2db2c3f68e8538d329d671a3a2b520fcf58dac20156f"
+    },
+    {
+      "path": "../bandgap_startup/bandgap_startup.gds",
+      "sha256": "e8d576056a1685de8b437099cedf05a1259892e4cee144378cf9467270f84f7c"
+    }
+  ],
+  "schema_version": 1
+}

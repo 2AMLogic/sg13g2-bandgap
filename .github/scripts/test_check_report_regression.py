@@ -216,6 +216,90 @@ class ReportRegression(unittest.TestCase):
         r = run_case(mutate)
         self.assertEqual(r.returncode, 0, output(r))
 
+    # -- non-integer per-class values (issue #601) ------------------------------
+
+    def test_lvs_bad_class_value_beside_a_good_one_fails(self):
+        def mutate(root):
+            write(root, LVS, lvs_doc(category={"device.unmatched": "many", "topology": 1}))
+        r = run_case(mutate)
+        self.assertEqual(r.returncode, 1, output(r))
+        self.assertIn(
+            "category_error_counts.device.unmatched is 'many', not an integer", output(r))
+
+    def test_lvs_bad_class_value_as_sole_entry_fails(self):
+        def mutate(root):
+            write(root, LVS, lvs_doc(category={"device.unmatched": "many"}))
+        r = run_case(mutate)
+        self.assertEqual(r.returncode, 1, output(r))
+        self.assertIn("category_error_counts.device.unmatched is 'many'", output(r))
+        self.assertIn("no usable integer values", output(r))
+
+    def test_drc_bad_rule_value_beside_a_good_one_fails(self):
+        def mutate(root):
+            write(root, DRC, drc_doc(rule_counts={"metal1.enclosing.cont.1": 18,
+                                                  "via1.width.1": "lots"}))
+        r = run_case(mutate)
+        self.assertEqual(r.returncode, 1, output(r))
+        self.assertIn("rule_counts.via1.width.1 is 'lots', not an integer", output(r))
+
+    def test_drc_bad_rule_value_as_sole_entry_fails(self):
+        def mutate(root):
+            write(root, DRC, drc_doc(rule_counts={"metal1.enclosing.cont.1": "lots"}))
+        r = run_case(mutate)
+        self.assertEqual(r.returncode, 1, output(r))
+        self.assertIn("rule_counts.metal1.enclosing.cont.1 is 'lots'", output(r))
+        self.assertIn("no usable integer values", output(r))
+
+    def test_bool_rule_value_is_not_an_integer(self):
+        def mutate(root):
+            write(root, DRC, drc_doc(rule_counts={"metal1.enclosing.cont.1": True}))
+        r = run_case(mutate)
+        self.assertEqual(r.returncode, 1, output(r))
+        self.assertIn("rule_counts.metal1.enclosing.cont.1 is True, not an integer", output(r))
+
+    def test_null_class_value_is_not_an_integer(self):
+        def mutate(root):
+            write(root, LVS, lvs_doc(category={"device.unmatched": None, "topology": 1}))
+        r = run_case(mutate)
+        self.assertEqual(r.returncode, 1, output(r))
+        self.assertIn("category_error_counts.device.unmatched is None, not an integer",
+                      output(r))
+
+    def test_bad_base_class_value_notes_and_still_compares_against_zero(self):
+        def mutate_base(root):
+            write(root, LVS, lvs_doc(category={"device.unmatched": "many", "topology": 1}))
+
+        def mutate_head(root):
+            write(root, LVS, lvs_doc(category={"device.unmatched": 5, "topology": 1}))
+        r = run_case(mutate_head, mutate_base)
+        self.assertEqual(r.returncode, 1, output(r))
+        self.assertIn("merge-base category_error_counts.device.unmatched is 'many'", output(r))
+        self.assertIn("lvs.category_error_counts.device.unmatched regressed 0 → 5", output(r))
+
+    def test_class_mapping_absent_at_head_keeps_missing_note(self):
+        def mutate(root):
+            doc = lvs_doc()
+            del doc["category_error_counts"]
+            write(root, LVS, doc)
+        r = run_case(mutate)
+        self.assertEqual(r.returncode, 0, output(r))
+        self.assertIn("category_error_counts mapping missing at the working-tree side",
+                      output(r))
+
+    def test_head_only_error_count_names_the_implicit_zero(self):
+        def mutate_base(root):
+            doc = lvs_doc()
+            del doc["error_count"]
+            write(root, LVS, doc)
+
+        def mutate_head(root):
+            write(root, LVS, lvs_doc())
+        r = run_case(mutate_head, mutate_base)
+        self.assertEqual(r.returncode, 1, output(r))
+        self.assertIn(
+            "lvs.error_count reads 4 at the working tree but the merge base recorded "
+            "no value", output(r))
+
     # -- waiver discipline -----------------------------------------------------
 
     def test_waived_regression_passes_with_note(self):
