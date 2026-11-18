@@ -228,7 +228,10 @@ Y_Q3 = 0.0
 #: is what keeps `e2`/`e3`'s drops into the PNP rows below unchanged in
 #: kind. Folding conserves the drawn conductor length exactly
 #: (`_klayout_builder_base.fold_plan`), so neither nominal value moves.
-#: Measured: R1 38.12 x 40.055 um, R2 14.0 x 13.85 um.
+#: Measured: R1 38.6 x 40.025 um (issue #573 put the fold gap itself on the
+#: 5 nm manufacturing grid, widening R1 from the 1 nm-step fold's
+#: 38.12 x 40.055 -- gap 0.408 -> 0.44, pitch 2.408 -> 2.44), R2
+#: 14.0 x 13.85 um unchanged (its 1 nm-step fold already landed on-grid).
 R1_LEGS = 16
 R2_LEGS = 6
 

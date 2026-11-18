@@ -6,11 +6,11 @@
     },
     {
       "path": "../bandgap_core/bandgap_core.gds",
-      "sha256": "e89d43e96fdfa85c59ba2db2c3f68e8538d329d671a3a2b520fcf58dac20156f"
+      "sha256": "50b8b8a32d88aae09fc1d213ee4d1754f0e9a844f26bf5116e62d38078e814d4"
     },
     {
       "path": "../bandgap_startup/bandgap_startup.gds",
-      "sha256": "e8d576056a1685de8b437099cedf05a1259892e4cee144378cf9467270f84f7c"
+      "sha256": "97e4ee515400f620ba420c20b470ab2d53b450fa5f155a026ed65fef76619bd7"
     }
   ],
   "schema_version": 1
