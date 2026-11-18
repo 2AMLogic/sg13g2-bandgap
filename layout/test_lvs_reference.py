@@ -156,6 +156,13 @@ def case_pin_sg13g2_rhigh():
     assert round(lvr._sg13g2_rhigh_ohms(1.0, 1411.3), 6) == 1999501.666667
 
 
+def case_pin_sg13g2_rppd():
+    # Same constants as the CMOS5L sibling, at bandgap_core's R1 point
+    # (w=2u l=37.2u): 70e-6/2e-6 + 260*37.2/2.006 = 35.0 + 4821.535394 --
+    # issue #561's live-measured reference value.
+    assert round(lvr._sg13g2_rppd_ohms(2.0, 37.2), 6) == 4856.535394
+
+
 CASES = [
     ("guard rejects b=1 (cmos5l rppd)", case_guard_rejects_b1_cmos5l_rppd),
     ("guard rejects b=1 (cmos5l rhigh)", case_guard_rejects_b1_cmos5l_rhigh),
@@ -172,6 +179,7 @@ CASES = [
     ("pins _cmos5l_rppd_ohms at (1u, 10u)", case_pin_cmos5l_rppd),
     ("pins _cmos5l_rhigh_ohms at (1u, 10u)", case_pin_cmos5l_rhigh),
     ("pins _sg13g2_rhigh_ohms at RPU's (1u, 1411.3u)", case_pin_sg13g2_rhigh),
+    ("pins _sg13g2_rppd_ohms at R1's (2u, 37.2u)", case_pin_sg13g2_rppd),
 ]
 
 
