@@ -1,27 +1,834 @@
 {
-  "schema_version": 2,
-  "file": "bandgap_core.gds",
+  "schema_version": 3,
+  "file": {
+    "path": "layout/bandgap_core/bandgap_core.gds",
+    "scope": "repo"
+  },
   "deck": "sg13g2",
   "dbu_um": 0.001,
-  "status": "clean",
-  "violation_count": 0,
-  "rule_counts": {},
-  "metrics": {
-    "drc__error__count": 0
+  "status": "violations",
+  "violation_count": 24,
+  "rule_counts": {
+    "metal1.enclosing.cont.1": 18,
+    "nwell.enclosing.nactiv.1": 6
   },
-  "violations": [],
+  "metrics": {
+    "drc__error__count": 24
+  },
+  "violations": [
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 50850,
+        "bottom": -680,
+        "right": 51150,
+        "top": -500
+      },
+      "polygon": [
+        [
+          50850,
+          -680
+        ],
+        [
+          50850,
+          -500
+        ],
+        [
+          51150,
+          -500
+        ],
+        [
+          51150,
+          -680
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 50850,
+        "bottom": 500,
+        "right": 51150,
+        "top": 680
+      },
+      "polygon": [
+        [
+          50850,
+          500
+        ],
+        [
+          50850,
+          680
+        ],
+        [
+          51150,
+          680
+        ],
+        [
+          51150,
+          500
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 52700,
+        "bottom": -680,
+        "right": 53000,
+        "top": -500
+      },
+      "polygon": [
+        [
+          52700,
+          -680
+        ],
+        [
+          52700,
+          -500
+        ],
+        [
+          53000,
+          -500
+        ],
+        [
+          53000,
+          -680
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 52700,
+        "bottom": 500,
+        "right": 53000,
+        "top": 680
+      },
+      "polygon": [
+        [
+          52700,
+          500
+        ],
+        [
+          52700,
+          680
+        ],
+        [
+          53000,
+          680
+        ],
+        [
+          53000,
+          500
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 54550,
+        "bottom": -680,
+        "right": 54850,
+        "top": -500
+      },
+      "polygon": [
+        [
+          54550,
+          -680
+        ],
+        [
+          54550,
+          -500
+        ],
+        [
+          54850,
+          -500
+        ],
+        [
+          54850,
+          -680
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 54550,
+        "bottom": 500,
+        "right": 54850,
+        "top": 680
+      },
+      "polygon": [
+        [
+          54550,
+          500
+        ],
+        [
+          54550,
+          680
+        ],
+        [
+          54850,
+          680
+        ],
+        [
+          54850,
+          500
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 56400,
+        "bottom": -680,
+        "right": 56700,
+        "top": -500
+      },
+      "polygon": [
+        [
+          56400,
+          -680
+        ],
+        [
+          56400,
+          -500
+        ],
+        [
+          56700,
+          -500
+        ],
+        [
+          56700,
+          -680
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 56400,
+        "bottom": 500,
+        "right": 56700,
+        "top": 680
+      },
+      "polygon": [
+        [
+          56400,
+          500
+        ],
+        [
+          56400,
+          680
+        ],
+        [
+          56700,
+          680
+        ],
+        [
+          56700,
+          500
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 58250,
+        "bottom": -680,
+        "right": 58550,
+        "top": -500
+      },
+      "polygon": [
+        [
+          58250,
+          -680
+        ],
+        [
+          58250,
+          -500
+        ],
+        [
+          58550,
+          -500
+        ],
+        [
+          58550,
+          -680
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 58250,
+        "bottom": 500,
+        "right": 58550,
+        "top": 680
+      },
+      "polygon": [
+        [
+          58250,
+          500
+        ],
+        [
+          58250,
+          680
+        ],
+        [
+          58550,
+          680
+        ],
+        [
+          58550,
+          500
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 60100,
+        "bottom": -680,
+        "right": 60400,
+        "top": -500
+      },
+      "polygon": [
+        [
+          60100,
+          -680
+        ],
+        [
+          60100,
+          -500
+        ],
+        [
+          60400,
+          -500
+        ],
+        [
+          60400,
+          -680
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 60100,
+        "bottom": 500,
+        "right": 60400,
+        "top": 680
+      },
+      "polygon": [
+        [
+          60100,
+          500
+        ],
+        [
+          60100,
+          680
+        ],
+        [
+          60400,
+          680
+        ],
+        [
+          60400,
+          500
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 61950,
+        "bottom": -680,
+        "right": 62250,
+        "top": -500
+      },
+      "polygon": [
+        [
+          61950,
+          -680
+        ],
+        [
+          61950,
+          -500
+        ],
+        [
+          62250,
+          -500
+        ],
+        [
+          62250,
+          -680
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 61950,
+        "bottom": 500,
+        "right": 62250,
+        "top": 680
+      },
+      "polygon": [
+        [
+          61950,
+          500
+        ],
+        [
+          61950,
+          680
+        ],
+        [
+          62250,
+          680
+        ],
+        [
+          62250,
+          500
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 63800,
+        "bottom": -680,
+        "right": 64100,
+        "top": -500
+      },
+      "polygon": [
+        [
+          63800,
+          -680
+        ],
+        [
+          63800,
+          -500
+        ],
+        [
+          64100,
+          -500
+        ],
+        [
+          64100,
+          -680
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 63800,
+        "bottom": 500,
+        "right": 64100,
+        "top": 680
+      },
+      "polygon": [
+        [
+          63800,
+          500
+        ],
+        [
+          63800,
+          680
+        ],
+        [
+          64100,
+          680
+        ],
+        [
+          64100,
+          500
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 121850,
+        "bottom": -680,
+        "right": 122150,
+        "top": -500
+      },
+      "polygon": [
+        [
+          121850,
+          -680
+        ],
+        [
+          121850,
+          -500
+        ],
+        [
+          122150,
+          -500
+        ],
+        [
+          122150,
+          -680
+        ]
+      ]
+    },
+    {
+      "rule": "metal1.enclosing.cont.1",
+      "description": "every Cont must lie fully inside Metal1 (upper landing)",
+      "check": "enclosing",
+      "layer": "Metal1.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 121850,
+        "bottom": 500,
+        "right": 122150,
+        "top": 680
+      },
+      "polygon": [
+        [
+          121850,
+          500
+        ],
+        [
+          121850,
+          680
+        ],
+        [
+          122150,
+          680
+        ],
+        [
+          122150,
+          500
+        ]
+      ]
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": -388,
+        "bottom": 23490,
+        "right": 388,
+        "top": 23590
+      },
+      "polygon": [
+        [
+          -170,
+          23490
+        ],
+        [
+          170,
+          23490
+        ],
+        [
+          -388,
+          23590
+        ],
+        [
+          388,
+          23590
+        ]
+      ]
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 44612,
+        "bottom": 23490,
+        "right": 45388,
+        "top": 23590
+      },
+      "polygon": [
+        [
+          44830,
+          23490
+        ],
+        [
+          45170,
+          23490
+        ],
+        [
+          44612,
+          23590
+        ],
+        [
+          45388,
+          23590
+        ]
+      ]
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 56612,
+        "bottom": 23490,
+        "right": 57388,
+        "top": 23590
+      },
+      "polygon": [
+        [
+          56830,
+          23490
+        ],
+        [
+          57170,
+          23490
+        ],
+        [
+          56612,
+          23590
+        ],
+        [
+          57388,
+          23590
+        ]
+      ]
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 109612,
+        "bottom": 23490,
+        "right": 110388,
+        "top": 23590
+      },
+      "polygon": [
+        [
+          109830,
+          23490
+        ],
+        [
+          110170,
+          23490
+        ],
+        [
+          109612,
+          23590
+        ],
+        [
+          110388,
+          23590
+        ]
+      ]
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 121612,
+        "bottom": 23490,
+        "right": 122388,
+        "top": 23590
+      },
+      "polygon": [
+        [
+          121830,
+          23490
+        ],
+        [
+          122170,
+          23490
+        ],
+        [
+          121612,
+          23590
+        ],
+        [
+          122388,
+          23590
+        ]
+      ]
+    },
+    {
+      "rule": "nwell.enclosing.nactiv.1",
+      "description": "minimum NWell enclosure of N+ Activ (well tie) outside ThickGateOx",
+      "check": "enclosed",
+      "layer": "Activ.drawing",
+      "cell": "bandgap_core",
+      "source_cell": null,
+      "source_path": null,
+      "bbox": {
+        "left": 133612,
+        "bottom": 23490,
+        "right": 134388,
+        "top": 23590
+      },
+      "polygon": [
+        [
+          133830,
+          23490
+        ],
+        [
+          134170,
+          23490
+        ],
+        [
+          133612,
+          23590
+        ],
+        [
+          134388,
+          23590
+        ]
+      ]
+    }
+  ],
   "coverage": {
     "deck_layers": [
       "1/0",
+      "1/20",
       "5/0",
       "6/0",
+      "7/0",
+      "7/21",
       "8/0",
       "10/0",
+      "14/0",
       "19/0",
       "29/0",
       "30/0",
+      "31/0",
+      "32/0",
+      "36/0",
       "49/0",
       "50/0",
+      "63/0",
       "66/0",
       "67/0",
       "125/0",
@@ -33,22 +840,22 @@
       "1/0",
       "5/0",
       "6/0",
+      "7/0",
       "8/0",
       "10/0",
-      "19/0"
+      "14/0",
+      "19/0",
+      "31/0",
+      "63/0"
     ],
     "layers_in_stream_without_rules": [
       "5/1",
-      "7/0",
       "8/1",
       "8/25",
       "10/1",
       "10/25",
-      "14/0",
       "28/0",
-      "31/0",
       "33/0",
-      "63/0",
       "111/0",
       "128/0",
       "128/1"
@@ -57,31 +864,56 @@
       "activ.enclosing.cont.1",
       "activ.space.1",
       "activ.width.1",
+      "cont.ongrid.1",
       "cont.space.1",
       "cont.width.1",
       "gatpoly.enclosing.cont.1",
       "gatpoly.separation.activ.1",
       "gatpoly.space.1",
       "gatpoly.width.1",
+      "metal1.enclosing.cont.1",
       "metal1.enclosing.via1.1",
       "metal1.space.1",
       "metal1.width.1",
+      "metal2.enclosing.via1.1",
       "metal2.space.1",
       "metal2.width.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
+      "nwell.enclosing.pactiv.1",
+      "nwell.enclosing.pactiv.dig.1",
+      "nwell.enclosing.pactiv.hv.1",
+      "nwell.space.1",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
+      "nwell.space.pactiv.1",
+      "nwell.space.pactiv.dig.1",
+      "nwell.space.pactiv.hv.1",
+      "nwell.width.1",
+      "psd.area.1",
+      "psd.space.1",
+      "psd.width.1",
       "via1.space.1",
       "via1.width.1"
     ],
     "rules_skipped": [
       "metal2.enclosing.via2.1",
+      "metal3.enclosing.via2.1",
       "metal3.enclosing.via3.1",
       "metal3.space.1",
       "metal3.width.1",
+      "metal4.enclosing.via3.1",
       "metal4.enclosing.via4.1",
       "metal4.space.1",
       "metal4.width.1",
+      "metal5.enclosing.mim.1",
       "metal5.enclosing.topvia1.1",
+      "metal5.enclosing.via4.1",
       "metal5.space.1",
       "metal5.width.1",
+      "mim.enclosing.topvia1.1",
       "topmetal1.enclosing.topvia1.1",
       "topmetal1.enclosing.topvia2.1",
       "topmetal1.space.1",
@@ -101,15 +933,27 @@
       "via4.width.1"
     ],
     "voltage_domain_warnings": [],
+    "unchecked_rules": [
+      {
+        "rule": "NW.b1",
+        "layer": "31/0",
+        "description": "NW.b1 (min. PWell width between NWell regions of different nets, 1.80 um) is net-aware and this engine has no net-aware spacing check; wells on different nets closer than 1.80 um are not flagged. Only the geometric nwell.space.1 (0.62 um) ran."
+      }
+    ],
+    "marker_blind_layers_in_stream": [],
     "deck_scope": [
       "Act",
       "Cnt",
+      "Cont upper-landing containment (curated)",
       "Gat",
       "M1",
       "M2",
       "M3",
       "M4",
       "M5",
+      "MIM",
+      "NW",
+      "Offgrid",
       "TM1",
       "TM2",
       "TV1",
@@ -117,7 +961,28 @@
       "V1",
       "V2",
       "V3",
-      "V4"
+      "V4",
+      "Via1 upper-landing containment (curated)",
+      "Via2 upper-landing containment (curated)",
+      "Via3 upper-landing containment (curated)",
+      "Via4 upper-landing containment (curated)",
+      "pSD"
+    ],
+    "unmodeled_rules": [
+      "LU.a",
+      "LU.c",
+      "LU.c1",
+      "LU.d",
+      "LU.d1",
+      "Pad.a1",
+      "Pad.aR",
+      "Pad.bR",
+      "Pad.d",
+      "Pad.d1R",
+      "Pad.dR",
+      "Pad.gR",
+      "Pad.jR",
+      "Pad.kR"
     ],
     "schema_version": 1,
     "known": true,
@@ -125,17 +990,37 @@
       "activ.enclosing.cont.1",
       "activ.space.1",
       "activ.width.1",
+      "cont.ongrid.1",
       "cont.space.1",
       "cont.width.1",
       "gatpoly.enclosing.cont.1",
       "gatpoly.separation.activ.1",
       "gatpoly.space.1",
       "gatpoly.width.1",
+      "metal1.enclosing.cont.1",
       "metal1.enclosing.via1.1",
       "metal1.space.1",
       "metal1.width.1",
+      "metal2.enclosing.via1.1",
       "metal2.space.1",
       "metal2.width.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
+      "nwell.enclosing.pactiv.1",
+      "nwell.enclosing.pactiv.dig.1",
+      "nwell.enclosing.pactiv.hv.1",
+      "nwell.space.1",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
+      "nwell.space.pactiv.1",
+      "nwell.space.pactiv.dig.1",
+      "nwell.space.pactiv.hv.1",
+      "nwell.width.1",
+      "psd.area.1",
+      "psd.space.1",
+      "psd.width.1",
       "via1.space.1",
       "via1.width.1"
     ],
@@ -143,6 +1028,10 @@
     "inapplicable": [
       {
         "id": "metal2.enclosing.via2.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.enclosing.via2.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -158,6 +1047,10 @@
         "reason": "no_applicable_geometry"
       },
       {
+        "id": "metal4.enclosing.via3.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "metal4.enclosing.via4.1",
         "reason": "no_applicable_geometry"
       },
@@ -170,7 +1063,15 @@
         "reason": "no_applicable_geometry"
       },
       {
+        "id": "metal5.enclosing.mim.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "metal5.enclosing.topvia1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal5.enclosing.via4.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -179,6 +1080,10 @@
       },
       {
         "id": "metal5.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "mim.enclosing.topvia1.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -255,18 +1160,20 @@
     "nothing_checked_reasons": []
   },
   "provenance": {
-    "klt_version": "0.6.0+geb7e7c6ace30",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.9.3.dev663+g22ab2a8756c7",
+    "klt_git_commit": "22ab2a8756c79a5d09778a08f58822fd65031207",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@22ab2a8756c79a5d09778a08f58822fd65031207",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:f9771af83c67c59da0f5f305b487b5f842de12e3f37e1307d1057e2c095478a0",
+      "content_hash": "sha256:d407265de045dc59cecc28793f70ac9734069a6fb8bae06daa9b9f2e04961602",
       "released": false
     },
     "input": {
-      "content_hash": "sha256:31217986b36d224789f1ecc7bf30cd4c64d306fbf7f079bb8c34e6fe3ea33a90",
+      "content_hash": "sha256:f2594e0a5c6f1f542ff2228826f640eede066940061a21cf442fd01763a24adf",
       "role": "layout"
     },
-    "klayout_version_mismatch": false
+    "klayout_version_mismatch": true
   }
 }

@@ -1,11 +1,14 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "engine": "klayout",
   "layout": {
     "path": "layout/bandgap_top/bandgap_top.gds",
     "scope": "repo"
   },
-  "reference": "bandgap_top.lvs_reference.spice",
+  "reference": {
+    "path": "layout/bandgap_top/bandgap_top.lvs_reference.spice",
+    "scope": "repo"
+  },
   "top": "bandgap_top",
   "reference_top": ".TOP",
   "parameter_tolerance": null,
@@ -33,6 +36,7 @@
     "anchor_top_level_pins": null,
     "strict_top_level_pin_count": false,
     "compare_mos_flavour": false,
+    "ignore_mos_bulk": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -54,6 +58,7 @@
     "instance_count": 0,
     "expected_nets": null,
     "unchecked_expected_pins": [],
+    "excluded_pins": [],
     "findings": [],
     "finding_count": 0
   },
@@ -66,6 +71,62 @@
     "finding_count": 0
   },
   "device_parameter_coverage": [
+    {
+      "class": "nfet",
+      "device_kind": "mos",
+      "layout_devices": 6,
+      "reference_devices": 6,
+      "compared": [
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "AS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "AD",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PD",
+          "reason": "secondary"
+        }
+      ]
+    },
+    {
+      "class": "pfet",
+      "device_kind": "mos",
+      "layout_devices": 11,
+      "reference_devices": 11,
+      "compared": [
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "AS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "AD",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PD",
+          "reason": "secondary"
+        }
+      ]
+    },
     {
       "class": "rhigh",
       "device_kind": "resistor",
@@ -109,18 +170,16 @@
       ]
     }
   ],
-  "mismatch_count": 1023,
-  "error_count": 1019,
+  "mismatch_count": 1022,
+  "error_count": 1018,
   "category_counts": {
     "device.bulk_reconciled": 2,
     "device.geometry_not_compared": 2,
-    "device.property": 1,
     "device.unmatched": 517,
     "net.unmatched": 500,
     "topology": 1
   },
   "category_error_counts": {
-    "device.property": 1,
     "device.unmatched": 517,
     "net.unmatched": 500,
     "topology": 1
@@ -129,12 +188,12 @@
     "nets": {
       "layout": 261,
       "reference": 261,
-      "matched": 5
+      "matched": 7
     },
     "devices": {
       "layout": 275,
       "reference": 278,
-      "matched": 17
+      "matched": 18
     },
     "pins": {
       "layout": 261,
@@ -157,21 +216,23 @@
     "engine": "klayout",
     "engine_version": "0.30.13",
     "netgen_binary": null,
-    "layout_sha256": "0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
-    "reference_sha256": "0824952e8a5588a211039e13442f020b0299a714378c8a9c9d17561edc83a89e",
+    "layout_sha256": "47cd7c7558ce561abc7121e2edbb592f32fd1ea4a54a7b6af0b76592670ba868",
+    "reference_sha256": "ba8082d960c95efbdc603e184ace52d8779f28b8fb1f1f70f8069eb87ecdb7fe",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.3.dev663+g22ab2a8756c7",
+    "klt_git_commit": "22ab2a8756c79a5d09778a08f58822fd65031207",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@22ab2a8756c79a5d09778a08f58822fd65031207",
     "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
-      "released": true
+      "content_hash": "sha256:d407265de045dc59cecc28793f70ac9734069a6fb8bae06daa9b9f2e04961602",
+      "released": false
     },
     "input": {
-      "content_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
+      "content_hash": "sha256:47cd7c7558ce561abc7121e2edbb592f32fd1ea4a54a7b6af0b76592670ba868",
       "role": "layout"
     },
     "klayout_version_mismatch": true
@@ -295,27 +356,6 @@
         "layout_devices": 257,
         "reference_devices": 257
       },
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "device.property",
-      "severity": "error",
-      "description": "matched device parameter 'r' differs",
-      "side": "both",
-      "net": null,
-      "device": {
-        "layout": "\\$275",
-        "reference": "X3_RPU",
-        "class": "rhigh"
-      },
-      "property": {
-        "name": "r",
-        "layout": 1999501.6666666667,
-        "reference": 1919368.0
-      },
-      "details": null,
       "circuit": null,
       "instance": null,
       "subcircuit": null
@@ -17139,6 +17179,11 @@
       "pin": true
     },
     {
+      "layout": "DET",
+      "reference": "DET",
+      "pin": true
+    },
+    {
       "layout": "FB|OUT",
       "reference": "FB|OUT",
       "pin": true
@@ -17151,6 +17196,11 @@
     {
       "layout": "TAIL",
       "reference": "TAIL",
+      "pin": true
+    },
+    {
+      "layout": "VDD",
+      "reference": "VDD",
       "pin": true
     }
   ]
