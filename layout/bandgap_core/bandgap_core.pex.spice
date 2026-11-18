@@ -827,17 +827,17 @@ X$262 T226__t1 T225__t1 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance $263 r0 *1 184.2,66.535 rppd
 X$263 T254__t1 CB3__t0 vsubs rppd r=479.566301097 L=3.43U W=2U
 * device instance CB2_t0 r0 *1 0,0 
-RCB2_t0 CB2__t0 CB2 23.024
+RCB2_t0 CB2__t0 CB2 27.8805
 * device instance CB2 r0 *1 0,0 
-CCB2 CB2 vsubs 7.41581e-15
+CCB2 CB2 vsubs 9.47633e-15
 * device instance CB3_t0 r0 *1 0,0 
-RCB3_t0 CB3__t0 CB3 38.9487
+RCB3_t0 CB3__t0 CB3 39.5298
 * device instance CB3 r0 *1 0,0 
-CCB3 CB3 vsubs 1.1950188e-14
+CCB3 CB3 vsubs 1.2212026e-14
 * device instance SNS1_t0 r0 *1 0,0 
-RSNS1_t0 SNS1__t0 SNS1 15.1283
+RSNS1_t0 SNS1__t0 SNS1 14.5679
 * device instance SNS1 r0 *1 0,0 
-CSNS1 SNS1 vsubs 4.244144e-15
+CSNS1 SNS1 vsubs 4.254508e-15
 * device instance SNS2_t0 r0 *1 0,0 
 RSNS2_t0 SNS2__t0 SNS2 2.91618268835
 * device instance SNS2_t1 r0 *1 0,0 
@@ -2434,11 +2434,11 @@ CVREF VREF vsubs 5.052496e-15
 * device instance VSS r0 *1 0,0 
 RVSS VSS VSS__par 7.5152
 * device instance VSS r0 *1 0,0 
-CVSS VSS__par vsubs 1.2491113e-14
+CVSS VSS__par vsubs 1.2362944e-14
 * device instance cc_CB2_VDD r0 *1 0,0 
 Ccc_CB2_VDD CB2 VDD 8.235e-18
 * device instance cc_CB2_VSS r0 *1 0,0 
-Ccc_CB2_VSS CB2 VSS__par 3.0251e-17
+Ccc_CB2_VSS CB2 VSS__par 4.33601e-16
 * device instance cc_CB3_T001_T003_T007_T015_T031_T063_T127_TN0 r0 *1 0,0 
 Ccc_CB3_T001_T003_T007_T015_T031_T063_T127_TN0 CB3
 + T001|T003|T007|T015|T031|T063|T127|TN0 1.1764e-17
@@ -2447,9 +2447,9 @@ Ccc_CB3_VDD CB3 VDD 8.235e-18
 * device instance cc_CB3_VREF r0 *1 0,0 
 Ccc_CB3_VREF CB3 VREF 8.235e-18
 * device instance cc_CB3_VSS r0 *1 0,0 
-Ccc_CB3_VSS CB3 VSS__par 2.0167e-17
+Ccc_CB3_VSS CB3 VSS__par 7.0586e-17
 * device instance cc_SNS1_VSS r0 *1 0,0 
-Ccc_SNS1_VSS SNS1 VSS__par 3.0251e-17
+Ccc_SNS1_VSS SNS1 VSS__par 5.0419e-17
 * device instance cc_SNS2_VDD r0 *1 0,0 
 Ccc_SNS2_VDD SNS2 VDD 8.235e-18
 * device instance cc_T001_T003_T007_T015_T031_T063_T127_TN0_T002 r0 *1 0,0 
