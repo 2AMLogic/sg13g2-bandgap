@@ -227,6 +227,60 @@ def build_fixture(root: Path) -> None:
         encoding="utf-8",
     )
 
+    # Assembly top + leaf-hash sidecar (issue #588): synth_top's stub
+    # generate.py carries the write_leaf_inputs_sidecar hook, so the checker
+    # treats it as an assembly top and binds its committed GDS to the leaf
+    # GDS files the sidecar names -- here the fixture's own synth_cell.
+    top = root / "layout" / "synth_top"
+    top.mkdir()
+    top_gds_bytes = b"not really a top gds, but it hashes just fine\n"
+    (top / "synth_top.gds").write_bytes(top_gds_bytes)
+    (top / "generate.py").write_text(
+        "# synthetic assembly top (issue #588 fixture)\n"
+        "# writes the leaf-hash sidecar: write_leaf_inputs_sidecar(OUTPUT, LEAVES)\n",
+        encoding="utf-8",
+    )
+    top_reference_bytes = b".SUBCKT synth_top\n.ENDS\n"
+    (top / "synth_top.lvs_reference.spice").write_bytes(top_reference_bytes)
+    (top / "drc_report.json").write_text(
+        json.dumps({
+            "schema_version": 1,
+            "file": "layout/synth_top/synth_top.gds",
+            "deck": "sg13g2",
+            "status": "clean",
+            "violation_count": 0,
+            "violations": [],
+            "coverage": {"rules_skipped": [], "layers_checked": []},
+            "provenance": {"klt_version": "0.3.0", "klayout_version": "0.30.10",
+                           "deck": deck,
+                           "input": {"content_hash": "sha256:" + sha256_bytes(top_gds_bytes)}},
+        }, indent=1),
+        encoding="utf-8",
+    )
+    (top / "lvs_report.json").write_text(
+        json.dumps({
+            "schema_version": 1,
+            "engine": "klayout",
+            "layout": "synth_top.gds",
+            "reference": "synth_top.lvs_reference.spice",
+            "status": "mismatch",
+            "mismatch_count": 1,
+            "error_count": 1,
+            "counts": {"nets": {"matched": 0}, "devices": {"matched": 0}, "pins": {"matched": 0}},
+            "environment": {"engine": "klayout",
+                            "layout_sha256": sha256_bytes(top_gds_bytes),
+                            "reference_sha256": sha256_bytes(top_reference_bytes)},
+            "provenance": {"klt_version": "0.3.0", "deck": deck},
+        }, indent=1),
+        encoding="utf-8",
+    )
+    (top / "leaf_inputs.json").write_text(
+        json.dumps({"schema_version": 1,
+                    "leaves": [{"path": "../synth_cell/synth_cell.gds",
+                                "sha256": sha256_bytes(gds_bytes)}]}, indent=1),
+        encoding="utf-8",
+    )
+
 
 def run_checker(root: Path, *extra: str) -> tuple[int, str]:
     proc = subprocess.run(
@@ -550,9 +604,10 @@ def case_waiver_guards_nothing(root: Path):
 def case_valid_waiver_passes(root: Path):
     """The whole point of the waiver: loud notes, exit 0.
 
-    Editing the GDS invalidates *every* report that names it as its input, so
+    Editing the GDS invalidates *every* check that names it as its input, so
     each such check has to be waived by name — which is the property being
-    demonstrated.
+    demonstrated. Since #588 that includes the assembly top's leaf binding:
+    synth_top's sidecar names synth_cell.gds, so it goes stale with the rest.
     """
     drc = json.loads((root / "layout/synth_cell/drc_report.json").read_text(encoding="utf-8"))
     lvs = json.loads((root / "layout/synth_cell/lvs_report.json").read_text(encoding="utf-8"))
@@ -596,6 +651,13 @@ def case_valid_waiver_passes(root: Path):
                 "report": "layout/synth_cell/erc_report.json",
                 "check": "input gds",
                 "recorded_hash": erc["provenance"]["input"]["content_hash"],
+                "issue": "#56",
+                "reason": "tracked follow-up",
+            },
+            {
+                "report": "layout/synth_top/leaf_inputs.json",
+                "check": "leaf ../synth_cell/synth_cell.gds",
+                "recorded_hash": drc["provenance"]["input"]["content_hash"],
                 "issue": "#56",
                 "reason": "tracked follow-up",
             },
@@ -1022,6 +1084,61 @@ def case_pre_cutoff_legacy_record_passes(root: Path):
     return None
 
 
+# --- assembly-top leaf binding, issue #588 ------------------------------------
+
+TOP_SIDECAR = "layout/synth_top/leaf_inputs.json"
+TOP_LEAF_REL = "../synth_cell/synth_cell.gds"
+
+
+def case_leaf_binding_clean_passes(_root: Path):
+    """The fixture's undamaged sidecar (fresh leaf hash, sorted, beside the
+    top GDS) must keep the checker green — the clean-pass half of the AC."""
+    return None
+
+
+def case_stale_leaf_hash(root: Path):
+    """A leaf GDS whose current bytes differ from the sidecar's recorded sha256."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"][0].update(sha256="b" * 64))
+    return f"[leaf {TOP_LEAF_REL}]"
+
+
+def case_missing_leaf(root: Path):
+    """A sidecar entry naming a leaf that is not committed."""
+    edit_json(root / TOP_SIDECAR,
+              lambda d: d["leaves"][0].update(path="../synth_cell/gone.gds"))
+    return "leaf ../synth_cell/gone.gds does not exist"
+
+
+def case_missing_sidecar(root: Path):
+    """An assembly top whose committed GDS has no leaf_inputs.json beside it."""
+    (root / TOP_SIDECAR).unlink()
+    return "no leaf_inputs.json beside synth_top.gds"
+
+
+def case_leaf_sidecar_unsorted(root: Path):
+    """The generator writes sorted leaf paths; a hand edit must not pass."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"].insert(
+        0, {"path": "../synth_cell/zz_second_leaf.gds", "sha256": "0" * 64}))
+    return "not sorted"
+
+
+def case_leaf_binding_waived_is_loud_note(root: Path):
+    """A stale leaf binding is waivable through the same mechanism as every
+    report anchor (and self-expires the same way once regenerated)."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"][0].update(sha256="b" * 64))
+    (root / "layout/evidence-freshness-waivers.json").write_text(
+        json.dumps({"waivers": [{
+            "report": TOP_SIDECAR,
+            "check": f"leaf {TOP_LEAF_REL}",
+            "recorded_hash": "sha256:" + "b" * 64,
+            "issue": "#588",
+            "reason": "tracked re-assembly",
+        }]}),
+        encoding="utf-8",
+    )
+    return None
+
+
 CASES = [
     ("undamaged fixture passes", case_valid),
     ("stored (manifest-only) record passes", case_stored_record_passes),
@@ -1110,6 +1227,14 @@ CASES = [
      case_binding_waiver_obsolete_after_rerun),
     ("binding waiver expires when a newer record lands",
      case_binding_waiver_expires_with_newer_record),
+    ("assembly-top leaf binding passes on the undamaged fixture",
+     case_leaf_binding_clean_passes),
+    ("sidecar leaf hash differs from the committed leaf GDS", case_stale_leaf_hash),
+    ("sidecar names a leaf that does not exist", case_missing_leaf),
+    ("assembly top has no leaf_inputs.json beside its GDS", case_missing_sidecar),
+    ("sidecar leaf paths are not sorted", case_leaf_sidecar_unsorted),
+    ("stale leaf binding downgraded to a note by a waiver",
+     case_leaf_binding_waived_is_loud_note),
 ]
 
 
