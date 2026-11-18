@@ -833,12 +833,15 @@ def check_leaf_bindings(
         if not isinstance(leaves, list) or not leaves:
             report.fail(sidecar_rel, "missing non-empty 'leaves' array")
             continue
-        paths: list[str] = []
+        entries: list[dict] = []
         for entry in leaves:
             if not isinstance(entry, dict) or not isinstance(entry.get("path"), str) or not entry["path"]:
                 report.fail(sidecar_rel, f"leaf entry {entry!r} has no 'path'")
                 continue
-            paths.append(entry["path"])
+            entries.append(entry)
+        if len(entries) != len(leaves):
+            continue
+        paths = [entry["path"] for entry in entries]
         if len(set(paths)) != len(paths):
             report.fail(sidecar_rel, "lists a leaf path more than once")
             continue
@@ -848,7 +851,7 @@ def check_leaf_bindings(
                 f"leaf paths are not sorted — regenerate it with layout/{cell}/generate.py",
             )
             continue
-        for entry in leaves:
+        for entry in entries:
             rel = entry["path"]
             recorded = SHA256_RE.match(str(entry.get("sha256", "")).strip())
             if not recorded:
