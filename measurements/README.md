@@ -126,20 +126,40 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
   (#315).
 
-- `2026-11-18-characterization-report/` — issue #557 (T1 checklist item 8):
-  the current aggregated characterization report, replacing the 16 Nov one.
-  It rotated because this branch's Via1 containment fix re-minted the layout
-  evidence (GDS, DRC/LVS/PEX under `klt 0.9.3.dev663`), moving both audited
-  PEX DUT inputs (`bandgap_top.pex.spice`, `bandgap_startup.pex.spice`).
-  Stamped at audited commit `11a18b96`. **No `sim/` record moved and no
-  simulation was run**: the three post-layout benches (PSRR-PEX, Zout-PEX,
-  startup trip-point) are disclosed as predating the current extraction, and
-  the PSRR @ DC row's verdict moves with them — met with caveats becomes
-  **not met on current evidence** (the only record that cleared 60 dB,
-  post-layout 45/45 at 0.0013 dB margin, predates the re-extraction; the
-  current schematic grid reads 59.685 dB at its worst corner). The re-run
-  one-point core PEX probe reproduces its recorded point exactly (vref
-  1.052999 V, ratio 12.630). Same shape as the earlier reports: `README.md`,
-  `spotcheck.py`, `envelope.json` (cited by
+- `2026-11-18-characterization-report/` — **superseded by
+  `2026-11-18-klu-retime-characterization-report/`** (below; kept untouched
+  as history). Issue #557 (T1 checklist item 8): replaced the 16 Nov one.
+  It rotated because that branch's Via1 containment fix re-minted the
+  layout evidence (GDS, DRC/LVS/PEX under `klt 0.9.3.dev663`), moving both
+  audited PEX DUT inputs (`bandgap_top.pex.spice`,
+  `bandgap_startup.pex.spice`). Stamped at audited commit `11a18b96`. **No
+  `sim/` record moved and no simulation was run**: the three post-layout
+  benches (PSRR-PEX, Zout-PEX, startup trip-point) are disclosed as
+  predating the current extraction, and the PSRR @ DC row's verdict moves
+  with them — met with caveats becomes **not met on current evidence** (the
+  only record that cleared 60 dB, post-layout 45/45 at 0.0013 dB margin,
+  predates the re-extraction; the current schematic grid reads 59.685 dB at
+  its worst corner). The re-run one-point core PEX probe reproduces its
+  recorded point exactly (vref 1.052999 V, ratio 12.630). Same shape as the
+  earlier reports: `README.md`, `spotcheck.py`, `envelope.json` (cited by
+  `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
+  (#315).
+
+- `2026-11-18-klu-retime-characterization-report/` — issue #518 (T1
+  checklist item 8): the current aggregated characterization report,
+  replacing the 18 Nov one. The name carries a `klu-retime` suffix because
+  the same-day `2026-11-18-` slot is taken by the #557 report it supersedes
+  (byte-identical history). It rotated because issue #518's KLU
+  direct-solver adoption on the two supply benches re-minted their 45-point
+  grids (`sim/closed-loop-iq/records/20261118-072122-3e600d97`,
+  `sim/closed-loop-startup/records/20261118-082945-3e600d97`), making them
+  those experiments' newest records. Stamped at audited commit `73c420a2`.
+  **Provenance-only, like the 13 Nov rotation**: the Iq grid reproduces its
+  predecessor figure-for-figure (recomputed from both CSVs, maximum
+  shared-column relative delta 0) and the startup grid's claims are
+  unchanged (45/45 self-start; node round-off within the `reltol=5e-3`
+  solver swap), so no verdict and no quoted number move and the spot-check
+  block is byte-identical to the 18 Nov report's. Same shape as the earlier
+  reports: `README.md`, `spotcheck.py`, `envelope.json` (cited by
   `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
   (#315).

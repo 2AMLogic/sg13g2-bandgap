@@ -283,11 +283,11 @@
       "reason": null,
       "graded_by_build": true,
       "citation": {
-        "file": "measurements/2026-11-18-characterization-report/envelope.json",
+        "file": "measurements/2026-11-18-klu-retime-characterization-report/envelope.json",
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:0c1a4c5ad5b2f60950ce9fe172bf5b9c3524eb1a409ad52a120eb8eb041618b1",
+        "content_hash": "sha256:a780fff95d0806a440b316b7751b763c93010bdfdcc45027f10cf2e50c55b352",
         "input_verified": true,
         "exit_status": 0
       }
