@@ -9,11 +9,11 @@
       "reason": "This 0.3.0-minted report compared against the retired flat rhigh reference value (1919368.0 ohm = 1360*L/W). Issue #563 traced the 0.8.0 deck's +4.2% rhigh extraction delta (klayout-tools#2652 transcribes rhigh.sym's end term 1.6e-4 ohm*m and width offset -0.04 um) and updated layout/lvs_reference.py to evaluate the PDK's own symbol formula, changing RPU's reference value to 1999501.7 ohm. Verified live under klt 0.8.0: this cell reaches status match / error_count 0 against the updated reference. Stale until the DR-0016 backlog re-mint (#561) lands."
     },
     {
-      "report": "layout/bandgap_top/lvs_report.json",
-      "check": "reference netlist",
-      "recorded_hash": "sha256:0824952e8a5588a211039e13442f020b0299a714378c8a9c9d17561edc83a89e",
+      "report": "layout/bandgap_top/pex_extract_report.json",
+      "check": "input gds",
+      "recorded_hash": "sha256:0e74bd779b38cf2f9b752f98ecb0272d068d3644893b2dcd89314ed4552f2930",
       "issue": "#561",
-      "reason": "This report (0.6.0 mint on main; re-minted 0.8.0 on PR #560's branch against the same reference file) compared against the retired flat rhigh reference value. Issue #563 traced the 0.8.0 deck's +4.2% rhigh extraction delta to klayout-tools#2652's rhigh.sym transcription and updated layout/lvs_reference.py to the PDK's own symbol formula (X3_RPU reference value 1919368.0 -> 1999501.7 ohm). Verified live under klt 0.8.0: the device.property rhigh finding goes 1 -> 0; the 1018 remaining errors are the out-of-scope pairing regression (klayout-tools#6313) plus the permanent bipolar topology entry. Stale until the DR-0016 backlog re-mint (#561) lands."
+      "reason": "Issue #572 re-minted bandgap_top.gds (the core cell gained its HBT base-contact landing strips and the assembly picked up e8f227de, which had never been folded into the committed top GDS), which makes this 0.6.0-minted extraction report stale against the new GDS. It is deliberately NOT re-minted in #572: layout/bandgap_top/bandgap_top.pex.spice is a dut[] entry of the actively cited characterization report (measurements/2026-11-16-characterization-report, T1 item 8, manifest item 8) whose current-design claims (sim/closed-loop-psrr-pex, sim/closed-loop-zout-pex) were measured against exactly this netlist hash \u2014 check_report_dependencies.py enforces that pin, and refreshing it requires the new dated characterization report those PEX PVT re-runs produce (#275 owns the grids; the DR-0016 re-mint backlog is #561). #572 measured the re-extraction (kept out of the committed tree): same 275 devices, same 842R/261C/59CC card counts, values shifted by m\u03a9/fF from the base-contact metal, and the one-point probe on the re-extracted core shows vref within 3 uV of the committed extraction."
     }
   ]
 }

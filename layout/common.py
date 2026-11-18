@@ -275,6 +275,30 @@ def draw_npn13g2(
         # generous margin rather than encroaching on the EmWind gap below).
         b.box(L_CONT, xc - 0.15, y0 - EMITTER_LE_UM / 2 - 0.23, xc + 0.15, y0 - EMITTER_LE_UM / 2 - 0.05)
         b.box(L_CONT, xc - 0.15, y0 + EMITTER_LE_UM / 2 + 0.05, xc + 0.15, y0 + EMITTER_LE_UM / 2 + 0.23)
+        # Metal1 base-contact landing (issue #572). The two Cont rows above
+        # are this simplified footprint's base contacts -- the real PyCell
+        # contacts its base metal flanking each emitter window -- so each
+        # stripe gets a Metal1 strip landing on both rows and overlapping
+        # the base rail below. Without it every Cont sits on bare Activ,
+        # and the curated deck's require_containment rule
+        # `metal1.enclosing.cont.1` ("every Cont must lie fully inside
+        # Metal1 (upper landing)", threshold 0 -- pure containment, exact
+        # boundary coincidence passes) reports each one: 18 on
+        # `bandgap_core` before this strip existed (Q2's 8 stripes x 2 rows
+        # + Q3's single pair; Q1's pair was already covered by that cell's
+        # own `sns1` route strip, which happens to run exactly over its
+        # stripe). Geometry: 0.5um wide (0.10um Cont enclosure per side;
+        # the floor is containment, not margin), from the base rail's
+        # centreline (one merged shape, so the base net actually reaches
+        # the contacts) up to 0.1um past the top row's outer edge. Clears
+        # `metal1.width.1` (0.16um) and `metal1.space.1` (0.18um) against
+        # the collector rail (1.42um above the strip top) and between
+        # neighbouring stripes (1.35um pitch gap) with margin. A caller
+        # routing a Metal1 tie strap through the stripe field must keep
+        # that same 0.18um floor clear of these strips -- see
+        # `bandgap_core/generate.py`'s `cb2_x`, centred in the gap between
+        # Q2's stripes 6 and 7 for exactly this reason.
+        b.box(L_METAL1, xc - 0.25, y0 - HBT_HALF_HEIGHT_UM + 0.7, xc + 0.25, y0 + EMITTER_LE_UM / 2 + 0.33)
 
     # Collector rail (top), base rail (bottom), emitter rail (Metal2, over
     # the emitter windows) -- one each, spanning the full stripe row, per
