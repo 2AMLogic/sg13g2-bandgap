@@ -14,8 +14,8 @@ that produced it.
 - `sg13g2-bandgap.signoff.json` — the committed **verdict of record**: the
   exact output of `klt signoff --manifest manifests/sg13g2-bandgap.json
   --format json`.
-  As of the commit that last regenerated it (the #579 rebase of PR #576 onto
-  post-#574 main): **tier: none — 5/11 T1
+  As of the commit that last regenerated it (#572's Metal1 base-contact
+  landing re-mint, on post-#579 main): **tier: none — 5/11 T1
   items met** (items 1, 2, 3, 8, 10; read the count from the report's
   `t1_met_count`, not from this sentence). That is the honest state; an
   all-`unmet` manifest is a correct result, and nothing here inflates it.
@@ -92,18 +92,22 @@ The binding used here:
   the committed GDS exists and was DRC-checkable at the pinned content hash;
   the generator (`layout/bandgap_top/generate.py`) is committed and
   deterministic. The #579 rebase regenerated the GDS with #571's tap-margin
-  fix composed onto #574's Via1 Metal2-landing enclosures, and the item is
+  fix composed onto #574's Via1 Metal2-landing enclosures, and #572 composed
+  its Metal1 base-contact landing onto that; the item is
   `met` again (it had regressed to `check_failed` on the pre-#574 branch,
   whose assembled GDS still carried the Via1 classes).
 - **Item 3 (DRC clean) — cited: `layout/bandgap_top/drc_report.json`**:
   `status: clean`, input hash pinned to the current committed GDS, with
-  **22 markers waived** cell-scoped (`drc_waivers.json`, each naming its
-  tracking issue: 18 `metal1.enclosing.cont.1` → #572, 4 `cont.ongrid.1` →
+  **4 markers waived** cell-scoped (`drc_waivers.json`, each naming its
+  tracking issue: 4 `cont.ongrid.1` →
   #573 — every waived marker instance-attributed to a leaf cell, none in
   top's own geometry). The 11 `nwell.enclosing.nactiv.1` markers #574's
   waiver carried are gone at the source: #571's tap-margin fix closed the
   class, and per `drc_waivers.json`'s own rule the two entries naming it
-  were deleted in this rebase. Every Via1 class is **0** (#574's landings
+  were deleted in the #579 rebase; the 18 `metal1.enclosing.cont.1`
+  markers are gone the same way — #572's landing strips closed the class
+  inside `bandgap_core`, and the entry naming it is deleted in this PR
+  (waived set 22 → 4). Every Via1 class is **0** (#574's landings
   fix, composed into this GDS).
   **DRC coverage disclosure (claimant-enforced, quoted from the report's
   `coverage` block):** the curated deck now checks 25 chapters
@@ -134,8 +138,8 @@ The binding used here:
   half is complete and clean: `layout/bandgap_top/erc-supply-spec.json`
   (SG13G2 stackup GatPoly/Metal1/Metal2, `Cont` + `Via1`, `VDD`/`VSS` as
   supplies, one n-well `ties[]` entry) re-minted under the containment-deck
-  build (`klt 0.9.3.dev980`, klayout 0.30.12 — the same build as the cell's
-  DRC/ERC mint on the #571 branch) against the rebase's regenerated GDS
+  build (`klt 0.9.3.dev1023`, klayout 0.30.13 — the same build as the cell's
+  DRC mint in #572) against the #572 regenerated GDS
   reports `erc_status: "clean"` with zero findings — each supply resolves to
   exactly one island, and all 7 gates and the n-well tie were *checked*
   (`erc_coverage.checked`). The envelope's top-level `status` reads

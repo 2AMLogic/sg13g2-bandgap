@@ -110,3 +110,29 @@ CI's `klayout-tools==` pin installs.** Concretely:
 - Grades are host-reproducible again: any agent on any host can re-derive
   every committed verdict with one `uvx` pin, and CI (exact pin) agrees
   with what is committed.
+- **The 0.8.0 deck's rule scope is narrower than the dev builds it
+  retires (disclosed via #597):** the pinned release's `sg13g2` deck does
+  not cover the `Offgrid` family or the `Cont`/`Via1`–`Via4` upper-landing
+  containment (curated) families, and the signoff manifest's `deck_scope`
+  records their absence. Two tracked, still-open defect classes live in
+  exactly those families: #572 (`metal1.enclosing.cont.1`, ×18 markers in
+  `bandgap_core`) and #573 (`cont.ongrid.1`, ×4 markers in
+  `bandgap_startup`). Those cells' committed DRC evidence reads `clean`
+  under the standard (re-minted in #586) because the deck cannot observe
+  those classes — the geometry is unchanged and still carries the markers
+  under a deck that can.
+- A DRC verdict minted under this standard is read as clean *within the
+  citation's `deck_scope`*, not clean absolutely: `clean` here is not
+  `clean` under a deck that carries the Offgrid/containment families, and
+  the signoff manifest must not be read as asserting otherwise.
+  `deck_scope` and `rules_skipped` in
+  `manifests/sg13g2-bandgap.signoff.json` are the authoritative statement
+  of what a DRC citation covers; `bandgap_top`'s retained
+  `drc_waivers.json` entries stay in place as the guard for any future
+  deck that fires those classes again.
+- Open follow-up, not decided here: a future standard bump should prefer a
+  release whose deck carries the containment/Offgrid families, so that
+  committed DRC evidence and the open DRC issues (#572, #573) are measured
+  by the same deck. Choosing such a release goes through the bump
+  procedure above — or an operator decision, if it needs a ruling — not
+  this record.
