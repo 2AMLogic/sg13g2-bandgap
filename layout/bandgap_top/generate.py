@@ -782,7 +782,7 @@ def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_s
     # 1.4um above `bandgap_core`'s own bbox top (local 70.623) instead of
     # carrying it past a bus stack that is no longer up there; the whole
     # path is a subset of the one #173 already proved DRC-clean.
-    x_vref = CORE_DX + (CORE["vref"][0] + CORE["vref"][2]) / 2
+    x_vref = (CORE["vref"][0] + CORE["vref"][2]) / 2
     vref_port_y = CORE_DY + 72.0
     columns.append(("vref", x_vref))
     _riser_up(b, x_vref, CORE["vref"], vref_port_y)
