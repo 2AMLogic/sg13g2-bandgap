@@ -211,6 +211,14 @@ does **not** yet validate:
   netlist itself; nothing yet ties a PEX record back to the extraction it
   consumed, and the checker says so out loud (`note: DUT freshness not
   checked: …`) rather than passing silently.
+- That evidence a PR validated is still fresh **at merge time**. These checks
+  run against the merge ref *as of the run*, and the branch ruleset does not
+  require the branch to be up to date before merging — so a GDS-changing PR
+  that merges after an evidence re-mint PR's last green run lands stale
+  evidence with every check green (the `push: main` run is the backstop). See
+  `layout/README.md` § "Merge-time staleness hazard" for the hazard, the #586
+  / #576 collision that surfaced it (#587), and the re-mint PR's pre-push
+  GDS re-check.
 - Characterization/measurement data formats in `measurements/` — empty
   until tape-out (#15).
 - Markdown style/lint (line length, table formatting, etc.) on `README.md`
