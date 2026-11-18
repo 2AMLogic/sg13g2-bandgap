@@ -8,16 +8,16 @@
     },
     "2": {
       "file": "layout/bandgap_top/drc_report.json",
-      "content_hash": "sha256:b177a7b0ab5a7586adc943c9b7393ecc3abfba304af02f47093fa33e7c736cb4"
+      "content_hash": "sha256:86f8140b915d0bc630669ed2f0b9ed3fcd452cdb92bb79356e1af69027f9f327"
     },
     "3": {
       "file": "layout/bandgap_top/drc_report.json",
-      "content_hash": "sha256:b177a7b0ab5a7586adc943c9b7393ecc3abfba304af02f47093fa33e7c736cb4"
+      "content_hash": "sha256:86f8140b915d0bc630669ed2f0b9ed3fcd452cdb92bb79356e1af69027f9f327"
     },
     "4": "layout/bandgap_top/lvs_report.runset.json",
     "8": {
-      "file": "measurements/2026-11-16-characterization-report/envelope.json",
-      "content_hash": "sha256:e22635cbe657b00083619371a8d5c3c0da4be93a872c09624d8acab518137446"
+      "file": "measurements/2026-11-18-characterization-report/envelope.json",
+      "content_hash": "sha256:0c1a4c5ad5b2f60950ce9fe172bf5b9c3524eb1a409ad52a120eb8eb041618b1"
     },
     "10": {
       "file": "manifests/evidence/hygiene.json",
@@ -26,7 +26,7 @@
     "11": [
       {
         "file": "layout/bandgap_top/erc_report.json",
-        "content_hash": "sha256:b177a7b0ab5a7586adc943c9b7393ecc3abfba304af02f47093fa33e7c736cb4"
+        "content_hash": "sha256:86f8140b915d0bc630669ed2f0b9ed3fcd452cdb92bb79356e1af69027f9f327"
       },
       "layout/bandgap_top/lvs_report.runset.json"
     ]

@@ -7,17 +7,19 @@ open PDK — designed by AI agents driving
 open-source xschem + ngspice flow.
 
 **Status: schematic captured and simulated across PVT; layout DRC —
-`bandgap_amp` `clean`/0 (the `nwell.enclosing.nactiv.1` class closed by
-#571's tap-margin fix), `bandgap_core` `violations`/44 and `bandgap_top`
-`violations`/109 (the pre-existing Via1/Cont classes the containment deck
-surfaces — the #556/#557 family) per the committed reports as re-measured
-at `eeed3d2e` (2026-11-18); LVS still open — curated deck: `match` on
-`bandgap_amp` and `bandgap_startup`, `mismatch` on `bandgap_core` and
+`bandgap_amp` and `bandgap_top` `clean`/0 (`bandgap_top` with 22 markers
+waived cell-scoped, tracked in #572/#573; the `nwell.enclosing.nactiv.1`
+class closed at the source by #571's tap-margin fix, its waiver entries
+deleted; the Via1 classes closed by #574's Metal2-landing enclosures),
+`bandgap_core` `violations`/18 (all `metal1.enclosing.cont.1`, the
+pre-existing #572 class) per the committed reports re-minted on the
+#571+#574 merged tree (2026-11-18); LVS still open — curated deck: `match`
+on `bandgap_amp` and `bandgap_startup`, `mismatch` on `bandgap_core` and
 `bandgap_top`; PDK runset on `bandgap_top`: `mismatch`, no MOS or HBT
 recognized (#380, #381).**
 The evidence-ladder verdict of record is
 [`manifests/sg13g2-bandgap.signoff.json`](manifests/sg13g2-bandgap.signoff.json):
-its `t1_met_count` reads 3 of 11 T1 items met (`klayout-tools`'
+its `t1_met_count` reads 5 of 11 T1 items met (`klayout-tools`'
 [`docs/design-evidence-tiers.md`](https://github.com/2AMLogic/klayout-tools/blob/main/docs/design-evidence-tiers.md)).
 The
 `klt` resolver gap that once blocked this repo closed on 2026-08-05
@@ -206,15 +208,16 @@ ratified (see decision records above), five of six rows two-key reviewed
 clean and the Output-reference row re-cast by the two-key-gated record 0011
 (#221) rather than blocking the other five; schematic simulated across PVT,
 pre- and post-layout (PEX);
-layout DRC `clean`/0 violations on `bandgap_amp` (the
-`nwell.enclosing.nactiv.1` class closed by #571's tap-margin fix),
-`violations`/44 on `bandgap_core` and `violations`/109 on `bandgap_top`
-(the pre-existing Via1/Cont classes the containment deck surfaces — the
-#556/#557 family), and curated-deck LVS
+layout DRC `clean`/0 violations on `bandgap_amp` and `bandgap_top`
+(top with 22 cell-scoped waived markers, tracked in #572/#573; the
+`nwell.enclosing.nactiv.1` class closed at the source by #571's
+tap-margin fix and the Via1 classes by #574's Metal2-landing enclosures),
+`violations`/18 on `bandgap_core` (all `metal1.enclosing.cont.1`, the
+pre-existing #572 class), and curated-deck LVS
 `match` on `bandgap_amp` and `bandgap_startup`, `mismatch` on
 `bandgap_core` — its three unrecognised `NPN13G2` devices,
-klayout-tools#1242, permanent — and on `bandgap_top`, whose 2026-11-18
-re-mint under the DR-0016 pin (#571) reads 1022 findings / 1018
+klayout-tools#1242, permanent — and on `bandgap_top`, whose re-mint
+under the DR-0016 pin reads 1022 findings / 1018
 error-severity: the `NPN13G2` cause is only 4 of the 1018, the `rhigh`
 parameter delta is closed (#563's reference fix landed), and
 the rest is the deck's resistor-class pairing regression
@@ -223,7 +226,7 @@ the rest is the deck's resistor-class pairing regression
 breakdown. The
 `bandgap_top` PDK-runset LVS that T1 item 4 cites is still `mismatch` —
 no MOS or HBT recognized (#380, #381). Verdict of record:
-`manifests/sg13g2-bandgap.signoff.json`, `t1_met_count` 3 of 11.**
+`manifests/sg13g2-bandgap.signoff.json`, `t1_met_count` 5 of 11.**
 
 ## Chipalooza
 

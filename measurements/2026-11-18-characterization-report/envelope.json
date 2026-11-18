@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 8,
+  "summary": "aggregated characterization report for all seven spec-table rows (Output reference as nominal/untrimmed/trimmed lines) at audited commit 11a18b96: the only evidence that moved since the 2026-11-16 report is the layout re-mint of the #557 Via1 containment fix (GDS, DRC/LVS/PEX re-minted under klt 0.9.3.dev663), which re-extracts both PEX DUT inputs this report audits; no simulation was run, and the three post-layout benches (PSRR-PEX, Zout-PEX, startup trip-point) are now disclosed as predating the current extraction, moving the PSRR row's verdict to not-met-on-current-evidence; each row carries bound, verdict, binding corner, statistical flag, newest committed record and a current-or-predates-the-netlist freshness mark; every quoted number spot-checked against its committed CSV; pass attests report completeness and citation honesty, not that every row meets its bound",
+  "source": "README.md",
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:0c1a4c5ad5b2f60950ce9fe172bf5b9c3524eb1a409ad52a120eb8eb041618b1",
+      "path": "README.md"
+    }
+  }
+}

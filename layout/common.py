@@ -791,12 +791,20 @@ def via1_tap(b: Builder, x_center: float, y_center: float, size: float = 0.25) -
     an already-overlapping ``Metal1`` shape below to an already-overlapping
     ``Metal2`` shape above (the caller is responsible for ensuring both
     metal shapes actually cover this footprint -- this only draws the via
-    cut itself). ``size=0.25`` clears the curated deck's ``via1.width.1``
-    floor (0.19um) with margin, and (with the default ``route_h``/
-    ``route_v`` width of 0.3) leaves >=0.01um `Metal1`/`Metal2` enclosure
-    on every side, clearing ``metal1.enclosing.via1.1`` (0.01um; this deck
-    does not model a Metal2-encloses-Via1 rule at all -- see
-    ``klayout_tools.decks.sg13g2``'s own ``DECK`` list).
+    cut itself). ``size=0.25`` predates the deck's via rules: the curated
+    ``sg13g2`` deck's ``via1.width.1`` is a **fixed** 0.19um cut size, not a
+    floor -- any wider cut (including this default) violates it, so every
+    SG13G2 caller passes ``size=0.19`` explicitly (the SG13CMOS5L builds
+    share this module and were not measured under that deck, so the default
+    stays 0.25 rather than silently changing their geometry). With a 0.19um
+    cut and the default ``route_h``/``route_v`` width of 0.3, both metals
+    leave >=0.055um enclosure on every side, clearing
+    ``metal1.enclosing.via1.1`` (0.01um) -- and, since the deck gained
+    containment rules (klayout-tools#6174), ``metal2.enclosing.via1.1``
+    (every Via1 must lie fully inside Metal2) as well, which is why every
+    via-bearing ``Metal2`` route end in the SG13G2 cells overshoots the
+    landing by half the cut plus enclosure (see each cell's own
+    ``generate.py`` ``VIA_CAP``).
     """
     half = size / 2
     b.box(L_VIA1, x_center - half, y_center - half, x_center + half, y_center + half)
