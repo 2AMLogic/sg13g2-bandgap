@@ -8,8 +8,8 @@
   "top": "bandgap_startup",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_startup.pex.spice",
-  "netlist_sha256": "ac8fa01e54fe2a5779198de7d101afc10f43f176f3e3ba5fa58ce3749d1e4778",
-  "netlist_normalized_sha256": "0811ed8fa82f5d1e4e7a110bf5d0c0e01b1bc3a7f6e0690929e630981d0e0489",
+  "netlist_sha256": "892cc05e5975381e5d2ef5e00a0164bc1dd3ed6c04570b8139aa07a000f3faf7",
+  "netlist_normalized_sha256": "37aa5775ec1869e34053d8bce28d2e0c8972d70e25cbe3afdc8d5a5dec785672",
   "status": "extracted",
   "device_count": 3,
   "net_count": 5,
@@ -146,7 +146,7 @@
         },
         {
           "text": "DET",
-          "x_um": 48.24,
+          "x_um": 44.272,
           "y_um": 4.75
         }
       ]
@@ -237,6 +237,13 @@
   "unbiased_pmos_body_nets": [],
   "single_terminal_nets": [],
   "dead_metal": [],
+  "dead_metal_omitted": false,
+  "dead_metal_summary": {
+    "clusters": 0,
+    "shapes": 0,
+    "area_um2": 0.0,
+    "by_layer": []
+  },
   "matched_device_groups": [],
   "def_pin_promotion": null,
   "pin_renames": null,
@@ -244,19 +251,22 @@
   "declared_pins": null,
   "def_pins": null,
   "label_layers": null,
+  "device_models": null,
   "probes": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.3.dev663+g22ab2a8756c7",
+    "klt_git_commit": "22ab2a8756c79a5d09778a08f58822fd65031207",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@22ab2a8756c79a5d09778a08f58822fd65031207",
     "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
-      "released": true
+      "content_hash": "sha256:d407265de045dc59cecc28793f70ac9734069a6fb8bae06daa9b9f2e04961602",
+      "released": false
     },
     "input": {
-      "content_hash": "sha256:97e4ee515400f620ba420c20b470ab2d53b450fa5f155a026ed65fef76619bd7",
+      "content_hash": "sha256:e8d576056a1685de8b437099cedf05a1259892e4cee144378cf9467270f84f7c",
       "role": "layout"
     }
   },
@@ -265,21 +275,21 @@
     "c_count": 4,
     "cc_count": 0,
     "l_count": 0,
-    "total_resistance_ohm": 34.4263,
-    "total_capacitance_ff": 8.46496,
+    "total_resistance_ohm": 32.9726,
+    "total_capacitance_ff": 8.109131,
     "total_coupling_capacitance_ff": 0.0,
     "total_inductance_nh": 0.0,
     "nets": [
       {
         "net": "DET",
         "net_id": 4,
-        "resistance_ohm": 21.9809,
-        "capacitance_ff": 5.609171,
+        "resistance_ohm": 20.5272,
+        "capacitance_ff": 5.253342,
         "by_layer": [
           {
             "layer": "metal0",
-            "resistance_ohm": 21.9809,
-            "capacitance_ff": 5.609171
+            "resistance_ohm": 20.5272,
+            "capacitance_ff": 5.253342
           }
         ],
         "resistance_ohm_top_cell": null,
@@ -292,19 +302,19 @@
             "device": "$1",
             "terminal": "D",
             "leg_net": "DET__t0",
-            "resistance_ohm": 7.9311
+            "resistance_ohm": 7.2825
           },
           {
             "device": "$2",
             "terminal": "G",
             "leg_net": "DET__t1",
-            "resistance_ohm": 4.7461
+            "resistance_ohm": 4.6609
           },
           {
             "device": "$3",
             "terminal": "B",
             "leg_net": "DET__t2",
-            "resistance_ohm": 9.3038
+            "resistance_ohm": 8.5838
           }
         ],
         "segments": [],
@@ -344,8 +354,8 @@
           },
           "capacitance": {
             "status": "pass",
-            "declared_ff": 5.609171,
-            "computed_ff": 5.609171,
+            "declared_ff": 5.253342,
+            "computed_ff": 5.253342,
             "delta_ff": 0.0,
             "reason": null,
             "tolerance": {
@@ -523,31 +533,31 @@
             "device": "$1",
             "terminal": "S",
             "leg_net": "VSS__t0",
-            "resistance_ohm": 2.2913
+            "resistance_ohm": 2.2556
           },
           {
             "device": "$2",
             "terminal": "S",
             "leg_net": "VSS__t1",
-            "resistance_ohm": 1.465
+            "resistance_ohm": 1.5348
           },
           {
             "device": "$3",
             "terminal": "W",
             "leg_net": "VSS__t2",
-            "resistance_ohm": 3.9963
+            "resistance_ohm": 3.9281
           },
           {
             "device": "$1",
             "terminal": "B",
             "leg_net": "VSS__t3",
-            "resistance_ohm": 2.2913
+            "resistance_ohm": 2.2556
           },
           {
             "device": "$2",
             "terminal": "B",
             "leg_net": "VSS__t4",
-            "resistance_ohm": 1.465
+            "resistance_ohm": 1.5348
           }
         ],
         "segments": [],
@@ -653,21 +663,23 @@
     "extract__capacitor__count": 4,
     "extract__coupling__capacitor__count": 0,
     "extract__inductor__count": 0,
-    "extract__resistance__ohm": 34.4263,
-    "extract__capacitance__ff": 8.46496,
+    "extract__resistance__ohm": 32.9726,
+    "extract__capacitance__ff": 8.109131,
     "extract__coupling__capacitance__ff": 0.0,
     "extract__inductance__nh": 0.0
   },
   "timing": {
     "stages": {
-      "read_layout": 0.0,
-      "device_extraction": 0.015,
+      "read_layout": 0.001,
+      "parasitics_compute": 0.001,
+      "device_extraction": 0.022,
       "diagnostics": 0.0,
-      "netlist_write": 0.0,
+      "parasitics_inject": 0.001,
+      "netlist_write": 0.001,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.087,
-    "unattributed_seconds": 0.071
+    "total_seconds": 0.031,
+    "unattributed_seconds": 0.005
   }
 }

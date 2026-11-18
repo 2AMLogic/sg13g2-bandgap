@@ -551,10 +551,10 @@
   "probes": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.9.3.dev517+gc6ecffcb8e56",
-    "klt_git_commit": "c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
-    "klayout_version": "0.30.13",
+    "klt_version": "0.9.3.dev980+g4cea37f245b0",
+    "klt_git_commit": "4cea37f245b0f61159431fd68cbf0349d67af74f",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@4cea37f245b0f61159431fd68cbf0349d67af74f",
+    "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
@@ -562,7 +562,7 @@
       "released": false
     },
     "input": {
-      "content_hash": "sha256:00922ef0324bd7713c1a8fddfc278f7b62931b6c7725e0eebefe0f68660f0cdb",
+      "content_hash": "sha256:219aa2a589fb85fb8f828f4656320cef48d42ef66f5f78d0773240861d364b10",
       "role": "layout"
     }
   },
@@ -1550,6 +1550,7 @@
     "metals_without_coefficient": [],
     "overlap_pairs_without_coefficient": [],
     "critical_nets": [],
+    "lateral_coupling": null,
     "parasitics_nets": [],
     "distributed_rc": false,
     "top_cell_only": false,
@@ -1582,13 +1583,15 @@
   "timing": {
     "stages": {
       "read_layout": 0.001,
-      "device_extraction": 0.016,
+      "parasitics_compute": 0.006,
+      "device_extraction": 0.01,
       "diagnostics": 0.0,
+      "parasitics_inject": 0.002,
       "netlist_write": 0.001,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.032,
-    "unattributed_seconds": 0.013
+    "total_seconds": 0.029,
+    "unattributed_seconds": 0.009
   }
 }

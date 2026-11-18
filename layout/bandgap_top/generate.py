@@ -294,10 +294,13 @@ STARTUP_DX, STARTUP_DY = 208.0, ROW_B_DY
 
 TRUNK_W = 0.3
 METAL2_W = 0.35
-VIA = 0.25
+# The deck's via1.width.1 is a *fixed* 0.19um cut size, not a floor -- any
+# wider cut violates it (issue #557; was 31x via1.width.1 at 0.25 in this
+# cell's own shapes).
+VIA = 0.19
 #: Extra same-layer overshoot past a jog/bridge transition's own via1_tap
 #: point (see `_riser_up`'s own docstring) -- must clear the via's own
-#: half-width (``VIA / 2 = 0.125``) plus `metal1.enclosing.via1.1`'s 0.01um
+#: half-width (``VIA / 2 = 0.095``) plus `metal1.enclosing.via1.1`'s 0.01um
 #: floor, not just the floor alone (an earlier, too-small 0.1 value left a
 #: bare 0.025um sliver of the via poking past a too-short Metal1 run,
 #: caught by this issue's own `klt drc` re-run) -- 0.15 clears
@@ -305,6 +308,15 @@ VIA = 0.25
 #: elsewhere in this module (e.g. every jog's own perpendicular ``TRUNK_W``
 #: vs. ``VIA`` clearance).
 OVERSHOOT_UM = 0.15
+#: Extra margin every Metal2 landing carries past a Via1's own edge
+#: (issue #557), the same constant bandgap_amp's #556 fix and
+#: bandgap_core's own `generate.py` use: a Metal2 bar ending at a via
+#: centre leaves half the cut outside (metal2.enclosing.via1.1, a
+#: require_containment deck rule, klayout-tools#6174 -- was 30x in this
+#: cell's own shapes at VIA=0.25 plus bare-centre ends).
+VIA_ENCLOSE = 0.05
+#: Metal2 end-cap overhang past a via-bearing route end (issue #557).
+VIA_CAP = VIA / 2 + VIA_ENCLOSE
 
 # Bus heights (Metal1) -- the routing channel between the two rows (issue
 # #177). Distinct per net purely for visual/manufacturing separation --
@@ -436,8 +448,10 @@ def build() -> Builder:
 #: on a Metal1 pad (issue #169's own `klt drc` re-run caught this: some
 #: leaf pads are thinner than VIA + 2*metal1.enclosing.via1.1's 0.01um floor
 #: in their own short axis -- e.g. bandgap_startup's own vss bar is only
-#: 0.2um tall, under VIA=0.25um -- so a via landed directly on the bare pad
-#: pokes out on both edges. LANDING_UM comfortably clears VIA on every side
+#: 0.2um tall, under the 0.25um cut this cell drew before issue #557 (the
+#: deck's fixed via1.width.1 is 0.19um) -- so a via landed directly on the
+#: bare pad pokes out on both edges. LANDING_UM comfortably clears VIA on
+#: every side
 #: regardless of the target pad's own thickness; drawing it as an extra,
 #: merged Metal1 box (not a replacement) is safe since it is always placed
 #: fully inside/against an already-same-net pad, well clear of every other
@@ -537,7 +551,21 @@ def _riser_up(
     (0.01um floor) on the other (caught by this issue's own `klt drc`
     re-run after the jog/bridge fix above; `_bus()`'s own vias never hit
     this since every riser there lands mid-span on a bar that already
-    extends ``0.5um`` past every riser's own column on both sides)."""
+    extends ``0.5um`` past every riser's own column on both sides).
+
+    Issue #557 (the deck's `require_containment` rules): every Via1's
+    **Metal2** upper landing must fully enclose the cut. Three ends here
+    used to stop exactly at the via centre, leaving half the cut outside
+    (``metal2.enclosing.via1.1``): the riser's own pad-end start, its
+    bus-side end, and -- worst -- the landing via of a jogged leg, whose
+    riser rises at the *jog* column, so the landing via had no Metal2 over
+    it at all. Each is now capped: the riser start and bus end overshoot
+    their via centres by ``VIA_CAP`` (half the cut plus enclosure, the
+    same constant bandgap_amp's #556 fix and bandgap_core's own
+    `generate.py` use), and the jogged leg's landing via gets its own
+    ``METAL2_W``-square Metal2 landing pad (the jog itself must stay
+    Metal1 -- see the "leaf-internal Metal2 crossings" module comment --
+    so the cap is a small same-net island over the via, not a reroute)."""
     y_land = (pad[1] + pad[3]) / 2
     cur_x = x
     if pad_layer is L_METAL2:
@@ -545,23 +573,34 @@ def _riser_up(
             far_x = jog_to + (OVERSHOOT_UM if jog_to > x else -OVERSHOOT_UM)
             route_h(b, L_METAL2, y_land, x, far_x, width=METAL2_W)
             cur_x = jog_to
+        # No via at this end (the riser merges directly onto the Metal2
+        # pad) -- the start needs no cap.
+        y_start = y_land
     else:
         half = LANDING_UM / 2
         b.box(L_METAL1, x - half, y_land - half, x + half, y_land + half)
         via1_tap(b, x, y_land, size=VIA)
         if jog_to is not None:
+            # The riser rises at the jog column, so this landing via would
+            # otherwise carry no Metal2 at all (a bare, electrically
+            # useless cut -- caught as metal2.enclosing.via1.1 by the
+            # containment deck, issue #557). Cap it in place.
+            cap_half = METAL2_W / 2
+            b.box(L_METAL2, x - cap_half, y_land - cap_half, x + cap_half, y_land + cap_half)
             far_x = jog_to + (OVERSHOOT_UM if jog_to > x else -OVERSHOOT_UM)
             route_h(b, L_METAL1, y_land, x, far_x, width=TRUNK_W)
             via1_tap(b, jog_to, y_land, size=VIA)
             cur_x = jog_to
-    y = y_land
+        y_start = y_land + (VIA_CAP if y_land > bus_y else -VIA_CAP)
+    y = y_start
     for lo, hi in bridges:
         route_v(b, L_METAL2, cur_x, y, lo + OVERSHOOT_UM, width=METAL2_W)
         via1_tap(b, cur_x, lo, size=VIA)
         route_v(b, L_METAL1, cur_x, lo - OVERSHOOT_UM, hi + OVERSHOOT_UM, width=TRUNK_W)
         via1_tap(b, cur_x, hi, size=VIA)
         y = hi - OVERSHOOT_UM
-    route_v(b, L_METAL2, cur_x, y, bus_y, width=METAL2_W)
+    bus_end = bus_y + (VIA_CAP if bus_y > y_land else -VIA_CAP)
+    route_v(b, L_METAL2, cur_x, y, bus_end, width=METAL2_W)
 
 
 def _bus(b: Builder, bus_y: float, riser_xs: list[float]) -> None:
@@ -721,21 +760,30 @@ def _route(b: Builder, core_fb_pad: tuple[float, float, float, float], startup_s
     via1_tap(b, CORE_DX + 49.0, y_land, size=VIA)
     route_v(b, L_METAL2, CORE_DX + 49.0, y_land, y_cross, width=METAL2_W)
     route_h(b, L_METAL2, y_cross, CORE_DX + 49.0, x_core, width=METAL2_W)
-    route_v(b, L_METAL2, x_core, y_cross, Y_BUS_SNS2, width=METAL2_W)
+    # The bus end is via-bearing (issue #557): overshoot the bus via's
+    # centre by VIA_CAP -- stopping at the centre left half the cut
+    # outside Metal2 (metal2.enclosing.via1.1).
+    route_v(b, L_METAL2, x_core, y_cross, Y_BUS_SNS2 + (VIA_CAP if Y_BUS_SNS2 > y_cross else -VIA_CAP), width=METAL2_W)
     _riser_up(b, AMP_DX - 10.6, AMP["sns2"], Y_BUS_SNS2, jog_to=x_amp)
     _bus(b, Y_BUS_SNS2, [x_core, x_amp])
 
     # -- vref: core only, brought straight up to bandgap_top's own external
     # port and labeled there (single-terminal net at this level -- no bus
     # needed, mirrors bandgap_startup's own single-terminal-pin reasoning).
-    # Local x=120 crosses only `bandgap_core`'s own vref/cb3 jog band at its
-    # own vref column (same net, safe) -- it sits left of cb3's own jog leg
-    # and right of the sns2/cb2 jog band's own x-extent, so no other-net
-    # crossing needs a detour here. Issue #177 stops the stub 1.4um above
-    # `bandgap_core`'s own bbox top (local 70.623) instead of carrying it
-    # past a bus stack that is no longer up there; the whole path is a
-    # subset of the one #173 already proved DRC-clean.
-    x_vref = CORE_DX + 120.0
+    # Local x=120.25 -- the vref pad's own centre -- crosses only
+    # `bandgap_core`'s own vref/cb3 jog band at its own vref column (same
+    # net, safe) -- it sits left of cb3's own jog leg and right of the
+    # sns2/cb2 jog band's own x-extent, so no other-net crossing needs a
+    # detour here. Landing at the pad centre is load-bearing since #557:
+    # the pad's centre is exactly where `bandgap_core`'s own vref drain
+    # via sits, so this leg's landing via merges with it into one cut --
+    # at the pre-#557 0.25um cuts the two vias merely edge-touched
+    # (x=120.0 vs 120.25), and the deck-fixed 0.19um cuts left them 0.06um
+    # apart, a fresh via1.space.1 violation. Issue #177 stops the stub
+    # 1.4um above `bandgap_core`'s own bbox top (local 70.623) instead of
+    # carrying it past a bus stack that is no longer up there; the whole
+    # path is a subset of the one #173 already proved DRC-clean.
+    x_vref = (CORE["vref"][0] + CORE["vref"][2]) / 2
     vref_port_y = CORE_DY + 72.0
     columns.append(("vref", x_vref))
     _riser_up(b, x_vref, CORE["vref"], vref_port_y)
