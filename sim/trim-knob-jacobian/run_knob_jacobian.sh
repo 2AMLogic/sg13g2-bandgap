@@ -420,7 +420,7 @@ CTAT_PRED=$(awk -F, '$1=="typ" && $2=="3.30" {printf "%.5f", $10; exit}' "${ANAL
   echo "  (sim/closed-loop-startup's own most recent record)."
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\` -- pinned release: see \`sim/pdk.json\`."
   echo "- **OSDI models**: \`${OSDI_DIR}\` -- built by \`sim/tools/build-osdi.sh\`;"
-  echo "  compiler provenance pinned in \`sim/pdk.json\` (\"osdi_toolchain\")."
+  echo "  compiler pins: \`sim/tools/build-osdi.sh --print-pins\`."
   echo "- **ngspice**: \`${NGSPICE_VERSION}\`"
   echo "- **JOBS**: ${JOBS} (wall-clock concurrency only)."
   echo "- **Corner matrix run**: ${#CORNER_LABELS[@]} process corners x"
