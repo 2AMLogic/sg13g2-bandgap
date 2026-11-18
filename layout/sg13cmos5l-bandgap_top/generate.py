@@ -42,15 +42,15 @@ The three leaf cells are placed in **two horizontal rows** (translation
 only, no mirroring) with every inter-cell bus living in the routing channel
 between them::
 
-    row B (top, y = 78.8 .. 132.3)
+    row B (top, y = 78.8 .. 132.18)
         amp     (-7, 78.76)-(77, 121.7)
           | 22.8 um gap |
-        startup (99.8, 78.8)-(184.4, 132.3)
+        startup (99.8, 78.8)-(188.4, 132.18)
 
     routing channel (y = 65 .. 75) -- five Metal1 buses, no leaf geometry
 
     row A (bottom, y = -3.21 .. 61.7)
-        core    (-10, -3.21)-(220.07, 61.7)
+        core    (-10, -3.21)-(220.55, 61.7)
 
 **Issue #173 re-packed a single left-to-right row** (``core`` | 30 um gap |
 ``amp`` | 30 um gap | ``startup``, all at ``dy=0``) after folding the two
@@ -263,7 +263,7 @@ ROW_B_APPROACH_DROP_UM = 3.0
 # edge, neither of which the fold touched.
 _CORE_PORTS_LOCAL = {
     "vdd": (-5.0, 60.64, 185.0, 60.9),
-    "vss": (214.39, -2.99, 219.85, 2.99),
+    "vss": (214.87, -2.99, 220.33, 2.99),
     "fb": (-8.38, 59.9, -7.98, 60.1),
     "sns1": (-10.0, 49.75, -9.5, 50.25),
     "sns2": (219.5, 56.75, 220.0, 57.25),
@@ -278,14 +278,16 @@ _AMP_PORTS_LOCAL = {
 }
 # Issue #173: every ``startup`` port moved. ``vdd`` is ``RPU``'s own end-A
 # terminal, which folding turned from the left end of a 1.4 mm bar into the
-# bottom-left terminal of a 45 x 44 um block; the other three moved with the
-# MSENSE/MKFB cluster, which shifted 1340 um left to sit just past the
-# folded block's right edge instead of under the old bar's far end.
+# bottom-left terminal of a ~49 x 44 um block; the other three moved with the
+# MSENSE/MKFB cluster, which shifted left to sit just past the folded block's
+# right edge instead of under the old bar's far end. Issue #573: the cluster
+# shifted again (+4.0 um) when the fold gap itself went on the 5 nm
+# manufacturing grid and RPU's drawn block widened 44.772 -> 48.74 um.
 _STARTUP_PORTS_LOCAL = {
     "vdd": (-0.2, 7.5, 1.2, 8.0),
-    "vss": (50.0, -0.65, 81.0, -0.39),
-    "sns1": (47.75, -1.2, 48.25, -0.7),
-    "fb": (83.9, 5.75, 84.4, 6.25),
+    "vss": (54.0, -0.65, 85.0, -0.39),
+    "sns1": (51.75, -1.2, 52.25, -0.7),
+    "fb": (87.9, 5.75, 88.4, 6.25),
 }
 
 
@@ -379,8 +381,11 @@ def build() -> Builder:
 #: local ``x=0..1411.3``, i.e. **almost the entire cell**, so both
 #: ``sns1``'s and ``vss``'s natural riser columns fell inside it and each
 #: needed a ``Metal1`` bridge across the ``(6.8, 9.2)`` band the bar
-#: occupied. Folded, the body occupies local ``x=-0.2..44.97`` only, and
-#: both of those columns (local 48.0 and 65.0) sit clear of it -- so the
+#: occupied. Folded, the body occupies local ``x=-0.2..48.94`` only (issue
+#: #573's grid-constrained fold widened it from the 1 nm-step fold's
+#: ``-0.2..44.972``), and both of the natural columns -- ``sns1``'s at
+#: local 52.0 (it moved +4.0 with the leaf's own sns1 tab) and ``vss``'s at
+#: 65.0 -- sit clear of it -- so the
 #: bridges are gone rather than merely retuned. The one riser that *would*
 #: now land inside the folded block is ``vdd``'s (``RPU``'s own end-A
 #: terminal is the block's bottom-left corner, and a straight climb from it
@@ -392,7 +397,7 @@ def build() -> Builder:
 #: than by rediscovering the same short. Verified against the regenerated
 #: leaf GDS, not asserted: `klt extract` on this assembly reports the same
 #: net set as the pre-fold one.
-STARTUP_RPU_BODY_X_LOCAL = (-0.2, 44.972)
+STARTUP_RPU_BODY_X_LOCAL = (-0.2, 48.94)
 
 
 def _riser(
@@ -543,7 +548,8 @@ def _route_vss(b: Builder, columns: list[tuple[str, float]]) -> None:
     cells' bottom edges, already facing the channel, and only need
     :func:`_row_b_drop` to get their transition over field."""
     core_pad = CORE["vss"]
-    x_core = 222.0  # 1.78 um right of core's own bbox right edge (220.07)
+    x_core = 222.0  # 1.45 um right of core's own bbox right edge (220.55 --
+    # issue #573 moved the pad +0.48 with R1's grid-constrained fold)
     route_h(b, L_METAL1, 0.0, core_pad[2], x_core, width=TRUNK_W)
 
     amp_pad = AMP["vss"]
@@ -551,8 +557,9 @@ def _route_vss(b: Builder, columns: list[tuple[str, float]]) -> None:
     y_amp = _row_b_drop(b, x_amp, amp_pad[1])
 
     startup_pad = STARTUP["vss"]
-    # Local x=65, between MSENSE (50..60) and MKFB (77.5..82.5) and -- since
-    # #173 folded it -- entirely clear of RPU's own GatPoly body
+    # Local x=65, within the leaf's own vss rail span (54..85, moved +4.0
+    # with the MOS cluster in issue #573) and -- since #173 folded it --
+    # entirely clear of RPU's own GatPoly body
     # (STARTUP_RPU_BODY_X_LOCAL), so no Metal1 bridge is needed.
     x_startup = STARTUP_DX + 65.0
     y_startup = _row_b_drop(b, x_startup, startup_pad[1])
@@ -589,7 +596,10 @@ def _route_fb(b: Builder, columns: list[tuple[str, float]]) -> None:
 
     startup_pad = STARTUP["fb"]
     y_startup = (startup_pad[1] + startup_pad[3]) / 2  # local 6.0
-    x_startup = STARTUP_DX + 87.0  # open corridor right of startup's right edge
+    x_startup = STARTUP_DX + 91.0  # open corridor right of startup's right
+    # edge (local 88.4 -- issue #573 moved the fb port, and this column with
+    # it, +4.0 um; it stays 2.6 um clear of the cell and, one row further
+    # right, of the leaf's own det tab at local 87.5)
     route_h(b, L_METAL1, y_startup, startup_pad[2], x_startup, width=TRUNK_W)
 
     columns += [("fb", x_core), ("fb", x_amp), ("fb", x_startup)]
@@ -614,12 +624,13 @@ def _route_sns1(b: Builder, columns: list[tuple[str, float]]) -> None:
     route_h(b, L_METAL1, y_amp, amp_pad[2], x_amp, width=TRUNK_W)
 
     startup_pad = STARTUP["sns1"]
-    x_startup = (startup_pad[0] + startup_pad[2]) / 2  # local 48 -- the leaf
-    # cell's own sns1 poly tab sits at this exact x (X_SNS1_TAB=48 local), so
+    x_startup = (startup_pad[0] + startup_pad[2]) / 2  # local 52 -- the leaf
+    # cell's own sns1 poly tab sits at this exact x (X_SNS1_TAB=52 local,
+    # moved +4.0 with the MOS cluster in issue #573), so
     # this riser lands directly under that cell's own existing sns1 tap --
     # same net, intentional, not a coincidence. Issue #173: this column used
     # to fall *inside* RPU's own 1.4 mm GatPoly body and needed a Metal1
-    # bridge across it; the folded body ends at local x=44.97, so the column
+    # bridge across it; the folded body ends at local x=48.94, so the column
     # is clear and the bridge is gone.
     y_startup = _row_b_drop(b, x_startup, startup_pad[1])
 

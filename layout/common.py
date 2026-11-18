@@ -590,9 +590,11 @@ RES_CONT_MARGIN_UM = 0.1
 #: clears it by 0.22 um, and still leaves 0.3 um of clearance once a
 #: terminal head's `RES_GATPOLY_Y_MARGIN_UM` overhang eats into the gap next
 #: to its neighbouring leg. This is a *floor*, not the drawn value:
-#: :func:`~_klayout_builder_base.fold_plan` may return a gap up to `legs`
-#: nanometres larger, which is how it keeps the folded conductor's total
-#: length exactly equal to the schematic's own `l` (see its docstring).
+#: :func:`~_klayout_builder_base.fold_plan` may return a gap up to
+#: ``legs * GRID_NM`` nanometres larger -- it searches only multiples of the
+#: 5 nm manufacturing grid, so every leg pitch lands on-grid -- which is how
+#: it keeps the folded conductor's total length exactly equal to the
+#: schematic's own `l` (see its docstring).
 RES_FOLD_GAP_UM = 0.4
 
 
@@ -629,7 +631,8 @@ def draw_poly_res(
     :func:`~_klayout_builder_base.fold_plan` derives the leg height and the
     inter-leg gap in whole nanometres such that ``legs*h + (legs-1)*gap`` is
     ``l_um`` exactly -- see its docstring for the derivation and for why the
-    gap it returns can exceed ``RES_FOLD_GAP_UM`` by a few nanometres. This
+    gap it returns can exceed ``RES_FOLD_GAP_UM`` by up to ``legs * GRID_NM``
+    nanometres while staying on the 5 nm manufacturing grid. This
     is a nominal-value-preserving transform, not a re-sizing: what folding
     *does* change is the device's parasitics (a compact block couples
     differently than a 1.4 mm bar) and its matching behaviour (a folded

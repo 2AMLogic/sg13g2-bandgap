@@ -1,21 +1,31 @@
 {
-  "schema_version": 1,
-  "file": "sg13cmos5l-bandgap_startup.gds",
+  "schema_version": 3,
+  "file": {
+    "path": "layout/sg13cmos5l-bandgap_startup/sg13cmos5l-bandgap_startup.gds",
+    "scope": "repo"
+  },
   "deck": "sg13cmos5l",
   "dbu_um": 0.001,
   "status": "clean",
   "violation_count": 0,
   "rule_counts": {},
+  "metrics": {
+    "drc__error__count": 0
+  },
   "violations": [],
   "coverage": {
     "deck_layers": [
       "1/0",
       "5/0",
+      "6/0",
+      "7/0",
       "8/0",
       "10/0",
+      "14/0",
       "19/0",
       "29/0",
       "30/0",
+      "31/0",
       "49/0",
       "50/0",
       "125/0",
@@ -24,30 +34,56 @@
     "layers_checked": [
       "1/0",
       "5/0",
-      "8/0"
-    ],
-    "layers_in_stream_without_rules": [
       "6/0",
       "7/0",
+      "8/0",
+      "14/0"
+    ],
+    "layers_in_stream_without_rules": [
       "8/2",
-      "14/0",
       "28/0",
       "44/0",
       "63/0",
       "111/0",
       "128/0"
     ],
+    "rules_checked": [
+      "activ.space.1",
+      "activ.width.1",
+      "gatpoly.space.1",
+      "gatpoly.width.1",
+      "metal1.space.1",
+      "metal1.width.1"
+    ],
     "rules_skipped": [
       "metal1.enclosing.via1.1",
+      "metal2.enclosing.via1.1",
       "metal2.enclosing.via2.1",
       "metal2.space.1",
       "metal2.width.1",
+      "metal3.enclosing.via2.1",
       "metal3.enclosing.via3.1",
       "metal3.space.1",
       "metal3.width.1",
       "metal4.enclosing.topvia1.1",
+      "metal4.enclosing.via3.1",
       "metal4.space.1",
       "metal4.width.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
+      "nwell.enclosing.pactiv.1",
+      "nwell.enclosing.pactiv.dig.1",
+      "nwell.enclosing.pactiv.hv.1",
+      "nwell.space.1",
+      "nwell.space.2",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
+      "nwell.space.pactiv.1",
+      "nwell.space.pactiv.dig.1",
+      "nwell.space.pactiv.hv.1",
+      "nwell.width.1",
       "topmetal1.enclosing.topvia1.1",
       "topmetal1.space.1",
       "topmetal1.width.1",
@@ -66,7 +102,10 @@
         "description": "ThickGateOx (44/0) marks cmos5l's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base -- confirmed present in cmos5l's own (symlinked-but-resolved) LVS source, mos_extraction.lvs's sg13_hv_nmos/sg13_hv_pmos extract_devices calls). Issue #1416 added the HV MOSFlavour entry to EXTRACTION_DECK.mos_flavours, so a transistor drawn inside this marker now recognises and binds correctly (mirroring sg13g2.py's own #1231 follow-on) -- what remains unmodelled is this curated deck's DRC rules, which still apply the general-case thresholds to geometry regardless of ThickGateOx's presence (the channel-length-specific Gat.a1/Gat.a2 GatPoly-width rules that do read it are not transcribed here, mirroring sg13g2.py's own note)."
       }
     ],
+    "unchecked_rules": [],
+    "marker_blind_layers_in_stream": [],
     "deck_scope": [
+      "5.1 NWell",
       "5.16 Metal1",
       "5.17 Metaln",
       "5.19 Via1",
@@ -74,20 +113,198 @@
       "5.21 TopVia1",
       "5.22 TopMetal1",
       "5.5 Activ",
-      "5.8 GatPoly"
-    ]
+      "5.8 GatPoly",
+      "Via1 upper-landing containment (curated)",
+      "Via2 upper-landing containment (curated)",
+      "Via3 upper-landing containment (curated)"
+    ],
+    "unmodeled_rules": [],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "activ.space.1",
+      "activ.width.1",
+      "gatpoly.space.1",
+      "gatpoly.width.1",
+      "metal1.space.1",
+      "metal1.width.1"
+    ],
+    "skipped": [],
+    "inapplicable": [
+      {
+        "id": "metal1.enclosing.via1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal2.enclosing.via1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal2.enclosing.via2.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal2.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal2.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.enclosing.via2.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.enclosing.via3.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal3.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.enclosing.topvia1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.enclosing.via3.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "metal4.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.enclosing.nactiv.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.enclosing.nactiv.dig.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.enclosing.nactiv.hv.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.enclosing.pactiv.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.enclosing.pactiv.dig.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.enclosing.pactiv.hv.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.space.2",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.space.nactiv.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.space.nactiv.dig.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.space.nactiv.hv.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.space.pactiv.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.space.pactiv.dig.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.space.pactiv.hv.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "nwell.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal1.enclosing.topvia1.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal1.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topmetal1.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topvia1.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "topvia1.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via1.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via1.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via2.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via2.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via3.space.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "via3.width.1",
+        "reason": "no_applicable_geometry"
+      }
+    ],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
   },
   "provenance": {
-    "klt_version": "0.3.0",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:5b5309ecd586f527d6df271384f18e8f1fcd528a09935544b46aed563b66a92e",
-      "released": false
+      "content_hash": "sha256:5a43b8eb0e1a4c228169cd33d820bf75ca5640812587f68c07f24f4aa2a1738f",
+      "released": true
     },
     "input": {
-      "content_hash": "sha256:a18f8c052af3d66f9e988cd874d92e0379d034f25cf9ce187dc351ad19c368fa"
-    }
+      "content_hash": "sha256:38f98a4b307e5711cd29e01d8b934a8cec199b3a9ab477c0d80d34a5df76303c",
+      "role": "layout"
+    },
+    "klayout_version_mismatch": true
   }
 }

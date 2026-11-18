@@ -1,11 +1,15 @@
 {
-  "schema_version": 3,
-  "file": "sg13cmos5l-bandgap_top.gds",
+  "schema_version": 4,
+  "file": {
+    "path": "layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds",
+    "scope": "repo"
+  },
   "deck": "sg13cmos5l",
   "top": "sg13cmos5l_bandgap_top",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_top.extracted.spice",
-  "netlist_sha256": "5c0e3e3eeac2932a63fd14a845c1ec52dfbfc6a843b1b12222a9d438399e1805",
+  "netlist_sha256": "8f6115ec3839b277248c74727a97381547afecd4fa9a4d8dfe4f57cadb3f88ed",
+  "netlist_normalized_sha256": "5549d87202a13c88ffe81887565e2da8b008e25ddb53f0bedd4644c7e1785ff2",
   "status": "extracted",
   "device_count": 17,
   "net_count": 13,
@@ -207,7 +211,7 @@
         "w": "vss"
       },
       "params": {
-        "r_ohm": 11063.0,
+        "r_ohm": 11064.910269,
         "l_um": 85.1,
         "w_um": 2.0,
         "area_um2": 170.2,
@@ -229,7 +233,7 @@
         "w": "vss"
       },
       "params": {
-        "r_ohm": 84110.0,
+        "r_ohm": 83893.424726,
         "l_um": 647.0,
         "w_um": 2.0,
         "area_um2": 1294.0,
@@ -251,7 +255,7 @@
         "w": "vss"
       },
       "params": {
-        "r_ohm": 1919368.0,
+        "r_ohm": 1999501.666667,
         "l_um": 1411.3,
         "w_um": 1.0,
         "area_um2": 1411.3,
@@ -505,12 +509,12 @@
       "label_positions_um": [
         {
           "text": "det",
-          "x_um": 144.272,
+          "x_um": 148.24,
           "y_um": 87.75
         },
         {
           "text": "det",
-          "x_um": 155.0,
+          "x_um": 159.0,
           "y_um": 80.52
         }
       ]
@@ -578,12 +582,12 @@
       "label_positions_um": [
         {
           "text": "e3",
-          "x_um": 217.12,
+          "x_um": 217.6,
           "y_um": 0.0
         },
         {
           "text": "e3",
-          "x_um": 217.12,
+          "x_um": 217.6,
           "y_um": 14.75
         }
       ]
@@ -602,12 +606,12 @@
         },
         {
           "text": "fb",
-          "x_um": 180.0,
+          "x_um": 184.0,
           "y_um": 80.52
         },
         {
           "text": "fb",
-          "x_um": 184.15,
+          "x_um": 188.15,
           "y_um": 86.0
         },
         {
@@ -656,12 +660,12 @@
         },
         {
           "text": "sns1",
-          "x_um": 148.0,
+          "x_um": 152.0,
           "y_um": 79.05
         },
         {
           "text": "sns1",
-          "x_um": 148.0,
+          "x_um": 152.0,
           "y_um": 80.0
         }
       ]
@@ -930,11 +934,6 @@
         },
         {
           "text": "vss",
-          "x_um": 155.0,
-          "y_um": 79.48
-        },
-        {
-          "text": "vss",
           "x_um": 157.175,
           "y_um": 30.0
         },
@@ -942,6 +941,11 @@
           "text": "vss",
           "x_um": 158.505,
           "y_um": 30.0
+        },
+        {
+          "text": "vss",
+          "x_um": 159.0,
+          "y_um": 79.48
         },
         {
           "text": "vss",
@@ -960,17 +964,17 @@
         },
         {
           "text": "vss",
-          "x_um": 180.0,
+          "x_um": 184.0,
           "y_um": 79.48
         },
         {
           "text": "vss",
-          "x_um": 214.545,
+          "x_um": 215.025,
           "y_um": 0.0
         },
         {
           "text": "vss",
-          "x_um": 215.875,
+          "x_um": 216.355,
           "y_um": 0.0
         }
       ]
@@ -1097,9 +1101,9 @@
     },
     {
       "bbox_um": {
-        "left": 147.65,
+        "left": 151.65,
         "bottom": 72.15,
-        "right": 148.35,
+        "right": 152.35,
         "top": 77.35
       },
       "reason": "unmarked"
@@ -1124,18 +1128,18 @@
     },
     {
       "bbox_um": {
-        "left": 179.65,
+        "left": 183.65,
         "bottom": 81.65,
-        "right": 180.35,
+        "right": 184.35,
         "top": 84.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 186.65,
+        "left": 190.65,
         "bottom": 69.65,
-        "right": 187.35,
+        "right": 191.35,
         "top": 86.35
       },
       "reason": "unmarked"
@@ -1191,23 +1195,33 @@
       ]
     }
   ],
+  "split_net_labels": [],
   "voltage_domain_warnings": [],
+  "missing_flavour_markers": [],
+  "unsupported_devices": [],
   "unbiased_pmos_body_nets": [],
   "single_terminal_nets": [],
   "dead_metal": [],
   "matched_device_groups": [],
+  "def_pin_promotion": null,
+  "pin_renames": null,
+  "rename_declared_pins": false,
+  "declared_pins": null,
+  "def_pins": null,
+  "label_layers": null,
+  "probes": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.6.0",
-    "klayout_version": "0.30.10",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:1912f17486e78de5259aab5d68533488ebbd239a05018f096217aa62ddee2909",
-      "released": false
+      "content_hash": "sha256:5a43b8eb0e1a4c228169cd33d820bf75ca5640812587f68c07f24f4aa2a1738f",
+      "released": true
     },
     "input": {
-      "content_hash": "sha256:4e4e4f85fa0875651c294c95a1f65792fa1913dd20d027fbe6905f2d001cb330",
+      "content_hash": "sha256:1b07a94d9b4e9119ec06c90c8703e50f4fd52bd72ccfe8934473338c12876361",
       "role": "layout"
     }
   },
@@ -1218,5 +1232,17 @@
     "extract__device__count": 17,
     "extract__net__count": 13,
     "extract__pin__count": 13
+  },
+  "timing": {
+    "stages": {
+      "read_layout": 0.001,
+      "device_extraction": 0.075,
+      "diagnostics": 0.0,
+      "netlist_write": 0.0,
+      "netlist_hash": 0.0,
+      "netlist_normalized_hash": 0.0
+    },
+    "total_seconds": 0.151,
+    "unattributed_seconds": 0.073
   }
 }
