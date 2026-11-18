@@ -103,12 +103,16 @@ def commit_all(root: Path, message: str) -> None:
         "commit", "-q", "--allow-empty", "-m", message)
 
 
-def run_case(mutate_head=None, mutate_base=None, extra: tuple[str, ...] = ()) \
-        -> subprocess.CompletedProcess:
+def run_case(mutate_head=None, mutate_base=None, extra: tuple[str, ...] = (),
+             base_ref: str = "main") -> subprocess.CompletedProcess:
     """Build the two-commit fixture repo and run the checker over it.
 
     `main` commit: the base reports (mutated first by `mutate_base` for
     corrupt-base cases). `topic` commit: the head, after `mutate_head`.
+    `base_ref` is the comparison base handed to the checker: a ref name (the
+    pull_request path, the default) or the sentinel `"@BASE_SHA"` — the
+    merge-group path (issue #614), where the workflow passes the queue's
+    trial-merge base as a raw sha.
     """
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
@@ -124,8 +128,10 @@ def run_case(mutate_head=None, mutate_base=None, extra: tuple[str, ...] = ()) \
         if mutate_head is not None:
             mutate_head(root)
         commit_all(root, "head")
+        if base_ref == "@BASE_SHA":
+            base_ref = git(root, "rev-parse", "main").stdout.strip()
         return subprocess.run(
-            [sys.executable, str(CHECKER), "--root", str(root), "--base-ref", "main", *extra],
+            [sys.executable, str(CHECKER), "--root", str(root), "--base-ref", base_ref, *extra],
             capture_output=True, text=True,
         )
 
@@ -445,6 +451,33 @@ class ReportRegression(unittest.TestCase):
         r = run_case(extra=("--base-ref", "no-such-ref", "--require-regression-base"))
         self.assertEqual(r.returncode, 1, output(r))
         self.assertIn("no merge base with no-such-ref", output(r))
+
+    # -- merge-group wiring (issue #614, ported from sky130-comparator#332) ----
+    # On merge_group runs the workflow passes the queue's trial-merge base as
+    # a raw sha; an absent/empty base_sha fails in the workflow before the
+    # checker runs. The cases below pin the checker contract that wiring
+    # relies on: a raw sha compares exactly like the named ref (the unchanged
+    # pull_request path every case above exercises), and an empty base handed
+    # to the checker anyway fails closed under --require-regression-base.
+
+    def test_merge_group_base_sha_compares_like_a_ref(self):
+        def mutate(root):
+            write(root, LVS, lvs_regressed_591())
+        r = run_case(mutate, base_ref="@BASE_SHA")
+        self.assertEqual(r.returncode, 1, output(r))
+        self.assertIn("lvs.error_count regressed 4 → 1022", output(r))
+
+    def test_merge_group_base_sha_clean_range_passes(self):
+        def mutate(root):
+            write(root, "README.md", "a non-report change\n")
+        r = run_case(mutate, base_ref="@BASE_SHA")
+        self.assertEqual(r.returncode, 0, output(r))
+        self.assertIn("no committed lvs/drc report changed", output(r))
+
+    def test_merge_group_empty_base_sha_fails_closed(self):
+        r = run_case(extra=("--base-ref", "", "--require-regression-base"))
+        self.assertEqual(r.returncode, 1, output(r))
+        self.assertIn("no merge base with", output(r))
 
 
 if __name__ == "__main__":

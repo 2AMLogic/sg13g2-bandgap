@@ -1300,7 +1300,28 @@ def test_append_only(tmp: Path) -> str | None:
     root = tmp / "append-only"
     root.mkdir()
     build_fixture(root)
+    _append_only_fixture(root)
 
+    proc = subprocess.run(
+        [sys.executable, str(CHECKER), "--root", str(root),
+         "--base-ref", "main~1", "--require-append-only"],
+        capture_output=True, text=True, check=False,
+    )
+    output = proc.stdout + proc.stderr
+    if proc.returncode == 0:
+        return f"expected non-zero exit, got 0\n{output}"
+    if "append-only" not in output:
+        return f"expected an append-only complaint, got:\n{output}"
+    return None
+
+
+def _append_only_fixture(root: Path) -> None:
+    """Commit the fixture, then edit a committed record on top of it.
+
+    Shared shape of the merge-base cases below: `main` holds the clean tree,
+    the head commit mutates one committed record — the diff the append-only
+    gate must catch whichever way the base arrives (ref name, raw sha, empty).
+    """
     def git(*args: str) -> None:
         subprocess.run(["git", "-C", str(root), *args], check=True,
                        capture_output=True, text=True)
@@ -1317,9 +1338,26 @@ def test_append_only(tmp: Path) -> str | None:
     git("add", "-A")
     git("commit", "-qm", "edit committed evidence")
 
+
+def test_append_only_merge_group_base_sha(tmp: Path) -> str | None:
+    """Merge-group shape (issue #614): the base arrives as a raw sha.
+
+    On merge_group runs the workflow passes the queue's trial-merge base
+    (github.event.merge_group.base_sha) as --base-ref — a raw sha, not a ref
+    name. The checker must resolve and compare it identically to `main~1`.
+    """
+    root = tmp / "append-only-mg-sha"
+    root.mkdir()
+    build_fixture(root)
+    _append_only_fixture(root)
+
+    rev = subprocess.run(["git", "-C", str(root), "rev-parse", "main~1"],
+                         capture_output=True, text=True, check=True)
+    base_sha = rev.stdout.strip()
+
     proc = subprocess.run(
         [sys.executable, str(CHECKER), "--root", str(root),
-         "--base-ref", "main~1", "--require-append-only"],
+         "--base-ref", base_sha, "--require-append-only"],
         capture_output=True, text=True, check=False,
     )
     output = proc.stdout + proc.stderr
@@ -1327,6 +1365,31 @@ def test_append_only(tmp: Path) -> str | None:
         return f"expected non-zero exit, got 0\n{output}"
     if "append-only" not in output:
         return f"expected an append-only complaint, got:\n{output}"
+    return None
+
+
+def test_append_only_empty_base_sha_fails_closed(tmp: Path) -> str | None:
+    """An empty base must fail explicitly, never skip-as-pass (issue #614).
+
+    The workflow fails first on a merge_group run without base_sha; this is
+    the second gate on the same hole — an empty --base-ref reaching the
+    checker with --require-append-only must be a failure, not a note.
+    """
+    root = tmp / "append-only-mg-empty"
+    root.mkdir()
+    build_fixture(root)
+    _append_only_fixture(root)
+
+    proc = subprocess.run(
+        [sys.executable, str(CHECKER), "--root", str(root),
+         "--base-ref", "", "--require-append-only"],
+        capture_output=True, text=True, check=False,
+    )
+    output = proc.stdout + proc.stderr
+    if proc.returncode == 0:
+        return f"expected non-zero exit, got 0\n{output}"
+    if "no merge base with" not in output:
+        return f"expected a no-merge-base complaint, got:\n{output}"
     return None
 
 
@@ -1369,7 +1432,21 @@ def main() -> int:
             failures += 1
             print(f"  FAIL editing committed evidence trips the append-only check: {problem}")
 
-    total = len(CASES) + 1
+        problem = test_append_only_merge_group_base_sha(tmp)
+        if problem is None:
+            print("  ok   merge-group base sha catches an edited committed record")
+        else:
+            failures += 1
+            print(f"  FAIL merge-group base sha catches an edited committed record: {problem}")
+
+        problem = test_append_only_empty_base_sha_fails_closed(tmp)
+        if problem is None:
+            print("  ok   empty base sha fails closed under --require-append-only")
+        else:
+            failures += 1
+            print(f"  FAIL empty base sha fails closed under --require-append-only: {problem}")
+
+    total = len(CASES) + 3
     if failures:
         print(f"\n{failures}/{total} self-test case(s) FAILED", file=sys.stderr)
         return 1
