@@ -2,8 +2,24 @@
 
 ## `hygiene.yml`
 
-Runs on every push to `main` and on every pull request. It validates repo
+Runs on every push to `main`, on every pull request, and on merge-group
+commits (issue #614). It validates repo
 structure/hygiene that already exists in this repo today — nothing more.
+
+### The merge queue trigger
+
+`on:` also declares `merge_group:` (no path filters, no branch narrowing) so
+the job reports on the merge queue's trial-merge commit; the fleet's ruleset
+tooling refuses to enable a queue whose required check cannot report there.
+On a merge-group run the two base-diff gates (`check_evidence_formats.py
+--require-append-only` and `check_report_regression.py
+--require-regression-base`) take their comparison base from
+`github.event.merge_group.base_sha` — `github.base_ref` is empty there, so
+the `origin/main` default would diff against the live tip instead of the
+queued base. An absent or empty `base_sha` fails the step explicitly; it
+never falls through to the default or skips as a pass. `pull_request` and
+`push` runs are unchanged (`origin/main`, as before). Ported from
+sky130-comparator#332.
 
 ### What it checks
 
