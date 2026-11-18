@@ -1,11 +1,4 @@
 * extracted by klt extract --deck sg13cmos5l
-* parasitic model (--parasitics):
-* - capacitance: net-to-ground for every net's own (non-coupled) area/perimeter, plus net-to-net for the vertical-overlap coupling `coupling` describes below -- a coupled net pair gets a direct capacitor between their two hub nodes, not just capacitors to the deck's ground/substrate net
-* - coupling: vertical overlap (crossover) unconditionally -- where one net's conductor on an adjacent metal level sits directly over another *distinct* net's conductor, that overlap area is charged between the two nets instead of to ground (issue #760) -- plus lateral (same-layer, sidewall) coupling, but only for a net pair naming one of the caller's declared `--critical-net` nets (issue #976): facing-edge length within that layer's own minimum-spacing lookback is charged between the two nets, *additively* (not deducted from either net's substrate fringe term, unlike the vertical case -- a known simplification). Any same-layer pair with neither side named `--critical-net`, and fringe shielding in general, are still not modelled
-* - resistance: single lumped series resistance per net, distributed as a star across that net's device terminals (issue #592) -- not a per-segment, distributed RC ladder, *unless* `--distributed-rc` names this net via `--critical-net` (issue #977, Epic #709 Phase 2b): then the net's terminals are ordered along their approximate physical spread and its total R/C is broken into a chain of per-segment resistors (segment length proportional to inter-terminal distance) with a ground capacitor at each terminal node (proportional to its adjacent segment length/2), instead of one star hub -- still an approximation (terminal position is a device-placement proxy, not true per-segment routing geometry), but a strictly finer-grained one than the single-hub star
-* - frequency: quasi-static -- one frequency-independent R and C per net; no skin effect, no distributed transmission-line behavior
-* - substrate tie: 1e+12 ohm to ground -- the substrate is capacitively floating in transient analysis (DC reference only); see --substrate-tie-ohms
-.GLOBAL vsubs
 
 * cell sg13cmos5l_bandgap_top
 * pin d1
@@ -24,206 +17,37 @@
 .SUBCKT sg13cmos5l_bandgap_top d1 d2 det e2 e3 fb|out in_n|sns1 in_p|sns2 pn
 + tail vdd vref vss
 * device instance $1 r0 *1 0,80 nfet
-M$1 fb|out__t2 d1__t0 vss__t3 vss__t9 nfet L=1U W=10U AS=4P AD=4P PS=20.8U
-+ PD=20.8U
+M$1 fb|out d1 vss vss nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $2 r0 *1 20,80 nfet
-M$2 d1__t3 d1__t2 vss__t5 vss__t10 nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$2 d1 d1 vss vss nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $3 r0 *1 45,80 nfet
-M$3 d2__t3 d2__t2 vss__t4 vss__t11 nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+M$3 d2 d2 vss vss nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $4 r0 *1 65,80 nfet
-M$4 pn__t0 d2__t1 vss__t2 vss__t12 nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
-* device instance $5 r0 *1 159,80 nfet
-M$5 det__t1 in_n|sns1__t0 vss__t0 vss__t13 nfet L=0.5U W=10U AS=4P AD=4P
-+ PS=20.8U PD=20.8U
-* device instance $6 r0 *1 184,80 nfet
-M$6 fb|out__t0 det__t0 vss__t1 vss__t14 nfet L=0.5U W=2U AS=0.8P AD=0.8P
-+ PS=4.8U PD=4.8U
+M$4 pn d2 vss vss nfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $5 r0 *1 155,80 nfet
+M$5 det in_n|sns1 vss vss nfet L=0.5U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
+* device instance $6 r0 *1 180,80 nfet
+M$6 fb|out det vss vss nfet L=0.5U W=2U AS=0.8P AD=0.8P PS=4.8U PD=4.8U
 * device instance $7 r0 *1 0,60 pfet
-M$7 vdd__t1 fb|out__t3 in_n|sns1__t2 vdd__t0 pfet L=1U W=10U AS=4P AD=4P
-+ PS=20.8U PD=20.8U
+M$7 vdd fb|out in_n|sns1 vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $8 r0 *1 45,60 pfet
-M$8 vdd__t5 fb|out__t4 in_p|sns2__t1 vdd__t10 pfet L=1U W=10U AS=4P AD=4P
-+ PS=20.8U PD=20.8U
+M$8 vdd fb|out in_p|sns2 vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $9 r0 *1 180,60 pfet
-M$9 vdd__t9 fb|out__t1 vref__t1 vdd__t14 pfet L=1U W=10U AS=4P AD=4P PS=20.8U
-+ PD=20.8U
+M$9 vdd fb|out vref vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $10 r0 *1 20,100 pfet
-M$10 tail__t1 in_p|sns2__t2 d1__t1 vdd__t2 pfet L=1U W=20U AS=8P AD=8P PS=40.8U
-+ PD=40.8U
+M$10 tail in_p|sns2 d1 vdd pfet L=1U W=20U AS=8P AD=8P PS=40.8U PD=40.8U
 * device instance $11 r0 *1 45,100 pfet
-M$11 tail__t0 in_n|sns1__t1 d2__t0 vdd__t4 pfet L=1U W=20U AS=8P AD=8P PS=40.8U
-+ PD=40.8U
+M$11 tail in_n|sns1 d2 vdd pfet L=1U W=20U AS=8P AD=8P PS=40.8U PD=40.8U
 * device instance $12 r0 *1 20,120 pfet
-M$12 vdd__t6 fb|out__t5 tail__t2 vdd__t11 pfet L=1U W=10U AS=4P AD=4P PS=20.8U
-+ PD=20.8U
+M$12 vdd fb|out tail vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $13 r0 *1 45,120 pfet
-M$13 vdd__t7 pn__t1 fb|out__t6 vdd__t12 pfet L=1U W=10U AS=4P AD=4P PS=20.8U
-+ PD=20.8U
+M$13 vdd pn fb|out vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $14 r0 *1 70,120 pfet
-M$14 vdd__t8 pn__t2 pn__t3 vdd__t13 pfet L=1U W=10U AS=4P AD=4P PS=20.8U
-+ PD=20.8U
+M$14 vdd pn pn vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $15 r0 *1 52,50.925 rppd
-X$15 in_p|sns2__t0 e2__t0 vss__t6 rppd r=11064.9102692 L=85.1U W=2U
-* device instance $16 r0 *1 199.3,35.012 rppd
-X$16 vref__t0 e3__t0 vss__t7 rppd r=83893.4247258 L=647U W=2U
-* device instance $17 r0 *1 124.37,109.79 rhigh
-X$17 vdd__t3 det__t2 vss__t8 rhigh r=1999501.66667 L=1411.3U W=1U
-* device instance d1_t0 r0 *1 0,0 
-Rd1_t0 d1__t0 d1 8.55993202283
-* device instance d1_t1 r0 *1 0,0 
-Rd1_t1 d1__t1 d1 8.55993202283
-* device instance d1_t2 r0 *1 0,0 
-Rd1_t2 d1__t2 d1 3.82811797717
-* device instance d1_t3 r0 *1 0,0 
-Rd1_t3 d1__t3 d1 3.82811797717
-* device instance d1 r0 *1 0,0 
-Cd1 d1 vsubs 5.657981e-15
-* device instance d2_t0 r0 *1 0,0 
-Rd2_t0 d2__t0 d2 8.55993202283
-* device instance d2_t1 r0 *1 0,0 
-Rd2_t1 d2__t1 d2 8.55993202283
-* device instance d2_t2 r0 *1 0,0 
-Rd2_t2 d2__t2 d2 3.82811797717
-* device instance d2_t3 r0 *1 0,0 
-Rd2_t3 d2__t3 d2 3.82811797717
-* device instance d2 r0 *1 0,0 
-Cd2 d2 vsubs 5.657981e-15
-* device instance det_t0 r0 *1 0,0 
-Rdet_t0 det__t0 det 8.70859864994
-* device instance det_t1 r0 *1 0,0 
-Rdet_t1 det__t1 det 3.03886971263
-* device instance det_t2 r0 *1 0,0 
-Rdet_t2 det__t2 det 10.8237316374
-* device instance det r0 *1 0,0 
-Cdet det vsubs 5.473261e-15
-* device instance e2_t0 r0 *1 0,0 
-Re2_t0 e2__t0 e2 50.6494
-* device instance e2 r0 *1 0,0 
-Ce2 e2 vsubs 1.5011366e-14
-* device instance e3_t0 r0 *1 0,0 
-Re3_t0 e3__t0 e3 5.3647
-* device instance e3 r0 *1 0,0 
-Ce3 e3 vsubs 1.753626e-15
-* device instance fb_out_t0 r0 *1 0,0 
-Rfb_out_t0 fb|out__t0 fb|out 16.032905982
-* device instance fb_out_t1 r0 *1 0,0 
-Rfb_out_t1 fb|out__t1 fb|out 15.7941395168
-* device instance fb_out_t2 r0 *1 0,0 
-Rfb_out_t2 fb|out__t2 fb|out 9.3416025536
-* device instance fb_out_t3 r0 *1 0,0 
-Rfb_out_t3 fb|out__t3 fb|out 9.85068415483
-* device instance fb_out_t4 r0 *1 0,0 
-Rfb_out_t4 fb|out__t4 fb|out 4.44155056632
-* device instance fb_out_t5 r0 *1 0,0 
-Rfb_out_t5 fb|out__t5 fb|out 8.33436412043
-* device instance fb_out_t6 r0 *1 0,0 
-Rfb_out_t6 fb|out__t6 fb|out 6.00095310604
-* device instance fb_out r0 *1 0,0 
-Cfb_out fb|out vsubs 3.5059516e-14
-* device instance in_n_sns1_t0 r0 *1 0,0 
-Rin_n_sns1_t0 in_n|sns1__t0 in_n|sns1 23.5821241505
-* device instance in_n_sns1_t1 r0 *1 0,0 
-Rin_n_sns1_t1 in_n|sns1__t1 in_n|sns1 7.89858663623
-* device instance in_n_sns1_t2 r0 *1 0,0 
-Rin_n_sns1_t2 in_n|sns1__t2 in_n|sns1 18.3681892133
-* device instance in_n_sns1 r0 *1 0,0 
-Cin_n_sns1 in_n|sns1 vsubs 2.7606119e-14
-* device instance in_p_sns2_t0 r0 *1 0,0 
-Rin_p_sns2_t0 in_p|sns2__t0 in_p|sns2 35.4151261715
-* device instance in_p_sns2_t1 r0 *1 0,0 
-Rin_p_sns2_t1 in_p|sns2__t1 in_p|sns2 18.0987562817
-* device instance in_p_sns2_t2 r0 *1 0,0 
-Rin_p_sns2_t2 in_p|sns2__t2 in_p|sns2 53.4896175469
-* device instance in_p_sns2 r0 *1 0,0 
-Cin_p_sns2 in_p|sns2 vsubs 4.7509114e-14
-* device instance pn_t0 r0 *1 0,0 
-Rpn_t0 pn__t0 pn 11.4861711734
-* device instance pn_t1 r0 *1 0,0 
-Rpn_t1 pn__t1 pn 7.69038285879
-* device instance pn_t2 r0 *1 0,0 
-Rpn_t2 pn__t2 pn 4.7693729839
-* device instance pn_t3 r0 *1 0,0 
-Rpn_t3 pn__t3 pn 4.7693729839
-* device instance pn r0 *1 0,0 
-Cpn pn vsubs 6.648209e-15
-* device instance tail_t0 r0 *1 0,0 
-Rtail_t0 tail__t0 tail 12.0575364197
-* device instance tail_t1 r0 *1 0,0 
-Rtail_t1 tail__t1 tail 7.16838819775
-* device instance tail_t2 r0 *1 0,0 
-Rtail_t2 tail__t2 tail 10.5614753825
-* device instance tail r0 *1 0,0 
-Ctail tail vsubs 6.490314e-15
-* device instance vdd_t0 r0 *1 0,0 
-Rvdd_t0 vdd__t0 vdd 9.78117422048
-* device instance vdd_t1 r0 *1 0,0 
-Rvdd_t1 vdd__t1 vdd 9.78117422048
-* device instance vdd_t2 r0 *1 0,0 
-Rvdd_t2 vdd__t2 vdd 5.8642160543
-* device instance vdd_t3 r0 *1 0,0 
-Rvdd_t3 vdd__t3 vdd 9.37632197111
-* device instance vdd_t4 r0 *1 0,0 
-Rvdd_t4 vdd__t4 vdd 2.45257221913
-* device instance vdd_t5 r0 *1 0,0 
-Rvdd_t5 vdd__t5 vdd 5.1418664384
-* device instance vdd_t6 r0 *1 0,0 
-Rvdd_t6 vdd__t6 vdd 6.95628407725
-* device instance vdd_t7 r0 *1 0,0 
-Rvdd_t7 vdd__t7 vdd 4.47392095616
-* device instance vdd_t8 r0 *1 0,0 
-Rvdd_t8 vdd__t8 vdd 4.10653259191
-* device instance vdd_t9 r0 *1 0,0 
-Rvdd_t9 vdd__t9 vdd 17.5797665935
-* device instance vdd_t10 r0 *1 0,0 
-Rvdd_t10 vdd__t10 vdd 5.1418664384
-* device instance vdd_t11 r0 *1 0,0 
-Rvdd_t11 vdd__t11 vdd 6.95628407725
-* device instance vdd_t12 r0 *1 0,0 
-Rvdd_t12 vdd__t12 vdd 4.47392095616
-* device instance vdd_t13 r0 *1 0,0 
-Rvdd_t13 vdd__t13 vdd 4.10653259191
-* device instance vdd_t14 r0 *1 0,0 
-Rvdd_t14 vdd__t14 vdd 17.5797665935
-* device instance vdd r0 *1 0,0 
-Cvdd vdd vsubs 2.5649185e-14
-* device instance vref_t0 r0 *1 0,0 
-Rvref_t0 vref__t0 vref 18.5324
-* device instance vref_t1 r0 *1 0,0 
-Rvref_t1 vref__t1 vref 18.5324
-* device instance vref r0 *1 0,0 
-Cvref vref vsubs 9.167192e-15
-* device instance vss_t0 r0 *1 0,0 
-Rvss_t0 vss__t0 vss 19.4471849464
-* device instance vss_t1 r0 *1 0,0 
-Rvss_t1 vss__t1 vss 26.2952160168
-* device instance vss_t2 r0 *1 0,0 
-Rvss_t2 vss__t2 vss 6.38619027686
-* device instance vss_t3 r0 *1 0,0 
-Rvss_t3 vss__t3 vss 24.1645726968
-* device instance vss_t4 r0 *1 0,0 
-Rvss_t4 vss__t4 vss 11.8443357362
-* device instance vss_t5 r0 *1 0,0 
-Rvss_t5 vss__t5 vss 18.6866128434
-* device instance vss_t6 r0 *1 0,0 
-Rvss_t6 vss__t6 vss 12.2164257959
-* device instance vss_t7 r0 *1 0,0 
-Rvss_t7 vss__t7 vss 32.5817689187
-* device instance vss_t8 r0 *1 0,0 
-Rvss_t8 vss__t8 vss 13.3906802526
-* device instance vss_t9 r0 *1 0,0 
-Rvss_t9 vss__t9 vss 24.1645726968
-* device instance vss_t10 r0 *1 0,0 
-Rvss_t10 vss__t10 vss 18.6866128434
-* device instance vss_t11 r0 *1 0,0 
-Rvss_t11 vss__t11 vss 11.8443357362
-* device instance vss_t12 r0 *1 0,0 
-Rvss_t12 vss__t12 vss 6.38619027686
-* device instance vss_t13 r0 *1 0,0 
-Rvss_t13 vss__t13 vss 19.4471849464
-* device instance vss_t14 r0 *1 0,0 
-Rvss_t14 vss__t14 vss 26.2952160168
-* device instance vss r0 *1 0,0 
-Cvss vss vsubs 8.0872681e-14
-* device instance vsubs_dctie r0 *1 0,0 
-Rvsubs_dctie vsubs 0 1e+12
+X$15 in_p|sns2 e2 vss rppd r=11064.9102692 L=85.1U W=2U
+* device instance $16 r0 *1 199.06,35.027 rppd
+X$16 vref e3 vss rppd r=83893.4247258 L=647U W=2U
+* device instance $17 r0 *1 122.386,109.852 rhigh
+X$17 vdd det vss rhigh r=1999501.66667 L=1411.3U W=1U
 .ENDS sg13cmos5l_bandgap_top

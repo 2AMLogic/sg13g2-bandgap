@@ -302,7 +302,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:38f98a4b307e5711cd29e01d8b934a8cec199b3a9ab477c0d80d34a5df76303c",
+      "content_hash": "sha256:a18f8c052af3d66f9e988cd874d92e0379d034f25cf9ce187dc351ad19c368fa",
       "role": "layout"
     },
     "klayout_version_mismatch": true

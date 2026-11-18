@@ -1,0 +1,4 @@
+{
+  "_comment": "Deliberate DRC/LVS report regressions, waived explicitly rather than silent. .github/scripts/check_report_regression.py compares every committed change to a bandgap_* cell's lvs_report.json / drc_report.json against the same file at the merge base and fails when a headline count worsens (LVS error_count up, counts.nets/devices.matched down, any category_error_counts class up; DRC violation_count or any rule_counts rule up). An entry here downgrades one such regression to a loud note -- and only that one: the entry names the exact report and, in 'expected', the exact new value of EVERY regressed predicate. It SELF-EXPIRES: once the report re-mints, the named values no longer match and the checker fails until the entry is deleted; an entry whose report stops regressing (or is not touched at all) fails the same way. Every entry must name a tracking issue. Waiving without one is a schema error, not a judgement call.",
+  "waivers": []
+}

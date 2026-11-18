@@ -8,8 +8,8 @@
   "top": "sg13cmos5l_bandgap_top",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_top.pex.spice",
-  "netlist_sha256": "53b5ea6702fe478a3a1d05b17a7eed02412f3137a59f35a54a645af2b454515c",
-  "netlist_normalized_sha256": "5549d87202a13c88ffe81887565e2da8b008e25ddb53f0bedd4644c7e1785ff2",
+  "netlist_sha256": "40ebf5b07fa94fceca9d2eb04fcd66054e6c928c03d3ed36261a8b210c16cf18",
+  "netlist_normalized_sha256": "103d0f15f8cb1c82f63edc280c95f1b2aaa68b9f5e18e5e8c7a6aa962a62a029",
   "status": "extracted",
   "device_count": 17,
   "net_count": 13,
@@ -509,12 +509,12 @@
       "label_positions_um": [
         {
           "text": "det",
-          "x_um": 148.24,
+          "x_um": 144.272,
           "y_um": 87.75
         },
         {
           "text": "det",
-          "x_um": 159.0,
+          "x_um": 155.0,
           "y_um": 80.52
         }
       ]
@@ -582,12 +582,12 @@
       "label_positions_um": [
         {
           "text": "e3",
-          "x_um": 217.6,
+          "x_um": 217.12,
           "y_um": 0.0
         },
         {
           "text": "e3",
-          "x_um": 217.6,
+          "x_um": 217.12,
           "y_um": 14.75
         }
       ]
@@ -606,12 +606,12 @@
         },
         {
           "text": "fb",
-          "x_um": 184.0,
+          "x_um": 180.0,
           "y_um": 80.52
         },
         {
           "text": "fb",
-          "x_um": 188.15,
+          "x_um": 184.15,
           "y_um": 86.0
         },
         {
@@ -660,12 +660,12 @@
         },
         {
           "text": "sns1",
-          "x_um": 152.0,
+          "x_um": 148.0,
           "y_um": 79.05
         },
         {
           "text": "sns1",
-          "x_um": 152.0,
+          "x_um": 148.0,
           "y_um": 80.0
         }
       ]
@@ -934,6 +934,11 @@
         },
         {
           "text": "vss",
+          "x_um": 155.0,
+          "y_um": 79.48
+        },
+        {
+          "text": "vss",
           "x_um": 157.175,
           "y_um": 30.0
         },
@@ -941,11 +946,6 @@
           "text": "vss",
           "x_um": 158.505,
           "y_um": 30.0
-        },
-        {
-          "text": "vss",
-          "x_um": 159.0,
-          "y_um": 79.48
         },
         {
           "text": "vss",
@@ -964,17 +964,17 @@
         },
         {
           "text": "vss",
-          "x_um": 184.0,
+          "x_um": 180.0,
           "y_um": 79.48
         },
         {
           "text": "vss",
-          "x_um": 215.025,
+          "x_um": 214.545,
           "y_um": 0.0
         },
         {
           "text": "vss",
-          "x_um": 216.355,
+          "x_um": 215.875,
           "y_um": 0.0
         }
       ]
@@ -1101,9 +1101,9 @@
     },
     {
       "bbox_um": {
-        "left": 151.65,
+        "left": 147.65,
         "bottom": 72.15,
-        "right": 152.35,
+        "right": 148.35,
         "top": 77.35
       },
       "reason": "unmarked"
@@ -1128,18 +1128,18 @@
     },
     {
       "bbox_um": {
-        "left": 183.65,
+        "left": 179.65,
         "bottom": 81.65,
-        "right": 184.35,
+        "right": 180.35,
         "top": 84.35
       },
       "reason": "unmarked"
     },
     {
       "bbox_um": {
-        "left": 190.65,
+        "left": 186.65,
         "bottom": 69.65,
-        "right": 191.35,
+        "right": 187.35,
         "top": 86.35
       },
       "reason": "unmarked"
@@ -1221,1351 +1221,28 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:1b07a94d9b4e9119ec06c90c8703e50f4fd52bd72ccfe8934473338c12876361",
+      "content_hash": "sha256:4e4e4f85fa0875651c294c95a1f65792fa1913dd20d027fbe6905f2d001cb330",
       "role": "layout"
     }
   },
-  "parasitics": {
-    "r_count": 65,
-    "c_count": 13,
-    "cc_count": 0,
-    "l_count": 0,
-    "total_resistance_ohm": 835.9629,
-    "total_capacitance_ff": 272.556545,
-    "total_coupling_capacitance_ff": 0.0,
-    "total_inductance_nh": 0.0,
-    "nets": [
-      {
-        "net": "d1",
-        "net_id": 19,
-        "resistance_ohm": 24.7761,
-        "capacitance_ff": 5.657981,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 24.7761,
-            "capacitance_ff": 5.657981
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "d1",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$1",
-            "terminal": "G",
-            "leg_net": "d1__t0",
-            "resistance_ohm": 8.5599
-          },
-          {
-            "device": "$10",
-            "terminal": "S",
-            "leg_net": "d1__t1",
-            "resistance_ohm": 8.5599
-          },
-          {
-            "device": "$2",
-            "terminal": "G",
-            "leg_net": "d1__t2",
-            "resistance_ohm": 3.8281
-          },
-          {
-            "device": "$2",
-            "terminal": "D",
-            "leg_net": "d1__t3",
-            "resistance_ohm": 3.8281
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 5.657981,
-            "computed_ff": 5.657981,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "d2",
-        "net_id": 22,
-        "resistance_ohm": 24.7761,
-        "capacitance_ff": 5.657981,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 24.7761,
-            "capacitance_ff": 5.657981
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "d2",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$11",
-            "terminal": "S",
-            "leg_net": "d2__t0",
-            "resistance_ohm": 8.5599
-          },
-          {
-            "device": "$4",
-            "terminal": "G",
-            "leg_net": "d2__t1",
-            "resistance_ohm": 8.5599
-          },
-          {
-            "device": "$3",
-            "terminal": "G",
-            "leg_net": "d2__t2",
-            "resistance_ohm": 3.8281
-          },
-          {
-            "device": "$3",
-            "terminal": "D",
-            "leg_net": "d2__t3",
-            "resistance_ohm": 3.8281
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 5.657981,
-            "computed_ff": 5.657981,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "det",
-        "net_id": 21,
-        "resistance_ohm": 22.5712,
-        "capacitance_ff": 5.473261,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 22.5712,
-            "capacitance_ff": 5.473261
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "det",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$6",
-            "terminal": "G",
-            "leg_net": "det__t0",
-            "resistance_ohm": 8.7086
-          },
-          {
-            "device": "$5",
-            "terminal": "D",
-            "leg_net": "det__t1",
-            "resistance_ohm": 3.0389
-          },
-          {
-            "device": "$17",
-            "terminal": "B",
-            "leg_net": "det__t2",
-            "resistance_ohm": 10.8237
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 5.473261,
-            "computed_ff": 5.473261,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "e2",
-        "net_id": 7,
-        "resistance_ohm": 50.6494,
-        "capacitance_ff": 15.011366,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 50.6494,
-            "capacitance_ff": 15.011366
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "e2",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$15",
-            "terminal": "B",
-            "leg_net": "e2__t0",
-            "resistance_ohm": 50.6494
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 15.011366,
-            "computed_ff": 15.011366,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "e3",
-        "net_id": 3,
-        "resistance_ohm": 5.3647,
-        "capacitance_ff": 1.753626,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 5.3647,
-            "capacitance_ff": 1.753626
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "e3",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$16",
-            "terminal": "B",
-            "leg_net": "e3__t0",
-            "resistance_ohm": 5.3647
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 1.753626,
-            "computed_ff": 1.753626,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "fb|out",
-        "net_id": 18,
-        "resistance_ohm": 69.7962,
-        "capacitance_ff": 35.059516,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 69.7962,
-            "capacitance_ff": 35.059516
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "fb|out",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$6",
-            "terminal": "D",
-            "leg_net": "fb|out__t0",
-            "resistance_ohm": 16.0329
-          },
-          {
-            "device": "$9",
-            "terminal": "G",
-            "leg_net": "fb|out__t1",
-            "resistance_ohm": 15.7941
-          },
-          {
-            "device": "$1",
-            "terminal": "D",
-            "leg_net": "fb|out__t2",
-            "resistance_ohm": 9.3416
-          },
-          {
-            "device": "$7",
-            "terminal": "G",
-            "leg_net": "fb|out__t3",
-            "resistance_ohm": 9.8507
-          },
-          {
-            "device": "$8",
-            "terminal": "G",
-            "leg_net": "fb|out__t4",
-            "resistance_ohm": 4.4416
-          },
-          {
-            "device": "$12",
-            "terminal": "G",
-            "leg_net": "fb|out__t5",
-            "resistance_ohm": 8.3344
-          },
-          {
-            "device": "$13",
-            "terminal": "S",
-            "leg_net": "fb|out__t6",
-            "resistance_ohm": 6.001
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 35.059516,
-            "computed_ff": 35.059516,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "in_n|sns1",
-        "net_id": 5,
-        "resistance_ohm": 49.8489,
-        "capacitance_ff": 27.606119,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 49.8489,
-            "capacitance_ff": 27.606119
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "in_n|sns1",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$5",
-            "terminal": "G",
-            "leg_net": "in_n|sns1__t0",
-            "resistance_ohm": 23.5821
-          },
-          {
-            "device": "$11",
-            "terminal": "G",
-            "leg_net": "in_n|sns1__t1",
-            "resistance_ohm": 7.8986
-          },
-          {
-            "device": "$7",
-            "terminal": "S",
-            "leg_net": "in_n|sns1__t2",
-            "resistance_ohm": 18.3682
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 27.606119,
-            "computed_ff": 27.606119,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "in_p|sns2",
-        "net_id": 15,
-        "resistance_ohm": 107.0035,
-        "capacitance_ff": 47.509114,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 107.0035,
-            "capacitance_ff": 47.509114
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "in_p|sns2",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$15",
-            "terminal": "A",
-            "leg_net": "in_p|sns2__t0",
-            "resistance_ohm": 35.4151
-          },
-          {
-            "device": "$8",
-            "terminal": "S",
-            "leg_net": "in_p|sns2__t1",
-            "resistance_ohm": 18.0988
-          },
-          {
-            "device": "$10",
-            "terminal": "G",
-            "leg_net": "in_p|sns2__t2",
-            "resistance_ohm": 53.4896
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 47.509114,
-            "computed_ff": 47.509114,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "pn",
-        "net_id": 20,
-        "resistance_ohm": 28.7153,
-        "capacitance_ff": 6.648209,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 28.7153,
-            "capacitance_ff": 6.648209
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "pn",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$4",
-            "terminal": "D",
-            "leg_net": "pn__t0",
-            "resistance_ohm": 11.4862
-          },
-          {
-            "device": "$13",
-            "terminal": "G",
-            "leg_net": "pn__t1",
-            "resistance_ohm": 7.6904
-          },
-          {
-            "device": "$14",
-            "terminal": "G",
-            "leg_net": "pn__t2",
-            "resistance_ohm": 4.7694
-          },
-          {
-            "device": "$14",
-            "terminal": "S",
-            "leg_net": "pn__t3",
-            "resistance_ohm": 4.7694
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 6.648209,
-            "computed_ff": 6.648209,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "tail",
-        "net_id": 23,
-        "resistance_ohm": 29.7874,
-        "capacitance_ff": 6.490314,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 29.7874,
-            "capacitance_ff": 6.490314
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "tail",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$11",
-            "terminal": "D",
-            "leg_net": "tail__t0",
-            "resistance_ohm": 12.0575
-          },
-          {
-            "device": "$10",
-            "terminal": "D",
-            "leg_net": "tail__t1",
-            "resistance_ohm": 7.1684
-          },
-          {
-            "device": "$12",
-            "terminal": "S",
-            "leg_net": "tail__t2",
-            "resistance_ohm": 10.5615
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 6.490314,
-            "computed_ff": 6.490314,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "vdd",
-        "net_id": 17,
-        "resistance_ohm": 113.7722,
-        "capacitance_ff": 25.649185,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 113.7722,
-            "capacitance_ff": 25.649185
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "vdd",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$7",
-            "terminal": "B",
-            "leg_net": "vdd__t0",
-            "resistance_ohm": 9.7812
-          },
-          {
-            "device": "$7",
-            "terminal": "D",
-            "leg_net": "vdd__t1",
-            "resistance_ohm": 9.7812
-          },
-          {
-            "device": "$10",
-            "terminal": "B",
-            "leg_net": "vdd__t2",
-            "resistance_ohm": 5.8642
-          },
-          {
-            "device": "$17",
-            "terminal": "A",
-            "leg_net": "vdd__t3",
-            "resistance_ohm": 9.3763
-          },
-          {
-            "device": "$11",
-            "terminal": "B",
-            "leg_net": "vdd__t4",
-            "resistance_ohm": 2.4526
-          },
-          {
-            "device": "$8",
-            "terminal": "D",
-            "leg_net": "vdd__t5",
-            "resistance_ohm": 5.1419
-          },
-          {
-            "device": "$12",
-            "terminal": "D",
-            "leg_net": "vdd__t6",
-            "resistance_ohm": 6.9563
-          },
-          {
-            "device": "$13",
-            "terminal": "D",
-            "leg_net": "vdd__t7",
-            "resistance_ohm": 4.4739
-          },
-          {
-            "device": "$14",
-            "terminal": "D",
-            "leg_net": "vdd__t8",
-            "resistance_ohm": 4.1065
-          },
-          {
-            "device": "$9",
-            "terminal": "D",
-            "leg_net": "vdd__t9",
-            "resistance_ohm": 17.5798
-          },
-          {
-            "device": "$8",
-            "terminal": "B",
-            "leg_net": "vdd__t10",
-            "resistance_ohm": 5.1419
-          },
-          {
-            "device": "$12",
-            "terminal": "B",
-            "leg_net": "vdd__t11",
-            "resistance_ohm": 6.9563
-          },
-          {
-            "device": "$13",
-            "terminal": "B",
-            "leg_net": "vdd__t12",
-            "resistance_ohm": 4.4739
-          },
-          {
-            "device": "$14",
-            "terminal": "B",
-            "leg_net": "vdd__t13",
-            "resistance_ohm": 4.1065
-          },
-          {
-            "device": "$9",
-            "terminal": "B",
-            "leg_net": "vdd__t14",
-            "resistance_ohm": 17.5798
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 25.649185,
-            "computed_ff": 25.649185,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "vref",
-        "net_id": 16,
-        "resistance_ohm": 37.0648,
-        "capacitance_ff": 9.167192,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 37.0648,
-            "capacitance_ff": 9.167192
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "vref",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$16",
-            "terminal": "A",
-            "leg_net": "vref__t0",
-            "resistance_ohm": 18.5324
-          },
-          {
-            "device": "$9",
-            "terminal": "S",
-            "leg_net": "vref__t1",
-            "resistance_ohm": 18.5324
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 9.167192,
-            "computed_ff": 9.167192,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      },
-      {
-        "net": "vss",
-        "net_id": 24,
-        "resistance_ohm": 271.8371,
-        "capacitance_ff": 80.872681,
-        "by_layer": [
-          {
-            "layer": "metal0",
-            "resistance_ohm": 271.8371,
-            "capacitance_ff": 80.872681
-          }
-        ],
-        "resistance_ohm_top_cell": null,
-        "capacitance_ff_top_cell": null,
-        "inductance_nh": 0.0,
-        "hub_net": "vss",
-        "rc_model": "lumped",
-        "terminals": [
-          {
-            "device": "$5",
-            "terminal": "S",
-            "leg_net": "vss__t0",
-            "resistance_ohm": 19.4472
-          },
-          {
-            "device": "$6",
-            "terminal": "S",
-            "leg_net": "vss__t1",
-            "resistance_ohm": 26.2952
-          },
-          {
-            "device": "$4",
-            "terminal": "S",
-            "leg_net": "vss__t2",
-            "resistance_ohm": 6.3862
-          },
-          {
-            "device": "$1",
-            "terminal": "S",
-            "leg_net": "vss__t3",
-            "resistance_ohm": 24.1646
-          },
-          {
-            "device": "$3",
-            "terminal": "S",
-            "leg_net": "vss__t4",
-            "resistance_ohm": 11.8443
-          },
-          {
-            "device": "$2",
-            "terminal": "S",
-            "leg_net": "vss__t5",
-            "resistance_ohm": 18.6866
-          },
-          {
-            "device": "$15",
-            "terminal": "W",
-            "leg_net": "vss__t6",
-            "resistance_ohm": 12.2164
-          },
-          {
-            "device": "$16",
-            "terminal": "W",
-            "leg_net": "vss__t7",
-            "resistance_ohm": 32.5818
-          },
-          {
-            "device": "$17",
-            "terminal": "W",
-            "leg_net": "vss__t8",
-            "resistance_ohm": 13.3907
-          },
-          {
-            "device": "$1",
-            "terminal": "B",
-            "leg_net": "vss__t9",
-            "resistance_ohm": 24.1646
-          },
-          {
-            "device": "$2",
-            "terminal": "B",
-            "leg_net": "vss__t10",
-            "resistance_ohm": 18.6866
-          },
-          {
-            "device": "$3",
-            "terminal": "B",
-            "leg_net": "vss__t11",
-            "resistance_ohm": 11.8443
-          },
-          {
-            "device": "$4",
-            "terminal": "B",
-            "leg_net": "vss__t12",
-            "resistance_ohm": 6.3862
-          },
-          {
-            "device": "$5",
-            "terminal": "B",
-            "leg_net": "vss__t13",
-            "resistance_ohm": 19.4472
-          },
-          {
-            "device": "$6",
-            "terminal": "B",
-            "leg_net": "vss__t14",
-            "resistance_ohm": 26.2952
-          }
-        ],
-        "segments": [],
-        "pin_order": null,
-        "coupled": [],
-        "integrity": {
-          "open": {
-            "status": "not_applicable",
-            "reason": "lumped model: terminal legs attach to the hub by construction; no distributed segments to check connectivity over",
-            "disconnected_count": 0,
-            "disconnected_terminals": [],
-            "details_truncated": false
-          },
-          "islands": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "orphan_nodes": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "suspicious_resistors": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "short_candidates": {
-            "count": 0,
-            "details": [],
-            "details_truncated": false,
-            "reason": null
-          },
-          "capacitance": {
-            "status": "pass",
-            "declared_ff": 80.872681,
-            "computed_ff": 80.872681,
-            "delta_ff": 0.0,
-            "reason": null,
-            "tolerance": {
-              "absolute_ff": 1e-06,
-              "relative": 1e-09
-            }
-          }
-        }
-      }
-    ],
-    "substrate_dc_tie": {
-      "resistance_ohm": 1000000000000.0,
-      "mode": "shunt",
-      "nets": [
-        {
-          "net": "vsubs",
-          "device": "Rvsubs_dctie"
-        }
-      ],
-      "node_scope": "global"
-    },
-    "integrity": {
-      "short_threshold_ohm": 1.0,
-      "cap_tolerance": {
-        "absolute_ff": 1e-06,
-        "relative": 1e-09
-      },
-      "max_detail_items": 20,
-      "nets_checked": 13,
-      "nets_with_findings": 0,
-      "open_nets": 0,
-      "island_components": 0,
-      "orphan_nodes": 0,
-      "suspicious_resistors": 0,
-      "short_candidates": 0,
-      "capacitance_mismatches": 0
-    },
-    "metals_without_coefficient": [],
-    "overlap_pairs_without_coefficient": [],
-    "critical_nets": [],
-    "parasitics_nets": [],
-    "distributed_rc": false,
-    "top_cell_only": false,
-    "model": {
-      "capacitance": "net-to-ground for every net's own (non-coupled) area/perimeter, plus net-to-net for the vertical-overlap coupling `coupling` describes below -- a coupled net pair gets a direct capacitor between their two hub nodes, not just capacitors to the deck's ground/substrate net",
-      "coupling": "vertical overlap (crossover) unconditionally -- where one net's conductor on an adjacent metal level sits directly over another *distinct* net's conductor, that overlap area is charged between the two nets instead of to ground (issue #760) -- plus lateral (same-layer, sidewall) coupling, but only for a net pair naming one of the caller's declared `--critical-net` nets (issue #976): facing-edge length within that layer's own minimum-spacing lookback is charged between the two nets, *additively* (not deducted from either net's substrate fringe term, unlike the vertical case -- a known simplification). Any same-layer pair with neither side named `--critical-net`, and fringe shielding in general, are still not modelled",
-      "resistance": "single lumped series resistance per net, distributed as a star across that net's device terminals (issue #592) -- not a per-segment, distributed RC ladder, *unless* `--distributed-rc` names this net via `--critical-net` (issue #977, Epic #709 Phase 2b): then the net's terminals are ordered along their approximate physical spread and its total R/C is broken into a chain of per-segment resistors (segment length proportional to inter-terminal distance) with a ground capacitor at each terminal node (proportional to its adjacent segment length/2), instead of one star hub -- still an approximation (terminal position is a device-placement proxy, not true per-segment routing geometry), but a strictly finer-grained one than the single-hub star",
-      "frequency": "quasi-static -- one frequency-independent R and C per net; no skin effect, no distributed transmission-line behavior"
-    },
-    "model_revision": 2,
-    "mom_crosscheck": null,
-    "substrate_spreading": null,
-    "mom_rlc_override": null
-  },
+  "parasitics": null,
   "spef_path": null,
   "subcircuit": null,
   "metrics": {
     "extract__device__count": 17,
     "extract__net__count": 13,
-    "extract__pin__count": 13,
-    "extract__resistor__count": 65,
-    "extract__capacitor__count": 13,
-    "extract__coupling__capacitor__count": 0,
-    "extract__inductor__count": 0,
-    "extract__resistance__ohm": 835.9629,
-    "extract__capacitance__ff": 272.556545,
-    "extract__coupling__capacitance__ff": 0.0,
-    "extract__inductance__nh": 0.0
+    "extract__pin__count": 13
   },
   "timing": {
     "stages": {
       "read_layout": 0.001,
-      "device_extraction": 0.087,
+      "device_extraction": 0.218,
       "diagnostics": 0.0,
-      "netlist_write": 0.002,
+      "netlist_write": 0.001,
       "netlist_hash": 0.0,
-      "netlist_normalized_hash": 0.0
+      "netlist_normalized_hash": 0.002
     },
-    "total_seconds": 0.163,
-    "unattributed_seconds": 0.072
+    "total_seconds": 0.414,
+    "unattributed_seconds": 0.191
   }
 }

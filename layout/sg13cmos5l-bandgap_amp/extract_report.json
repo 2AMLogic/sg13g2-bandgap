@@ -1,11 +1,15 @@
 {
-  "schema_version": 3,
-  "file": "sg13cmos5l-bandgap_amp.gds",
+  "schema_version": 4,
+  "file": {
+    "path": "layout/sg13cmos5l-bandgap_amp/sg13cmos5l-bandgap_amp.gds",
+    "scope": "repo"
+  },
   "deck": "sg13cmos5l",
   "top": "sg13cmos5l_bandgap_amp",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_amp.extracted.spice",
   "netlist_sha256": "03f5ac2b65cb3b04f875ed427875885d57a4a33d9bb26f40a54e85ab9b784e01",
+  "netlist_normalized_sha256": "b52beb0447343c689957f4f83206fc26732c7d4ff422624ea4b404b1c548976f",
   "status": "extracted",
   "device_count": 9,
   "net_count": 10,
@@ -214,7 +218,7 @@
       "name": "d1",
       "pin": true,
       "device_count": 4,
-      "net_id": 4,
+      "net_id": 3,
       "pin_index": 0,
       "label_positions_um": [
         {
@@ -309,7 +313,7 @@
       "name": "pn",
       "pin": true,
       "device_count": 4,
-      "net_id": 3,
+      "net_id": 4,
       "pin_index": 5,
       "label_positions_um": [
         {
@@ -451,20 +455,30 @@
     }
   ],
   "merged_net_labels": [],
+  "split_net_labels": [],
   "voltage_domain_warnings": [],
+  "missing_flavour_markers": [],
+  "unsupported_devices": [],
   "unbiased_pmos_body_nets": [],
   "single_terminal_nets": [],
   "dead_metal": [],
   "matched_device_groups": [],
+  "def_pin_promotion": null,
+  "pin_renames": null,
+  "rename_declared_pins": false,
+  "declared_pins": null,
+  "def_pins": null,
+  "label_layers": null,
+  "probes": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.5.0+g32f69f811682",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:1912f17486e78de5259aab5d68533488ebbd239a05018f096217aa62ddee2909",
-      "released": false
+      "content_hash": "sha256:5a43b8eb0e1a4c228169cd33d820bf75ca5640812587f68c07f24f4aa2a1738f",
+      "released": true
     },
     "input": {
       "content_hash": "sha256:f277d98557728bb77e2a7332fa5052488a383fb90d233ef1cffd38071c22863a",
@@ -473,9 +487,22 @@
   },
   "parasitics": null,
   "spef_path": null,
+  "subcircuit": null,
   "metrics": {
     "extract__device__count": 9,
     "extract__net__count": 10,
     "extract__pin__count": 10
+  },
+  "timing": {
+    "stages": {
+      "read_layout": 0.001,
+      "device_extraction": 0.017,
+      "diagnostics": 0.0,
+      "netlist_write": 0.0,
+      "netlist_hash": 0.0,
+      "netlist_normalized_hash": 0.0
+    },
+    "total_seconds": 0.161,
+    "unattributed_seconds": 0.142
   }
 }

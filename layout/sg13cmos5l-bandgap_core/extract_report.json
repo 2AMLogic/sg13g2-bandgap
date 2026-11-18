@@ -8,8 +8,8 @@
   "top": "sg13cmos5l_bandgap_core",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_core.extracted.spice",
-  "netlist_sha256": "99de6382c0c1040ee1907f556398e3df28ddd959f4cd6be2022cb7b81969a7de",
-  "netlist_normalized_sha256": "0eb432ea6d56115fc18280c737e7baedb93c2ba29c02052ed7abd5d0caeaf9fe",
+  "netlist_sha256": "4dfabcbf2ee0e46dfbefb4f7cea733cbf13435ba3a43f2ab49e29637c0675b64",
+  "netlist_normalized_sha256": "47effd0d6da8a60a6ebe544d0a3d591a14fd8b47a8ea7f0dac5d4ecc3eb24357",
   "status": "extracted",
   "device_count": 5,
   "net_count": 8,
@@ -212,12 +212,12 @@
       "label_positions_um": [
         {
           "text": "e3",
-          "x_um": 217.6,
+          "x_um": 217.12,
           "y_um": 0.0
         },
         {
           "text": "e3",
-          "x_um": 217.6,
+          "x_um": 217.12,
           "y_um": 14.75
         }
       ]
@@ -436,12 +436,12 @@
         },
         {
           "text": "vss",
-          "x_um": 215.025,
+          "x_um": 214.545,
           "y_um": 0.0
         },
         {
           "text": "vss",
-          "x_um": 216.355,
+          "x_um": 215.875,
           "y_um": 0.0
         }
       ]
@@ -491,7 +491,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:2bfdd1cbb38e871c236b23fc9bb0f15649756b2b0f143766bd6e7d3753a9240f",
+      "content_hash": "sha256:832b570e7d109e0f1449271ee1aca27e1599a856fd15ffe4d999c4db8f1fc5d3",
       "role": "layout"
     }
   },
@@ -506,13 +506,13 @@
   "timing": {
     "stages": {
       "read_layout": 0.001,
-      "device_extraction": 0.019,
+      "device_extraction": 0.046,
       "diagnostics": 0.0,
-      "netlist_write": 0.0,
+      "netlist_write": 0.004,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.09,
-    "unattributed_seconds": 0.07
+    "total_seconds": 0.244,
+    "unattributed_seconds": 0.193
   }
 }

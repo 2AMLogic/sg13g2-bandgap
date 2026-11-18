@@ -18,6 +18,6 @@ M$2 vdd fb sns2 vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 M$3 vdd fb vref vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $4 r0 *1 52,50.925 rppd
 X$4 sns2 e2 vss rppd r=11064.9102692 L=85.1U W=2U
-* device instance $5 r0 *1 199.3,35.012 rppd
+* device instance $5 r0 *1 199.06,35.027 rppd
 X$5 vref e3 vss rppd r=83893.4247258 L=647U W=2U
 .ENDS sg13cmos5l_bandgap_core

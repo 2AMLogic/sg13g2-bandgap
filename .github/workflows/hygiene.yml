@@ -127,6 +127,24 @@ jobs:
         # the merge base stops resolving (a skipped check reads as a pass).
         run: python3 .github/scripts/check_evidence_formats.py --require-append-only
 
+      - name: Report-regression checker self-test
+        # Issue #594: the guard that stops a fresh, well-formed re-mint whose
+        # outcome is much worse than the report it replaces (PR #591 moved the
+        # core LVS error_count 4 → 1022 with every checker green) from passing.
+        # Hermetic two-commit temp-git-repo cases: the #591 shape fails,
+        # improvement/equal pass, exact waiver passes, stale/missing/extra
+        # waiver values fail, new/unparseable/deleted reports are loud.
+        run: python3 .github/scripts/test_check_report_regression.py
+
+      - name: DRC/LVS report regression against merge base
+        # Issue #594: each bandgap_* lvs/drc report a PR modifies is compared
+        # against its own merge-base revision; any worsened headline count
+        # fails unless waived (layout/report-regression-waivers.json, which
+        # self-expires). --require-regression-base mirrors
+        # --require-append-only: this job's checkout is fetch-depth: 0, so an
+        # unresolvable merge base is a failure, never a skip-as-pass.
+        run: python3 .github/scripts/check_report_regression.py --require-regression-base
+
       - name: Characterization-report dependency checker self-test
         # Issue #315: hermetic defect injection (changed DUT, newer record,
         # changed bound, missing dependency, honest stale disclosure, ...).
