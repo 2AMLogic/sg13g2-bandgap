@@ -111,17 +111,28 @@ current (Iq `i_mkfb_a`, 33/45 points, max ~1.6% relative; startup
   the measured spread, never on the absolute values.
 - One instance type (m7i.4xlarge), one job, one pass ordering — no
   cross-instance hardware variance inside the measurement.
-- `out/work/` keeps every run's `ngspice.log`, report and request; the
-  assembled corner decks (`corner.cir`) were pruned per run (regenerable
-  from the committed templates + `out/meta.json`'s substitutions and
-  sha256s).
+- `out/work/` keeps every run's `report.json` and `request.json` plus the
+  committed `body.spice` decks; it does **not** keep the raw per-run
+  `ngspice.log` files. `.gitignore`'s blanket `*.log` rule (then without any
+  `measurements/**` negation) silently dropped all 41 of them at `git add`,
+  and the job's Spot instance is gone, so they are not recoverable. The
+  solver assignment those logs attested survives three other ways:
+  `out/results.csv`'s `solver_line`/`solver_line_ok` columns (41/41
+  `True`), `retimer.py`'s in-code assertion plus `out/meta.json`'s
+  `problems: []`, and the committed `out/work/*/body.spice` decks, whose
+  KLU and SPARSE variants differ by exactly the `klu` token on the
+  `.options reltol=5e-3` line. The assembled corner decks (`corner.cir`)
+  were pruned per run (regenerable from the committed templates +
+  `out/meta.json`'s substitutions and sha256s).
 
 ## Contents
 
 - `retimer.py` / `retime_job.sh` — the driver (also the T1 cold-start
   invocation: submit `retime_job.sh` as a `repo-script` job, or run
   `retimer.py --out <dir>` on any host with the PDK resolved).
-- `out/` — everything the job produced (`results.csv`, `meta.json`,
-  per-run logs/reports under `out/work/`).
+- `out/` — everything the job produced that is committed (`results.csv`,
+  `meta.json`, per-run reports/requests under `out/work/`); the raw
+  per-run `ngspice.log` files were dropped by `.gitignore`'s `*.log` rule
+  and are not recoverable (see Caveats).
 - `job/` — the collected job envelope (`run.json`, `status.json`,
   `group.json`).
