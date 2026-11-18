@@ -27,12 +27,20 @@ are compared:
   the base counts as 0, so a brand-new violation class fails).
 
 A class/rule present only at one side is resolved exactly as the predicates
-say: absent in the base counts as 0 (any positive head value fails); a
-headline field that exists in only one revision is skipped with a loud note,
-never silently. A report that is new (no merge-base revision) is a note; a
-merge-base copy that does not parse is a failure — the comparison cannot run
-and must not read as a pass. Deletion of a guarded report is a failure too:
-the guard compares replaced reports and cannot vouch for a deletion.
+say: absent in the base counts as 0 (any positive head value fails). A
+class/rule value that is not an integer never disappears quietly either: at
+the working-tree side it is a failure — a report whose counts cannot be
+read cannot be compared — and at the merge base it is a note, the head
+value for that class still comparing against an implicit 0. A headline
+field that exists only at the merge base is skipped with a loud note; a
+head-only error_count/violation_count fails against an implicit 0 with a
+message that says the base recorded no value. A per-class mapping the base
+carried but the head does not is a note that distinguishes an absent
+mapping from one present with no usable integer values. A report that is
+new (no merge-base revision) is a note; a merge-base copy that does not
+parse is a failure — the comparison cannot run and must not read as a
+pass. Deletion of a guarded report is a failure too: the guard compares
+replaced reports and cannot vouch for a deletion.
 
 A deliberate regression stays expressible through
 `layout/report-regression-waivers.json` (same discipline as
@@ -191,8 +199,9 @@ def report_unused_waivers(
 # --- per-report predicates ----------------------------------------------------
 
 
-def collect_lvs(doc: dict, side: str, rel: str, report: Report) -> dict[str, int]:
-    """The comparable integer predicates of an LVS report revision."""
+def collect_lvs(doc: dict, side: str, rel: str, report: Report) -> tuple[dict[str, int], bool]:
+    """The comparable integer predicates of an LVS report revision, and whether
+    `category_error_counts` was present as a mapping at all."""
     preds: dict[str, int] = {}
     value = doc.get("error_count")
     if _int(value):
@@ -219,14 +228,27 @@ def collect_lvs(doc: dict, side: str, rel: str, report: Report) -> dict[str, int
         for cls, value in cat.items():
             if _int(value):
                 preds[f"lvs.category_error_counts.{cls}"] = value
+            elif side == "working-tree":
+                report.fail(
+                    rel,
+                    f"{side} category_error_counts.{cls} is {value!r}, not an integer "
+                    "— the per-class comparison cannot run and must not read as a pass",
+                )
+            else:
+                report.note(
+                    f"{rel}: {side} category_error_counts.{cls} is {value!r}, not an "
+                    "integer — not compared; a head value for this class compares "
+                    "against an implicit 0",
+                )
 
     if isinstance(cat, dict) is False and cat is not None:
         report.note(f"{rel}: {side} category_error_counts is not a mapping — not compared")
-    return preds
+    return preds, isinstance(cat, dict)
 
 
-def collect_drc(doc: dict, side: str, rel: str, report: Report) -> dict[str, int]:
-    """The comparable integer predicates of a DRC report revision."""
+def collect_drc(doc: dict, side: str, rel: str, report: Report) -> tuple[dict[str, int], bool]:
+    """The comparable integer predicates of a DRC report revision, and whether
+    `rule_counts` was present as a mapping at all."""
     preds: dict[str, int] = {}
     value = doc.get("violation_count")
     if _int(value):
@@ -239,13 +261,29 @@ def collect_drc(doc: dict, side: str, rel: str, report: Report) -> dict[str, int
         for rule, value in rules.items():
             if _int(value):
                 preds[f"drc.rule_counts.{rule}"] = value
+            elif side == "working-tree":
+                report.fail(
+                    rel,
+                    f"{side} rule_counts.{rule} is {value!r}, not an integer — the "
+                    "per-class comparison cannot run and must not read as a pass",
+                )
+            else:
+                report.note(
+                    f"{rel}: {side} rule_counts.{rule} is {value!r}, not an integer — "
+                    "not compared; a head value for this rule compares against an "
+                    "implicit 0",
+                )
     elif rules is not None:
         report.note(f"{rel}: {side} rule_counts is not a mapping — not compared")
-    return preds
+    return preds, isinstance(rules, dict)
 
 
 def regressions(
-    rel: str, base: dict[str, int], head: dict[str, int], report: Report
+    rel: str,
+    base: dict[str, int],
+    head: dict[str, int],
+    report: Report,
+    head_mapping_present: bool,
 ) -> dict[str, tuple[int, int]]:
     """Pair the two revisions' predicates; return `{key: (base, head)} regressions`.
 
@@ -253,7 +291,10 @@ def regressions(
     union of both sides with a base-default of 0, so a class that appears
     only at head fails on any positive value and a class that disappears is
     an improvement. Matched counts are compared only when both sides carry
-    them (a field that exists in one revision only is not comparable).
+    them (a field that exists in one revision only is not comparable). A
+    per-class mapping the base carried but the head did not is a note,
+    worded by whether the head mapping is absent or present with no usable
+    integer values.
     """
     out: dict[str, tuple[int, int]] = {}
     for key, head_value in sorted(head.items()):
@@ -278,10 +319,17 @@ def regressions(
         base_has = any(k.startswith(prefix) for k in base)
         head_has = any(k.startswith(prefix) for k in head)
         if base_has and not head_has:
-            report.note(
-                f"{rel}: {prefix.split('.', 1)[1]} mapping missing at the working-tree "
-                "side — per-class check skipped"
-            )
+            name = prefix.split(".", 1)[1]
+            if head_mapping_present:
+                report.note(
+                    f"{rel}: {name} mapping present at the working-tree side but "
+                    "carries no usable integer values — per-class check skipped"
+                )
+            else:
+                report.note(
+                    f"{rel}: {name} mapping missing at the working-tree side — "
+                    "per-class check skipped"
+                )
     return out
 
 
@@ -371,9 +419,9 @@ def check_regression(root: Path, base_ref: str, required: bool, report: Report) 
         compared += 1
         kind = "lvs" if path.endswith("lvs_report.json") else "drc"
         collect = collect_lvs if kind == "lvs" else collect_drc
-        base_preds = collect(base_doc, "merge-base", path, report)
-        head_preds = collect(head_doc, "working-tree", path, report)
-        fired = regressions(path, base_preds, head_preds, report)
+        base_preds, _ = collect(base_doc, "merge-base", path, report)
+        head_preds, head_mapping_present = collect(head_doc, "working-tree", path, report)
+        fired = regressions(path, base_preds, head_preds, report, head_mapping_present)
         consulted.add(path)  # consulted whether or not it regressed
 
         if not fired:
@@ -381,12 +429,22 @@ def check_regression(root: Path, base_ref: str, required: bool, report: Report) 
         waiver = waivers.get(path)
         if fired and waiver is None:
             for key, (base_value, head_value) in sorted(fired.items()):
-                report.fail(
-                    path,
-                    f"{key} regressed {base_value} → {head_value} relative to {base_ref} "
-                    f"({base[:12]}) — waive deliberately via {WAIVER_FILE} naming the exact "
-                    "new value and the tracking issue",
-                )
+                if key in ("lvs.error_count", "drc.violation_count") and key not in base_preds:
+                    report.fail(
+                        path,
+                        f"{key} reads {head_value} at the working tree but the merge "
+                        f"base recorded no value (compared against an implicit 0) "
+                        f"relative to {base_ref} ({base[:12]}) — waive deliberately "
+                        f"via {WAIVER_FILE} naming the exact new value and the "
+                        "tracking issue",
+                    )
+                else:
+                    report.fail(
+                        path,
+                        f"{key} regressed {base_value} → {head_value} relative to {base_ref} "
+                        f"({base[:12]}) — waive deliberately via {WAIVER_FILE} naming the exact "
+                        "new value and the tracking issue",
+                    )
         elif fired and waiver is not None:
             expected = {str(k): v for k, v in waiver["expected"].items()}
             fired_heads = {k: v for k, (_, v) in fired.items()}
