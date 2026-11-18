@@ -9,11 +9,13 @@ for ``b=0``/``m=1``. Before #582 that precondition lived in docstrings only;
 now `_require_formula_preconditions` enforces it in both formula branches of
 `_convert_device_line`. These cases prove the guard rejects a bent or
 multiplied resistor loudly (naming model, parameter and line), accepts the
-explicit, absent and float-spelled allowed values, leaves the flat-sheet
-sg13g2 flavours unguarded (they never used the formula), and pins each
-formula helper's value at one (w, l) point so a constant cannot drift
-silently. White-box: `lvs_reference` imports stdlib only (os/re), so the
-module is imported directly -- no klayout, no PDK, no network.
+explicit, absent and float-spelled allowed values, and pins each formula
+helper's value at one (w, l) point so a constant cannot drift silently.
+The flat-sheet path stays unguarded (a flat value cannot depend on b or
+m); since #580 every sg13g2 flavour in the sheet table is also a formula
+flavour, so on this PDK the guard covers them all. White-box:
+`lvs_reference` imports stdlib only (os/re), so the module is imported
+directly -- no klayout, no PDK, no network.
 """
 
 from __future__ import annotations
@@ -85,11 +87,13 @@ def case_guard_rejects_m2_sg13g2_rhigh():
 def case_accepts_explicit_b0_m1():
     # The committed netlists' only spelling today: explicit `m=1 b=0`.
     out = _convert(RHIGH_LINE.format(bm="m=1 b=0"), "sg13g2")
-    # Pinned card shape too (`.1f` value, model as positional token, L=/W=):
-    # the sg13g2 rhigh formula at w=1u l=1411.3u is 1999501.666..., `.1f` ->
-    # "1999501.7" (issue #563's +4.2% finding, kept pinned here) -- the same
-    # bytes bandgap_startup.lvs_reference.spice's RPU card carries.
-    assert out == "RPU vdd det 1999501.7 rhigh L=1411.3U W=1U", out
+    # Pinned card shape too (model as positional token, L=/W=): the sg13g2
+    # rhigh formula at w=1u l=1411.3u is 1999501.666...; since #580 the
+    # sg13g2 formula path writes six decimals (`_res_element_line`'s
+    # `r_fmt`), so the card reads "1999501.666667" -- the same bytes
+    # bandgap_startup.lvs_reference.spice's RPU card carries (issue #563's
+    # corrected value, kept pinned here).
+    assert out == "RPU vdd det 1999501.666667 rhigh L=1411.3U W=1U", out
 
 
 def case_accepts_absent_b_m():
@@ -112,13 +116,24 @@ def case_non_numeric_m_fails_loudly():
     )
 
 
-def case_flat_sheet_sg13g2_rppd_not_guarded():
-    # `rppd` on sg13g2 stays on the flat sheet table (not in
-    # `_SG13G2_RES_OHMS`) -- it never used a formula, so no precondition
-    # guard: a bent/multiplied call is accepted (and valued flat, unchanged:
-    # 260 Ohm/sq * 37.2/2 = 4836.0, R1's committed card value).
-    out = _convert(RPPD_LINE.format(bm="b=1 m=2"), "sg13g2")
-    assert out == "R1 vref tn0 4836.0 rppd L=37.2U W=2U", out
+def case_guard_rejects_b1_sg13g2_rppd():
+    # Since #580 `rppd` on sg13g2 is a formula flavour too (in
+    # `_SG13G2_RES_OHMS`), so the guard covers it exactly like `rhigh`:
+    # a bent call must raise, not silently pass (issue #582). The old
+    # "flat-sheet sg13g2 rppd not guarded" case pinned the pre-#580 state
+    # and no sg13g2 flavour is flat-only anymore -- every flavour in
+    # `_RES_SHEET_OHM_PER_SQ` is also a formula flavour -- so AC2's
+    # not-guarded instance is vacuous post-#580 and the case now asserts
+    # the guarded side instead.
+    _expect_value_error(
+        RPPD_LINE.format(bm="m=1 b=1"), "sg13g2", "rppd b=1", "on line:"
+    )
+
+
+def case_guard_rejects_m2_sg13g2_rppd():
+    _expect_value_error(
+        RPPD_LINE.format(bm="m=2 b=0"), "sg13g2", "rppd m=2", "on line:"
+    )
 
 
 def case_pin_cmos5l_rppd():
@@ -152,7 +167,8 @@ CASES = [
     ("accepts absent b/m", case_accepts_absent_b_m),
     ("accepts float-spelled b=0.0 m=1.0", case_accepts_float_spelled_b0_m1),
     ("non-numeric m fails loudly", case_non_numeric_m_fails_loudly),
-    ("flat-sheet sg13g2 rppd not guarded", case_flat_sheet_sg13g2_rppd_not_guarded),
+    ("guard rejects b=1 (sg13g2 rppd)", case_guard_rejects_b1_sg13g2_rppd),
+    ("guard rejects m=2 (sg13g2 rppd)", case_guard_rejects_m2_sg13g2_rppd),
     ("pins _cmos5l_rppd_ohms at (1u, 10u)", case_pin_cmos5l_rppd),
     ("pins _cmos5l_rhigh_ohms at (1u, 10u)", case_pin_cmos5l_rhigh),
     ("pins _sg13g2_rhigh_ohms at RPU's (1u, 1411.3u)", case_pin_sg13g2_rhigh),
@@ -164,9 +180,9 @@ def main() -> int:
     for name, case in CASES:
         try:
             case()
-        except AssertionError as e:
+        except Exception as e:  # noqa: BLE001 -- one bad case must not kill the run
             failures += 1
-            print(f"  FAIL {name}\n       {e}", file=sys.stderr)
+            print(f"  FAIL {name}\n       {e!r}", file=sys.stderr)
         else:
             print(f"  ok   {name}")
     if failures:
