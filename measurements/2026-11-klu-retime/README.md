@@ -67,8 +67,12 @@ loss.
 committed anchors at 6 significant figures (`fb_v` 2.49682 / 2.22558,
 `|iq_avg_a|` 2.80682e-05 / 3.62959e-05, `vref_final_v` 1.04728 / 1.04201),
 and the `singular matrix` recovery diagnostic the hot corners are known
-for occurred identically under both solvers (recovered; corner grades
-`pass`). `out/results.csv` carries every run; `out/meta.json` the summary,
+for occurred under both solvers on the hot cells (recovered; corner grades
+`pass`), on different internal trim nodes — SPARSE flags `xxtrim.t231`
+and `xxtrim.t240`, KLU flags `xxtrim.t252` — and under KLU only the
+27 °C sanity corner of both benches also emits one such warning per run
+(`xxtrim.t254`, 10/10 runs, recovered; SPARSE: none there).
+`out/results.csv` carries every run; `out/meta.json` the summary,
 the per-run bodies' sha256 and the host facts.
 
 ## Verdict: adopted on both benches
@@ -82,8 +86,11 @@ direct-solver pin" carve-out reverted — all three closed-loop supply
 benches now pin KLU. The 45-point grids were re-run through each bench's
 `run_klt_sim.sh --batch` on the adopted templates (new records in each
 bench's `records/`: iq `20261118-072122-3e600d97`, startup
-`20261118-082945-3e600d97`, both 45/45 PASS with every value identical to
-the pre-adoption records at 6 significant figures; see the bench READMEs).
+`20261118-082945-3e600d97`, both 45/45 PASS, identical to the pre-adoption
+records at 6 significant figures on every verdict-bearing column — on each
+grid the one wiggling column is the femtoamp/picoamp `i_mkfb*` noise-floor
+current (Iq `i_mkfb_a`, 33/45 points, max ~1.6% relative; startup
+`i_mkfb_final_a`, 32/45 points, max ~1.3% relative); see the bench READMEs).
 `timeout_s` stays 1800: no corner was anywhere near it under either solver.
 
 ## Caveats, stated plainly
@@ -117,4 +124,4 @@ the pre-adoption records at 6 significant figures; see the bench READMEs).
 - `out/` — everything the job produced (`results.csv`, `meta.json`,
   per-run logs/reports under `out/work/`).
 - `job/` — the collected job envelope (`run.json`, `status.json`,
-  `harness.log`, `group.json`).
+  `group.json`).

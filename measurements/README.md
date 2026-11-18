@@ -154,11 +154,13 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   grids (`sim/closed-loop-iq/records/20261118-072122-3e600d97`,
   `sim/closed-loop-startup/records/20261118-082945-3e600d97`), making them
   those experiments' newest records. Stamped at audited commit `73c420a2`.
-  **Provenance-only, like the 13 Nov rotation**: the Iq grid reproduces its
-  predecessor figure-for-figure (recomputed from both CSVs, maximum
-  shared-column relative delta 0) and the startup grid's claims are
-  unchanged (45/45 self-start; node round-off within the `reltol=5e-3`
-  solver swap), so no verdict and no quoted number move and the spot-check
+  **Provenance-only, like the 13 Nov rotation**: on both re-minted grids
+  the only shared column that moves is the femtoamp/picoamp `i_mkfb*`
+  noise-floor current (Iq `i_mkfb_a`, 33/45 points, max ~1.6% relative;
+  startup `i_mkfb_final_a`, 32/45 points, max ~1.3% relative — recomputed
+  from both CSVs; every stored node voltage is identical) and the startup
+  grid's claims are unchanged (45/45 self-start), so no verdict and no
+  quoted number move and the spot-check
   block is byte-identical to the 18 Nov report's. Same shape as the earlier
   reports: `README.md`, `spotcheck.py`, `envelope.json` (cited by
   `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`

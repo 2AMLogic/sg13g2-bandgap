@@ -278,8 +278,12 @@ Engine wall, s (min / median / max of 5–6 serial repeats on that instance):
 Answer preservation: every run of the re-time landed on the committed
 anchors at 6 significant figures (`vref_final_v` 1.04728 / 1.04201,
 `fb_final_v` 2.49682 / 2.22558), and the `singular matrix` recovery
-diagnostic the hot corner is known for occurred identically under both
-solvers (one warning per run, recovered; the corner grades `pass`).
+diagnostic the hot corner is known for occurred under both solvers (one
+warning per hot-corner run, recovered, though on different internal trim
+nodes — SPARSE flags `xxtrim.t231` and `xxtrim.t240`, KLU flags
+`xxtrim.t252` — and under KLU only the 27 °C sanity corner emits one such
+warning per run too, at `xxtrim.t254`, 10/10 runs across both benches,
+recovered; every affected run grades `pass`).
 Run-to-run spread on the fleet instance was itself ~10–20 % (see the
 measurement README's caveats: the image's own execution environment,
 applied identically to both solvers on interleaved passes), so only deltas

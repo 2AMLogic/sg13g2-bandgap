@@ -18,8 +18,10 @@ already taken by the #557 report this one supersedes (same-day rotation;
 that report stays byte-identical as history). The only evidence that moved
 since the 18 Nov report is the two KLU re-time records of the supply benches
 (see "What moved since the 18 Nov report" below); like the 13 Nov rotation
-this one is **provenance-only**: the Iq grid reproduces the record it
-replaces figure-for-figure and the startup grid's claims are unchanged, so
+this one is **provenance-only**: on both re-minted grids the only shared
+column that moves is the femtoamp/picoamp `i_mkfb*` noise-floor current,
+which no verdict or quoted number reads, and the startup grid's claims are
+unchanged (45/45 self-start), so
 no verdict and no quoted number move — the DUT netlists, the spec table and
 every other selected record are unchanged.
 
@@ -72,13 +74,15 @@ and tolerances, a different sparse-LU kernel, adopted for the measured
 netlists, the testbench structure, the 45-point corner matrix and the spec
 rows are untouched.
 
-**Both grids reproduce the records they replace.** The Iq grid is
-figure-for-figure identical on every shared column (19.58 to 41.78 uA,
-45/45 PASS, 2/45 under the 20 uA stretch, worst bcs/125 C/3.63 V, margin to
-50 uA 16.4% — recomputed from both CSVs, maximum relative delta 0). The
-startup grid's claims are unchanged (45/45 self-start); the internal node
-voltages it stores differ by up to ~1.3% relative, the round-off expected
-from a solver swap under `reltol=5e-3`, and no verdict reads them.
+**Both grids reproduce the records they replace.** The Iq grid is identical
+on every verdict-bearing column (19.58 to 41.78 uA, 45/45 PASS, 2/45 under
+the 20 uA stretch, worst bcs/125 C/3.63 V, margin to 50 uA 16.4%); the one
+shared column that moves is `i_mkfb_a`, a ~1e-15…1e-13 A noise-floor
+current (33/45 points, max ~1.6% relative — recomputed from both CSVs; no
+verdict reads it). The startup grid's claims are unchanged (45/45
+self-start); its one moving column is the same noise-floor current
+(`i_mkfb_final_a`, 32/45 points, max ~1.3% relative), every stored node
+voltage is identical, and no verdict reads it.
 Accordingly the Iq and Startup verdicts below, their bounds, their binding
 corners and every number quoted for them are **unchanged**; this rotation
 exists so the actively cited report keeps citing each supply bench's newest
@@ -365,7 +369,7 @@ commit — for post-layout rows, on the extraction minted by this branch
 | **Temp coefficient** (-40 to 125 C): < 50 ppm/C; stretch < 20 | **Target met; stretch not met.** Box method, default code 128: two independent trim-bearing grids agree — `closed-loop-vref-boxtc-trim` 20.2 to 38.6 ppm/C and the 120-point grid 20.20 to 38.62 ppm/C (0 of 15 groups below 20, worst `bcs`/3.63 V in both); ±1-code band worst **45.7 ppm/C** (inside 50 by 8.6%). Endpoint method: -37.3 to -14.1 ppm/C | bcs / 3.63 V (box, both grids; code 127: 45.7); endpoint worst bcs / 3.63 V | No, corner-swept | `sim/closed-loop-vref-boxtc-trim/records/20261001-043806-729d889-boxtc.csv` (box, ratified row); `sim/closed-loop-vref-pvt-boxtc/records/20261116-024010-dc056b4c-boxtc.csv` (box, 120-point); `sim/closed-loop-vref-pvt/records/20261001-085908-e5507b2-tc.csv` (endpoint) | **Current** (schematic: all three trim-bearing). The PEX and pre-trim box-method records (20.1 / 19.8 ppm/C worst) **predate the current netlist** |
 | **PSRR @ DC**: > 60 dB; stretch > 70 | **Not met on current evidence; stretch not met.** The only current record is schematic: 59.685 to 100.400 dB, **44/45 above 60 dB** — the worst corner reads 59.685 dB, below the bound. The post-layout grid that met it (60.001 to 99.507 dB, 45/45, margin 0.0013 dB; 10/45 above 70) predates the current extraction and is history, not a current claim | bcs / 125 C / 3.63 V | No, corner-swept | `sim/closed-loop-psrr/records/20261113-085406-9d568b91.csv` (current); `sim/closed-loop-psrr-pex/records/20261004-030337-5553d523.csv` (history) | **Current** (schematic). The post-layout PSRR grid predates the current extraction |
 | **Supply**: 3.3 V ±10% (HV); stretch 1.2 V (LV) | **Met by construction** (rating argument, `0002` ratified); every current record sweeps 2.97/3.30/3.63 V. The 1.2 V stretch is a flavor statement, not measured | n/a | No | `spec/decision-records/0002-supply-voltage-scope.md` + `vdd_v` column of the records above | Current (grid); the argument itself is not simulated |
-| **Iq**: < 50 uA; stretch < 20 | **Met with caveats; stretch not met.** 19.58 to 41.78 uA, 45/45 under 50 (margin 16.4%); 2/45 under 20 uA. Pre-layout only | bcs / 125 C / 3.63 V | No, corner-swept | `sim/closed-loop-iq/records/20261118-072122-3e600d97.csv` (2026-11-18, KLU re-time; reproduces `20261001-092257-4fe07ea` figure-for-figure) | **Current** (schematic). No PEX Iq bench exists |
+| **Iq**: < 50 uA; stretch < 20 | **Met with caveats; stretch not met.** 19.58 to 41.78 uA, 45/45 under 50 (margin 16.4%); 2/45 under 20 uA. Pre-layout only | bcs / 125 C / 3.63 V | No, corner-swept | `sim/closed-loop-iq/records/20261118-072122-3e600d97.csv` (2026-11-18, KLU re-time; identical to `20261001-092257-4fe07ea` on every verdict-bearing column — only the `i_mkfb_a` noise-floor current moves) | **Current** (schematic). No PEX Iq bench exists |
 | **Startup**: self-starting, < 1 ms | **Met**: 45/45 self-start; every point released by the first 100 us checkpoint (~10x inside 1 ms; resolution 100 us). Post-layout: startup-cell trip point 45/45 | all points identical at the checkpoint resolution | No: pass counts | `sim/closed-loop-startup/records/20261118-082945-3e600d97.csv` (2026-11-18, KLU re-time; claims unchanged from `20261001-083332-e5507b2`); `sim/startup-time-to-release/records/20261001-085905-e5507b2.csv`; `sim/startup-trip-point-pex/records/20260905-033740-fe97115.csv` | **Current** (schematic). The startup trip-point PEX record predates the current extraction: the `bandgap_startup` layout it names is byte-identical, but the re-minted extraction (subcircuit `rhigh`, substrate tie) is the DUT now committed. No PEX time-to-release |
 
 ## Per-row notes
@@ -495,10 +499,11 @@ sweep exactly the 2.97/3.30/3.63 V grid the row specifies.
 
 Schematic only, current. 19.58 to 41.78 uA across 45 points; the 20 uA
 stretch is touched only at 2 points. The 2026-11-18 KLU re-time record
-reproduces its predecessor figure-for-figure (recomputed from both CSVs,
-maximum shared-column relative delta 0), so the switch of the direct
-solver moves the bench's provenance, not its numbers. No post-layout Iq
-bench exists; Iq is a DC bias quantity, but that is a judgment, not
+reproduces its predecessor on every verdict-bearing column (recomputed from
+both CSVs, the one moving shared column is `i_mkfb_a`, a ~1e-15…1e-13 A
+noise-floor current moving ≤ ~1.6% relative on 33/45 points), so the
+switch of the direct solver moves the bench's provenance, not its
+numbers. No post-layout Iq bench exists; Iq is a DC bias quantity, but that is a judgment, not
 evidence.
 
 ### Startup
@@ -506,9 +511,10 @@ evidence.
 Self-start 45/45 and time-to-release at the first 100 us checkpoint on all 45
 points, schematic, current (the self-start grid is the 2026-11-18 KLU
 re-time record; its claims are unchanged from the 2026-10-01 record it
-replaces — the stored node voltages move within the `reltol=5e-3` solver
-swap's round-off and no verdict reads them). The post-layout evidence is the
-startup cell's trip point (45/45, 2026-09-05), which exercises the extracted
+replaces — the one moving stored column is `i_mkfb_final_a`, a ~1e-15…1e-13
+A noise-floor current (32/45 points, max ~1.3% relative), every stored
+node voltage is identical, and no verdict reads it). The post-layout
+evidence is the startup cell's trip point (45/45, 2026-09-05), which exercises the extracted
 `bandgap_startup` layout; the startup trip-point PEX record predates the
 current extraction (the layout is byte-identical, the extraction is
 re-minted), it was never run against the trim-bearing assembly, and there

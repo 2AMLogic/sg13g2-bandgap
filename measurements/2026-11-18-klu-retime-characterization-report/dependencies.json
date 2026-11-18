@@ -2,7 +2,7 @@
  "schema_version": 1,
  "_comment": "Dependency inventory of the actively cited T1 item-8 report (issue #315). Checked by .github/scripts/check_report_dependencies.py: every DUT input, spec-table row, decision-record status, absent path and selected record below must still match the committed tree, and each selected record must still be its experiment's newest. Any mismatch means a NEW dated report (this one stays unchanged as history), a new inventory, envelope, manifest pin and regenerated signoff verdict. Hand-audited, never regenerated automatically.",
  "report": "measurements/2026-11-18-klu-retime-characterization-report/README.md",
- "report_sha256": "sha256:a780fff95d0806a440b316b7751b763c93010bdfdcc45027f10cf2e50c55b352",
+ "report_sha256": "sha256:5462c09e49e9f5ff53c9f3a0e87e2a41ee7343a7736851fc093295340ed687fa",
  "audited_commit": "73c420a2",
  "dut": [
   {
