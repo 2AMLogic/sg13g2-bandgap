@@ -93,6 +93,25 @@ appended.
 `sim/*/netlist-snapshots/` or `sim/*/corners/` may be modified or deleted
 relative to the merge base. A correction is a new `<record-id>`, never an edit.
 
+**F. Assembly-top leaf binding** — each top's `generate.py` does not redraw
+its leaves: it `layout.read()`s the committed leaf GDS files and instances
+them, so a top regenerated after an edited leaf silently stops matching its
+own leaves while every report beside it stays fresh (found live in #573's
+control experiment; issue #588). Each assembly generator therefore writes a
+`leaf_inputs.json` sidecar beside its GDS recording the sha256 of every leaf
+GDS it read, and this check re-derives each one. It fails when a leaf's hash
+differs, when a listed leaf is missing, and when a top GDS has no sidecar at
+all. Stale leaves are waived through the same
+`layout/evidence-freshness-waivers.json` mechanism as section D (and
+self-expire the same way). Deliberate limit, stated rather than hidden: the
+sidecar binds the *leaves* only — a top whose own inter-cell routing has
+drifted from its generator source is still caught only by re-running the
+byte-deterministic generator, which CI does not do (`hygiene` stays
+stdlib-only and klayout-free). A cell counts as an assembly top when its
+`generate.py` calls `write_leaf_inputs_sidecar` (the hook in
+`layout/_klayout_builder_base.py`), so a future assembly opts in by using the
+same helper.
+
 What is deliberately *not* checked: the prose inside a record field (a record is
 a human/agent-written argument, not a form), and the pass/fail *verdict* of the
 DRC/LVS reports. This repo's LVS legitimately reads `mismatch` today for reasons
@@ -184,6 +203,20 @@ ERC_STATUSES = frozenset({"clean", "violations", "clean_partial", "not_checked",
 
 WAIVER_FILE = "layout/evidence-freshness-waivers.json"
 WAIVER_REQUIRED_KEYS = ("report", "check", "recorded_hash", "issue", "reason")
+
+# --- assembly-top leaf binding, issue #588 ------------------------------------
+
+#: The sidecar each assembly top's generator writes beside its GDS
+#: (`layout/_klayout_builder_base.py`'s `write_leaf_inputs_sidecar`).
+SIDECAR_NAME = "leaf_inputs.json"
+
+#: The token whose presence in a `layout/<cell>/generate.py` marks that cell
+#: as an assembly top bound to leaf GDS files: the shared helper call every
+#: assembly top's `__main__` block makes. Leaf cells never call it, so this
+#: separates tops from leaves without a hand-maintained list a future
+#: assembly could forget to join. The name is duplicated from the producer on
+#: purpose — this checker is deliberately independent of the code it polices.
+SIDECAR_HOOK = "write_leaf_inputs_sidecar"
 
 # --- sim/ DUT-freshness constants --------------------------------------------
 
@@ -751,6 +784,94 @@ def _resolve_cell_file(cell_dir: Path, value) -> Path | None:
     return None
 
 
+def check_leaf_bindings(
+    report: Report,
+    root: Path,
+    cells: list[Path],
+    waivers: dict[tuple[str, str], dict],
+    used_waivers: set[tuple[str, str]],
+) -> None:
+    """Bind each assembly top's committed GDS to the leaf GDS files it embedded.
+
+    Issue #588: every per-report freshness anchor in section D binds a
+    *report* to the GDS committed beside it, so a top GDS regenerated while a
+    leaf went stale kept CI green with evidence describing a layout that no
+    longer equalled its own leaves. The `leaf_inputs.json` sidecar each
+    assembly generator writes beside its GDS closes that gap; this re-derives
+    every recorded leaf sha256 through the same waiver machinery
+    (`compare_recorded`) the report anchors use.
+    """
+    for cell_dir in cells:
+        generate = cell_dir / "generate.py"
+        try:
+            source = generate.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if SIDECAR_HOOK not in source:
+            continue
+        cell = cell_dir.name
+        sidecar = cell_dir / SIDECAR_NAME
+        sidecar_rel = str(sidecar.relative_to(root))
+        report.checked += 1
+        if not sidecar.is_file():
+            report.fail(
+                str(cell_dir.relative_to(root)),
+                f"no {SIDECAR_NAME} beside {cell}.gds — the committed top is not bound "
+                f"to the leaf GDS files it embedded; re-run layout/{cell}/generate.py "
+                f"to write it",
+            )
+            continue
+        try:
+            data = json.loads(sidecar.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            report.fail(sidecar_rel, f"is not valid JSON: {exc}")
+            continue
+        if not isinstance(data.get("schema_version"), int):
+            report.fail(sidecar_rel, "missing integer 'schema_version'")
+            continue
+        leaves = data.get("leaves")
+        if not isinstance(leaves, list) or not leaves:
+            report.fail(sidecar_rel, "missing non-empty 'leaves' array")
+            continue
+        paths: list[str] = []
+        for entry in leaves:
+            if not isinstance(entry, dict) or not isinstance(entry.get("path"), str) or not entry["path"]:
+                report.fail(sidecar_rel, f"leaf entry {entry!r} has no 'path'")
+                continue
+            paths.append(entry["path"])
+        if len(set(paths)) != len(paths):
+            report.fail(sidecar_rel, "lists a leaf path more than once")
+            continue
+        if paths != sorted(paths):
+            report.fail(
+                sidecar_rel,
+                f"leaf paths are not sorted — regenerate it with layout/{cell}/generate.py",
+            )
+            continue
+        for entry in leaves:
+            rel = entry["path"]
+            recorded = SHA256_RE.match(str(entry.get("sha256", "")).strip())
+            if not recorded:
+                report.fail(sidecar_rel, f"leaf {rel} records no sha256 digest")
+                continue
+            recorded_hex = recorded.group("hex")
+            leaf = (cell_dir / rel).resolve()
+            try:
+                leaf.relative_to(root.resolve())
+            except ValueError:
+                report.fail(sidecar_rel, f"leaf {rel} escapes the repository")
+                continue
+            if not leaf.is_file():
+                report.fail(sidecar_rel, f"leaf {rel} does not exist")
+                continue
+            actual = sha256_file(leaf)
+            compare_recorded(
+                report, sidecar_rel, f"leaf {rel}", recorded_hex, actual,
+                f"top embedded sha256:{recorded_hex}, but {rel} is now sha256:{actual}",
+                waivers, used_waivers, WAIVER_FILE,
+            )
+
+
 def check_layout(root: Path, report: Report) -> None:
     layout = root / "layout"
     if not layout.is_dir():
@@ -936,6 +1057,8 @@ def check_layout(root: Path, report: Report) -> None:
                                spec_path, waivers, used_waivers)
                 check_hash(report, root, rel, "input gds", _provenance_input_hash(data),
                            gds, waivers, used_waivers)
+
+    check_leaf_bindings(report, root, cells, waivers, used_waivers)
 
     report_unused_waivers(report, waivers, used_waivers, WAIVER_FILE)
 

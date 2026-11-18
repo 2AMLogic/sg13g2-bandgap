@@ -319,12 +319,12 @@ XQ3 cb3 cb3 vss vss npn13G2 Nx=1
 
 * Wire parasitics -- verbatim from the extraction, node names lowered
 * and the merged tap net renamed (see header).
-rcb2_t0 cb2__t0 cb2 23.024
-ccb2 cb2 vsubs 7.41581e-15
-rcb3_t0 cb3__t0 cb3 38.9487
-ccb3 cb3 vsubs 1.1950188e-14
-rsns1_t0 sns1__t0 sns1 15.1283
-csns1 sns1 vsubs 4.244144e-15
+rcb2_t0 cb2__t0 cb2 27.8805
+ccb2 cb2 vsubs 9.47633e-15
+rcb3_t0 cb3__t0 cb3 39.5298
+ccb3 cb3 vsubs 1.2212026e-14
+rsns1_t0 sns1__t0 sns1 14.5679
+csns1 sns1 vsubs 4.254508e-15
 rsns2_t0 sns2__t0 sns2 2.91618268835
 rsns2_t1 sns2__t1 sns2 3.24388944631
 rsns2_t2 sns2__t2 sns2 4.45932786534
@@ -1106,14 +1106,14 @@ rvref_t2 vref__t2 vref 1.81590982293
 rvref_t3 vref__t3 vref 5.71046168275
 cvref vref vsubs 5.052496e-15
 rvss vss vss__par 7.5152
-cvss vss__par vsubs 1.2491113e-14
+cvss vss__par vsubs 1.2362944e-14
 ccc_cb2_vdd cb2 vdd 8.235e-18
-ccc_cb2_vss cb2 vss__par 3.0251e-17
+ccc_cb2_vss cb2 vss__par 4.33601e-16
 ccc_cb3_t001_t003_t007_t015_t031_t063_t127_tn0 cb3 tn0_merged 1.1764e-17
 ccc_cb3_vdd cb3 vdd 8.235e-18
 ccc_cb3_vref cb3 vref 8.235e-18
-ccc_cb3_vss cb3 vss__par 2.0167e-17
-ccc_sns1_vss sns1 vss__par 3.0251e-17
+ccc_cb3_vss cb3 vss__par 7.0586e-17
+ccc_sns1_vss sns1 vss__par 5.0419e-17
 ccc_sns2_vdd sns2 vdd 8.235e-18
 ccc_t001_t003_t007_t015_t031_t063_t127_tn0_t002 tn0_merged t002 8.067e-17
 ccc_t001_t003_t007_t015_t031_t063_t127_tn0_t004 tn0_merged t004 8.067e-17

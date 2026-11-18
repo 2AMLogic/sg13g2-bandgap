@@ -181,9 +181,9 @@
         },
         {
           "layer": "Metal1",
-          "step_area_um2": 87.31,
-          "cumulative_area_um2": 113.086,
-          "antenna_ratio": 4.52344,
+          "step_area_um2": 87.906,
+          "cumulative_area_um2": 113.682,
+          "antenna_ratio": 4.54728,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -192,8 +192,8 @@
         {
           "layer": "Metal2",
           "step_area_um2": 14.68075,
-          "cumulative_area_um2": 127.76675,
-          "antenna_ratio": 5.11067,
+          "cumulative_area_um2": 128.36275,
+          "antenna_ratio": 5.13451,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -257,9 +257,9 @@
         },
         {
           "layer": "Metal1",
-          "step_area_um2": 31.277,
-          "cumulative_area_um2": 218.875,
-          "antenna_ratio": 10.94375,
+          "step_area_um2": 43.197,
+          "cumulative_area_um2": 230.795,
+          "antenna_ratio": 11.53975,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -267,9 +267,9 @@
         },
         {
           "layer": "Metal2",
-          "step_area_um2": 61.306875,
-          "cumulative_area_um2": 280.181875,
-          "antenna_ratio": 14.009094,
+          "step_area_um2": 61.149375,
+          "cumulative_area_um2": 291.944375,
+          "antenna_ratio": 14.597219,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -421,20 +421,10 @@
       "erc.net_connectivity:[\"VSS\"]"
     ],
     "skipped": [],
-    "inapplicable": [
-      {
-        "id": "erc.supply_short",
-        "missing": [
-          "--deck naming the PDK family, so the isolation layers can be measured",
-          "or assert ties[].isolation_boxes"
-        ],
-        "reason": "substrate_isolation_undecidable"
-      }
-    ],
+    "inapplicable": [],
     "unknown": [],
     "nothing_checked": false,
     "nothing_checked_reasons": [],
-    "missing_tie_checked": true,
     "checked_by_assertion": [],
     "checked_by_well_assertion": [],
     "layers_in_stream_without_declaration": [
@@ -452,14 +442,12 @@
   },
   "ties_disclosure": null,
   "provenance": {
-    "klt_version": "0.9.3.dev980+g4cea37f245b0",
-    "klt_git_commit": "4cea37f245b0f61159431fd68cbf0349d67af74f",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@4cea37f245b0f61159431fd68cbf0349d67af74f",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": null,
     "input": {
-      "content_hash": "sha256:86f8140b915d0bc630669ed2f0b9ed3fcd452cdb92bb79356e1af69027f9f327",
+      "content_hash": "sha256:dd8c2dbc735e5f3cb8b97fc12b5177578b1998f70fa305df03c010a508e45ac9",
       "role": "layout"
     },
     "spec": {
