@@ -35,6 +35,14 @@ What is shared:
   options; one that only needs a repo root takes `add_root_arg()` alone.
 - `tracked_files()` -- the committed tree as repo-relative paths, for the
   checkers that read what git tracks rather than what is on disk.
+- `git_out()` -- the `git -C <root> <args>` capture the two report-diffing
+  checkers run their plumbing through, returning `(returncode, stdout.strip())`
+  with stderr discarded; each caller words its own skip/fail message around
+  the return code.
+- `load_waiver_entries()` -- the waiver-file preamble (read-if-present,
+  JSON-parse, object shape, required keys, `#<number>` tracking issue) the
+  evidence-freshness and report-regression waiver loaders share; yields the
+  surviving entries for each caller's own keying and extra checks.
 """
 
 from __future__ import annotations
@@ -233,6 +241,23 @@ def discover_manifests(args: argparse.Namespace) -> "tuple[Path, list[Path]] | N
     return root, paths
 
 
+def git_out(root: Path, *args: str) -> tuple[int, str]:
+    """Run `git -C <root> ...`, returning `(returncode, stdout.strip())`.
+
+    The capture the two report-diffing checkers (`check_evidence_formats.py`'s
+    append-only walk, `check_report_regression.py`'s merge-base comparison)
+    run their `rev-parse` / `merge-base` / `diff` / `show` plumbing through:
+    text mode, `check=False`, stderr discarded -- each caller words its own
+    skip/fail message around the return code. `tracked_files()` below keeps
+    its own call instead: its `ls-files -z` contract needs the raw bytes and
+    the failing command's stderr, neither of which this returns.
+    """
+    proc = subprocess.run(
+        ["git", "-C", str(root), *args], capture_output=True, text=True, check=False
+    )
+    return proc.returncode, proc.stdout.strip()
+
+
 def tracked_files(root: Path) -> list[str]:
     """Every git-tracked path under `root`, repo-relative, in `ls-files` order.
 
@@ -252,3 +277,46 @@ def tracked_files(root: Path) -> list[str]:
               f"{proc.stderr.decode('utf-8', 'replace').strip()}", file=sys.stderr)
         raise SystemExit(2)
     return [p.decode("utf-8", "surrogateescape") for p in proc.stdout.split(b"\0") if p]
+
+
+def load_waiver_entries(
+    root: Path, report: Report, waiver_file: str, required_keys: tuple[str, ...]
+) -> Iterator[dict]:
+    """Yield a waiver file's schema-valid entries, reporting every defect.
+
+    The preamble the evidence-freshness and report-regression waiver loaders
+    carried as two drifting copies until issue #610: a missing file yields
+    nothing (no failure -- no waiver is the default state), while unreadable
+    JSON, a file that is not a JSON object with a 'waivers' list, a
+    non-object entry, a missing required key, or a tracking issue that is not
+    `#<number>` is a reported failure that drops that entry (or the whole
+    file). Each caller keys the survivors and adds its own extra checks on
+    top. A generator, so the diagnostics are emitted as it advances: consume
+    it to completion, or the later entries' defects go unreported.
+    """
+    path = root / waiver_file
+    if not path.is_file():
+        return
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        report.fail(waiver_file, f"is not valid JSON: {exc}")
+        return
+    if not isinstance(raw, dict) or not isinstance(raw.get("waivers"), list):
+        report.fail(waiver_file, "must be a JSON object with a 'waivers' list")
+        return
+    for entry in raw["waivers"]:
+        if not isinstance(entry, dict):
+            report.fail(waiver_file, f"waiver entry is not an object: {entry!r}")
+            continue
+        missing = [k for k in required_keys if not entry.get(k)]
+        if missing:
+            report.fail(waiver_file, f"waiver entry missing required key(s): {', '.join(missing)}")
+            continue
+        if not re.match(r"^#\d+$", str(entry["issue"])):
+            report.fail(
+                waiver_file,
+                f"waiver for {entry['report']} has issue {entry['issue']!r}; expected '#<number>'",
+            )
+            continue
+        yield entry

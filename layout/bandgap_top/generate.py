@@ -75,7 +75,7 @@ them::
     row B (top, y = 49.9 .. 124.7)
         bandgap_core     (-5.4, 49.9)-(185.4, 124.7)
           | 17.5 um gap |
-        bandgap_startup  (202.9, 51.7)-(253.0, 102.2)
+        bandgap_startup  (202.9, 51.7)-(256.94, 102.2)
 
     routing channel (y = 34 .. 46) -- five Metal1 buses, no leaf geometry
 
@@ -285,9 +285,10 @@ STARTUP_GDS = os.path.join(HERE, "..", "bandgap_startup", "bandgap_startup.gds")
 # `STARTUP_DX + local` and every bus spans its own riser set, so re-placing
 # the leaf moves its columns and stretches its buses with it. What is given
 # up is #177's "neither row overhangs the other" property (startup's right
-# edge, 208.0 + 44.972 = 252.972, now overhangs `bandgap_amp`'s 205.1) --
-# row B is simply the wider row now, and `_assert_column_pitch` below is
-# what actually guards the routing.
+# edge, 208.0 + 48.94 = 256.94 -- issue #573's grid-constrained fold widened
+# RPU's block 44.972 -> 48.94, from 252.972 -- now overhangs `bandgap_amp`'s
+# 205.1) -- row B is simply the wider row now, and `_assert_column_pitch`
+# below is what actually guards the routing.
 #
 # Every riser column in `_route` below is written as `<CELL>_DX + local`
 # rather than as a baked-in absolute, so re-placing moves the columns with
