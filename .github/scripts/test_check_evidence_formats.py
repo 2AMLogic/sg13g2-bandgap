@@ -299,7 +299,10 @@ def edit_json(path: Path, mutate) -> None:
 # --- cases -------------------------------------------------------------------
 #
 # Each case mutates the fixture in place and returns the substring the checker's
-# output must contain. A case returning None must leave the checker passing.
+# output must contain. A case returning a `(required, forbidden)` pair must find
+# `required` in the output (a str, or a tuple of fragments all of which must be
+# present) and `forbidden` absent from it. A case returning None must leave the
+# checker passing.
 
 
 def case_valid(_root: Path):
@@ -552,6 +555,23 @@ def case_waiver_without_issue(root: Path):
         encoding="utf-8",
     )
     return "missing required key(s): issue"
+
+
+def case_waiver_file_is_not_an_object(root: Path):
+    """A malformed waiver file is a schema failure, not a traceback (#610)."""
+    case_stale_drc_input(root)
+    (root / "layout/evidence-freshness-waivers.json").write_text(
+        json.dumps(["not an object"]), encoding="utf-8"
+    )
+    return "must be a JSON object with a 'waivers' list"
+
+
+def case_waiver_entry_is_not_an_object(root: Path):
+    case_stale_drc_input(root)
+    (root / "layout/evidence-freshness-waivers.json").write_text(
+        json.dumps({"waivers": ["not an object"]}), encoding="utf-8"
+    )
+    return "waiver entry is not an object"
 
 
 def case_waiver_silences_only_its_own_check(root: Path):
@@ -1122,6 +1142,33 @@ def case_leaf_sidecar_unsorted(root: Path):
     return "not sorted"
 
 
+def case_leaf_entry_without_path(root: Path):
+    """A dict entry carrying a sha256 but no 'path' is reported through the
+    normal Report output, not a crash (issue #595: the sha256 pass indexed
+    `entry["path"]` unconditionally)."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"][0].pop("path"))
+    return ((f"{TOP_SIDECAR}: leaf entry", "has no 'path'"), "Traceback")
+
+
+def case_leaf_entry_not_a_dict(root: Path):
+    """A bare string where a leaf entry belongs is reported, not a crash."""
+    edit_json(root / TOP_SIDECAR,
+              lambda d: d.update(leaves=["../synth_cell/synth_cell.gds"]))
+    return ((f"{TOP_SIDECAR}: leaf entry", "has no 'path'"), "Traceback")
+
+
+def case_leaf_entry_empty_path(root: Path):
+    """An empty-string 'path' is as unusable as a missing one."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"][0].update(path=""))
+    return ((f"{TOP_SIDECAR}: leaf entry", "has no 'path'"), "Traceback")
+
+
+def case_leaf_entry_non_string_path(root: Path):
+    """A non-string 'path' is as unusable as a missing one."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"][0].update(path=7))
+    return ((f"{TOP_SIDECAR}: leaf entry", "has no 'path'"), "Traceback")
+
+
 def case_leaf_binding_waived_is_loud_note(root: Path):
     """A stale leaf binding is waivable through the same mechanism as every
     report anchor (and self-expires the same way once regenerated)."""
@@ -1192,6 +1239,8 @@ CASES = [
     ("erc_report.json rejects a status outside the vocabulary", case_erc_bad_status_token),
     ("erc_report.json is stale after its supply spec is edited", case_erc_stale_spec),
     ("waiver without a tracking issue is rejected", case_waiver_without_issue),
+    ("waiver file that is not an object is rejected", case_waiver_file_is_not_an_object),
+    ("waiver entry that is not an object is rejected", case_waiver_entry_is_not_an_object),
     ("waiver silences only its own check", case_waiver_silences_only_its_own_check),
     ("obsolete waiver self-expires", case_obsolete_waiver_self_expires),
     ("waiver that guards nothing is rejected", case_waiver_guards_nothing),
@@ -1233,6 +1282,14 @@ CASES = [
     ("sidecar names a leaf that does not exist", case_missing_leaf),
     ("assembly top has no leaf_inputs.json beside its GDS", case_missing_sidecar),
     ("sidecar leaf paths are not sorted", case_leaf_sidecar_unsorted),
+    ("sidecar leaf entry without a 'path' is reported, not a crash",
+     case_leaf_entry_without_path),
+    ("sidecar leaf entry that is not a dict is reported, not a crash",
+     case_leaf_entry_not_a_dict),
+    ("sidecar leaf entry with an empty-string 'path' is reported, not a crash",
+     case_leaf_entry_empty_path),
+    ("sidecar leaf entry with a non-string 'path' is reported, not a crash",
+     case_leaf_entry_non_string_path),
     ("stale leaf binding downgraded to a note by a waiver",
      case_leaf_binding_waived_is_loud_note),
 ]
@@ -1286,6 +1343,15 @@ def main() -> int:
             if expected is None:
                 ok = code == 0
                 detail = "expected exit 0"
+            elif isinstance(expected, tuple):
+                required, forbidden = expected
+                fragments = required if isinstance(required, tuple) else (required,)
+                ok = code != 0 and all(f in output for f in fragments)
+                if forbidden:
+                    ok = ok and forbidden not in output
+                detail = (f"expected non-zero exit, "
+                          f"{' and '.join(map(repr, fragments))} in output, "
+                          f"and no {forbidden!r}")
             else:
                 ok = code != 0 and expected in output
                 detail = f"expected non-zero exit and {expected!r} in output"

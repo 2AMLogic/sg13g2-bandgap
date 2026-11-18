@@ -126,10 +126,9 @@ import csv
 import hashlib
 import json
 import re
-import subprocess
 from pathlib import Path
 
-from _ci_common import Report, sha256_file
+from _ci_common import Report, git_out, load_waiver_entries, sha256_file
 
 # --- sim/ convention constants (sim/README.md) -------------------------------
 
@@ -607,26 +606,13 @@ def check_sim(root: Path, report: Report) -> None:
 def load_waivers(
     root: Path, report: Report, waiver_file: str = WAIVER_FILE
 ) -> dict[tuple[str, str], dict]:
-    path = root / waiver_file
-    if not path.is_file():
-        return {}
-    try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        report.fail(waiver_file, f"is not valid JSON: {exc}")
-        return {}
+    """Key valid waiver entries by `(report, check)`, the unit a waiver silences.
+
+    The file/JSON/shape/required-key/issue-number preamble is
+    `_ci_common.load_waiver_entries`.
+    """
     waivers: dict[tuple[str, str], dict] = {}
-    for entry in raw.get("waivers", []):
-        missing = [k for k in WAIVER_REQUIRED_KEYS if not entry.get(k)]
-        if missing:
-            report.fail(waiver_file, f"waiver entry missing required key(s): {', '.join(missing)}")
-            continue
-        if not re.match(r"^#\d+$", str(entry["issue"])):
-            report.fail(
-                waiver_file,
-                f"waiver for {entry['report']} has issue {entry['issue']!r}; expected '#<number>'",
-            )
-            continue
+    for entry in load_waiver_entries(root, report, waiver_file, WAIVER_REQUIRED_KEYS):
         waivers[(entry["report"], entry["check"])] = entry
     return waivers
 
@@ -833,12 +819,15 @@ def check_leaf_bindings(
         if not isinstance(leaves, list) or not leaves:
             report.fail(sidecar_rel, "missing non-empty 'leaves' array")
             continue
-        paths: list[str] = []
+        entries: list[dict] = []
         for entry in leaves:
             if not isinstance(entry, dict) or not isinstance(entry.get("path"), str) or not entry["path"]:
                 report.fail(sidecar_rel, f"leaf entry {entry!r} has no 'path'")
                 continue
-            paths.append(entry["path"])
+            entries.append(entry)
+        if len(entries) != len(leaves):
+            continue
+        paths = [entry["path"] for entry in entries]
         if len(set(paths)) != len(paths):
             report.fail(sidecar_rel, "lists a leaf path more than once")
             continue
@@ -848,7 +837,7 @@ def check_leaf_bindings(
                 f"leaf paths are not sorted — regenerate it with layout/{cell}/generate.py",
             )
             continue
-        for entry in leaves:
+        for entry in entries:
             rel = entry["path"]
             recorded = SHA256_RE.match(str(entry.get("sha256", "")).strip())
             if not recorded:
@@ -1508,27 +1497,20 @@ def check_sim_freshness(root: Path, report: Report) -> None:
 # --- append-only -------------------------------------------------------------
 
 
-def _git(root: Path, *args: str) -> tuple[int, str]:
-    proc = subprocess.run(
-        ["git", "-C", str(root), *args], capture_output=True, text=True, check=False
-    )
-    return proc.returncode, proc.stdout.strip()
-
-
 def check_append_only(root: Path, base_ref: str, required: bool, report: Report) -> None:
-    code, _ = _git(root, "rev-parse", "--git-dir")
+    code, _ = git_out(root, "rev-parse", "--git-dir")
     if code != 0:
         message = "not a git checkout — append-only evidence check cannot run"
         report.fail("append-only", message) if required else report.note(f"SKIP: {message}")
         return
 
-    code, base = _git(root, "merge-base", base_ref, "HEAD")
+    code, base = git_out(root, "merge-base", base_ref, "HEAD")
     if code != 0 or not base:
         message = f"no merge base with {base_ref} — append-only evidence check cannot run"
         report.fail("append-only", message) if required else report.note(f"SKIP: {message}")
         return
 
-    code, out = _git(root, "diff", "--name-status", "--diff-filter=MDR", f"{base}...HEAD")
+    code, out = git_out(root, "diff", "--name-status", "--diff-filter=MDR", f"{base}...HEAD")
     if code != 0:
         message = f"git diff against {base[:12]} failed"
         report.fail("append-only", message) if required else report.note(f"SKIP: {message}")

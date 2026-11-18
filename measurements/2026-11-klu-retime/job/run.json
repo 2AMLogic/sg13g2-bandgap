@@ -1,0 +1,24 @@
+{
+ "kind": "repo-script",
+ "repo": "2AMLogic/sg13g2-bandgap",
+ "commit": "17be349822d2669d11859b1feff1d7280001f8b1",
+ "script": "measurements/2026-11-klu-retime/retime_job.sh",
+ "shard": "s00",
+ "exit_code": 0,
+ "requirements_exit_code": 0,
+ "started_at": "2026-11-18T04:38:55Z",
+ "wall_seconds": 3176,
+ "instance_type": "m7i.4xlarge",
+ "image_id": "ami-09c14f55df4958cbd",
+ "retry_count": 0,
+ "input_sha256": {
+  "source_tarball": "d35b26771302aecb187bbb820b32577430758932551dba7f293d55bacc1cfac8",
+  "runner": "6649ba4d3bec681d36e9a98304171ef99f1f097772dbac54bb91949b50ca5565"
+ },
+ "outputs": {
+  "found": [
+   "measurements/2026-11-klu-retime/out"
+  ],
+  "missing": []
+ }
+}

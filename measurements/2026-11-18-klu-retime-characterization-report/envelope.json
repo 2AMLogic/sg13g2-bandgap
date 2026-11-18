@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 8,
+  "summary": "aggregated characterization report for all seven spec-table rows (Output reference as nominal/untrimmed/trimmed lines) at audited commit 73c420a2: the only evidence that moved since the 2026-11-18 report is issue #518's KLU direct-solver adoption on the two supply benches, whose re-minted 45-point grids (sim/closed-loop-iq 20261118-072122-3e600d97, sim/closed-loop-startup 20261118-082945-3e600d97) become those experiments' newest records; the rotation is provenance-only — on both re-minted grids the only moving shared column is the femtoamp/picoamp i_mkfb* noise-floor current, which no verdict or quoted number reads, and the startup grid's claims are unchanged (45/45 self-start), so no verdict and no quoted number move; the three post-layout benches (PSRR-PEX, Zout-PEX, startup trip-point) remain disclosed as predating the current extraction and the PSRR row's verdict stays not-met-on-current-evidence; each row carries bound, verdict, binding corner, statistical flag, newest committed record and a current-or-predates-the-netlist freshness mark; every quoted number spot-checked against its committed CSV; pass attests report completeness and citation honesty, not that every row meets its bound",
+  "source": "README.md",
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:5462c09e49e9f5ff53c9f3a0e87e2a41ee7343a7736851fc093295340ed687fa",
+      "path": "README.md"
+    }
+  }
+}
