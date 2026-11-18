@@ -235,61 +235,51 @@ host a multi-corner grid must go through `--batch`: `run_pvt_sweep.sh` (removed 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.
 
-## Solve time under KLU (issue #489, measured 2026-11-15)
+## Solve time under KLU (issues #489/#518; re-timed 2026-11-18, adopted)
 
 Issue #469 adopted the KLU direct linear solver on
 [`../closed-loop-vref-pvt-boxtc/`](../closed-loop-vref-pvt-boxtc/README.md)
 after a measured 17× hot-corner win there (3643 s → 211 s on
 typ/100 °C/2.97 V), and #488 then had to carve this bench's body out of the
-cross-bench solver-options claim. Before inverting that claim back, the
-question this issue asks is whether `klu` buys *this* bench anything: same
-DUT and fixture as the boxtc body, `reltol=5e-3` kept, on a comparable long
-transient (`tran 50n 3m`). Both corners the issue names were timed under the
-ngspice default (SPARSE 1.3) and under `.options … klu`: one local corner
-per setting through the committed templates (`run_klt_sim.sh --sanity` for
-the sanity corner, whose anchor bands the driver enforces itself; a scratch
-one-corner `klt sim` request for the hot corner, the method the boxtc README
-documents), on a dispatch host with ngspice 47 (compiled with KLU) and klt
-0.9.3.dev3. Each run's solver was confirmed from its own
-`Using … Direct Linear Solver` log line (never inferred from the option
-being present); wall is the corner's engine wall clock from the `klt sim`
-report. No evidence record was minted or touched — this is a timing
-measurement, not a claim refresh.
+cross-bench solver-options claim. #489 timed both corners under each solver
+(its 2026-11-15 single-run table — sanity 133.9 s SPARSE / 168.8 s KLU, hot
+249.6 s / 153.7 s, answers identical at 6 significant figures) and, because
+those walls were taken one-run-per-setting on a contended dispatch host
+during PR #501's review (load average 43–63 on 16 cores; an identical
+re-run of the 133.9 s cell did not finish inside a 900 s cap), drew no
+solver attribution from them and adopted nothing — every wall in that table
+was disclaimed by its own README text. #518 closed the question with a
+proper re-time, on the host class the 2026-11-17 operator ruling approved:
+**one repo-script batch job on one dedicated sim-image fleet instance**
+(m7i.4xlarge, 16 vCPU), every cell serial, 5–6 repeats per cell, each run's
+solver confirmed from that run's own `Using … Direct Linear Solver` log
+line and its answers checked against the committed CSV at 6 significant
+figures. Method, caveats and per-run raw evidence:
+[`../../measurements/2026-11-klu-retime/`](../../measurements/2026-11-klu-retime/README.md).
 
-| corner | setting | wall (s) | `fb_v` (V) | `iq_avg_a` (A) | verdict |
-|---|---|---:|---|---|---|
-| typ / 27 °C / 3.30 V (sanity) | SPARSE 1.3 (default) | 133.9 | 2.49682 | 2.80682e-05 | sanity gate PASS, delta 0 |
-| typ / 27 °C / 3.30 V (sanity) | `.options … klu` | 168.8 | 2.49682 | 2.80682e-05 | answers identical |
-| typ / 125 °C / 2.97 V (hot) | SPARSE 1.3 (default) | 249.6 | 2.22558 | 3.62959e-05 | matches the committed CSV row exactly |
-| typ / 125 °C / 2.97 V (hot) | `.options … klu` | 153.7 | 2.22558 | 3.62959e-05 | answers identical |
+Engine wall, s (min / median / max of 5–6 serial repeats on that instance):
 
-Answer preservation: the sanity corner lands on both anchors (`iq_avg_a
-2.80682e-05 ± 2.8e-8`, `fb_v 2.49682 ± 0.005`) with delta 0 under **both**
-solvers; the hot corner reproduces the committed
-`20261001-092257-4fe07ea` typ/125 °C/2.97 V row (`fb_v = 2.22558`,
-`iq_avg_a = 3.62959e-05`) to all 6 reported significant figures under both
-solvers.
+| corner | SPARSE 1.3 (default) | KLU | Δ(min) | verdict |
+|---|---|---|---:|---|
+| typ / 27 °C / 3.30 V (sanity) | 79.0 / 86.2 / 95.6 | 76.0 / 88.8 / 90.0 | 3.0 | not resolved (spread 16.6 / 14.0 > Δ) |
+| typ / 125 °C / 2.97 V (hot) | 107.2 / 116.2 / 119.7 | 74.6 / 86.6 / 87.4 | 32.6 | **resolved: KLU wins, 1.44× (min), 1.34× (median)** |
 
-**Verdict: not adopted.** KLU is answer-preserving here exactly as it was on
-the boxtc bench, but this bench has no hole for it to fill: the committed
-grid completed all 45 points inside the request's `timeout_s` of 1800 s on
-the fleet — record `20261001-092257-4fe07ea` marks 45/45 points PASS under
-these templates — and that cap is a fleet limit, not a property of this
-host, so there is no measured solve-time problem for a different
-factorization to relieve. The boxtc contrast still holds: its 100 °C point
-that drove the 17× adoption there ran to 3643 s, past its cap. The templates keep
-the ngspice SPARSE default and no deck changed: the body template's
-cross-bench solver claim (its lines 9–14) stays exactly as #469/#488 left
-it — shared with boxtc except that body's `klu` pin, this body on the
-SPARSE default — which this measurement supports as the right trade for
-this bench. The `singular matrix` recovery diagnostic the hot corner is
-known for occurs identically under both solvers (one warning per run,
-recovered; the corner grades `pass` with identical answers). Single local
-corner per setting, on a contended dispatch host: during review, an
-identical re-run of the recorded-133.9 s sanity/SPARSE configuration did
-not finish within a 900 s cap (load average 43–63 on 16 cores), so a
-single-run wall clock here carries run-to-run spread larger than any delta
-in the table. No per-cell delta above therefore supports a solver
-attribution — the wall-clock column is descriptive only, and no wall clock
-in the table, nor any fraction derived from one, carries weight on this
-host; the verdict rests on the committed grid above instead.
+Answer preservation: every run of the re-time landed on the committed
+anchors at 6 significant figures (`fb_v` 2.49682 / 2.22558, `iq_avg_a`
+2.80682e-05 / 3.62959e-05), and the `singular matrix` recovery diagnostic
+the hot corner is known for occurred identically under both solvers
+(one warning per run, recovered; the corner grades `pass`). Run-to-run
+spread on the fleet instance was itself ~10–20 % (see the measurement
+README's caveats: the image's own execution environment, applied
+identically to both solvers on interleaved passes), so only deltas that
+exceed the spread — never absolute seconds — carry the verdict.
+
+**Verdict: adopted (#518).** The hot corner's win is resolved with Δ ≫
+spread, the 27 °C corner shows no resolved difference either way, and KLU
+is answer-preserving — so the body template now pins
+`.options reltol=5e-3 klu`, #488's cross-bench carve-out is reverted (all
+three closed-loop supply benches pin KLU), and the committed grid was
+re-run under the adopted deck through this bench's `run_klt_sim.sh`:
+record `20261118-072122-3e600d97` marks 45/45 points PASS with every value
+identical to `20261001-092257-4fe07ea` at 6 significant figures.
+`timeout_s` stays 1800: no corner approached it under either solver.

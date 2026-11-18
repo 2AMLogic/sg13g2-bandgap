@@ -81,8 +81,10 @@ the request `_comment` timing notes, and #488's "except that body's klu
 direct-solver pin" carve-out reverted — all three closed-loop supply
 benches now pin KLU. The 45-point grids were re-run through each bench's
 `run_klt_sim.sh --batch` on the adopted templates (new records in each
-bench's `records/`; see the bench READMEs). `timeout_s` stays 1800: no
-corner was anywhere near it under either solver.
+bench's `records/`: iq `20261118-072122-3e600d97`, startup
+`20261118-082945-3e600d97`, both 45/45 PASS with every value identical to
+the pre-adoption records at 6 significant figures; see the bench READMEs).
+`timeout_s` stays 1800: no corner was anywhere near it under either solver.
 
 ## Caveats, stated plainly
 
