@@ -217,12 +217,13 @@ pre-existing #572 class), and curated-deck LVS
 `match` on `bandgap_amp` and `bandgap_startup`, `mismatch` on
 `bandgap_core` — its three unrecognised `NPN13G2` devices,
 klayout-tools#1242, permanent — and on `bandgap_top`, whose re-mint
-under the DR-0016 pin reads 1022 findings / 1018
-error-severity: the `NPN13G2` cause is only 4 of the 1018, the `rhigh`
-parameter delta is closed (#563's reference fix landed), and
-the rest is the deck's resistor-class pairing regression
-(klayout-tools#6313 — layout `rppd` no longer pairs with reference
-`RPPD`, so zero resistors match); `layout/README.md` holds the itemized
+under the DR-0016 pin (on the #579 merged GDS, against #561 step 1's
+`rppd.sym`-derived reference) reads 8 findings / 4 error-severity: the
+resistor-class pairing regression that dominated every earlier mint
+(klayout-tools#6313) is fixed at its root by the re-derived reference, and
+the residual 4 are exactly the permanent `NPN13G2`
+bipolar-recognition cause (the `rhigh` parameter delta was already closed
+by #563's reference fix); `layout/README.md` holds the itemized
 breakdown. The
 `bandgap_top` PDK-runset LVS that T1 item 4 cites is still `mismatch` —
 no MOS or HBT recognized (#380, #381). Verdict of record:

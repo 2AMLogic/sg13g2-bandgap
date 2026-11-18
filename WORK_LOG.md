@@ -10,6 +10,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-18
+
+- **PR #574**: fix(layout): enclose core/top Via1 landings in Metal2 at the deck's fixed 0.19 um
+- **Issue #557** (closed): layout: remaining via1 end-cap/size defects in bandgap_core, bandgap_startup, bandgap_top under the current sg13g2 deck
+
 ### 2026-11-17
 
 - **PR #569**: docs: correct rhigh trace narrative (schematic path, unmatched split)

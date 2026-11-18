@@ -238,15 +238,61 @@ def _sg13g2_rhigh_ohms(w_um: float, l_um: float) -> float:
     the flat reference and exactly what the schematic's own symbol
     annotates. The layout was correct all along; the reference's flat sheet
     approximation was the stale side, so ``rhigh`` now evaluates the PDK's
-    own formula here too. ``rppd``/``rsil`` stay on the flat table: no
-    committed report compares their ``r`` today (the 0.8.0 deck's
-    resistor-class pairing regression, klayout-tools#6313, keeps every
-    ``rppd`` from reaching parameter comparison), and updating them ahead of
-    that upstream fix would change reference values no current evidence
-    exercises.
+    own formula here too. ``rppd`` joined it in issue #561 (same stale-
+    reference mechanism, measured live once 0.8.0-era reports exercised
+    its ``R``); ``rsil`` is the only flavour left on the flat table -- no
+    netlist this repo converts instantiates one.
     """
     w_m, l_m = w_um * 1e-6, l_um * 1e-6
     return 1.6e-4 / w_m + 1360.0 * l_m / (w_m - 0.04e-6)
+
+
+def _sg13g2_rppd_ohms(w_um: float, l_um: float) -> float:
+    """SG13G2 ``rppd`` resistance, evaluated with **that PDK's own** symbol
+    formula rather than the flat ``_RES_SHEET_OHM_PER_SQ`` approximation
+    (issue #561 -- the same stale-reference class :func:`_sg13g2_rhigh_ohms`
+    fixed for ``rhigh`` in #563, now measured live on ``bandgap_core``:
+    every ``rppd`` failed device pairing under the 0.8.0 deck because the
+    stale flat values lose the pair, klayout-tools#6313's closing note).
+
+    Read verbatim from IHP-Open-PDK v0.3.0's
+    ``ihp-sg13g2/libs.tech/xschem/sg13g2_pr/rppd.sym``'s ``value=``
+    expression::
+
+        ( 70.0e-6 / @w + 260.0 * ( (@b + 1)* @l
+         + ( 1.081*( @w + 6.0e-9 ) + 0.18e-6 )*@b ) / ( @w + 6.0e-9 ) ) / @m
+
+    with ``b=0`` and ``m=1`` -- every ``rppd`` call in
+    ``design/netlist/bandgap_core.spice``/``bandgap_top.spice`` carries
+    exactly that (257 of each, verified), so the bend and multiplier terms
+    drop out: a ``70.0e-6 ohm*m`` end/contact term plus 260 ohm/sq over the
+    width-corrected ``w + 6 nm``. The constants are *identical* to the
+    SG13CMOS5L sibling :func:`_cmos5l_rppd_ohms` transcribes -- same IHP
+    resistor family, the same reason the ``rhigh`` pair was (issue #74) --
+    and to klt 0.8.0's own deck entry (``decks/sg13g2.py``:
+    ``end_term_ohm_um=70.0``, ``width_offset_um=0.006``,
+    ``sheet_rho_ohm_sq=260.0``, citing this same ``.sym`` per
+    klayout-tools#2652), which is what makes the reference value reproduce
+    the extracted one.
+
+    Why the flat approximation had to retire here (the #561/#6313
+    mechanism): the deck's ``rppd`` extraction gained these end-term and
+    width-offset rspec terms at klt 0.7.0 (#2652) and the abutting-heads
+    recognition at 0.8.0 (#2679), so a reference value committed against
+    the 0.6.0-era plain ``260*L/W`` sheet math no longer equals what the
+    deck extracts from the same GDS. ``R`` is a compared parameter for this
+    cell's ``rppd`` class (``lvs_request.json`` ``compare_parameters``), and
+    a compared parameter that differs fails the device *pairing* -- one
+    stale value fails the whole class and cascades into ``net.unmatched``
+    (517 ``device.unmatched`` + 504 ``net.unmatched`` on ``bandgap_core``,
+    the issue's own before-measurement). Reference values are written at
+    six decimal places (see :func:`_res_element_line`) so the round-trip
+    stays inside the comparer's 1e-6 relative parameter threshold at
+    two-ohm-magnitude too, where the ``rhigh`` magnitudes' ``.1f`` rounding
+    happened to already sit inside it.
+    """
+    w_m, l_m = w_um * 1e-6, l_um * 1e-6
+    return 70.0e-6 / w_m + 260.0 * l_m / (w_m + 6.0e-9)
 
 
 #: ``pdk="sg13g2"`` resistor flavours promoted from the flat
@@ -255,6 +301,7 @@ def _sg13g2_rhigh_ohms(w_um: float, l_um: float) -> float:
 #: this table keep the flat sheet-resistance path below.
 _SG13G2_RES_OHMS = {
     "rhigh": _sg13g2_rhigh_ohms,
+    "rppd": _sg13g2_rppd_ohms,
 }
 
 
@@ -264,14 +311,25 @@ def _res_element_line(
     model_lower: str,
     params: dict[str, str],
     r_ohm: float,
+    r_fmt: str = ".1f",
 ) -> str:
     """Format one plain-element R-element line, given its already-computed
     resistance -- shared by the SG13G2 sheet-resistance path and the
     CMOS5L symbol-formula path in :func:`_convert_device_line`, which
-    differ only in how ``r_ohm`` is derived."""
+    differ only in how ``r_ohm`` is derived.
+
+    ``r_fmt`` is the value's own float format spec. The default ``.1f``
+    covers the paths whose values no committed request compares; the
+    SG13G2 symbol-formula path passes ``.6f`` (issue #561): those values
+    feed a compared ``R`` parameter, and the decimal round-trip must stay
+    inside ``klt lvs``'s own 1e-6 relative parameter threshold --
+    ``.1f``'s half-milliare rounding is a ~7e-5 relative error on a
+    480-ohm ``rppd`` and would lose the pairing all over again, while
+    ``.6f``'s 5e-7 absolute rounding is below the threshold at every
+    magnitude this design's resistors reach (479.566301 ohm upward)."""
     n1, n2, _sub = nodes
     return (
-        f"{_element_name(instance, 'R')} {n1} {n2} {r_ohm:.1f} "
+        f"{_element_name(instance, 'R')} {n1} {n2} {format(r_ohm, r_fmt)} "
         f"{model_lower} L={_um(params['l'])} W={_um(params['w'])}"
     )
 
@@ -422,15 +480,21 @@ def _convert_device_line(line: str, pdk: str) -> str:
         # `rppd`/`rhigh`).
         l_um = float(params["l"].rstrip("uU"))
         w_um = float(params["w"].rstrip("uU"))
-        # `rhigh` evaluates the PDK's own symbol formula (issue #563 -- see
-        # `_sg13g2_rhigh_ohms`); the other flavours stay on the flat sheet
-        # table.
+        # Formula flavours evaluate the PDK's own symbol formula (issue
+        # #563 for `rhigh`, #561 for `rppd`); the remaining flavours stay
+        # on the flat sheet table. A formula flavour's value feeds a
+        # compared `R` parameter on this PDK's requests, so it is written
+        # at six decimals (see `_res_element_line`'s `r_fmt`); the flat
+        # values keep the historical one-decimal form.
+        formula_path = model_lower in _SG13G2_RES_OHMS
         r_ohm = (
             _SG13G2_RES_OHMS[model_lower](w_um, l_um)
-            if model_lower in _SG13G2_RES_OHMS
+            if formula_path
             else _RES_SHEET_OHM_PER_SQ[model_lower] * (l_um / w_um)
         )
-        return _res_element_line(instance, nodes, model_lower, params, r_ohm)
+        return _res_element_line(
+            instance, nodes, model_lower, params, r_ohm, ".6f" if formula_path else ".1f"
+        )
     else:
         raise ValueError(f"unrecognised device model {model!r} on line: {line}")
 
