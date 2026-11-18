@@ -1,14 +1,11 @@
 {
-  "schema_version": 3,
+  "schema_version": 2,
   "engine": "klayout",
   "layout": {
     "path": "layout/bandgap_amp/bandgap_amp.gds",
     "scope": "repo"
   },
-  "reference": {
-    "path": "layout/bandgap_amp/bandgap_amp.lvs_reference.spice",
-    "scope": "repo"
-  },
+  "reference": "bandgap_amp.lvs_reference.spice",
   "top": "bandgap_amp",
   "reference_top": ".TOP",
   "parameter_tolerance": null,
@@ -25,7 +22,6 @@
     "anchor_top_level_pins": null,
     "strict_top_level_pin_count": false,
     "compare_mos_flavour": false,
-    "ignore_mos_bulk": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -47,7 +43,6 @@
     "instance_count": 0,
     "expected_nets": null,
     "unchecked_expected_pins": [],
-    "excluded_pins": [],
     "findings": [],
     "finding_count": 0
   },
@@ -59,64 +54,7 @@
     "findings": [],
     "finding_count": 0
   },
-  "device_parameter_coverage": [
-    {
-      "class": "nfet",
-      "device_kind": "mos",
-      "layout_devices": 4,
-      "reference_devices": 4,
-      "compared": [
-        "L",
-        "W"
-      ],
-      "not_compared": [
-        {
-          "parameter": "AS",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "AD",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "PS",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "PD",
-          "reason": "secondary"
-        }
-      ]
-    },
-    {
-      "class": "pfet",
-      "device_kind": "mos",
-      "layout_devices": 5,
-      "reference_devices": 5,
-      "compared": [
-        "L",
-        "W"
-      ],
-      "not_compared": [
-        {
-          "parameter": "AS",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "AD",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "PS",
-          "reason": "secondary"
-        },
-        {
-          "parameter": "PD",
-          "reason": "secondary"
-        }
-      ]
-    }
-  ],
+  "device_parameter_coverage": [],
   "mismatch_count": 0,
   "error_count": 0,
   "category_counts": {},
@@ -158,15 +96,13 @@
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.9.3.dev517+gc6ecffcb8e56",
-    "klt_git_commit": "c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
+    "klt_version": "0.8.0",
     "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:d407265de045dc59cecc28793f70ac9734069a6fb8bae06daa9b9f2e04961602",
-      "released": false
+      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
+      "released": true
     },
     "input": {
       "content_hash": "sha256:00922ef0324bd7713c1a8fddfc278f7b62931b6c7725e0eebefe0f68660f0cdb",

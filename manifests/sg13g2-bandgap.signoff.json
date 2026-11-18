@@ -73,23 +73,21 @@
             "10/25",
             "28/0",
             "33/0",
+            "63/0",
             "111/0",
             "128/0",
             "128/1"
           ],
           "rules_skipped": [
             "metal2.enclosing.via2.1",
-            "metal3.enclosing.via2.1",
             "metal3.enclosing.via3.1",
             "metal3.space.1",
             "metal3.width.1",
-            "metal4.enclosing.via3.1",
             "metal4.enclosing.via4.1",
             "metal4.space.1",
             "metal4.width.1",
             "metal5.enclosing.mim.1",
             "metal5.enclosing.topvia1.1",
-            "metal5.enclosing.via4.1",
             "metal5.space.1",
             "metal5.width.1",
             "mim.enclosing.topvia1.1",
@@ -114,7 +112,6 @@
           "deck_scope": [
             "Act",
             "Cnt",
-            "Cont upper-landing containment (curated)",
             "Gat",
             "M1",
             "M2",
@@ -123,7 +120,6 @@
             "M5",
             "MIM",
             "NW",
-            "Offgrid",
             "TM1",
             "TM2",
             "TV1",
@@ -132,10 +128,6 @@
             "V2",
             "V3",
             "V4",
-            "Via1 upper-landing containment (curated)",
-            "Via2 upper-landing containment (curated)",
-            "Via3 upper-landing containment (curated)",
-            "Via4 upper-landing containment (curated)",
             "pSD"
           ]
         }
@@ -168,23 +160,21 @@
             "10/25",
             "28/0",
             "33/0",
+            "63/0",
             "111/0",
             "128/0",
             "128/1"
           ],
           "rules_skipped": [
             "metal2.enclosing.via2.1",
-            "metal3.enclosing.via2.1",
             "metal3.enclosing.via3.1",
             "metal3.space.1",
             "metal3.width.1",
-            "metal4.enclosing.via3.1",
             "metal4.enclosing.via4.1",
             "metal4.space.1",
             "metal4.width.1",
             "metal5.enclosing.mim.1",
             "metal5.enclosing.topvia1.1",
-            "metal5.enclosing.via4.1",
             "metal5.space.1",
             "metal5.width.1",
             "mim.enclosing.topvia1.1",
@@ -209,7 +199,6 @@
           "deck_scope": [
             "Act",
             "Cnt",
-            "Cont upper-landing containment (curated)",
             "Gat",
             "M1",
             "M2",
@@ -218,7 +207,6 @@
             "M5",
             "MIM",
             "NW",
-            "Offgrid",
             "TM1",
             "TM2",
             "TV1",
@@ -227,10 +215,6 @@
             "V2",
             "V3",
             "V4",
-            "Via1 upper-landing containment (curated)",
-            "Via2 upper-landing containment (curated)",
-            "Via3 upper-landing containment (curated)",
-            "Via4 upper-landing containment (curated)",
             "pSD"
           ]
         }

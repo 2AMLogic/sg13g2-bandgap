@@ -1,11 +1,15 @@
 {
-  "schema_version": 1,
-  "file": "layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds",
+  "schema_version": 2,
+  "file": {
+    "path": "layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds",
+    "scope": "repo"
+  },
   "spec": "layout/sg13cmos5l-bandgap_top/erc-supply-spec.json",
   "pdk": null,
   "findings_only": false,
   "gate_role": "GatPoly",
   "gate_count": 7,
+  "antenna_tables_omitted": false,
   "gates": [
     {
       "gate_id": "gate0",
@@ -202,6 +206,28 @@
           "remedy": null
         }
       ]
+    }
+  ],
+  "nets": [
+    {
+      "name": "vdd",
+      "matched_islands": 1,
+      "expected_islands": 1,
+      "roles": [],
+      "unlabelled_islands": null,
+      "unlabelled_area_um2": null,
+      "unlabelled_bbox": null,
+      "unlabelled_allowed_islands": null
+    },
+    {
+      "name": "vss",
+      "matched_islands": 1,
+      "expected_islands": 1,
+      "roles": [],
+      "unlabelled_islands": null,
+      "unlabelled_area_um2": null,
+      "unlabelled_bbox": null,
+      "unlabelled_allowed_islands": null
     }
   ],
   "erc_findings": [
@@ -453,12 +479,21 @@
     "nothing_checked": false,
     "nothing_checked_reasons": [],
     "checked_by_assertion": [],
-    "checked_by_well_assertion": []
+    "checked_by_well_assertion": [],
+    "layers_in_stream_without_declaration": [
+      "14/0",
+      "28/0",
+      "44/0",
+      "63/0",
+      "111/0",
+      "128/0"
+    ],
+    "well_assertion_coverage": []
   },
   "ties_disclosure": null,
   "provenance": {
-    "klt_version": "0.6.0",
-    "klayout_version": "0.30.10",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": null,
     "input": {
@@ -468,6 +503,14 @@
     "spec": {
       "content_hash": "sha256:d01f01b8b87543fab5ad26e6100d03d744d6e3151a67149e97d0e27d5f2881bf"
     },
-    "devices": []
+    "devices": [],
+    "net_exclusions": [],
+    "label_layers": [
+      {
+        "name": "Metal1",
+        "label_layer": "8/2",
+        "label_text_count": 80
+      }
+    ]
   }
 }

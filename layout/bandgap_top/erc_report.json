@@ -4,7 +4,7 @@
     "path": "layout/bandgap_top/bandgap_top.gds",
     "scope": "repo"
   },
-  "spec": "erc-supply-spec.json",
+  "spec": "layout/bandgap_top/erc-supply-spec.json",
   "pdk": null,
   "findings_only": false,
   "gate_role": "GatPoly",
@@ -421,20 +421,10 @@
       "erc.net_connectivity:[\"VSS\"]"
     ],
     "skipped": [],
-    "inapplicable": [
-      {
-        "id": "erc.supply_short",
-        "missing": [
-          "--deck naming the PDK family, so the isolation layers can be measured",
-          "or assert ties[].isolation_boxes"
-        ],
-        "reason": "substrate_isolation_undecidable"
-      }
-    ],
+    "inapplicable": [],
     "unknown": [],
     "nothing_checked": false,
     "nothing_checked_reasons": [],
-    "missing_tie_checked": true,
     "checked_by_assertion": [],
     "checked_by_well_assertion": [],
     "layers_in_stream_without_declaration": [
@@ -452,9 +442,7 @@
   },
   "ties_disclosure": null,
   "provenance": {
-    "klt_version": "0.9.3.dev663+g22ab2a8756c7",
-    "klt_git_commit": "22ab2a8756c79a5d09778a08f58822fd65031207",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@22ab2a8756c79a5d09778a08f58822fd65031207",
+    "klt_version": "0.8.0",
     "klayout_version": "0.30.13",
     "pdk": null,
     "deck": null,

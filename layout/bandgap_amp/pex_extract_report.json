@@ -533,13 +533,6 @@
   "unbiased_pmos_body_nets": [],
   "single_terminal_nets": [],
   "dead_metal": [],
-  "dead_metal_omitted": false,
-  "dead_metal_summary": {
-    "clusters": 0,
-    "shapes": 0,
-    "area_um2": 0.0,
-    "by_layer": []
-  },
   "matched_device_groups": [],
   "def_pin_promotion": null,
   "pin_renames": null,
@@ -547,19 +540,16 @@
   "declared_pins": null,
   "def_pins": null,
   "label_layers": null,
-  "device_models": null,
   "probes": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.9.3.dev517+gc6ecffcb8e56",
-    "klt_git_commit": "c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
+    "klt_version": "0.8.0",
     "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:d407265de045dc59cecc28793f70ac9734069a6fb8bae06daa9b9f2e04961602",
-      "released": false
+      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
+      "released": true
     },
     "input": {
       "content_hash": "sha256:00922ef0324bd7713c1a8fddfc278f7b62931b6c7725e0eebefe0f68660f0cdb",
@@ -1588,7 +1578,7 @@
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.032,
-    "unattributed_seconds": 0.013
+    "total_seconds": 0.136,
+    "unattributed_seconds": 0.118
   }
 }

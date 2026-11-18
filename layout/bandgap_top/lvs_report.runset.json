@@ -1,10 +1,7 @@
 {
-  "schema_version": 3,
+  "schema_version": 2,
   "engine": "klayout-runset",
-  "layout": {
-    "path": "layout/bandgap_top/bandgap_top.gds",
-    "scope": "repo"
-  },
+  "layout": "bandgap_top.gds",
   "reference": "bandgap_top.lvs_reference.runset.spice",
   "top": "bandgap_top",
   "reference_top": "BANDGAP_TOP",
@@ -21,7 +18,6 @@
     "instance_count": 0,
     "expected_nets": null,
     "unchecked_expected_pins": [],
-    "excluded_pins": [],
     "findings": [],
     "finding_count": 0
   },
@@ -324,7 +320,7 @@
     }
   },
   "mismatch_count": 808,
-  "error_count": 552,
+  "error_count": 808,
   "category_counts": {
     "device.property": 5,
     "device.unmatched": 276,
@@ -334,7 +330,8 @@
   "category_error_counts": {
     "device.property": 5,
     "device.unmatched": 276,
-    "net.unmatched": 271
+    "net.unmatched": 271,
+    "pin.unmatched": 256
   },
   "counts": {
     "nets": {
@@ -408,9 +405,7 @@
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.9.3.dev663+g22ab2a8756c7",
-    "klt_git_commit": "22ab2a8756c79a5d09778a08f58822fd65031207",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@22ab2a8756c79a5d09778a08f58822fd65031207",
+    "klt_version": "0.8.0",
     "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
@@ -11278,8 +11273,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'VDD' of circuit 'bandgap_top' is present only on the reference side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'VDD' of circuit 'bandgap_top' is not matched",
       "side": "reference",
       "net": {
         "layout": null,
@@ -11297,8 +11292,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'VREF' of circuit 'bandgap_top' is present only on the reference side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'VREF' of circuit 'bandgap_top' is not matched",
       "side": "reference",
       "net": {
         "layout": null,
@@ -11316,8 +11311,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'VSS' of circuit 'bandgap_top' is present only on the reference side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'VSS' of circuit 'bandgap_top' is not matched",
       "side": "reference",
       "net": {
         "layout": null,
@@ -11335,8 +11330,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'CB2' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'CB2' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "CB2",
@@ -11354,8 +11349,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'CB3' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'CB3' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "CB3",
@@ -11373,8 +11368,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'D1,D2,FB,IN_N,IN_P,OUT,PN,SNS1,SNS2,TAIL,VDD,VREF' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'D1,D2,FB,IN_N,IN_P,OUT,PN,SNS1,SNS2,TAIL,VDD,VREF' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "D1,D2,FB,IN_N,IN_P,OUT,PN,SNS1,SNS2,TAIL,VDD,VREF",
@@ -11392,8 +11387,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'DET' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'DET' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "DET",
@@ -11411,8 +11406,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T001,T003,T007,T015,T031,T063,T127,TN0' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T001,T003,T007,T015,T031,T063,T127,TN0' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T001,T003,T007,T015,T031,T063,T127,TN0",
@@ -11430,8 +11425,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T002' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T002' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T002",
@@ -11449,8 +11444,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T004' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T004' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T004",
@@ -11468,8 +11463,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T005' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T005' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T005",
@@ -11487,8 +11482,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T006' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T006' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T006",
@@ -11506,8 +11501,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T008' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T008' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T008",
@@ -11525,8 +11520,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T009' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T009' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T009",
@@ -11544,8 +11539,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T010' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T010' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T010",
@@ -11563,8 +11558,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T011' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T011' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T011",
@@ -11582,8 +11577,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T012' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T012' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T012",
@@ -11601,8 +11596,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T013' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T013' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T013",
@@ -11620,8 +11615,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T014' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T014' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T014",
@@ -11639,8 +11634,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T016' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T016' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T016",
@@ -11658,8 +11653,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T017' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T017' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T017",
@@ -11677,8 +11672,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T018' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T018' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T018",
@@ -11696,8 +11691,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T019' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T019' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T019",
@@ -11715,8 +11710,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T020' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T020' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T020",
@@ -11734,8 +11729,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T021' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T021' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T021",
@@ -11753,8 +11748,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T022' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T022' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T022",
@@ -11772,8 +11767,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T023' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T023' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T023",
@@ -11791,8 +11786,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T024' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T024' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T024",
@@ -11810,8 +11805,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T025' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T025' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T025",
@@ -11829,8 +11824,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T026' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T026' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T026",
@@ -11848,8 +11843,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T027' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T027' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T027",
@@ -11867,8 +11862,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T028' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T028' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T028",
@@ -11886,8 +11881,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T029' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T029' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T029",
@@ -11905,8 +11900,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T030' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T030' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T030",
@@ -11924,8 +11919,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T032' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T032' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T032",
@@ -11943,8 +11938,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T033' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T033' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T033",
@@ -11962,8 +11957,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T034' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T034' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T034",
@@ -11981,8 +11976,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T035' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T035' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T035",
@@ -12000,8 +11995,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T036' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T036' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T036",
@@ -12019,8 +12014,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T037' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T037' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T037",
@@ -12038,8 +12033,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T038' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T038' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T038",
@@ -12057,8 +12052,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T039' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T039' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T039",
@@ -12076,8 +12071,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T040' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T040' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T040",
@@ -12095,8 +12090,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T041' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T041' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T041",
@@ -12114,8 +12109,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T042' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T042' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T042",
@@ -12133,8 +12128,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T043' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T043' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T043",
@@ -12152,8 +12147,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T044' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T044' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T044",
@@ -12171,8 +12166,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T045' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T045' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T045",
@@ -12190,8 +12185,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T046' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T046' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T046",
@@ -12209,8 +12204,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T047' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T047' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T047",
@@ -12228,8 +12223,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T048' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T048' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T048",
@@ -12247,8 +12242,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T049' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T049' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T049",
@@ -12266,8 +12261,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T050' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T050' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T050",
@@ -12285,8 +12280,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T051' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T051' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T051",
@@ -12304,8 +12299,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T052' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T052' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T052",
@@ -12323,8 +12318,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T053' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T053' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T053",
@@ -12342,8 +12337,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T054' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T054' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T054",
@@ -12361,8 +12356,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T055' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T055' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T055",
@@ -12380,8 +12375,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T056' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T056' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T056",
@@ -12399,8 +12394,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T057' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T057' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T057",
@@ -12418,8 +12413,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T058' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T058' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T058",
@@ -12437,8 +12432,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T059' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T059' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T059",
@@ -12456,8 +12451,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T060' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T060' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T060",
@@ -12475,8 +12470,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T061' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T061' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T061",
@@ -12494,8 +12489,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T062' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T062' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T062",
@@ -12513,8 +12508,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T064' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T064' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T064",
@@ -12532,8 +12527,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T065' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T065' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T065",
@@ -12551,8 +12546,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T066' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T066' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T066",
@@ -12570,8 +12565,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T067' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T067' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T067",
@@ -12589,8 +12584,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T068' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T068' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T068",
@@ -12608,8 +12603,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T069' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T069' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T069",
@@ -12627,8 +12622,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T070' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T070' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T070",
@@ -12646,8 +12641,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T071' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T071' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T071",
@@ -12665,8 +12660,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T072' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T072' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T072",
@@ -12684,8 +12679,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T073' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T073' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T073",
@@ -12703,8 +12698,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T074' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T074' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T074",
@@ -12722,8 +12717,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T075' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T075' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T075",
@@ -12741,8 +12736,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T076' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T076' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T076",
@@ -12760,8 +12755,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T077' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T077' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T077",
@@ -12779,8 +12774,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T078' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T078' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T078",
@@ -12798,8 +12793,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T079' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T079' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T079",
@@ -12817,8 +12812,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T080' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T080' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T080",
@@ -12836,8 +12831,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T081' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T081' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T081",
@@ -12855,8 +12850,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T082' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T082' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T082",
@@ -12874,8 +12869,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T083' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T083' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T083",
@@ -12893,8 +12888,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T084' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T084' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T084",
@@ -12912,8 +12907,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T085' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T085' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T085",
@@ -12931,8 +12926,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T086' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T086' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T086",
@@ -12950,8 +12945,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T087' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T087' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T087",
@@ -12969,8 +12964,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T088' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T088' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T088",
@@ -12988,8 +12983,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T089' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T089' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T089",
@@ -13007,8 +13002,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T090' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T090' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T090",
@@ -13026,8 +13021,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T091' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T091' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T091",
@@ -13045,8 +13040,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T092' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T092' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T092",
@@ -13064,8 +13059,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T093' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T093' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T093",
@@ -13083,8 +13078,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T094' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T094' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T094",
@@ -13102,8 +13097,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T095' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T095' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T095",
@@ -13121,8 +13116,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T096' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T096' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T096",
@@ -13140,8 +13135,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T097' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T097' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T097",
@@ -13159,8 +13154,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T098' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T098' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T098",
@@ -13178,8 +13173,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T099' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T099' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T099",
@@ -13197,8 +13192,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T100' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T100' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T100",
@@ -13216,8 +13211,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T101' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T101' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T101",
@@ -13235,8 +13230,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T102' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T102' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T102",
@@ -13254,8 +13249,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T103' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T103' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T103",
@@ -13273,8 +13268,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T104' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T104' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T104",
@@ -13292,8 +13287,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T105' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T105' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T105",
@@ -13311,8 +13306,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T106' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T106' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T106",
@@ -13330,8 +13325,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T107' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T107' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T107",
@@ -13349,8 +13344,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T108' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T108' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T108",
@@ -13368,8 +13363,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T109' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T109' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T109",
@@ -13387,8 +13382,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T110' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T110' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T110",
@@ -13406,8 +13401,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T111' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T111' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T111",
@@ -13425,8 +13420,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T112' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T112' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T112",
@@ -13444,8 +13439,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T113' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T113' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T113",
@@ -13463,8 +13458,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T114' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T114' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T114",
@@ -13482,8 +13477,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T115' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T115' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T115",
@@ -13501,8 +13496,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T116' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T116' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T116",
@@ -13520,8 +13515,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T117' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T117' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T117",
@@ -13539,8 +13534,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T118' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T118' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T118",
@@ -13558,8 +13553,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T119' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T119' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T119",
@@ -13577,8 +13572,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T120' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T120' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T120",
@@ -13596,8 +13591,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T121' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T121' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T121",
@@ -13615,8 +13610,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T122' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T122' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T122",
@@ -13634,8 +13629,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T123' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T123' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T123",
@@ -13653,8 +13648,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T124' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T124' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T124",
@@ -13672,8 +13667,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T125' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T125' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T125",
@@ -13691,8 +13686,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T126' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T126' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T126",
@@ -13710,8 +13705,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T128' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T128' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T128",
@@ -13729,8 +13724,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T129' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T129' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T129",
@@ -13748,8 +13743,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T130' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T130' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T130",
@@ -13767,8 +13762,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T131' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T131' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T131",
@@ -13786,8 +13781,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T132' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T132' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T132",
@@ -13805,8 +13800,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T133' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T133' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T133",
@@ -13824,8 +13819,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T134' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T134' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T134",
@@ -13843,8 +13838,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T135' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T135' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T135",
@@ -13862,8 +13857,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T136' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T136' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T136",
@@ -13881,8 +13876,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T137' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T137' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T137",
@@ -13900,8 +13895,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T138' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T138' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T138",
@@ -13919,8 +13914,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T139' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T139' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T139",
@@ -13938,8 +13933,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T140' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T140' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T140",
@@ -13957,8 +13952,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T141' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T141' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T141",
@@ -13976,8 +13971,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T142' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T142' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T142",
@@ -13995,8 +13990,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T143' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T143' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T143",
@@ -14014,8 +14009,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T144' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T144' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T144",
@@ -14033,8 +14028,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T145' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T145' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T145",
@@ -14052,8 +14047,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T146' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T146' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T146",
@@ -14071,8 +14066,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T147' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T147' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T147",
@@ -14090,8 +14085,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T148' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T148' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T148",
@@ -14109,8 +14104,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T149' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T149' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T149",
@@ -14128,8 +14123,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T150' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T150' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T150",
@@ -14147,8 +14142,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T151' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T151' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T151",
@@ -14166,8 +14161,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T152' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T152' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T152",
@@ -14185,8 +14180,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T153' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T153' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T153",
@@ -14204,8 +14199,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T154' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T154' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T154",
@@ -14223,8 +14218,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T155' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T155' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T155",
@@ -14242,8 +14237,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T156' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T156' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T156",
@@ -14261,8 +14256,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T157' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T157' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T157",
@@ -14280,8 +14275,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T158' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T158' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T158",
@@ -14299,8 +14294,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T159' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T159' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T159",
@@ -14318,8 +14313,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T160' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T160' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T160",
@@ -14337,8 +14332,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T161' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T161' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T161",
@@ -14356,8 +14351,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T162' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T162' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T162",
@@ -14375,8 +14370,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T163' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T163' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T163",
@@ -14394,8 +14389,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T164' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T164' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T164",
@@ -14413,8 +14408,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T165' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T165' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T165",
@@ -14432,8 +14427,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T166' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T166' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T166",
@@ -14451,8 +14446,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T167' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T167' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T167",
@@ -14470,8 +14465,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T168' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T168' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T168",
@@ -14489,8 +14484,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T169' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T169' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T169",
@@ -14508,8 +14503,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T170' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T170' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T170",
@@ -14527,8 +14522,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T171' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T171' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T171",
@@ -14546,8 +14541,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T172' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T172' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T172",
@@ -14565,8 +14560,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T173' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T173' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T173",
@@ -14584,8 +14579,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T174' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T174' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T174",
@@ -14603,8 +14598,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T175' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T175' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T175",
@@ -14622,8 +14617,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T176' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T176' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T176",
@@ -14641,8 +14636,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T177' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T177' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T177",
@@ -14660,8 +14655,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T178' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T178' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T178",
@@ -14679,8 +14674,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T179' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T179' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T179",
@@ -14698,8 +14693,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T180' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T180' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T180",
@@ -14717,8 +14712,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T181' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T181' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T181",
@@ -14736,8 +14731,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T182' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T182' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T182",
@@ -14755,8 +14750,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T183' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T183' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T183",
@@ -14774,8 +14769,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T184' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T184' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T184",
@@ -14793,8 +14788,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T185' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T185' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T185",
@@ -14812,8 +14807,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T186' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T186' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T186",
@@ -14831,8 +14826,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T187' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T187' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T187",
@@ -14850,8 +14845,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T188' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T188' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T188",
@@ -14869,8 +14864,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T189' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T189' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T189",
@@ -14888,8 +14883,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T190' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T190' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T190",
@@ -14907,8 +14902,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T191' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T191' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T191",
@@ -14926,8 +14921,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T192' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T192' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T192",
@@ -14945,8 +14940,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T193' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T193' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T193",
@@ -14964,8 +14959,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T194' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T194' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T194",
@@ -14983,8 +14978,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T195' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T195' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T195",
@@ -15002,8 +14997,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T196' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T196' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T196",
@@ -15021,8 +15016,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T197' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T197' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T197",
@@ -15040,8 +15035,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T198' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T198' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T198",
@@ -15059,8 +15054,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T199' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T199' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T199",
@@ -15078,8 +15073,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T200' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T200' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T200",
@@ -15097,8 +15092,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T201' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T201' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T201",
@@ -15116,8 +15111,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T202' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T202' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T202",
@@ -15135,8 +15130,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T203' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T203' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T203",
@@ -15154,8 +15149,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T204' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T204' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T204",
@@ -15173,8 +15168,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T205' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T205' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T205",
@@ -15192,8 +15187,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T206' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T206' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T206",
@@ -15211,8 +15206,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T207' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T207' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T207",
@@ -15230,8 +15225,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T208' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T208' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T208",
@@ -15249,8 +15244,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T209' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T209' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T209",
@@ -15268,8 +15263,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T210' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T210' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T210",
@@ -15287,8 +15282,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T211' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T211' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T211",
@@ -15306,8 +15301,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T212' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T212' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T212",
@@ -15325,8 +15320,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T213' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T213' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T213",
@@ -15344,8 +15339,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T214' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T214' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T214",
@@ -15363,8 +15358,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T215' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T215' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T215",
@@ -15382,8 +15377,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T216' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T216' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T216",
@@ -15401,8 +15396,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T217' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T217' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T217",
@@ -15420,8 +15415,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T218' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T218' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T218",
@@ -15439,8 +15434,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T219' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T219' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T219",
@@ -15458,8 +15453,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T220' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T220' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T220",
@@ -15477,8 +15472,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T221' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T221' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T221",
@@ -15496,8 +15491,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T222' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T222' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T222",
@@ -15515,8 +15510,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T223' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T223' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T223",
@@ -15534,8 +15529,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T224' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T224' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T224",
@@ -15553,8 +15548,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T225' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T225' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T225",
@@ -15572,8 +15567,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T226' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T226' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T226",
@@ -15591,8 +15586,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T227' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T227' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T227",
@@ -15610,8 +15605,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T228' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T228' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T228",
@@ -15629,8 +15624,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T229' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T229' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T229",
@@ -15648,8 +15643,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T230' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T230' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T230",
@@ -15667,8 +15662,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T231' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T231' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T231",
@@ -15686,8 +15681,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T232' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T232' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T232",
@@ -15705,8 +15700,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T233' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T233' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T233",
@@ -15724,8 +15719,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T234' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T234' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T234",
@@ -15743,8 +15738,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T235' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T235' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T235",
@@ -15762,8 +15757,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T236' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T236' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T236",
@@ -15781,8 +15776,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T237' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T237' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T237",
@@ -15800,8 +15795,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T238' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T238' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T238",
@@ -15819,8 +15814,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T239' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T239' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T239",
@@ -15838,8 +15833,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T240' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T240' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T240",
@@ -15857,8 +15852,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T241' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T241' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T241",
@@ -15876,8 +15871,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T242' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T242' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T242",
@@ -15895,8 +15890,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T243' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T243' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T243",
@@ -15914,8 +15909,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T244' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T244' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T244",
@@ -15933,8 +15928,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T245' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T245' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T245",
@@ -15952,8 +15947,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T246' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T246' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T246",
@@ -15971,8 +15966,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T247' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T247' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T247",
@@ -15990,8 +15985,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T248' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T248' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T248",
@@ -16009,8 +16004,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T249' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T249' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T249",
@@ -16028,8 +16023,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T250' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T250' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T250",
@@ -16047,8 +16042,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T251' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T251' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T251",
@@ -16066,8 +16061,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T252' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T252' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T252",
@@ -16085,8 +16080,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T253' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T253' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T253",
@@ -16104,8 +16099,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'T254' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'T254' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "T254",
@@ -16123,8 +16118,8 @@
     },
     {
       "category": "pin.unmatched",
-      "severity": "warning",
-      "description": "pin 'VSS' of circuit 'bandgap_top' is present only on the layout side, but the runset's own compare graded the pin pair matched (Match)",
+      "severity": "error",
+      "description": "pin 'VSS' of circuit 'bandgap_top' is not matched",
       "side": "layout",
       "net": {
         "layout": "VSS",

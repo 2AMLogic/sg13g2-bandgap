@@ -188,7 +188,6 @@
       "5/0",
       "6/0",
       "7/0",
-      "7/21",
       "8/0",
       "10/0",
       "14/0",
@@ -196,11 +195,9 @@
       "29/0",
       "30/0",
       "31/0",
-      "32/0",
       "36/0",
       "49/0",
       "50/0",
-      "63/0",
       "66/0",
       "67/0",
       "125/0",
@@ -217,30 +214,27 @@
       "10/0",
       "14/0",
       "19/0",
-      "31/0",
-      "63/0"
+      "31/0"
     ],
     "layers_in_stream_without_rules": [
       "5/1",
       "8/1",
-      "8/25"
+      "8/25",
+      "63/0"
     ],
     "rules_checked": [
       "activ.enclosing.cont.1",
       "activ.space.1",
       "activ.width.1",
-      "cont.ongrid.1",
       "cont.space.1",
       "cont.width.1",
       "gatpoly.enclosing.cont.1",
       "gatpoly.separation.activ.1",
       "gatpoly.space.1",
       "gatpoly.width.1",
-      "metal1.enclosing.cont.1",
       "metal1.enclosing.via1.1",
       "metal1.space.1",
       "metal1.width.1",
-      "metal2.enclosing.via1.1",
       "metal2.space.1",
       "metal2.width.1",
       "nwell.enclosing.nactiv.1",
@@ -265,17 +259,14 @@
     ],
     "rules_skipped": [
       "metal2.enclosing.via2.1",
-      "metal3.enclosing.via2.1",
       "metal3.enclosing.via3.1",
       "metal3.space.1",
       "metal3.width.1",
-      "metal4.enclosing.via3.1",
       "metal4.enclosing.via4.1",
       "metal4.space.1",
       "metal4.width.1",
       "metal5.enclosing.mim.1",
       "metal5.enclosing.topvia1.1",
-      "metal5.enclosing.via4.1",
       "metal5.space.1",
       "metal5.width.1",
       "mim.enclosing.topvia1.1",
@@ -309,7 +300,6 @@
     "deck_scope": [
       "Act",
       "Cnt",
-      "Cont upper-landing containment (curated)",
       "Gat",
       "M1",
       "M2",
@@ -326,12 +316,7 @@
       "V2",
       "V3",
       "V4",
-      "Via1 upper-landing containment (curated)",
-      "Via2 upper-landing containment (curated)",
-      "Via3 upper-landing containment (curated)",
-      "Via4 upper-landing containment (curated)",
-      "pSD",
-      "x"
+      "pSD"
     ],
     "unmodeled_rules": [
       "LU.a",
@@ -355,18 +340,15 @@
       "activ.enclosing.cont.1",
       "activ.space.1",
       "activ.width.1",
-      "cont.ongrid.1",
       "cont.space.1",
       "cont.width.1",
       "gatpoly.enclosing.cont.1",
       "gatpoly.separation.activ.1",
       "gatpoly.space.1",
       "gatpoly.width.1",
-      "metal1.enclosing.cont.1",
       "metal1.enclosing.via1.1",
       "metal1.space.1",
       "metal1.width.1",
-      "metal2.enclosing.via1.1",
       "metal2.space.1",
       "metal2.width.1",
       "nwell.enclosing.nactiv.1",
@@ -396,10 +378,6 @@
         "reason": "no_applicable_geometry"
       },
       {
-        "id": "metal3.enclosing.via2.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
         "id": "metal3.enclosing.via3.1",
         "reason": "no_applicable_geometry"
       },
@@ -409,10 +387,6 @@
       },
       {
         "id": "metal3.width.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "metal4.enclosing.via3.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -433,10 +407,6 @@
       },
       {
         "id": "metal5.enclosing.topvia1.1",
-        "reason": "no_applicable_geometry"
-      },
-      {
-        "id": "metal5.enclosing.via4.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -525,15 +495,13 @@
     "nothing_checked_reasons": []
   },
   "provenance": {
-    "klt_version": "0.9.3.dev517+gc6ecffcb8e56",
-    "klt_git_commit": "c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
-    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@c6ecffcb8e56a8b5092d7547bffe76ac52b6d41b",
+    "klt_version": "0.8.0",
     "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:d407265de045dc59cecc28793f70ac9734069a6fb8bae06daa9b9f2e04961602",
-      "released": false
+      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
+      "released": true
     },
     "input": {
       "content_hash": "sha256:00922ef0324bd7713c1a8fddfc278f7b62931b6c7725e0eebefe0f68660f0cdb",

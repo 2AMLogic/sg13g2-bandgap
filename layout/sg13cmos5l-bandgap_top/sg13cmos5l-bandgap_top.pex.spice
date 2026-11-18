@@ -45,9 +45,9 @@ M$13 vdd pn fb|out vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $14 r0 *1 70,120 pfet
 M$14 vdd pn pn vdd pfet L=1U W=10U AS=4P AD=4P PS=20.8U PD=20.8U
 * device instance $15 r0 *1 52,50.925 rppd
-R$15 in_p|sns2 e2 vss 11063 rppd L=85.1U W=2U
+X$15 in_p|sns2 e2 vss rppd r=11064.9102692 L=85.1U W=2U
 * device instance $16 r0 *1 199.06,35.027 rppd
-R$16 vref e3 vss 84110 rppd L=647U W=2U
+X$16 vref e3 vss rppd r=83893.4247258 L=647U W=2U
 * device instance $17 r0 *1 122.386,109.852 rhigh
-R$17 vdd det vss 1919368 rhigh L=1411.3U W=1U
+X$17 vdd det vss rhigh r=1999501.66667 L=1411.3U W=1U
 .ENDS sg13cmos5l_bandgap_top
