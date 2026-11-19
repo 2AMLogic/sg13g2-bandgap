@@ -12,6 +12,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-18
 
+- **PR #624**: fix: end build-osdi.sh help at header terminator
+- **Issue #623** (closed): build-osdi.sh -h prints 6 lines past the end of the header; sim/README.md has a stray short line
+- **Issue #622** (closed): Post-merge: file the build-osdi.sh re-vendor follow-up for the 9 remaining consumer repos
+- **PR #621**: build-osdi.sh: embed toolchain pins as JSON and add --print-pins
+- **Issue #620** (closed): build-osdi.sh: carry the pins as embedded JSON and print them, so consumers stop restating them
 - **PR #617**: ci: report hygiene's base-diff gates on merge_group commits (merge queue step 1)
 - **PR #616**: fix: correct klu-retime README log claims and un-ignore measurements logs
 - **Issue #615** (closed): measurements/2026-11-klu-retime README promises per-run ngspice.log files that .gitignore's *.log rule silently dropped
@@ -430,9 +435,4 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 - **Issue #223** (closed): spec: duplicate decision-record number 0007 on main, and DR-0001/DR-0002 left 'proposed' after the table they feed was ratified
 - **Issue #222** (closed): sim: commit a box-method TC testbench (endpoint method understates TC post-retune; box worst corner ~20.2 ppm/°C vs the < 20 stretch)
 - **Issue #15** (closed): Publish an aggregated characterization report under measurements/
-
-### 2026-09-19
-
-- **PR #224**: ratification: run the two-key review of the target-spec table and record its outcome
-- **Issue #125** (closed): Cut the spec-ratification PR now that #13 is resolved (two-key mechanism)
 

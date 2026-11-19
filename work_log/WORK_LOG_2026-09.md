@@ -2,6 +2,11 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-19
+
+- **PR #224**: ratification: run the two-key review of the target-spec table and record its outcome
+- **Issue #125** (closed): Cut the spec-ratification PR now that #13 is resolved (two-key mechanism)
+
 ### 2026-09-15
 
 - **PR #219**: docs(spec): DR-0007 — keep sim/ evidence logs verbatim and uncompressed
