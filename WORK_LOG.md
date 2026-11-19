@@ -10,6 +10,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-19
+
+- **PR #596**: docs: document merge-time staleness hazard for layout evidence
+- **Issue #587** (closed): Layout evidence can go stale against a concurrently-merged GDS change, and PR CI never re-checks it
+
 ### 2026-11-18
 
 - **PR #624**: fix: end build-osdi.sh help at header terminator
