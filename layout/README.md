@@ -1505,6 +1505,35 @@ the same way. Stated limit, not hidden: the sidecar binds the *leaves*
 only — stale top-level routing is caught by re-running the deterministic
 generator, which CI does not do.
 
+### Merge-time staleness hazard
+
+Everything above is checked on every push and PR — but a PR's checks describe
+the merge ref **as of the run**, not as of the merge. The branch ruleset
+requires the `hygiene` / `signoff-manifest` checks yet does not require the
+branch to be up to date before merging (`strict_required_status_checks_policy:
+false`, deliberately — it keeps the repo's no-rebase-needed property, and
+Loom's Judge treats `BEHIND` as non-blocking by design). So a GDS-changing PR
+that merges *after* an evidence re-mint PR's last green run lands the
+re-mint's reports against a GDS they never saw: every check green, evidence
+stale. If the two PRs also touch the same report JSONs the merge conflicts and
+the collision is visible by luck — a GDS-only change (e.g. a
+`layout/common.py` margin) conflicts with nothing and merges clean. #587
+measured exactly this during the #586 / #576 collision: #586 re-minted all 28
+committed layout reports hashing the pre-#576 GDS, #576 then re-wrote three
+GDS files, and the checker run against the true merge result went from 171
+artifacts OK to 10 STALE failures.
+
+The backstop is the `push: main` hygiene run: it validates the *merged* tree,
+so it goes red once stale evidence lands on `main`. Whoever sees it re-mints
+against the new GDS. Until then `main`'s evidence is stale while looking
+green-checked — which is why an evidence re-mint must be the last thing to
+land in its window, enforced by the re-mint PR's author:
+
+> Immediately before pushing — and again before requesting merge — `git fetch
+> origin main` and run `git diff --stat origin/main -- 'layout/**/*.gds'`
+> against the PR's merge base. If any GDS moved, rebase and re-mint the
+> evidence rather than merging.
+
 ### Known-stale evidence: `layout/evidence-freshness-waivers.json`
 
 Regenerating a report can require `klt`, the PDK, ngspice and OSDI models, none
