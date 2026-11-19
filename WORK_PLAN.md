@@ -3,12 +3,12 @@
 Current repository work state, generated from GitHub labels by the Guide role.
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-18T20:31:13Z (snapshot; compare against live labels)_
+_Generated: 2026-11-19T14:42:33Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-- **#596**: docs: document merge-time staleness hazard for layout evidence
+_None._
 
 ## Very Important
 
@@ -35,7 +35,6 @@ Human-approved issues (`loom:issue`) ready for implementation — excluding held
 Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
-- **#587**: Layout evidence can go stale against a concurrently-merged GDS change, and PR CI never re-checks it
 
 ## PRs Awaiting Review
 
@@ -47,7 +46,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#596**: docs: document merge-time staleness hazard for layout evidence — closes #587
+_None._
 
 ## Proposed
 
@@ -62,7 +61,6 @@ Issues carrying `loom:curated`.
 - **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)* *(held)*
 - **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(curated)* *(held)*
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)* *(held)*
-- **#587**: Layout evidence can go stale against a concurrently-merged GDS change, and PR CI never re-checks it *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -77,14 +75,14 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 1 |
+| Operator merge-risk holds | 0 |
 | Very important | 0 |
 | Important | 3 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
-| In Progress (`loom:building`) | 2 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
-| Curated | 10 |
+| Approved PRs awaiting merge | 0 |
+| Curated | 9 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
