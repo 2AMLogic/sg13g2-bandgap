@@ -109,10 +109,10 @@ NOT-ELIGIBLE; verdict links and full findings in
 [`0008-two-key-ratification-review-outcome.md`](spec/decision-records/0008-two-key-ratification-review-outcome.md)),
 so the honest per-row status is:
 
-- **Temp coefficient, Supply, Iq, Startup, PSRR @ DC** — target met on
+- **Temp coefficient, Supply, Iq, Startup** — target met on
   currently-committed evidence, and found technically sound (EE key) and
-  `competitive`/`adequate-for-catalog` (market key). Two caveats the review
-  put on the record: the TC row meets its `< 50 ppm/°C` **target** by both
+  `competitive`/`adequate-for-catalog` (market key). The TC row meets
+  its `< 50 ppm/°C` **target** by both
   the endpoint and box methods at both levels, on both the pre-trim and the
   trim-bearing core (worst number anywhere in the near-band grid: box-method
   45.7 ppm/°C — still inside the target, by ~9%), but the `< 20 ppm/°C`
@@ -141,9 +141,13 @@ so the honest per-row status is:
   the aids, is the dominant cause). No decision record supersedes `0010`
   for this: the `< 20 ppm/°C` stretch *number* is unchanged, and `0010`'s
   pre-trim characterization stands as a historical reading on the superseded
-  pre-trim core; and
-  the PSRR row's post-layout margin at its binding corner (`bcs`/125 °C/
-  3.63 V) is 0.20 dB, on a corner that reads 59.68 dB pre-layout.
+  pre-trim core.
+- **PSRR @ DC** misses the `> 60 dB` target at one of 45 schematic
+  operating points. At `bcs`, 125 °C and 3.63 V, the November 13 sweep
+  measured **59.685 dB**. The October 4 post-layout sweep measured
+  **60.0013 dB** at the same corner and predates the current extraction.
+  [Characterization report](measurements/2026-11-18-klu-retime-characterization-report/README.md#psrr--dc)
+  · [Design issue #631](https://github.com/2AMLogic/sg13g2-bandgap/issues/631).
 - **Output reference — re-cast by decision record
   [`0011`](spec/decision-records/0011-output-reference-row-disposition.md)
   (issue #221).** The row both keys declined is disposed by re-cast, not
