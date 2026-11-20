@@ -6,17 +6,20 @@ open PDK — designed by AI agents driving
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
 open-source xschem + ngspice flow.
 
-**Status: schematic captured and simulated across PVT; layout DRC —
-`bandgap_amp` and `bandgap_top` `clean`/0 (`bandgap_top` with 22 markers
-waived cell-scoped, tracked in #572/#573; the `nwell.enclosing.nactiv.1`
-class closed at the source by #571's tap-margin fix, its waiver entries
-deleted; the Via1 classes closed by #574's Metal2-landing enclosures),
-`bandgap_core` `violations`/18 (all `metal1.enclosing.cont.1`, the
-pre-existing #572 class) per the committed reports re-minted on the
-#571+#574 merged tree (2026-11-18); LVS still open — curated deck: `match`
+**The schematic has been captured and simulated across PVT.** The committed
+DRC reports for `bandgap_amp`, `bandgap_core`, `bandgap_startup`, and
+`bandgap_top` each show zero violations under the pinned `klt 0.8.0`
+SG13G2 deck. The top-level DRC waiver list is empty. The pinned deck
+omits the contact-enclosure and off-grid checks that flagged the earlier
+markers. Checks with a development deck confirmed that the core Metal1
+landing fix (#572) cleared all 18 enclosure markers and the startup
+resistor fold fix (#573) cleared all four off-grid markers.
+[Layout verdicts](layout/README.md#verdicts).
+
+**LVS remains open.** The curated deck reports `match`
 on `bandgap_amp` and `bandgap_startup`, `mismatch` on `bandgap_core` and
-`bandgap_top`; PDK runset on `bandgap_top`: `mismatch`, no MOS or HBT
-recognized (#380, #381).**
+`bandgap_top`. The PDK runset reports `mismatch` on `bandgap_top` and
+recognizes no MOS or HBT devices (#380, #381).
 The evidence-ladder verdict of record is
 [`manifests/sg13g2-bandgap.signoff.json`](manifests/sg13g2-bandgap.signoff.json):
 its `t1_met_count` reads 5 of 11 T1 items met (`klayout-tools`'
@@ -208,16 +211,13 @@ ratified (see decision records above), five of six rows two-key reviewed
 clean and the Output-reference row re-cast by the two-key-gated record 0011
 (#221) rather than blocking the other five; schematic simulated across PVT,
 pre- and post-layout (PEX);
-layout DRC `clean`/0 violations on `bandgap_amp` and `bandgap_top`
-(top with 22 cell-scoped waived markers, tracked in #572/#573; the
-`nwell.enclosing.nactiv.1` class closed at the source by #571's
-tap-margin fix and the Via1 classes by #574's Metal2-landing enclosures),
-`violations`/18 on `bandgap_core` (all `metal1.enclosing.cont.1`, the
-pre-existing #572 class), and curated-deck LVS
+the three leaf cells and the assembled top all report DRC `clean`/0
+under the pinned SG13G2 deck, with zero top-level DRC waivers. The
+curated-deck LVS reports show
 `match` on `bandgap_amp` and `bandgap_startup`, `mismatch` on
 `bandgap_core` — its three unrecognised `NPN13G2` devices,
 klayout-tools#1242, permanent — and on `bandgap_top`, whose re-mint
-under the DR-0016 pin (on the #579 merged GDS, against #561 step 1's
+under the DR-0016 pin (against #561 step 1's
 `rppd.sym`-derived reference) reads 8 findings / 4 error-severity: the
 resistor-class pairing regression that dominated every earlier mint
 (klayout-tools#6313) is fixed at its root by the re-derived reference, and
