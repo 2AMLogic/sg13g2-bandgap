@@ -14,11 +14,13 @@ that produced it.
 - `sg13g2-bandgap.signoff.json` — the committed **verdict of record**: the
   exact output of `klt signoff --manifest manifests/sg13g2-bandgap.json
   --format json`.
-  As of the commit that last regenerated it (#572's Metal1 base-contact
-  landing re-mint, on post-#579 main): **tier: none — 5/11 T1
-  items met** (items 1, 2, 3, 8, 10; read the count from the report's
-  `t1_met_count`, not from this sentence). That is the honest state; an
-  all-`unmet` manifest is a correct result, and nothing here inflates it.
+  As of the commit that last regenerated it (#630's item-6 yield-evidence
+  citation): **tier: none — 5/11 T1 items met** (items 1, 2, 3, 8, 10; read
+  the count from the report's `t1_met_count`, not from this sentence). That
+  is the honest state; an all-`unmet` manifest is a correct result, and
+  nothing here inflates it. Item 6 moved from `unmet`/`no_evidence` to
+  `unmet`/`check_failed` — the honest grade of a yield report whose two
+  125 °C points miss their 3σ lower-bound gate (see the item 6 entry below).
 - `artifacts/` — **stored-run manifests** (issue #379, DR-0015): one
   `<bench>-<run-id>.manifest.json` per new `klt sim` run, naming the run's raw
   logs and netlist snapshots in the fleet artifact store by sha256. See
@@ -131,6 +133,42 @@ The binding used here:
   `provenance.input` block (upstream JSON contract) — its freshness is
   enforced by `check_evidence_formats.py`'s layout-report staleness gate
   instead, which re-derives every committed report's input hashes.
+- **Item 6 (Statistical claims carry Monte Carlo evidence) — cited unpinned:
+  `sim/closed-loop-vref-mc/records/20261120-231009-73ef81b4-yield-report.json`**:
+  a `klt yield` JSON report minted (producer `klayout-tools[yield]==0.9.2`,
+  graded under the CI pin `0.8.0` — both versions in #630) from the
+  **committed** `20261104-201955-2a0f04d7-draws.csv` campaign via
+  `klt yield-csv` (same CSV sha256 in the sample set's `derivation` block);
+  it is a re-analysis of that run, not a new campaign. Five measurements
+  (the mismatch points `nominal`, `bcs_n40`, `bcs_125`, `wcs_n40`,
+  `wcs_125`, N=300 each, seed rule `20260909 + draw_index` readable from the
+  draws' own seed column; the zero-spread `negctrl` rows are excluded) carry
+  the ±16 % bounds 0.882–1.218 V, `target_sigma: 3`, `min_converged_samples:
+  300`, `spec_row: output-reference-untrimmed`; `spec_rows["6"]` declares
+  that row covered and the trimmed ±0.5 % line as a **gap** (#303, PR #435
+  pending — re-campaign and re-mint when it lands).
+  **What the citation does and does not prove.** It proves the statistical
+  machinery ran on real seeded draws: every yield estimate carries its
+  Clopper-Pearson interval, every sample-size verdict is `sufficient`
+  (±1 point half-width), and exactly one draw (wcs_125, 1.2215 V) falls
+  outside the bounds. It does **not** prove the ±16 % 3σ claim holds: the
+  sigma-to-spec lower bounds at the hot corners are **2.8845** (`bcs_125`)
+  and **2.8632** (`wcs_125`), below 3, so the report's `status` is `fail`
+  and the item grades `unmet`/`check_failed` with the untrimmed row in
+  `detail.failed_rows` — committed as graded, follow-up campaign sized in
+  #635. The **negative control is not declared** (`not_declared`): the
+  report carries klt's own null + warning because `klt yield-csv` 0.9.2
+  cannot attach a control and `klt yield-samples` rejects CSV-derived sample
+  sets (klayout-tools#6974); the campaign's zero-spread `negctrl` point stays
+  what it always was — the harness's own determinism check — and is not
+  presented as klt's negative control. The citation carries no
+  `content_hash` pin because `klt yield` envelopes record no
+  `provenance.input` block (upstream JSON contract, like `klt lvs`); the
+  freshness chain is the verdict-of-record identity check — the report names
+  its samples document (`samples`: `<id>-yield-samples.json`, committed
+  beside it), `klt signoff` hashes it into every fresh grade, so any change
+  to the samples document or the report rots the committed
+  `sg13g2-bandgap.signoff.json` and fails `check_signoff_manifest.py`.
 - **Item 11 (Power delivery, structural) — cited as the compound pair
   `layout/bandgap_top/erc_report.json` (pinned to the `bandgap_top.gds`
   hash) + `layout/bandgap_top/lvs_report.runset.json` (item 4's LVS

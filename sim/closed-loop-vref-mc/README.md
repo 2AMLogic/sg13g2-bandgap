@@ -258,3 +258,56 @@ See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows —
 this experiment follows the same shape, with the one addition
 (`records/<record-id>-draws.csv`) "Evidence volume" above explains.
+
+## `klt yield` envelope (issue #630, T1 item 6)
+
+The statistical evidence `klt signoff` grades for T1 item 6 is a
+[`klt yield`](https://github.com/2AMLogic/klayout-tools) JSON report —
+minted here as a **re-analysis of the committed `20261104-201955-2a0f04d7`
+campaign**, not a new run. Three files beside the run's records (producer
+`klayout-tools[yield]==0.9.2`; graded under the repo's CI pin
+`klayout-tools==0.8.0` — see `manifests/README.md`'s item 6 entry):
+
+- `records/20261120-231009-73ef81b4-yield-samples.json` — the sample set,
+  derived by `klt yield-csv` from `20261104-201955-2a0f04d7-draws.csv`
+  (`--group-by point --value vref_v --status-col status --pass-value PASS
+  --draw-col draw_index --unit V`); its `derivation` block pins that CSV's
+  sha256 (`bb7eb778…`) and the column mapping. Six groups of 300, zero
+  errored draws; the seed rule (`20260909 + draw_index`, N=300 per
+  population) is readable from the draws' own `seed` column — `klt
+  yield-csv` 0.9.2 cannot emit a `provenance` block, so the report's
+  `source.provenance` is null (klayout-tools#6974).
+- `records/20261120-231009-73ef81b4-yield-limits.json` — the spec-limits
+  file: 0.882–1.218 V (±16 % of 1.050 V, DR-0011) on the five mismatch
+  points only (`nominal`, `bcs_n40`, `bcs_125`, `wcs_n40`, `wcs_125`;
+  the zero-spread `negctrl` group is kept out — it is this harness's own
+  determinism check, not klt's negative control), each with
+  `target_sigma: 3` (the ratified 3σ claim in the form `klt yield` grades:
+  sigma-to-spec lower bound at two-sided 95 % confidence) and
+  `min_converged_samples: 300`, `spec_row: output-reference-untrimmed`.
+- `records/20261120-231009-73ef81b4-yield-report.json` — the report
+  (`klt yield … --measurement nominal,bcs_n40,bcs_125,wcs_n40,wcs_125`,
+  1,500 samples; exit 3, `status: "fail"`), cited unpinned by
+  `manifests/sg13g2-bandgap.json` under item 6 with the trimmed ±0.5 %
+  line declared as a `spec_rows` gap (#303).
+
+**Reported as graded, not curated.** All five sample-size verdicts are
+`sufficient` (±1-point yield-interval half-width) and exactly one draw
+(wcs_125, 1.2215 V) falls outside the bounds, but the sigma-to-spec lower
+bounds at the hot corners — **2.8845** (`bcs_125`) and **2.8632**
+(`wcs_125`) — miss the 3σ gate, so the report fails and item 6 grades
+`unmet`/`check_failed`. The follow-up campaign is sized in #635; the ±16 %
+line and the 3σ claim are not edited. The **klt negative control is not
+declared** (`negative_control: null` + the report's own warning): no
+released CLI path attaches a control to a CSV-derived sample set
+(klayout-tools#6974), and #630 declined to hand-splice one or dispatch a
+fleet known-bad run that no supported path could consume.
+
+**No new `records/*.md` by design.** This mint measured nothing new — the
+newest *run* of this experiment is still `20261104-201955-2a0f04d7`, which
+is what the item-8 characterization report's dependency inventory selects
+(`check_report_dependencies.py`'s newest-record rule keys on
+`records/*.md`). The JSON artifacts are committed beside the run's records;
+this section is their index. When a future campaign re-mints them (e.g.
+after PR #435 lands, or #635's larger N), it lands as a new dated set under
+the same convention.
