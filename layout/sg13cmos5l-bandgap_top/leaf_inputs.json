@@ -1,0 +1,17 @@
+{
+  "leaves": [
+    {
+      "path": "../sg13cmos5l-bandgap_amp/sg13cmos5l-bandgap_amp.gds",
+      "sha256": "f277d98557728bb77e2a7332fa5052488a383fb90d233ef1cffd38071c22863a"
+    },
+    {
+      "path": "../sg13cmos5l-bandgap_core/sg13cmos5l-bandgap_core.gds",
+      "sha256": "2bfdd1cbb38e871c236b23fc9bb0f15649756b2b0f143766bd6e7d3753a9240f"
+    },
+    {
+      "path": "../sg13cmos5l-bandgap_startup/sg13cmos5l-bandgap_startup.gds",
+      "sha256": "38f98a4b307e5711cd29e01d8b934a8cec199b3a9ab477c0d80d34a5df76303c"
+    }
+  ],
+  "schema_version": 1
+}

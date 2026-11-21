@@ -2,8 +2,24 @@
 
 ## `hygiene.yml`
 
-Runs on every push to `main` and on every pull request. It validates repo
+Runs on every push to `main`, on every pull request, and on merge-group
+commits (issue #614). It validates repo
 structure/hygiene that already exists in this repo today — nothing more.
+
+### The merge queue trigger
+
+`on:` also declares `merge_group:` (no path filters, no branch narrowing) so
+the job reports on the merge queue's trial-merge commit; the fleet's ruleset
+tooling refuses to enable a queue whose required check cannot report there.
+On a merge-group run the two base-diff gates (`check_evidence_formats.py
+--require-append-only` and `check_report_regression.py
+--require-regression-base`) take their comparison base from
+`github.event.merge_group.base_sha` — `github.base_ref` is empty there, so
+the `origin/main` default would diff against the live tip instead of the
+queued base. An absent or empty `base_sha` fails the step explicitly; it
+never falls through to the default or skips as a pass. `pull_request` and
+`push` runs are unchanged (`origin/main`, as before). Ported from
+sky130-comparator#332.
 
 ### What it checks
 
@@ -56,7 +72,7 @@ structure/hygiene that already exists in this repo today — nothing more.
   (`enrich_pvt_report.py`), and corner-id formatting, 6-s.f. CSV cells,
   include inlining and `${PDK_ROOT}` redaction (`klt_sim_evidence.py`).
 - **`.github/scripts/check_evidence_formats.py`** — the evidence-format and
-  freshness gate. Four things, all headless and PDK-free:
+  freshness gate. Five things, all headless and PDK-free:
   1. **`sim/` record format** — every `sim/<slug>/records/<record-id>.md`
      against the convention `sim/README.md` documents: record-id grammar,
      required fields, the `.csv` sibling, the corner-id grammar, and the
@@ -76,6 +92,12 @@ structure/hygiene that already exists in this repo today — nothing more.
      GDS / reference netlist / extracted netlist. Known-stale reports are
      waived by name, with a tracking issue, in
      `layout/evidence-freshness-waivers.json`; see `layout/README.md`.
+     Assembly tops are additionally bound to the leaf GDS files they
+     embedded: each top's generator writes a `leaf_inputs.json` sidecar
+     recording every leaf's sha256 (issue #588), and the checker fails on a
+     stale leaf hash, a missing leaf, or a missing sidecar — waived through
+     the same mechanism. Leaves only: stale top-level routing is caught by
+     re-running the deterministic generator, not by CI.
   4. **`sim/` DUT freshness** — the same "staleness is failure" rule applied
      to simulation evidence. Each experiment's **newest** record is compared
      against the committed `design/**` netlist it names as its own
@@ -124,6 +146,23 @@ structure/hygiene that already exists in this repo today — nothing more.
   inventory/attestation mismatch. SG13CMOS5L and unrelated edits are ignored;
   a pass is not an export-equivalence proof and nothing is auto-refreshed.
 
+- **`.github/scripts/test_check_spotcheck_outputs.py`** then
+  **`.github/scripts/check_spotcheck_outputs.py`** (#516) — the spot-check
+  output gate. Each `measurements/*-characterization-report/` README commits
+  the stdout of its own `spotcheck.py` in the `## Reproducing the
+  spot-check` section as the evidence that the report's quoted numbers match
+  the committed CSVs; the checker re-runs every report's script (`python3
+  -I`, exactly the command the README documents — stdlib CSV re-reads, never
+  a simulator) and requires the committed block to match live stdout line
+  for line, failing with a named-report unified diff on any drift. Line
+  endings and a missing final newline are normalised; a changed digit is
+  not. This is what keeps an edit to the shared
+  `measurements/lib/spotcheck_common.py` (or a CSV re-mint, or a record
+  repoint) from silently invalidating a historical report nobody re-reads.
+  A report without a `spotcheck.py` is noted and skipped. Re-derivation
+  only: it never mints evidence and never edits a README — when it fails,
+  a human re-records honestly.
+
 All of these are plain bash/python3 scripts (stdlib only, no venv, no
 ngspice, no PDK), runnable locally the same way CI runs them:
 
@@ -140,6 +179,8 @@ python3 .github/scripts/test_check_report_dependencies.py
 python3 .github/scripts/check_report_dependencies.py
 python3 .github/scripts/test_check_design_source_dependencies.py
 python3 .github/scripts/check_design_source_dependencies.py
+python3 .github/scripts/test_check_spotcheck_outputs.py
+python3 .github/scripts/check_spotcheck_outputs.py
 ```
 
 ### The `signoff-manifest` job
@@ -147,10 +188,9 @@ python3 .github/scripts/check_design_source_dependencies.py
 Added by #226. This is the one job that *does* run `klt` — in read-only
 grading mode over committed envelope JSON (no PDK, no klayout, no evidence
 minting). It installs a **pinned** upstream
-[`klayout-tools`](https://github.com/2AMLogic/klayout-tools) git rev (PyPI
-releases up to 0.5.0 predate T1 item 11, added 2026-09-17 by
-klayout-tools#2025, so a PyPI pin would silently grade a 10-item checklist)
-and then:
+[`klayout-tools`](https://github.com/2AMLogic/klayout-tools) PyPI release
+(`==0.8.0`; a git build reports a dev version that no longer satisfies an
+exact pin, klayout-tools#2823), prints `klt --version`, and then:
 
 - **`.github/scripts/test_check_signoff_manifest.py`** — the checker's own
   self-test, hermetic (stub `klt`, fixture tree, no network): an undamaged
@@ -193,6 +233,14 @@ does **not** yet validate:
   netlist itself; nothing yet ties a PEX record back to the extraction it
   consumed, and the checker says so out loud (`note: DUT freshness not
   checked: …`) rather than passing silently.
+- That evidence a PR validated is still fresh **at merge time**. These checks
+  run against the merge ref *as of the run*, and the branch ruleset does not
+  require the branch to be up to date before merging — so a GDS-changing PR
+  that merges after an evidence re-mint PR's last green run lands stale
+  evidence with every check green (the `push: main` run is the backstop). See
+  `layout/README.md` § "Merge-time staleness hazard" for the hazard, the #586
+  / #576 collision that surfaced it (#587), and the re-mint PR's pre-push
+  GDS re-check.
 - Characterization/measurement data formats in `measurements/` — empty
   until tape-out (#15).
 - Markdown style/lint (line length, table formatting, etc.) on `README.md`

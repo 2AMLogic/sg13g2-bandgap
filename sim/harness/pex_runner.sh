@@ -9,93 +9,72 @@
 #   EXP    experiment directory name        STEM   testbench file stem
 #   VDDS   (optional) per-supply body variants; leave unset when the bench
 #          sweeps the supply natively (see pex_merge_call.sh)
+#   BODY_TEMPLATE  (optional) the body template -- defaults to the
+#          experiment's own ${EXP_DIR}/testbench/${STEM}.body.spice.tmpl.
+#          Set BEFORE sourcing to make the submission identity below hash
+#          the override too (the shared-wrapper case, issue #472); the
+#          schematic benches assign it after sourcing instead, handing
+#          --batch a pre-filled WORK copy, and keep the identity on their
+#          own committed template
+#   PEX_BATCH_MAX_IN_FLIGHT  (optional) submit --batch's per-variant requests
+#          concurrently, as one `klt sim --batch-set` with this many in
+#          flight, instead of one blocking `klt sim` per request (#402);
+#          PEX_BATCH_SET_OUTDIR (default `batch-set`) names its output dir
 # Sourcing validates the CLI mode (positional args pass through), resolves
 # klt / the PDK / the OSDI models, and sets: MODE SCRIPT_DIR SIM_DIR REPO_ROOT
-# HARNESS_DIR EXP_DIR KLT_BIN PDK_ROOT OSDI_DIR BATCH_PDK_ROOT
+# HARNESS_DIR EXP_DIR KLT_BIN PDK_ROOT OSDI_DIR BATCH_PDK_ROOT BATCH_LIB_ROOT
 # BATCH_PROVISION_SCRIPT IDENT_ARGS FIXUP_UNBOUND WORK CORNER_LABELS.
 # Then the runner defines its anchors and a `case "${MODE}"` using the
 # pex_* helpers below. No simulation is launched from here directly.
 
+# The `klt sim` runner preamble below the mode check is shared with
+# cmos5l_runner.sh (sim/harness/klt_sim_preamble.sh, issue #481): each block
+# is a sourced function that returns non-zero, and this base -- which runs at
+# source time, top level -- turns a failure into its `exit` here. Only what
+# is genuinely PEX-runner-specific stays in this file: the pex_merge_call.sh
+# sourcing, CORNER_LABELS, BATCH_LIB_ROOT, and the PEX --extra/--declare list
+# appended to the shared IDENT_ARGS.
+# shellcheck source=klt_sim_preamble.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/klt_sim_preamble.sh"
+
 MODE="${1:-}"
-case "${MODE}" in
-  --sanity|--batch|--record) ;;
-  *)
-    echo "usage: run_klt_sim.sh --sanity | --batch | --record" >&2
-    exit 2
-    ;;
-esac
+klt_sim_mode "${MODE}" || exit $?
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
-SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
-HARNESS_DIR="${SIM_DIR}/harness"
-EXP_DIR="${SIM_DIR}/${EXP}"
+klt_sim_dirs "${BASH_SOURCE[1]}"
 
-# The `klt` that submits. Batch needs one carrying the batch backend
-# (klayout-tools 0.6.0+); the PyPI 0.5.0 the dispatch hosts ship as `klt`
-# predates it. Sanity mode works with either.
-KLT_BIN="${KLT_SIM_KLT:-klt}"
-if ! command -v "${KLT_BIN}" >/dev/null 2>&1; then
-  echo "run_klt_sim.sh: klt binary '${KLT_BIN}' not found (KLT_SIM_KLT)." >&2
-  exit 3
-fi
+klt_sim_require_klt || exit $?
 
-# PDK resolution: sim/env.sh's own candidates first, then the klt checkout's
-# fetched-PDKs tree (the install this repo's extraction flow itself uses on
-# dev hosts), then an explicit KLT_SIM_PDK_ROOT.
-source "${SIM_DIR}/env.sh" >/dev/null
+klt_sim_resolve_pdk || exit $?
 source "${HARNESS_DIR}/pex_merge_call.sh"
-if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
-  for _cand in "${KLT_SIM_PDK_ROOT:-}" \
-               "${HOME}/GitHub/klayout-tools/pdks/ihp-open-pdk"; do
-    if [[ -n "${_cand}" && -d "${_cand}/${PDK}/libs.tech/ngspice" ]]; then
-      export PDK_ROOT="${_cand}"
-      break
-    fi
-  done
-fi
-if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
-  echo "run_klt_sim.sh: no resolvable ${PDK} install (PDK_ROOT / KLT_SIM_PDK_ROOT)." >&2
-  exit 3
-fi
-OSDI_DIR="${SG13G2_OSDI_DIR:-${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi}"
-if [[ ! -f "${OSDI_DIR}/psp103.osdi" ]]; then
-  echo "run_klt_sim.sh: OSDI models missing in ${OSDI_DIR} -- run sim/tools/build-osdi.sh." >&2
-  exit 3
-fi
 
-# The batch runner image's baked PDK root (2am infra/aws/batch-image-pins.env
-# BAKED_PDK_ROOT) and the provision script `klt` shells out to on this host.
-BATCH_PDK_ROOT="${KLT_SIM_BATCH_PDK_ROOT:-/opt/pdk}"
-BATCH_PROVISION_SCRIPT="${KLT_BATCH_PROVISION_SCRIPT:-${HOME}/GitHub/2am/infra/aws/batch-fleet-provision.sh}"
+klt_sim_require_osdi SG13G2_OSDI_DIR " -- run sim/tools/build-osdi.sh." || exit $?
 
-# Resume safety (#332): a saved report is reused only when its committed
-# submission identity matches the inputs about to be submitted
-# (sim/harness/submission_identity.py). Legacy/stale reports are refused;
-# KLT_SIM_ALLOW_UNBOUND_REPORTS=1 / KLT_SIM_REDISPATCH_STALE=1 are the opt-ins.
-source "${HARNESS_DIR}/submission_identity.sh"
-KLT_VERSION_DECL="$("${KLT_BIN}" --version 2>&1 | head -1 || true)"
-IDENT_ARGS=(--declare "klt_bin=${KLT_BIN}" --declare "klt_version=${KLT_VERSION_DECL}"
-  --declare "pdk=${PDK}" --declare "batch_pdk_root=${BATCH_PDK_ROOT}"
+# BATCH_LIB_ROOT is the root of the body's selection-form `.lib` cards. klt
+# 0.8.x refuses an absolute runner path there ("not under $PDK_ROOT") and
+# accepts one under the SUBMITTING host's $PDK_ROOT, which it rewrites for the
+# runner -- so it is the local PDK root, never the runner's, and not overridable.
+BATCH_LIB_ROOT="${PDK_ROOT}"
+klt_sim_batch_defaults
+
+# One body template for all three uses below -- the identity declaration's
+# --extra, the sanity instantiation and the batch request generator.
+# Default: the experiment's own per-stem committed template; an experiment
+# whose DUT wrapper is byte-identical to a sibling's points the override at
+# that shared template instead (issue #472).
+BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"
+
+klt_sim_resume_scaffold
+IDENT_ARGS+=(
+  --declare "batch_lib_root=submitter-pdk-root"
   --extra "${EXP_DIR}/testbench/${STEM}.request.json.tmpl"
-  --extra "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
+  --extra "${BODY_TEMPLATE}"
   --extra "${BATCH_PROVISION_SCRIPT}"
   --extra "${HARNESS_DIR}/klt_corner_bundle.py"
   --extra "${SIM_DIR}/tools/gen_pex_netlist_body.py")
-FIXUP_UNBOUND=()
-[[ "${KLT_SIM_ALLOW_UNBOUND_REPORTS:-}" == 1 ]] && FIXUP_UNBOUND=(--allow-unbound)
 
-WORK="${KLT_SIM_WORK:-$(mktemp -d -t sg13g2-klt-${EXP}-XXXXXX)}"
-mkdir -p "${WORK}"
-echo "run_klt_sim.sh: work dir ${WORK}"
+klt_sim_work_dir "${MODE}" || exit $?
 
 CORNER_LABELS=(typ bcs wcs sf fs)
-
-# Captured at bench generation, never at --record time (extraction_binding.py):
-# generators called by a runner pass "${SOURCES_OUT[@]}".
-EXTRACTION_SOURCES="${WORK}/extraction-sources.json"
-SOURCES_OUT=(--sources-out "${EXTRACTION_SOURCES}")
-[[ "${MODE}" == "--record" ]] && SOURCES_OUT=()
 
 # pex_instantiate_body OSDI_DIR PEX_BODY_REF [KEY=VALUE ...]
 # The body template with @@OSDI_DIR@@, @@PEX_BODY@@ and each @@KEY@@ filled.
@@ -103,7 +82,7 @@ pex_instantiate_body() {
   local args=(-e "s|@@OSDI_DIR@@|${1}|g" -e "s|@@PEX_BODY@@|${2}|g") kv
   shift 2
   for kv in "$@"; do args+=(-e "s|@@${kv%%=*}@@|${kv#*=}|g"); done
-  sed "${args[@]}" "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
+  sed "${args[@]}" "${BODY_TEMPLATE}"
 }
 
 # pex_sanity_local [CORNERS_JSON]  (needs body.spice in WORK)
@@ -162,8 +141,8 @@ pex_batch_dispatch() {
   # never touches them, so those stay the runner's baked path.
   local gen=(python3 "${HARNESS_DIR}/gen_pex_batch_requests.py"
     --request-template "${EXP_DIR}/testbench/${STEM}.request.json.tmpl"
-    --body-template "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
-    --pdk-root "${PDK_ROOT}" --provision-script "${BATCH_PROVISION_SCRIPT}"
+    --body-template "${BODY_TEMPLATE}"
+    --lib-root "${BATCH_LIB_ROOT}" --provision-script "${BATCH_PROVISION_SCRIPT}"
     --pdk "${PDK}" --work "${WORK}"
     --osdi "${BATCH_PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi")
   [[ -n "${VDDS[*]-}" ]] && gen+=(--supplies "${VDDS[@]}")
@@ -171,18 +150,37 @@ pex_batch_dispatch() {
 
   # Each request's body includes the generated PEX body by its bare staged
   # name; klt stages the include closure from the body's own directory.
+  #
+  # PEX_BATCH_MAX_IN_FLIGHT set (the experiment opts in): the whole campaign
+  # goes to one `klt sim --batch-set` with that many requests in flight at
+  # once, so the shards run concurrently on the fleet rather than one fleet
+  # round-trip after another (issue #402). Unset: the historical one-request-
+  # at-a-time path, unchanged.
+  if [[ -n "${PEX_BATCH_MAX_IN_FLIGHT:-}" ]]; then
+    si_set_reset
+  fi
   for label in "${CORNER_LABELS[@]}"; do
     if [[ -n "${VDDS[*]-}" ]]; then
       for vdd in "${VDDS[@]}"; do
         vid="-$(echo "${vdd}" | tr '.' 'p')"
-        si_shard "request-${label}${vid}.json" "report-${label}${vid}.json" \
-          "artifacts-${label}${vid}" "${label}/${vdd}V (3 points, one fleet job)"
+        if [[ -n "${PEX_BATCH_MAX_IN_FLIGHT:-}" ]]; then
+          si_set_add "request-${label}${vid}.json" "report-${label}${vid}.json" \
+            "${label}/${vdd}V"
+        else
+          si_shard "request-${label}${vid}.json" "report-${label}${vid}.json" \
+            "artifacts-${label}${vid}" "${label}/${vdd}V (3 points, one fleet job)"
+        fi
       done
+    elif [[ -n "${PEX_BATCH_MAX_IN_FLIGHT:-}" ]]; then
+      si_set_add "request-${label}.json" "report-${label}.json" "${label}"
     else
       si_shard "request-${label}.json" "report-${label}.json" "artifacts-${label}" \
         "${label} (one fleet job)"
     fi
   done
+  if [[ -n "${PEX_BATCH_MAX_IN_FLIGHT:-}" ]]; then
+    si_set_dispatch "${PEX_BATCH_SET_OUTDIR:-batch-set}" "${PEX_BATCH_MAX_IN_FLIGHT}" || true
+  fi
 
   for label in "${CORNER_LABELS[@]}"; do
     for v in "${VDDS[@]-}"; do
@@ -206,12 +204,11 @@ pex_batch_dispatch() {
 # per-corner artifact paths are relative to the work dir the batch requests
 # wrote into; the record's outputs go to the (absolute) experiment directory.
 pex_record_mint() {
-  # A PEX record must bind the extraction it consumed (#309): the sources are
-  # captured at bench generation (--sanity/--batch) and only re-verified here.
-  local bind=()
-  [[ -f "${EXTRACTION_SOURCES}" ]] && bind=(--extraction-sources "${EXTRACTION_SOURCES}")
+  # The generator's --sources-out file binds the record to the extraction it
+  # was built from; klt_sim_evidence.py refuses an unbound PEX record.
   ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
-      --report "$1" "${bind[@]}" \
+      --report "$1" \
+      --extraction-sources "${WORK}/extraction-sources.json" \
       --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
       --experiment "${EXP_DIR}" )
 }

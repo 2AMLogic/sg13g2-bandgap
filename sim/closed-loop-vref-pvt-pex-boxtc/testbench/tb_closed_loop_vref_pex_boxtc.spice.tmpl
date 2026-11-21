@@ -3,7 +3,7 @@
 * #222, follow-on to #186). Generated from
 * sim/closed-loop-vref-pvt-pex-boxtc/testbench/
 * tb_closed_loop_vref_pex_boxtc.spice.tmpl by
-* sim/closed-loop-vref-pvt-pex-boxtc/run_pvt_sweep.sh -- do not edit a
+* sim/closed-loop-vref-pvt-pex-boxtc/run_pvt_sweep.sh (removed in #438; see git history) -- do not edit a
 * generated netlist-snapshots/*.spice file directly, edit this template
 * and re-run the sweep. Full rationale (including exactly what the
 * extraction does and does not model) is in
@@ -241,7 +241,7 @@ meas tran v_sns2_v find v(sns2) at=3m
 meas tran v_det_v find v(det) at=3m
 meas tran i_mkfb_v find i(Vmkfb) at=3m
 * The claim under test: vref at two separated time points, so
-* run_pvt_sweep.sh can confirm it has stopped moving before reporting it.
+* run_pvt_sweep.sh (removed in #438; see git history) can confirm it has stopped moving before reporting it.
 meas tran v_vref_2ms find v(vref) at=2m
 meas tran v_vref_3ms find v(vref) at=3m
 * VBE(Q3) (decision-support parity with sim/closed-loop-vref-pvt's own

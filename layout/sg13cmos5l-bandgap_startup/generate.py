@@ -132,9 +132,11 @@ Y_MOS = 0.0
 #: sqrt(1411.3 / 1.4) = 31.7. 32 rounds that to an **even** count, which is
 #: what keeps both terminals on the block's bottom row (odd counts leave end
 #: B on top -- see ``_draw_poly_res``) and therefore keeps this cell's
-#: `vdd`/`det` escape topology unchanged in kind. Measured: 44.772 x 43.704
-#: um, aspect 1.02. Identical count, and identical resulting geometry, to
-#: the SG13G2 port's own ``RPU`` -- the two cells draw the same device.
+#: `vdd`/`det` escape topology unchanged in kind. Measured: 48.74 x 43.58
+#: um (issue #573 put the fold gap itself on the 5 nm manufacturing grid,
+#: widening the block from the 1 nm-step fold's 44.772 x 43.704), aspect
+#: 1.12. Identical count, and identical resulting geometry, to the SG13G2
+#: port's own ``RPU`` -- the two cells draw the same device.
 RPU_LEGS = 32
 
 # Device sizes, read from design/sg13cmos5l/netlist/bandgap_startup.spice.
@@ -145,20 +147,28 @@ MKFB_W, MKFB_L = 2.0, 0.5
 # Column origins. RPU starts at x=0; the two NMOS sit just past its right
 # edge, the same relative topology they had pre-fold (they used to sit under
 # the 1.4 mm bar's far end, at x=1395; folded, that far end -- RPU's own
-# `det` terminal -- is at x=44.3, so the whole cluster moves left by 1340 um
-# and keeps every one of its internal clearances unchanged). The 3 um step
-# from the folded block's right edge (44.972) to the `sns1` tab clears that
-# tab's own 0.7 um-wide GatPoly landing pad against RPU's own end-B head
-# poly (which ends at 44.872) with ~2.8 um to spare -- checked, because a
-# tighter placement would merge the two conductors outright.
+# `det` terminal -- is at x~44.3 with the 1 nm-step fold of issue #173, so
+# the whole cluster moved left by ~1340 um and kept every one of its
+# internal clearances unchanged). Issue #573 put the fold gap itself on the
+# 5 nm manufacturing grid (gap 0.4 -> 0.54, pitch 1.412 -> 1.54), which
+# widened RPU's drawn block 44.772 -> 48.74 um and pushed its end-B head
+# poly right from 44.872 to 48.84 -- so the whole MOS cluster shifts right
+# by the same 4.0 um (every internal clearance below is unchanged in kind,
+# only re-based).
+#
+# The ~3 um step from the folded block's right edge (Metal1 pads reach
+# 48.94) to the `sns1` tab clears that tab's own 0.7 um-wide GatPoly
+# landing pad against RPU's own end-B head poly (which ends at 48.84) with
+# ~2.8 um to spare -- checked, because a tighter placement would merge the
+# two conductors outright.
 X_RPU = 0.0
-X_MSENSE = 55.0
-X_MKFB = 80.0
+X_MSENSE = 59.0
+X_MKFB = 84.0
 #: ``sns1`` gate tab, ~1.8 um left of ``MSENSE``'s own gate endcap.
-X_SNS1_TAB = 48.0
+X_SNS1_TAB = 52.0
 #: ``det`` gate tab, ~2.3 um right of ``MKFB``'s own gate endcap -- clear of
-#: ``MKFB``'s ``fb`` drain pad (which ends at x=81) by >2 um.
-X_DET_TAB = 83.5
+#: ``MKFB``'s ``fb`` drain pad (which ends at x=85) by >2 um.
+X_DET_TAB = 87.5
 
 # -- boundary ports for bandgap_top assembly (issue #76) -- see this
 # module's own docstring "Boundary ports for bandgap_top assembly".
@@ -177,7 +187,10 @@ Y_SNS1_PORT = -1.2
 #: not.
 Y_FB_JOG = 6.0
 Y_FB_UNDERPASS = (2.0, 4.0)
-X_FB_PORT = 84.4
+#: Issue #573 moved this with the MOS cluster (84.4 -> 88.4, +4.0 um) so it
+#: keeps its 3.4 um clearance past ``MKFB``'s own ``fb`` drain pad (which
+#: ends at x=85, moved with ``X_MKFB``).
+X_FB_PORT = 88.4
 
 
 def build() -> Builder:
@@ -224,9 +237,10 @@ def _route(b: Builder, rpu: dict, msense: dict, mkfb: dict) -> dict[str, tuple[f
     # Issue #173: the lane now starts at RPU's own drop column rather than at
     # X_MSENSE. Pre-fold the drop landed at x=1411.5, *right* of MSENSE, so
     # the lane's own X_MSENSE..X_DET_TAB span already covered it; folded, the
-    # drop is at x=44.3, left of the whole MOS cluster, so the lane has to
-    # reach out to it. It stays clear of `sns1`'s own tab column (x=48) --
-    # that tab's Metal1 never rises above y=0.25, 2.75 um below this lane.
+    # drop is at x~48.3 (issue #573's grid-constrained fold), left of the
+    # whole MOS cluster, so the lane has to reach out to it. It stays clear
+    # of `sns1`'s own tab column (x=52) -- that tab's Metal1 never rises
+    # above y=0.25, 2.75 um below this lane.
     route_h(b, L_METAL1, Y_DET_LANE, min(X_MSENSE, x_rpu_det), X_DET_TAB, width=TRUNK_W)
     route_v(b, L_METAL1, X_MSENSE, msense["drain_pad"][3], Y_DET_LANE, width=TRUNK_W)
 

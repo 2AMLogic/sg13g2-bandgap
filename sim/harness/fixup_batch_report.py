@@ -66,14 +66,14 @@ def fixup(
             continue
         text = deck_path.read_text(encoding="utf-8")
         text = _RUNNER_INCLUDE_RE.sub(lambda m: f"{m.group(1)}{body}{m.group(2)}", text)
-        # Quoted and bare alike: the runner's generated corner deck writes its
-        # own `.lib <models.lib> <section>` card UNQUOTED, so a quoted-only
-        # rewrite left that one card pointing at the runner's root -- which
-        # klt_sim_evidence.py then refuses as an unresolved include, because the
-        # path is neither a local file nor under this host's PDK_ROOT (#387). The
-        # trailing separator keeps this a path-component match, so a sibling root
-        # (`/opt/pdkx`) is not caught by a prefix that happens to overlap.
-        text = text.replace(f"{runner_pdk_root}/", f"{local_pdk_root}/")
+        text = text.replace(f'"{runner_pdk_root}/', f'"{local_pdk_root}/')
+        # klt 0.7 writes the deck's `.lib <path> <section>` card unquoted.
+        text = re.sub(
+            rf"(^\s*\.(?:lib|include)\s+){re.escape(runner_pdk_root)}/",
+            lambda m: f"{m.group(1)}{local_pdk_root}/",
+            text,
+            flags=re.M,
+        )
         # The runner's deck writes the include bare (no quotes); handle that
         # spelling too.
         text = re.sub(

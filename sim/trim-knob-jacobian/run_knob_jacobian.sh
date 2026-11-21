@@ -132,7 +132,7 @@ lookup_seeds() {
   SNS2_SEED="$(lookup_seed "${corner}" "${temp}" "${vdd}" sns2_final_v)"
   VREF_SEED="$(lookup_seed "${corner}" "${temp}" "${vdd}" vref_final_v)"
   if [[ -z "${FB_SEED}" || -z "${SNS1_SEED}" || -z "${SNS2_SEED}" || -z "${VREF_SEED}" ]]; then
-    echo "run_knob_jacobian.sh: no PASS seed row for ${corner}/${temp}C/${vdd}V in ${SEED_CSV} -- run sim/closed-loop-startup/run_pvt_sweep.sh first." >&2
+    echo "run_knob_jacobian.sh: no PASS seed row for ${corner}/${temp}C/${vdd}V in ${SEED_CSV} -- run sim/closed-loop-startup/run_klt_sim.sh first." >&2
     exit 3
   fi
 }
@@ -420,7 +420,7 @@ CTAT_PRED=$(awk -F, '$1=="typ" && $2=="3.30" {printf "%.5f", $10; exit}' "${ANAL
   echo "  (sim/closed-loop-startup's own most recent record)."
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\` -- pinned release: see \`sim/pdk.json\`."
   echo "- **OSDI models**: \`${OSDI_DIR}\` -- built by \`sim/tools/build-osdi.sh\`;"
-  echo "  compiler provenance pinned in \`sim/pdk.json\` (\"osdi_toolchain\")."
+  echo "  compiler pins: \`sim/tools/build-osdi.sh --print-pins\`."
   echo "- **ngspice**: \`${NGSPICE_VERSION}\`"
   echo "- **JOBS**: ${JOBS} (wall-clock concurrency only)."
   echo "- **Corner matrix run**: ${#CORNER_LABELS[@]} process corners x"

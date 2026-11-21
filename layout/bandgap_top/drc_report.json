@@ -1,6 +1,9 @@
 {
-  "schema_version": 2,
-  "file": "bandgap_top.gds",
+  "schema_version": 3,
+  "file": {
+    "path": "layout/bandgap_top/bandgap_top.gds",
+    "scope": "repo"
+  },
   "deck": "sg13g2",
   "dbu_um": 0.001,
   "status": "clean",
@@ -13,13 +16,18 @@
   "coverage": {
     "deck_layers": [
       "1/0",
+      "1/20",
       "5/0",
       "6/0",
+      "7/0",
       "8/0",
       "10/0",
+      "14/0",
       "19/0",
       "29/0",
       "30/0",
+      "31/0",
+      "36/0",
       "49/0",
       "50/0",
       "66/0",
@@ -33,25 +41,21 @@
       "1/0",
       "5/0",
       "6/0",
+      "7/0",
       "8/0",
       "10/0",
-      "19/0"
+      "14/0",
+      "19/0",
+      "31/0"
     ],
     "layers_in_stream_without_rules": [
-      "1/20",
       "5/1",
-      "7/0",
-      "7/21",
       "8/1",
       "8/25",
       "10/1",
       "10/25",
-      "14/0",
-      "26/0",
       "28/0",
-      "31/0",
       "33/0",
-      "44/0",
       "63/0",
       "111/0",
       "128/0",
@@ -72,6 +76,23 @@
       "metal1.width.1",
       "metal2.space.1",
       "metal2.width.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
+      "nwell.enclosing.pactiv.1",
+      "nwell.enclosing.pactiv.dig.1",
+      "nwell.enclosing.pactiv.hv.1",
+      "nwell.space.1",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
+      "nwell.space.pactiv.1",
+      "nwell.space.pactiv.dig.1",
+      "nwell.space.pactiv.hv.1",
+      "nwell.width.1",
+      "psd.area.1",
+      "psd.space.1",
+      "psd.width.1",
       "via1.space.1",
       "via1.width.1"
     ],
@@ -83,9 +104,11 @@
       "metal4.enclosing.via4.1",
       "metal4.space.1",
       "metal4.width.1",
+      "metal5.enclosing.mim.1",
       "metal5.enclosing.topvia1.1",
       "metal5.space.1",
       "metal5.width.1",
+      "mim.enclosing.topvia1.1",
       "topmetal1.enclosing.topvia1.1",
       "topmetal1.enclosing.topvia2.1",
       "topmetal1.space.1",
@@ -104,12 +127,15 @@
       "via4.space.1",
       "via4.width.1"
     ],
-    "voltage_domain_warnings": [
+    "voltage_domain_warnings": [],
+    "unchecked_rules": [
       {
-        "marker": "44/0",
-        "description": "ThickGateOx (44/0) marks sg13g2's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base). EXTRACTION_DECK models it for MOS device recognition/model binding (issue #1231: sg13_hv_nmos/sg13_hv_pmos under --pdk); this curated deck's DRC rules still apply the general-case ('-LV') thresholds to geometry regardless of ThickGateOx's presence (e.g. the Gat.a1/Gat.a2 channel-length-specific GatPoly widths, not transcribed in this deck yet)."
+        "rule": "NW.b1",
+        "layer": "31/0",
+        "description": "NW.b1 (min. PWell width between NWell regions of different nets, 1.80 um) is net-aware and this engine has no net-aware spacing check; wells on different nets closer than 1.80 um are not flagged. Only the geometric nwell.space.1 (0.62 um) ran."
       }
     ],
+    "marker_blind_layers_in_stream": [],
     "deck_scope": [
       "Act",
       "Cnt",
@@ -119,6 +145,8 @@
       "M3",
       "M4",
       "M5",
+      "MIM",
+      "NW",
       "TM1",
       "TM2",
       "TV1",
@@ -126,7 +154,24 @@
       "V1",
       "V2",
       "V3",
-      "V4"
+      "V4",
+      "pSD"
+    ],
+    "unmodeled_rules": [
+      "LU.a",
+      "LU.c",
+      "LU.c1",
+      "LU.d",
+      "LU.d1",
+      "Pad.a1",
+      "Pad.aR",
+      "Pad.bR",
+      "Pad.d",
+      "Pad.d1R",
+      "Pad.dR",
+      "Pad.gR",
+      "Pad.jR",
+      "Pad.kR"
     ],
     "schema_version": 1,
     "known": true,
@@ -145,6 +190,23 @@
       "metal1.width.1",
       "metal2.space.1",
       "metal2.width.1",
+      "nwell.enclosing.nactiv.1",
+      "nwell.enclosing.nactiv.dig.1",
+      "nwell.enclosing.nactiv.hv.1",
+      "nwell.enclosing.pactiv.1",
+      "nwell.enclosing.pactiv.dig.1",
+      "nwell.enclosing.pactiv.hv.1",
+      "nwell.space.1",
+      "nwell.space.nactiv.1",
+      "nwell.space.nactiv.dig.1",
+      "nwell.space.nactiv.hv.1",
+      "nwell.space.pactiv.1",
+      "nwell.space.pactiv.dig.1",
+      "nwell.space.pactiv.hv.1",
+      "nwell.width.1",
+      "psd.area.1",
+      "psd.space.1",
+      "psd.width.1",
       "via1.space.1",
       "via1.width.1"
     ],
@@ -179,6 +241,10 @@
         "reason": "no_applicable_geometry"
       },
       {
+        "id": "metal5.enclosing.mim.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "metal5.enclosing.topvia1.1",
         "reason": "no_applicable_geometry"
       },
@@ -188,6 +254,10 @@
       },
       {
         "id": "metal5.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "mim.enclosing.topvia1.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -264,16 +334,16 @@
     "nothing_checked_reasons": []
   },
   "provenance": {
-    "klt_version": "0.6.0",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
       "released": true
     },
     "input": {
-      "content_hash": "sha256:3e32887b8d2230bb96fb94bc06a7c4f78ce604e1e45a8465f22ceb57feeffdc4",
+      "content_hash": "sha256:1c289ecfa0fea1fcc67e6b1ee0ef837f61493708c4e8763ae59da35dbc779665",
       "role": "layout"
     },
     "klayout_version_mismatch": true

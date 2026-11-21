@@ -2,7 +2,7 @@
 * closed-loop AC power-supply-rejection (PSRR) testbench (issue #88,
 * follow-on to #86/#58). Generated from
 * sim/closed-loop-psrr/testbench/tb_closed_loop_psrr.spice.tmpl
-* by sim/closed-loop-psrr/run_pvt_sweep.sh -- do not edit a generated
+* by sim/closed-loop-psrr/run_pvt_sweep.sh (removed in #438; see git history) -- do not edit a generated
 * netlist-snapshots/*.spice file directly, edit this template and re-run
 * the sweep. Full methodology rationale is in
 * sim/closed-loop-psrr/README.md.
@@ -50,7 +50,7 @@
 * for the same reason: seed a `.nodeset` at fb/sns1/sns2/vref from
 * sim/closed-loop-startup's own most recent committed per-corner converged
 * transient endpoint (read from that experiment's own record CSV by
-* run_pvt_sweep.sh -- see README "Nodeset provenance"), which is (very
+* run_pvt_sweep.sh (removed in #438; see git history) -- see README "Nodeset provenance"), which is (very
 * nearly) the true closed-loop answer for this exact corner, so `.op`'s
 * Newton-Raphson converges directly to it rather than searching from a
 * default guess that might land in the degenerate all-off equilibrium
@@ -417,7 +417,7 @@ op
 * seed" -- see README): if .op strayed into the wrong equilibrium, fb here
 * will read far from @@FB_SEED@@. ngspice has no ".meas op" analysis type;
 * "print" is this tree's standard way to pull a DC operating-point value
-* out of a .control block, parsed by run_pvt_sweep.sh from this exact
+* out of a .control block, parsed by run_pvt_sweep.sh (removed in #438; see git history) from this exact
 * "v(node) = value" line shape.
 print v(fb)
 print v(sns1)

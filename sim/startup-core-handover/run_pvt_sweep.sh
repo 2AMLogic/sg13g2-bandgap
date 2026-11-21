@@ -144,7 +144,7 @@ done
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\` -- pinned release: see"
   echo "  \`sim/pdk.json\`."
   echo "- **OSDI models**: \`${OSDI_DIR}\` -- built by \`sim/tools/build-osdi.sh\`;"
-  echo "  compiler provenance pinned in \`sim/pdk.json\` (\"osdi_toolchain\")."
+  echo "  compiler pins: \`sim/tools/build-osdi.sh --print-pins\`."
   echo "- **ngspice**: \`${NGSPICE_VERSION}\`"
   echo "- **Corner matrix run**: process corner {typ, bcs, wcs, sf, fs}"
   echo "  (HBT x MOS-hv x resistor sections) x temperature {-40, 27, 125} C"

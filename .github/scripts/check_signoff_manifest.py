@@ -274,6 +274,10 @@ def _check_entry(root: Path, label: str, entry: Any, report: Report, item_id: st
         )
         return
     named = envelope.get("file")
+    if isinstance(named, dict):
+        # klt >= 0.8 (erc schema_version 2) records the input as
+        # {"path": ..., "scope": ...} instead of a bare string.
+        named = named.get("path")
     if not isinstance(named, str) or not named:
         report.problem(
             f"{label}: envelope {file_rel} names no input 'file' to freshness-check"

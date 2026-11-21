@@ -1,0 +1,309 @@
+{
+  "schema_version": 3,
+  "netlist": {
+    "path": "measurements/2026-11-klu-retime/out/work/iq-hot-klu/body.spice",
+    "scope": "repo"
+  },
+  "status": "pass",
+  "corner_count": 1,
+  "passed": 1,
+  "failed": 0,
+  "errored": 0,
+  "inconclusive": 0,
+  "diagnostic_counts": {
+    "by_code": {
+      "singular_matrix": 1
+    },
+    "by_severity": {
+      "warning": 1
+    },
+    "corners_with_diagnostics": 1
+  },
+  "metrics": {
+    "sim__corner__count": 1,
+    "sim__corner__passed_count": 1,
+    "sim__corner__failed_count": 0,
+    "sim__corner__errored_count": 0,
+    "sim__corner__inconclusive_count": 0
+  },
+  "environment": {
+    "engine": "ngspice",
+    "engine_version": "47",
+    "ngspice_binary": "/usr/local/bin/ngspice",
+    "engine_build": {
+      "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******",
+      "binary_sha256": "e12148baf532d879d2e2053cecc5b498680bd4156a0dc3f69ce4f83e741e1314",
+      "probe": "ok",
+      "reason": null
+    },
+    "models_lib": {
+      "path": "measurements/2026-11-klu-retime/out/work/sg13g2_corners.lib",
+      "scope": "repo"
+    },
+    "models_lib_sha256": "a9fddfe0d15aa2f71eb3943dcd4e604e55f4ff28aaa560655d399679382629f2",
+    "models_lib_sha256_scope": "local",
+    "netlist_sha256": "3360007ddb03bcb5f8477f228455d1f3c1b264484aad2c2e2d27cb73d311cbc8",
+    "netlist_closure": [
+      {
+        "path": "measurements/2026-11-klu-retime/out/work/iq-hot-klu/body.spice",
+        "scope": "repo",
+        "sha256": "3360007ddb03bcb5f8477f228455d1f3c1b264484aad2c2e2d27cb73d311cbc8"
+      }
+    ],
+    "netlist_identity": "sha256:6435792393ddbba145145008ae91727893ce8ca8764405181bfc6df21133db76",
+    "netlist_source": "schematic",
+    "engine_host": "local",
+    "backend": {
+      "resolved": "local",
+      "source": "flag",
+      "requested": "local"
+    }
+  },
+  "coverage": {
+    "corners_simulated": 1,
+    "measurements_declared": 8,
+    "measurements_with_limits": 0,
+    "unrecognized_limit_keys": [],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "measurement:[0,\"typ/novdd/125C\",\"det_v\"]/observation",
+      "measurement:[0,\"typ/novdd/125C\",\"fb_v\"]/observation",
+      "measurement:[0,\"typ/novdd/125C\",\"i_mkfb_a\"]/observation",
+      "measurement:[0,\"typ/novdd/125C\",\"iq_2ms_a\"]/observation",
+      "measurement:[0,\"typ/novdd/125C\",\"iq_3ms_a\"]/observation",
+      "measurement:[0,\"typ/novdd/125C\",\"iq_avg_a\"]/observation",
+      "measurement:[0,\"typ/novdd/125C\",\"sns1_v\"]/observation",
+      "measurement:[0,\"typ/novdd/125C\",\"sns2_v\"]/observation"
+    ],
+    "skipped": [],
+    "inapplicable": [
+      {
+        "id": "measurement:[0,\"typ/novdd/125C\",\"det_v\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/novdd/125C\",\"fb_v\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/novdd/125C\",\"i_mkfb_a\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/novdd/125C\",\"iq_2ms_a\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/novdd/125C\",\"iq_3ms_a\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/novdd/125C\",\"iq_avg_a\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/novdd/125C\",\"sns1_v\"]/limits",
+        "reason": "characterization_without_limits"
+      },
+      {
+        "id": "measurement:[0,\"typ/novdd/125C\",\"sns2_v\"]/limits",
+        "reason": "characterization_without_limits"
+      }
+    ],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
+  },
+  "provenance": {
+    "klt_version": "0.9.0",
+    "klt_git_commit": "5dbbad05ff42265c92a6f3d2f20d1bbcd2957d49",
+    "klt_reinstall_spec": "klayout-tools==0.9.0",
+    "klayout_version": "0.30.13",
+    "pdk": null,
+    "deck": {
+      "name": "sg13g2_corners.lib",
+      "content_hash": "sha256:a9fddfe0d15aa2f71eb3943dcd4e604e55f4ff28aaa560655d399679382629f2",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:3360007ddb03bcb5f8477f228455d1f3c1b264484aad2c2e2d27cb73d311cbc8",
+      "role": "netlist"
+    }
+  },
+  "measurements": [
+    {
+      "name": "fb_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/novdd/125C",
+        "value": 2.22558,
+        "margin": null
+      }
+    },
+    {
+      "name": "sns1_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/novdd/125C",
+        "value": 0.589934,
+        "margin": null
+      }
+    },
+    {
+      "name": "sns2_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/novdd/125C",
+        "value": 0.589309,
+        "margin": null
+      }
+    },
+    {
+      "name": "det_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/novdd/125C",
+        "value": 0.0227978,
+        "margin": null
+      }
+    },
+    {
+      "name": "i_mkfb_a",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/novdd/125C",
+        "value": 4.42142e-11,
+        "margin": null
+      }
+    },
+    {
+      "name": "iq_2ms_a",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/novdd/125C",
+        "value": -3.62959e-05,
+        "margin": null
+      }
+    },
+    {
+      "name": "iq_3ms_a",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/novdd/125C",
+        "value": -3.62959e-05,
+        "margin": null
+      }
+    },
+    {
+      "name": "iq_avg_a",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/novdd/125C",
+        "value": -3.62959e-05,
+        "margin": null
+      }
+    }
+  ],
+  "corners": [
+    {
+      "corner_id": "typ/novdd/125C",
+      "process": "typ",
+      "supply_v": {},
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 86.573,
+      "peak_rss_bytes": 836014080,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.22558,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.589934,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.589309,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0227978,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 4.42142e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "iq_2ms_a",
+          "value": -3.62959e-05,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "iq_3ms_a",
+          "value": -3.62959e-05,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "iq_avg_a",
+          "value": -3.62959e-05,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "singular_matrix",
+          "message": "Warning: singular matrix:  check node xxtrim.t252"
+        }
+      ],
+      "artifacts": {
+        "log": "/var/tmp/eda-job-rs-20261118T043815Z-17be3498-s00/src/measurements/2026-11-klu-retime/out/work/iq-hot-klu/p2/artifacts/typ_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "/var/tmp/eda-job-rs-20261118T043815Z-17be3498-s00/src/measurements/2026-11-klu-retime/out/work/iq-hot-klu/p2/artifacts/typ_novdd_125C/corner.cir"
+      },
+      "monte_carlo": null
+    }
+  ]
+}

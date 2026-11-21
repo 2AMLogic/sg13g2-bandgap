@@ -5,35 +5,53 @@
 # pex_runner.sh, with
 #   ANCHOR_VREF_V / ANCHOR_TOL_V   the sanity band on typ/27C/3.30V vref_3ms
 # set, define `pex_record_companion` (run after the record is minted, to write
-# the experiment's TC companion CSV), then call `pex_vref_main`.
+# the experiment's TC companion CSV), then call `pex_vref_main` (or, for the schematic twins that have no
+# extraction, `schematic_vref_main`, which needs MSENSE_W from
+# sim/lib/msense_width.sh). The gate
+# itself is sim/harness/sanity_anchors.py (issue #458).
+#
+# All four vref benches delegate their companion hook: the two box-method
+# benches to the shared `pex_boxtc_companion` below (issue #465), and the two
+# endpoint-method benches to the shared `pex_endpoint_tc_companion` (issue
+# #496), instead of re-typing the formula. The two *methods* remain distinct
+# derivations -- box = worst-case spread (`-boxtc.csv`,
+# sim/harness/boxtc_companion.py), endpoint = two-point slope (`-tc.csv`,
+# sim/harness/tc_companion.py) -- each with its own module, helper and
+# companion file.
 
 check_anchors() {  # $1 = report json
-  python3 - "$1" "${ANCHOR_VREF_V}" "${ANCHOR_TOL_V}" <<'PY'
-import json, pathlib, sys
-report = json.loads(pathlib.Path(sys.argv[1]).read_text())
-anchor_v, tol_v = float(sys.argv[2]), float(sys.argv[3])
-if report["status"] != "pass":
-    raise SystemExit(f"sanity gate: klt sim graded the run {report['status']!r}")
-(corner,) = report["corners"]
-got = {m["name"]: m.get("value") for m in corner["measurements"]}
-value = got.get("vref_3ms_v")
-if value is None:
-    raise SystemExit("sanity gate: vref_3ms_v did not come back")
-delta = abs(value - anchor_v)
-print(f"  sanity vref_3ms = {value!r} (anchor {anchor_v}, delta {delta:.3g}) "
-      f"{'ok' if delta <= tol_v else 'FAIL'}")
-if delta > tol_v:
-    raise SystemExit(
-        "sanity gate: off the schematic twin's committed typ/27C/3.30V band -- "
-        "the bench, not the extraction, is wrong (issue #278's sanity-gate item)"
-    )
-print("  sanity gate: PASS")
-PY
+  python3 "${HARNESS_DIR}/sanity_anchors.py" "$1" \
+    --anchor "vref_3ms_v=${ANCHOR_VREF_V}:${ANCHOR_TOL_V}" \
+    --hint "off the schematic twin's committed typ/27C/3.30V band -- the bench, not the extraction, is wrong (issue #278's sanity-gate item)"
+}
+
+pex_boxtc_companion() {
+  # Box-method TC companion per (corner, vdd) group -- same formula,
+  # disclosure and justification policy as the committed records (box =
+  # (vmax-vmin)/(span*v27), span = 165 C over the -40..125 grid). The
+  # derivation itself lives in sim/harness/boxtc_companion.py, which the
+  # harness self-test covers; this picks the newest minted record, skipping
+  # the companions a previous run derived from it.
+  CSV="$(ls -t "${EXP_DIR}"/records/*.csv | grep -v -e '-boxtc.csv' -e '-tc.csv' | head -1)"
+  python3 "${HARNESS_DIR}/boxtc_companion.py" "${CSV}" "${CSV%.csv}-boxtc.csv"
+}
+
+pex_endpoint_tc_companion() {
+  # Endpoint-method TC companion per (corner, vdd) group -- the two-point
+  # slope over the -40/125 C endpoints, same disclaimer as the committed
+  # records. The derivation itself lives in sim/harness/tc_companion.py,
+  # which the harness self-test covers; this picks the newest minted record,
+  # skipping the companions a previous run derived from it. The
+  # -vs-schematic exclusion is a no-op on the schematic bench: only the
+  # extracted benches mint those.
+  CSV="$(ls -t "${EXP_DIR}"/records/*.csv | grep -v -e '-tc.csv' -e '-vs-schematic' | head -1)"
+  python3 "${HARNESS_DIR}/tc_companion.py" "${CSV}" "${CSV%.csv}-tc.csv"
 }
 
 pex_vref_main() {
   # --- the DUT body (generated, top cell) -----------------------------------
-  python3 "${SIM_DIR}/tools/gen_pex_netlist_body.py" --cell top "${SOURCES_OUT[@]}" -o "${WORK}/pex_body.inc"
+  python3 "${SIM_DIR}/tools/gen_pex_netlist_body.py" --cell top -o "${WORK}/pex_body.inc" \
+    --sources-out "${WORK}/extraction-sources.json"
   case "${MODE}" in
   --sanity)
     pex_instantiate_body "${OSDI_DIR}" "${WORK}/pex_body.inc" VDD=3.30 > "${WORK}/body.spice"
@@ -47,6 +65,30 @@ pex_vref_main() {
     ;;
   --record)
     pex_record_mint "${WORK}/report-enriched.json"
+    pex_record_companion
+    ;;
+  esac
+}
+
+# (Shared by the schematic benches, issue #512.) pex_vref_main generates the PEX body and states the extraction; the
+# schematic has neither, so this is its body-less twin.
+schematic_vref_main() {
+  case "${MODE}" in
+  --sanity)
+    pex_instantiate_body "${OSDI_DIR}" "unused" VDD=3.30 MSENSE_W="${MSENSE_W}" > "${WORK}/body.spice"
+    pex_sanity_local
+    check_anchors "${WORK}/report.json"
+    ;;
+  --batch)
+    pex_batch_dispatch --supply-word "ramp target"
+    python3 "${HARNESS_DIR}/enrich_pvt_report.py" "${WORK}/report-merged.json" \
+      -o "${WORK}/report-enriched.json"
+    ;;
+  --record)
+    ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
+        --report "${WORK}/report-enriched.json" \
+        --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
+        --experiment "${EXP_DIR}" )
     pex_record_companion
     ;;
   esac

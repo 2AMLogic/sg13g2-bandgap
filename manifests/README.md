@@ -14,7 +14,8 @@ that produced it.
 - `sg13g2-bandgap.signoff.json` — the committed **verdict of record**: the
   exact output of `klt signoff --manifest manifests/sg13g2-bandgap.json
   --format json`.
-  As of the commit that last regenerated it (#300): **tier: none — 5/11 T1
+  As of the commit that last regenerated it (#572's Metal1 base-contact
+  landing re-mint, on post-#579 main): **tier: none — 5/11 T1
   items met** (items 1, 2, 3, 8, 10; read the count from the report's
   `t1_met_count`, not from this sentence). That is the honest state; an
   all-`unmet` manifest is a correct result, and nothing here inflates it.
@@ -90,19 +91,37 @@ The binding used here:
 - **Item 2 (Layout) — cited: `layout/bandgap_top/drc_report.json`**: proves
   the committed GDS exists and was DRC-checkable at the pinned content hash;
   the generator (`layout/bandgap_top/generate.py`) is committed and
-  deterministic.
+  deterministic. The #579 rebase regenerated the GDS with #571's tap-margin
+  fix composed onto #574's Via1 Metal2-landing enclosures, and #572 composed
+  its Metal1 base-contact landing onto that; the item is
+  `met` again (it had regressed to `check_failed` on the pre-#574 branch,
+  whose assembled GDS still carried the Via1 classes).
 - **Item 3 (DRC clean) — cited: `layout/bandgap_top/drc_report.json`**:
-  `status: clean`, input hash pinned to the current committed GDS. **DRC
-  coverage disclosure (claimant-enforced, quoted from the citation's
-  `coverage` block):** the curated starter deck checks 16 chapters
-  (`deck_scope`: Act, Cnt, Gat, M1–M5, TM1, TM2, TV1, TV2, V1–V4); this run
-  skipped 27 carried rules (`rules_skipped`, all metal3+ / topmetal / topvia
-  width-space-enclosure rules — the block routes on M1/M2 only) and drew 14
-  layers the deck has no rule for (`layers_in_stream_without_rules`: 5/1,
-  7/0, 8/1, 8/25, 10/1, 10/25, 14/0, 28/0, 31/0, 33/0, 63/0, 111/0, 128/0,
-  128/1 — marker/label/implant layers, including the EXTBlock/pSD/SalBlock
-  resistor-recognition markers). A `met` here means "clean inside that
-  scope", not "no DRC-expressible defect exists".
+  `status: clean`, input hash pinned to the current committed GDS, with
+  **4 markers waived** cell-scoped (`drc_waivers.json`, each naming its
+  tracking issue: 4 `cont.ongrid.1` →
+  #573 — every waived marker instance-attributed to a leaf cell, none in
+  top's own geometry). The 11 `nwell.enclosing.nactiv.1` markers #574's
+  waiver carried are gone at the source: #571's tap-margin fix closed the
+  class, and per `drc_waivers.json`'s own rule the two entries naming it
+  were deleted in the #579 rebase; the 18 `metal1.enclosing.cont.1`
+  markers are gone the same way — #572's landing strips closed the class
+  inside `bandgap_core`, and the entry naming it is deleted in this PR
+  (waived set 22 → 4). Every Via1 class is **0** (#574's landings
+  fix, composed into this GDS).
+  **DRC coverage disclosure (claimant-enforced, quoted from the report's
+  `coverage` block):** the curated deck now checks 25 chapters
+  (`deck_scope`: Act, Cnt, Gat, M1–M5, MIM, NW, Offgrid, TM1, TM2, TV1,
+  TV2, V1–V4, pSD, plus the curated Cont/Via1–Via4 upper-landing
+  containment chapters); this run skipped 32 carried rules
+  (`rules_skipped`, all Via2+/metal3+/topmetal/topvia
+  width-space-enclosure rules — the block routes on M1/M2 with Cont/Via1
+  only) and drew 10 layers the deck has no rule for
+  (`layers_in_stream_without_rules`: 5/1, 8/1, 8/25, 10/1, 10/25, 28/0,
+  33/0, 111/0, 128/0, 128/1 — label/pin-purpose variants and marker
+  layers, including the EXTBlock/SalBlock/PolyRes resistor-recognition
+  markers and EmWind). A `met` here means "clean inside that scope",
+  not "no DRC-expressible defect exists".
 - **Item 4 (LVS clean) — cited unpinned: `layout/bandgap_top/lvs_report.json`**:
   grades `check_failed` — `status: mismatch`, honestly. Sole remaining cause
   on the SG13G2 cells: `bandgap_core`/`bandgap_top`'s three `NPN13G2`
@@ -113,37 +132,40 @@ The binding used here:
   enforced by `check_evidence_formats.py`'s layout-report staleness gate
   instead, which re-derives every committed report's input hashes.
 - **Item 11 (Power delivery, structural) — cited as the compound pair
-  `layout/sg13cmos5l-bandgap_top/erc_report.json` (pinned) +
-  `layout/bandgap_top/lvs_report.json` (item 4's own, unpinned):** grades
-  `check_failed`, honestly — the first item-11 citation any fleet block has
-  registered (#234 closed #225; #239 registered the citation). Since #233
-  declared the spec's `ties[]` entry and regenerated the report under the
-  commit-pinned `klt 0.5.0+g32f69f811682`, the ERC half is **checked
-  evidence with findings on record**, not a passing envelope:
-  `erc_status: "violations"` with **12 `erc.missing_tie` findings** (one
-  per physically distinct `NWell` island — no nSD-covered `Activ` is drawn
-  inside any well; 2 floating MOS wells + 10 marker-less pnpMPA base
-  rings, filed as #240 and kept, not tuned away), while the supply-island
-  half stays clean (each declared supply resolves to exactly one island,
-  and `gates[]`/`nets[]` findings are byte-identical to the pre-tie
-  report — klayout-tools#2186's tie isolation). Both halves keep the item
-  unmet: (a) the ERC half's `erc.missing_tie` count is nonzero until #240
-  clears; (b) the LVS half — every declared supply paired in the cited
-  report's `net_correspondence` — is not met: that report pairs only
-  `d1`/`d2` (the standing NPN13G2 decline item 4 documents,
-  klayout-tools#1242). `t1_met_count` is unchanged at 3. The citation's
-  pin binds the ERC envelope's **input** hash (the committed GDS — the
-  same convention every pinned citation uses), so it is unchanged by a
-  report regeneration that does not touch the GDS; the report's own
-  spec/GDS freshness anchors are what `check_evidence_formats.py`
-  re-derives.
+  `layout/bandgap_top/erc_report.json` (pinned to the `bandgap_top.gds`
+  hash) + `layout/bandgap_top/lvs_report.runset.json` (item 4's LVS
+  report, unpinned):** grades `unmet` / `lvs_did_not_pass` (#411). The ERC
+  half is complete and clean: `layout/bandgap_top/erc-supply-spec.json`
+  (SG13G2 stackup GatPoly/Metal1/Metal2, `Cont` + `Via1`, `VDD`/`VSS` as
+  supplies, one n-well `ties[]` entry) re-minted under the containment-deck
+  build (`klt 0.9.3.dev1023`, klayout 0.30.13 — the same build as the cell's
+  DRC mint in #572) against the #572 regenerated GDS
+  reports `erc_status: "clean"` with zero findings — each supply resolves to
+  exactly one island, and all 7 gates and the n-well tie were *checked*
+  (`erc_coverage.checked`). The envelope's top-level `status` reads
+  `not_checked` (exit 4) only because no `--pdk` antenna table is supplied;
+  gate on `erc_status`. Net names are upper-case because the builders
+  upper-case every drawn label (`layout/common.py`). No substrate tie is
+  declared (no drawn p-well layer for `ties[]` to name). The remaining
+  reason is the LVS half: the cited report's `lvs_status` is `mismatch`
+  (the standing NPN13G2 decline, klayout-tools#1242; re-citation tracked in
+  #381). Before #411 this item cited the **SG13CMOS5L port's** ERC report,
+  which is a different PDK and layout and was never this block's evidence.
+  **Re-run the ERC after any regeneration of the GDS** and re-pin both
+  this citation and the report.
+- **SG13CMOS5L port ERC (not cited anywhere).**
+  `layout/sg13cmos5l-bandgap_top/erc_report.json` still reads
+  `erc_status: "violations"` with **10 `erc.missing_tie` findings** even
+  though #240 ("Zero out the 12 erc.missing_tie findings") closed on
+  2026-09-23. The remaining ten are the pnpMPA wells whose correct tie is
+  `vss` (needs klayout-tools#2354). That residue is *not* resolved by #240's
+  closure; either reopen that work or fix it when the port is next touched.
 
-- **Item 8 (Characterization report) — cited: `measurements/2026-11-characterization-report/envelope.json`**
-  (#387, replacing #300's October citation; `generic` envelope, `t1_item: 8`,
-  `provenance.input.path` = `README.md` beside it, pinned to that report's
-  sha256). The report is
-  [`measurements/2026-11-characterization-report/README.md`](../measurements/2026-11-characterization-report/README.md),
-  stamped at the audited commit `e2d2b1c4`: one entry per row of the
+- **Item 8 (Characterization report) — cited: `measurements/2026-11-18-characterization-report/envelope.json`**
+  (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
+  `README.md` beside it, pinned to that report's sha256). The report is
+  [`measurements/2026-11-18-characterization-report/README.md`](../measurements/2026-11-18-characterization-report/README.md),
+  stamped at the audited commit `11a18b96`: one entry per row of the
   `README.md` target-spec table (the Output-reference row as its nominal,
   untrimmed and trimmed lines), each with bound, verdict, binding corner,
   whether the verdict is statistical, the newest committed `sim/` record
@@ -152,32 +174,30 @@ The binding used here:
   **What an item 8 `met` means here — and what it does not.** It means the
   report exists, is current at the stamped commit and cites its evidence. It
   is **not** a statement that every spec row passes: the report itself
-  records the trimmed ±0.5% line as measured unmet (3σ ≈ 2.6%), the PSRR @ DC
-  row as measured **unmet** by 0.0033 dB (59.9967 dB at bcs/125 °C/3.63 V,
-  where October's record read 60.0013 dB), and four records as stale against
-  the trim-bearing netlist (`sim/evidence-freshness-waivers.json`). The
-  November report's item-8 verdict is `met` and the T1 count is unchanged at
-  5/11 precisely because this row grades report currency and citation
-  honesty, not circuit performance. Whether the block conforms to its spec is
-  item 5's question, and item 5 stays unmet.
+  records the trimmed ±0.5% line as measured unmet (3σ ≈ 2.4%), the PSRR
+  row as not met on current evidence (the post-layout grid that cleared it
+  by 0.0013 dB predates the current extraction), and five stale records:
+  two pre-trim-DUT records waived in
+  `sim/evidence-freshness-waivers.json`, plus three post-layout benches
+  disclosed against the pre-#557 extraction. Whether the
+  block conforms to its spec is item 5's question, and item 5 stays unmet.
   **The pin binds the report, not the envelope**: the grader re-hashes the
   report file, so editing the report without regenerating the envelope and
   this manifest's pin fails `check_signoff_manifest.py` (the exact-bytes
   freshness is tested, not assumed). The pin alone would not notice the
   report's *dependencies* moving while its bytes stay put, so since #315 the
   report also carries a machine-readable dependency inventory,
-  [`dependencies.json`](../measurements/2026-11-characterization-report/dependencies.json),
+  [`dependencies.json`](../measurements/2026-11-18-characterization-report/dependencies.json),
   checked by `.github/scripts/check_report_dependencies.py` (see "Item-8
   dependency drift" below): a change to an audited DUT netlist, a spec-table
   bound, a quoted decision-record status, or a newer record in a summarized
-  experiment now fails CI even though the pin still matches. **That is what
-  happened**: PR #383 re-extracted `bandgap_top.pex.spice` and
-  `bandgap_startup.pex.spice`, the October inventory's `dut[5]`/`dut[6]`
-  stopped matching, and the remedy the checker prescribes — a new dated
-  report with the three affected experiments re-run, a new inventory,
-  envelope, pin and re-minted verdict — is #387's November report. The
-  September and October reports are superseded and kept as history; neither
-  is required to track newer inputs.
+  experiment now fails CI even though the pin still matches (#303 is the
+  change expected to trigger it). The six earlier reports
+  (`2026-09-characterization-report/`, `2026-10-characterization-report/`,
+  `2026-11-characterization-report/`, `2026-11-04-characterization-report/`,
+  `2026-11-13-characterization-report/`,
+  `2026-11-16-characterization-report/`)
+  are superseded and kept as history; none is required to track newer inputs.
 
 Items deliberately left **uncited** (they render `unmet` / `no_evidence`,
 which is the honest machine-readable gap — repo evidence exists for several
@@ -291,18 +311,20 @@ circuit-performance pass, and no bound is relaxed to make it green.
 
 ### The pin
 
-The verdict is graded against the exact upstream `klt` build recorded in the
-workflow's `pip install` line (a pinned git rev of
-`2AMLogic/klayout-tools`, currently `3a75c3ae` — the merge of
-klayout-tools#2718, artifact-anchored `generic` evidence for items 1, 2, 9
-and 10; PyPI releases up to 0.5.0 predate T1 item 11, which the ladder added
-2026-09-17 in klayout-tools#2025, so a PyPI pin would silently grade a
-10-item checklist). The report embeds the governing checklist's own
-`source_doc_content_hash`; when the pin is bumped to a rev whose checklist
-differs, the committed report stops matching and CI fails until the report
-is regenerated and committed — the same "checklist moved, re-read
-everything" discipline the 2026-09-17 item-11 incident made necessary
-fleet-wide.
+The verdict is graded against the exact upstream `klt` release recorded in
+the workflow's `pip install` line (PyPI `klayout-tools==0.8.0`, tag `v0.8.0`,
+commit `c572046b`). The report embeds the governing checklist's own
+`source_doc_content_hash` and the build's `grading_ruleset_id`; when the pin
+is bumped to a release whose checklist or ruleset differs, the committed
+report stops matching and CI fails until the report is regenerated and
+committed — the same "checklist moved, re-read everything" discipline the
+2026-09-17 item-11 incident made necessary fleet-wide.
+
+**Bump to 0.8.0 (from the git rev `7ee09483`, 0.7.1.dev1743)**: grading this
+unchanged manifest at both gives an identical verdict — `t1_met_count` 5, items
+1/2/3/8/10 `met`, 4/5/6/7/9/11 `unmet`, same `source_doc_content_hash`. Only
+the `build` block changed (release version, tag, commit, `is_release: true`,
+new `grading_ruleset_id`).
 
 **What changed between the old pin (`2b1e55e5`) and `3a75c3ae`** (compared by
 grading this unchanged manifest at both): the checklist is still 11 items

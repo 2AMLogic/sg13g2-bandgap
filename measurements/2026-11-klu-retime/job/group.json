@@ -1,0 +1,19 @@
+{
+ "group": "rs-20261118T043815Z-17be3498",
+ "shards": [
+  {
+   "job": "rs-20261118T043815Z-17be3498-s00",
+   "state": "done",
+   "ok": true,
+   "retry_count": 0,
+   "found_outputs": [
+    "measurements/2026-11-klu-retime/out"
+   ],
+   "exit_code": 0,
+   "wall_seconds": 3176,
+   "instance_type": "m7i.4xlarge",
+   "image_id": "ami-09c14f55df4958cbd",
+   "missing_outputs": []
+  }
+ ]
+}

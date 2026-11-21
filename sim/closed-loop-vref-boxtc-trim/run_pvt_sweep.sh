@@ -88,6 +88,14 @@ echo "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,sta
 ROWS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/boxtct-rows-${RECORD_ID}.XXXXXX")"
 trap 'rm -rf "${ROWS_DIR}"' EXIT
 
+# fmt_set 127 128 129 -> "{127, 128, 129}" ("$*" alone cannot render the
+# comma-space separator: it joins on the first character of IFS only).
+fmt_set() {
+  local out="{$1" v
+  for v in "${@:2}"; do out+=", $v"; done
+  echo "${out}}"
+}
+
 render_op() {
   # render_op OUT CORNER TEMP VDD CODE
   local out="$1" corner="$2" temp="$3" vdd="$4" code="$5"
@@ -304,7 +312,7 @@ for point in "${GRID[@]}"; do
 done
 
 # Box-method TC per (corner x code, vdd) group over the 8-temp .op grid
-# (same formula as sim/closed-loop-vref-pvt-boxtc).
+# (same formula as sim/harness/boxtc_companion.py).
 BOXT_OUT="${RECORDS_DIR}/${RECORD_ID}-boxtc.csv"
 echo "corner_label,trim_code,vdd_v,n_pass,n_grid,vmin_v,vmin_temp_c,vmax_v,vmax_temp_c,vref_27c_v,box_tc_ppm_per_c" > "${BOXT_OUT}"
 ALL_CODE_LABELS=("${NEAR_CODES[@]}" "${FAR_CODES[@]}")
@@ -371,7 +379,8 @@ for corner in "${FAR_CORNERS[@]}"; do
 done
 
 WORST_BOX=$(awk -F, 'NR>1 && $4==$5 && $11+0 > m { m = $11+0; line = $1"/"$3"V = "sprintf("%.1f", $11)" ppm/C" } END { print line }' "${BOXT_OUT}")
-WORST_NEAR=$(awk -F, 'NR>1 && $3=="near" && $7+0 > m { m=$7+0; line = $1"/"$2"V @code"$5" vs 128: +"sprintf("%.2f", $7)" ppm/C ("$8"% over 98C, cap "$9")" } END { print line }' "${DELT_OUT}")
+WORST_NEAR=$(awk -F, -v s="${TRIM_TC_SPAN_C}" 'NR>1 && $3=="near" && $7+0 > m { m=$7+0; line = $1"/"$2"V @code"$5" vs 128: +"sprintf("%.2f", $7)" ppm/C ("$8"% over "s"C, cap "$9")" } END { print line }' "${DELT_OUT}")
+VDD_SET="$(fmt_set "${VDDS[@]}")"
 
 {
   echo "# Record ${RECORD_ID}"
@@ -386,13 +395,13 @@ WORST_NEAR=$(awk -F, 'NR>1 && $3=="near" && $7+0 > m { m=$7+0; line = $1"/"$2"V 
   echo "  trim-induced TC comes from the sub-code mis-aim (+/-1/2 LSB"
   echo "  quantization + <~0.4 LSB chord-fit aim), i.e. <=~1 code off"
   echo "  null. This bench measures the box-method TC"
-  echo "  ((vmax-vmin)/(vref(27C)*165 C)) on the same 8-temperature grid"
-  echo "  as sim/closed-loop-vref-pvt-boxtc at codes {127, 128, 129} (the"
+  echo "  ((vmax-vmin)/(vref(27C)*${TEMP_SPAN_C} C)) on the same ${#TEMPS[@]}-temperature grid"
+  echo "  as sim/closed-loop-vref-pvt-boxtc at codes $(fmt_set "${NEAR_CODES[@]}") (the"
   echo "  +/-1-code band, full corner x supply grid) and gates the"
   echo "  +/-1-code delta vs the code-128 baseline at ${GATE_DELTA_PPM_CAP} ppm/C (the"
-  echo "  ~0.175% headroom DR-0011's budget carries, over the 98 C span"
-  echo "  from the 27 C trim point). Codes {0, 64, 192, 255} on"
-  echo "  {typ, bcs, wcs}/3.30 V bound the TC-vs-code sensitivity slope"
+  echo "  ~${TRIM_TC_HEADROOM_PCT}% headroom DR-0011's budget carries, over the ${TRIM_TC_SPAN_C} C span"
+  echo "  from the 27 C trim point). Codes $(fmt_set "${FAR_CODES[@]}") on"
+  echo "  $(fmt_set "${FAR_CORNERS[@]}")/${FAR_VDDS[*]} V bound the TC-vs-code sensitivity slope"
   echo "  and its saturation (reported, ungated). NOT a claim against a"
   echo "  different target -- the ratified TC row (< 50 ppm/C) is"
   echo "  unchanged."
@@ -417,13 +426,13 @@ WORST_NEAR=$(awk -F, 'NR>1 && $3=="near" && $7+0 > m { m=$7+0; line = $1"/"$2"V 
   echo "- **PDK**: \`${PDK}\` at \`${PDK_ROOT}\` -- pinned release: see"
   echo "  \`sim/pdk.json\`."
   echo "- **OSDI models**: \`${OSDI_DIR}\` -- built by \`sim/tools/build-osdi.sh\`;"
-  echo "  compiler provenance pinned in \`sim/pdk.json\` (\"osdi_toolchain\")."
+  echo "  compiler pins: \`sim/tools/build-osdi.sh --print-pins\`."
   echo "- **ngspice**: \`${NGSPICE_VERSION}\`"
   echo "- **JOBS**: ${JOBS} (wall-clock concurrency only)."
-  echo "- **Corner matrix run**: {typ, bcs, wcs, sf, fs} x {2.97, 3.30,"
-  echo "  3.63} V x 8 temperatures x codes {127, 128, 129} (full grid)"
-  echo "  + {typ, bcs, wcs} x 3.30 V x codes {0, 64, 192, 255}"
-  echo "  + 5 transient validation points = ${total} points."
+  echo "- **Corner matrix run**: $(fmt_set "${CORNER_LABELS[@]}") x ${VDD_SET%,*},"
+  echo "  ${VDD_SET##*, } V x ${#TEMPS[@]} temperatures x codes $(fmt_set "${NEAR_CODES[@]}") (full grid)"
+  echo "  + $(fmt_set "${FAR_CORNERS[@]}") x ${FAR_VDDS[*]} V x codes $(fmt_set "${FAR_CODES[@]}")"
+  echo "  + ${#CORNER_LABELS[@]} transient validation points = ${total} points."
   echo "- **Result**: ${passed}/${total} points PASS. Worst box-method"
   echo "  group across complete groups: ${WORST_BOX}. Worst +/-1-code"
   echo "  trim-induced delta: ${WORST_NEAR};"

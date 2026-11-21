@@ -9,14 +9,11 @@ corner set spans three per-device-family files, klayout-tools#2668); with
 variant, optionally seeded from a committed record (--seed-csv).
 """
 import argparse
-import csv
 import json
 import pathlib
 
 import klt_corner_bundle as bundle
-
-SEED_FIELDS = (("@@FB_SEED@@", "fb_final_v"), ("@@SNS1_SEED@@", "sns1_final_v"),
-               ("@@SNS2_SEED@@", "sns2_final_v"), ("@@VREF_SEED@@", "vref_final_v"))
+from seed_deck import SEED_FIELDS, load_seeds
 
 
 def seed_row(seeds: dict, label: str, vdd: float, seed_csv: str) -> dict:
@@ -38,12 +35,10 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--request-template", required=True)
     ap.add_argument("--body-template", required=True)
-    ap.add_argument("--pdk-root", required=True,
-                    help="the SUBMITTING host's PDK_ROOT: the per-family `.lib` cards "
-                         "appended to each body name their file under it, and klt "
-                         "rewrites such a target to `$PDK_ROOT/<rel>` for the runner to "
-                         "expand against its baked root (klayout-tools#4097). Naming the "
-                         "runner's baked root here instead is refused at submit")
+    ap.add_argument("--lib-root", required=True,
+                    help="PDK root of the body's `.lib` cards: the submitting host's "
+                         "$PDK_ROOT, which klt rewrites for the runner (it refuses an "
+                         "absolute runner path there). OSDI paths are --osdi, unrewritten.")
     ap.add_argument("--provision-script", required=True)
     ap.add_argument("--pdk", required=True)
     ap.add_argument("--work", required=True)
@@ -59,16 +54,11 @@ def main() -> None:
                          "(dc-sweep benches whose levels scale with the supply)")
     a = ap.parse_args()
 
-    seeds: dict = {}
-    if a.seed_csv:
-        with open(a.seed_csv) as fh:
-            for row in csv.DictReader(fh):
-                if row["status"] == "PASS":
-                    seeds[(row["corner_label"], row["temp_c"], row["vdd_v"])] = row
+    seeds = load_seeds(a.seed_csv) if a.seed_csv else {}
 
     body_tmpl = pathlib.Path(a.body_template)
     base = json.loads(pathlib.Path(a.request_template).read_text())
-    models_dir = f"{a.pdk_root}/{a.pdk}/libs.tech/ngspice/models"
+    models_dir = f"{a.lib_root}/{a.pdk}/libs.tech/ngspice/models"
     out = pathlib.Path(a.work)
 
     for label, (hbt, mos, res) in bundle.CORNER_SECTIONS.items():
@@ -88,10 +78,9 @@ def main() -> None:
             text += f"""
 * Batch mode only (issue #278 per-process bridge): the two families the
 * request's single models.lib (klt 0.5.0 on the runner) cannot reach, as
-* selection-form `.lib` cards under the SUBMITTING host's PDK root -- klt
-* rewrites each to `$PDK_ROOT/<rel>` and the runner expands it against its
-* own baked root (klayout-tools#4097, issue #387). Same CORNER_SECTIONS entry
-* the request's models.lib selects the HBT family from. {where}{'.' if vdd is not None else ''}
+* selection-form `.lib` cards under the submitting host's PDK root (klt rewrites them). Same
+* CORNER_SECTIONS entry the request's models.lib selects the HBT family
+* from. {where}{'.' if vdd is not None else ''}
 .lib "{models_dir}/cornerMOShv.lib" {mos}
 .lib "{models_dir}/cornerRES.lib" {res}
 """

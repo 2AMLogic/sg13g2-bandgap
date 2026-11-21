@@ -7,7 +7,54 @@ table and subclasses :class:`BuilderBase` to add its own drawing methods.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import os
+
 import klayout.db as kdb
+
+#: The leaf-hash sidecar an assembly top's generator writes beside its GDS
+#: (issue #588): ``{"schema_version": 1, "leaves": [{"path": ..., "sha256":
+#: ...}, ...]}``, binding the committed top to the exact bytes of each leaf
+#: GDS it read. ``.github/scripts/check_evidence_formats.py`` re-derives every
+#: hash on each push/PR, so an edited leaf plus a subset regeneration can no
+#: longer land ``hygiene``-green with a top that no longer matches its own
+#: leaves. The name is duplicated in the checker on purpose: the checker is
+#: deliberately independent of the producers it polices and must not import
+#: from ``layout/``.
+SIDECAR_NAME = "leaf_inputs.json"
+
+
+def write_leaf_inputs_sidecar(top_gds_path: str, leaf_gds_paths: list[str]) -> str:
+    """Write :data:`SIDECAR_NAME` beside ``top_gds_path``, hashing each leaf GDS.
+
+    Called from an assembly top's ``__main__`` block right after
+    ``builder.write(OUTPUT)`` with the same leaf paths ``build()`` just
+    ``layout.read()`` -- the recorded sha256 is therefore of the exact bytes
+    embedded into the top. Output is deterministic for unchanged leaves
+    (paths sorted, ``indent=2``, ``sort_keys=True``, one trailing newline),
+    so re-running the generator leaves ``git diff`` empty exactly as the GDS
+    itself does.
+
+    Returns the sidecar's path (printed by the caller beside the GDS line).
+    """
+    top_dir = os.path.dirname(os.path.abspath(top_gds_path))
+    entries = []
+    for leaf in leaf_gds_paths:
+        leaf_abs = os.path.abspath(leaf)
+        digest = hashlib.sha256()
+        with open(leaf_abs, "rb") as handle:
+            for chunk in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(chunk)
+        entries.append(
+            {"path": os.path.relpath(leaf_abs, top_dir), "sha256": digest.hexdigest()}
+        )
+    entries.sort(key=lambda entry: entry["path"])
+    sidecar = os.path.join(top_dir, SIDECAR_NAME)
+    with open(sidecar, "w", encoding="utf-8") as handle:
+        json.dump({"schema_version": 1, "leaves": entries}, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    return sidecar
 
 
 class BuilderBase:
@@ -126,6 +173,12 @@ def route_v(b: BuilderBase, layer: tuple[int, int], x_center: float, y0: float, 
 #: float that rounds to it. See :func:`fold_plan`'s docstring.
 NM_PER_UM = 1000
 
+#: The manufacturing grid, in nanometres. :func:`fold_plan` returns only gap
+#: values that are multiples of this, so every folded leg's pitch -- and with
+#: it each leg's edges and the Cont boxes drawn on the terminal heads --
+#: lands on the grid the decks' ``*.ongrid`` DRC rules check (issue #573).
+GRID_NM = 5
+
 
 def fold_plan(
     w_um: float,
@@ -170,13 +223,31 @@ def fold_plan(
     conserved to float precision and the drawn boxes would round. Rather than
     force the caller to hand-tune ``l``, this function keeps ``h`` an exact
     integer number of nanometres and *searches ``g`` upward* from
-    ``gap_min_um`` for the first value that divides evenly. Incrementing ``g``
-    by 1 nm changes the numerator by ``-(legs-1)`` nm, i.e. by ``+1`` modulo
-    ``legs``, so the residue cycles through every value and a solution always
-    exists within ``legs`` nanometres of the floor -- at most 0.03 um wider
-    than the requested minimum for the leg counts this repo uses. The
+    ``gap_min_um`` -- rounded up to a multiple of :data:`GRID_NM`, the
+    manufacturing grid -- for the first value that divides evenly. Stepping
+    ``g`` only on the grid matters as much as the divisibility itself: the
+    leg pitch is ``w + g``, so an off-grid ``g`` puts every leg edge ``i`` --
+    and with it the Cont boxes drawn on the terminal heads -- off the
+    manufacturing grid the deck's ``*.ongrid`` rules check (issue #573: a
+    1 nm-step search produced an RPU pitch of 1.412 um and Cont vertices at
+    x=43.772/44.772 um).
+
+    Incrementing ``g`` by :data:`GRID_NM` changes the numerator by
+    ``-(legs-1)*GRID_NM`` nm, i.e. by ``+GRID_NM`` modulo ``legs``, so when
+    ``gcd(GRID_NM, legs) == 1`` the residue cycles through every value and a
+    solution always exists within ``legs`` grid steps of the aligned floor --
+    at most ``legs * GRID_NM`` nm wider than the requested minimum (0.16 um
+    for the 32-leg RPU, up from the 1 nm search's 0.03 um). When ``legs`` is
+    itself a multiple of :data:`GRID_NM` only every ``GRID_NM``-th residue is
+    reachable, and a solution exists iff ``l`` is a multiple of
+    :data:`GRID_NM` nm -- but the aligned floor need not divide evenly even
+    then: with ``legs = 5m`` the congruence is solvable in ``k`` modulo
+    ``m``, so the search may take up to ``legs / GRID_NM`` grid steps past
+    the aligned floor (measured worst case ``legs/GRID_NM - 1`` steps:
+    ``legs=15 l=300.0um -> 405 nm``, ``legs=30 l=300.0um -> 420 nm``; the
+    ``legs=5`` callers here do return the aligned floor itself). The
     resulting ``g`` is therefore always **at least** the DRC-driven minimum
-    the caller asked for, never below it.
+    the caller asked for, never below it, and always on the grid.
 
     ``legs=1`` is the degenerate, unfolded case: one vertical bar of length
     ``l_um``, no links, ``gap`` unused.
@@ -198,14 +269,21 @@ def fold_plan(
     if legs == 1:
         leg_nm, gap_nm = l_nm, gap_min_nm
     else:
-        for gap_nm in range(gap_min_nm, gap_min_nm + legs):
+        gap_start_nm = -(-gap_min_nm // GRID_NM) * GRID_NM
+        for gap_nm in range(gap_start_nm, gap_start_nm + legs * GRID_NM, GRID_NM):
             remainder = l_nm - (legs - 1) * gap_nm
             if remainder > 0 and remainder % legs == 0:
                 leg_nm = remainder // legs
                 break
-        else:  # pragma: no cover -- unreachable: see the docstring's residue argument
+        else:
+            # Reachable only when legs is itself a multiple of GRID_NM and l
+            # is not (see the docstring's residue argument): then no gap on
+            # the manufacturing grid divides l into whole-nm legs at all.
             raise ValueError(
-                f"no gap >= {gap_min_um}um divides l={l_um}um into {legs} whole-nm legs"
+                f"no multiple-of-{GRID_NM}nm gap >= {gap_min_um}um divides l={l_um}um "
+                f"into {legs} whole-nm legs -- a grid-constrained search needs "
+                f"l to be a multiple of {GRID_NM}nm whenever {legs} % {GRID_NM} == 0 "
+                f"(l_nm={l_nm}, l % {GRID_NM} = {l_nm % GRID_NM})"
             )
         if leg_nm <= w_nm:
             raise ValueError(

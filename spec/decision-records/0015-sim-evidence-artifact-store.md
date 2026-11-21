@@ -96,7 +96,10 @@ size budget replaces it (manifests and summaries are small).
   `$KLT_ARTIFACT_BROKER` (set for agent sessions on fleet workers); a laptop
   without it cannot mint a record.
 - The older `run_pvt_sweep.sh` shell writers still commit bytes. They are
-  legacy; this record does not convert them, and new evidence should use the
-  `klt sim` harness.
+  legacy; this record does not convert them. They cannot mint new records:
+  `check_evidence_formats.py` fails a manifest-less record with an id dated
+  `20261023` or later. An experiment lacking `run_klt_sim.sh` is converted
+  when a re-run is needed (one issue per experiment); the unconverted ones
+  are listed in `sim/README.md`.
 - Not touched: the target spec, any circuit, and `manifests/klt-pin.json`
   (the signoff/layout pin is a separate build from the artifact client).

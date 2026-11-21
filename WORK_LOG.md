@@ -6,6 +6,265 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 <!-- Maintained automatically by the Guide triage agent. Manual edits are fine but may be overwritten. -->
 
+## Archives
+
+- [2026-09](work_log/WORK_LOG_2026-09.md)
+
+### 2026-11-19
+
+- **PR #596**: docs: document merge-time staleness hazard for layout evidence
+- **Issue #587** (closed): Layout evidence can go stale against a concurrently-merged GDS change, and PR CI never re-checks it
+
+### 2026-11-18
+
+- **PR #624**: fix: end build-osdi.sh help at header terminator
+- **Issue #623** (closed): build-osdi.sh -h prints 6 lines past the end of the header; sim/README.md has a stray short line
+- **Issue #622** (closed): Post-merge: file the build-osdi.sh re-vendor follow-up for the 9 remaining consumer repos
+- **PR #621**: build-osdi.sh: embed toolchain pins as JSON and add --print-pins
+- **Issue #620** (closed): build-osdi.sh: carry the pins as embedded JSON and print them, so consumers stop restating them
+- **PR #617**: ci: report hygiene's base-diff gates on merge_group commits (merge queue step 1)
+- **PR #616**: fix: correct klu-retime README log claims and un-ignore measurements logs
+- **Issue #615** (closed): measurements/2026-11-klu-retime README promises per-run ngspice.log files that .gitignore's *.log rule silently dropped
+- **Issue #614** (closed): Merge queue: add the merge_group trigger to the required-check workflow(s)
+- **PR #613**: sim: adopt the klu direct solver on both supply benches (measured 1.44x/1.36x hot-corner wins)
+- **PR #612**: fix(layout): refresh bandgap_top leaf_inputs.json to the post-#572 core GDS hash
+- **PR #611**: refactor: hoist shared git capture and waiver-file preamble into _ci_common
+- **Issue #610** (closed): Dedupe .github/scripts: _git and the waiver-file loader are copied between check_report_regression and check_evidence_formats
+- **PR #608**: fix: report a malformed leaf sidecar entry instead of crashing the evidence checker
+- **Issue #607** (closed): main is red: bandgap_top leaf_inputs.json leaf binding stale after #588's hygiene run (non-waived STALE)
+- **Issue #595** (closed): check_evidence_formats: malformed leaf_inputs.json entry crashes with KeyError instead of the intended failure report
+- **PR #589**: fix(layout): put fold_plan's inter-leg gap on the 5 nm manufacturing grid
+- **Issue #573** (closed): layout: cont.ongrid.1 x4 in bandgap_startup under the current sg13g2 deck
+- **Issue #518** (closed): sim: re-time closed-loop-iq / closed-loop-startup under KLU on an uncontended host (#489 left the number undetermined)
+
+- **PR #593**: layout: bind assembly tops to the leaf GDS hashes they embed via leaf_inputs.json
+- **Issue #588** (closed): layout: bind bandgap_top.gds (and CMOS5L top) to the leaf GDS hashes it embedded — a stale leaf can hide in a committed top for weeks
+- **PR #605**: fix: fail closed on non-integer per-class counts in report regression guard
+- **PR #604**: fix(layout): cite #557, not #552, in bandgap_top's DRC waiver comment
+- **PR #602**: docs: sync item-8 citation to the 2026-11-18 report and bandgap_top LVS prose to the committed 8-finding mint
+- **PR #600**: ci: guard DRC/LVS re-mints against outcome regressions vs the merge base
+- **PR #591**: fix(layout): land Metal1 on draw_npn13g2's base-contact Cont rows
+- **Issue #601** (closed): check_report_regression: a non-integer per-class count is dropped silently, so the per-class comparison can read as a pass
+- **Issue #598** (closed): Docs drift in layout/README.md and manifests/README.md: wrong klayout version on the DRC/ERC mints, stale characterization-report date and top-LVS finding count
+- **Issue #594** (closed): Evidence ladder has no regression guard: a re-minted DRC/LVS report that gets worse passes every checker
+- **Issue #584** (closed): layout: bandgap_top/drc_waivers.json _comment cites #552 (unrelated) where it means #557
+- **Issue #572** (closed): layout: metal1.enclosing.cont.1 x18 in bandgap_core under the require_containment sg13g2 deck
+- **PR #599**: docs: disclose the 0.8.0 deck's Offgrid/containment scope narrowing in DR-0016
+- **PR #592**: test: pin _sg13g2_rppd_ohms at R1's (2u, 37.2u) in the lvs_reference self-test
+- **PR #586**: layout: re-mint all committed layout evidence under the klt 0.8.0 pin (#561 step 2)
+- **PR #583**: fix: enforce b=0/m=1 precondition of lvs_reference's formula resistor paths
+- **PR #576**: fix(layout): raise TAP_NWELL_MARGIN_UM to the deck's 0.24um nwell.enclosing.nactiv.1 floor
+- **Issue #597** (closed): DR-0016: disclose that the pinned 0.8.0 deck cannot see the containment rule families #572/#573 are filed against
+- **Issue #590** (closed): lvs_reference self-test: _sg13g2_rppd_ohms is the one formula helper whose value is not pinned
+- **Issue #582** (closed): lvs_reference.py: the PDK symbol-formula resistor paths silently assume b=0 and m=1
+- **Issue #579** (closed): Rebase PR #576 (#571 tap-margin fix) onto post-#574 main: layout regen + evidence re-mint
+- **Issue #571** (closed): layout: nwell.enclosing.nactiv.1 (amp 5, core 6, top 11) under the require_containment sg13g2 deck
+- **Issue #561** (closed): Evidence backlog: 20 committed layout reports predate the DR-0016 evidence standard (klt 0.8.0)
+- **PR #580**: layout: derive SG13G2 rppd reference values from the PDK's own rppd.sym formula (issue #561 step 1)
+- **PR #578**: fix(layout): drop double-applied CORE_DX in bandgap_top vref column x
+- **Issue #577** (closed): layout: bandgap_top's vref column double-applies CORE_DX (latent; harmless only while CORE_DX == 0)
+- **PR #574**: fix(layout): enclose core/top Via1 landings in Metal2 at the deck's fixed 0.19 um
+- **Issue #557** (closed): layout: remaining via1 end-cap/size defects in bandgap_core, bandgap_startup, bandgap_top under the current sg13g2 deck
+
+### 2026-11-17
+
+- **PR #569**: docs: correct rhigh trace narrative (schematic path, unmatched split)
+- **PR #566**: layout: value SG13G2 rhigh reference from the PDK symbol formula, trace the 0.8.0 deck r delta
+- **Issue #568** (closed): docs: two precision fixes in the #563 rhigh trace narrative (wrong schematic path, unmatched-finding attribution)
+- **Issue #563** (closed): trace: bandgap_top rhigh X3_RPU `r` delta +4.2% (1999501.7 Ω layout vs 1919368.0 Ω reference) — the 1019th LVS error-severity finding
+- **PR #565**: docs: root README status block matches committed DRC/LVS reports after the DR-0016 re-mint
+- **PR #560**: evidence: re-mint bandgap_top LVS under pinned klt 0.8.0; add DR-0016 evidence standard
+- **PR #559**: fix(layout): enclose bandgap_amp Via1 landings in Metal2 at the deck's fixed 0.19 um
+- **Issue #564** (closed): docs: root README status block attributes bandgap_top's LVS mismatch to the 3 NPN13G2 devices — stale after the DR-0016 re-mint
+- **Issue #558** (closed): tool drift: top-level LVS findings explode 10/4 -> 1023/1019 under klt 0.9.3 deck; signoff manifest ROTTED on main
+- **Issue #556** (closed): layout: bandgap_amp has 12 Via1 shapes half outside Metal2 (metal2.enclosing.via1.1)
+- **PR #554**: chore(loom): resync installed Loom to v0.19.1306
+- **PR #550**: chore(sim): remove closed-loop-vref-pvt run_pvt_sweep.sh, superseded by run_klt_sim.sh twin
+- **PR #546**: ci: gate characterization spot-check output blocks on live re-run
+- **Issue #519** (closed): Remove closed-loop-vref-pvt run_pvt_sweep.sh: superseded by the new run_klt_sim.sh twin
+- **Issue #516** (closed): No gate re-derives the characterization reports' committed "Spot-check output" blocks
+- **PR #552**: fix(harness): companions remove the refused CSV instead of leaving it header-only
+- **PR #551**: fix: derive boxtc-trim mint block's shared-grid literals from CORNER_LABELS/VDDS
+- **PR #548**: fix: derive boxtc-trim mint block's grid cardinality from TEMPS
+- **PR #547**: docs: source the 100 °C fleet-timing claim to the committed record
+- **Issue #549** (closed): boxtc-trim mint block still restates two shared-grid cardinalities as literals ("5 transient validation points", the {typ,bcs,wcs,sf,fs} x {2.97,3.30,3.63} V grid)
+- **Issue #544** (closed): Trim bench mint block still restates the TEMPS cardinality as "8-temperature grid" (sixth instance, missed by #530's table)
+- **Issue #536** (closed): TC companions leave a header-only CSV on disk when main() refuses (#510 residual)
+- **Issue #515** (closed): closed-loop-vref-pvt-boxtc README quotes a per-100 °C-point timing range the committed record cannot source
+- **PR #543**: fix(sim): derive boxtc-trim record grid prose from array constants
+- **PR #542**: docs: document batch PDK-root precedence in trim-axis env header; reflow harness README
+- **Issue #530** (closed): The trim bench's array-valued constants (NEAR_CODES, FAR_CODES, FAR_CORNERS, FAR_VDDS, TEMPS count) are still restated as record prose
+- **Issue #524** (closed): Docs nit: name the generic KLT_SIM_BATCH_PDK_ROOT in run_klt_trim_axis.sh's Environment header; re-wrap sim/harness/README.md:634
+
+### 2026-11-16
+
+- **PR #540**: refactor: hoist seed_row and fill_deck into seed_deck.py
+- **PR #513**: chore(loom): resync installed Loom to v0.19.1302
+- **Issue #487** (closed): render_deck() in the two MC harnesses carries 11 more byte-identical lines, and the 3-line half already has a factored helper in trim_coverage_klt
+- **PR #538**: chore(sim): delete startup-time-to-release run_pvt_sweep.sh, superseded by run_klt_sim.sh
+- **Issue #520** (closed): Remove startup-time-to-release run_pvt_sweep.sh: superseded by its run_klt_sim.sh twin
+
+- **PR #535**: fix(harness): TC companions refuse an empty derivation instead of exiting 0
+- **Issue #510** (closed): sim/harness: a TC companion that derives zero rows should be loud, not a header-only CSV
+- **PR #529**: fix(sim): derive trim bench WORST_NEAR span label and headroom prose from constants
+- **Issue #527** (closed): Two more box-TC record-prose literals in the trim bench sit outside #517's fix (headroom pct, WORST_NEAR span)
+- **PR #526**: fix(sim): derive box-TC trim record span prose from span constants
+- **Issue #517** (closed): The box span's prose restatements (165) sit outside #474's tripwire, including one that lands in minted evidence
+- **PR #511**: docs: record cited_envelopes() full-consumption contract in its docstring
+- **Issue #500** (closed): cited_envelopes()'s docstring does not record the full-consumption contract its generator conversion introduced
+- **Issue #273** (closed): Finish the #264 refresh: closed-loop-vref-mc (1800 draws) and closed-loop-vref-pvt-boxtc (120 transient points)
+- **PR #523**: refactor: route the standalone batch submitters through klt_sim_batch_defaults
+- **PR #521**: refactor: share schematic_vref_main in the vref PEX runner
+- **Issue #512** (closed): Dedupe sim wrapper leftovers after #465: endpoint-method TC companion and schematic_vref_main are each copy-pasted across two benches
+- **Issue #503** (closed): run_klt_trim_axis.sh keeps a third copy of the batch provision-script default
+- **PR #508**: evidence: trim-bearing 120-point box-TC record, retire the #273 waiver
+- **PR #504**: test: tripwire the trim bench's awk box-TC copy to boxtc_companion
+- **PR #501**: docs: record measured KLU-vs-SPARSE solve times for closed-loop-iq and closed-loop-startup
+- **PR #494**: refactor: hoist the duplicated klt-sim runner preamble into one shared file
+- **PR #482**: feat(sim): klt sim wrapper for startup-time-to-release, with a ladder enricher mode
+- **Issue #489** (closed): Consider the KLU direct solver on the sibling klt sim benches that share the boxtc DUT
+- **Issue #481** (closed): Hoist the duplicated klt-sim runner preamble shared by pex_runner.sh and cmos5l_runner.sh
+- **Issue #474** (closed): A third box-method TC implementation survives #465: closed-loop-vref-boxtc-trim's awk copy
+- **Issue #468** (closed): sim: add a klt sim wrapper for startup-time-to-release (Startup row)
+- **Issue #402** (closed): sim: refresh closed-loop-vref-pvt-boxtc (120 points) via concurrent klt sim shard submission (Part of #273)
+- **PR #509**: refactor: share the endpoint-method TC companion via sim/harness/tc_companion.py
+- **PR #498**: refactor(sim): hoist SEED_FIELDS and load_seeds into one shared seed_deck module
+- **PR #490**: refactor: drop last hand-rolled MSENSE parse; de-enumerate sim/lib caller headers
+- **PR #499**: fix: yield cited_envelopes() lazily so walk diagnostics interleave with each caller's tail
+- **Issue #496** (closed): sim/harness: factor the endpoint-method TC companion into a shared helper (and fix its vdd_v formatting)
+- **Issue #486** (closed): Hoist the triplicated nodeset-seed loader and SEED_FIELDS token map into one harness module
+- **Issue #473** (closed): Drop the last hand-rolled MSENSE-width parse and fix sim/lib/msense_width.sh's stale caller list
+- **Issue #493** (closed): _ci_common.cited_envelopes() batches its diagnostics ahead of each caller's tail, reordering multi-problem failure output
+
+### 2026-11-15
+
+- **PR #495**: pex: share one vref DUT body template between the pex and pex-boxtc benches
+- **PR #491**: sim: add the klt sim wrapper for closed-loop-vref-pvt
+- **PR #488**: sim: adopt KLU direct solver on closed-loop-vref-pvt-boxtc (3643s -> 211s hot corner)
+- **PR #492**: refactor: dedupe the manifest-to-envelope citation resolver into _ci_common
+- **PR #479**: refactor(ci): fold two checkers into _ci_common's shared scaffolding
+- **PR #476**: refactor: give the MC harness family one copy of its corner-section mapping
+- **PR #485**: docs(layout): one complete SG13G2 build recipe, unique section headings
+- **Issue #472** (closed): Dedupe the PEX vref DUT wrapper: closed_loop_vref_pvt_pex_boxtc.body.spice.tmpl is byte-identical to its sibling, and the harness already has the BODY_TEMPLATE override
+- **Issue #467** (closed): sim: add a klt sim wrapper for closed-loop-vref-pvt (Output-reference nominal row)
+- **Issue #469** (closed): sim: get the box-TC 100 C corner to solve inside the batch job limit (unblocks #402)
+- **Issue #477** (closed): Dedupe .github/scripts: the two dependency checkers each carry the same manifest-to-envelope citation resolver
+- **Issue #475** (closed): Dedupe .github/scripts: check_artifact_manifests.py re-grows _ci_common's Report, resolve_root and ls-files reader
+- **Issue #478** (closed): layout/README.md: consolidate the three colliding "Reproducing" sections — neither SG13G2 recipe regenerates all four cells
+- **Issue #463** (closed): Dedupe the Monte Carlo klt-sim harnesses: PDK corner-section maps, sections(), make_ctx() and load_seeds() re-typed instead of imported
+- **PR #497**: docs: align README status, maturity ladder and measurements/ line with committed evidence
+- **PR #505**: refactor: extract shared spotcheck bodies into measurements/lib/spotcheck_common.py
+- **PR #506**: test: pin the shared PEX body-template contract in SetDispatchWiringTests
+- **Issue #470** (closed): docs: bring the README status and maturity-ladder lines in line with the signoff verdict
+- **Issue #484** (closed): Deduplicate the characterization reports' spotcheck.py: 186 of 201 lines are identical in all four copies
+- **Issue #502** (closed): Harness tests do not pin the shared PEX body-template contract (#472 / PR #495)
+
+### 2026-11-14
+
+- **PR #471**: refactor(sim): one home for the box-method TC derivation
+- **PR #466**: docs: roadmap as of 2026-11-13
+- **PR #462**: sim: gate every grid dispatch through one anchor-check implementation
+- **Issue #465** (closed): Dedupe the box-method TC companion: pex_record_companion() is byte-identical in two experiments, with a shared runner already sourced by both
+- **Issue #458** (closed): Consolidate six copies of the --sanity anchor gate into one tested harness helper
+
+### 2026-11-13
+
+- **PR #461**: docs: drop seven converted experiments from sim/README.md unconverted list
+- **PR #457**: sim: submit batch campaign shards concurrently via klt --batch-set
+- **PR #456**: sim: drop two uncalled awk helpers from pvt_sed_common.sh
+- **PR #455**: chore(sim): remove legacy run_trim_coverage.sh hand-launched ngspice loop
+- **PR #453**: sim: record closed-loop-psrr 45-point batch grid
+- **Issue #459** (closed): Remove seven converted experiments from the 'Still unconverted' list in sim/README.md
+- **Issue #454** (closed): Remove dead is_new_max() and latest_records_csv() from sim/lib/pvt_sed_common.sh
+- **Issue #452** (closed): Remove legacy run_trim_coverage.sh: superseded by run_klt_sim.sh
+- **Issue #415** (closed): sim: add klt sim wrapper for schematic closed-loop-psrr (Part of #412)
+
+### 2026-11-12
+
+- **PR #451**: Bump Repo Skills 0.25.10 -> 0.26.1
+
+### 2026-11-10
+
+- **PR #450**: chore(sim): remove legacy run_mc.sh and run_trim_mc.sh ngspice loops
+- **Issue #448** (closed): Remove legacy run_mc.sh / run_trim_mc.sh: superseded by run_klt_sim.sh
+- **Issue #371** (closed): Live --batch run of the shared PEX runner driver (sim/harness/pex_runner.sh)
+
+### 2026-11-07
+
+- **PR #449**: Bump Repo Skills 0.25.1 -> 0.25.10
+
+### 2026-11-06
+
+- **PR #447**: ci: run orphaned harness self-tests in hygiene and guard against new orphans
+- **PR #446**: chore(sim): delete 9 legacy run_pvt_sweep.sh superseded by run_klt_sim.sh
+- **PR #445**: chore(sim): remove 4 SG13CMOS5L legacy run_pvt_sweep.sh runners
+- **Issue #444** (closed): ci: run the three orphaned sim/harness self-tests in hygiene.yml, and guard against new orphans
+- **Issue #443** (closed): Remove 4 SG13CMOS5L legacy run_pvt_sweep.sh runners (split from #438)
+- **Issue #441** (closed): Classify the sg13cmos5l bandgap_amp netlist port-order drift (committed vs schematic)
+- **Issue #438** (closed): Remove 13 legacy run_pvt_sweep.sh runners superseded by run_klt_sim.sh
+
+### 2026-11-04
+
+- **PR #439**: feat(sim): run closed-loop-vref-mc on the klt sim fleet with a trim-bearing record
+- **Issue #403** (closed): sim: closed-loop-vref-mc klt sim monte_carlo seeding design and 1800-draw refresh (Part of #273)
+- **Issue #299** (closed): signoff: bind T1 items 9 and 10 (and re-bind item 1) to audited artifacts (klayout-tools#2718 landed)
+
+### 2026-11-01
+
+- **PR #437**: Bump Repo Skills 0.24.7 -> 0.25.1
+
+### 2026-10-30
+
+- **PR #434**: measurements: re-mint trim records on the fleet and add the November characterization report
+- **PR #433**: fix: write PEX batch .lib cards under the submitting PDK root
+- **PR #425**: sim: run the trim-domain mismatch Monte Carlo on klt sim decks
+- **Issue #432** (closed): pex_runner.sh: stop emitting absolute /opt/pdk .lib paths in batch requests (klt 0.8.x refuses them)
+- **Issue #427** (closed): Re-mint trim-coverage and trim-mc records and publish a new dated characterization report
+- **Issue #423** (closed): sim: add klt sim decks wrapper for closed-loop-vref-trim-mc (split from #416)
+
+### 2026-10-29
+
+- **Issue #416** (closed): sim: add klt sim wrappers for the Trim benches (trim-mc, trim-coverage) (Part of #412)
+- **PR #422**: sim: add klt sim wrapper and fleet record for the trim-coverage bench
+- **Issue #242** (closed): README: embed the fleet burndown chart (one line)
+- **Issue #426** (closed): Remove legacy run_pvt_sweep.sh loops in the 13 experiments that already have run_klt_sim.sh
+- **PR #428**: docs: describe run_pvt_sweep.sh as a point-definition reference, not an entry point
+
+### 2026-10-28
+
+- **PR #421**: sim: add klt sim wrapper for schematic closed-loop-psrr
+- **PR #418**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup
+- **Issue #4** (closed): Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers)
+- **PR #417**: feat: add SG13G2 bandgap_top ERC evidence and cite it for T1 item 11
+- **Issue #411** (closed): T1 item 11 (power delivery): commit a klt erc supply spec and report for the SG13G2 bandgap_top instead of citing the SG13CMOS5L port's ERC
+
+### 2026-10-27
+
+- **PR #409**: ci: pin klayout-tools to PyPI 0.8.0 and regenerate signoff verdict
+- **Issue #408** (closed): Bump klayout-tools pin 7ee09483b748 → 0.8.0
+- **PR #406**: docs: classify archived-pin mm_ok netlist delta in drift check
+- **Issue #405** (closed): SG13CMOS5L committed netlists drift from schematics at the dev PDK pin
+
+### 2026-10-25
+
+- **PR #400**: refactor(sim): remove uncalled helpers from enrich_ac_report
+- **Issue #399** (closed): Remove dead helpers _interp_log and _fmt_vdd from enrich_ac_report.py
+- **PR #398**: feat(sim): convert closed-loop-vref-pvt-boxtc to the klt sim fleet harness
+
+### 2026-10-24
+
+- **Issue #385** (closed): Remove dead riser 'bridge' machinery in sg13cmos5l-bandgap_top generate.py
+
+### 2026-10-23
+
+- **PR #393**: docs(sim): list all 18 experiments without run_klt_sim.sh as unconverted
+- **Issue #389** (closed): sim/README: list the 6 other manifest-less experiments with non-run_pvt_sweep runners
+- **PR #388**: ci(sim): fail manifest-less evidence records dated on/after DR-0015
+- **Issue #386** (closed): Follow-on from PR #382: convert legacy corners/-writing sim runners to the artifact store
+- **PR #391**: fix(sim): make PEX klt-sim record step work cold; add partial item-9 audit log
+- **Issue #310** (closed): signoff: execute the deferred cold-start testbench audit for T1 item 9
+- **PR #382**: feat(sim): store new klt-sim evidence in the artifact store, commit manifests
+
 ### 2026-10-21
 
 - **PR #365**: Bump Repo Skills 0.24.3 -> 0.24.7
@@ -182,54 +441,3 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 - **Issue #222** (closed): sim: commit a box-method TC testbench (endpoint method understates TC post-retune; box worst corner ~20.2 ppm/°C vs the < 20 stretch)
 - **Issue #15** (closed): Publish an aggregated characterization report under measurements/
 
-### 2026-09-19
-
-- **PR #224**: ratification: run the two-key review of the target-spec table and record its outcome
-- **Issue #125** (closed): Cut the spec-ratification PR now that #13 is resolved (two-key mechanism)
-
-### 2026-09-15
-
-- **PR #219**: docs(spec): DR-0007 — keep sim/ evidence logs verbatim and uncompressed
-- **PR #220**: ratification: ratify target-spec table with current R1=511um/N=300-MC evidence (supersedes #128)
-- **Issue #150** (closed): PR #128's ratification evidence is stale relative to main's R1=511um TC retune (#139's fix didn't touch it)
-- **Issue #118** (closed): Recurring redispatch-race churn on #4 (loom-daemon, cf. rjwalters/loom#6685)
-- **Issue #26** (closed): Decide evidence-log verbosity policy for sim/ records (6.4 MB per sweep after OSDI conversion)
-
-### 2026-09-12
-
-- **PR #218**: fix: normalize GraphQL/REST merge-state shapes in dep-recheck-fingerprint.sh
-- **Issue #217** (closed): dep-recheck-fingerprint.sh produces non-deterministic CONCLUSION_HASH for an unchanged blocked PR (spam on #125)
-
-### 2026-09-10
-
-- **Issue #167** (closed): Champion: Merge-Risk Hold Digest
-
-### 2026-09-09
-
-- **PR #216**: sim: add closed-loop-vref-mc device-mismatch Monte Carlo campaign
-- **Issue #215** (closed): sim: untrimmed `vref` mismatch Monte Carlo (`hbt_typ_mismatch` + `mos_tt_mismatch` + `res_typ_mismatch`, seeded, N≥300, negative control) — T1 item 6 evidence for the ±1 % untrimmed Output-reference row
-
-### 2026-09-08
-
-- **PR #203**: refactor(sim): dedupe trip-point verdict awk block into sim/lib/pvt_verdict_common.sh
-- **PR #205**: refactor(sim): extend abs_diff() to 10 remaining inline call sites
-- **PR #208**: refactor(sim): use abs_diff() helper in run_offset_check.sh (#206)
-- **PR #209**: refactor: dedupe _shift/_assert_column_pitch into _klayout_builder_base
-- **PR #212**: refactor(layout): dedupe poly-resistor core geometry into _klayout_builder_base
-- **PR #213**: refactor(sim): derive startup-time-to-release checkpoint ladder from template
-- **Issue #211** (closed): Dedupe poly-resistor leg/bbox geometry: identical arithmetic in common.py and common_sg13cmos5l.py
-- **Issue #210** (closed): Dedupe startup-time-to-release checkpoint ladder: hardcoded in both run_pvt_sweep.sh and its .spice.tmpl
-- **Issue #207** (closed): Dedupe _shift() / _assert_column_pitch() across the two bandgap_top generate.py modules
-- **Issue #206** (closed): Extend abs_diff() to the one remaining inline call site in sim/closed-loop-offset/run_offset_check.sh
-- **Issue #204** (closed): Extend abs_diff() to 10 remaining inline call sites in run_pvt_sweep.sh
-- **Issue #202** (closed): Dedupe trip-point verdict awk block into sim/lib/pvt_verdict_common.sh
-
-### 2026-09-07
-
-- **PR #197**: refactor(sim): dedupe .measure grep/awk extraction idiom into sim/lib
-- **PR #199**: refactor(sim): dedupe .op voltage-extraction idiom into sim/lib
-- **PR #201**: refactor(sim): dedupe cross-bench comparison idioms in *-pex run_pvt_sweep.sh into sim/lib
-- **Issue #200** (closed): Consolidate duplicated cross-bench comparison idioms in *-pex run_pvt_sweep.sh scripts
-- **Issue #198** (closed): sim: dedupe .op voltage-extraction idiom across 3 run_pvt_sweep.sh scripts
-- **Issue #196** (closed): sim: dedupe .measure grep/awk extraction idiom across run_pvt_sweep.sh into sim/lib
-- **Issue #55** (closed): Champion: Merge-Risk Hold Digest

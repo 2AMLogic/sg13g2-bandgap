@@ -78,6 +78,7 @@ from _ci_common import (
     Report,
     add_manifest_args,
     check_pin,
+    cited_envelopes,
     contained,
     discover_manifests,
     sha256_prefixed,
@@ -438,50 +439,27 @@ def active_reports(root: Path, manifest_paths: list[Path],
                    report: Report) -> list[tuple[Path, Path, Any]]:
     """(envelope, report, recorded hash) for every item-8 citation."""
     out = []
-    for manifest_path in manifest_paths:
-        try:
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            report.problem(f"{manifest_path.name}: unreadable manifest: {exc}")
+    for envelope_path, envelope, rel, where in cited_envelopes(
+            root, manifest_paths, ITEM_ID, report):
+        recorded = ((envelope.get("provenance") or {}).get("input") or {}) \
+            if isinstance(envelope, dict) else {}
+        inp = recorded.get("path") if isinstance(recorded, dict) else None
+        if isinstance(inp, dict) and inp.get("scope") == "repo":
+            report_path = contained(root, inp.get("path"), "report", report, where)
+        elif isinstance(inp, str):
+            report_path = contained(
+                root, str(envelope_path.parent.relative_to(root.resolve()) / inp),
+                "report", report, where,
+            )
+        else:
+            report.problem(f"{where}: envelope {rel} names no provenance.input.path report")
             continue
-        entry = (manifest.get("evidence") or {}).get(ITEM_ID) if isinstance(manifest, dict) else None
-        if entry is None:
-            report.note(f"{manifest_path.name}: no item-{ITEM_ID} citation; nothing to check")
+        if report_path is None:
             continue
-        entries = entry if isinstance(entry, list) else [entry]
-        for e in entries:
-            where = f"{manifest_path.name} evidence['{ITEM_ID}']"
-            rel = e if isinstance(e, str) else (e.get("file") if isinstance(e, dict) else None)
-            envelope_path = contained(root, rel, "cited envelope", report, where)
-            if envelope_path is None:
-                continue
-            if not envelope_path.is_file():
-                report.problem(f"{where}: cited envelope {rel} does not exist")
-                continue
-            try:
-                envelope = json.loads(envelope_path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError as exc:
-                report.problem(f"{where}: cited envelope {rel} is not valid JSON: {exc}")
-                continue
-            recorded = ((envelope.get("provenance") or {}).get("input") or {}) \
-                if isinstance(envelope, dict) else {}
-            inp = recorded.get("path") if isinstance(recorded, dict) else None
-            if isinstance(inp, dict) and inp.get("scope") == "repo":
-                report_path = contained(root, inp.get("path"), "report", report, where)
-            elif isinstance(inp, str):
-                report_path = contained(
-                    root, str(envelope_path.parent.relative_to(root.resolve()) / inp),
-                    "report", report, where,
-                )
-            else:
-                report.problem(f"{where}: envelope {rel} names no provenance.input.path report")
-                continue
-            if report_path is None:
-                continue
-            if not report_path.is_file():
-                report.problem(f"{where}: MISSING DEPENDENCY — report {report_path} does not exist")
-                continue
-            out.append((envelope_path, report_path, recorded.get("content_hash")))
+        if not report_path.is_file():
+            report.problem(f"{where}: MISSING DEPENDENCY — report {report_path} does not exist")
+            continue
+        out.append((envelope_path, report_path, recorded.get("content_hash")))
     return out
 
 

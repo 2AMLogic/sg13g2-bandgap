@@ -54,17 +54,6 @@ loom_test_require_daemon_bin "$SCRIPTS_DIR" "classify-dependency-block"
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/assert.sh"
 
-assert_eq() {
-    local expected="$1" actual="$2" msg="$3"
-    if [[ "$expected" == "$actual" ]]; then
-        pass "$msg"
-    else
-        fail "$msg"
-        echo "    Expected: '$expected'"
-        echo "    Actual:   '$actual'"
-    fi
-}
-
 # assert_line <haystack> <line> <msg>: an EXACT line match. "loom:operator" is
 # a prefix of every retired operator-hold name (#11795), so a substring check
 # would also accept "REMOVE loom:operator-only".
@@ -72,47 +61,7 @@ assert_line() {
     if grep -qxF -- "$2" <<<"$1"; then pass "$3"; else fail "$3"; echo "    expected line: $2"; echo "    got: $1"; fi
 }
 
-assert_contains() {
-    local haystack="$1" needle="$2" msg="$3"
-    if [[ "$haystack" == *"$needle"* ]]; then
-        pass "$msg"
-    else
-        fail "$msg"
-        echo "    Expected to contain: '$needle'"
-        echo "    Actual: '$haystack'"
-    fi
-}
-
-assert_not_contains() {
-    local haystack="$1" needle="$2" msg="$3"
-    if [[ "$haystack" != *"$needle"* ]]; then
-        pass "$msg"
-    else
-        fail "$msg"
-        echo "    Expected NOT to contain: '$needle'"
-        echo "    Actual: '$haystack'"
-    fi
-}
-
 assert_true() { if "$@"; then pass "${!#}"; else fail "${!#}"; fi; }
-
-assert_doc_contains() {
-    local file="$1" needle="$2" msg="$3"
-    if grep -qF -- "$needle" "$file"; then
-        pass "$msg"
-    else
-        fail "$msg (missing literal in $file: $needle)"
-    fi
-}
-
-assert_doc_lacks() {
-    local file="$1" needle="$2" msg="$3"
-    if grep -qF -- "$needle" "$file"; then
-        fail "$msg (unexpected literal in $file: $needle)"
-    else
-        pass "$msg"
-    fi
-}
 
 # =====================================================================
 # Fixture comment bodies (the real shapes champion-issue-promo.md posts)
@@ -451,8 +400,7 @@ assert_eq "1" "$RC" "one merits finding disqualifies the whole set"
 assert_contains "$OUT" "REASON: merits-finding" "mixed set reports merits-finding"
 
 # Premise-false interaction with --check-defer (#7904) is covered in the
-# sibling module test-classify-dependency-block-premise-false.sh -- extracted
-# to keep this file under the file-size-policy.md threshold.
+# sibling module test-classify-dependency-block-premise-false.sh.
 
 echo
 echo "--- REGRESSION GUARD: a real dependency CYCLE still escalates ---"

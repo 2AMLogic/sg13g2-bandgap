@@ -167,7 +167,7 @@ harder numerical problem, not a symptom of a wiring bug (every one of the
 originally-failing corners converges cleanly, with results consistent with
 its neighbors, once given the aid).
 
-`run_pvt_sweep.sh`'s own measurement-extraction step is also hardened
+`run_pvt_sweep.sh` (removed in #438)'s own measurement-extraction step is also hardened
 against this failure mode (`|| true` on each `grep`, since `set -euo pipefail`
 would otherwise abort the *entire* 45-point sweep — losing every other
 point's evidence — the first time a single corner's `.measure` lines fail to
@@ -226,8 +226,76 @@ points.
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
 sim/tools/build-osdi.sh              # one-time: build the OSDI models
-sim/closed-loop-startup/run_pvt_sweep.sh
+sim/closed-loop-startup/run_klt_sim.sh --sanity    # one local typ/27C/3.30V corner vs the newest record
+sim/closed-loop-startup/run_klt_sim.sh --batch     # the 45-point grid via `klt sim` on the batch fleet
+sim/closed-loop-startup/run_klt_sim.sh --record    # mint records/ from the enriched report
 ```
+
+`run_klt_sim.sh` is the cold-start path (issue #414, on the harness described in
+`sim/harness/README.md`; it follows `../closed-loop-vref-pvt-boxtc/run_klt_sim.sh`).
+`--sanity` is a single local corner and must land on the newest committed
+record's `vref_final_v` 1.04728 V and `fb_final_v` 2.49682 V; `--batch` runs that gate first, then submits the grid as 15
+requests (5 processes x 3 supplies, 3 temperatures each) and records the batch
+job ids in the report's `environment.remote`; a partial grid is refused by the
+shard merger and cannot be recorded. The DUT is the schematic, carried in
+`testbench/*.body.spice.tmpl`; the request, record spec and the verdict pass
+(`sim/harness/enrich_supply_bench_report.py`) are alongside. On a dispatch
+host a multi-corner grid must go through `--batch`: `run_pvt_sweep.sh` (removed in #438) was deleted in #438 (recoverable from git history); there is no local grid runner.
 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.
+
+## Solve time under KLU (issues #489/#518; re-timed 2026-11-18, adopted)
+
+Issue #469 adopted the KLU direct linear solver on
+[`../closed-loop-vref-pvt-boxtc/`](../closed-loop-vref-pvt-boxtc/README.md)
+after a measured 17× hot-corner win there (3643 s → 211 s on
+typ/100 °C/2.97 V), and #488 then had to carve this bench's body out of the
+cross-bench solver-options claim. #489 timed both corners under each solver
+(its 2026-11-15 single-run table — sanity 110.2 s SPARSE / 105.2 s KLU, hot
+107.8 s / 235.3 s, answers identical at 6 significant figures) and, because
+those walls were taken one-run-per-setting on a contended dispatch host
+during PR #501's review (load average 43–63 on 16 cores; an identical
+re-run of the sibling iq bench's 133.9 s cell did not finish inside a 900 s
+cap), drew no solver attribution from them and adopted nothing — every wall
+in that table was disclaimed by its own README text. #518 closed the
+question with a proper re-time, on the host class the 2026-11-17 operator
+ruling approved: **one repo-script batch job on one dedicated sim-image
+fleet instance** (m7i.4xlarge, 16 vCPU), every cell serial, 5–6 repeats per
+cell, each run's solver confirmed from that run's own
+`Using … Direct Linear Solver` log line and its answers checked against the
+committed CSV at 6 significant figures. Method, caveats and per-run raw
+evidence:
+[`../../measurements/2026-11-klu-retime/`](../../measurements/2026-11-klu-retime/README.md).
+
+Engine wall, s (min / median / max of 5–6 serial repeats on that instance):
+
+| corner | SPARSE 1.3 (default) | KLU | Δ(min) | verdict |
+|---|---|---|---:|---|
+| typ / 27 °C / 3.30 V (sanity) | 53.1 / 61.9 / 63.7 | 50.3 / 51.8 / 60.2 | 2.8 | not resolved (spread 10.6 / 9.9 > Δ) |
+| typ / 125 °C / 2.97 V (hot) | 69.0 / 79.7 / 82.2 | 50.8 / 51.9 / 58.1 | 18.2 | **resolved: KLU wins, 1.36× (min), 1.54× (median)** |
+
+Answer preservation: every run of the re-time landed on the committed
+anchors at 6 significant figures (`vref_final_v` 1.04728 / 1.04201,
+`fb_final_v` 2.49682 / 2.22558), and the `singular matrix` recovery
+diagnostic the hot corner is known for occurred under both solvers (one
+warning per hot-corner run, recovered, though on different internal trim
+nodes — SPARSE flags `xxtrim.t231` and `xxtrim.t240`, KLU flags
+`xxtrim.t252` — and under KLU only the 27 °C sanity corner emits one such
+warning per run too, at `xxtrim.t254`, 10/10 runs across both benches,
+recovered; every affected run grades `pass`).
+Run-to-run spread on the fleet instance was itself ~10–20 % (see the
+measurement README's caveats: the image's own execution environment,
+applied identically to both solvers on interleaved passes), so only deltas
+that exceed the spread — never absolute seconds — carry the verdict.
+
+**Verdict: adopted (#518).** The hot corner's win is resolved with Δ ≫
+spread, the 27 °C corner shows no resolved difference either way, and KLU
+is answer-preserving — so the body template now pins
+`.options reltol=5e-3 klu`, #488's cross-bench carve-out is reverted (all
+three closed-loop supply benches pin KLU), and the committed grid was
+re-run under the adopted deck through this bench's `run_klt_sim.sh`:
+record `20261118-082945-3e600d97` marks 45/45 points PASS with every value
+identical to `20261001-083332-e5507b2` at 6 significant figures (the one
+wiggling column is `i_mkfb_final_a`, a ~1e-15 A noise-floor current).
+`timeout_s` stays 1800: no corner approached it under either solver.

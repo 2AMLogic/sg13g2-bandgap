@@ -19,6 +19,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
+    # Merge queue (issue #614, ported from sky130-comparator#332): report the
+    # required checks on the queue's trial-merge commit, so the fleet's
+    # ruleset tooling can enable the queue. No path filters, no branch
+    # narrowing — the two base-diff gates below take their comparison base
+    # from github.event.merge_group.base_sha on these runs.
 
 permissions:
   contents: read
@@ -66,6 +72,13 @@ jobs:
         # PEX templates; the test proves the 255-unit ladder chain closes.
         run: python3 sim/tools/test_gen_pex_netlist_body.py
 
+      - name: LVS reference generator self-test
+        # Issue #582: the resistor symbol-formula paths assume b=0/m=1; the
+        # guard now enforces that (rejects bent/multiplied calls loudly) and
+        # each formula helper's value is pinned. White-box, stdlib only --
+        # lvs_reference imports no klayout.
+        run: python3 layout/test_lvs_reference.py
+
       - name: Loop-gain solve-quality gate self-test
         # Issue #297: the guard that stops numerically corrupted AC solves
         # (#289's 36.3 / 43.9 deg artifacts) from being recorded as evidence.
@@ -84,6 +97,31 @@ jobs:
         # and the runners' fail-closed gates. No simulation, no PDK.
         run: python3 sim/harness/test_cmos5l_harness.py
 
+      - name: trim-coverage klt-sim conversion self-test
+        # Issue #416: shard plan / expected grid, code-axis relabel + merge,
+        # closed-loop verdict, ladder-coverage gates. No simulation, no PDK.
+        run: python3 sim/harness/test_trim_coverage_klt.py
+
+      - name: closed-loop-vref-mc klt-sim self-test
+        # Issue #403: guards vref_mc_klt.py, the closed-loop-vref-mc fleet path.
+        run: python3 sim/harness/test_vref_mc_klt.py
+
+      - name: trim Monte Carlo klt-sim self-test
+        # Issue #423: guards trim_mc_klt.py.
+        run: python3 sim/harness/test_trim_mc_klt.py
+
+      - name: PEX batch-request generator self-test
+        # Issue #432: guards gen_pex_batch_requests.py (klt 0.8.x .lib-root fix).
+        run: python3 sim/harness/test_gen_pex_batch_requests.py
+
+      - name: Self-test wiring guard self-test
+        # Issue #444: hermetic temp-git-repo cases for the guard below.
+        run: python3 .github/scripts/test_check_selftests_wired.py
+
+      - name: Every tracked self-test is wired
+        # Issue #444: fails if a tracked test_*.py is not run by this workflow.
+        run: python3 .github/scripts/check_selftests_wired.py
+
       - name: Artifact manifests (schema; no stored bytes committed)
         # Accepts only artifact:<key> uris and fails if a stored object's bytes
         # (or the .evidence-scratch/ staging tree) are also tracked. Schema-valid
@@ -93,7 +131,56 @@ jobs:
       - name: Evidence formats and freshness
         # --require-append-only: fail loudly rather than silently skipping if
         # the merge base stops resolving (a skipped check reads as a pass).
-        run: python3 .github/scripts/check_evidence_formats.py --require-append-only
+        # Merge queue (issue #614): on merge_group runs the comparison base
+        # is the trial-merge base_sha from the event payload — github.base_ref
+        # is empty there, so the origin/main default would diff against the
+        # live tip instead of the queued base. An absent/empty base_sha fails
+        # explicitly, never falls through to the default. pull_request/push
+        # runs are unchanged: the if never fires and BASE_REF stays origin/main.
+        env:
+          MG_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: |
+          BASE_REF=origin/main
+          if [ "$GITHUB_EVENT_NAME" = merge_group ]; then
+            if [ -z "$MG_BASE_SHA" ]; then
+              echo "merge_group run without base_sha — refusing to guess the append-only comparison base" >&2
+              exit 1
+            fi
+            BASE_REF=$MG_BASE_SHA
+          fi
+          python3 .github/scripts/check_evidence_formats.py --require-append-only --base-ref "$BASE_REF"
+
+      - name: Report-regression checker self-test
+        # Issue #594: the guard that stops a fresh, well-formed re-mint whose
+        # outcome is much worse than the report it replaces (PR #591 moved the
+        # core LVS error_count 4 → 1022 with every checker green) from passing.
+        # Hermetic two-commit temp-git-repo cases: the #591 shape fails,
+        # improvement/equal pass, exact waiver passes, stale/missing/extra
+        # waiver values fail, new/unparseable/deleted reports are loud.
+        run: python3 .github/scripts/test_check_report_regression.py
+
+      - name: DRC/LVS report regression against merge base
+        # Issue #594: each bandgap_* lvs/drc report a PR modifies is compared
+        # against its own merge-base revision; any worsened headline count
+        # fails unless waived (layout/report-regression-waivers.json, which
+        # self-expires). --require-regression-base mirrors
+        # --require-append-only: this job's checkout is fetch-depth: 0, so an
+        # unresolvable merge base is a failure, never a skip-as-pass.
+        # Merge queue (issue #614): same base selection as the append-only
+        # gate above — merge_group.base_sha on merge_group runs, origin/main
+        # otherwise, explicit failure on an absent/empty base_sha.
+        env:
+          MG_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+        run: |
+          BASE_REF=origin/main
+          if [ "$GITHUB_EVENT_NAME" = merge_group ]; then
+            if [ -z "$MG_BASE_SHA" ]; then
+              echo "merge_group run without base_sha — refusing to guess the regression comparison base" >&2
+              exit 1
+            fi
+            BASE_REF=$MG_BASE_SHA
+          fi
+          python3 .github/scripts/check_report_regression.py --require-regression-base --base-ref "$BASE_REF"
 
       - name: Characterization-report dependency checker self-test
         # Issue #315: hermetic defect injection (changed DUT, newer record,
@@ -117,6 +204,20 @@ jobs:
         # only; never runs xschem and never refreshes the attestation.
         run: python3 .github/scripts/check_design_source_dependencies.py
 
+      - name: Spot-check output-block checker self-test
+        # Issue #516: hermetic defect injection (drifted block digit, missing
+        # section/fence, unclosed fence, non-zero spotcheck exit, CRLF and
+        # decoy fences, skipped scriptless report).
+        run: python3 .github/scripts/test_check_spotcheck_outputs.py
+
+      - name: Characterization spot-check blocks match live output
+        # Issue #516: every measurements/*-characterization-report with a
+        # spotcheck.py must have its README's committed "Reproducing the
+        # spot-check" block re-derived by running that script (stdlib CSV
+        # re-reads, no simulator). Re-derives committed evidence only;
+        # never mints or rewrites it.
+        run: python3 .github/scripts/check_spotcheck_outputs.py
+
   signoff-manifest:
     # Re-derives the block's T1 verdict of record (issue #226): re-runs
     # `klt signoff --manifest` over the committed block manifest and requires
@@ -139,11 +240,14 @@ jobs:
           python-version: '3.14'
 
       - name: Install pinned klt
-        # Pinned to the exact upstream rev whose bundled design-evidence-tiers
-        # checklist the committed verdict was graded against (PyPI releases up
-        # to 0.5.0 predate T1 item 11). Bump the rev => re-run klt signoff and
-        # commit the new *.signoff.json in the same PR, or this job fails.
-        run: python3 -m pip install "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@7ee09483b74867a47a05eb353015c2cf5ca33ef3"
+        # Pinned to the exact PyPI release whose bundled design-evidence-tiers
+        # checklist the committed verdict was graded against. Bump the version
+        # => re-run klt signoff and commit the new *.signoff.json in the same
+        # PR, or this job fails. Keep the PyPI form: a git build reports a dev
+        # version that no longer satisfies an exact pin (klayout-tools#2823).
+        run: |
+          python3 -m pip install "klayout-tools==0.8.0"
+          klt --version
 
       - name: Signoff checker self-test
         # Runs first, same discipline as the evidence checker: a checker that

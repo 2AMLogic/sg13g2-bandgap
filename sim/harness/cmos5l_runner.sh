@@ -14,7 +14,7 @@
 #   KIND       core-open-loop | trip-point | closed-loop (sim/harness/cmos5l_klt.py)
 #   FAMILIES   pnp,mos,res | mos,res -- the corner families the bench instantiates
 #   ANCHORS    bash array of `name=value:tol` sanity anchors (committed legacy
-#              record, typ/27C/3.30V)
+#              record, typ/27C/3.30V), gated by sim/harness/sanity_anchors.py
 #   MSENSE_NETLIST   (optional) design netlist whose XMSENSE w= the body takes
 #
 # WHY THIS SHAPE (same reasoning as the SG13G2 siblings, sim/harness/README.md):
@@ -34,47 +34,31 @@
 # was committed WITHOUT running any of these modes (issue #337 scope).
 set -euo pipefail
 
+# The runner preamble (mode check, directory/klt/PDK/OSDI resolution, work
+# dir, batch defaults, resume-safety scaffold) is shared with pex_runner.sh
+# (sim/harness/klt_sim_preamble.sh, issue #481); only the SG13CMOS5L-specific
+# blocks stay in this file (issue #337). Each shared function returns
+# non-zero instead of exiting; `cmos5l_main` turns a failure into its
+# `return` here. The batch defaults and the resume scaffold keep their
+# --batch-only timing: they are called from `cmos5l_batch`, not from here.
+# shellcheck source=klt_sim_preamble.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/klt_sim_preamble.sh"
+
 cmos5l_main() {
   local MODE="${1:-}"
-  case "${MODE}" in
-    --sanity|--batch|--record) ;;
-    *) echo "usage: run_klt_sim.sh --sanity | --batch | --record" >&2; return 2 ;;
-  esac
+  klt_sim_mode "${MODE}" || return $?
 
-  local SCRIPT_DIR SIM_DIR HARNESS_DIR EXP_DIR
-  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[1]}")" && pwd)"
-  SIM_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-  REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
-  HARNESS_DIR="${SIM_DIR}/harness"
-  EXP_DIR="${SIM_DIR}/${EXP}"
+  klt_sim_dirs "${BASH_SOURCE[1]}"
   local TB="${EXP_DIR}/testbench"
   local CMOS5L_PY="${HARNESS_DIR}/cmos5l_klt.py"
 
-  local KLT_BIN="${KLT_SIM_KLT:-klt}"
-  if ! command -v "${KLT_BIN}" >/dev/null 2>&1; then
-    echo "run_klt_sim.sh: klt binary '${KLT_BIN}' not found (KLT_SIM_KLT)." >&2
-    return 3
-  fi
+  klt_sim_require_klt || return $?
 
   # PDK resolution. This runner is SG13CMOS5L-only, so PDK is forced (an
   # inherited ihp-sg13g2 would silently run the wrong variant); PDK_ROOT
   # follows sim/env.sh's candidates, then KLT_SIM_PDK_ROOT.
   export PDK=ihp-sg13cmos5l
-  # shellcheck source=../env.sh
-  source "${SIM_DIR}/env.sh" >/dev/null
-  if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
-    local cand
-    for cand in "${KLT_SIM_PDK_ROOT:-}" "${HOME}/GitHub/klayout-tools/pdks/ihp-open-pdk"; do
-      if [[ -n "${cand}" && -d "${cand}/${PDK}/libs.tech/ngspice" ]]; then
-        export PDK_ROOT="${cand}"
-        break
-      fi
-    done
-  fi
-  if [[ -z "${PDK_ROOT:-}" || ! -d "${PDK_ROOT}/${PDK}/libs.tech/ngspice" ]]; then
-    echo "run_klt_sim.sh: no resolvable ${PDK} install (PDK_ROOT / KLT_SIM_PDK_ROOT)." >&2
-    return 3
-  fi
+  klt_sim_resolve_pdk || return $?
   local MODELS_DIR="${PDK_ROOT}/${PDK}/libs.tech/ngspice/models"
   # The MOS/resistor corner libs are symlinks into the sibling ihp-sg13g2/
   # checkout (sim/pdk-sg13cmos5l.json sibling_checkout_requirement): a dangling
@@ -84,26 +68,14 @@ cmos5l_main() {
     echo "             the sibling ihp-sg13g2/ checkout is missing (dangling symlinks)." >&2
     return 3
   fi
-  local OSDI_DIR="${SG13CMOS5L_OSDI_DIR:-${PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi}"
-  if [[ ! -f "${OSDI_DIR}/psp103.osdi" ]]; then
-    echo "run_klt_sim.sh: OSDI models missing in ${OSDI_DIR} (sim/pdk-sg13cmos5l.json osdi_toolchain)." >&2
-    return 3
-  fi
+  klt_sim_require_osdi SG13CMOS5L_OSDI_DIR " (sim/pdk-sg13cmos5l.json osdi_toolchain)." || return $?
 
   # Fail-closed mapping checks, before anything is generated: the corner map
   # must still agree with the legacy scripts and with the installed libs.
   python3 "${CMOS5L_PY}" check-mapping --models-dir "${MODELS_DIR}" >&2
 
-  local WORK="${KLT_SIM_WORK:-}"
-  if [[ -z "${WORK}" ]]; then
-    if [[ "${MODE}" == "--record" ]]; then
-      echo "run_klt_sim.sh: --record needs KLT_SIM_WORK (the --batch work dir)." >&2
-      return 2
-    fi
-    WORK="$(mktemp -d -t "sg13g2-klt-${EXP}-XXXXXX")"
-  fi
-  mkdir -p "${WORK}"
-  echo "run_klt_sim.sh: work dir ${WORK}"
+  local WORK
+  klt_sim_work_dir "${MODE}" || return $?
 
   local MSENSE_W=""
   if [[ -n "${MSENSE_NETLIST:-}" ]]; then
@@ -145,12 +117,14 @@ cmos5l_sanity() {
     "${MSENSE_ARGS[@]}"
   "${KLT_BIN}" sim "${WORK}/request.json" --backend local --format json \
     -o "${WORK}/artifacts" > "${WORK}/report.json"
-  python3 "${CMOS5L_PY}" check-anchors "${WORK}/report.json" "${ANCHOR_ARGS[@]}"
+  python3 "${HARNESS_DIR}/sanity_anchors.py" "${WORK}/report.json" "${ANCHOR_ARGS[@]}" \
+    --hint "the bench, not the PDK pin, is the first suspect (issue #337 sanity gate)"
 }
 
 cmos5l_batch() {
-  local BATCH_PDK_ROOT="${KLT_SIM_BATCH_PDK_ROOT:-/opt/pdk}"
-  local PROVISION="${KLT_BATCH_PROVISION_SCRIPT:-${HOME}/GitHub/2am/infra/aws/batch-fleet-provision.sh}"
+  # --batch-only timing preserved (#481): these two resolve here, not at
+  # source time, so --sanity/--record never touch batch defaults.
+  klt_sim_batch_defaults
   if [[ "${KLT_SIM_CMOS5L_BATCH_READY:-}" != 1 ]]; then
     echo "run_klt_sim.sh: refusing --batch. The batch runner image bakes ihp-sg13g2 only" >&2
     echo "             (sim/pdk-sg13cmos5l.json deferred_requirements.provisioning); no" >&2
@@ -159,36 +133,30 @@ cmos5l_batch() {
     echo "             CMOS5L-provisioned image is demonstrated." >&2
     return 5
   fi
-  if [[ ! -x "${PROVISION}" ]]; then
-    echo "run_klt_sim.sh: batch provision script not executable at ${PROVISION}" >&2
+  if [[ ! -x "${BATCH_PROVISION_SCRIPT}" ]]; then
+    echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2
     echo "             (KLT_BATCH_PROVISION_SCRIPT) -- see klt sim docs, 'Batch backend'." >&2
     return 3
   fi
   echo "run_klt_sim.sh: sanity gate before dispatch"
   cmos5l_sanity
 
-  # Resume safety (#332): a saved report is reused only when its committed
-  # submission identity matches the inputs about to be submitted.
-  # shellcheck source=submission_identity.sh
-  source "${HARNESS_DIR}/submission_identity.sh"
-  local KLT_VERSION_DECL
-  KLT_VERSION_DECL="$("${KLT_BIN}" --version 2>&1 | head -1 || true)"
-  IDENT_ARGS=(--declare "klt_bin=${KLT_BIN}" --declare "klt_version=${KLT_VERSION_DECL}"
-    --declare "pdk=${PDK}" --declare "batch_pdk_root=${BATCH_PDK_ROOT}"
+  # Resume safety (#332): the shared scaffold sources submission_identity.sh
+  # and builds the common declares; the CMOS5L extras are appended here.
+  klt_sim_resume_scaffold
+  IDENT_ARGS+=(
     --declare "msense_w=${MSENSE_W}"
     --extra "${TB}/${STEM}.request.json.tmpl"
     --extra "${TB}/${STEM}.body.spice.tmpl"
-    --extra "${PROVISION}"
+    --extra "${BATCH_PROVISION_SCRIPT}"
     --extra "${CMOS5L_PY}"
     --extra "${HARNESS_DIR}/klt_corner_bundle.py")
-  local FIXUP_UNBOUND=()
-  [[ "${KLT_SIM_ALLOW_UNBOUND_REPORTS:-}" == 1 ]] && FIXUP_UNBOUND=(--allow-unbound)
 
   python3 "${CMOS5L_PY}" prepare --mode batch --kind "${KIND}" --families "${FAMILIES}" \
     --request-template "${TB}/${STEM}.request.json.tmpl" \
     --body-template "${TB}/${STEM}.body.spice.tmpl" \
     --work "${WORK}" --pdk "${PDK}" --batch-pdk-root "${BATCH_PDK_ROOT}" \
-    --local-pdk-root "${PDK_ROOT}" --provision "${PROVISION}" "${MSENSE_ARGS[@]}"
+    --local-pdk-root "${PDK_ROOT}" --provision "${BATCH_PROVISION_SCRIPT}" "${MSENSE_ARGS[@]}"
 
   local sid label vdd req rep art body fixed decks desc
   while IFS=$'\t' read -r sid label vdd req rep art body fixed decks; do

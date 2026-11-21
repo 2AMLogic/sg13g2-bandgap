@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shared PVT-sweep sed-template-substitution args, sourced (not executed) by
-# every experiment's run_pvt_sweep.sh -- all 14 scripts under sim/*/
-# render their per-point netlist from a .spice.tmpl via a `sed -e ... -e ...`
+# every experiment's PVT-sweep runner under sim/*/ -- each renders its
+# per-point netlist from a .spice.tmpl via a `sed -e ... -e ...`
 # call, and six of those `-e` clauses (@@PDK_ROOT@@, @@PDK@@, @@OSDI_DIR@@,
 # @@TEMP_C@@, @@VDD@@, @@CORNER_LABEL@@) were byte-identical, token order
 # included, across every one of them. Extracted in issue #108 because this
@@ -29,8 +29,6 @@
 #   extract_measure() function      -- see its own header comment below
 #   extract_op_voltage() function   -- see its own header comment below
 #   abs_diff() function             -- see its own header comment below
-#   is_new_max() function           -- see its own header comment below
-#   latest_records_csv() function   -- see its own header comment below
 #
 # Callers still own the rest of their `sed` call (their own script-specific
 # tokens like @@HBT_SECTION@@, @@MSENSE_W@@, @@LAYOUT_GIT_SHA@@, seed
@@ -67,12 +65,13 @@ common_pvt_sed_args() {
 #   file's caller contract). Extracted in issue #122 because this exact
 #   4-line block -- `total=$((total + 1))` plus the corner_id/netlist/log
 #   assignments it feeds -- was byte-identical, confirmed by hashing each
-#   script's own copy, across all 14 run_pvt_sweep.sh scripts under sim/*/,
-#   as the first statement in each script's own per-point loop body (most
-#   callers follow it immediately with common_pvt_sed_args(); a few instead
-#   compute their own per-point locals like vdd_half/vdd_off first -- either
-#   way, this call must come first in the loop body, since it is what
-#   defines the point's own corner_id/netlist/log for everything after it).
+#   script's own copy, across all 14 run_pvt_sweep.sh scripts that existed
+#   under sim/*/ at the time of that extraction, as the first statement in
+#   each script's own per-point loop body (most callers follow it
+#   immediately with common_pvt_sed_args(); a few instead compute their own
+#   per-point locals like vdd_half/vdd_off first -- either way, this call
+#   must come first in the loop body, since it is what defines the point's
+#   own corner_id/netlist/log for everything after it).
 #
 #   CORNER_ID's format string (`${corner}_${temp}c_${vdd}v`) and NETLIST/LOG's
 #   paths (under SNAPSHOTS_OUT/CORNERS_OUT, both set by
@@ -96,10 +95,10 @@ next_corner_id() {
 #   so field 3 is always the value regardless of which form printed). Extracted
 #   in issue #196 because this exact
 #   `grep -E "^${1}" "${2}" | head -1 | awk '{print $3}' || true` one-liner
-#   was duplicated 66 times across 10 run_pvt_sweep.sh scripts under sim/*/ --
-#   same shape of duplication next_corner_id() above (#122) and every other
-#   sim/lib/*.sh helper this file's own header comment lists was extracted to
-#   fix.
+#   was duplicated 66 times across the 10 run_pvt_sweep.sh scripts that
+#   existed under sim/*/ at the time -- same shape of duplication
+#   next_corner_id() above (#122) and every other sim/lib/*.sh helper this
+#   file's own header comment lists was extracted to fix.
 #
 #   The trailing `|| true` is the one behavioral subtlety worth stating once,
 #   here, instead of re-explaining it at each of the 66 call sites (as roughly
@@ -131,9 +130,10 @@ extract_measure() {
 #   with `tr -d ' '` needed because that field carries a leading space `.op`
 #   always emits before the value). Extracted in issue #198 because this
 #   exact `grep -E "^v\(${1}\)" "${2}" | head -1 | awk -F'=' '{print $2}' |
-#   tr -d ' ' || true` idiom was duplicated, comment included, across 4
-#   run_pvt_sweep.sh scripts under sim/*/ -- same shape of duplication
-#   extract_measure() above (#196/#197) was extracted to fix, but for `.op`
+#   tr -d ' ' || true` idiom was duplicated, comment included, across 4 of
+#   the run_pvt_sweep.sh scripts that existed under sim/*/ at the time --
+#   same shape of duplication extract_measure() above (#196/#197) was
+#   extracted to fix, but for `.op`
 #   node-voltage lines (`v(node)=...`) rather than `.measure` lines, a
 #   distinct output format needing its own parse (`awk -F'='` + `tr -d ' '`
 #   here vs. plain `awk '{print $3}'` there).
@@ -172,40 +172,13 @@ extract_op_voltage() {
 #   (d<0)?-d:d}'`) those same scripts used on an already-computed delta
 #   (`absd`/`absdc`/`absmin`) -- one function covers both call shapes rather
 #   than shipping a second single-argument `abs()` helper.
+#
+#   Those three original `*-pex` callers were themselves deleted under #426
+#   (commit `acaf6d86`, superseded by run_klt_sim.sh); abs_diff() stays
+#   because seven other sim/ scripts picked it up since. The two sibling
+#   helpers extracted alongside it in #200 gained no such later callers and
+#   were removed as dead code in #454.
 abs_diff() {
   local a="$1" b="$2"
   awk -v a="${a}" -v b="${b}" 'BEGIN{d=a-b; print (d<0)?-d:d}'
-}
-
-# is_new_max CANDIDATE CURRENT
-#   Prints `1` if CANDIDATE > CURRENT, else `0`. Extracted in issue #200
-#   alongside abs_diff() because this exact `awk -v a="$a" -v b="$b"
-#   'BEGIN{print (a>b)?1:0}'` idiom was duplicated across the same three
-#   `*-pex` scripts' running-max tracking of their largest per-point
-#   cross-bench delta (`max_abs_delta`, `max_abs_dc_delta`,
-#   `max_abs_min_delta`).
-is_new_max() {
-  local candidate="$1" current="$2"
-  awk -v a="${candidate}" -v b="${current}" 'BEGIN{print (a>b)?1:0}'
-}
-
-# latest_records_csv DIR [EXCLUDE_GLOB]
-#   Prints the path of the newest `*.csv` file directly under DIR (not
-#   recursive -- `find -maxdepth 1`), or an empty string if DIR doesn't
-#   exist or contains none ("newest" by filename sort, matching every
-#   caller's own `RECORD_ID`-prefixed timestamp-sortable naming). When
-#   EXCLUDE_GLOB is given, files matching it are excluded first (used by
-#   closed-loop-vref-pvt-pex to skip its sibling `-tc.csv` summary file).
-#   Extracted in issue #200 because this exact `find "$dir" -maxdepth 1
-#   -name '*.csv' [! -name EXCLUDE] 2>/dev/null | sort | tail -1 || true`
-#   idiom -- used by each `*-pex` script to locate its own cross-bench
-#   comparison target (the schematic or sibling-PEX experiment's most
-#   recent record) -- was duplicated, `|| true` included, across all three.
-latest_records_csv() {
-  local dir="$1" exclude="${2:-}"
-  if [[ -n "${exclude}" ]]; then
-    find "${dir}" -maxdepth 1 -name '*.csv' ! -name "${exclude}" 2>/dev/null | sort | tail -1 || true
-  else
-    find "${dir}" -maxdepth 1 -name '*.csv' 2>/dev/null | sort | tail -1 || true
-  fi
 }

@@ -97,16 +97,6 @@ def _nodeset_seeds(deck_text: str) -> dict[str, float]:
     return seeds
 
 
-def _interp_log(curve: list[tuple[float, float]], target: float) -> float | None:
-    for (f0, d0), (f1, d1) in zip(curve, curve[1:]):
-        if f0 <= target <= f1:
-            if f1 == f0:
-                return d0
-            frac = (math.log10(target) - math.log10(f0)) / (math.log10(f1) - math.log10(f0))
-            return d0 + frac * (d1 - d0)
-    return None
-
-
 _VDD_RE = re.compile(r"^Vvdd\s+vdd\s+0\s+DC\s+([-+0-9.eE]+)", re.M | re.I)
 
 
@@ -151,14 +141,6 @@ def _load_seed_rows(path: str) -> dict:
         for row in csv.DictReader(fh):
             rows[(row["corner_label"], row["temp_c"], row["vdd_v"])] = row
     return rows
-
-
-def _fmt_vdd(v: float) -> str:
-    for cand in (f"{v:g}", f"{v:.2f}", f"{v:.1f}"):
-        if cand.endswith("0") and "." in cand:
-            continue
-        return cand
-    return f"{v:g}"
 
 
 def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:

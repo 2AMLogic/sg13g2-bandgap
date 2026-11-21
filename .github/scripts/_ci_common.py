@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """Shared scaffolding for `.github/scripts`' CI evidence checkers.
 
-Not an entry point itself -- imported by all four `check_*.py` checkers
-(`check_evidence_formats`, `check_signoff_manifest`, `check_report_dependencies`,
-`check_design_source_dependencies`), which independently redefined the same
-`Report` collector, `sha256_file()` helper, manifest discovery and end-of-run
-printout before this module existed (issues #260, #342).
+Not an entry point itself -- imported by the `check_*.py` checkers, which
+independently redefined the same `Report` collector, `sha256_file()` helper,
+manifest discovery and end-of-run printout before this module existed (issues
+#260, #342). A new checker imports what it needs from here rather than
+re-typing it; `check_artifact_manifests.py` and `check_selftests_wired.py`
+landed after the extraction and were folded in by issue #475. Deliberately no
+caller census here: a count goes stale the next time a checker is added, which
+is what #475 found.
 
 What is shared:
 
 - `Report` -- problem/note collector with an end-of-run `finish()` printout.
-  `check_signoff_manifest.py` and the two dependency checkers construct
-  `Report(annotate=True)` so each problem also prints immediately as a GitHub
-  Actions inline annotation (``::error::<msg>``); `check_evidence_formats.py`
-  defers everything to the end-of-run printout and uses the `Report()` default.
+  Most callers construct `Report(annotate=True)` so each problem also prints
+  immediately as a GitHub Actions inline annotation (``::error::<msg>``);
+  `check_evidence_formats.py` defers everything to the end-of-run printout and
+  uses the `Report()` default.
 - `sha256_file()` -- bare hex digest, streamed in 1 MiB chunks;
   `sha256_prefixed()` -- the same with a `"sha256:"` prefix, the form the
   manifests' `content_hash` pins use.
@@ -21,17 +24,36 @@ What is shared:
   pin format, repo-relative path containment, and the containment -> pin-format
   -> existence -> hash-match sequence the two dependency checkers share. Each
   checker words its own MISSING/CHANGED message from the returned kind.
-- `add_manifest_args()` / `resolve_root()` / `discover_manifests()` -- the
-  `--root`/`--manifest` options and block-manifest discovery shared by the
-  three manifest-driven checkers.
+- `cited_envelopes()` -- the manifest -> evidence[<item>] -> cited envelope
+  walk the two dependency checkers share: JSON-read the block manifest,
+  normalise the citation (bare path, `{file, ...}` object, singular or list),
+  resolve it through `contained()`, check existence and JSON-parse the
+  envelope. Each caller extracts its own target path from the parsed envelope.
+- `add_root_arg()` / `add_manifest_args()` / `resolve_root()` /
+  `discover_manifests()` -- the `--root`/`--manifest` options and
+  block-manifest discovery. A checker that reads block manifests takes both
+  options; one that only needs a repo root takes `add_root_arg()` alone.
+- `tracked_files()` -- the committed tree as repo-relative paths, for the
+  checkers that read what git tracks rather than what is on disk.
+- `git_out()` -- the `git -C <root> <args>` capture the two report-diffing
+  checkers run their plumbing through, returning `(returncode, stdout.strip())`
+  with stderr discarded; each caller words its own skip/fail message around
+  the return code.
+- `load_waiver_entries()` -- the waiver-file preamble (read-if-present,
+  JSON-parse, object shape, required keys, `#<number>` tracking issue) the
+  evidence-freshness and report-regression waiver loaders share; yields the
+  surviving entries for each caller's own keying and extra checks.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
+import subprocess
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -139,9 +161,60 @@ def check_pin(root: Path, rel: Any, pin: Any, what: str, report: Report,
     return True, ""
 
 
+def cited_envelopes(root: Path, manifest_paths: list[Path], item_id: str,
+                    report: Report) -> "Iterator[tuple[Path, Any, Any, str]]":
+    """(envelope path, parsed envelope, cited rel, `where` label) per item-<id> citation.
+
+    Walks each block manifest's `evidence[<item_id>]` citation -- a bare
+    envelope path or a `{file, ...}` object, singular or list -- resolving and
+    JSON-parsing the cited envelope. Malformed citations, unreadable manifests
+    and unparseable envelopes are reported (with these four messages) and
+    skipped. A generator, so each surviving tuple is yielded as soon as its
+    citation passes and the caller's own diagnostics interleave with the
+    walk's per citation; each yielded tuple is ready for the caller to extract
+    its own target path from (the report's `provenance.input`, the
+    attestation's `source`, ...).
+    Callers must consume the generator to completion: the walk's four
+    diagnostics are emitted lazily as the generator advances, so a caller
+    that `break`s early -- or never iterates the call at all -- silently
+    loses the diagnostics for every manifest it never reached, and those
+    manifests' defects go unreported.
+    """
+    for manifest_path in manifest_paths:
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            report.problem(f"{manifest_path.name}: unreadable manifest: {exc}")
+            continue
+        entry = (manifest.get("evidence") or {}).get(item_id) if isinstance(manifest, dict) else None
+        if entry is None:
+            report.note(f"{manifest_path.name}: no item-{item_id} citation; nothing to check")
+            continue
+        for e in entry if isinstance(entry, list) else [entry]:
+            where = f"{manifest_path.name} evidence['{item_id}']"
+            rel = e if isinstance(e, str) else (e.get("file") if isinstance(e, dict) else None)
+            envelope_path = contained(root, rel, "cited envelope", report, where)
+            if envelope_path is None:
+                continue
+            if not envelope_path.is_file():
+                report.problem(f"{where}: cited envelope {rel} does not exist")
+                continue
+            try:
+                envelope = json.loads(envelope_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                report.problem(f"{where}: cited envelope {rel} is not valid JSON: {exc}")
+                continue
+            yield (envelope_path, envelope, rel, where)
+
+
+def add_root_arg(parser: argparse.ArgumentParser) -> None:
+    """Add the `--root` option `resolve_root()` reads."""
+    parser.add_argument("--root", default=None, help="repo root (default: this script's repo)")
+
+
 def add_manifest_args(parser: argparse.ArgumentParser) -> None:
     """Add the `--root` / `--manifest` options shared by the manifest checkers."""
-    parser.add_argument("--root", default=None, help="repo root (default: this script's repo)")
+    add_root_arg(parser)
     parser.add_argument("--manifest", default=None, help="block manifest (default: auto-detect)")
 
 
@@ -166,3 +239,84 @@ def discover_manifests(args: argparse.Namespace) -> "tuple[Path, list[Path]] | N
         print(f"::error::no block manifest found under {manifests_dir}")
         return None
     return root, paths
+
+
+def git_out(root: Path, *args: str) -> tuple[int, str]:
+    """Run `git -C <root> ...`, returning `(returncode, stdout.strip())`.
+
+    The capture the two report-diffing checkers (`check_evidence_formats.py`'s
+    append-only walk, `check_report_regression.py`'s merge-base comparison)
+    run their `rev-parse` / `merge-base` / `diff` / `show` plumbing through:
+    text mode, `check=False`, stderr discarded -- each caller words its own
+    skip/fail message around the return code. `tracked_files()` below keeps
+    its own call instead: its `ls-files -z` contract needs the raw bytes and
+    the failing command's stderr, neither of which this returns.
+    """
+    proc = subprocess.run(
+        ["git", "-C", str(root), *args], capture_output=True, text=True, check=False
+    )
+    return proc.returncode, proc.stdout.strip()
+
+
+def tracked_files(root: Path) -> list[str]:
+    """Every git-tracked path under `root`, repo-relative, in `ls-files` order.
+
+    A git failure is the checkers' documented exit 2, not a traceback. The
+    message names the script the operator ran rather than this module -- the
+    Python form of `sim/lib/nodeset_seed.sh`'s `caller_name` convention, since
+    a shared helper that blamed `_ci_common.py` would misattribute the failure.
+    """
+    who = Path(sys.argv[0]).name or "_ci_common.py"
+    try:
+        proc = subprocess.run(["git", "-C", str(root), "ls-files", "-z"],
+                              capture_output=True, check=False)
+    except OSError as exc:
+        raise SystemExit(f"{who}: cannot run git: {exc}") from None
+    if proc.returncode != 0:
+        print(f"{who}: git ls-files failed: "
+              f"{proc.stderr.decode('utf-8', 'replace').strip()}", file=sys.stderr)
+        raise SystemExit(2)
+    return [p.decode("utf-8", "surrogateescape") for p in proc.stdout.split(b"\0") if p]
+
+
+def load_waiver_entries(
+    root: Path, report: Report, waiver_file: str, required_keys: tuple[str, ...]
+) -> Iterator[dict]:
+    """Yield a waiver file's schema-valid entries, reporting every defect.
+
+    The preamble the evidence-freshness and report-regression waiver loaders
+    carried as two drifting copies until issue #610: a missing file yields
+    nothing (no failure -- no waiver is the default state), while unreadable
+    JSON, a file that is not a JSON object with a 'waivers' list, a
+    non-object entry, a missing required key, or a tracking issue that is not
+    `#<number>` is a reported failure that drops that entry (or the whole
+    file). Each caller keys the survivors and adds its own extra checks on
+    top. A generator, so the diagnostics are emitted as it advances: consume
+    it to completion, or the later entries' defects go unreported.
+    """
+    path = root / waiver_file
+    if not path.is_file():
+        return
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        report.fail(waiver_file, f"is not valid JSON: {exc}")
+        return
+    if not isinstance(raw, dict) or not isinstance(raw.get("waivers"), list):
+        report.fail(waiver_file, "must be a JSON object with a 'waivers' list")
+        return
+    for entry in raw["waivers"]:
+        if not isinstance(entry, dict):
+            report.fail(waiver_file, f"waiver entry is not an object: {entry!r}")
+            continue
+        missing = [k for k in required_keys if not entry.get(k)]
+        if missing:
+            report.fail(waiver_file, f"waiver entry missing required key(s): {', '.join(missing)}")
+            continue
+        if not re.match(r"^#\d+$", str(entry["issue"])):
+            report.fail(
+                waiver_file,
+                f"waiver for {entry['report']} has issue {entry['issue']!r}; expected '#<number>'",
+            )
+            continue
+        yield entry

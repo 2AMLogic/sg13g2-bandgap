@@ -1,11 +1,15 @@
 {
-  "schema_version": 1,
-  "file": "layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds",
-  "spec": "layout/sg13cmos5l-bandgap_top/erc-supply-spec.json",
+  "schema_version": 2,
+  "file": {
+    "path": "layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.gds",
+    "scope": "repo"
+  },
+  "spec": "erc-supply-spec.json",
   "pdk": null,
   "findings_only": false,
   "gate_role": "GatPoly",
   "gate_count": 7,
+  "antenna_tables_omitted": false,
   "gates": [
     {
       "gate_id": "gate0",
@@ -25,9 +29,9 @@
         },
         {
           "layer": "Metal1",
-          "step_area_um2": 194.5976,
-          "cumulative_area_um2": 244.7636,
-          "antenna_ratio": 9.790544,
+          "step_area_um2": 198.5976,
+          "cumulative_area_um2": 248.7636,
+          "antenna_ratio": 9.950544,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -81,9 +85,9 @@
         },
         {
           "layer": "Metal1",
-          "step_area_um2": 104.9716,
-          "cumulative_area_um2": 1545.9586,
-          "antenna_ratio": 1545.9586,
+          "step_area_um2": 104.9812,
+          "cumulative_area_um2": 1545.9682,
+          "antenna_ratio": 1545.9682,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -109,9 +113,9 @@
         },
         {
           "layer": "Metal1",
-          "step_area_um2": 240.2385,
-          "cumulative_area_um2": 353.4225,
-          "antenna_ratio": 8.835562,
+          "step_area_um2": 244.2385,
+          "cumulative_area_um2": 357.4225,
+          "antenna_ratio": 8.935562,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -204,6 +208,28 @@
       ]
     }
   ],
+  "nets": [
+    {
+      "name": "vdd",
+      "matched_islands": 1,
+      "expected_islands": 1,
+      "roles": [],
+      "unlabelled_islands": null,
+      "unlabelled_area_um2": null,
+      "unlabelled_bbox": null,
+      "unlabelled_allowed_islands": null
+    },
+    {
+      "name": "vss",
+      "matched_islands": 1,
+      "expected_islands": 1,
+      "roles": [],
+      "unlabelled_islands": null,
+      "unlabelled_area_um2": null,
+      "unlabelled_bbox": null,
+      "unlabelled_allowed_islands": null
+    }
+  ],
   "erc_findings": [
     {
       "rule": "erc.missing_tie",
@@ -213,9 +239,9 @@
       "gate_id": null,
       "layer": "nwell_tap_vdd",
       "bbox": {
-        "left": 215420,
+        "left": 215900,
         "bottom": -1960,
-        "right": 218820,
+        "right": 219300,
         "top": 1960
       },
       "islands": null
@@ -453,21 +479,38 @@
     "nothing_checked": false,
     "nothing_checked_reasons": [],
     "checked_by_assertion": [],
-    "checked_by_well_assertion": []
+    "checked_by_well_assertion": [],
+    "layers_in_stream_without_declaration": [
+      "14/0",
+      "28/0",
+      "44/0",
+      "63/0",
+      "111/0",
+      "128/0"
+    ],
+    "well_assertion_coverage": []
   },
   "ties_disclosure": null,
   "provenance": {
-    "klt_version": "0.6.0",
-    "klayout_version": "0.30.10",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": null,
     "input": {
-      "content_hash": "sha256:4e4e4f85fa0875651c294c95a1f65792fa1913dd20d027fbe6905f2d001cb330",
+      "content_hash": "sha256:1b07a94d9b4e9119ec06c90c8703e50f4fd52bd72ccfe8934473338c12876361",
       "role": "layout"
     },
     "spec": {
       "content_hash": "sha256:d01f01b8b87543fab5ad26e6100d03d744d6e3151a67149e97d0e27d5f2881bf"
     },
-    "devices": []
+    "devices": [],
+    "net_exclusions": [],
+    "label_layers": [
+      {
+        "name": "Metal1",
+        "label_layer": "8/2",
+        "label_text_count": 80
+      }
+    ]
   }
 }

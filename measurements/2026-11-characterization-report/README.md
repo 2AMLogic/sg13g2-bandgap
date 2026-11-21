@@ -1,30 +1,18 @@
 # Aggregated characterization report, November 2026 (T1 item 8, the `Characterization report` row)
 
-Audited commit: **`e2d2b1c4`** (`feature/issue-387`, stacked on PR #383).
+Audited commit: **`03e62489`** (`main` on 2026-10-30, merge of PR #433).
 Supersedes [`../2026-10-characterization-report/`](../2026-10-characterization-report/README.md)
-(written 2026-10-08 against `b89f4c5f`; left untouched as history).
-
-**Why this report exists.** PR #383 regenerated
-`layout/bandgap_top/bandgap_top.pex.spice` and
-`layout/bandgap_startup/bandgap_startup.pex.spice`, the two post-layout DUT
-inputs the October report had audited by sha256. That staled its
-`dependencies.json`, and the remedy its own checker prescribes is this file:
-a new dated report, with the three experiments that cite those netlists
-**re-run** rather than re-hashed (issue #387). Those three re-runs are the
-only new evidence here; every other row is carried over from the October
-report and re-verified against the same committed CSVs.
-
-**One verdict changed, and not in the comfortable direction**: PSRR @ DC was
-`met with caveats` by 0.0013 dB and is now **measured unmet** by 0.0033 dB.
-See that row below.
+(written 2026-10-08 against `b89f4c5f`; left untouched as history), which
+superseded `../2026-09-characterization-report/`. The only evidence that moved
+is the two re-minted fleet records (see "What moved since October" below);
+the DUT netlists, the spec table and every other selected record are
+unchanged.
 
 This is the one aggregated, current artifact giving per-spec-row performance
 across conditions, with the committed evidence record each verdict rests on.
-**No simulation was run for this file.** Every number is read from a record
-already committed under `sim/` -- including the three PEX re-runs, which
-landed as committed records in `e2d2b1c4` before this report was written --
-and every quoted figure is reproduced by [`spotcheck.py`](spotcheck.py)
-(output at the end of this file).
+**No simulation was run for it.** Every number is read from a record already
+committed under `sim/`, and every quoted figure is reproduced by
+[`spotcheck.py`](spotcheck.py) (output at the end of this file).
 
 ## What this report claims, and what it does not
 
@@ -34,10 +22,8 @@ and every quoted figure is reproduced by [`spotcheck.py`](spotcheck.py)
   nominal, untrimmed, trimmed), each with its bound, verdict, binding corner,
   whether the verdict is statistical, the newest committed record behind it,
   and whether that record was taken on the current (trim-bearing) design.
-- **It does not claim every row passes.** Two lines are reported as
-  **measured unmet** -- the trimmed +/-0.5% line, and, new in this report,
-  PSRR @ DC -- and four more as met-with-caveats or stretch-not-met. Each is
-  reported as such. A `met` on T1 item 8 means
+- **It does not claim every row passes.** Two lines fail or are only
+  caveated-met, and they are reported as such. A `met` on T1 item 8 means
   "this report exists, is current and cites its evidence"; whether the block
   conforms to its spec is T1 item 5's question, and the report's passing
   `envelope.json` attests nothing else.
@@ -49,47 +35,33 @@ and every quoted figure is reproduced by [`spotcheck.py`](spotcheck.py)
   in **#303** (open). Where this report says "unsettled" it means that
   redesign outcome, not the measured failure.
 
+## What moved since October
+
+Two records were re-minted on the Spot batch fleet (`klt sim`, `klt 0.8.0`,
+fleet job ids in each record's `environment.remote`; issue #427, following
+#422/#425) and are the only evidence that changed:
+
+| Line | October (`b89f4c5f`) | November (`03e62489`) |
+|---|---|---|
+| Trim range / resolution (`sim/trim-coverage`) | 169/169 PASS; +29.22 / -29.63% worst; 0.2347%/step | **Unchanged**: 169/169 PASS, identical figures (deterministic sweep) |
+| Trimmed +/-0.5%, typ 3 sigma / inside +/-0.5% | 2.601% / 29.8% | 2.399% / 24.7% |
+| Trimmed +/-0.5%, bcs 3 sigma / inside | 2.523% / 28.5% (58 excluded) | 2.413% / 25.0% (0 excluded) |
+| Trimmed +/-0.5%, wcs 3 sigma / inside | 2.592% / 31.7% (7 excluded) | 2.390% / 27.0% (0 excluded) |
+
+The trim-MC mismatch draw comes from the host's RNG, so the fleet nominal
+population is different from, but comparable to, October's (the negative
+control, which has no mismatch, is identical). The trimmed line is still
+**UNMET**: the verdict wording is unchanged, no spec row was touched, and the
+lower 3 sigma does not bring it near the 0.5% claim.
+
 ## The design under test and how freshness was established
 
 The current committed DUT is the **trim-bearing** core: `design/netlist/
 bandgap_core.spice` and `bandgap_trim.spice` at `9530863` (2026-09-30, the
 255-unit R1 trim ladder, #229), `bandgap_amp.spice` at `397fe2d`,
 `bandgap_startup.spice` at `66ac99d`; `git log -- design/netlist` shows
-nothing newer -- the schematic DUT is unchanged since the October report.
-
-The post-layout DUT **is** what changed. `layout/bandgap_top/bandgap_top.pex.spice`
-and `layout/bandgap_startup/bandgap_startup.pex.spice` were re-extracted at
-`a13ee7f7` (2026-10-23, #380/PR #383), superseding #272's `8a44ec19`
-extraction; no commit since touches either. #383 re-drew the PDK runset's
-recognition layers in the HV MOS and `npn13G2` helpers, which left the
-parasitic network's *size* alone (842 wire resistors and 261 capacitors on
-`bandgap_top`, 10 and 4 on `bandgap_startup` -- the same counts as `8a44ec19`)
-while permuting which per-device bulk hub tag each body terminal lands on and
-giving the extracted resistor cards their `L`/`W` geometry. Three experiments
-cite those two netlists as their DUT, and all three were re-run on the new
-extraction for this report rather than re-hashed against it:
-
-| Experiment | New record (2026-11-13) | Supersedes |
-|---|---|---|
-| `sim/closed-loop-psrr-pex` | `20261113-145323-7c46e66b` | `20261004-030337-5553d523` |
-| `sim/closed-loop-zout-pex` | `20261113-145415-7c46e66b` | `20261004-030338-5553d523` |
-| `sim/startup-trip-point-pex` | `20261113-145230-7c46e66b` | `20260905-033740-fe97115` |
-
-Each ran its full 45-point PVT grid on the batch fleet through `klt sim` (15
-jobs per grid, one per process x supply; the job ids are in each record's
-`environment.remote`), graded 45/45 pass, and **binds the exact extraction
-bytes it consumed** in its `Extraction sources` field -- so a further
-re-extraction stales these records mechanically rather than silently. The
-`startup-trip-point-pex` record is the first from that experiment's new
-`run_klt_sim.sh`; its legacy 45-point local `ngspice` loop is untouched.
-
-Because those three records now carry an extraction binding, the three
-`extraction-sources` waivers (#309) that used to cover their predecessors are
-deleted from `sim/evidence-freshness-waivers.json`: a waiver that guards
-nothing hides nothing, and the checker fails one that matches no check it
-runs. Four such waivers remain, for PEX records that still bind no sources
-(`closed-loop-vref-pvt-pex`, `closed-loop-vref-pvt-pex-boxtc`,
-`core-open-loop-bias-pex`, `sg13cmos5l-closed-loop-startup-pex`).
+nothing newer. The post-layout DUT is `layout/bandgap_top/bandgap_top.pex.spice`
+re-extracted at `8a44ec19` (2026-10-01, #272); no commit since touches it.
 
 Freshness is taken from record metadata and netlist snapshots, not dates.
 Each record's "Netlist provenance" block names the netlist commits it
@@ -141,15 +113,15 @@ Other disclosures that apply to several rows:
 
 | Row (bound; governing record) | Verdict | Binding corner | Statistical? | Newest committed record(s) behind it | Fresh? |
 |---|---|---|---|---|---|
-| **Output reference, nominal**: 1.050 V (`0011`, proposed) | **Met with caveats**: 1.04060 to 1.05052 V over the 45-point grid; nominal 1.04728 V (-0.26%); schematic only | bcs/125 C/2.97 V (low), wcs/27 C/3.63 V (high) | No, corner-swept | `sim/closed-loop-vref-pvt/records/20261001-085908-e5507b2.csv` (2026-10-01) | **Current** (schematic). PEX: only a DC-op `vref_op` of 1.03912 to 1.04961 V in the PSRR-PEX record; the PEX vref grid predates the current netlist |
+| **Output reference, nominal**: 1.050 V (`0011`, proposed) | **Met with caveats**: 1.04060 to 1.05052 V over the 45-point grid; nominal 1.04728 V (-0.26%); schematic only | bcs/125 C/2.97 V (low), wcs/27 C/3.63 V (high) | No, corner-swept | `sim/closed-loop-vref-pvt/records/20261001-085908-e5507b2.csv` (2026-10-01) | **Current** (schematic). PEX: only a DC-op `vref_op` of 1.03894 to 1.04950 V in the PSRR-PEX record; the PEX vref grid predates the current netlist |
 | **Output reference, untrimmed line**: +/-16% (3 sigma, mismatch MC + PVT) (`0011`) | **Met with caveats, statistical evidence predates the current netlist**: worst-case 3 sigma total 15.32% against the 16% line | bcs/125 C (3 sigma/mean 14.60%, mean 1.041041 V) | **Yes**: N=300, seeded | `sim/closed-loop-vref-mc/records/20260909-232418-c9b83ab.{md,csv}` + `-draws.csv` (2026-09-09) | **Predates the current netlist** (waived, #273). The current-DUT 45-point grid (row above) supports only the systematic part |
-| **Output reference, trimmed line**: +/-0.5% trimmed, 1-point @ 27 C (`0011`) | **UNMET (measured)**: 3 sigma of worst-case deviation over -40 to 125 C is **2.60%** (nominal point); only 29.8% of dies inside +/-0.5%. The disposition (redesign, #303) is **unsettled**; the bound is not relaxed | no single corner: 2.60 / 2.52 / 2.59% (typ / bcs / wcs, all at 3.30 V) | **Yes**: N=300 per point, seeded, with negative control | `sim/closed-loop-vref-trim-mc/records/20260930-232155-affdefe.{md,csv}` + `-draws.csv` (2026-09-30) | **Current** (schematic, trim-bearing). No PEX trim-domain MC |
-| **Trim**: 1-point @ 27 C only, no hot insertion, no CTAT knob (`0014`, proposed); range >= +/-15%; resolution <= 0.25%/step; magnitude only | **Met** (range, resolution); 1-point-only holds by construction (no second knob, `0013`/`0014`) | Range worst: +29.22 / -29.63% (both wcs / 2.97 V); resolution worst 0.2347%/step (bcs 3.30/3.63 V) | No: 15 corner/supply groups, deterministic | `sim/trim-coverage/records/20260930-195507-9530863.{md,csv}` + `-analysis.csv` (2026-09-30) | **Current** (schematic). No PEX trim sweep. `0014` is `proposed` and #303 may change the DUT |
+| **Output reference, trimmed line**: +/-0.5% trimmed, 1-point @ 27 C (`0011`) | **UNMET (measured)**: 3 sigma of worst-case deviation over -40 to 125 C is **2.40%** (nominal point); only 24.7% of dies inside +/-0.5%. The disposition (redesign, #303) is **unsettled**; the bound is not relaxed | no single corner: 2.40 / 2.41 / 2.39% (typ / bcs / wcs, all at 3.30 V) | **Yes**: N=300 per point, seeded, with negative control | `sim/closed-loop-vref-trim-mc/records/20261030-070305-03e62489.{md,csv}` + `-draws.csv` (2026-10-30) | **Current** (schematic, trim-bearing). No PEX trim-domain MC |
+| **Trim**: 1-point @ 27 C only, no hot insertion, no CTAT knob (`0014`, proposed); range >= +/-15%; resolution <= 0.25%/step; magnitude only | **Met** (range, resolution); 1-point-only holds by construction (no second knob, `0013`/`0014`) | Range worst: +29.22 / -29.63% (both wcs / 2.97 V); resolution worst 0.2347%/step (bcs 3.30/3.63 V) | No: 15 corner/supply groups, deterministic | `sim/trim-coverage/records/20261030-061206-03e62489.{md,csv}` + `-analysis.csv` (2026-10-30) | **Current** (schematic). No PEX trim sweep. `0014` is `proposed` and #303 may change the DUT |
 | **Temp coefficient** (-40 to 125 C): < 50 ppm/C; stretch < 20 | **Target met; stretch not met.** Box method, default code 128: 20.2 to 38.6 ppm/C (0 of 15 groups below 20); +/-1-code band worst **45.7 ppm/C** (inside 50 by 8.6%). Endpoint method: -37.3 to -14.1 ppm/C | bcs / 3.63 V (code 128: 38.6; code 127: 45.7); endpoint worst bcs / 3.63 V | No, corner-swept | `sim/closed-loop-vref-boxtc-trim/records/20261001-043806-729d889-boxtc.csv` (box); `sim/closed-loop-vref-pvt/records/20261001-085908-e5507b2-tc.csv` (endpoint) | **Current** (schematic). The PEX and pre-trim box-method records (20.1 / 19.8 ppm/C worst) **predate the current netlist** |
-| **PSRR @ DC**: > 60 dB; stretch > 70 | **UNMET (measured), by 0.0033 dB; stretch not met.** Post-layout on #383's extraction: 59.997 to 99.351 dB, **44/45** above 60 dB, worst point **59.9967 dB**; 10/45 above 70 dB. The schematic reads 44/45 above 60 at the same corner, 59.685 dB. The bound is not relaxed; the disposition is unsettled (#303's redesign is the open lever) | bcs / 125 C / 3.63 V (both post-layout and schematic) | No, corner-swept | `sim/closed-loop-psrr-pex/records/20261113-145323-7c46e66b.csv` (primary); `sim/closed-loop-psrr/records/20261001-085737-e5507b2.csv` | **Current** (both) |
+| **PSRR @ DC**: > 60 dB; stretch > 70 | **Met with caveats (marginal); stretch not met.** Post-layout, trim-bearing: 60.001 to 99.507 dB, 45/45 above 60 dB, **margin 0.0013 dB**; 10/45 above 70 dB. Schematic reads 44/45 above 60, with the same corner at 59.685 dB | bcs / 125 C / 3.63 V | No, corner-swept | `sim/closed-loop-psrr-pex/records/20261004-030337-5553d523.csv` (primary); `sim/closed-loop-psrr/records/20261001-085737-e5507b2.csv` | **Current** (both) |
 | **Supply**: 3.3 V +/-10% (HV); stretch 1.2 V (LV) | **Met by construction** (rating argument, `0002` ratified); every current record sweeps 2.97/3.30/3.63 V. The 1.2 V stretch is a flavor statement, not measured | n/a | No | `spec/decision-records/0002-supply-voltage-scope.md` + `vdd_v` column of the records above | Current (grid); the argument itself is not simulated |
 | **Iq**: < 50 uA; stretch < 20 | **Met with caveats; stretch not met.** 19.58 to 41.78 uA, 45/45 under 50 (margin 16.4%); 2/45 under 20 uA. Pre-layout only | bcs / 125 C / 3.63 V | No, corner-swept | `sim/closed-loop-iq/records/20261001-092257-4fe07ea.csv` | **Current** (schematic). No PEX Iq bench exists |
-| **Startup**: self-starting, < 1 ms | **Met**: 45/45 self-start; every point released by the first 100 us checkpoint (~10x inside 1 ms; resolution 100 us). Post-layout: startup-cell trip point 45/45, trip point 0.422561 to 0.667305 V, strictly inside (0, vdd) at every point | all points identical at the checkpoint resolution | No: pass counts | `sim/closed-loop-startup/records/20261001-083332-e5507b2.csv`; `sim/startup-time-to-release/records/20261001-085905-e5507b2.csv`; `sim/startup-trip-point-pex/records/20261113-145230-7c46e66b.csv` | **Current** (schematic; and the PEX record is re-run on #383's extraction). The PEX record is startup-cell-only and names no `design/` netlist, so the schematic-DUT check does not test it -- but it now binds the `bandgap_startup.pex.spice` bytes it simulated. No PEX time-to-release |
+| **Startup**: self-starting, < 1 ms | **Met**: 45/45 self-start; every point released by the first 100 us checkpoint (~10x inside 1 ms; resolution 100 us). Post-layout: startup-cell trip point 45/45 | all points identical at the checkpoint resolution | No: pass counts | `sim/closed-loop-startup/records/20261001-083332-e5507b2.csv`; `sim/startup-time-to-release/records/20261001-085905-e5507b2.csv`; `sim/startup-trip-point-pex/records/20260905-033740-fe97115.csv` | **Current** (schematic). The PEX record is startup-cell-only: it names no `design/` netlist, so the checker does not test it, but the extracted layout it names (`bandgap_startup` at `7b4d0e1`) is unchanged since. No PEX time-to-release |
 
 ## Per-row notes
 
@@ -183,20 +155,21 @@ DUT, and only on the schematic.
 (`sim/closed-loop-vref-trim-mc`) models a 1-point trim at 27 C (per-die code
 chosen from a 3-code fit) on the trim-bearing DUT, with the ladder's own
 mismatch inside the draw, and reads vref at -40, 27 and 125 C. Per point
-(seed `20260930 + draw_index`, N=300):
+(seed `20260930 + draw_index`, N=300; re-minted 2026-10-30 on the fleet, record `20261030-070305-03e62489`):
 
 | Point | Converged / N | Inside +/-0.5% over -40 to 125 C | 3 sigma of worst-case deviation | Worst draw |
 |---|---|---|---|---|
-| typ mismatch (27 C reference) | 299 / 300 (1 excluded) | 29.8% | 2.601% | 6.72% |
-| bcs mismatch | 242 / 300 (58 excluded) | 28.5% | 2.523% | 6.79% |
-| wcs mismatch | 293 / 300 (7 excluded) | 31.7% | 2.592% | 6.79% |
+| typ mismatch (27 C reference) | 299 / 300 (1 excluded) | 24.7% | 2.399% | 4.44% |
+| bcs mismatch | 300 / 300 | 25.0% | 2.413% | 4.33% |
+| wcs mismatch | 300 / 300 | 27.0% | 2.390% | 4.41% |
 | typ negative control | 300 / 300 | 100% | 0.000% | 0.43% |
 
 Statistics are over the converged draws only; the exclusions are
-draws whose verification failed (no reading recorded), not outliers dropped on value. The bcs point lost 58 of
-300 draws, so its percentages describe a subset and are weaker evidence than
-the other two. At the 27 C trim point itself all 299 converged nominal draws
-land within 0.246% (the trim works there); the failure is the temperature
+draws whose verification failed (no reading recorded), not outliers dropped on value. Only the typ point
+lost a draw (1 of 300); bcs and wcs converged in full this time, so all three
+points now rest on essentially the whole population. At the 27 C trim point
+itself all 299 converged nominal draws land within 0.284% (the trim works
+there); the failure is the temperature
 drift, which the 1-point trim cannot remove. The mismatch-free negative
 control still drifts 0.43% over temperature, above the 0.20% budget input
 `0011` used. The campaign covers the schematic only and the three-corner
@@ -233,32 +206,14 @@ and are history, not current numbers.
 
 ### PSRR @ DC
 
-**This row changed verdict, and the change is a measured one.** The October
-report put the post-layout worst point at **60.001 dB** -- 45/45 above the
-spec's `> 60 dB`, by a margin of 0.0013 dB, with the explicit warning that a
-margin that small "should not be read as comfortable". Re-run on #383's
-extraction, the same corner (bcs / 125 C / 3.63 V) reads **59.9967 dB**. The
-row is therefore **44/45 above 60 dB and measured unmet by 0.0033 dB**.
-
-The move itself is small and in no way a design change: across the 45 shared
-points the largest `psrr_dc_db` difference between the two records is
-0.156 dB (at bcs / 27 C / 3.63 V), and the worst point moved by 0.0046 dB.
-What happened is that a bound the old record cleared by 0.0013 dB was
-crossed by a re-extraction that changed no device and no parasitic count --
-only which bulk hub tag each body terminal lands on, and the `L`/`W`
-geometry on the resistor cards. The honest reading is the one the October
-report already offered: at this margin the verdict is set by modelling
-detail, not by rejection the circuit actually has. The schematic grid agrees
-that the corner is marginal and has read below 60 dB at it all along
-(59.685 dB), so the two views are now consistent rather than contradictory.
-
-**Nothing here relaxes the bound.** `> 60 dB` stands as ratified, the row is
-reported unmet, and the disposition is unsettled: the open lever is #303's
-redesign, the same one the trimmed-line row waits on. The stretch (> 70 dB)
-is not met either (10/45 above 70 dB). `0006` documents the narrowband
-above-DC transmission zero; no above-DC bound exists in the spec (the PEX
-record's `psrr_min_db` is 5.69 to 6.59 dB at the HF notch, outside this
-row).
+On the post-layout, trim-bearing DUT 45/45 points clear 60 dB, at **60.001 dB
+for the worst point** (0.0013 dB margin; next-worst 60.336 dB). It is a
+corner-swept row; the margin is a small fraction of any plausible model
+error, and the schematic is below 60 dB at the same corner (59.685 dB). It should not be
+read as comfortable. The stretch (> 70 dB) is not met (10/45 above 70 dB).
+`0006` documents the narrowband above-DC transmission zero; no above-DC bound
+exists in the spec (the PEX record's `psrr_min_db` is 5.69 to 6.59 dB at the
+HF notch, outside this row).
 
 ### Supply
 
@@ -275,14 +230,9 @@ DC bias quantity, but that is a judgment, not evidence.
 
 Self-start 45/45 and time-to-release at the first 100 us checkpoint on all 45
 points, schematic, current. The post-layout evidence is the startup cell's
-trip point (45/45, 2026-11-13), which exercises the extracted
-`bandgap_startup` layout as #383 re-extracted it. That re-run is the one
-place this report can show the re-extraction is benign: against the
-2026-09-05 record the trip point is **identical at printed precision at all
-45 points** (`vtrip_v`, `det_off_v` and `fb_off_v` byte-equal; `det_on_v`
-within 5 uV), which is what a hub-tag permutation that conserves every wire
-R/C value should produce. The cell still has not been re-run against the
-trim-bearing assembly, and there is no post-layout time-to-release.
+trip point (45/45, 2026-09-05), which exercises the extracted
+`bandgap_startup` layout; it has not been re-run against the trim-bearing
+assembly, and there is no post-layout time-to-release.
 
 ## Supplementary current evidence not tied to a spec row
 
@@ -290,19 +240,13 @@ trim-bearing assembly, and there is no post-layout time-to-release.
   20261003-180919-2addad0.csv`, the solve-quality-guarded grid from #289 (45/45
   `quality=ok`; minimum phase margin 83.5 deg across the 45 rows). Not a spec
   row.
-- Output impedance, post-layout, re-run on #383's extraction:
-  `sim/closed-loop-zout-pex/records/20261113-145415-7c46e66b.csv` (45/45 pass;
-  `zout_dc_db` 96.150 to 97.940 dB). Not a spec row, and there is no bound to
-  meet; it is listed because it is the third experiment this report's
-  re-extraction forced a re-run of, and because it is the cleanest evidence
-  that the re-extraction moved nothing: the largest per-point change against
-  the 2026-10-04 record is 0.0024 dB.
+- Output impedance, post-layout: `sim/closed-loop-zout-pex/records/
+  20261004-030338-5553d523.csv`. Not a spec row; not quoted further here.
 
 ## Gaps this report does not close
 
 - #303 (open): redesign against mismatch and re-aim of the trim for the
-  trimmed line; one-point trim only. It is now also the open lever for the
-  PSRR @ DC row, which this report records as measured unmet.
+  trimmed line; one-point trim only.
 - #273 (open): the untrimmed MC and the schematic box-TC grid re-runs on the
   trim-bearing core. The two PEX re-runs still waived under #275 have no
   open tracker.
@@ -311,16 +255,6 @@ trim-bearing assembly, and there is no post-layout time-to-release.
 - If #303 changes the DUT before this report is merged or later, every row
   marked "Current" must be rechecked; the netlist-snapshot check will flag the
   ones that go stale.
-- #381 (blocked) will regenerate `layout/bandgap_top` again. When it lands,
-  the two post-layout `.pex.spice` hashes this report audits move again and
-  `check_report_dependencies.py` will ask for the next dated report, with the
-  psrr/zout re-runs repeated. That is the mechanism working, not a defect.
-- The three re-run records keep their per-point logs and netlist snapshots in
-  the artifact store rather than in-tree (#379/#382), so
-  `check_evidence_formats.py` reports their schematic-DUT freshness as "not
-  checked" and their parasitic freshness is carried by the `Extraction
-  sources` binding instead. That is a narrower check than the in-tree
-  snapshot comparison the older records get.
 
 ## Reproducing the spot-check
 
@@ -329,32 +263,32 @@ python3 -I measurements/2026-11-characterization-report/spotcheck.py
 ```
 
 It reads only the committed CSVs under `sim/` and prints one line per quoted
-figure. Output at the audited commit `e2d2b1c4`:
+figure. Output at the audited commit `03e62489`:
 
 ```text
 vref-pvt sch trim-bearing: 45/45 PASS; vref 1.04060..1.05052 V; vs 1.050 V: -0.90%..+0.05%; nominal typ/27C/3.30V 1.04728 V (-0.259%); max settle delta 0 V
 vref-pvt sch trim-bearing endpoint TC: 15 groups; -37.3..-14.1 ppm/C; max |TC| 37.3; groups < 50: 15; groups < 20: 3
-psrr-pex vref_op (PEX trim-bearing, 27C/DC op only): 45/45 PASS; vref_op 1.03912..1.04961 V
-PSRR@DC PEX trim-bearing: 59.997..99.351 dB; >60 dB: 44/45; >70 dB: 10/45; worst 59.9967 dB at bcs/125C/3.63V
-PSRR@DC PEX trim-bearing, 2nd/3rd worst: 60.332, 60.497 dB
+psrr-pex vref_op (PEX trim-bearing, 27C/DC op only): 45/45 PASS; vref_op 1.03894..1.04950 V
+PSRR@DC PEX trim-bearing: 60.001..99.507 dB; >60 dB: 45/45; >70 dB: 10/45; worst 60.0013 dB at bcs/125C/3.63V
+PSRR@DC PEX trim-bearing, 2nd/3rd worst: 60.336, 60.502 dB
 PSRR above-DC min (PEX trim-bearing): psrr_min_db 5.69..6.59 dB (HF notch, not the DC row)
 PSRR@DC sch trim-bearing: 59.685..100.400 dB; >60 dB: 44/45; >70 dB: 10/45; worst 59.6849 dB at bcs/125C/3.63V
 Supply grid actually swept by the current records: ['2.97', '3.30', '3.63']
 Iq sch trim-bearing: 45/45 PASS; 19.58..41.78 uA; <50 uA: 45/45; <20 uA: 2/45; worst bcs/125C/3.63V; margin to 50 uA 16.4%; max settle delta 0 A
 startup sch trim-bearing: 45/45 PASS
 startup time-to-release sch trim-bearing: 45/45 PASS; release_time_us values ['100']; max 100 us (ladder step 100 us)
-startup trip point PEX (2026-11-13): 45/45 PASS; vtrip 0.422561..0.667305 V
+startup trip point PEX (2026-09-05): 45/45 PASS
 trim-coverage: 15/15 groups PASS; range up +29.22..+29.72%, down -29.63..-30.12% (worst-case +29.22/-29.63); LSB 0.2309..0.2347 %/step; worst binary-weight deviation 0.2937%; monotonic in 15/15
 trim-coverage points: 169/169 PASS
-trim-MC nominal: N=300 draws, 299 converged (1 excluded); within +/-0.5% over -40..125C: 29.8%; 3*sigma(max_dev) 2.601%; worst draw 6.72%; seeds 20260930..20261229
-trim-MC bcs: N=300 draws, 242 converged (58 excluded); within +/-0.5% over -40..125C: 28.5%; 3*sigma(max_dev) 2.523%; worst draw 6.79%; seeds 20260930..20261229
-trim-MC wcs: N=300 draws, 293 converged (7 excluded); within +/-0.5% over -40..125C: 31.7%; 3*sigma(max_dev) 2.592%; worst draw 6.79%; seeds 20260930..20261229
+trim-MC nominal: N=300 draws, 299 converged (1 excluded); within +/-0.5% over -40..125C: 24.7%; 3*sigma(max_dev) 2.399%; worst draw 4.44%; seeds 20260930..20261229
+trim-MC bcs: N=300 draws, 300 converged (0 excluded); within +/-0.5% over -40..125C: 25.0%; 3*sigma(max_dev) 2.413%; worst draw 4.33%; seeds 20260930..20261229
+trim-MC wcs: N=300 draws, 300 converged (0 excluded); within +/-0.5% over -40..125C: 27.0%; 3*sigma(max_dev) 2.390%; worst draw 4.41%; seeds 20260930..20261229
 trim-MC negctrl: N=300 draws, 300 converged (0 excluded); within +/-0.5% over -40..125C: 100.0%; 3*sigma(max_dev) 0.000%; worst draw 0.43%; seeds 20260930..20261229
-trim-MC digest typ_mismatch: status FAIL, n_pass 299/300, frac_within_0p5 29.77%, 3sigma 2.601%
+trim-MC digest typ_mismatch: status FAIL, n_pass 299/300, frac_within_0p5 24.75%, 3sigma 2.399%
 trim-MC digest typ_negctrl: status PASS, n_pass 300/300, frac_within_0p5 100.00%, 3sigma 0.000%
-trim-MC digest bcs_mismatch: status FAIL, n_pass 242/300, frac_within_0p5 28.51%, 3sigma 2.523%
-trim-MC digest wcs_mismatch: status FAIL, n_pass 293/300, frac_within_0p5 31.74%, 3sigma 2.592%
-trim-MC nominal at the 27C trim point: max |dev_27c| 0.246%; draws with |dev_27c|<=0.5%: 299/299
+trim-MC digest bcs_mismatch: status FAIL, n_pass 300/300, frac_within_0p5 25.00%, 3sigma 2.413%
+trim-MC digest wcs_mismatch: status FAIL, n_pass 300/300, frac_within_0p5 27.00%, 3sigma 2.390%
+trim-MC nominal at the 27C trim point: max |dev_27c| 0.284%; draws with |dev_27c|<=0.5%: 299/299
 box TC trim-bearing, code 128: 15 groups; 20.2..38.6 ppm/C; < 20: 0; < 50: 15
 box TC trim-bearing, code 128 worst: bcs_code128/3.63V 38.610
 box TC trim-bearing, codes 127..129: 45 groups; 15.5..45.7 ppm/C; < 50: 45/45; < 20: 3/45
@@ -379,7 +313,6 @@ untrimmed MC nominal recomputed from draws (STALE): N=300 mean 1.046711 sigma 0.
 untrimmed worst-case 3sigma total vs 1.050 V (STALE; DR-0011's 15.3% sum): 15.32% vs the +/-16% line
 untrimmed MC +/-16% band around 1.050 V (STALE): draws inside [0.882, 1.218] V: 300/300
 PEX pre-trim vref grid (STALE): 45 PASS; 1.04309..1.05667 V; nominal 1.05048 V
-Zout@DC PEX trim-bearing (supplementary): 45/45 PASS; 96.150..97.940 dB; worst 97.9396 dB at wcs/125C/3.63V
 loop-gain (supplementary, not a spec row): 45/45 PASS, 45 quality=ok rows
 loop-gain phase margin: 45 rows with a crossover; min 83.5 deg
 ```
@@ -387,7 +320,7 @@ loop-gain phase margin: 45 rows with a crossover; min 83.5 deg
 Two conventions to read the output by: "3 sigma of worst-case deviation" is
 `3 * stdev` of each converged draw's `max_dev_pct` (the maximum absolute
 deviation from 1.050 V over -40/27/125 C), the same definition the record's own
-digest uses (reproduced exactly: 2.601233 for the nominal point); and the
+digest uses (reproduced exactly: 2.399440 for the nominal point); and the
 box-method TC is `(vmax-vmin)/(vref(27C) * 165 C)`, taken from the record's
 `box_tc_ppm_per_c` column.
 

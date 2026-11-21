@@ -238,9 +238,27 @@ current).
 ```bash
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
-sim/tools/build-osdi.sh              # one-time: build the OSDI models
-sim/closed-loop-vref-pvt/run_pvt_sweep.sh
+sim/tools/build-osdi.sh                              # one-time: build the OSDI models
+sim/closed-loop-vref-pvt/run_klt_sim.sh --sanity     # one local corner, vs the sanity anchor
+sim/closed-loop-vref-pvt/run_klt_sim.sh --batch      # the 45-point grid, on the fleet (resumable)
+sim/closed-loop-vref-pvt/run_klt_sim.sh --record     # mint the record from the merged report
 ```
+
+The grid runs through the `klt sim` batch harness (`sim/harness/README.md`,
+the #275 decision; wrapper added by issue #467), not the `run_pvt_sweep.sh`
+shell loop that minted the records through 2026-10-01 — that script was
+removed in #519 and is recoverable from git history only. Its `JOBS=N`
+wall-clock knob has no successor here: the 45 points are no longer `ngspice`
+processes on the invoking host at all. `--batch` dispatches through the shared
+`pex_batch_dispatch` (one request per process x supply, merged before the
+adapter) and inherits the harness's `--wait-for-capacity` handling; a
+failed dispatch is reported, never re-run as a local grid. The local
+`--sanity` corner (typ / 27 °C / 3.30 V) is gated on this bench's own
+committed record's `vref_3ms_v` (1.04728 V ± 0.5 mV,
+`20261001-085908-e5507b2`) — the same anchor
+[`../closed-loop-vref-pvt-pex/`](../closed-loop-vref-pvt-pex/README.md) and
+[`../closed-loop-vref-pvt-boxtc/`](../closed-loop-vref-pvt-boxtc/README.md)
+gate against.
 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.

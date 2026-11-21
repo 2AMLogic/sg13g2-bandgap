@@ -280,7 +280,10 @@ the first fix that meets the row."
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
 sim/tools/build-osdi.sh
-sim/closed-loop-vref-pvt/run_pvt_sweep.sh
+# The runner that minted the record above,
+# sim/closed-loop-vref-pvt/run_pvt_sweep.sh, was removed in #519
+# (see git history); the current flow is
+# sim/closed-loop-vref-pvt/run_klt_sim.sh (--batch, then --record).
 ```
 
 The fine-grid (8-temperature-point) box-method scan in Sec 2/4b was a

@@ -1,7 +1,7 @@
 * sg13g2-bandgap -- bandgap_core PEX (post-layout) open-loop PVT testbench
 * (issue #14). Generated from
 * sim/core-open-loop-bias-pex/testbench/tb_core_open_loop_bias_pex.spice.tmpl
-* by sim/core-open-loop-bias-pex/run_pvt_sweep.sh -- do not edit a generated
+* by sim/core-open-loop-bias-pex/run_pvt_sweep.sh (removed in #438; see git history) -- do not edit a generated
 * netlist-snapshots/*.spice file directly, edit this template and re-run
 * the sweep. Full rationale is in sim/core-open-loop-bias-pex/README.md;
 * this header is a short pointer, not a restatement.
@@ -189,7 +189,7 @@ Ibias pex_fb vss dc 5u
 * SEPARATE ammeter per finger (Vm2a/Vm2b, Vm3a/Vm3b/Vm3c) rather than
 * merging them onto one shared probe node, which would lose the real
 * per-finger wire-resistance distinction the extraction reports.
-* run_pvt_sweep.sh sums each leg's per-finger ammeter readings
+* run_pvt_sweep.sh (removed in #438; see git history) sums each leg's per-finger ammeter readings
 * (i(vm2a)+i(vm2b), i(vm3a)+i(vm3b)+i(vm3c)) into that leg's total current,
 * matching the pre-#149 single-ammeter-per-leg convention at the CSV/record
 * level even though the netlist itself now measures each finger

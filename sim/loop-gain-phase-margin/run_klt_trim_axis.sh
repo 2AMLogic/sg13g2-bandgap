@@ -29,7 +29,9 @@
 #
 # Environment: KLT_TRIM_AXIS_WORK (scratch dir, default mktemp),
 # KLT_TRIM_AXIS_ONLY (space-separated subset of point names, batch mode),
-# KLT_BATCH_PROVISION_SCRIPT, KLT_TRIM_AXIS_BATCH_PDK_ROOT (default /opt/pdk).
+# KLT_BATCH_PROVISION_SCRIPT, KLT_TRIM_AXIS_BATCH_PDK_ROOT,
+# KLT_SIM_BATCH_PDK_ROOT (KLT_TRIM_AXIS_BATCH_PDK_ROOT takes precedence;
+# both fall back to /opt/pdk).
 set -euo pipefail
 
 MODE="${1:-}"
@@ -43,7 +45,13 @@ SIM_DIR="$(cd "${EXPERIMENT_DIR}/.." && pwd)"
 REPO_ROOT="$(cd "${SIM_DIR}/.." && pwd)"
 TOOL="${EXPERIMENT_DIR}/tools/klt_trim_axis.py"
 KLT_BIN="${KLT_TRIM_AXIS_KLT:-klt}"
-PROVISION="${KLT_BATCH_PROVISION_SCRIPT:-${HOME}/GitHub/2am/infra/aws/batch-fleet-provision.sh}"
+# The shared batch defaults (issue #503): BATCH_PROVISION_SCRIPT and
+# BATCH_PDK_ROOT. KLT_TRIM_AXIS_BATCH_PDK_ROOT (this script's documented
+# override name, header above) is passed so it stays ahead of the generic
+# KLT_SIM_BATCH_PDK_ROOT. The preamble is function definitions only.
+# shellcheck source=../harness/klt_sim_preamble.sh
+source "${SIM_DIR}/harness/klt_sim_preamble.sh"
+klt_sim_batch_defaults KLT_TRIM_AXIS_BATCH_PDK_ROOT
 WORK="${KLT_TRIM_AXIS_WORK:-$(mktemp -d -t sg13g2-trim-axis-XXXXXX)}"
 mkdir -p "${WORK}"
 echo "run_klt_trim_axis.sh: work dir ${WORK}"
@@ -73,11 +81,11 @@ fi
 PLAN_NAME=characterization
 [[ "${MODE}" == "--pvt" ]] && PLAN_NAME=pvt
 
-[[ -x "${PROVISION}" ]] || { echo "run_klt_trim_axis.sh: no provision script at ${PROVISION}" >&2; exit 3; }
+[[ -x "${BATCH_PROVISION_SCRIPT}" ]] || { echo "run_klt_trim_axis.sh: no provision script at ${BATCH_PROVISION_SCRIPT}" >&2; exit 3; }
 # shellcheck disable=SC2086
 python3 "${TOOL}" prepare --work "${WORK}" --target batch --plan "${PLAN_NAME}" \
-  --batch-pdk-root "${KLT_TRIM_AXIS_BATCH_PDK_ROOT:-/opt/pdk}" \
-  --provision-script "${PROVISION}" ${KLT_TRIM_AXIS_ONLY:+--only ${KLT_TRIM_AXIS_ONLY}} \
+  --batch-pdk-root "${BATCH_PDK_ROOT}" \
+  --provision-script "${BATCH_PROVISION_SCRIPT}" ${KLT_TRIM_AXIS_ONLY:+--only ${KLT_TRIM_AXIS_ONLY}} \
   > "${WORK}/points.txt"
 
 # One fleet job per request. The submitting processes only upload, launch and

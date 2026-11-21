@@ -754,8 +754,10 @@ def _draw_poly_res(
 
     The fold conserves the drawn conductor length **exactly** (see
     :func:`~_klayout_builder_base.fold_plan` for the derivation and for why
-    the gap it returns can exceed ``RES_FOLD_GAP_UM`` by a few nanometres),
-    so it does not re-size the device: it changes the resistor's parasitics
+    the gap it returns can exceed ``RES_FOLD_GAP_UM`` by up to
+    ``legs * GRID_NM`` nanometres while staying on the 5 nm manufacturing
+    grid), so it does not re-size the device: it changes the resistor's
+    parasitics
     and its matching (a compact block sees a far smaller across-die gradient
     than a 1.4 mm bar) but not its nominal value. The leg/link box arithmetic
     is the same construction ``layout/common.py``'s SG13G2 ``draw_poly_res``

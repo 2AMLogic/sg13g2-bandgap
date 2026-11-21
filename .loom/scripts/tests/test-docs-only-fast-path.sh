@@ -4,7 +4,7 @@
 # diff is confined to WORK_LOG.md/WORK_PLAN.md/README.md skip the full code
 # evaluation + merge-risk judgment cycle, while still landing safely.
 #
-# Judge's "Docs-Only Fast Path" section and Champion's criterion #2 "Docs-only
+# Judge's "Docs-Only Fast Path" section and Champion's merge-risk criterion "Docs-only
 # fast path" subsection are prose an LLM instance reads and executes, not a
 # standalone script (same situation as test-champion-critical-file-check.sh)
 # — so this file mirrors the documented `docs_only_fast_path_check()`
@@ -54,36 +54,14 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/assert.sh"
 
 # Pin a literal snippet as present verbatim in a doc file — catches drift
 # between this test's mirrored function and the shipped markdown.
-assert_doc_contains() {
-    local file="$1" needle="$2" msg="$3"
-    TESTS_RUN=$((TESTS_RUN + 1))
-    if grep -qF -- "$needle" "$file"; then
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        echo -e "  ${GREEN}PASS${NC}: $msg"
-    else
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        echo -e "  ${RED}FAIL${NC}: $msg (missing literal in $file: $needle)"
-    fi
-}
 
 # Pin a literal snippet's ABSENCE from a doc file — catches a regression back
 # to a truncating/trust-the-marker shortcut.
-assert_doc_lacks() {
-    local file="$1" needle="$2" msg="$3"
-    TESTS_RUN=$((TESTS_RUN + 1))
-    if grep -qF -- "$needle" "$file"; then
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        echo -e "  ${RED}FAIL${NC}: $msg (found stale/unsafe literal in $file: $needle)"
-    else
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        echo -e "  ${GREEN}PASS${NC}: $msg"
-    fi
-}
 
 # =====================================================================
 # The docs-only fast-path eligibility check, mirrored verbatim from BOTH
 # judge.md's "Docs-Only Fast Path" section and champion-pr-merge.md's
-# "Docs-only fast path" subsection of criterion #2 — the two shipped copies
+# "Docs-only fast path" subsection of the merge-risk criterion — the two shipped copies
 # are intentionally identical, and the doc pins below confirm both actually
 # match this mirror.
 # =====================================================================

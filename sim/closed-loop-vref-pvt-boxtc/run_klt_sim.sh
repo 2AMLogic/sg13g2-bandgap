@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# sg13g2-bandgap -- closed-loop-vref-pvt-boxtc (schematic DUT) on the `klt sim`
+# harness (issue #273, completing #264's trim-bearing refresh).
+#
+#   sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh --sanity  # one local corner, vs the vref-pvt twin
+#   sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh --batch   # the 120-point box-TC grid, on the fleet
+#   sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh --record  # mint evidence from the enriched report
+#
+# This is the schematic twin of sim/closed-loop-vref-pvt-pex-boxtc/run_klt_sim.sh
+# and shares its driver (sim/harness/pex_runner.sh + pex_vref_runner.sh's
+# anchor check): the grid runs as 15 requests (5 processes x 3 supplies) of 8
+# temperatures each, sharded over the fleet, for the reasons stated there
+# (klayout-tools#2668 single-models.lib; the PWL ramp is the convergence path
+# so the supply cannot ride `alter`). The DUT is the schematic, carried
+# verbatim in the body template, so there is no extraction and no generated
+# body. The old run_pvt_sweep.sh (removed in #438; see git history) is kept as the point-definition reference
+# only: it must not be run as a grid on a dispatch host.
+#
+# SANITY GATE. One local typ/27C/3.30V corner must land on the committed
+# sim/closed-loop-vref-pvt record's vref_3ms (1.04728 V): the two benches share
+# the DUT, fixture and measurement; the solver options are shared except this
+# bench's `klu` direct solver (issue #469). The band stays tight because that
+# divergence was measured to move neither corner (sanity delta 0 here,
+# vref_3ms identical to the reported precision on the hot corner -- README
+# "Hot-corner solve time"), not because the options are identical.
+#
+# HOST SETUP seen on 2026-10-25 (issue #273), needed until the runner image and
+# the dispatch hosts' klt agree:
+#   * the fleet runner ran klt 0.7.0 and refuses a client of another version
+#     (host klt was 0.8.1.dev): KLT_SIM_SUBMIT_KLT=<wrapper running
+#     `uvx --from klayout-tools==0.7.0 klt "$@"`>. The sanity gate keeps the host klt.
+#   * klt >= 0.8 rejects a body `.lib` path under an absolute runner root
+#     (/opt/pdk) as "not under $PDK_ROOT"; pex_runner.sh now writes the `.lib`
+#     cards under the submitting host's $PDK_ROOT (BATCH_LIB_ROOT), so no
+#     KLT_SIM_BATCH_PDK_ROOT override is needed (it names the OSDI/runner root).
+#
+# Resumable: a per-variant report that passed AND carries a matching
+# submission identity (#332) is not re-submitted.
+set -euo pipefail
+
+EXP="closed-loop-vref-pvt-boxtc"
+STEM="closed_loop_vref_pvt_boxtc"
+VDDS=(2.97 3.30 3.63)
+# The 15 requests are independent, so --batch submits them as one
+# `klt sim --batch-set` instead of 15 blocking round-trips (issue #402):
+# sequentially the first request alone had not returned after ~30 min and the
+# grid projected to 7+ h, which is why this DUT carried a #273 evidence-
+# freshness waiver.
+#
+# Both bounds below default to the pair this campaign was MEASURED to complete
+# with (2026-11-13, see the README). The fleet is shared and vCPU-budgeted, so
+# the limit is not the client: each request shards to 8 fleet jobs
+# (`remote.hosts`), and in-flight x hosts jobs are wanted at once.
+# 3 x 8 = 24 ran the fleet to 384 vCPU against `BATCH_MAX_VCPU=224` and lost
+# about half the campaign's shards to exhausted capacity waits; 2 members x 3
+# shards each lost none. Raise either one and the overflow is refused with
+# `batch_no_capacity` rather than finishing sooner. Both stay overridable.
+PEX_BATCH_MAX_IN_FLIGHT="${PEX_BATCH_MAX_IN_FLIGHT:-2}"
+KLT_SIM_MAX_CONCURRENT_JOBS="${KLT_SIM_MAX_CONCURRENT_JOBS:-3}"
+source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_runner.sh"
+source "${HARNESS_DIR}/pex_vref_runner.sh"
+
+# XMSENSE's width from the live startup netlist, as every closed-loop bench does.
+# shellcheck source=../lib/msense_width.sh
+source "${SIM_DIR}/lib/msense_width.sh"
+( cd "${REPO_ROOT}" && read_msense_width "design/netlist/bandgap_startup.spice" \
+    && printf '%s' "${MSENSE_W}" > "${WORK}/msense_w.txt" )
+MSENSE_W="$(<"${WORK}/msense_w.txt")"
+BODY_TEMPLATE="${WORK}/body.spice.tmpl"
+sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl" > "${BODY_TEMPLATE}"
+IDENT_ARGS+=(--extra "${REPO_ROOT}/design/netlist/bandgap_startup.spice"
+  --extra "${REPO_ROOT}/design/netlist/bandgap_core.spice"
+  --extra "${REPO_ROOT}/design/netlist/bandgap_amp.spice")
+
+# Sanity anchor: sim/closed-loop-vref-pvt's newest committed record,
+# typ/27C/3.30V vref_3ms (trim-bearing, 20261001 refresh), same bench.
+ANCHOR_VREF_V="1.04728"
+ANCHOR_TOL_V="0.0005"
+
+pex_record_companion() {
+  # The box-method derivation is shared with this bench's twin:
+  # sim/harness/pex_vref_runner.sh's pex_boxtc_companion (issue #465).
+  pex_boxtc_companion
+}
+
+schematic_vref_main

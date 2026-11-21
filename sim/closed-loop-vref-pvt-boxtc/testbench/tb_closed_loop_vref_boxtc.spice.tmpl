@@ -2,7 +2,7 @@
 * co-simulated closed-loop box-method TC testbench (issue #222, follow-on
 * to #86/#134). Generated from
 * sim/closed-loop-vref-pvt-boxtc/testbench/tb_closed_loop_vref_boxtc.spice.tmpl
-* by sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh -- do not edit a
+* by sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh (removed in #438; see git history) -- do not edit a
 * generated netlist-snapshots/*.spice file directly, edit this template and
 * re-run the sweep. Full rationale is in
 * sim/closed-loop-vref-pvt-boxtc/README.md.
@@ -15,11 +15,14 @@
 * PDK: @@PDK@@ @@PDK_ROOT@@ (see sim/pdk.json for the pinned release)
 * OSDI models: @@OSDI_DIR@@ (built by sim/tools/build-osdi.sh)
 *
-* This netlist is byte-identical in device set, fixture, solver options and
-* every .measure to sim/closed-loop-vref-pvt's own
-* tb_closed_loop_vref.spice.tmpl (the official endpoint-method bench) from
-* the .lib line down -- deliberately. This experiment's ONLY difference
-* from that bench is the temperature grid its driver sweeps: 8 points
+* This netlist is byte-identical in device set, fixture and every .measure
+* to sim/closed-loop-vref-pvt's own tb_closed_loop_vref.spice.tmpl (the
+* official endpoint-method bench) from the .lib line down -- deliberately --
+* except the direct linear solver: this deck pins klu (SPARSE 1.3 stays the
+* ngspice default in the official bench), a deliberate, measured
+* answer-preserving departure (issue #469; see README "Hot-corner solve
+* time"). This experiment's other difference from that bench is the
+* temperature grid its driver sweeps: 8 points
 * (-40/-20/0/27/50/75/100/125 C, the grid measurements/2026-08-tc-retune
 * README Sec 4b used) instead of 3 (-40/27/125), because the box method
 * this experiment exists to measure needs the interior extremum sampled,
@@ -104,7 +107,15 @@
 * vref_2ms/vref_3ms/vbeq3_2ms/vbeq3_3ms identical at 200n vs 50n) -- a
 * solver-robustness relaxation for a known-stiff instant, not a claim
 * changed by applying it.
-.options temp=@@TEMP_C@@ tnom=27 reltol=5e-3
+* klu (issue #469): KLU direct linear solver, answer-preserving by
+* construction (same equations/tolerances, different factorization); measured
+* 3643 s -> 211 s on typ/100C/2.97V with vref_3ms identical at 6 significant
+* figures. Kept in step with the klt sim bench's body template
+* (closed_loop_vref_pvt_boxtc.body.spice.tmpl), whose klu pin this deck
+* mirrors; that pin is a deliberate, documented departure from the header's
+* byte-identity with sim/closed-loop-vref-pvt (README "Hot-corner solve
+* time"), not an instance of it.
+.options temp=@@TEMP_C@@ tnom=27 reltol=5e-3 klu
 
 * FIXTURE -- transient supply ramp: vdd ramps 0 -> VDD over 200 us (same
 * rise sim/closed-loop-startup and sim/startup-core-handover use) and holds
@@ -464,7 +475,7 @@ meas tran v_sns2_v find v(sns2) at=3m
 meas tran v_det_v find v(det) at=3m
 meas tran i_mkfb_v find i(Vmkfb) at=3m
 * The claim under test: vref at two separated time points, so
-* run_pvt_sweep.sh can confirm it has stopped moving (a real DC value, not
+* run_pvt_sweep.sh (removed in #438; see git history) can confirm it has stopped moving (a real DC value, not
 * a still-slewing snapshot) before reporting it.
 meas tran v_vref_2ms find v(vref) at=2m
 meas tran v_vref_3ms find v(vref) at=3m
@@ -474,7 +485,7 @@ meas tran v_vref_3ms find v(vref) at=3m
 * directly -- no subtraction needed. design/bandgap_core.sch's own header
 * derives R1 from an ASSUMED VBE(Q3)~=0.75V that was never simulated; this
 * measures the real value at the same two time points as vref above, so
-* run_pvt_sweep.sh can confirm it too has settled before reporting it.
+* run_pvt_sweep.sh (removed in #438; see git history) can confirm it too has settled before reporting it.
 meas tran v_vbeq3_2ms find v(cb3) at=2m
 meas tran v_vbeq3_3ms find v(cb3) at=3m
 .endc

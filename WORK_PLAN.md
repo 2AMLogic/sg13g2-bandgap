@@ -3,6 +3,7 @@
 Current repository work state, generated from GitHub labels by the Guide role.
 
 <!-- guide:plan-body:start -->
+_Generated: 2026-11-20T19:08:32Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -13,33 +14,37 @@ _None._
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-_None._
+- **#628**: Rebase PR #383 (runset recognition layers, #380 + #387) onto current main: resolve 38 conflicts, regenerate layout, re-mint evidence, re-run the three PEX benches
 
 ## Important
 
 `loom:important`; taken before unlabelled work.
 
-_None._
+- **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
+- **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(held)*
+- **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(held)*
 
 ## Ready
 
-Human-approved issues ready for implementation (`loom:issue`).
+Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-- **#371**: Live --batch run of the shared PEX runner driver (sim/harness/pex_runner.sh)
+- **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
+- **#628**: Rebase PR #383 (runset recognition layers, #380 + #387) onto current main: resolve 38 conflicts, regenerate layout, re-mint evidence, re-run the three PEX benches
+- **#629**: T1 item 5 (corner verification): cite the klt sim corner-matrix envelopes per spec row and declare the row set, so the item grades on evidence instead of no_evidence
+- **#630**: T1 item 6 (Monte Carlo): produce and cite a klt yield report for the untrimmed Output-reference line, with a real negative control and the statistical row set declared
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-- **#379**: Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact)
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
+- **#631**: design: PSRR @ DC misses the > 60 dB row at bcs/125 C/3.63 V (59.685 dB schematic); attribute the limit and propose a bounded fix
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#382**: feat(sim): store new klt-sim evidence in the artifact store, commit manifests
-- **#383**: fix(layout): draw the PDK runset's recognition layers in the HV MOS and npn13G2 helpers
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -51,20 +56,24 @@ _None._
 
 Issues carrying `loom:curated`.
 
-- **#4**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
-- **#379**: Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact) *(curated)*
-- **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures) *(curated)*
-- **#273**: Finish the #264 refresh: closed-loop-vref-mc (1800 draws) and closed-loop-vref-pvt-boxtc (120 transient points) *(curated)*
-- **#278**: Re-run the five PEX experiments through the klt sim harness (the remaining half of #275) *(curated)*
-- **#299**: signoff: bind T1 items 9 and 10 (and re-bind item 1) to audited artifacts (klayout-tools#2718 landed) *(curated)*
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6) *(curated)*
-- **#322**: Re-stamp SG13CMOS5L PDK pin from klayout-tools (IHP-Open-PDK dev f7bca326) *(curated)*
-- **#335**: sim: provision SG13CMOS5L pin on the permitted batch backend (Part of #322) *(curated)*
-- **#371**: Live --batch run of the shared PEX runner driver (sim/harness/pex_runner.sh) *(curated)*
+- **#322**: Re-stamp SG13CMOS5L PDK pin from klayout-tools (IHP-Open-PDK dev f7bca326) *(curated)* *(held)*
+- **#335**: sim: provision SG13CMOS5L pin on the permitted batch backend (Part of #322) *(curated)* *(held)*
+- **#379**: Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact) *(curated)* *(held)*
+- **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures) *(curated)*
+- **#387**: Re-audit characterization report after PR #383 changed the layout PEX netlists *(curated)* *(held)*
+- **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)* *(held)*
+- **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(curated)* *(held)*
+- **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)* *(held)*
+- **#628**: Rebase PR #383 (runset recognition layers, #380 + #387) onto current main: resolve 38 conflicts, regenerate layout, re-mint evidence, re-run the three PEX benches *(curated)*
+- **#629**: T1 item 5 (corner verification): cite the klt sim corner-matrix envelopes per spec row and declare the row set, so the item grades on evidence instead of no_evidence *(curated)*
+- **#630**: T1 item 6 (Monte Carlo): produce and cite a klt yield report for the untrimmed Output-reference line, with a real negative control and the statistical row set declared *(curated)*
+- **#631**: design: PSRR @ DC misses the > 60 dB row at bcs/125 C/3.63 V (59.685 dB schematic); attribute the limit and propose a bounded fix *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-- **#310**: signoff: execute the deferred cold-start testbench audit for T1 item 9 *(architect)*
+- **#460**: Remove two logic-free awk wrappers (zout_summary.awk, psrr_summary.awk) left behind by the klt sim conversion *(hermit)* *(held)*
+- **#480**: Collapse the sg13cmos5l-bandgap_top duplicate extraction pair: extract_report.json and pex_extract_report.json differ only in one string *(hermit)* *(held)*
 
 ## Epics
 
@@ -75,13 +84,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Very important | 0 |
-| Important | 0 |
-| Ready (`loom:issue`) | 1 |
+| Very important | 1 |
+| Important | 3 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 4 |
 | In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 2 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 10 |
-| Architect / Hermit proposals | 1 |
+| Curated | 13 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

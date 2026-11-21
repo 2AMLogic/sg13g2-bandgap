@@ -152,7 +152,7 @@ transient bring-up analogous to `closed-loop-startup`'s vdd-ramp could
 work here too — but `.nodeset`-seeding from `../closed-loop-startup/`'s
 own most recent committed record is simpler, already proven, and
 sufficient: it is (very nearly) the true answer for this exact corner, so
-`.op`'s Newton-Raphson converges to it directly. `run_pvt_sweep.sh` reads
+`.op`'s Newton-Raphson converges to it directly. `run_pvt_sweep.sh` (removed in #438) reads
 `fb_final_v`/`sns1_final_v`/`sns2_final_v`/`vref_final_v` for the matching
 `corner_label`/`temp_c`/`vdd_v` row out of that experiment's own most
 recent committed record CSV (looked up by column name, exactly as
@@ -161,7 +161,7 @@ recent committed record CSV (looked up by column name, exactly as
 
 ### "op landed near its seed" — verified per point, not just trusted
 
-`run_pvt_sweep.sh` compares the resulting `v(fb)` against its own
+`run_pvt_sweep.sh` (removed in #438) compares the resulting `v(fb)` against its own
 `.nodeset` seed after `.op` converges and fails the point outright
 (`|fb_op - fb_seed| > 0.05 V`) rather than silently reporting a PSRR curve
 computed around the wrong equilibrium — the same tolerance and rationale
@@ -302,8 +302,23 @@ monotonic-ish rolloff from the DC value toward the crossover-band minimum.
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
 sim/tools/build-osdi.sh              # one-time: build the OSDI models
-sim/closed-loop-psrr/run_pvt_sweep.sh
+sim/closed-loop-psrr/run_klt_sim.sh --sanity   # one local typ/27C/3.30V corner vs the newest record
+sim/closed-loop-psrr/run_klt_sim.sh --batch    # the 45-point grid via `klt sim` on the batch fleet
+sim/closed-loop-psrr/run_klt_sim.sh --record   # mint records/ from the enriched report
 ```
+
+`run_klt_sim.sh` is the cold-start path (issue #415, on the harness described in
+`sim/harness/README.md`; it is the schematic twin of
+`../closed-loop-psrr-pex/run_klt_sim.sh`). `--sanity` is a single local corner
+and must land on the newest committed record's `psrr_dc_db` 66.0695 dB (±0.1 dB)
+and `vref_op_v` 1.047278 V (±2 mV); `--batch` runs that gate first, then submits
+the grid as 15 requests (5 processes x 3 supplies, 3 temperatures each) and
+records the batch job ids in the report's `environment.remote`; a partial grid is
+refused by the shard merger and cannot be recorded. The DUT is the schematic,
+carried in `testbench/closed_loop_psrr.body.spice.tmpl`; the request, record spec
+and the verdict pass (`sim/harness/enrich_ac_report.py --kind psrr`) are
+alongside. On a dispatch host a multi-corner grid must go through `--batch`:
+`run_pvt_sweep.sh` (removed in #438) was deleted in #438 (recoverable from git history); there is no local grid runner.
 
 Requires a committed `../closed-loop-startup/records/*.csv` to exist (see
 "DC bias: `.nodeset`" above) — already true in this repo; no separate

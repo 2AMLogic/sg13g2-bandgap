@@ -141,7 +141,7 @@ pvt_closed_loop_verdict() {
 #   measured det_on/fb_on/vtrip/det_off/fb_off values and vdd. Extracted in
 #   issue #202 from the byte-identical 15-line inline block in
 #   sim/startup-trip-point, sim/startup-trip-point-pex and
-#   sim/sg13cmos5l-startup-trip-point's own run_pvt_sweep.sh scripts.
+#   sim/sg13cmos5l-startup-trip-point's own run_pvt_sweep.sh scripts (the last since removed, #443).
 #
 #   Six criteria, all required (matches sim/startup-trip-point/README.md's
 #   "What this testbench claims" section, which owns the full rationale for

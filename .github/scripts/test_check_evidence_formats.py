@@ -227,6 +227,60 @@ def build_fixture(root: Path) -> None:
         encoding="utf-8",
     )
 
+    # Assembly top + leaf-hash sidecar (issue #588): synth_top's stub
+    # generate.py carries the write_leaf_inputs_sidecar hook, so the checker
+    # treats it as an assembly top and binds its committed GDS to the leaf
+    # GDS files the sidecar names -- here the fixture's own synth_cell.
+    top = root / "layout" / "synth_top"
+    top.mkdir()
+    top_gds_bytes = b"not really a top gds, but it hashes just fine\n"
+    (top / "synth_top.gds").write_bytes(top_gds_bytes)
+    (top / "generate.py").write_text(
+        "# synthetic assembly top (issue #588 fixture)\n"
+        "# writes the leaf-hash sidecar: write_leaf_inputs_sidecar(OUTPUT, LEAVES)\n",
+        encoding="utf-8",
+    )
+    top_reference_bytes = b".SUBCKT synth_top\n.ENDS\n"
+    (top / "synth_top.lvs_reference.spice").write_bytes(top_reference_bytes)
+    (top / "drc_report.json").write_text(
+        json.dumps({
+            "schema_version": 1,
+            "file": "layout/synth_top/synth_top.gds",
+            "deck": "sg13g2",
+            "status": "clean",
+            "violation_count": 0,
+            "violations": [],
+            "coverage": {"rules_skipped": [], "layers_checked": []},
+            "provenance": {"klt_version": "0.3.0", "klayout_version": "0.30.10",
+                           "deck": deck,
+                           "input": {"content_hash": "sha256:" + sha256_bytes(top_gds_bytes)}},
+        }, indent=1),
+        encoding="utf-8",
+    )
+    (top / "lvs_report.json").write_text(
+        json.dumps({
+            "schema_version": 1,
+            "engine": "klayout",
+            "layout": "synth_top.gds",
+            "reference": "synth_top.lvs_reference.spice",
+            "status": "mismatch",
+            "mismatch_count": 1,
+            "error_count": 1,
+            "counts": {"nets": {"matched": 0}, "devices": {"matched": 0}, "pins": {"matched": 0}},
+            "environment": {"engine": "klayout",
+                            "layout_sha256": sha256_bytes(top_gds_bytes),
+                            "reference_sha256": sha256_bytes(top_reference_bytes)},
+            "provenance": {"klt_version": "0.3.0", "deck": deck},
+        }, indent=1),
+        encoding="utf-8",
+    )
+    (top / "leaf_inputs.json").write_text(
+        json.dumps({"schema_version": 1,
+                    "leaves": [{"path": "../synth_cell/synth_cell.gds",
+                                "sha256": sha256_bytes(gds_bytes)}]}, indent=1),
+        encoding="utf-8",
+    )
+
 
 def run_checker(root: Path, *extra: str) -> tuple[int, str]:
     proc = subprocess.run(
@@ -245,7 +299,10 @@ def edit_json(path: Path, mutate) -> None:
 # --- cases -------------------------------------------------------------------
 #
 # Each case mutates the fixture in place and returns the substring the checker's
-# output must contain. A case returning None must leave the checker passing.
+# output must contain. A case returning a `(required, forbidden)` pair must find
+# `required` in the output (a str, or a tuple of fragments all of which must be
+# present) and `forbidden` absent from it. A case returning None must leave the
+# checker passing.
 
 
 def case_valid(_root: Path):
@@ -331,6 +388,26 @@ def case_stale_drc_input(root: Path):
 
 
 def case_stale_lvs_reference(root: Path):
+    reference = root / "layout/synth_cell/synth_cell.lvs_reference.spice"
+    reference.write_bytes(reference.read_bytes() + b"* edited\n")
+    return "lvs_report.json [reference netlist]"
+
+
+def case_lvs_reference_object_form(root: Path):
+    # klt >= 0.9 emits `reference` as a {"path", "scope": "repo"} object with
+    # a repo-relative path instead of a cell-relative filename string (issue
+    # #556) -- the freshness anchor must resolve through it unchanged.
+    edit_json(root / "layout/synth_cell/lvs_report.json",
+              lambda d: d.update(reference={
+                  "path": "layout/synth_cell/synth_cell.lvs_reference.spice",
+                  "scope": "repo"}))
+    return None
+
+
+def case_stale_lvs_reference_object_form(root: Path):
+    # Staleness detection must survive the same form change: same object
+    # reference, but the file it names has moved on since the run.
+    case_lvs_reference_object_form(root)
     reference = root / "layout/synth_cell/synth_cell.lvs_reference.spice"
     reference.write_bytes(reference.read_bytes() + b"* edited\n")
     return "lvs_report.json [reference netlist]"
@@ -480,6 +557,23 @@ def case_waiver_without_issue(root: Path):
     return "missing required key(s): issue"
 
 
+def case_waiver_file_is_not_an_object(root: Path):
+    """A malformed waiver file is a schema failure, not a traceback (#610)."""
+    case_stale_drc_input(root)
+    (root / "layout/evidence-freshness-waivers.json").write_text(
+        json.dumps(["not an object"]), encoding="utf-8"
+    )
+    return "must be a JSON object with a 'waivers' list"
+
+
+def case_waiver_entry_is_not_an_object(root: Path):
+    case_stale_drc_input(root)
+    (root / "layout/evidence-freshness-waivers.json").write_text(
+        json.dumps({"waivers": ["not an object"]}), encoding="utf-8"
+    )
+    return "waiver entry is not an object"
+
+
 def case_waiver_silences_only_its_own_check(root: Path):
     """A waiver for the DRC input must not silence a stale LVS reference."""
     drc = json.loads((root / "layout/synth_cell/drc_report.json").read_text(encoding="utf-8"))
@@ -530,9 +624,10 @@ def case_waiver_guards_nothing(root: Path):
 def case_valid_waiver_passes(root: Path):
     """The whole point of the waiver: loud notes, exit 0.
 
-    Editing the GDS invalidates *every* report that names it as its input, so
+    Editing the GDS invalidates *every* check that names it as its input, so
     each such check has to be waived by name — which is the property being
-    demonstrated.
+    demonstrated. Since #588 that includes the assembly top's leaf binding:
+    synth_top's sidecar names synth_cell.gds, so it goes stale with the rest.
     """
     drc = json.loads((root / "layout/synth_cell/drc_report.json").read_text(encoding="utf-8"))
     lvs = json.loads((root / "layout/synth_cell/lvs_report.json").read_text(encoding="utf-8"))
@@ -576,6 +671,13 @@ def case_valid_waiver_passes(root: Path):
                 "report": "layout/synth_cell/erc_report.json",
                 "check": "input gds",
                 "recorded_hash": erc["provenance"]["input"]["content_hash"],
+                "issue": "#56",
+                "reason": "tracked follow-up",
+            },
+            {
+                "report": "layout/synth_top/leaf_inputs.json",
+                "check": "leaf ../synth_cell/synth_cell.gds",
+                "recorded_hash": drc["provenance"]["input"]["content_hash"],
                 "issue": "#56",
                 "reason": "tracked follow-up",
             },
@@ -980,9 +1082,115 @@ def case_stored_manifest_point_mismatch_fails(root: Path):
     return "disagree on PVT points"
 
 
+def _reid_record(root: Path, new_id: str) -> None:
+    """Re-mint the fixture record under `new_id`: content and paths both."""
+    experiment = root / "sim/synthetic-experiment"
+    for path in sorted(experiment.rglob("*"), key=lambda p: -len(p.parts)):
+        if path.is_file() and path.suffix in (".md", ".csv", ".log", ".spice"):
+            text = path.read_text(encoding="utf-8")
+            if RECORD_ID in text:
+                path.write_text(text.replace(RECORD_ID, new_id), encoding="utf-8")
+        if RECORD_ID in path.name:
+            path.rename(path.with_name(path.name.replace(RECORD_ID, new_id)))
+
+
+def case_post_cutoff_legacy_record_fails(root: Path):
+    _reid_record(root, "20261023-000000-abcdef1")
+    return "DR-0015"
+
+
+def case_pre_cutoff_legacy_record_passes(root: Path):
+    _reid_record(root, "20261022-235959-abcdef1")
+    return None
+
+
+# --- assembly-top leaf binding, issue #588 ------------------------------------
+
+TOP_SIDECAR = "layout/synth_top/leaf_inputs.json"
+TOP_LEAF_REL = "../synth_cell/synth_cell.gds"
+
+
+def case_leaf_binding_clean_passes(_root: Path):
+    """The fixture's undamaged sidecar (fresh leaf hash, sorted, beside the
+    top GDS) must keep the checker green — the clean-pass half of the AC."""
+    return None
+
+
+def case_stale_leaf_hash(root: Path):
+    """A leaf GDS whose current bytes differ from the sidecar's recorded sha256."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"][0].update(sha256="b" * 64))
+    return f"[leaf {TOP_LEAF_REL}]"
+
+
+def case_missing_leaf(root: Path):
+    """A sidecar entry naming a leaf that is not committed."""
+    edit_json(root / TOP_SIDECAR,
+              lambda d: d["leaves"][0].update(path="../synth_cell/gone.gds"))
+    return "leaf ../synth_cell/gone.gds does not exist"
+
+
+def case_missing_sidecar(root: Path):
+    """An assembly top whose committed GDS has no leaf_inputs.json beside it."""
+    (root / TOP_SIDECAR).unlink()
+    return "no leaf_inputs.json beside synth_top.gds"
+
+
+def case_leaf_sidecar_unsorted(root: Path):
+    """The generator writes sorted leaf paths; a hand edit must not pass."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"].insert(
+        0, {"path": "../synth_cell/zz_second_leaf.gds", "sha256": "0" * 64}))
+    return "not sorted"
+
+
+def case_leaf_entry_without_path(root: Path):
+    """A dict entry carrying a sha256 but no 'path' is reported through the
+    normal Report output, not a crash (issue #595: the sha256 pass indexed
+    `entry["path"]` unconditionally)."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"][0].pop("path"))
+    return ((f"{TOP_SIDECAR}: leaf entry", "has no 'path'"), "Traceback")
+
+
+def case_leaf_entry_not_a_dict(root: Path):
+    """A bare string where a leaf entry belongs is reported, not a crash."""
+    edit_json(root / TOP_SIDECAR,
+              lambda d: d.update(leaves=["../synth_cell/synth_cell.gds"]))
+    return ((f"{TOP_SIDECAR}: leaf entry", "has no 'path'"), "Traceback")
+
+
+def case_leaf_entry_empty_path(root: Path):
+    """An empty-string 'path' is as unusable as a missing one."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"][0].update(path=""))
+    return ((f"{TOP_SIDECAR}: leaf entry", "has no 'path'"), "Traceback")
+
+
+def case_leaf_entry_non_string_path(root: Path):
+    """A non-string 'path' is as unusable as a missing one."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"][0].update(path=7))
+    return ((f"{TOP_SIDECAR}: leaf entry", "has no 'path'"), "Traceback")
+
+
+def case_leaf_binding_waived_is_loud_note(root: Path):
+    """A stale leaf binding is waivable through the same mechanism as every
+    report anchor (and self-expires the same way once regenerated)."""
+    edit_json(root / TOP_SIDECAR, lambda d: d["leaves"][0].update(sha256="b" * 64))
+    (root / "layout/evidence-freshness-waivers.json").write_text(
+        json.dumps({"waivers": [{
+            "report": TOP_SIDECAR,
+            "check": f"leaf {TOP_LEAF_REL}",
+            "recorded_hash": "sha256:" + "b" * 64,
+            "issue": "#588",
+            "reason": "tracked re-assembly",
+        }]}),
+        encoding="utf-8",
+    )
+    return None
+
+
 CASES = [
     ("undamaged fixture passes", case_valid),
     ("stored (manifest-only) record passes", case_stored_record_passes),
+    ("legacy record minted on/after the DR-0015 cutoff", case_post_cutoff_legacy_record_fails),
+    ("legacy record minted before the DR-0015 cutoff", case_pre_cutoff_legacy_record_passes),
     ("stored record whose manifest names no snapshots", case_stored_record_without_snapshots_fails),
     ("stored record whose manifest names no logs", case_stored_record_without_logs_fails),
     ("record with neither corners/ nor a manifest", case_record_with_neither_fails),
@@ -1002,6 +1210,8 @@ CASES = [
     ("experiment ships no cold-start run script", case_missing_run_script),
     ("DRC report is stale vs the committed GDS", case_stale_drc_input),
     ("LVS reference netlist edited after the run", case_stale_lvs_reference),
+    ("LVS reference in {path, scope} object form still resolves", case_lvs_reference_object_form),
+    ("LVS reference in object form still freshness-checks", case_stale_lvs_reference_object_form),
     ("DRC status contradicts its own violation count", case_drc_status_contradiction),
     ("LVS status contradicts its own mismatch count", case_lvs_status_contradiction),
     ("LVS zero mismatch_count must be a match verdict", case_lvs_zero_mismatches_not_match),
@@ -1029,6 +1239,8 @@ CASES = [
     ("erc_report.json rejects a status outside the vocabulary", case_erc_bad_status_token),
     ("erc_report.json is stale after its supply spec is edited", case_erc_stale_spec),
     ("waiver without a tracking issue is rejected", case_waiver_without_issue),
+    ("waiver file that is not an object is rejected", case_waiver_file_is_not_an_object),
+    ("waiver entry that is not an object is rejected", case_waiver_entry_is_not_an_object),
     ("waiver silences only its own check", case_waiver_silences_only_its_own_check),
     ("obsolete waiver self-expires", case_obsolete_waiver_self_expires),
     ("waiver that guards nothing is rejected", case_waiver_guards_nothing),
@@ -1064,6 +1276,22 @@ CASES = [
      case_binding_waiver_obsolete_after_rerun),
     ("binding waiver expires when a newer record lands",
      case_binding_waiver_expires_with_newer_record),
+    ("assembly-top leaf binding passes on the undamaged fixture",
+     case_leaf_binding_clean_passes),
+    ("sidecar leaf hash differs from the committed leaf GDS", case_stale_leaf_hash),
+    ("sidecar names a leaf that does not exist", case_missing_leaf),
+    ("assembly top has no leaf_inputs.json beside its GDS", case_missing_sidecar),
+    ("sidecar leaf paths are not sorted", case_leaf_sidecar_unsorted),
+    ("sidecar leaf entry without a 'path' is reported, not a crash",
+     case_leaf_entry_without_path),
+    ("sidecar leaf entry that is not a dict is reported, not a crash",
+     case_leaf_entry_not_a_dict),
+    ("sidecar leaf entry with an empty-string 'path' is reported, not a crash",
+     case_leaf_entry_empty_path),
+    ("sidecar leaf entry with a non-string 'path' is reported, not a crash",
+     case_leaf_entry_non_string_path),
+    ("stale leaf binding downgraded to a note by a waiver",
+     case_leaf_binding_waived_is_loud_note),
 ]
 
 
@@ -1072,7 +1300,28 @@ def test_append_only(tmp: Path) -> str | None:
     root = tmp / "append-only"
     root.mkdir()
     build_fixture(root)
+    _append_only_fixture(root)
 
+    proc = subprocess.run(
+        [sys.executable, str(CHECKER), "--root", str(root),
+         "--base-ref", "main~1", "--require-append-only"],
+        capture_output=True, text=True, check=False,
+    )
+    output = proc.stdout + proc.stderr
+    if proc.returncode == 0:
+        return f"expected non-zero exit, got 0\n{output}"
+    if "append-only" not in output:
+        return f"expected an append-only complaint, got:\n{output}"
+    return None
+
+
+def _append_only_fixture(root: Path) -> None:
+    """Commit the fixture, then edit a committed record on top of it.
+
+    Shared shape of the merge-base cases below: `main` holds the clean tree,
+    the head commit mutates one committed record — the diff the append-only
+    gate must catch whichever way the base arrives (ref name, raw sha, empty).
+    """
     def git(*args: str) -> None:
         subprocess.run(["git", "-C", str(root), *args], check=True,
                        capture_output=True, text=True)
@@ -1089,9 +1338,26 @@ def test_append_only(tmp: Path) -> str | None:
     git("add", "-A")
     git("commit", "-qm", "edit committed evidence")
 
+
+def test_append_only_merge_group_base_sha(tmp: Path) -> str | None:
+    """Merge-group shape (issue #614): the base arrives as a raw sha.
+
+    On merge_group runs the workflow passes the queue's trial-merge base
+    (github.event.merge_group.base_sha) as --base-ref — a raw sha, not a ref
+    name. The checker must resolve and compare it identically to `main~1`.
+    """
+    root = tmp / "append-only-mg-sha"
+    root.mkdir()
+    build_fixture(root)
+    _append_only_fixture(root)
+
+    rev = subprocess.run(["git", "-C", str(root), "rev-parse", "main~1"],
+                         capture_output=True, text=True, check=True)
+    base_sha = rev.stdout.strip()
+
     proc = subprocess.run(
         [sys.executable, str(CHECKER), "--root", str(root),
-         "--base-ref", "main~1", "--require-append-only"],
+         "--base-ref", base_sha, "--require-append-only"],
         capture_output=True, text=True, check=False,
     )
     output = proc.stdout + proc.stderr
@@ -1099,6 +1365,31 @@ def test_append_only(tmp: Path) -> str | None:
         return f"expected non-zero exit, got 0\n{output}"
     if "append-only" not in output:
         return f"expected an append-only complaint, got:\n{output}"
+    return None
+
+
+def test_append_only_empty_base_sha_fails_closed(tmp: Path) -> str | None:
+    """An empty base must fail explicitly, never skip-as-pass (issue #614).
+
+    The workflow fails first on a merge_group run without base_sha; this is
+    the second gate on the same hole — an empty --base-ref reaching the
+    checker with --require-append-only must be a failure, not a note.
+    """
+    root = tmp / "append-only-mg-empty"
+    root.mkdir()
+    build_fixture(root)
+    _append_only_fixture(root)
+
+    proc = subprocess.run(
+        [sys.executable, str(CHECKER), "--root", str(root),
+         "--base-ref", "", "--require-append-only"],
+        capture_output=True, text=True, check=False,
+    )
+    output = proc.stdout + proc.stderr
+    if proc.returncode == 0:
+        return f"expected non-zero exit, got 0\n{output}"
+    if "no merge base with" not in output:
+        return f"expected a no-merge-base complaint, got:\n{output}"
     return None
 
 
@@ -1115,6 +1406,15 @@ def main() -> int:
             if expected is None:
                 ok = code == 0
                 detail = "expected exit 0"
+            elif isinstance(expected, tuple):
+                required, forbidden = expected
+                fragments = required if isinstance(required, tuple) else (required,)
+                ok = code != 0 and all(f in output for f in fragments)
+                if forbidden:
+                    ok = ok and forbidden not in output
+                detail = (f"expected non-zero exit, "
+                          f"{' and '.join(map(repr, fragments))} in output, "
+                          f"and no {forbidden!r}")
             else:
                 ok = code != 0 and expected in output
                 detail = f"expected non-zero exit and {expected!r} in output"
@@ -1132,7 +1432,21 @@ def main() -> int:
             failures += 1
             print(f"  FAIL editing committed evidence trips the append-only check: {problem}")
 
-    total = len(CASES) + 1
+        problem = test_append_only_merge_group_base_sha(tmp)
+        if problem is None:
+            print("  ok   merge-group base sha catches an edited committed record")
+        else:
+            failures += 1
+            print(f"  FAIL merge-group base sha catches an edited committed record: {problem}")
+
+        problem = test_append_only_empty_base_sha_fails_closed(tmp)
+        if problem is None:
+            print("  ok   empty base sha fails closed under --require-append-only")
+        else:
+            failures += 1
+            print(f"  FAIL empty base sha fails closed under --require-append-only: {problem}")
+
+    total = len(CASES) + 3
     if failures:
         print(f"\n{failures}/{total} self-test case(s) FAILED", file=sys.stderr)
         return 1

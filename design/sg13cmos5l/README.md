@@ -149,6 +149,28 @@ hierarchically:
   SG13G2's own `sim/closed-loop-startup/` (issue #58) followed the
   schematic-capture phase.
 
+## Committed netlists are at the archived PDK pin (issue #405)
+
+The four committed netlists in `netlist/` were generated against the
+**archived** pin `607e18d4` (`historical_pin_used_by_existing_evidence` in
+[`../../sim/pdk-sg13cmos5l.json`](../../sim/pdk-sg13cmos5l.json)), the pin
+every `sim/sg13cmos5l-*/` record was produced from. This is intentional:
+regenerating them at the `dev` pin (`f7bca326`, the current target) would
+change DUT parameters under every existing record, and refreshing records on
+the target pin is the deferred scope of #322.
+
+**Expected delta at the `dev` pin**: the symbols there emit `mm_ok=1` on every
+`sg13_hv_pmos`, `sg13_hv_nmos`, `rppd` and `rhigh` instance; the committed
+netlists have none. Whether `mm_ok` changes simulated results has not been
+checked. `design/check_netlist_drift.sh` reports a diff consisting solely of
+added `mm_ok=1` tokens as `KNOWN-PIN-DELTA` rather than `DRIFT`; any other
+difference is still `DRIFT` (exit 1).
+
+The `** sch_path:` / `** sym_path:` header lines embed checkout-specific
+absolute paths. `check_netlist_drift.sh` ignores `**` lines, but a byte-exact
+`klt netlist --check` cannot report in-sync on another checkout; that is a tool
+gap tracked upstream as 2AMLogic/klayout-tools#4214.
+
 ## Running xschem / regenerating the netlist
 
 ```bash

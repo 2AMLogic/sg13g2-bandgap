@@ -158,7 +158,7 @@ this section is the disclosure and the arithmetic behind that disposition.
 Both paths, same host, same corner (typ / 27 °C / 3.30 V), same engine
 (ngspice 46):
 
-| quantity | `core-open-loop-bias/run_pvt_sweep.sh` (`.op` print) | `klt sim` (`.meas`) | resolution lost |
+| quantity | legacy `core-open-loop-bias/run_pvt_sweep.sh` (`.op` print; SG13CMOS5L twin removed in #443, recoverable from git history) | `klt sim` (`.meas`) | resolution lost |
 |---|---|---|---|
 | `vref_v` | `1.052707e+00` | `1.05271e+00` | 10 µV |
 | `r1_ohm` | `6.605704e+04` | `6.60571e+04` | 0.1 Ω |
@@ -211,7 +211,7 @@ The exact value is `2.0001/3.0001 = 0.666677777…`. So:
   printed.
 - It **is** the `.meas` card, which is the only measurement form `klt sim`'s
   request schema can express — there is no `print`/`wrdata`/rawfile extraction
-  form. `core-open-loop-bias/run_pvt_sweep.sh` gets seven figures because it
+  form. legacy `core-open-loop-bias/run_pvt_sweep.sh` (SG13CMOS5L twin removed in #443, recoverable from git history) got seven figures because it
   scrapes the `.op` print block (`grep -E '^v\(vref\)' | awk '{print $3}'`),
   and its derived columns are recomputed in `awk` at `%.6e` from those.
 
@@ -240,7 +240,7 @@ Two notes on that table, because they are the reason the disposition is safe
 rather than merely convenient:
 
 - **The box-TC evidence is already formed from 6-s.f. `.meas` values.**
-  `closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh` reads each point's settled
+  `closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh` (removed in #438; see git history) read each point's settled
   `vref` through `extract_measure '^v_vref_3ms'` — a `.measure` line — so its
   per-point record carries `vref_3ms_v` at 6 s.f. (`1.04758e+00`), and
   `box_tc` is computed from those values. Reproducing the committed `typ`/2.97
@@ -410,7 +410,7 @@ derived columns and the closed-loop verdict
 `sim/harness/enrich_ac_report.py`), and mints one record through the
 adapter. Each runner is resumable (a passing per-variant report is never
 re-submitted) and gates the grid behind a one-local-corner sanity anchor
-(#278's own sanity-gate item).
+(#278's own sanity-gate item, `sim/harness/sanity_anchors.py` -- below).
 
 Two ngspice findings this work established, recorded so the next bench
 does not re-derive them (both verified on ngspice 46):
@@ -473,19 +473,167 @@ image, a klt build with an unchanged version string, or the PDK files behind
 a change, use a new work dir. Tests (`test_harness_transformers.py`,
 `ResumeIdentityTests`) use a mock `klt` and run no simulator.
 
+## The `--sanity` anchor gate, once (issue #458)
+
+Every runner above gates grid dispatch on the same decision: **one local
+typ/27C/3.30V corner must land within an absolute tolerance of the
+experiment's newest committed record before any grid is submitted.** That
+decision has exactly one implementation,
+[`sanity_anchors.py`](sanity_anchors.py), which the runners call as a CLI:
+
+```bash
+python3 sim/harness/sanity_anchors.py <report.json> \
+    --anchor vref_v=1.052999:0.0002 --anchor r1_ohm=66123:10 \
+    [--magnitude] [--mode local] [--hint "where the anchor came from"]
+```
+
+`name=value:tol` is the spelling the runners' own `ANCHORS` arrays already
+used. Exit 0 with `sanity gate: PASS` is the only answer that permits a
+dispatch; a non-pass grade, a corner count other than one, a measurement that
+did not come back, or a value off its anchor lists every problem and exits
+non-zero. `--magnitude` compares `|value|` with the anchor, which only the
+supply benches need (ngspice's passive sign convention reports `i(Vvdd)`
+negative while the supply delivers current); `--mode` labels the gate's lines
+for a runner that gates in more than one place; `--hint` names the record or
+issue each experiment's anchor came from. The gate reads a report and writes
+no evidence, so it is not part of any record's provenance.
+
+It was previously implemented six times -- five inline `python3 - <<'PY'`
+heredocs in the runners plus `cmos5l_klt.py`'s tested `check_anchors()` -- and
+the copies had drifted: a 0- or 2-corner report died with a raw `ValueError`,
+a report with no `status` key died with a `KeyError`, only one copy printed the
+corner diagnostics behind a non-pass grade, and only one compared magnitudes.
+The surviving implementation keeps the strictest behaviour of each. Anchor
+**values and tolerances were not touched** by the consolidation. Tests:
+`AnchorTests` and `AnchorCallSiteTests` in
+[`test_cmos5l_harness.py`](test_cmos5l_harness.py), which also assert that no
+runner re-implements the comparison. The Monte Carlo draw-0 gate in
+`trim_mc_klt.py` is a different decision (a committed draw, not a PVT corner)
+and stays where it is.
+
+## The box-method TC companion, once (issue #465)
+
+The two box-TC benches -- `closed-loop-vref-pvt-boxtc` (schematic) and
+`closed-loop-vref-pvt-pex-boxtc` (extracted) -- derive the same quantity the
+same way from their minted record: per `(corner, vdd)` group, over the PASS
+points of the 8-point temperature grid,
+
+```
+box_tc_ppm_per_c = 1e6 * (vref_3ms_max - vref_3ms_min) / (165 * vref_3ms(27 C))
+```
+
+written as an 11-column `records/<id>-boxtc.csv` companion. For the two
+benches on the PEX runner seam that derivation has exactly one
+implementation, [`boxtc_companion.py`](boxtc_companion.py), which the shared
+shell seam calls as a CLI:
+
+```bash
+python3 sim/harness/boxtc_companion.py <records/id.csv> <records/id-boxtc.csv>
+```
+
+`pex_vref_runner.sh`'s `pex_boxtc_companion` picks the newest minted record
+(skipping the companions an earlier run derived from it) and invokes the
+module; each bench's `pex_record_companion` hook is a one-line delegation to
+it. **The hook itself stays per-experiment**, because the three hooks'
+input filters differ on purpose. The endpoint-method benches delegate the
+same way to their own module: [`tc_companion.py`](tc_companion.py) behind
+`pex_vref_runner.sh`'s `pex_endpoint_tc_companion` (issue #496). The two
+*methods* remain distinct derivations -- box = worst-case spread, endpoint
+= two-point slope -- each with its own module, helper and companion file;
+only the duplicated bodies were collapsed. One third copy of the box
+derivation is known and stays: `closed-loop-vref-boxtc-trim` carries its
+own awk body in its `run_pvt_sweep.sh` (that bench does not source
+`pex_vref_runner.sh`, so the seam cannot reach it); `BoxTcSeamTests`
+cross-checks its span, PASS filter and rounding against the module
+instead.
+
+It was previously implemented twice -- byte-identical 40-line
+`python3 - <<'PY'` heredocs, one per bench, the second pasted in *after* the
+shared driver existed. Both copies are live, and
+[`../../spec/decision-records/0010-box-method-tc-evidence.md`](../../spec/decision-records/0010-box-method-tc-evidence.md)
+ratifies their output as this row's TC evidence: pre-layout worst 19.765
+ppm/°C (`wcs`/3.30 V), post-layout worst 20.137 ppm/°C (`bcs`/3.63 V) -- the
+design sits *on* the 20 ppm/°C stretch line, so the number is decided at the
+third decimal place, and the two benches are compared against each other
+(`*-vs-schematic-boxtc.csv`). A correction to one copy would silently have
+left the other bench reporting the old derivation. **No value, span, filter
+or rounding was touched** by the consolidation: both committed companions
+regenerate byte-identically from the module, which is the acceptance test and
+is kept as a golden test. Tests: `BoxTcGoldenTests`, `BoxTcFormulaTests` and
+`BoxTcSeamTests` in
+[`test_harness_transformers.py`](test_harness_transformers.py), the last of
+which also asserts that neither bench re-implements the formula and that the
+two TC companions stay separate derivations.
+
+## The endpoint-method TC companion, once (issue #496)
+
+The two endpoint-TC benches -- `closed-loop-vref-pvt` (schematic) and
+`closed-loop-vref-pvt-pex` (extracted) -- derive the same quantity the same
+way from their minted record: per `(corner, vdd)` group, the two-point slope
+over the -40 and 125 °C endpoints of the 165 °C grid,
+
+```
+tc_ppm_per_c = 1e6 * (vref_3ms(125 C) - vref_3ms(-40 C)) / (165 * vref_3ms(27 C))
+```
+
+written as a 6-column `records/<id>-tc.csv` companion. That derivation has
+exactly one implementation, [`tc_companion.py`](tc_companion.py), which the
+shared shell seam calls as a CLI:
+
+```bash
+python3 sim/harness/tc_companion.py <records/id.csv> <records/id-tc.csv>
+```
+
+`pex_vref_runner.sh`'s `pex_endpoint_tc_companion` picks the newest minted
+record (skipping the companions an earlier run derived from it) and invokes
+the module; each bench's `pex_record_companion` hook is a one-line delegation
+to it. The companion is informal evidence on purpose -- no `status` column,
+no `.md` sibling, not the ratified TC row the box method carries -- so
+nothing validates it in CI, which is why the golden test is load-bearing.
+
+It was previously implemented twice -- inline `python3 - <<'PY'` heredocs in
+each bench's hook, re-rendering the record's values through Python floats.
+That re-render was never exercised, and it diverged from the convention every
+committed companion was minted under in three ways at once: `vdd_v` as `3.3`
+instead of `3.30`, voltages re-rendered at 6 decimals instead of the record's
+own 5, and CRLF line endings from `csv.writer`'s default. The convention is
+**pass-through of the record's own strings** -- the legacy
+`run_pvt_sweep.sh` minter echoed the record's fields verbatim and formatted
+only `tc` -- so the module keys rows by the record's
+`(corner_label, vdd_v, temp_c)` strings and passes every value but `tc`
+through unchanged. **No committed evidence changed**: all six companions
+regenerate byte-identically from the module, which is the acceptance test and
+is kept as a golden test. Tests: `EndpointTcGoldenTests`,
+`EndpointTcFormulaTests` and `EndpointTcSeamTests` in
+[`test_harness_transformers.py`](test_harness_transformers.py), the last of
+which also asserts that both endpoint benches delegate and that the two TC
+companions stay separate derivations.
+
 ## SG13CMOS5L experiments on the harness (issue #337, Part of #322)
 
 The four `sim/sg13cmos5l-*` experiments (core-open-loop-bias,
 startup-trip-point, closed-loop-startup, closed-loop-startup-pex) have
 `run_klt_sim.sh`, a request template, a bench body and a record spec each,
-converted from their legacy `run_pvt_sweep.sh` loops with the same grids and
+converted from their legacy `run_pvt_sweep.sh` loops (removed in #443, recoverable from git history) with the same grids and
 measurements. The SG13CMOS5L-specific parts live in
 [`cmos5l_klt.py`](cmos5l_klt.py) (corner mapping, request/body
 instantiation, shard merge with an explicit expected grid, the legacy
-verdicts, the sanity-anchor gate) and [`cmos5l_runner.sh`](cmos5l_runner.sh)
+verdicts) and [`cmos5l_runner.sh`](cmos5l_runner.sh)
 (the shared runner body); the generic mechanics are reused unchanged
 (`klt_sim_evidence.py`, `merge_batch_shards.py`, `fixup_batch_report.py`,
-`submission_identity.*`). Two small shared-code changes:
+`submission_identity.*`). Since #481 the runner preamble itself is shared
+too: [`klt_sim_preamble.sh`](klt_sim_preamble.sh) holds the mode check,
+directory/klt/PDK/OSDI resolution, work-dir mint, batch defaults and
+resume-safety scaffold that `pex_runner.sh` and `cmos5l_runner.sh` had
+retyped, and the batch defaults + resume scaffold keep their --batch-only
+timing on the CMOS5L side. Since #503 the two standalone batch submitters
+source it as well: `probe/run_probe.sh` and
+`sim/loop-gain-phase-margin/run_klt_trim_axis.sh` call only
+`klt_sim_batch_defaults`, passing their documented per-script PDK-root
+override name (`KLT_SIM_PROBE_BATCH_PDK_ROOT`,
+`KLT_TRIM_AXIS_BATCH_PDK_ROOT`) as the function's optional argument.
+Every SG13CMOS5L-specific block stayed at its
+call site. Two small shared-code changes:
 `klt_corner_bundle.render_bundle` takes optional `libs`/`sections` for other
 family sets (default unchanged), and `enrich_pvt_report.inject_baked_supply`
 was factored out of `enrich` (behaviour unchanged, tested).
@@ -580,6 +728,10 @@ Four files, three of which are the experiment's own:
    `extra_columns`.
 4. **Runner** (`sim/<exp>/run_klt_sim.sh`) — generates the bundle, substitutes
    the body/request paths, calls `klt sim`, calls the adapter. `probe/run_probe.sh`
-   is the worked example.
+   is the worked example. Gate the grid by calling
+   [`sanity_anchors.py`](sanity_anchors.py) with this experiment's
+   `--anchor name=value:tol` arguments — do **not** write a new comparison
+   (issue #458: the same four steps had been written out six times and had
+   drifted). The runner's job is to name the anchors, not to compare them.
 
 `sim/harness/probe/` holds a complete instance of all four.

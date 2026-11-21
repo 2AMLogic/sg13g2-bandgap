@@ -1,0 +1,52 @@
+{
+  "_comment": [
+    "klt erc supply spec for bandgap_top.gds -- the SG13G2 structural",
+    "power-delivery artifact T1 item 11 requires, per issue #411. Run:",
+    "",
+    "    klt erc layout/bandgap_top/bandgap_top.gds \\",
+    "      layout/bandgap_top/erc-supply-spec.json --format json",
+    "",
+    "Commit the output as erc_report.json beside this spec.",
+    "",
+    "Every layer/datatype is read from the SG13G2 layer table in",
+    "layout/common.py (sg13g2.lyp <source> entries) -- not copied from the",
+    "SG13CMOS5L spec (layout/sg13cmos5l-bandgap_top/erc-supply-spec.json), whose",
+    "stack is single-metal. SG13G2 here is two-metal:",
+    "- stackup[0] is GatPoly (5/0), role gate, with active_layer Activ (1/0) so",
+    "  the antenna denominator is poly AND diff (the block carries poly resistors",
+    "  whose GatPoly has no gate oxide).",
+    "- Metal1 (8/0) and Metal2 (10/0) are the routing metals; net-name text is on",
+    "  Metal1.text 8/25 and Metal2.text 10/25 (the deck's metal_labels).",
+    "- vias: Cont (6/0) GatPoly<->Metal1, Via1 (19/0) Metal1<->Metal2.",
+    "- nets: vdd/vss, kind supply; signal nets are deliberately not declared.",
+    "- ties: the n-well tap, nSD (7/0)-covered Activ (1/0) inside NWell (31/0),",
+    "  contacted to Metal1, expected on vdd. No substrate tie is declared: the",
+    "  block sits in native p-substrate with no drawn p-well layer, which klt",
+    "  erc's ties[] cannot express.",
+    "",
+    "Findings in the report are recorded as-is; this spec is not tuned to hide them."
+  ],
+  "stackup": [
+    { "name": "GatPoly", "layer": "5/0", "role": "gate", "active_layer": "1/0", "label_layer": "5/1" },
+    { "name": "Metal1", "layer": "8/0", "label_layer": "8/25" },
+    { "name": "Metal2", "layer": "10/0", "label_layer": "10/25" }
+  ],
+  "vias": [
+    { "name": "Cont", "layer": "6/0", "between": ["GatPoly", "Metal1"] },
+    { "name": "Via1", "layer": "19/0", "between": ["Metal1", "Metal2"] }
+  ],
+  "nets": [
+    { "name": "VDD", "kind": "supply" },
+    { "name": "VSS", "kind": "supply" }
+  ],
+  "ties": [
+    {
+      "name": "nwell_tap_vdd",
+      "well_layer": "31/0",
+      "tap_layer": "1/0",
+      "tap_requires": ["7/0"],
+      "connect_to": "Metal1",
+      "net": "VDD"
+    }
+  ]
+}

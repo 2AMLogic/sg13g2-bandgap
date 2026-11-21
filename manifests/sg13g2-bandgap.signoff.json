@@ -9,13 +9,13 @@
   "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:a26b90262320d0fbd32b3f549a02b6300832706041797a559d8bf6bdb62efdc7",
   "build": {
-    "version": "0.7.1.dev1743+g7ee09483b748",
-    "package_version": "0.7.1.dev1743+g7ee09483b748",
-    "git_commit": "7ee09483b74867a47a05eb353015c2cf5ca33ef3",
-    "git_tag": null,
+    "version": "0.8.0",
+    "package_version": "0.8.0",
+    "git_commit": "c572046be644e0407f693f2410f3abb799d68a3a",
+    "git_tag": "v0.8.0",
     "dirty": false,
-    "is_release": false,
-    "grading_ruleset_id": "sha256:903c436514f2e51dbe8562080f3b36537e26ca088571e457d38d57e78da9056b"
+    "is_release": true,
+    "grading_ruleset_id": "sha256:46c446d84423b7399ee1cf957b3d49801ae4f42a0bda53da92f435776cf977c4"
   },
   "items": [
     {
@@ -61,25 +61,18 @@
         "command": null,
         "kind": "drc",
         "check_status": "clean",
-        "content_hash": "sha256:3e32887b8d2230bb96fb94bc06a7c4f78ce604e1e45a8465f22ceb57feeffdc4",
+        "content_hash": "sha256:1c289ecfa0fea1fcc67e6b1ee0ef837f61493708c4e8763ae59da35dbc779665",
         "input_verified": true,
         "exit_status": 0,
         "coverage": {
           "layers_in_stream_without_rules": [
-            "1/20",
             "5/1",
-            "7/0",
-            "7/21",
             "8/1",
             "8/25",
             "10/1",
             "10/25",
-            "14/0",
-            "26/0",
             "28/0",
-            "31/0",
             "33/0",
-            "44/0",
             "63/0",
             "111/0",
             "128/0",
@@ -93,9 +86,11 @@
             "metal4.enclosing.via4.1",
             "metal4.space.1",
             "metal4.width.1",
+            "metal5.enclosing.mim.1",
             "metal5.enclosing.topvia1.1",
             "metal5.space.1",
             "metal5.width.1",
+            "mim.enclosing.topvia1.1",
             "topmetal1.enclosing.topvia1.1",
             "topmetal1.enclosing.topvia2.1",
             "topmetal1.space.1",
@@ -123,6 +118,8 @@
             "M3",
             "M4",
             "M5",
+            "MIM",
+            "NW",
             "TM1",
             "TM2",
             "TV1",
@@ -130,7 +127,8 @@
             "V1",
             "V2",
             "V3",
-            "V4"
+            "V4",
+            "pSD"
           ]
         }
       }
@@ -150,25 +148,18 @@
         "command": null,
         "kind": "drc",
         "check_status": "clean",
-        "content_hash": "sha256:3e32887b8d2230bb96fb94bc06a7c4f78ce604e1e45a8465f22ceb57feeffdc4",
+        "content_hash": "sha256:1c289ecfa0fea1fcc67e6b1ee0ef837f61493708c4e8763ae59da35dbc779665",
         "input_verified": true,
         "exit_status": 0,
         "coverage": {
           "layers_in_stream_without_rules": [
-            "1/20",
             "5/1",
-            "7/0",
-            "7/21",
             "8/1",
             "8/25",
             "10/1",
             "10/25",
-            "14/0",
-            "26/0",
             "28/0",
-            "31/0",
             "33/0",
-            "44/0",
             "63/0",
             "111/0",
             "128/0",
@@ -182,9 +173,11 @@
             "metal4.enclosing.via4.1",
             "metal4.space.1",
             "metal4.width.1",
+            "metal5.enclosing.mim.1",
             "metal5.enclosing.topvia1.1",
             "metal5.space.1",
             "metal5.width.1",
+            "mim.enclosing.topvia1.1",
             "topmetal1.enclosing.topvia1.1",
             "topmetal1.enclosing.topvia2.1",
             "topmetal1.space.1",
@@ -212,6 +205,8 @@
             "M3",
             "M4",
             "M5",
+            "MIM",
+            "NW",
             "TM1",
             "TM2",
             "TV1",
@@ -219,7 +214,8 @@
             "V1",
             "V2",
             "V3",
-            "V4"
+            "V4",
+            "pSD"
           ]
         }
       }
@@ -287,11 +283,11 @@
       "reason": null,
       "graded_by_build": true,
       "citation": {
-        "file": "measurements/2026-11-characterization-report/envelope.json",
+        "file": "measurements/2026-11-18-klu-retime-characterization-report/envelope.json",
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:8d25d320543ef2cbe03c15453a174b18e2682ef4995a8f5d6445956c1993e76f",
+        "content_hash": "sha256:5462c09e49e9f5ff53c9f3a0e87e2a41ee7343a7736851fc093295340ed687fa",
         "input_verified": true,
         "exit_status": 0
       }
@@ -347,9 +343,19 @@
         "**Port accessibility \u2014 PROVISIONAL, not yet in force** (issue #2839; operator ruling 2AMLogic/product#134, amendment text drafted in 2AMLogic/product PR #168 and awaiting the two-key ratification). Every supply the cited `klt erc` spec declares must be published as an **edge-accessible boundary port** and named in a **machine-readable abstract**: (1) a `klt socket-check` envelope whose `power_ports` facts show, for each declared supply, a `POWER`/`GROUND` pin of that name with drawn conductor under its label lying within the edge band of a counted outline edge with a clear approach channel (no other conductor on its layer between it and the edge), on an allowed layer; and (2) a `klt lef-abstract` envelope whose LEF carries a `PIN` of the same name with `USE POWER`/`USE GROUND` matching the port, a drawn `PORT` on the same layer touching the port, and a `SIZE` equal to the outline. Parameters, with their provisional defaults, are set per block in the `klt signoff` manifest's `power_ports` object: the edge band (`edge_band_um`, default `0` \u2014 the port must touch the outline; the draft proposes one minimum metal pitch), the counted edges (all four), and the allowed layers (default: any layer that resolves to a LEF routing layer, the draft's recommendation). Until ratification `klt signoff` grades this clause only for a block that opts in (`power_ports.required: true`, or port evidence cited in item 11's list), after the ERC/LVS rules above are proven, rendering `power_port_unproven`, `no_edge_power_port`, `power_port_interior_only`, `power_port_layer_disallowed`, `lef_power_pin_missing` or `lef_power_pin_mismatch` when it fails \u2014 see `docs/cli/signoff.md` \u2192 \"Item 11 port accessibility\". Not graded yet: one port per declared island of a multi-island supply."
       ],
       "status": "unmet",
-      "reason": "check_failed",
+      "reason": "lvs_did_not_pass",
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "detail": {
+        "power_delivery": {
+          "supply_nets": [
+            "VDD",
+            "VSS"
+          ],
+          "lvs_status": "mismatch",
+          "power_connectivity_status": "unchecked"
+        }
+      }
     },
     {
       "tier": "T2",

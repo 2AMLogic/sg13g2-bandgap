@@ -6,8 +6,25 @@ open PDK — designed by AI agents driving
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
 open-source xschem + ngspice flow.
 
-**Status: schematic captured and simulated across PVT; layout DRC-clean;
-LVS `match` on `bandgap_startup`, still `mismatch` on `bandgap_core`.** The
+**The schematic has been captured and simulated across PVT.** The committed
+DRC reports for `bandgap_amp`, `bandgap_core`, `bandgap_startup`, and
+`bandgap_top` each show zero violations under the pinned `klt 0.8.0`
+SG13G2 deck. The top-level DRC waiver list is empty. The pinned deck
+omits the contact-enclosure and off-grid checks that flagged the earlier
+markers. Checks with a development deck confirmed that the core Metal1
+landing fix (#572) cleared all 18 enclosure markers and the startup
+resistor fold fix (#573) cleared all four off-grid markers.
+[Layout verdicts](layout/README.md#verdicts).
+
+**LVS remains open.** The curated deck reports `match`
+on `bandgap_amp` and `bandgap_startup`, `mismatch` on `bandgap_core` and
+`bandgap_top`. The PDK runset reports `mismatch` on `bandgap_top` and
+recognizes no MOS or HBT devices (#380, #381).
+The evidence-ladder verdict of record is
+[`manifests/sg13g2-bandgap.signoff.json`](manifests/sg13g2-bandgap.signoff.json):
+its `t1_met_count` reads 5 of 11 T1 items met (`klayout-tools`'
+[`docs/design-evidence-tiers.md`](https://github.com/2AMLogic/klayout-tools/blob/main/docs/design-evidence-tiers.md)).
+The
 `klt` resolver gap that once blocked this repo closed on 2026-08-05
 ([klayout-tools#522](https://github.com/2AMLogic/klayout-tools/issues/522)),
 and a curated SG13G2 DRC/LVS starter deck now ships with klayout-tools
@@ -15,11 +32,12 @@ and a curated SG13G2 DRC/LVS starter deck now ships with klayout-tools
 [#911](https://github.com/2AMLogic/klayout-tools/pull/911)); design work has
 proceeded since. `spec/`, `design/`, `sim/`, and `layout/` are all populated,
 including pre- and post-layout (PEX) PVT sweeps and committed `klt drc` /
-`klt lvs` reports. The current open blockers are `bandgap_core`'s three
-`NPN13G2` devices, which the curated extraction deck cannot recognise at all
-because SiGe HBT recognition was investigated and permanently declined
-upstream
-([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/pull/1242)),
+`klt lvs` reports. The current open blockers are LVS — the `bandgap_top`
+PDK-runset report that T1 item 4 cites recognises no MOS or HBT at all
+(#380, #381), and the curated deck's `bandgap_core` `mismatch` is its three
+`NPN13G2` devices, which it cannot recognise because SiGe HBT recognition
+was investigated and permanently declined upstream
+([klayout-tools#1242](https://github.com/2AMLogic/klayout-tools/pull/1242)) —
 and the core resizing and trim re-aiming needed to meet the ratified trimmed
 Output-reference line (issue #303). The trim network itself landed in #229;
 the remaining accuracy gap requires design work. The earlier
@@ -91,10 +109,10 @@ NOT-ELIGIBLE; verdict links and full findings in
 [`0008-two-key-ratification-review-outcome.md`](spec/decision-records/0008-two-key-ratification-review-outcome.md)),
 so the honest per-row status is:
 
-- **Temp coefficient, Supply, Iq, Startup, PSRR @ DC** — target met on
+- **Temp coefficient, Supply, Iq, Startup** — target met on
   currently-committed evidence, and found technically sound (EE key) and
-  `competitive`/`adequate-for-catalog` (market key). Two caveats the review
-  put on the record: the TC row meets its `< 50 ppm/°C` **target** by both
+  `competitive`/`adequate-for-catalog` (market key). The TC row meets
+  its `< 50 ppm/°C` **target** by both
   the endpoint and box methods at both levels, on both the pre-trim and the
   trim-bearing core (worst number anywhere in the near-band grid: box-method
   45.7 ppm/°C — still inside the target, by ~9%), but the `< 20 ppm/°C`
@@ -123,9 +141,13 @@ so the honest per-row status is:
   the aids, is the dominant cause). No decision record supersedes `0010`
   for this: the `< 20 ppm/°C` stretch *number* is unchanged, and `0010`'s
   pre-trim characterization stands as a historical reading on the superseded
-  pre-trim core; and
-  the PSRR row's post-layout margin at its binding corner (`bcs`/125 °C/
-  3.63 V) is 0.20 dB, on a corner that reads 59.68 dB pre-layout.
+  pre-trim core.
+- **PSRR @ DC** misses the `> 60 dB` target at one of 45 schematic
+  operating points. At `bcs`, 125 °C and 3.63 V, the November 13 sweep
+  measured **59.685 dB**. The October 4 post-layout sweep measured
+  **60.0013 dB** at the same corner and predates the current extraction.
+  [Characterization report](measurements/2026-11-18-klu-retime-characterization-report/README.md#psrr--dc)
+  · [Design issue #631](https://github.com/2AMLogic/sg13g2-bandgap/issues/631).
 - **Output reference — re-cast by decision record
   [`0011`](spec/decision-records/0011-output-reference-row-disposition.md)
   (issue #221).** The row both keys declined is disposed by re-cast, not
@@ -193,9 +215,23 @@ ratified (see decision records above), five of six rows two-key reviewed
 clean and the Output-reference row re-cast by the two-key-gated record 0011
 (#221) rather than blocking the other five; schematic simulated across PVT,
 pre- and post-layout (PEX);
-layout DRC-clean, with LVS `match` on `bandgap_startup` and `mismatch` on
-`bandgap_core` (three unrecognised `NPN13G2` devices, klayout-tools#1242,
-permanent).**
+the three leaf cells and the assembled top all report DRC `clean`/0
+under the pinned SG13G2 deck, with zero top-level DRC waivers. The
+curated-deck LVS reports show
+`match` on `bandgap_amp` and `bandgap_startup`, `mismatch` on
+`bandgap_core` — its three unrecognised `NPN13G2` devices,
+klayout-tools#1242, permanent — and on `bandgap_top`, whose re-mint
+under the DR-0016 pin (against #561 step 1's
+`rppd.sym`-derived reference) reads 8 findings / 4 error-severity: the
+resistor-class pairing regression that dominated every earlier mint
+(klayout-tools#6313) is fixed at its root by the re-derived reference, and
+the residual 4 are exactly the permanent `NPN13G2`
+bipolar-recognition cause (the `rhigh` parameter delta was already closed
+by #563's reference fix); `layout/README.md` holds the itemized
+breakdown. The
+`bandgap_top` PDK-runset LVS that T1 item 4 cites is still `mismatch` —
+no MOS or HBT recognized (#380, #381). Verdict of record:
+`manifests/sg13g2-bandgap.signoff.json`, `t1_met_count` 5 of 11.**
 
 ## Chipalooza
 
@@ -221,7 +257,7 @@ spec/          ratified spec + decision records
 design/        schematics / netlists (xschem)
 sim/           testbenches + PVT corner results (ngspice)
 layout/        GDS + DRC/LVS reports (klayout-tools driven)
-measurements/  silicon characterization (empty until tape-out)
+measurements/  supplementary quantitative analysis (characterization reports, design studies); no silicon yet
 ```
 
 ## Reproducing the results

@@ -12,22 +12,30 @@ nothing under sim/ is written.
 
 from __future__ import annotations
 
+import contextlib
+import csv
+import io
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import boxtc_companion as bxc  # noqa: E402
 import enrich_pvt_report as epr  # noqa: E402
+import enrich_supply_bench_report as esb  # noqa: E402
 import extraction_binding as xb  # noqa: E402
 import fixup_batch_report as fbr  # noqa: E402
 import klt_sim_evidence as kse  # noqa: E402
 from test_evidence_store import FakeStore  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
 import submission_identity as si  # noqa: E402
+import tc_companion as tcc  # noqa: E402
 
 
 class TempDirCase(unittest.TestCase):
@@ -534,6 +542,240 @@ class EnrichTests(TempDirCase):
 # --------------------------------------------------------------------------
 
 
+class EnrichSupplyBenchTests(unittest.TestCase):
+    """enrich_supply_bench_report.enrich (issue #414): the Iq and Startup benches."""
+
+    @staticmethod
+    def corner(bench: str, **over: float) -> dict:
+        if bench == "iq":
+            m = {"fb_v": 1.0, "sns1_v": 0.700, "sns2_v": 0.695, "det_v": 0.1,
+                 "i_mkfb_a": 1e-9, "iq_2ms_a": -2.8e-5, "iq_3ms_a": -2.8e-5, "iq_avg_a": -2.8e-5}
+        else:
+            m = {"fb_final_v": 1.0, "sns1_final_v": 0.700, "sns2_final_v": 0.695,
+                 "det_final_v": 0.1, "i_mkfb_final_a": 1e-9, "vref_final_v": 1.04}
+        m.update(over)
+        return {"corner_id": "typ/3.30V/27C", "status": "pass",
+                "measurements": [{"name": k, "value": v} for k, v in m.items()]}
+
+    def run_one(self, bench: str, **over: float) -> dict:
+        report = esb.enrich({"status": "pass", "corners": [self.corner(bench, **over)]}, bench)
+        return report["corners"][0]
+
+    def test_iq_reports_magnitudes_and_derived_columns(self) -> None:
+        c = self.run_one("iq", iq_3ms_a=-2.80005e-5)
+        got = meas(c)
+        self.assertEqual(c["status"], "pass", c.get("diagnostics"))
+        self.assertAlmostEqual(got["iq_avg_a"], 2.8e-5, places=12)
+        self.assertAlmostEqual(got["iq_settle_delta_a"], 5e-10, places=14)
+        self.assertAlmostEqual(got["dvsns_v"], 0.005, places=12)
+
+    def test_iq_not_settled_over_100na(self) -> None:
+        c = self.run_one("iq", iq_3ms_a=-2.82e-5)
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["message"], "not_settled")
+
+    def test_startup_verdict_criteria(self) -> None:
+        self.assertEqual(self.run_one("startup")["status"], "pass")
+        self.assertAlmostEqual(meas(self.run_one("startup"))["dvsns_final_v"], 0.005, places=12)
+        c = self.run_one("startup", det_final_v=2.0, fb_final_v=3.3)
+        self.assertEqual(c["diagnostics"][0]["message"], "startup_not_released; fb_railed")
+        c = self.run_one("startup", sns2_final_v=0.6)
+        self.assertEqual(c["diagnostics"][0]["message"], "loop_not_closed")
+
+    def test_missing_operand_fails(self) -> None:
+        corner = self.corner("startup")
+        corner["measurements"] = [m for m in corner["measurements"] if m["name"] != "fb_final_v"]
+        c = esb.enrich({"status": "pass", "corners": [corner]}, "startup")["corners"][0]
+        self.assertEqual(c["diagnostics"][0]["code"], "derived_columns_missing")
+
+
+class EnrichStartupReleaseLadderTests(unittest.TestCase):
+    """enrich_supply_bench_report, `--bench startup_release` (issue #468).
+
+    The checkpoint-ladder mode: per-checkpoint verdicts, `dvsns_<N>u_v` at
+    every checkpoint, and `release_time_us` under the suffix-of-PASS rule
+    `sim/startup-time-to-release/README.md` defines. The reference
+    implementation these replace is that bench's own
+    `run_pvt_sweep.sh` (lines 108-163), which stays in the tree.
+    """
+
+    LADDER = (100, 200, 2000)
+
+    @staticmethod
+    def ladder_corner(
+        checkpoints: tuple[int, ...] = LADDER,
+        cid: str = "typ/3.30V/27C",
+        status: str = "pass",
+        **over: float | None,
+    ) -> dict:
+        """A ladder corner whose every checkpoint PASSes, plus `over`.
+
+        `over` keys are measurement names (`det_200u_v`, ...); a `None` value
+        drops that measurement, which is how a non-convergent corner's
+        unprinted `meas` line is modelled.
+        """
+        values: dict[str, float | None] = {}
+        for checkpoint in checkpoints:
+            values[f"det_{checkpoint}u_v"] = 0.10      # <= 0.2 * 3.30
+            values[f"i_mkfb_{checkpoint}u_a"] = 1e-9   # <= 50 nA
+            values[f"fb_{checkpoint}u_v"] = 1.0        # inside [0.05, 3.25]
+            values[f"sns1_{checkpoint}u_v"] = 0.700
+            values[f"sns2_{checkpoint}u_v"] = 0.695    # dvsns 5 mV <= 20 mV
+        values.update(over)
+        return {
+            "corner_id": cid,
+            "status": status,
+            "measurements": [
+                {"name": k, "value": v} for k, v in values.items() if v is not None
+            ],
+        }
+
+    def run_one(self, **kwargs) -> dict:
+        corner = self.ladder_corner(**kwargs)
+        return esb.enrich({"status": "pass", "corners": [corner]}, "startup_release")["corners"][0]
+
+    # -- the ladder is read off the report, never hardcoded (issue #210) ----
+
+    def test_ladder_is_read_off_det_measurement_names_and_sorted_numerically(self) -> None:
+        corner = self.ladder_corner(checkpoints=(100, 900, 1000, 2000))
+        corner["measurements"].append({"name": "det_early_v", "value": 0.3})
+        # numeric sort, not lexical: a lexical sort would put 1000 before 900
+        self.assertEqual(esb.ladder_checkpoints(corner), [100, 900, 1000, 2000])
+
+    def test_a_report_with_no_ladder_is_refused(self) -> None:
+        corner = {"corner_id": "typ/3.30V/27C", "status": "pass",
+                  "measurements": [{"name": "fb_final_v", "value": 1.0}]}
+        c = esb.enrich({"status": "pass", "corners": [corner]}, "startup_release")["corners"][0]
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["code"], "derived_columns_missing")
+
+    # -- the ladder walk ---------------------------------------------------
+
+    def test_ladder_walk_derives_dvsns_at_every_checkpoint(self) -> None:
+        c = self.run_one()
+        got = meas(c)
+        self.assertEqual(c["status"], "pass", c.get("diagnostics"))
+        for checkpoint in self.LADDER:
+            self.assertAlmostEqual(got[f"dvsns_{checkpoint}u_v"], 0.005, places=12)
+        derived = [m for m in c["measurements"] if m["name"].startswith("dvsns_")]
+        self.assertEqual(len(derived), len(self.LADDER))
+        self.assertTrue(all(m["spice"].startswith("derived: ") for m in derived))
+
+    def test_checkpoint_verdicts_trajectory_spelling(self) -> None:
+        c = self.run_one(det_200u_v=3.0)
+        self.assertEqual(meas(c)["checkpoint_verdicts"], "100u:PASS;200u:FAIL;2000u:PASS")
+
+    # -- release_time_us: a suffix-of-PASS rule ----------------------------
+
+    def test_release_time_is_the_first_checkpoint_of_the_all_pass_suffix(self) -> None:
+        self.assertEqual(meas(self.run_one())["release_time_us"], 100)
+        # not released at 100u, released from 200u onward
+        self.assertEqual(meas(self.run_one(det_100u_v=3.0))["release_time_us"], 200)
+
+    def test_transient_pass_then_regression_is_not_reported_as_early_release(self) -> None:
+        """The whole point of the suffix rule: 100u PASSes but 200u does not."""
+        c = self.run_one(det_200u_v=3.0)
+        self.assertEqual(meas(c)["release_time_us"], 2000)  # NOT 100
+
+    def test_not_released_when_the_final_checkpoint_fails(self) -> None:
+        c = self.run_one(det_2000u_v=3.0)
+        self.assertEqual(meas(c)["release_time_us"], esb.NOT_RELEASED)
+        self.assertEqual(c["status"], "fail")
+        self.assertIn("never_released", c["diagnostics"][0]["message"])
+        self.assertIn("startup_not_released", c["diagnostics"][0]["message"])
+
+    def test_release_time_helper_is_pure_and_total(self) -> None:
+        self.assertEqual(esb.release_time_us([(100, "PASS"), (200, "PASS")]), 100)
+        self.assertEqual(esb.release_time_us([(100, "FAIL"), (200, "PASS")]), 200)
+        self.assertEqual(esb.release_time_us([(100, "PASS"), (200, "FAIL")]), esb.NOT_RELEASED)
+        self.assertEqual(esb.release_time_us([]), esb.NOT_RELEASED)
+
+    # -- a MISSING checkpoint ---------------------------------------------
+
+    def test_missing_checkpoint_is_named_and_fails_the_corner(self) -> None:
+        """A corner that did not converge that far leaves a `meas` line unprinted."""
+        c = self.run_one(sns2_200u_v=None)
+        got = meas(c)
+        self.assertEqual(got["checkpoint_verdicts"], "100u:PASS;200u:MISSING;2000u:PASS")
+        self.assertNotIn("dvsns_200u_v", got)        # no operands, no derived column
+        self.assertIn("dvsns_100u_v", got)           # the rest of the ladder still walks
+        self.assertEqual(c["status"], "fail")
+        self.assertIn("checkpoint_missing at 200u", c["diagnostics"][0]["message"])
+
+    def test_missing_checkpoint_does_not_break_the_later_suffix(self) -> None:
+        """Documented divergence from the legacy bash, which reported NOT_RELEASED here.
+
+        `run_pvt_sweep.sh` let a MISSING checkpoint pass through its
+        running-start tracker without resetting it, so `PASS;MISSING;PASS`
+        reported `NOT_RELEASED`. The rule README.md states -- the earliest
+        checkpoint with an all-PASS suffix -- gives 2000u. The corner is
+        graded `fail` either way, so only the reported number differs.
+        """
+        c = self.run_one(sns2_200u_v=None)
+        self.assertEqual(meas(c)["release_time_us"], 2000)
+        self.assertEqual(c["status"], "fail")
+
+    # -- the criteria are pvt_closed_loop_verdict's, per checkpoint ---------
+
+    def assert_checkpoint_verdict(self, expected: str, **over: float) -> None:
+        got = meas(self.run_one(**over))
+        self.assertEqual(got["checkpoint_verdicts"].split(";")[0], f"100u:{expected}")
+
+    def test_startup_release_uses_corner_vdd_at_each_checkpoint(self) -> None:
+        self.assert_checkpoint_verdict("PASS", det_100u_v=0.65)   # 0.2 * 3.30 = 0.66
+        self.assert_checkpoint_verdict("FAIL", det_100u_v=0.67)
+        self.assert_checkpoint_verdict("FAIL", i_mkfb_100u_a=-60e-9)
+        self.assert_checkpoint_verdict("PASS", i_mkfb_100u_a=-40e-9)  # magnitude
+        # the same det at a 3.63 V corner is released (0.726 V threshold)
+        got = meas(self.run_one(cid="typ/3.63V/27C", det_100u_v=0.67))
+        self.assertEqual(got["checkpoint_verdicts"].split(";")[0], "100u:PASS")
+
+    def test_loop_closure_and_rail_window_boundaries(self) -> None:
+        self.assert_checkpoint_verdict("PASS", sns1_100u_v=0.7199, sns2_100u_v=0.700)
+        self.assert_checkpoint_verdict("FAIL", sns1_100u_v=0.7201, sns2_100u_v=0.700)
+        self.assert_checkpoint_verdict("FAIL", fb_100u_v=0.049)
+        self.assert_checkpoint_verdict("PASS", fb_100u_v=0.051)
+        self.assert_checkpoint_verdict("FAIL", fb_100u_v=3.30 - 0.049)
+
+    def test_constants_are_the_shared_closed_loop_ones(self) -> None:
+        self.assertEqual(
+            (epr.DET_RELEASE_FRAC, epr.I_MKFB_RELEASE_A, epr.DVSNS_CLOSE_V, epr.FB_RAIL_MARGIN_V),
+            (0.2, 50e-9, 0.020, 0.05),
+        )
+
+    # -- supply resolution -------------------------------------------------
+
+    def test_unresolvable_supply_is_refused_rather_than_graded(self) -> None:
+        """The release threshold IS a fraction of vdd; without it there is no verdict."""
+        c = self.run_one(cid="typ/novdd/27C")
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["code"], "derived_columns_missing")
+        self.assertIn("supply not resolvable", c["diagnostics"][0]["message"])
+
+    def test_non_pass_corner_is_not_regraded(self) -> None:
+        c = self.run_one(status="error")
+        self.assertEqual(c["status"], "error")
+        self.assertNotIn("release_time_us", meas(c))
+
+    def test_top_level_counts_recomputed(self) -> None:
+        report = esb.enrich(
+            {
+                "status": "pass",
+                "passed": 99,
+                "corners": [
+                    self.ladder_corner(),
+                    self.ladder_corner(cid="wcs/2.97V/125C", det_2000u_v=3.0),
+                    self.ladder_corner(cid="bcs/3.63V/-40C", status="error"),
+                ],
+            },
+            "startup_release",
+        )
+        self.assertEqual(
+            {k: report[k] for k in ("corner_count", "passed", "failed", "errored", "status")},
+            {"corner_count": 3, "passed": 1, "failed": 1, "errored": 1, "status": "fail"},
+        )
+
+
 class CornerIdTests(unittest.TestCase):
     def test_grammar_and_cell_spellings(self) -> None:
         self.assertEqual(
@@ -615,6 +857,51 @@ class RecordShapeTests(unittest.TestCase):
         self.assertEqual(list(rows[0]), list(rows[1]))  # one header for every row
         self.assertEqual((rows[1]["status"], rows[1]["iq_a"], rows[1]["trim"]), ("FAIL", "", ""))
         self.assertEqual((rows[2]["status"], rows[2]["temp_c"]), ("FAIL", "-40"))
+
+    def test_categorical_cells_are_written_verbatim(self) -> None:
+        """A derived column need not be a number (issue #468).
+
+        `startup-time-to-release`'s `release_time_us` is a checkpoint in
+        microseconds **or** the string `NOT_RELEASED`, and `checkpoint_verdicts`
+        is a `<N>u:<PASS|FAIL|MISSING>` trajectory -- both spellings its legacy
+        `run_pvt_sweep.sh` CSV already used. Six-significant-figure formatting
+        would raise on either, so the mint would die on the first
+        non-convergent corner.
+        """
+        self.assertEqual(kse._cell(1.234567891), "1.234568e+00")
+        self.assertEqual(kse._cell(100), "1.000000e+02")
+        self.assertEqual(kse._cell(None), "")
+        self.assertEqual(kse._cell("NOT_RELEASED"), "NOT_RELEASED")
+        self.assertEqual(kse._cell("100u:PASS;200u:MISSING"), "100u:PASS;200u:MISSING")
+
+    def test_categorical_measurements_ride_through_build_csv(self) -> None:
+        report = {
+            "corners": [
+                {
+                    "process": "typ", "temperature_c": 27, "supply_v": {"Vvdd": 3.3},
+                    "status": "pass",
+                    "measurements": [
+                        {"name": "release_time_us", "value": 100},
+                        {"name": "checkpoint_verdicts", "value": "100u:PASS;2000u:PASS"},
+                    ],
+                },
+                {
+                    "process": "wcs", "temperature_c": 125, "supply_v": {"Vvdd": 2.97},
+                    "status": "fail",
+                    "measurements": [
+                        {"name": "release_time_us", "value": "NOT_RELEASED"},
+                        {"name": "checkpoint_verdicts", "value": "100u:FAIL;2000u:MISSING"},
+                    ],
+                },
+            ]
+        }
+        names = kse.measurement_names(report)
+        rows, passed = kse.build_csv(report, {"pass_requires": names}, names)
+        self.assertEqual(passed, 1)
+        self.assertEqual(rows[0]["release_time_us"], "1.000000e+02")
+        self.assertEqual(rows[0]["checkpoint_verdicts"], "100u:PASS;2000u:PASS")
+        self.assertEqual(rows[1]["release_time_us"], "NOT_RELEASED")
+        self.assertEqual(rows[1]["status"], "FAIL")
 
 
 class InlineDeckTests(TempDirCase):
@@ -1342,6 +1629,952 @@ class PexMergeCallTests(TempDirCase):
             text = (SIM_DIR / exp / "run_klt_sim.sh").read_text()
             self.assertIn("harness/pex_runner.sh", text)
             self.assertNotIn("merge_batch_shards.py", text.replace("(sim/harness/merge_batch_shards.py)", ""))
+
+
+# --------------------------------------------------------------------------
+# submission_identity.sh si_set_* -- concurrent `klt sim --batch-set` dispatch
+# --------------------------------------------------------------------------
+
+#: mock `klt --batch-set`: records the invocation, writes one per-member
+#: report where the real client writes it (<outdir>/<request stem>/report.json)
+#: and prints the aggregate envelope. Runs no simulator and touches no fleet.
+#: MOCK_SKIP (a request stem) omits that member's report, standing in for a
+#: member the set could not run.
+MOCK_KLT_SET = """#!/usr/bin/env bash
+if [[ "$1" == "--version" ]]; then echo "mock-klt 1.0"; exit 0; fi
+args=("$@"); outdir=""; requests=(); collecting=0
+for ((i = 0; i < ${#args[@]}; i++)); do
+  case "${args[$i]}" in
+    --batch-set) collecting=1 ;;
+    -o) outdir="${args[$((i + 1))]}"; collecting=0 ;;
+    --*) collecting=0 ;;
+    *) [[ ${collecting} -eq 1 ]] && requests+=("${args[$i]}") ;;
+  esac
+done
+printf '%s\n' "${args[@]}" >> "${MOCK_COUNT}"
+for req in "${requests[@]}"; do
+  stem="$(basename "${req}" .json)"
+  [[ "${stem}" == "${MOCK_SKIP:-}" ]] && continue
+  mkdir -p "${outdir}/${stem}"
+  printf '{"status": "pass", "corners": [{"corner_id": "%s", "artifacts": {"deck": "%s/%s/deck.cir"}}]}\n' \
+    "${stem}" "${outdir}" "${stem}" > "${outdir}/${stem}/report.json"
+done
+echo '{"schema_version": 1, "status": "pass", "requests": []}'
+"""
+
+SHARDS = ("typ", "bcs")
+
+
+class SetDispatchTests(TempDirCase):
+    """si_set_add / si_set_dispatch: the 15 independent requests of a PVT
+    campaign go to ONE `klt sim --batch-set` (issue #402) instead of one
+    blocking `klt sim` each, without loosening the #332 identity contract.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.klt = self.write("bin/klt", MOCK_KLT_SET)
+        self.klt.chmod(0o755)
+        self.count = self.tmp / "count.txt"
+        self.work = self.tmp / "work"
+        self.work.mkdir()
+        self.tmpl = self.write("tmpl/body.tmpl", "* template v1\n")
+        self.make_inputs()
+
+    def make_inputs(self, body_extra: str = "") -> None:
+        for label in SHARDS:
+            body = self.work / f"body-{label}.spice"
+            body.write_text(self.tmpl.read_text() + body_extra, encoding="utf-8")
+            (self.work / f"request-{label}.json").write_text(
+                json.dumps({"netlist": str(body), "corners": {"temperature_c": [27]}}),
+                encoding="utf-8",
+            )
+
+    def dispatch(self, in_flight: int = 2, **env) -> subprocess.CompletedProcess:
+        adds = "; ".join(
+            f'si_set_add request-{label}.json report-{label}.json "{label}"'
+            for label in SHARDS
+        )
+        script = (
+            f'set -euo pipefail; WORK="{self.work}"; HARNESS_DIR="{HARNESS}"; '
+            f'KLT_BIN="{self.klt}"; '
+            f'IDENT_ARGS=(--declare "klt_version=mock" --extra "{self.tmpl}"); '
+            f'source "{HARNESS}/submission_identity.sh"; '
+            f'si_set_reset; {adds}; si_set_dispatch batch-set {in_flight}'
+        )
+        e = {**os.environ, "MOCK_COUNT": str(self.count)}
+        e.pop(si.ENV_ALLOW_LEGACY, None)
+        e.pop(si.ENV_REDISPATCH, None)
+        e.update(env)
+        return subprocess.run(["bash", "-c", script], capture_output=True, text=True, env=e)
+
+    def invocations(self) -> list[list[str]]:
+        if not self.count.exists():
+            return []
+        text = self.count.read_text()
+        return [block.splitlines() for block in text.split("--batch-set\n")[1:]]
+
+    def test_one_invocation_carries_every_shard(self) -> None:
+        r = self.dispatch()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        # The whole campaign is ONE client run, not one per shard.
+        self.assertEqual(len(self.invocations()), 1, self.count.read_text())
+        argv = self.count.read_text().split()
+        for label in SHARDS:
+            self.assertIn(f"request-{label}.json", argv)
+        self.assertIn("--max-in-flight", argv)
+        self.assertIn("--wait-for-capacity", argv)
+
+    def test_member_reports_are_harvested_and_bound(self) -> None:
+        r = self.dispatch()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        for label in SHARDS:
+            report = self.work / f"report-{label}.json"
+            # Copied to the per-shard path the fixup/merge steps read...
+            self.assertTrue(report.is_file(), f"{label} report not harvested")
+            self.assertEqual(
+                json.loads(report.read_text())["corners"][0]["corner_id"], f"request-{label}"
+            )
+            # ...and bound to the inputs it was submitted with (#332).
+            self.assertTrue(si.sidecar_path(report).is_file(), f"{label} left unbound")
+
+    def test_capacity_wait_is_always_passed(self) -> None:
+        # The fleet is vCPU-budgeted: a submit that does not wait out
+        # `batch_no_capacity` fails the campaign instead of queueing.
+        self.dispatch()
+        argv = self.count.read_text().split()
+        self.assertEqual(argv[argv.index("--wait-for-capacity") + 1], "600")
+        # A completed shard is not re-submitted, so clear the results first.
+        self.count.unlink()
+        for label in SHARDS:
+            report = self.work / f"report-{label}.json"
+            report.unlink()
+            si.sidecar_path(report).unlink()
+        self.dispatch(**{"KLT_SIM_CAPACITY_WAIT_S": "900"})
+        argv = self.count.read_text().split()
+        self.assertEqual(argv[argv.index("--wait-for-capacity") + 1], "900")
+
+    def test_member_shard_concurrency_is_bounded_when_asked(self) -> None:
+        # The fleet's shared vCPU budget, not the client, is what a campaign
+        # actually runs out of: MAX_IN_FLIGHT x `remote.hosts` jobs are wanted
+        # at once and the overflow is refused, so both bounds must be settable.
+        self.dispatch()
+        self.assertNotIn("--max-concurrent-jobs", self.count.read_text().split())
+        self.count.unlink()
+        for label in SHARDS:
+            report = self.work / f"report-{label}.json"
+            report.unlink()
+            si.sidecar_path(report).unlink()
+        self.dispatch(**{"KLT_SIM_MAX_CONCURRENT_JOBS": "3"})
+        argv = self.count.read_text().split()
+        self.assertEqual(argv[argv.index("--max-concurrent-jobs") + 1], "3")
+
+    def test_unchanged_rerun_submits_nothing(self) -> None:
+        self.assertEqual(self.dispatch().returncode, 0)
+        self.count.unlink()
+        self.make_inputs()  # regeneration is byte-identical
+        r = self.dispatch()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self.invocations(), [])  # nothing re-submitted
+        self.assertIn("nothing to submit", r.stdout)
+
+    def test_changed_inputs_refuse_rather_than_reuse(self) -> None:
+        self.assertEqual(self.dispatch().returncode, 0)
+        self.make_inputs(body_extra=".param x=1\n")
+        r = self.dispatch()
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+        self.assertIn("different inputs", r.stderr)
+
+    def test_missing_member_report_is_reported_and_left_unbound(self) -> None:
+        # A member the set could not run must not be silently bound to a
+        # stale/absent report -- the merge is what refuses a partial grid,
+        # and a resume has to re-dispatch exactly this shard.
+        r = self.dispatch(**{"MOCK_SKIP": "request-typ"})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("the set returned no report", r.stderr)
+        self.assertFalse((self.work / "report-typ.json").exists())
+        self.assertFalse(si.sidecar_path(self.work / "report-typ.json").is_file())
+        # ...while its siblings still land.
+        self.assertTrue(si.sidecar_path(self.work / "report-bcs.json").is_file())
+
+    def test_a_previous_runs_member_report_is_never_harvested_again(self) -> None:
+        # The same regression, into a work dir that has ALREADY been used --
+        # the resumable case this harness exists for. `--batch-set` writes its
+        # member reports into <outdir>/<stem>/ and does not clear them, so a
+        # member it cannot run this time leaves the previous run's file
+        # sitting there. Harvesting it would `commit` old measurements under
+        # the identity si_set_add just `begin`-ed for the CURRENT inputs: a
+        # verified binding of a stale report to a new DUT (#332).
+        self.assertEqual(self.dispatch().returncode, 0)
+        member = self.work / "batch-set" / "request-typ" / "report.json"
+        self.assertTrue(member.is_file(), "first run left no member report to go stale")
+        first = (self.work / "report-typ.json").read_text()
+
+        self.make_inputs(body_extra=".param x=1\n")  # the DUT body changes
+        r = self.dispatch(**{si.ENV_REDISPATCH: "1", "MOCK_SKIP": "request-typ"})
+
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("the set returned no report", r.stderr)
+        # Cleared before the submit, so "no report" is not satisfied by last
+        # time's file...
+        self.assertFalse(member.is_file(), "stale member report survived the submit")
+        # ...the shard is left unbound (`begin` dropped the old sidecar and
+        # nothing re-published it), so a resume re-dispatches exactly it...
+        self.assertFalse(
+            si.sidecar_path(self.work / "report-typ.json").is_file(),
+            "stale report was bound to the new inputs",
+        )
+        self.assertEqual((self.work / "report-typ.json").read_text(), first)
+        # ...while the sibling that DID run is harvested and bound as usual.
+        bcs = self.work / "report-bcs.json"
+        self.assertTrue(si.sidecar_path(bcs).is_file())
+        self.assertEqual(
+            si.check(
+                self.work / "request-bcs.json", bcs, [self.tmpl], {"klt_version": "mock"}
+            )[0],
+            si.EXIT_REUSE,
+        )
+
+
+class SetDispatchWiringTests(unittest.TestCase):
+    """The shared driver offers the concurrent path, and the 120-point
+    box-TC campaign (#402, the DUT whose sequential run was 7+ h) opts in.
+    """
+
+    def test_driver_dispatches_a_set_when_opted_in(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        self.assertIn("PEX_BATCH_MAX_IN_FLIGHT", driver)
+        self.assertIn("si_set_dispatch", driver)
+        self.assertIn("si_shard", driver)  # the default path is still there
+
+    def test_boxtc_runner_opts_in(self) -> None:
+        runner = (SIM_DIR / "closed-loop-vref-pvt-boxtc" / "run_klt_sim.sh").read_text()
+        self.assertIn("PEX_BATCH_MAX_IN_FLIGHT", runner)
+
+    def test_boxtc_runner_defaults_to_the_measured_concurrency(self) -> None:
+        # The out-of-the-box invocation must be the configuration that was
+        # measured to complete, not one measured to lose shards: the fleet is
+        # shared and vCPU-budgeted, and 3 requests x 8 shard jobs overran it
+        # (384 vCPU vs BATCH_MAX_VCPU=224, ~half the campaign's shards lost).
+        # 2 x 3 lost none. Both stay overridable from the environment.
+        runner = (SIM_DIR / "closed-loop-vref-pvt-boxtc" / "run_klt_sim.sh").read_text()
+        self.assertIn('PEX_BATCH_MAX_IN_FLIGHT="${PEX_BATCH_MAX_IN_FLIGHT:-2}"', runner)
+        self.assertIn(
+            'KLT_SIM_MAX_CONCURRENT_JOBS="${KLT_SIM_MAX_CONCURRENT_JOBS:-3}"', runner
+        )
+
+    def test_every_batch_submit_waits_out_a_capacity_refusal(self) -> None:
+        helper = (SIM_DIR / "harness" / "submission_identity.sh").read_text()
+        for fn in ("si_shard", "si_set_dispatch"):
+            body = helper.split(f"{fn}() {{", 1)[1]
+            self.assertIn("--wait-for-capacity", body.split("\n}\n", 1)[0], fn)
+
+    def test_pex_boxtc_runner_overrides_the_body_template_before_sourcing_the_driver(self) -> None:
+        assignment = (
+            'BODY_TEMPLATE="${_here}/../closed-loop-vref-pvt-pex/testbench/'
+            'closed_loop_vref_pvt_pex.body.spice.tmpl"'
+        )
+        runner = (SIM_DIR / "closed-loop-vref-pvt-pex-boxtc" / "run_klt_sim.sh").read_text()
+        self.assertIn(assignment, runner)
+        source_line = 'source "${_here}/../harness/pex_runner.sh"'
+        self.assertIn(source_line, runner)
+        # The ordering is the contract: the override only reaches the
+        # submission identity when it precedes the source line.
+        self.assertLess(runner.index(assignment), runner.index(source_line))
+
+    def test_pex_driver_resolves_the_body_template_only_at_the_default(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        occurrences = [
+            line
+            for line in driver.splitlines()
+            if "${STEM}.body.spice.tmpl" in line and not line.lstrip().startswith("#")
+        ]
+        self.assertEqual(
+            occurrences,
+            ['BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"'],
+        )
+
+    def test_shared_pex_body_template_exists_and_the_per_stem_copy_does_not(self) -> None:
+        shared = (
+            SIM_DIR / "closed-loop-vref-pvt-pex"
+            / "testbench" / "closed_loop_vref_pvt_pex.body.spice.tmpl"
+        )
+        self.assertTrue(shared.is_file(), shared)
+        # Stem-exact on purpose: the non-PEX closed-loop-vref-pvt-boxtc bench
+        # legitimately keeps its own ..._boxtc.body.spice.tmpl on main.
+        per_stem = (
+            SIM_DIR / "closed-loop-vref-pvt-pex-boxtc"
+            / "testbench" / "closed_loop_vref_pvt_pex_boxtc.body.spice.tmpl"
+        )
+        self.assertFalse(per_stem.exists(), per_stem)
+
+
+# --------------------------------------------------------------------------
+# boxtc_companion: the box-method TC derivation (issue #465). It used to be
+# typed twice, inline, in the two benches that share it -- and
+# spec/decision-records/0010-box-method-tc-evidence.md ratifies its output as
+# this block's TC evidence, with the design sitting ON the 20 ppm/degC stretch
+# line. So the derivation gets a golden test against the committed records it
+# produced, unit coverage of the parts a correction would touch, and a guard
+# that the duplication cannot come back.
+# --------------------------------------------------------------------------
+
+#: The two box-method benches and the committed record each minted.
+BOXTC_BENCHES = {
+    "closed-loop-vref-pvt-boxtc": "20260921-194249-77820fc",
+    "closed-loop-vref-pvt-pex-boxtc": "20260921-195122-77820fc",
+}
+
+
+def boxtc_rows(points: list[tuple], corner: str = "typ", vdd: str = "3.30") -> list[dict]:
+    """Record rows for one (corner, vdd) group from `(temp_c, vref, status)`."""
+    return [
+        {"corner_label": corner, "vdd_v": vdd, "temp_c": f"{t}",
+         "vref_3ms_v": repr(v), "status": s}
+        for t, v, s in points
+    ]
+
+
+#: A grid whose extremes are INTERIOR points, so the box method and the
+#: endpoint method cannot agree: vref peaks at 50 C and bottoms at 0 C, while
+#: -40 C and 125 C sit between them.
+INTERIOR_EXTREMA = [
+    (-40, 1.0400, "PASS"), (0, 1.0300, "PASS"), (27, 1.0500, "PASS"),
+    (50, 1.0600, "PASS"), (125, 1.0450, "PASS"),
+]
+
+
+#: The endpoint benches and the newest committed record/companion pair each
+#: carries -- the golden-test inputs for the endpoint derivation (issue #496).
+TC_BENCHES = {
+    "closed-loop-vref-pvt": "20261001-085908-e5507b2",
+    "closed-loop-vref-pvt-pex": "20260905-114438-8abe2aa",
+}
+
+
+def endpoint_rows(points: list[tuple], corner: str = "typ",
+                  vdd: str = "3.30") -> list[dict]:
+    """Record rows for one (corner, vdd) group from `(temp_c, vref_3ms_v)`.
+
+    `vref` may be a float or an already-rendered string -- the way the
+    minted records carry it (`1.04695e+00`).
+    """
+    return [
+        {"corner_label": corner, "vdd_v": vdd, "temp_c": f"{t}",
+         "vref_3ms_v": v if isinstance(v, str) else repr(v)}
+        for t, v in points
+    ]
+
+
+class BoxTcGoldenTests(unittest.TestCase):
+    """The derivation still reproduces the committed evidence, byte for byte."""
+
+    def test_committed_companions_regenerate_byte_identically(self) -> None:
+        # The acceptance test for the de-duplication (#465): both benches'
+        # committed -boxtc.csv must come back out of the shared module
+        # unchanged. Read-only on sim/ -- output goes to a temp dir.
+        for exp, stem in BOXTC_BENCHES.items():
+            with self.subTest(exp=exp):
+                records = SIM_DIR / exp / "records"
+                want = (records / f"{stem}-boxtc.csv").read_text()
+                with tempfile.TemporaryDirectory() as tmp:
+                    got = Path(tmp) / "companion.csv"
+                    bxc.write_companion(records / f"{stem}.csv", got)
+                    self.assertEqual(got.read_text(), want)
+
+    def test_committed_companions_are_not_rewritten(self) -> None:
+        # sim/*/records/ is append-only evidence: deriving must never write
+        # back into it. Guards the module against an EXP_DIR-relative default.
+        for exp, stem in BOXTC_BENCHES.items():
+            with self.subTest(exp=exp):
+                committed = SIM_DIR / exp / "records" / f"{stem}-boxtc.csv"
+                before = committed.stat().st_mtime_ns, committed.read_bytes()
+                with tempfile.TemporaryDirectory() as tmp:
+                    bxc.write_companion(
+                        SIM_DIR / exp / "records" / f"{stem}.csv",
+                        Path(tmp) / "companion.csv",
+                    )
+                self.assertEqual(
+                    (committed.stat().st_mtime_ns, committed.read_bytes()), before
+                )
+
+
+class BoxTcFormulaTests(unittest.TestCase):
+    """The parts of the derivation a correction would land on."""
+
+    def one(self, points: list[tuple], **kw) -> list:
+        rows = bxc.companion_rows(boxtc_rows(points, **kw))
+        self.assertEqual(len(rows), 1, rows)
+        return rows[0]
+
+    def test_box_is_the_worst_case_spread_not_the_endpoint_slope(self) -> None:
+        # The whole point of the box method: the extremes are wherever they
+        # fall on the grid, not at its ends. Here they are interior, so a
+        # regression to an endpoint derivation changes the reported number.
+        row = self.one(INTERIOR_EXTREMA)
+        _, _, _, _, vmin, tmin, vmax, tmax, v27, box, endpoint = row
+        self.assertEqual((float(vmin), tmin), (1.03, 0))
+        self.assertEqual((float(vmax), tmax), (1.06, 50))
+        self.assertAlmostEqual(float(box), 1e6 * (1.06 - 1.03) / (165 * 1.05), places=3)
+        # ... and the endpoint figure is carried alongside, not instead of it.
+        self.assertAlmostEqual(
+            float(endpoint), 1e6 * (1.045 - 1.040) / (165 * 1.05), places=3
+        )
+        self.assertNotAlmostEqual(float(box), float(endpoint), places=1)
+
+    def test_span_is_the_165_degree_grid(self) -> None:
+        # The committed records disclose a 165 degC span (-40..125). It is the
+        # formula's denominator, so it is a named constant, not a literal
+        # repeated per copy.
+        self.assertEqual(bxc.SPAN_C, 165)
+        row = self.one([(-40, 1.0, "PASS"), (27, 1.0, "PASS"), (125, 1.1, "PASS")])
+        self.assertAlmostEqual(float(row[9]), 1e6 * 0.1 / (165 * 1.0), places=3)
+
+    def test_failing_points_are_excluded_from_the_number_but_disclosed(self) -> None:
+        # A FAIL point must not set vmin/vmax -- it never converged -- but
+        # n_grid still reports it, so n_pass/n_grid discloses the coverage
+        # behind the figure.
+        row = self.one([
+            (-40, 0.5, "FAIL"), (0, 1.04, "PASS"), (27, 1.05, "PASS"),
+            (125, 1.06, "PASS"),
+        ])
+        self.assertEqual((row[2], row[3]), (3, 4))        # n_pass, n_grid
+        self.assertEqual(float(row[4]), 1.04)             # vmin, not the 0.5 FAIL
+        self.assertEqual(row[10], "")                     # -40 C absent: no endpoint
+
+    def test_group_without_a_passing_27c_point_is_omitted(self) -> None:
+        # v27 is the denominator. Without it the derivation has no value, so
+        # the group is omitted rather than reported from a substitute.
+        for points in (
+            [(-40, 1.04, "PASS"), (125, 1.06, "PASS")],                  # no 27 C
+            [(-40, 1.04, "PASS"), (27, 1.05, "FAIL"), (125, 1.06, "PASS")],
+        ):
+            with self.subTest(points=points):
+                self.assertEqual(bxc.companion_rows(boxtc_rows(points)), [])
+
+    def test_group_with_no_passing_point_is_omitted(self) -> None:
+        self.assertEqual(
+            bxc.companion_rows(boxtc_rows([(27, 1.05, "FAIL")])), []
+        )
+
+    def test_absent_group_is_skipped_not_reported_empty(self) -> None:
+        rows = bxc.companion_rows(boxtc_rows(INTERIOR_EXTREMA, corner="wcs", vdd="2.97"))
+        self.assertEqual([(r[0], r[1]) for r in rows], [("wcs", "2.97")])
+
+    def test_rows_follow_the_committed_grid_order(self) -> None:
+        # Row order is part of the committed CSV's shape: corner-major over
+        # (typ, bcs, wcs, sf, fs) x (2.97, 3.30, 3.63).
+        rows: list[dict] = []
+        for corner in reversed(bxc.CORNERS):
+            for vdd in reversed(bxc.VDDS):
+                rows += boxtc_rows(INTERIOR_EXTREMA, corner=corner, vdd=vdd)
+        got = [(r[0], r[1]) for r in bxc.companion_rows(rows)]
+        self.assertEqual(got, [(c, v) for c in bxc.CORNERS for v in bxc.VDDS])
+
+    def test_header_matches_the_committed_companions(self) -> None:
+        for exp, stem in BOXTC_BENCHES.items():
+            with self.subTest(exp=exp):
+                committed = (SIM_DIR / exp / "records" / f"{stem}-boxtc.csv").read_text()
+                self.assertEqual(committed.splitlines()[0], ",".join(bxc.HEADER))
+
+    def test_companion_is_newline_terminated_not_crlf(self) -> None:
+        # csv.writer defaults to \r\n; the committed records are \n.
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dst = Path(tmp) / "r.csv", Path(tmp) / "c.csv"
+            with src.open("w", newline="") as fh:
+                w = csv.writer(fh, lineterminator="\n")
+                w.writerow(["corner_label", "vdd_v", "temp_c", "vref_3ms_v", "status"])
+                for t, v, s in INTERIOR_EXTREMA:
+                    w.writerow(["typ", "3.30", t, v, s])
+            bxc.write_companion(src, dst)
+            self.assertNotIn(b"\r", dst.read_bytes())
+
+
+class BoxTcSeamTests(TempDirCase):
+    """The shell side: one shared implementation, and it stays shared."""
+
+    def test_both_box_benches_delegate_to_the_shared_companion(self) -> None:
+        for exp in BOXTC_BENCHES:
+            with self.subTest(exp=exp):
+                script = (SIM_DIR / exp / "run_klt_sim.sh").read_text()
+                hook = script.split("pex_record_companion() {", 1)[1].split("\n}\n", 1)[0]
+                self.assertIn("pex_boxtc_companion", hook)
+                # The formula must not be re-typed here -- that is the
+                # duplication #465 removed. No inline heredoc, no formula.
+                self.assertNotIn("python3 - ", hook)
+                self.assertNotIn("1e6", hook)
+                self.assertNotIn("csv.writer", hook)
+                self.assertIn('source "${HARNESS_DIR}/pex_vref_runner.sh"', script)
+
+    def test_the_shared_companion_defers_the_formula_to_the_module(self) -> None:
+        runner = (SIM_DIR / "harness" / "pex_vref_runner.sh").read_text()
+        body = runner.split("pex_boxtc_companion() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("boxtc_companion.py", body)
+        self.assertNotIn("1e6", body)
+        # The input filter is the box benches' own: it drops both companion
+        # kinds. The two helpers' filters differ on purpose (#496): the
+        # endpoint helper drops -vs-schematic instead.
+        self.assertIn("grep -v -e '-boxtc.csv' -e '-tc.csv'", body)
+
+    def test_the_endpoint_bench_keeps_its_own_different_body(self) -> None:
+        # Reframed for #496: its premise -- the endpoint bench re-types its
+        # own endpoint-method body -- became false by design when that body
+        # moved into sim/harness/tc_companion.py. What remains true is the
+        # separation it guarded: the endpoint bench delegates to the
+        # *endpoint* companion, never the box one.
+        script = (SIM_DIR / "closed-loop-vref-pvt-pex" / "run_klt_sim.sh").read_text()
+        hook = script.split("pex_record_companion() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("pex_endpoint_tc_companion", hook)
+        self.assertNotIn("pex_boxtc_companion", hook)
+        self.assertNotIn("boxtc_companion", hook)
+
+    def test_the_trim_bench_box_derivation_matches_the_module(self) -> None:
+        # closed-loop-vref-boxtc-trim carries a third copy of the box
+        # derivation: an awk body inside run_pvt_sweep.sh, which does not
+        # source pex_vref_runner.sh, so the pex_boxtc_companion seam cannot
+        # reach it (#474; delegating it is out of scope there). The copy is
+        # load-bearing -- its -boxtc.csv feeds the trim-induced-TC gate that
+        # DR-0013 cites -- so a correction applied to boxtc_companion.py
+        # alone would silently leave the bench reporting the old derivation.
+        # Until the bench delegates, this tripwire makes that divergence red.
+        script = (SIM_DIR / "closed-loop-vref-boxtc-trim" / "run_pvt_sweep.sh").read_text()
+
+        # The span is parsed from the bench and compared to the module's:
+        # restating 165 on both sides would check nothing.
+        span = re.search(r"TEMP_SPAN_C[ \t]*=[ \t]*([0-9]+)", script)
+        self.assertIsNotNone(
+            span,
+            "TEMP_SPAN_C= is gone from the trim bench; its awk span must "
+            "still equal boxtc_companion.SPAN_C "
+            f"({bxc.SPAN_C}). boxtc_companion.py is the one place to "
+            "correct the box derivation.")
+        self.assertEqual(
+            int(span.group(1)), bxc.SPAN_C,
+            f"the trim bench's box span (TEMP_SPAN_C={span.group(1)}) no "
+            f"longer equals boxtc_companion.SPAN_C ({bxc.SPAN_C}): correct "
+            "boxtc_companion.py first, then this bench.")
+        self.assertIn(
+            '-v span="${TEMP_SPAN_C}"', script,
+            "the trim bench's awk no longer takes its span from "
+            "TEMP_SPAN_C; boxtc_companion.py is the one place to correct "
+            "the box derivation.")
+
+        # The box awk itself: same formula shape and PASS filter as the
+        # module's group loop.
+        awk_m = re.search(r"'(.*?)' \"\$\{CSV_OUT\}\"",
+                          script.split('-v span="${TEMP_SPAN_C}"', 1)[1],
+                          re.DOTALL)
+        self.assertIsNotNone(
+            awk_m,
+            "the trim bench's box-TC awk is gone or no longer writes to "
+            "${CSV_OUT}; boxtc_companion.py is the one place to correct "
+            "the box derivation.")
+        awk_prog = awk_m.group(1)
+        self.assertIn(
+            "1e6 * (vmax - vmin) / (span * v27)", awk_prog,
+            "the trim bench's box formula drifted from the module's "
+            "1e6 * (vmax - vmin) / (span * v27); boxtc_companion.py is the "
+            "one place to correct the derivation.")
+        self.assertIn(
+            '$scol == "PASS"', awk_prog,
+            "the trim bench's box derivation dropped the PASS-point filter; "
+            "boxtc_companion.py is the one place to correct the derivation.")
+
+        # Same rounding the module emits: %.5g voltages, %d integer
+        # temperatures and counts, %.3f box_tc_ppm_per_c -- positionally, in
+        # the companion header's column order.
+        fmt = re.search(r'printf "([^"]+)"', awk_prog)
+        self.assertIsNotNone(
+            fmt,
+            "the trim bench's box printf is gone; its companion rounding "
+            "must match boxtc_companion.py's emission.")
+        convs = fmt.group(1).split("\\n")[0].split(",")
+        self.assertEqual(
+            convs,
+            ["%s", "%s", "%s", "%d", "%d",
+             "%.5g", "%d", "%.5g", "%d", "%.5g", "%.3f"],
+            "the trim bench's companion rounding drifted from "
+            "boxtc_companion.py's (%.5g voltages, %d temperatures/counts, "
+            "%.3f box_tc_ppm_per_c): correct boxtc_companion.py first, "
+            "then this bench.")
+
+    def test_shared_companion_picks_the_record_over_its_own_companions(self) -> None:
+        # `ls -t` picks the newest CSV, so a companion derived by an earlier
+        # run -- which is newer than the record -- must be filtered out, or
+        # the derivation would consume its own output.
+        records = self.tmp / "records"
+        records.mkdir()
+        exp, stem = next(iter(BOXTC_BENCHES.items()))
+        committed = SIM_DIR / exp / "records"
+        (records / f"{stem}.csv").write_bytes((committed / f"{stem}.csv").read_bytes())
+        # Companions, all newer than the record, all of which must be skipped.
+        for name in (f"{stem}-boxtc.csv", f"{stem}-tc.csv",
+                     f"{stem}-vs-schematic-boxtc.csv"):
+            (records / name).write_text("corner_label,garbage\nbad,row\n")
+            os.utime(records / name, (time.time() + 10, time.time() + 10))
+        script = (
+            f'set -euo pipefail; HARNESS_DIR="{SIM_DIR / "harness"}"; '
+            f'EXP_DIR="{self.tmp}"; '
+            f'source "$HARNESS_DIR/pex_vref_runner.sh"; pex_boxtc_companion'
+        )
+        r = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (records / f"{stem}-boxtc.csv").read_text(),
+            (committed / f"{stem}-boxtc.csv").read_text(),
+        )
+
+
+class EndpointTcGoldenTests(unittest.TestCase):
+    """The endpoint derivation still reproduces the committed evidence."""
+
+    def test_committed_companions_regenerate_byte_identically(self) -> None:
+        # The acceptance test for the de-duplication (#496): both benches'
+        # committed -tc.csv must come back out of the shared module
+        # unchanged, byte for byte -- including the header and the absence
+        # of CRLF. Read-only on sim/ -- output goes to a temp dir.
+        for exp, stem in TC_BENCHES.items():
+            with self.subTest(exp=exp):
+                records = SIM_DIR / exp / "records"
+                want = (records / f"{stem}-tc.csv").read_text()
+                with tempfile.TemporaryDirectory() as tmp:
+                    got = Path(tmp) / "companion.csv"
+                    tcc.write_companion(records / f"{stem}.csv", got)
+                    self.assertEqual(got.read_text(), want)
+
+    def test_committed_companions_are_not_rewritten(self) -> None:
+        # sim/*/records/ is append-only evidence: deriving must never write
+        # back into it. Guards the module against an EXP_DIR-relative default.
+        for exp, stem in TC_BENCHES.items():
+            with self.subTest(exp=exp):
+                committed = SIM_DIR / exp / "records" / f"{stem}-tc.csv"
+                before = committed.stat().st_mtime_ns, committed.read_bytes()
+                with tempfile.TemporaryDirectory() as tmp:
+                    tcc.write_companion(
+                        SIM_DIR / exp / "records" / f"{stem}.csv",
+                        Path(tmp) / "companion.csv",
+                    )
+                self.assertEqual(
+                    (committed.stat().st_mtime_ns, committed.read_bytes()), before
+                )
+
+
+class EndpointTcFormulaTests(unittest.TestCase):
+    """The parts of the derivation a correction would land on."""
+
+    def one(self, points: list[tuple], **kw) -> list:
+        rows = tcc.companion_rows(endpoint_rows(points, **kw))
+        self.assertEqual(len(rows), 1, rows)
+        return rows[0]
+
+    def test_tc_is_the_two_endpoint_slope(self) -> None:
+        # 1e6 * (v125 - vn40) / (165 * v27): the grid's endpoints, not the
+        # box method's worst-case spread -- interior extrema must not move
+        # the number. (The INTERIOR_EXTREMA grid, without status: the
+        # endpoint derivation does not read it.)
+        row = self.one([(-40, 1.0400), (0, 1.0300), (27, 1.0500),
+                        (50, 1.0600), (125, 1.0450)])
+        self.assertEqual(row[:2], ["typ", "3.30"])
+        self.assertAlmostEqual(
+            float(row[5]), 1e6 * (1.045 - 1.04) / (165 * 1.05), places=3)
+        self.assertNotAlmostEqual(
+            float(row[5]), 1e6 * (1.06 - 1.03) / (165 * 1.05), places=1)
+
+    def test_values_pass_through_verbatim_not_rerendered(self) -> None:
+        # The committed convention: the record's own strings are echoed, not
+        # re-rendered through Python floats -- vdd_v as `3.30`, voltages at
+        # the record's precision. This is exactly the regression the inline
+        # hook this module replaces would have minted (#496).
+        row = self.one([(-40, "1.04695e+00"), (27, "1.04705e+00"),
+                        (125, "1.04201e+00")])
+        self.assertEqual(row, ["typ", "3.30", "1.04695e+00", "1.04705e+00",
+                               "1.04201e+00", "-28.594"])
+
+    def test_span_is_the_165_degree_grid(self) -> None:
+        # The committed companions disclose a 165 degC span (-40..125). It
+        # is the formula's denominator, so it is a named constant, not a
+        # literal repeated per copy.
+        self.assertEqual(tcc.SPAN_C, 165)
+        row = self.one([(-40, 1.04), (27, 1.05), (125, 1.14)])
+        self.assertAlmostEqual(float(row[5]), 1e6 * 0.1 / (165 * 1.05),
+                               places=3)
+
+    def test_group_missing_an_endpoint_temperature_is_omitted(self) -> None:
+        # No denominator (27 C), or a missing slope endpoint: the derivation
+        # has no value, so the group is omitted rather than reported from a
+        # substitute or a crash (the old hook's
+        # `except (KeyError, ValueError): continue`).
+        for points in (
+            [(-40, 1.047), (125, 1.042)],        # no 27 C: no denominator
+            [(27, 1.047), (125, 1.042)],         # no -40 C
+            [(-40, 1.047), (27, 1.047)],         # no 125 C
+        ):
+            with self.subTest(points=points):
+                self.assertEqual(tcc.companion_rows(endpoint_rows(points)), [])
+
+    def test_unparseable_voltage_is_omitted_not_crashed(self) -> None:
+        self.assertEqual(
+            tcc.companion_rows(
+                endpoint_rows([(-40, 1.047), (27, "not-a-number"),
+                               (125, 1.042)])
+            ),
+            [],
+        )
+
+    def test_rows_follow_the_committed_grid_order(self) -> None:
+        # Row order is part of the committed CSV's shape: corner-major over
+        # (typ, bcs, wcs, sf, fs) x (2.97, 3.30, 3.63).
+        rows: list[dict] = []
+        for corner in reversed(tcc.CORNERS):
+            for vdd in reversed(tcc.VDDS):
+                rows += endpoint_rows([(-40, 1.04695), (27, 1.04705),
+                                       (125, 1.04201)],
+                                      corner=corner, vdd=vdd)
+        got = [(r[0], r[1]) for r in tcc.companion_rows(rows)]
+        self.assertEqual(got, [(c, v) for c in tcc.CORNERS for v in tcc.VDDS])
+
+    def test_header_matches_the_committed_companions(self) -> None:
+        for exp, stem in TC_BENCHES.items():
+            with self.subTest(exp=exp):
+                committed = (SIM_DIR / exp / "records" / f"{stem}-tc.csv").read_text()
+                self.assertEqual(committed.splitlines()[0], ",".join(tcc.HEADER))
+
+    def test_companion_is_newline_terminated_not_crlf(self) -> None:
+        # csv.writer defaults to \r\n; the committed companions are \n. The
+        # inline hook this module replaces had exactly this bug (#496).
+        with tempfile.TemporaryDirectory() as tmp:
+            src, dst = Path(tmp) / "r.csv", Path(tmp) / "c.csv"
+            with src.open("w", newline="") as fh:
+                w = csv.writer(fh, lineterminator="\n")
+                w.writerow(["corner_label", "vdd_v", "temp_c", "vref_3ms_v"])
+                for t, v in [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]:
+                    w.writerow(["typ", "3.30", t, repr(v)])
+            tcc.write_companion(src, dst)
+            self.assertNotIn(b"\r", dst.read_bytes())
+
+
+class EndpointTcSeamTests(TempDirCase):
+    """The shell side: one shared implementation, and it stays shared."""
+
+    ENDPOINT_BENCHES = ("closed-loop-vref-pvt", "closed-loop-vref-pvt-pex")
+
+    def test_both_endpoint_benches_delegate_to_the_shared_companion(self) -> None:
+        for exp in self.ENDPOINT_BENCHES:
+            with self.subTest(exp=exp):
+                script = (SIM_DIR / exp / "run_klt_sim.sh").read_text()
+                hook = script.split("pex_record_companion() {", 1)[1].split("\n}\n", 1)[0]
+                self.assertIn("pex_endpoint_tc_companion", hook)
+                # The formula must not be re-typed here -- that is the
+                # duplication #496 removed. No inline heredoc, no formula.
+                self.assertNotIn("python3 - ", hook)
+                self.assertNotIn("1e6", hook)
+                self.assertNotIn("csv.writer", hook)
+                self.assertIn('source "${HARNESS_DIR}/pex_vref_runner.sh"', script)
+
+    def test_the_shared_companion_defers_the_formula_to_the_module(self) -> None:
+        runner = (SIM_DIR / "harness" / "pex_vref_runner.sh").read_text()
+        body = runner.split("pex_endpoint_tc_companion() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("tc_companion.py", body)
+        self.assertNotIn("1e6", body)
+        # The input filter is the endpoint benches' own: it drops the
+        # companion kind and the extracted benches' -vs-schematic artifacts
+        # (a no-op on the schematic twin). The two helpers' filters differ
+        # on purpose (#496).
+        self.assertIn("grep -v -e '-tc.csv' -e '-vs-schematic'", body)
+
+    def test_the_two_tc_companions_stay_separate_derivations(self) -> None:
+        # The endpoint and box methods must not collapse into one module or
+        # one helper: different column sets, different companions, and a
+        # ratified decision record behind one of them (#465).
+        runner = (SIM_DIR / "harness" / "pex_vref_runner.sh").read_text()
+        endpoint = runner.split("pex_endpoint_tc_companion() {", 1)[1].split("\n}\n", 1)[0]
+        box = runner.split("pex_boxtc_companion() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("${HARNESS_DIR}/tc_companion.py", endpoint)
+        self.assertIn("-tc.csv", endpoint)
+        self.assertNotIn("boxtc_companion", endpoint)
+        self.assertIn("${HARNESS_DIR}/boxtc_companion.py", box)
+        self.assertIn("-boxtc.csv", box)
+        self.assertNotIn("${HARNESS_DIR}/tc_companion.py", box)
+
+    def test_shared_companion_picks_the_record_over_its_own_companions(self) -> None:
+        # `ls -t` picks the newest CSV, so a companion derived by an earlier
+        # run -- which is newer than the record -- must be filtered out, or
+        # the derivation would consume its own output.
+        records = self.tmp / "records"
+        records.mkdir()
+        exp, stem = next(iter(TC_BENCHES.items()))
+        committed = SIM_DIR / exp / "records"
+        (records / f"{stem}.csv").write_bytes((committed / f"{stem}.csv").read_bytes())
+        # Companions, all newer than the record, all of which must be skipped.
+        for name in (f"{stem}-tc.csv", f"{stem}-vs-schematic.csv"):
+            (records / name).write_text("corner_label,garbage\nbad,row\n")
+            os.utime(records / name, (time.time() + 10, time.time() + 10))
+        script = (
+            f'set -euo pipefail; HARNESS_DIR="{SIM_DIR / "harness"}"; '
+            f'EXP_DIR="{self.tmp}"; '
+            f'source "$HARNESS_DIR/pex_vref_runner.sh"; pex_endpoint_tc_companion'
+        )
+        r = subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (records / f"{stem}-tc.csv").read_text(),
+            (committed / f"{stem}-tc.csv").read_text(),
+        )
+
+
+# --------------------------------------------------------------------------
+# Loud failure when a derivation omits every group (issue #510). Both
+# companions key their grid axes by the record's own strings (#496's
+# pass-through convention) and omit any group whose key misses the grid, so
+# a drifted key used to mint a header-only CSV and exit 0 -- empty evidence
+# published as if it were derived. main() must refuse instead: non-zero
+# exit, stderr naming the keys the record actually carried.
+# --------------------------------------------------------------------------
+
+
+def write_record(path: Path, fieldnames: list[str], rows: list[dict]) -> None:
+    with path.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=fieldnames, lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+
+
+def run_main(main_fn, argv: list[str]) -> tuple[object, str]:
+    """Run a companion `main()`; `None` means it returned (exit 0).
+
+    The modules fail the repo's way (`sanity_anchors.py`): `SystemExit`
+    carrying the diagnostic as its `code` -- at top level the interpreter
+    prints it to stderr and exits 1, so the returned string is the message
+    a run log would carry.
+    """
+    err = io.StringIO()
+    with contextlib.redirect_stderr(err):
+        try:
+            main_fn(argv)
+        except SystemExit as exc:
+            return exc, str(exc.code)
+    return None, err.getvalue()
+
+
+RECORD_FIELDS = ["corner_label", "vdd_v", "temp_c", "vref_3ms_v", "status"]
+
+
+class EndpointTcLoudEmptyTests(TempDirCase):
+    """tc_companion.main() refuses an empty derivation (#510)."""
+
+    def test_key_miss_exits_nonzero_naming_the_record_keys(self) -> None:
+        # The issue's own example: `temperature_c` arrives as a string, so
+        # temp_c renders "-40.0" and matches none of TEMPS -- every group
+        # is omitted. The refusal must say what the record carried.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
+        write_record(src, RECORD_FIELDS, [
+            {"corner_label": "typ", "vdd_v": "3.30", "temp_c": f"{t}.0",
+             "vref_3ms_v": repr(1.047), "status": "PASS"}
+            for t in (-40, 27, 125)
+        ])
+        exc, err = run_main(tcc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "key-miss record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertIn("header-only", err)
+        for key in ("typ/3.30/-40.0", "typ/3.30/27.0", "typ/3.30/125.0"):
+            self.assertIn(key, err)
+        # And the refusal leaves no header-only artifact on disk (#536):
+        # records/ is append-only evidence, and a companion whose body is
+        # empty is one `git add -A` away from being committed as derived.
+        self.assertFalse(dst.exists(), "refused run left the companion on disk")
+
+    def test_empty_record_is_a_distinct_refusal(self) -> None:
+        # A record with a header and no rows read: also no evidence, but a
+        # different defect than a key miss, and the message says which.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
+        write_record(src, RECORD_FIELDS, [])
+        exc, err = run_main(tcc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "empty record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertIn("no rows", err)
+        self.assertNotIn("keys the record carried", err)
+        self.assertFalse(dst.exists(), "refused run left the companion on disk")
+
+    def test_a_refusal_restores_a_preexisting_companion_intact(self) -> None:
+        # Edge #536 leaves to the Builder: the companion path already holds
+        # an earlier good derivation when a rerun refuses. write_companion()
+        # has truncated it by the time the refusal is known, so main() must
+        # put the prior bytes back: a refused run leaves the path exactly as
+        # it found it -- no header-only shell, no destroyed prior evidence.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
+        write_record(src, RECORD_FIELDS, endpoint_rows(
+            [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]))
+        exc, err = run_main(tcc.main, [str(src), str(dst)])
+        self.assertIsNone(exc, err)
+        prior = dst.read_bytes()
+        write_record(src, RECORD_FIELDS, [])
+        exc, err = run_main(tcc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "empty record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertEqual(dst.read_bytes(), prior)
+
+    def test_a_deriving_record_still_exits_zero(self) -> None:
+        # The check must not turn a healthy derivation into a failure.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
+        write_record(src, RECORD_FIELDS, endpoint_rows(
+            [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]))
+        exc, err = run_main(tcc.main, [str(src), str(dst)])
+        self.assertIsNone(exc, err)
+        self.assertEqual(dst.read_text().splitlines()[0], ",".join(tcc.HEADER))
+
+
+class BoxTcLoudEmptyTests(TempDirCase):
+    """boxtc_companion.main() refuses an empty derivation (#510)."""
+
+    def test_key_miss_exits_nonzero_naming_the_record_keys(self) -> None:
+        # The box module keys groups by (corner, vdd) and matches
+        # temperature numerically, so a drifted vdd empties every group.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
+        write_record(src, RECORD_FIELDS,
+                     boxtc_rows(INTERIOR_EXTREMA, vdd="3.31"))
+        exc, err = run_main(bxc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "key-miss record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertIn("header-only", err)
+        self.assertIn("typ/3.31", err)
+        # And the refusal leaves no header-only artifact on disk (#536):
+        # records/ is append-only evidence, and a companion whose body is
+        # empty is one `git add -A` away from being committed as derived.
+        self.assertFalse(dst.exists(), "refused run left the companion on disk")
+
+    def test_empty_record_is_a_distinct_refusal(self) -> None:
+        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
+        write_record(src, RECORD_FIELDS, [])
+        exc, err = run_main(bxc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "empty record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertIn("no rows", err)
+        self.assertNotIn("keys the record carried", err)
+        self.assertFalse(dst.exists(), "refused run left the companion on disk")
+
+    def test_a_refusal_restores_a_preexisting_companion_intact(self) -> None:
+        # Edge #536 leaves to the Builder: the companion path already holds
+        # an earlier good derivation when a rerun refuses. write_companion()
+        # has truncated it by the time the refusal is known, so main() must
+        # put the prior bytes back: a refused run leaves the path exactly as
+        # it found it -- no header-only shell, no destroyed prior evidence.
+        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
+        write_record(src, RECORD_FIELDS, boxtc_rows(INTERIOR_EXTREMA))
+        exc, err = run_main(bxc.main, [str(src), str(dst)])
+        self.assertIsNone(exc, err)
+        prior = dst.read_bytes()
+        write_record(src, RECORD_FIELDS, [])
+        exc, err = run_main(bxc.main, [str(src), str(dst)])
+        self.assertIsNotNone(exc, "empty record still exited 0")
+        self.assertNotEqual(exc.code, 0)
+        self.assertEqual(dst.read_bytes(), prior)
+
+    def test_a_deriving_record_still_exits_zero(self) -> None:
+        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
+        write_record(src, RECORD_FIELDS, boxtc_rows(INTERIOR_EXTREMA))
+        exc, err = run_main(bxc.main, [str(src), str(dst)])
+        self.assertIsNone(exc, err)
+        self.assertEqual(dst.read_text().splitlines()[0], ",".join(bxc.HEADER))
 
 
 if __name__ == "__main__":

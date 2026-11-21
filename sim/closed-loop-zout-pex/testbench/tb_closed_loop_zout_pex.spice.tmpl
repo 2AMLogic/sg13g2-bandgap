@@ -2,7 +2,7 @@
 * PVT testbench (issue #191, independent confirmation of the
 * closed-loop-psrr-pex ~30 MHz PSRR dip). Generated from
 * sim/closed-loop-zout-pex/testbench/tb_closed_loop_zout_pex.spice.tmpl by
-* sim/closed-loop-zout-pex/run_pvt_sweep.sh -- do not edit a generated
+* sim/closed-loop-zout-pex/run_pvt_sweep.sh (removed in #438; see git history) -- do not edit a generated
 * netlist-snapshots/*.spice file directly, edit this template and re-run the
 * sweep. Full rationale is in sim/closed-loop-zout-pex/README.md; this header
 * is a pointer, not a restatement.
@@ -276,7 +276,7 @@ op
 * Sanity check, same as sim/closed-loop-psrr-pex: if .op strayed into the
 * wrong equilibrium, fb here will read far from @@FB_SEED@@. ngspice has no
 * ".meas op" analysis type; "print" is this tree's standard way to pull a DC
-* operating-point value out of a .control block, parsed by run_pvt_sweep.sh
+* operating-point value out of a .control block, parsed by run_pvt_sweep.sh (removed in #438; see git history)
 * from this exact "v(node) = value" line shape.
 print v(fb)
 print v(sns1)

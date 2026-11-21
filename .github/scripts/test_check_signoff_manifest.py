@@ -201,6 +201,23 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory() as tmp:
         t = Path(tmp)
+        build_fixture(t)
+        # klt >= 0.8 `erc` (schema_version 2) records the input as an object.
+        v2 = dict(DRC_ENVELOPE, schema_version=2,
+                  file={"path": "layout/fixture_cell/fixture_cell.gds", "scope": "repo"})
+        (t / "layout" / "fixture_cell" / "drc_report.json").write_text(json.dumps(v2))
+        failures += not expect(
+            "case 3b: schema-v2 envelope with file={path, scope} is freshness-checked",
+            run_checker(t), passes=True, message_fragment="fresh",
+        )
+        (t / "layout" / "fixture_cell" / "fixture_cell.gds").write_bytes(b"changed")
+        failures += not expect(
+            "case 3c: schema-v2 envelope still detects a stale artifact",
+            run_checker(t), passes=False, message_fragment="STALE",
+        )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        t = Path(tmp)
         build_fixture(t, stub_exit=4)
         failures += not expect(
             "case 4: klt exit 4 (refused) is not a valid grade",

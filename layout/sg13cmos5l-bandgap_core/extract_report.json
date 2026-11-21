@@ -1,11 +1,15 @@
 {
-  "schema_version": 3,
-  "file": "sg13cmos5l-bandgap_core.gds",
+  "schema_version": 4,
+  "file": {
+    "path": "layout/sg13cmos5l-bandgap_core/sg13cmos5l-bandgap_core.gds",
+    "scope": "repo"
+  },
   "deck": "sg13cmos5l",
   "top": "sg13cmos5l_bandgap_core",
   "dbu_um": 0.001,
   "netlist_path": "sg13cmos5l-bandgap_core.extracted.spice",
-  "netlist_sha256": "9465ffab8d5db610b3fc2073b5400e64d42d5d1ce1d27eb2a612dd5e231f3ff1",
+  "netlist_sha256": "99de6382c0c1040ee1907f556398e3df28ddd959f4cd6be2022cb7b81969a7de",
+  "netlist_normalized_sha256": "0eb432ea6d56115fc18280c737e7baedb93c2ba29c02052ed7abd5d0caeaf9fe",
   "status": "extracted",
   "device_count": 5,
   "net_count": 8,
@@ -118,7 +122,7 @@
         "w": "vss"
       },
       "params": {
-        "r_ohm": 11063.0,
+        "r_ohm": 11064.910269,
         "l_um": 85.1,
         "w_um": 2.0,
         "area_um2": 170.2,
@@ -135,7 +139,7 @@
         "w": "vss"
       },
       "params": {
-        "r_ohm": 84110.0,
+        "r_ohm": 83893.424726,
         "l_um": 647.0,
         "w_um": 2.0,
         "area_um2": 1294.0,
@@ -208,12 +212,12 @@
       "label_positions_um": [
         {
           "text": "e3",
-          "x_um": 217.12,
+          "x_um": 217.6,
           "y_um": 0.0
         },
         {
           "text": "e3",
-          "x_um": 217.12,
+          "x_um": 217.6,
           "y_um": 14.75
         }
       ]
@@ -432,12 +436,12 @@
         },
         {
           "text": "vss",
-          "x_um": 214.545,
+          "x_um": 215.025,
           "y_um": 0.0
         },
         {
           "text": "vss",
-          "x_um": 215.875,
+          "x_um": 216.355,
           "y_um": 0.0
         }
       ]
@@ -461,23 +465,33 @@
     }
   ],
   "merged_net_labels": [],
+  "split_net_labels": [],
   "voltage_domain_warnings": [],
+  "missing_flavour_markers": [],
+  "unsupported_devices": [],
   "unbiased_pmos_body_nets": [],
   "single_terminal_nets": [],
   "dead_metal": [],
   "matched_device_groups": [],
+  "def_pin_promotion": null,
+  "pin_renames": null,
+  "rename_declared_pins": false,
+  "declared_pins": null,
+  "def_pins": null,
+  "label_layers": null,
+  "probes": [],
   "pdk": null,
   "provenance": {
-    "klt_version": "0.6.0",
-    "klayout_version": "0.30.10",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13cmos5l",
-      "content_hash": "sha256:1912f17486e78de5259aab5d68533488ebbd239a05018f096217aa62ddee2909",
-      "released": false
+      "content_hash": "sha256:5a43b8eb0e1a4c228169cd33d820bf75ca5640812587f68c07f24f4aa2a1738f",
+      "released": true
     },
     "input": {
-      "content_hash": "sha256:832b570e7d109e0f1449271ee1aca27e1599a856fd15ffe4d999c4db8f1fc5d3",
+      "content_hash": "sha256:2bfdd1cbb38e871c236b23fc9bb0f15649756b2b0f143766bd6e7d3753a9240f",
       "role": "layout"
     }
   },
@@ -488,5 +502,17 @@
     "extract__device__count": 5,
     "extract__net__count": 8,
     "extract__pin__count": 8
+  },
+  "timing": {
+    "stages": {
+      "read_layout": 0.001,
+      "device_extraction": 0.02,
+      "diagnostics": 0.0,
+      "netlist_write": 0.0,
+      "netlist_hash": 0.0,
+      "netlist_normalized_hash": 0.0
+    },
+    "total_seconds": 0.101,
+    "unattributed_seconds": 0.08
   }
 }

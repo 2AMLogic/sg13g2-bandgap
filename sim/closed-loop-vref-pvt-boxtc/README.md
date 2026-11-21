@@ -5,8 +5,11 @@ Closed-loop **box-method temperature-coefficient characterization** (issue
 `bandgap_core` + `bandgap_amp` + `bandgap_startup` closed-loop topology
 [`../closed-loop-vref-pvt/`](../closed-loop-vref-pvt/README.md) uses — the
 per-point netlist is **byte-identical from the `.lib` line down** (device
-set, fixture, solver options, every `.measure`); this experiment's only
-difference is the **temperature grid** its driver sweeps.
+set, fixture, every `.measure`) except the direct linear solver: this bench
+pins `klu`, a deliberate, measured answer-preserving departure (issue #469,
+[Hot-corner solve time](#hot-corner-solve-time-issue-469-measured-2026-11-14)).
+This experiment's other difference is the **temperature grid** its driver
+sweeps.
 
 ## Why this experiment exists
 
@@ -96,7 +99,7 @@ The §4b scratch scan had one non-converged grid point (`wcs`/0 °C) and
 argued from its two flanking points that it could not exceed the box
 bounded by the other 7 — plausible, but an argument from a scratch re-run,
 not committed data. This experiment's policy, applied automatically by
-`run_pvt_sweep.sh`:
+`run_pvt_sweep.sh` (removed in #438):
 
 - Every group's `n_pass`/`n_grid` in `-boxtc.csv` discloses exactly which
   groups a failed point shrank; the record's `**Failed points**` field
@@ -129,6 +132,165 @@ Same corner-label vocabulary and section pairing as
 
 × temperature `{-40, -20, 0, 27, 50, 75, 100, 125} °C` × supply
 `{2.97, 3.30, 3.63} V` = **120 points**.
+
+## Trim-bearing DUT refresh (issue #402)
+
+**DUT.** The core netlist this bench inlines device-for-device is
+#229's trim-bearing `design/netlist/bandgap_core.spice`, ladder pinned at
+code **128** — the same DUT every #264 refresh adopted (see
+[`../closed-loop-vref-pvt/`](../closed-loop-vref-pvt/README.md)'s refresh
+section for the ladder's device-for-device description). The template has
+carried that core since the #273 `klt sim` conversion (PR #398); what this
+bench was missing was the **record** — until now, the newest committed
+record below was still the pre-trim 2026-09-21 run, held by the standing
+#273 evidence-freshness waiver.
+
+**Solver options.** Aids-free (`rshunt`/`gmin` dropped, `reltol=5e-3` +
+`tran 50n` kept) like every #264 bench, plus this bench's own `klu` direct
+linear solver — #469's measured answer-preserving departure, 17× on the hot
+corner (see [Hot-corner solve time](#hot-corner-solve-time-issue-469-measured-2026-11-14)
+below).
+
+**Result** (record
+[`records/20261116-024010-dc056b4c.md`](records/20261116-024010-dc056b4c.md),
+120/120 points PASS, 120 fleet jobs listed in the run's
+`environment.remote`):
+
+| quantity | pre-trim (`20260921-194249-77820fc`) | trim-bearing, code 128, aids-free + KLU (`20261116-024010-dc056b4c`) |
+|---|---|---|
+| `vref_3ms_v` @ `typ`/27 °C/3.30 V | 1.04947 V | **1.04728 V** (−2.19 mV, −0.21%) |
+| box TC, worst group | `wcs`/3.30 V = 19.77 ppm/°C | **`bcs`/3.63 V = 38.62 ppm/°C** |
+| box TC, 15-group range | 8.90–19.77 ppm/°C | 20.20–38.62 ppm/°C |
+| endpoint TC, 15-group range | −14.4 … +18.1 ppm/°C | **−37.3 … −14.1 ppm/°C** |
+| box extrema positions | `vmin` @ 125 °C in 14/15 groups (`wcs` at −40 °C), `vmax` @ 0–75 °C | `vmin` @ 125 °C in all 15 groups; `vmax` @ 0 °C (`typ`/`sf`/`fs`), −20 °C (`bcs`), 27 °C (`wcs`) |
+| points PASS | 120/120 | 120/120 |
+
+The −2.19 mV nominal move is the same delta, to the digit, that the #264
+twin measured on the identical DUT swap. The TC rows move by more, and that
+is expected, not a regression: **read them as the trim-bearing aids-free
+DUT's own numbers, with the disposition attached elsewhere.** The endpoint
+range −37.3 … −14.1 ppm/°C is the twin refresh's endpoint range repeated —
+two separately-written benches agreeing — and the 20.20–38.62 ppm/°C box
+range sits inside
+[`../closed-loop-vref-boxtc-trim/`](../closed-loop-vref-boxtc-trim/README.md)'s
+independent 20.2–45.7 ppm/°C box-method band for the same core. The
+ratified `< 20 ppm/°C` stretch is not met by the box method on this DUT;
+that disposition is **#269's** (the ratified box-TC row's evidence lives in
+`../closed-loop-vref-boxtc-trim/`), and nothing in `spec/` is edited here.
+The "Results summary" and "§4b cross-check" sections below read the
+superseded pre-trim record and are left standing as that record's reading
+(`sim/` evidence is append-only); their §4b agreement statements apply to
+the pre-trim DUT the §4b scratch scan also ran.
+
+**Batch path used** (disclosure): `run_klt_sim.sh --batch` handed all 15
+per-(corner, supply) requests to **one** `klt sim --batch-set` (in-flight
+2, 3 shard jobs per request, `--wait-for-capacity 600` — the committed
+defaults), which ran **120 spot fleet jobs** (c7i/m7i/m6i.4xlarge,
+`runner_compatibility: match`, runner klt 0.9.0 vs client 0.9.3.dev16) to
+completion in a **62-minute** wall clock, individual jobs 79–120 s — every
+100 °C point completed inside a fleet job whose `elapsed_seconds` is in the
+committed 79–120 s set (all 120 jobs `exit_code: 0`; the fleet entries carry
+no corner label, so no finer per-point timing is reconstructible from the
+record), against the 3643 s the pre-KLU hot corner needed. The fleet
+runner's ngspice is KLU-capable and **engaged
+KLU on every corner**: all **120/120** harvested corner logs carry ngspice's
+`Using KLU as Direct Linear Solver` line, and the runner environment
+capture reads `ngspice-47 … Compiled with KLU Direct Linear Solver`. The
+`#273` freshness waiver for the 2026-09-21 record is deleted.
+
+## Why the 2026-11-13 refresh attempt topped out (superseded history)
+
+The refresh above landed; this section is the measured history of the one
+attempt that did not, kept because the "Hot-corner solve time" section
+below quotes its row 0. On 2026-11-13, with the concurrent submission in
+place but before #469's KLU adoption, all three `typ` requests came back
+7/8 with their 100 °C corner graded `error`/`timeout` at the request's
+`options.timeout_s` of 1800 s — reproducibly, the same point every time. A
+single-corner local debug probe of `typ`/100 °C/2.97 V **passed** and
+settled in **3643 s** (`vref_3ms = 1.04385 V`, settle delta 0): ngspice
+logs `singular matrix` on the 255 interior ladder nodes and recovers
+through dynamic gmin stepping — slow, not wrong. But 3643 s does not fit a
+fleet job (`BATCH_MAX_JOB_SECONDS=3600`, so the largest legal one-corner
+`timeout_s` is 3480 s), and the axis was already sharded as far as it goes
+(`remote.hosts: 8` = one fleet job per temperature), so the grid topped out
+around 105/120 with exactly the hot end missing. That was **not** recorded:
+`vmax` sits at 50–75 °C in most groups of the pre-trim record, so a box
+computed without the 100 °C point is a lower bound on the box, not the box
+— a weaker claim than the waiver it would have replaced.
+
+The same session also measured the campaign's own fleet overrun: at 3
+requests in flight the 24 simultaneous shard launches took the shared fleet
+to 384 vCPU against `BATCH_MAX_VCPU=224` and lost about half its shards to
+exhausted capacity waits; the committed defaults (2 requests × 3 shard
+jobs) lost none — see [Running](#running) below. #469's KLU adoption (17×
+on the hot corner) is what made the refresh above possible. Nothing here is
+a reason to re-add the convergence aids: #264 dropped them for a measured
+37 mV settled-`vref` error on this ladder, which is a wrong answer rather
+than a slow one.
+
+## Hot-corner solve time (issue #469, measured 2026-11-14)
+
+The 100 °C point is slow, not non-convergent, and the cost is wall clock in
+the transient — so the fix attempted here was on the solver-options side
+only. All probes below are one-corner local runs of typ / 100 °C / 2.97 V
+through the committed templates (scratch `klt sim` request, `--timeout-s
+5400` override, `/usr/bin/time -v` wall clock), on a dispatch host with
+ngspice 47 (compiled with KLU) and klt 0.9.2.dev1029; row 0 is the 2026-11-13
+probe recorded above, re-quoted for comparison. No convergence aid
+(`rshunt`/`gmin`) was touched and `reltol` stayed at `5e-3` throughout.
+
+**Where the time goes (split probe).** Re-running the same corner with the
+transient truncated to the supply ramp (`50n 200u`, row 1) took **325 s** of
+the 3643 s total: roughly 91% of the wall clock sits in the post-ramp
+settled transient (200 µs → 3 ms), and the cost scales with simulated time
+rather than being concentrated in one stiff event. That rules out the
+operating-point/`.nodeset` family up front (the t=0 solve is the all-zero
+rails solution the PWL ramp intends, and the ramp itself is cheap), and
+points every candidate at the per-timestep solve.
+
+| # | setting | tran window | wall (s) | `vref_3ms` (V) | settle Δ (V) | verdict |
+|---|---------|-------------|---------:|----------------|--------------|---------|
+| 0 | baseline — ngspice default solver (SPARSE 1.3), 2026-11-13 probe | `50n 3m` | 3643 | 1.04385 | 0 | incumbent: exceeds the 3480 s largest legal one-corner `timeout_s` |
+| 1 | split probe — same options, truncated window | `50n 200u` | 325 | n/a | n/a | timing probe only (klt grades it `error` because the `at=2m/3m` measurements fall outside the truncated window — expected, see above) |
+| 2 | `.options … klu` — KLU direct linear solver | `50n 3m` | **211** | 1.04385 | 0 | **adopted**: 17× vs baseline, answer identical at 6 significant figures |
+
+**Why KLU is the adopted candidate.** It is answer-preserving by
+construction — same equations, same tolerances, a different direct
+factorization of the same matrix (ngspice 47 ships compiled with KLU; the
+default is SPARSE 1.3, which is what every committed log of this bench
+shows). The measurement confirms it: `vref_3ms` is identical to the
+baseline to the reported precision (1.04385 V), `vref_settle_delta = 0`,
+and the corner grades `pass`. The remaining candidates from the issue's
+ranked list were not spent: they are accuracy knobs (`trtol`, `method=gear`) or a weaker
+version of the same lever (`tran` initial step / `tmax`), and none can beat
+a 17× answer-preserving win for the purpose #402 needs. The
+`singular matrix` recovery this corner is known for still occurs under KLU
+(check node `xxtrim.t251`) and recovers as before; under klt 0.9.2 grading
+it is recorded as a `warning`-severity diagnostic and the corner still
+grades `pass`.
+
+**What landed.** `.options … klu` on both decks —
+`testbench/closed_loop_vref_pvt_boxtc.body.spice.tmpl` (the `klt sim`
+bench) and `testbench/tb_closed_loop_vref_boxtc.spice.tmpl` (the
+point-definition reference, kept in step) — plus a measured-timing note in
+the request template's `_comment` block. Both acceptance bands were
+checked on the edited templates:
+
+- hot corner (row 2): `vref_3ms = 1.04385 V`, within 0.0005 V of the
+  committed SPARSE answer, settle delta 0, 211 s < 3480 s;
+- reference corner (`run_klt_sim.sh --sanity`, typ / 27 °C / 3.30 V):
+  `sanity vref_3ms_v = 1.04728 (anchor 1.04728, delta 0) ok` — sanity gate
+  PASS, 161 s.
+
+`timeout_s: 1800` in the request template now covers the whole grid
+including the 100 °C points (211 s ≪ 1800 s), so #402 needs **no**
+`timeout_s` raise to complete the refresh — only the re-run itself. One
+precondition for that re-run: the fleet runner's ngspice must also be
+KLU-capable (the measurement above pins only this host's ngspice 47; the
+committed 2026-09-21 logs show SPARSE 1.3 but no version banner). If it is
+not, the option is ignored and the 100 °C points time out exactly as
+before — `klt sim --fail-fast-probe` (already recommended above) surfaces
+that on the first corner instead of after a shard campaign.
 
 ## Results summary (this repo's own committed record)
 
@@ -186,17 +348,38 @@ is a finding to record and investigate, not to tune away.
 ```bash
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
-sim/tools/build-osdi.sh              # one-time: build the OSDI models
-sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh          # sequential (default)
-JOBS=8 sim/closed-loop-vref-pvt-boxtc/run_pvt_sweep.sh   # bounded parallel
+sim/tools/build-osdi.sh                                      # one-time: build the OSDI models
+sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh --sanity       # one local corner, vs the sanity anchor
+sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh --batch        # the 120-point grid, on the fleet (resumable)
+sim/closed-loop-vref-pvt-boxtc/run_klt_sim.sh --record       # mint the record from the merged report
 ```
 
-`JOBS=N` (default 1) runs the 120 independent per-point `ngspice` batch
-processes with bounded N-way concurrency — a wall-clock-only knob with the
-same contract `../closed-loop-vref-mc/`'s `--parallel` established: it does
-not change which points run, their results, or the records' emission order
-(each point writes its own row file; the CSV is assembled in grid order
-after every point settles).
+The grid runs through the `klt sim` batch harness (`sim/harness/README.md`,
+the #275 decision), not the `run_pvt_sweep.sh` shell loop that minted the
+2026-09-21 record — that script was removed in #438 and is recoverable from
+git history only. Its `JOBS=N` wall-clock knob went with it: the 120 points
+are no longer `ngspice` processes on the invoking host at all, so there is
+nothing local to fan out. The fleet-side equivalents are the request's
+`remote.hosts` (8 — one fleet job per temperature point) and
+`PEX_BATCH_MAX_IN_FLIGHT` / `KLT_SIM_MAX_CONCURRENT_JOBS` (how many of the
+15 requests, and how many of each request's 8 shard jobs, are in flight at
+once). Like `JOBS`, none of them changes which points run or what they
+measure — they trade wall clock against the fleet's shared vCPU budget, and
+overshooting it loses shards rather than finishing sooner (see the
+superseded-history section above). The runner defaults them to the pair
+measured to lose no shards, **2** requests × **3** shard jobs; both are
+overridable, but the fleet is shared and 3 × 8 = 24 simultaneous jobs
+already overran it.
 
-See `sim/README.md` for the append-only `records/`/`corners/`/
-`netlist-snapshots/` convention every experiment in this tree follows.
+`--batch` is resumable in two independent senses: a shard whose committed
+submission identity still matches its inputs is not re-submitted
+(`sim/harness/submission_identity.py`, #332), and `KLT_SIM_SET_RESUME=1`
+re-attaches each in-flight request to the fleet jobs its previous run
+recorded instead of relaunching them. Point `KLT_SIM_WORK` at the same
+directory to pick a campaign back up.
+
+See `sim/README.md` for the append-only `records/` convention every
+experiment in this tree follows; since #379 (DR-0015) a new run's raw logs
+and per-point netlist snapshots live in the fleet artifact store under a
+committed `manifests/artifacts/` manifest rather than in committed
+`corners/` / `netlist-snapshots/` directories.

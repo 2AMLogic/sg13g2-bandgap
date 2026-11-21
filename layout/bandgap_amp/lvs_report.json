@@ -1,7 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "engine": "klayout",
-  "layout": "bandgap_amp.gds",
+  "layout": {
+    "path": "layout/bandgap_amp/bandgap_amp.gds",
+    "scope": "repo"
+  },
   "reference": "bandgap_amp.lvs_reference.spice",
   "top": "bandgap_amp",
   "reference_top": ".TOP",
@@ -9,12 +12,16 @@
   "options": {
     "combine_devices": false,
     "combine_devices_per_circuit": null,
+    "combine_devices_max_attempts": 5,
     "flatten_layout": false,
     "flatten_reference": false,
     "netgen_setup": null,
     "parameter_tolerance": null,
     "compare_parameters": null,
     "power_connectivity": null,
+    "anchor_top_level_pins": null,
+    "strict_top_level_pin_count": false,
+    "compare_mos_flavour": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -22,9 +29,11 @@
       "VGND",
       "VPWR",
       "VSS"
-    ]
+    ],
+    "finfet_bulk": null
   },
   "hints_applied": null,
+  "constant_nets_applied": null,
   "status": "match",
   "power_connectivity": {
     "status": "unchecked",
@@ -45,6 +54,7 @@
     "findings": [],
     "finding_count": 0
   },
+  "device_parameter_coverage": [],
   "mismatch_count": 0,
   "error_count": 0,
   "category_counts": {},
@@ -79,22 +89,23 @@
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.12",
-    "layout_sha256": "af7a8a454a009dcff587492029ec8d0ed484f9f0a21d23ba43aaad3d255ea13d",
+    "engine_version": "0.30.13",
+    "netgen_binary": null,
+    "layout_sha256": "219aa2a589fb85fb8f828f4656320cef48d42ef66f5f78d0773240861d364b10",
     "reference_sha256": "39b5d2a616d573457adf28c35b633ebb5daa0f66bcdf9fceacb8ecb126d9ebc9",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.6.0",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
       "released": true
     },
     "input": {
-      "content_hash": "sha256:af7a8a454a009dcff587492029ec8d0ed484f9f0a21d23ba43aaad3d255ea13d",
+      "content_hash": "sha256:219aa2a589fb85fb8f828f4656320cef48d42ef66f5f78d0773240861d364b10",
       "role": "layout"
     },
     "klayout_version_mismatch": true

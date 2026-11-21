@@ -1,7 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "engine": "klayout",
-  "layout": "bandgap_core.gds",
+  "layout": {
+    "path": "layout/bandgap_core/bandgap_core.gds",
+    "scope": "repo"
+  },
   "reference": "bandgap_core.lvs_reference.spice",
   "top": "bandgap_core",
   "reference_top": ".TOP",
@@ -9,6 +12,7 @@
   "options": {
     "combine_devices": false,
     "combine_devices_per_circuit": null,
+    "combine_devices_max_attempts": 5,
     "flatten_layout": false,
     "flatten_reference": false,
     "netgen_setup": null,
@@ -21,6 +25,9 @@
       ]
     },
     "power_connectivity": null,
+    "anchor_top_level_pins": null,
+    "strict_top_level_pin_count": false,
+    "compare_mos_flavour": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -28,9 +35,11 @@
       "VGND",
       "VPWR",
       "VSS"
-    ]
+    ],
+    "finfet_bulk": null
   },
   "hints_applied": null,
+  "constant_nets_applied": null,
   "status": "mismatch",
   "power_connectivity": {
     "status": "unchecked",
@@ -51,11 +60,34 @@
     "findings": [],
     "finding_count": 0
   },
-  "mismatch_count": 8,
+  "device_parameter_coverage": [
+    {
+      "class": "rppd",
+      "device_kind": "resistor",
+      "layout_devices": 257,
+      "reference_devices": 257,
+      "compared": [
+        "R",
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "A",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "P",
+          "reason": "secondary"
+        }
+      ]
+    }
+  ],
+  "mismatch_count": 7,
   "error_count": 4,
   "category_counts": {
     "device.bulk_reconciled": 1,
-    "device.parameter_excluded": 2,
+    "device.geometry_not_compared": 1,
     "device.unmatched": 3,
     "topology": 2
   },
@@ -93,22 +125,23 @@
   ],
   "environment": {
     "engine": "klayout",
-    "engine_version": "0.30.12",
-    "layout_sha256": "7749d258e439a758c430c8a0f27c261f0a6d4cbd51526b257711b28e979411fc",
-    "reference_sha256": "9f61c2b63122141478946ff2b50af7069bab63f9c56ac610b57e2020fd69c399",
+    "engine_version": "0.30.13",
+    "netgen_binary": null,
+    "layout_sha256": "50b8b8a32d88aae09fc1d213ee4d1754f0e9a844f26bf5116e62d38078e814d4",
+    "reference_sha256": "aec4dec12635fcb8a9ae7af32ef0853e5a6d02c6444176084de63a24ba97bc39",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.6.0",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2",
-      "content_hash": "sha256:894326a4e37fb24fef2f7ffc6ae1da55a0e262b0f0bc1c09adc4862909278fda",
+      "content_hash": "sha256:1c95db40596afc5412e216009bcf0b775d1d74895b32738447eccbc76336dd15",
       "released": true
     },
     "input": {
-      "content_hash": "sha256:7749d258e439a758c430c8a0f27c261f0a6d4cbd51526b257711b28e979411fc",
+      "content_hash": "sha256:50b8b8a32d88aae09fc1d213ee4d1754f0e9a844f26bf5116e62d38078e814d4",
       "role": "layout"
     },
     "klayout_version_mismatch": true
@@ -146,9 +179,9 @@
       "subcircuit": null
     },
     {
-      "category": "device.parameter_excluded",
+      "category": "device.geometry_not_compared",
       "severity": "warning",
-      "description": "options.compare_parameters scoped device class 'rppd' to compare only ['L', 'R', 'W'] -- 'A' was excluded from this compare and is NOT verified; a 'match' does not confirm the two sides agree on it (see docs/cli/lvs.md, 'device.parameter_excluded')",
+      "description": "device class 'rppd' is a resistor class, whose ['A', 'P'] parameter(s) KLayout declares *secondary*: kdb.NetlistComparer compares primary parameters only, so none of them took part in this compare and each is NOT verified -- this resistor's geometry could differ between the two sides by any amount and this run would still report 'match'. The compared parameter(s) were ['R', 'L', 'W']. Name them in options.compare_parameters to compare them (see docs/cli/lvs.md, 'device.geometry_not_compared')",
       "side": "both",
       "net": null,
       "device": {
@@ -158,36 +191,18 @@
       },
       "property": null,
       "details": {
-        "parameter": "A",
+        "device_kind": "resistor",
         "compared_parameters": [
-          "L",
           "R",
-          "W"
-        ]
-      },
-      "circuit": null,
-      "instance": null,
-      "subcircuit": null
-    },
-    {
-      "category": "device.parameter_excluded",
-      "severity": "warning",
-      "description": "options.compare_parameters scoped device class 'rppd' to compare only ['L', 'R', 'W'] -- 'P' was excluded from this compare and is NOT verified; a 'match' does not confirm the two sides agree on it (see docs/cli/lvs.md, 'device.parameter_excluded')",
-      "side": "both",
-      "net": null,
-      "device": {
-        "layout": null,
-        "reference": null,
-        "class": "rppd"
-      },
-      "property": null,
-      "details": {
-        "parameter": "P",
-        "compared_parameters": [
           "L",
-          "R",
           "W"
-        ]
+        ],
+        "not_compared_parameters": [
+          "A",
+          "P"
+        ],
+        "layout_devices": 257,
+        "reference_devices": 257
       },
       "circuit": null,
       "instance": null,
@@ -247,10 +262,14 @@
     {
       "category": "topology",
       "severity": "warning",
-      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'nfet'",
       "side": "layout",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "nfet"
+      },
       "property": null,
       "details": null,
       "circuit": null,
@@ -260,10 +279,14 @@
     {
       "category": "topology",
       "severity": "error",
-      "description": "device class could not be mapped to a counterpart",
+      "description": "device class could not be mapped to a counterpart: 'NPN13G2'",
       "side": "reference",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "NPN13G2"
+      },
       "property": null,
       "details": null,
       "circuit": null,

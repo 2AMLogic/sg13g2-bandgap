@@ -323,6 +323,13 @@ def draw_npn13g2(
                 (xc - 0.975, y0 - 2.43),
             ],
         )
+        # Cont y-extents are the PyCell's own 0.16um rows (cont.width.1
+        # floor exactly); every Cont lands inside its net's rail Metal1
+        # below (collector rail y0+1.02..1.46 over the collector Cont row
+        # y0+1.05..1.21, base rail y0-1.26..-1.02 over the base Cont row
+        # y0-1.22..-1.06), so the `metal1.enclosing.cont.1` containment
+        # intent of main's #572 base-contact strips is carried by the rails
+        # in this PyCell-faithful stack (#628 merge note).
 
     # Optional substrate tie on the guard ring (the pcell draws the ring bare,
     # which is what ``substrate_net=None`` keeps): one Cont + Metal1 pad on the
@@ -419,20 +426,30 @@ def draw_npn13g2(
 # channel net it does not belong to. The caller's own routing pass wires
 # the isolated tap to the real `body_net` elsewhere instead.
 #
-# No DRC rule in this curated deck's own `DECK` list constrains `NWell`,
-# `nSD`, or `pSD` directly (only `Activ`/`GatPoly`/`Cont`/`Metal1`+ carry
-# checks) -- so the only floors this geometry must clear are the ordinary
-# `Activ`/`Cont`/`Metal1` ones already cited throughout this module
-# (`activ.width.1` 0.15um, `activ.space.1` 0.21um,
+# The deck's `require_containment` regime (klayout-tools#6174) constrains
+# `NWell` directly: `nwell.width.1`/`nwell.space.1` 0.62um,
+# `nwell.enclosing.nactiv.1` 0.24um (the tap's own nSD-marked Activ must be
+# enclosed by >= 0.24um of its well -- issue #571),
+# `nwell.enclosing.pactiv.1` 0.31um (the PMOS channel activ) and
+# `nwell.space.nactiv.1`/`nwell.space.pactiv.1` 0.31um/0.24um against
+# outside activ -- so the tap margins below clear those in addition to the
+# ordinary `Activ`/`Cont`/`Metal1` floors already cited throughout this
+# module (`activ.width.1` 0.15um, `activ.space.1` 0.21um,
 # `activ.enclosing.cont.1`/`gatpoly.enclosing.cont.1` 0.07um, `cont.width.1`
-# 0.16um, `metal1.width.1` 0.16um) -- all satisfied with real margin below.
+# 0.16um, `metal1.width.1` 0.16um). Only `nSD`/`pSD` themselves remain
+# unconstrained by the curated deck's own `DECK` list.
 TAP_GAP_UM = 0.25
 TAP_ACTIV_UM = 0.34
 TAP_IMPLANT_MARGIN_UM = 0.1
 TAP_CONT_UM = 0.16
 TAP_BRIDGE_W_UM = 0.2
 TAP_BRIDGE_OVERLAP_UM = 0.05
-TAP_NWELL_MARGIN_UM = 0.1
+# >= the deck's `nwell.enclosing.nactiv.1` 0.24um floor (`require_containment`
+# regime, klayout-tools#6174): the NWell must enclose the tap's nSD-marked
+# Activ by 0.24um, so 0.1um produced 5/6/11 markers on amp/core/top (issue
+# #571). 0.3um clears the floor with 0.06um slack while staying far under
+# the 0.62um `nwell.space.1` well-to-well floor.
+TAP_NWELL_MARGIN_UM = 0.3
 
 
 def draw_hv_mos(
@@ -668,9 +685,11 @@ RES_CONT_MARGIN_UM = 0.1
 #: clears it by 0.22 um, and still leaves 0.3 um of clearance once a
 #: terminal head's `RES_GATPOLY_Y_MARGIN_UM` overhang eats into the gap next
 #: to its neighbouring leg. This is a *floor*, not the drawn value:
-#: :func:`~_klayout_builder_base.fold_plan` may return a gap up to `legs`
-#: nanometres larger, which is how it keeps the folded conductor's total
-#: length exactly equal to the schematic's own `l` (see its docstring).
+#: :func:`~_klayout_builder_base.fold_plan` may return a gap up to
+#: ``legs * GRID_NM`` nanometres larger -- it searches only multiples of the
+#: 5 nm manufacturing grid, so every leg pitch lands on-grid -- which is how
+#: it keeps the folded conductor's total length exactly equal to the
+#: schematic's own `l` (see its docstring).
 RES_FOLD_GAP_UM = 0.4
 
 
@@ -707,7 +726,8 @@ def draw_poly_res(
     :func:`~_klayout_builder_base.fold_plan` derives the leg height and the
     inter-leg gap in whole nanometres such that ``legs*h + (legs-1)*gap`` is
     ``l_um`` exactly -- see its docstring for the derivation and for why the
-    gap it returns can exceed ``RES_FOLD_GAP_UM`` by a few nanometres. This
+    gap it returns can exceed ``RES_FOLD_GAP_UM`` by up to ``legs * GRID_NM``
+    nanometres while staying on the 5 nm manufacturing grid. This
     is a nominal-value-preserving transform, not a re-sizing: what folding
     *does* change is the device's parasitics (a compact block couples
     differently than a 1.4 mm bar) and its matching behaviour (a folded
@@ -859,12 +879,20 @@ def via1_tap(b: Builder, x_center: float, y_center: float, size: float = 0.25) -
     an already-overlapping ``Metal1`` shape below to an already-overlapping
     ``Metal2`` shape above (the caller is responsible for ensuring both
     metal shapes actually cover this footprint -- this only draws the via
-    cut itself). ``size=0.25`` clears the curated deck's ``via1.width.1``
-    floor (0.19um) with margin, and (with the default ``route_h``/
-    ``route_v`` width of 0.3) leaves >=0.01um `Metal1`/`Metal2` enclosure
-    on every side, clearing ``metal1.enclosing.via1.1`` (0.01um; this deck
-    does not model a Metal2-encloses-Via1 rule at all -- see
-    ``klayout_tools.decks.sg13g2``'s own ``DECK`` list).
+    cut itself). ``size=0.25`` predates the deck's via rules: the curated
+    ``sg13g2`` deck's ``via1.width.1`` is a **fixed** 0.19um cut size, not a
+    floor -- any wider cut (including this default) violates it, so every
+    SG13G2 caller passes ``size=0.19`` explicitly (the SG13CMOS5L builds
+    share this module and were not measured under that deck, so the default
+    stays 0.25 rather than silently changing their geometry). With a 0.19um
+    cut and the default ``route_h``/``route_v`` width of 0.3, both metals
+    leave >=0.055um enclosure on every side, clearing
+    ``metal1.enclosing.via1.1`` (0.01um) -- and, since the deck gained
+    containment rules (klayout-tools#6174), ``metal2.enclosing.via1.1``
+    (every Via1 must lie fully inside Metal2) as well, which is why every
+    via-bearing ``Metal2`` route end in the SG13G2 cells overshoots the
+    landing by half the cut plus enclosure (see each cell's own
+    ``generate.py`` ``VIA_CAP``).
     """
     half = size / 2
     b.box(L_VIA1, x_center - half, y_center - half, x_center + half, y_center + half)

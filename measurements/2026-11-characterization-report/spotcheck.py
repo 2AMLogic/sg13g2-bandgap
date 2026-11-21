@@ -50,7 +50,7 @@ say("vref-pvt sch trim-bearing endpoint TC", f"{len(t)} groups; {min(tc):.1f}..{
     f"groups < 20: {sum(abs(c)<20 for c in tc)}")
 
 # --- same, PEX trim-bearing: vref_op_v of the psrr-pex record -----------------
-p = "closed-loop-psrr-pex/records/20261113-145323-7c46e66b"
+p = "closed-loop-psrr-pex/records/20261004-030337-5553d523"
 r = rows(p + ".csv")
 ok = [x for x in r if x["status"] == "PASS"]
 v = [f(x, "vref_op_v") for x in ok]
@@ -77,7 +77,7 @@ say("PSRR@DC sch trim-bearing", f"{min(d):.3f}..{max(d):.3f} dB; >60 dB: {sum(c>
 sup = set()
 for rel in ("closed-loop-vref-pvt/records/20261001-085908-e5507b2.csv", "closed-loop-iq/records/20261001-092257-4fe07ea.csv",
             "closed-loop-psrr/records/20261001-085737-e5507b2.csv", "closed-loop-startup/records/20261001-083332-e5507b2.csv",
-            "closed-loop-psrr-pex/records/20261113-145323-7c46e66b.csv"):
+            "closed-loop-psrr-pex/records/20261004-030337-5553d523.csv"):
     sup |= {x["vdd_v"] for x in rows(rel)}
 say("Supply grid actually swept by the current records", sorted(sup))
 
@@ -98,11 +98,11 @@ r = rows("startup-time-to-release/records/20261001-085905-e5507b2.csv")
 rt = [x["release_time_us"] for x in r if x["status"] == "PASS"]
 say("startup time-to-release sch trim-bearing", f"{len(rt)}/{len(r)} PASS; release_time_us values {sorted(set(rt))}; "
     f"max {max(float(c) for c in rt):.0f} us (ladder step 100 us)")
-r = rows("startup-trip-point-pex/records/20261113-145230-7c46e66b.csv")
-say("startup trip point PEX (2026-11-13)", f"{sum(x['status']=='PASS' for x in r)}/{len(r)} PASS; vtrip {min(f(x,'vtrip_v') for x in r):.6f}..{max(f(x,'vtrip_v') for x in r):.6f} V")
+r = rows("startup-trip-point-pex/records/20260905-033740-fe97115.csv")
+say("startup trip point PEX (2026-09-05)", f"{sum(x['status']=='PASS' for x in r)}/{len(r)} PASS")
 
 # --- Trim row ---------------------------------------------------------------
-r = rows("trim-coverage/records/20260930-195507-9530863-analysis.csv")
+r = rows("trim-coverage/records/20261030-061206-03e62489-analysis.csv")
 up = [f(x, "up_span_pct") for x in r]
 dn = [f(x, "down_span_pct") for x in r]
 ls = [f(x, "lsb_pct_of_target") for x in r]
@@ -111,12 +111,12 @@ say("trim-coverage", f"{sum(x['group_status']=='PASS' for x in r)}/{len(r)} grou
     f"+{min(up):.2f}..+{max(up):.2f}%, down -{min(dn):.2f}..-{max(dn):.2f}% (worst-case "
     f"+{min(up):.2f}/-{min(dn):.2f}); LSB {min(ls):.4f}..{max(ls):.4f} %/step; worst binary-weight "
     f"deviation {max(wd):.4f}%; monotonic in {sum(x['monotonic']=='yes' for x in r)}/{len(r)}")
-r = rows("trim-coverage/records/20260930-195507-9530863.csv")
+r = rows("trim-coverage/records/20261030-061206-03e62489.csv")
 say("trim-coverage points", f"{sum(x['status']=='PASS' for x in r)}/{len(r)} PASS")
 
 # --- Trimmed accuracy: trim-domain MC ---------------------------------------
-dg = rows("closed-loop-vref-trim-mc/records/20260930-232155-affdefe-draws.csv")
-dig = rows("closed-loop-vref-trim-mc/records/20260930-232155-affdefe.csv")
+dg = rows("closed-loop-vref-trim-mc/records/20261030-070305-03e62489-draws.csv")
+dig = rows("closed-loop-vref-trim-mc/records/20261030-070305-03e62489.csv")
 for pt in ("nominal", "bcs", "wcs", "negctrl"):
     d = [x for x in dg if x["point"] == pt]
     okd = [x for x in d if x["verify_status"] == "PASS"]
@@ -126,7 +126,7 @@ for pt in ("nominal", "bcs", "wcs", "negctrl"):
         f"3*sigma(max_dev) {3*st.stdev(m):.3f}%; worst draw {max(m):.2f}%; seeds "
         f"{d[0]['seed']}..{d[-1]['seed']}")
 for x in dig:
-    say(f"trim-MC digest {x['corner_label']}", f"status {x['status']}, n_pass {x['n_pass']}/{x['n_draws']}, "
+    say(f"trim-MC digest {x['corner_label']}", f"status {x['status']}, n_pass {int(float(x['n_pass']))}/{int(float(x['n_draws']))}, "
         f"frac_within_0p5 {float(x['frac_within_0p5_pct']):.2f}%, 3sigma {float(x['three_sigma_max_dev_pct']):.3f}%")
 nom = [x for x in dg if x["point"] == "nominal" and x["verify_status"] == "PASS"]
 d27 = [abs(f(x, "dev_27c_pct")) for x in nom]
@@ -190,14 +190,6 @@ r = rows("closed-loop-vref-pvt-pex/records/20260905-114438-8abe2aa.csv")
 v = [f(x, "vref_3ms_v") for x in r if x["status"] == "PASS"]
 nm = [x for x in r if x["corner_label"] == "typ" and x["temp_c"] == "27" and x["vdd_v"] == "3.30"][0]
 say("PEX pre-trim vref grid (STALE)", f"{len(v)} PASS; {min(v):.5f}..{max(v):.5f} V; nominal {f(nm,'vref_3ms_v'):.5f} V")
-
-# --- Output impedance, post-layout (supplementary, not a spec row) -----------
-r = rows("closed-loop-zout-pex/records/20261113-145415-7c46e66b.csv")
-ok = [x for x in r if x["status"] == "PASS"]
-z = [f(x, "zout_dc_db") for x in ok]
-w = max(ok, key=lambda x: f(x, "zout_dc_db"))
-say("Zout@DC PEX trim-bearing (supplementary)", f"{len(ok)}/{len(r)} PASS; {min(z):.3f}..{max(z):.3f} dB; "
-    f"worst {f(w,'zout_dc_db'):.4f} dB at {w['corner_label']}/{w['temp_c']}C/{w['vdd_v']}V")
 
 # --- Loop gain supplementary --------------------------------------------------
 r = rows("loop-gain-phase-margin/records/20261003-180919-2addad0.csv")

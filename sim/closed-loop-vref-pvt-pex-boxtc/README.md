@@ -12,15 +12,17 @@
 > and how CI judges it. Disclosed here rather than silently reconciled, per this
 > repo's convention.
 >
-> **1. The harness is `klt sim`, not `run_pvt_sweep.sh`** (option 1 of the two
+> **1. The harness is `klt sim`, not `run_pvt_sweep.sh`** (removed in #438) (option 1 of the two
 > #275 offered). The dispatch hosts this repo's agents run on forbid
 > hand-looping `ngspice -b` over a corner grid and direct multi-corner work to
 > `klt sim`'s batch backend. The next record here will therefore be minted by
 > `sim/harness/klt_sim_evidence.py` from a `klt sim` report rather than by this
-> directory's `run_pvt_sweep.sh`, and its `- **Harness**:` field will say so.
-> `run_pvt_sweep.sh` stays on disk and stays correct — it is how every record
-> currently in `records/` was produced, and it remains the right entry point on
-> a workstation. Read [`sim/harness/README.md`](../harness/README.md) for the
+> directory's `run_pvt_sweep.sh` (removed in #438), and its `- **Harness**:` field will say so.
+> `run_pvt_sweep.sh` (removed in #438; recoverable from git history) is how every record
+> currently in `records/` was produced; it is no longer an entry point:
+> new runs go through `klt sim` and, per
+> [DR-0015](../../spec/decision-records/0015-sim-evidence-artifact-store.md),
+> store their bytes in the artifact store. Read [`sim/harness/README.md`](../harness/README.md) for the
 > decision, the three pieces of the harness, the one-corner anchor that proves
 > it (3 µV against a committed record), and precisely what still blocks the
 > grids: the batch fleet's runner image carries no `ihp-sg13g2` PDK and no
@@ -176,8 +178,7 @@ and reflected in `README.md`'s TC-row status.
 export PDK_ROOT=/path/to/ihp-open-pdk
 export PDK=ihp-sg13g2
 sim/tools/build-osdi.sh              # one-time: build the OSDI models
-sim/closed-loop-vref-pvt-pex-boxtc/run_pvt_sweep.sh          # sequential (default)
-JOBS=8 sim/closed-loop-vref-pvt-pex-boxtc/run_pvt_sweep.sh   # bounded parallel
+sim/closed-loop-vref-pvt-pex-boxtc/run_klt_sim.sh
 ```
 
 `JOBS=N` (default 1) has the same wall-clock-only contract the schematic
@@ -194,10 +195,10 @@ See `sim/README.md` for the append-only `records/`/`corners/`/
 
 This experiment's grid now runs through the `klt sim` batch harness
 (`sim/harness/README.md`, the #275 decision) instead of the
-`run_pvt_sweep.sh` shell loop; the loop script itself remains for history
-and cold-start reference but is no longer the evidence-producing path on
-the dispatch hosts (their operating rules direct multi-corner work to
-`klt sim`'s batch backend).
+`run_pvt_sweep.sh` shell loop (deleted in #438; recoverable from git
+history). It was not the evidence-producing path on the dispatch hosts
+(their operating rules direct multi-corner work to `klt sim`'s batch
+backend).
 
 ```bash
 sim/closed-loop-vref-pvt-pex-boxtc/run_klt_sim.sh --sanity   # one local corner, vs the sanity anchor
@@ -213,9 +214,12 @@ What changed about how this experiment's evidence is minted:
   netlists on every run (hub tags read off each device card, the merged
   tap net renamed to `tn0`, the 255 ladder units under their `XRU<n>`
   names for D2, the three subckts are flattened through the design netlist's own instance lines, and the `FB|OUT`/`IN_N|SNS1`/`IN_P|SNS2` merged label nets are renamed to their schematic names `fb`/`sns1`/`sns2`). The hand-transcribed
-  `testbench/*.spice.tmpl` files remain for history; the bench body
-  (`testbench/*.body.spice.tmpl`) now carries only fixtures and includes
-  the generated DUT.
+  `testbench/*.spice.tmpl` files remain for history; the bench body --
+  since issue #472 the sibling's committed
+  `sim/closed-loop-vref-pvt-pex/testbench/closed_loop_vref_pvt_pex.body.spice.tmpl`,
+  shared verbatim (same extraction, different grid) via the runner's
+  `BODY_TEMPLATE` override -- carries only fixtures and includes the
+  generated DUT.
 - **The grid runs as per-process x supply `klt sim --backend batch` requests**
   (one fleet job each), merged deterministically
   (`sim/harness/merge_batch_shards.py`) before the adapter mints one
