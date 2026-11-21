@@ -159,10 +159,12 @@ committed record plus the −40 °C extremes; full table in
 No probed corner regresses. The worst corner stays `bcs`/125 °C/3.63 V at
 60.988 dB — a +0.99 dB margin on the > 60 dB row (three orders of magnitude
 clear of the 0.001 dB passes this issue rejects, 0.012 dB short of a literal
-1.000 dB). The full-grid number of record is the fleet variant record minted
-from [`run_klt_sim.sh`](../run_klt_sim.sh) with `PSRR_VARIANT=p12-w2` (see
-[`../variants/`](../variants/)); the probes above are its corner-level
-preview, not the evidence of record.
+1.000 dB). **The grid of record is the fleet variant record
+[`../records/20261121-095519-80e1511e.md`](../records/20261121-095519-80e1511e.md)**
+(`run_klt_sim.sh` with `PSRR_VARIANT=p12-w2`, 15 fleet jobs, 45/45 points,
+worst corner 60.9884 dB at `bcs`/125 °C/3.63 V — the probes above matched it
+to 0.0004 dB); the probes are its corner-level preview, not the evidence of
+record.
 
 ### Candidate costs and regression checks (probe-level; the apply-time gates live in the follow-up issue)
 
@@ -202,3 +204,7 @@ preview, not the evidence of record.
   re-layout / PEX re-run that follows) is the follow-up issue's job,
   sequenced against #436.
 - XMN1-4 — #435's devices, only measured here (`xmn435`) for coordination.
+
+Applying the candidate to `design/` (plus the re-verification matrix, the
+re-layout tie-in and the post-layout PSRR re-run) is tracked in
+[#638](https://github.com/2AMLogic/sg13g2-bandgap/issues/638).

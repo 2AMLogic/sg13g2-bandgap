@@ -54,7 +54,8 @@ op-level TC spans improved 2–3 ppm/°C.
    `fs`/2.97 V, and whose own loop stability at `wcs`/125 °C/2.97 V measured
    unsolved-quality here).
 3. Applying the candidate to `design/` is **gated on the apply-time
-   re-verification matrix** filed as the follow-up issue: the full
+   re-verification matrix** filed as
+   [#638](https://github.com/2AMLogic/sg13g2-bandgap/issues/638): the full
    boxTC/vref-PVT, startup transient, loop-gain grid and Iq re-runs on the
    changed core (probe-level checks here: TC spans improve, PM 51–55° with
    solve-quality OK, startup released at every probed op, Iq 41.85 µA worst),
@@ -82,9 +83,11 @@ op-level TC spans improved 2–3 ppm/°C.
 ## Consequences
 
 - The > 60 dB row keeps its bound; the schematic grid of record for the
-  candidate is the variant fleet record (45/45 with the worst corner ≈ +1 dB
-  — see the record's own table for the numbers of record; the probes
-  preview 60.99 dB worst, a +0.99 dB margin).
+  candidate is variant fleet record
+  [`sim/closed-loop-psrr/records/20261121-095519-80e1511e.md`](../sim/closed-loop-psrr/records/20261121-095519-80e1511e.md):
+  45/45 points above 60 dB, worst corner `bcs`/125 °C/3.63 V at 60.9884 dB —
+  a +0.988 dB margin (0.012 dB short of a literal 1.000 dB; the probes
+  matched the fleet to 0.0004 dB).
 - The amp's phase margin budget is the binding constraint this record adds
   to the design's common knowledge: future PSRR or gain work must budget
   against the 40–50 MHz crossover, and any XMN1-4 / XMP3-4 change must

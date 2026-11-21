@@ -356,8 +356,11 @@ committed body with one bounded change, header-marked as a proposal),
 `<name>.anchors.env` (its own typ/27C/3.30V sanity anchors) and
 `<name>.record-spec.json` (so a minted record names the variant). Select
 with `PSRR_VARIANT=<name>` (above). `p12-w2` is the first resident; the
-fleet record it produced is in `records/` with `variant` in its Claim and
-Netlist-provenance fields.
+fleet record it produced is
+[`records/20261121-095519-80e1511e.md`](records/20261121-095519-80e1511e.md)
+(45/45 points, worst 60.9884 dB at `bcs`/125 °C/3.63 V) with `variant` in
+its Claim and Netlist-provenance fields. Applying it to `design/` is
+tracked in [#638](https://github.com/2AMLogic/sg13g2-bandgap/issues/638).
 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.
