@@ -500,6 +500,19 @@ def pnpmpa_extent(w_um: float, l_um: float) -> dict[str, float]:
     }
 
 
+def _pnp_ring_contacts(
+    b: Builder, x0: float, y0: float, x1: float, y1: float, wall: float,
+) -> None:
+    """Pack the three contacted walls of an open-top Metal1 ring."""
+    # The bottom row owns both corners. Start each side column at least
+    # Cnt_b above the upper edge of any cut in that row, before centring.
+    bottom_row_top = y0 + wall - CNT_C
+    side_start = bottom_row_top + CNT_B
+    cont_array(b, x0 + CNT_C, y0 + CNT_C, x1 - CNT_C, bottom_row_top)
+    cont_array(b, x0 + CNT_C, side_start, x0 + wall - CNT_C, y1 - CNT_C)
+    cont_array(b, x1 - wall + CNT_C, side_start, x1 - CNT_C, y1 - CNT_C)
+
+
 def draw_pnpmpa(
     b: Builder,
     name: str,
@@ -560,49 +573,48 @@ def draw_pnpmpa(
     b.net_label(emitter_net, x0, y0)
 
     # -- base: n+ Activ ring in the same NWell + Metal1 ring ---------------
-    br_x0, br_y0 = x0 - d["w2act"] - d["dw2act"], y0 - d["h2act"] - d["dh2act"]
-    br_x1, br_y1 = x0 + d["w2act"] + d["dw2act"], y0 + d["h2act"] + d["dh2act"]
-    b.ring(L_ACTIV, br_x0, br_y0, br_x1, br_y1, min(d["dw2act"], d["dh2act"]))
-    # Issue #240: an explicit ``nSD`` ring over the same four walls. The n+
-    # base ring has always been n+ *electrically* (the well is the PNP's
-    # base, and this ring is its contact), but CMOS5L's own PCell idiom
-    # draws n+ as pSD's complement -- no implant marker on the ring -- so
-    # any marker-keyed derivation (klt erc's ``ties[]`` boolean, the deck's
-    # ``tap_nplus``) was structurally blind to it. Drawing the marker makes
-    # the physically-real tie gradeable: same coordinates, same wall width
-    # as the ``Activ`` ring above, and strictly inside the well (``wnwell``
-    # clears the ring's outer edge by 0.31 um for every instantiated size,
-    # per :func:`pnpmpa_extent`'s own formulae). It does deviate from the
-    # PDK PCell's own mask set -- the documented trade issue #240 names for
-    # this cause -- and it must never reach the emitter's ``pSD`` (this
-    # ring's inner edge sits ``PSD_C`` outside it, the same implant spacing
-    # the PCell itself keeps between the two).
-    b.ring(L_NSD, br_x0, br_y0, br_x1, br_y1, min(d["dw2act"], d["dh2act"]))
+    # Issue #633: the PCell formula's own wall, ``min(dw2act, dh2act) =
+    # dh2act = 0.29`` um (``dw2act >= 0.3`` always, since it is
+    # ``max(wact, 0.3)``), is 0.01 um too thin to land even one ``Cnt_a``
+    # cut with ``Cnt_c`` Activ enclosure on both sides -- 0.16 + 2*0.07 =
+    # 0.30 um -- so the three base contact arrays hit their fit
+    # guard and drew **zero** base-ring contacts, leaving the well's base
+    # diffusion disconnected from the ``vss`` Metal1 ring. Widen the wall
+    # to that minimum legal landing, growing the ring
+    # *outward*: the inner edge stays exactly where
+    # :func:`pnpmpa_extent`'s PCell formulae put it (``w2act``/``h2act``,
+    # keeping the ``PSD_C`` implant spacing to the emitter's ``pSD``), and
+    # the outer edge moves at most 0.01 um deeper into the well's own
+    # 0.31 um margin, leaving >= 0.30 um of well beyond the ring for every
+    # instantiated size.
+    pcell_wall = min(d["dw2act"], d["dh2act"])
+    wall = max(pcell_wall, CNT_A + 2 * CNT_C)
+    grow = wall - pcell_wall
+    br_x0, br_y0 = (x0 - d["w2act"] - d["dw2act"] - grow,
+                    y0 - d["h2act"] - d["dh2act"] - grow)
+    br_x1, br_y1 = (x0 + d["w2act"] + d["dw2act"] + grow,
+                    y0 + d["h2act"] + d["dh2act"] + grow)
+    b.ring(L_ACTIV, br_x0, br_y0, br_x1, br_y1, wall)
+    # The PCell represents n+ as the complement of pSD. Issue #240 added
+    # this explicit implant so the deck recognises the active ring as a
+    # well tap. Issue #633 supplies the cuts from that diffusion to Metal1.
+    b.ring(L_NSD, br_x0, br_y0, br_x1, br_y1, wall)
+    # The Metal1 ring sizes with the wall (the same -0.04 um inset pair the
+    # collector ring below uses), so the single centred contact column each
+    # wall now lands stays covered on both sides by ``M1_c1 = 0.05`` um of
+    # metal -- the same endcap the collector ring's column has always had.
     base_ring_m1 = (br_x0 + 0.02, br_y0 + 0.02, br_x1 - 0.02, br_y1 - 0.02)
     b.ring(
         L_METAL1, *base_ring_m1,
-        width=min(d["dw2act"], d["dh2act"]) - 0.04, open_top=True,
+        width=wall - 0.04, open_top=True,
     )
-    wall = min(d["dw2act"], d["dh2act"])
-    cont_array(b, br_x0 + CNT_C, br_y0 + CNT_C, br_x0 + wall - CNT_C, br_y1 - CNT_C)
-    cont_array(b, br_x1 - wall + CNT_C, br_y0 + CNT_C, br_x1 - CNT_C, br_y1 - CNT_C)
-    cont_array(b, br_x0 + CNT_C, br_y0 + CNT_C, br_x1 - CNT_C, br_y0 + wall - CNT_C)
+    _pnp_ring_contacts(b, br_x0, br_y0, br_x1, br_y1, wall)
     base_ring = (br_x0, br_y0, br_x1, br_y1)
     b.net_label(base_net, br_x0 + wall / 2, y0)
 
     # -- the well itself: the PNP's base region ----------------------------
-    # Left deliberately unlabelled (no ``NWell.pin`` text): the well *is*
-    # the PNP's base, and since issue #240's explicit ``nSD`` marker ring
-    # the deck's ``tap_nplus`` derivation (klayout-tools#1414, in klt
-    # builds from 0.5.0 on) connects it to the base ring's own net without
-    # any label -- the marker-keyed tap is the connection, which is the
-    # whole reason the marker is drawn. A ``NWell.pin`` text on top would
-    # name the same net a second way but change nothing else, so it stays
-    # off rather than doubling the label surface. (Pre-#240, against the
-    # 0.3.0-era deck that declared no tap derivation at all, this well
-    # extracted as an isolated region a label could not connect -- the
-    # floating-well evidence ``layout/README.md`` "SG13CMOS5L: LVS
-    # -- ``mismatch``, fully attributed", cause 4, documents.)
+    # The well takes its net name from the labelled Metal1 ring through
+    # the contacts and n+ tap, so it needs no separate NWell.pin text.
     b.box(L_NWELL, x0 - d["wnwell"], y0 - d["hnwell"], x0 + d["wnwell"], y0 + d["hnwell"])
 
     # -- collector: p+ substrate ring outside the well ---------------------
@@ -616,9 +628,7 @@ def draw_pnpmpa(
     b.ring(L_ACTIV, cr_x0, cr_y0, cr_x1, cr_y1, d["d3act"])
     collector_ring_m1 = (cr_x0 + 0.02, cr_y0 + 0.02, cr_x1 - 0.02, cr_y1 - 0.02)
     b.ring(L_METAL1, *collector_ring_m1, width=d["d3act"] - 0.04, open_top=True)
-    cont_array(b, cr_x0 + CNT_C, cr_y0 + CNT_C, cr_x0 + d["d3act"] - CNT_C, cr_y1 - CNT_C)
-    cont_array(b, cr_x1 - d["d3act"] + CNT_C, cr_y0 + CNT_C, cr_x1 - CNT_C, cr_y1 - CNT_C)
-    cont_array(b, cr_x0 + CNT_C, cr_y0 + CNT_C, cr_x1 - CNT_C, cr_y0 + d["d3act"] - CNT_C)
+    _pnp_ring_contacts(b, cr_x0, cr_y0, cr_x1, cr_y1, d["d3act"])
     collector_ring = (cr_x0, cr_y0, cr_x1, cr_y1)
     b.net_label(collector_net, cr_x0 + d["d3act"] / 2, y0)
 

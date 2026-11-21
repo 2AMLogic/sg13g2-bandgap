@@ -11,9 +11,9 @@ name: hygiene
 #
 # The `signoff-manifest` job is the one exception to "never runs klt": it
 # installs a pinned klayout-tools build and runs `klt signoff --manifest` in
-# read-only grading mode over committed envelope JSON — no PDK, no klayout,
-# no evidence minting — so the block's T1 verdict of record
-# (manifests/*.signoff.json) is re-derived in CI and fails when it rots.
+# read-only grading mode over committed envelope JSON to verify the block's
+# T1 verdict of record (manifests/*.signoff.json). It also uses the installed
+# KLayout Python bindings to check PNP contacts in the committed CMOS5L GDS.
 
 on:
   push:
@@ -257,3 +257,6 @@ jobs:
 
       - name: Signoff manifest freshness and verdict of record
         run: python3 .github/scripts/check_signoff_manifest.py
+
+      - name: SG13CMOS5L PNP contact geometry
+        run: python3 layout/test_sg13cmos5l_pnp_contacts.py
