@@ -17,7 +17,7 @@
     "4": "layout/bandgap_top/lvs_report.runset.json",
     "6": [
       {
-        "file": "sim/closed-loop-vref-mc/records/20261120-231009-73ef81b4-yield-report.json",
+        "file": "sim/closed-loop-vref-mc/records/20261121-195500-b03b10b7-yield-report.json",
         "rows": ["output-reference-untrimmed"]
       }
     ],

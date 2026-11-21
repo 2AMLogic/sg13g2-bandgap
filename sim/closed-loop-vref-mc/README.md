@@ -243,6 +243,60 @@ reported as measured, not tuned. No ratified spec row is edited; the
 untrimmed/trimmed line dispositions are #265's. The `#273` freshness waiver for
 the 2026-09-09 record is deleted.
 
+### N=1200 follow-up campaign (issue #635, T1 item 6)
+
+The N=300 run above left one question open: its `klt yield` report's
+sigma-to-spec **lower bounds** at the 125 °C corners (2.8845 `bcs_125`,
+2.8632 `wcs_125`, at two-sided 95 % confidence) missed the ratified 3σ
+gate while the point estimates (3.16, 3.14) sat above it — a
+confidence-bound shortfall, not an observed spread violation. #635 sized
+the follow-up (break-even N ≈ 881 / 1,182 at the observed half-widths;
+a projected WCS lower bound of 3.0011 at N=1,200) and ran it as one fixed
+campaign of **N=1200 draws per point** — 7,200 decks, 72 `decks` requests
+of 100, `--max-in-flight 4`, `batch.capacity_wait_s=600`, seed rule
+unchanged (`20260909 + draw_index`).
+
+**Result** (record `records/20261121-194338-b03b10b7.md`, 72 fleet jobs in
+its `environment.remote`, 6 points x 1200 = 7200/7200 draws PASS):
+
+| point | mean vref (V) | 3sigma/mean (%) | within +/-1% | within +/-0.5% | outside 0.882-1.218 V |
+|---|---|---|---|---|---|
+| typ mismatch, 27 C | 1.050042 | 13.01 | 0.190 | 0.095 | 1 |
+| typ negative control, 27 C | 1.047278 | 0.00 | 1.000 | 1.000 | 0 |
+| bcs mismatch, -40 C | 1.049321 | 12.31 | 0.198 | 0.100 | 1 |
+| bcs mismatch, 125 C | 1.044015 | 14.46 | 0.177 | 0.086 | 1 |
+| wcs mismatch, -40 C | 1.051733 | 12.07 | 0.196 | 0.100 | 1 |
+| wcs mismatch, 125 C | 1.050103 | 14.17 | 0.179 | 0.092 | 2 |
+
+The negative control is still exactly zero-spread (one distinct `vref`,
+1.047278 V, across all 1200 draws — the value `sim/trim-coverage`'s
+code-128 point has always read). Six of the 6,000 mismatch draws fall
+outside the ±16 % bounds (one per point except `wcs_125`'s two, max
+1.264654 V); every one of the 7,200 draws converged with the loop closed,
+so no convergence/exclusion distinction is needed this time.
+
+**Superset status: verified draw-for-draw.** The startup CSV the harness
+seeds `.nodeset` initial guesses from changed revision between the two
+campaigns (2026-10-01 vs 2026-11-18); all nodeset voltages the deck reads
+are numerically identical, so the decks differ at most in number
+formatting. Joining the first 300 draw indices per point against the
+committed `20261104-201955-2a0f04d7-draws.csv` (1,800 rows): every status
+matches, and 1,797 of 1,800 `vref` values are byte-identical at the
+recorded 7-significant-digit precision — the three exceptions (`bcs_125`
+225/273, `wcs_n40` 13) differ by 1 in the last recorded digit
+(|Δ| ≤ 1e-6 V, ≤ 1e-6 relative), the fleet runner's floating-point noise
+across instance generations, not a different draw. Indices 300-1199 are
+fresh draws under the same rule. The N=1200 population is therefore a
+superset of the N=300 one for every statistical purpose.
+
+**The gate clears.** The re-minted `klt yield` report (below) reads
+sigma-to-spec lower bounds of **3.0782** (`bcs_125`) and **3.2389**
+(`wcs_125`) — both above 3, with all five points `met` and every
+sample-size verdict `sufficient`. The N=300 shortfall was what it looked
+like: bound-width, not spread. The point estimates moved modestly
+(`bcs_125` 3.16 → 3.22, `wcs_125` 3.14 → 3.39) and the half-widths halved
+as 1/√N, exactly the scaling the sizing used.
+
 ## Results (this repo's own committed record)
 
 See `records/<record-id>.md` for the full per-point table (mean/sigma/
@@ -259,55 +313,63 @@ See `sim/README.md` for the append-only `records/`/`corners/`/
 this experiment follows the same shape, with the one addition
 (`records/<record-id>-draws.csv`) "Evidence volume" above explains.
 
-## `klt yield` envelope (issue #630, T1 item 6)
+## `klt yield` envelope (issues #630 and #635, T1 item 6)
 
 The statistical evidence `klt signoff` grades for T1 item 6 is a
-[`klt yield`](https://github.com/2AMLogic/klayout-tools) JSON report —
-minted here as a **re-analysis of the committed `20261104-201955-2a0f04d7`
-campaign**, not a new run. Three files beside the run's records (producer
+[`klt yield`](https://github.com/2AMLogic/klayout-tools) JSON report. The
+**current** mint is a re-analysis of the committed N=1200 campaign
+`20261121-194338-b03b10b7` (issue #635); the N=300 mint of #630
+(`20261120-231009-73ef81b4-*`, a re-analysis of `20261104-201955-2a0f04d7`
+that failed the hot-corner gate and sized this follow-up) stays beside it
+as history. Three files per mint, beside the run's records (producer
 `klayout-tools[yield]==0.9.2`; graded under the repo's CI pin
 `klayout-tools==0.8.0` — see `manifests/README.md`'s item 6 entry):
 
-- `records/20261120-231009-73ef81b4-yield-samples.json` — the sample set,
-  derived by `klt yield-csv` from `20261104-201955-2a0f04d7-draws.csv`
+- `records/20261121-195500-b03b10b7-yield-samples.json` — the sample set,
+  derived by `klt yield-csv` from `20261121-194338-b03b10b7-draws.csv`
   (`--group-by point --value vref_v --status-col status --pass-value PASS
   --draw-col draw_index --unit V`); its `derivation` block pins that CSV's
-  sha256 (`bb7eb778…`) and the column mapping. Six groups of 300, zero
-  errored draws; the seed rule (`20260909 + draw_index`, N=300 per
+  sha256 (`73338af2…`) and the column mapping. Six groups of 1,200, zero
+  errored draws; the seed rule (`20260909 + draw_index`, N=1,200 per
   population) is readable from the draws' own `seed` column — `klt
   yield-csv` 0.9.2 cannot emit a `provenance` block, so the report's
-  `source.provenance` is null (klayout-tools#6974).
-- `records/20261120-231009-73ef81b4-yield-limits.json` — the spec-limits
+  `source.provenance` is null (klayout-tools#6974, re-checked at mint
+  time: still open, no released producer attaches a control or provenance
+  to a CSV-derived sample set).
+- `records/20261121-195500-b03b10b7-yield-limits.json` — the spec-limits
   file: 0.882–1.218 V (±16 % of 1.050 V, DR-0011) on the five mismatch
   points only (`nominal`, `bcs_n40`, `bcs_125`, `wcs_n40`, `wcs_125`;
   the zero-spread `negctrl` group is kept out — it is this harness's own
   determinism check, not klt's negative control), each with
   `target_sigma: 3` (the ratified 3σ claim in the form `klt yield` grades:
   sigma-to-spec lower bound at two-sided 95 % confidence) and
-  `min_converged_samples: 300`, `spec_row: output-reference-untrimmed`.
-- `records/20261120-231009-73ef81b4-yield-report.json` — the report
+  `min_converged_samples: 1200` (the campaign's N, all of which converged),
+  `spec_row: output-reference-untrimmed`.
+- `records/20261121-195500-b03b10b7-yield-report.json` — the report
   (`klt yield … --measurement nominal,bcs_n40,bcs_125,wcs_n40,wcs_125`,
-  1,500 samples; exit 3, `status: "fail"`), cited unpinned by
+  6,000 samples; exit 0, `status: "pass"`), cited unpinned by
   `manifests/sg13g2-bandgap.json` under item 6 with the trimmed ±0.5 %
   line declared as a `spec_rows` gap (#303).
 
 **Reported as graded, not curated.** All five sample-size verdicts are
-`sufficient` (±1-point yield-interval half-width) and exactly one draw
-(wcs_125, 1.2215 V) falls outside the bounds, but the sigma-to-spec lower
-bounds at the hot corners — **2.8845** (`bcs_125`) and **2.8632**
-(`wcs_125`) — miss the 3σ gate, so the report fails and item 6 grades
-`unmet`/`check_failed`. The follow-up campaign is sized in #635; the ±16 %
-line and the 3σ claim are not edited. The **klt negative control is not
-declared** (`negative_control: null` + the report's own warning): no
-released CLI path attaches a control to a CSV-derived sample set
-(klayout-tools#6974), and #630 declined to hand-splice one or dispatch a
-fleet known-bad run that no supported path could consume.
+`sufficient` (±1-point yield-interval half-width) and all five
+sigma-to-spec lower bounds clear the 3σ gate — 3.5307 (`nominal`), 3.7195
+(`bcs_n40`), **3.0782** (`bcs_125`), 3.7613 (`wcs_n40`), **3.2389**
+(`wcs_125`) against point estimates 3.6889 / 3.8849 / 3.2189 / 3.9284 /
+3.3857 — so the report passes and item 6 grades `met`. Six of 6,000 draws
+fall outside the bounds (empirical yield 0.99917 at four points,
+0.99833 at `wcs_125`, each with its Clopper-Pearson interval). The ±16 %
+line and the 3σ claim are not edited; the passing verdict is the measured
+outcome #635 was sized to determine, not a relaxation. The **klt negative
+control is not declared** (`negative_control: null` + the report's own
+warning): no released CLI path attaches a control to a CSV-derived sample
+set (klayout-tools#6974 — re-checked at re-mint, still unlanded), and the
+campaign's zero-spread `negctrl` point stays what it always was — the
+harness's own determinism check, not klt's negative control. When #6974
+lands a released CSV-control producer, the next re-mint should declare the
+seeded known-bad trim population #630 sketched.
 
-**No new `records/*.md` by design.** This mint measured nothing new — the
-newest *run* of this experiment is still `20261104-201955-2a0f04d7`, which
-is what the item-8 characterization report's dependency inventory selects
-(`check_report_dependencies.py`'s newest-record rule keys on
-`records/*.md`). The JSON artifacts are committed beside the run's records;
-this section is their index. When a future campaign re-mints them (e.g.
-after PR #435 lands, or #635's larger N), it lands as a new dated set under
-the same convention.
+**The N=300 mint stays as history.** `records/20261120-231009-73ef81b4-*`
+(min_converged_samples 300, 1,500 samples, exit 3 `status: "fail"`,
+hot-corner lower bounds 2.8845 / 2.8632) documented the confidence-bound
+shortfall that sized this campaign; it is superseded, not edited.
