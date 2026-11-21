@@ -11,14 +11,26 @@
 # sim/harness/sanity_anchors.py (issue #458); these are its anchor values.
 
 # --- node seeds: sim/closed-loop-startup's newest committed record ----------
-SEED_CSV="$(ls -t "${SIM_DIR}"/closed-loop-startup/records/*.csv \
-  | grep -v -e '-tc.csv' -e '-vs-schematic' | head -1)"
+# Newest by NAME, not mtime: the records are timestamp-prefixed, and a fresh
+# clone's checkout mtimes are arbitrary, which `ls -t` once made depend on
+# the order git happened to write files (#628).
+SEED_CSV="$(ls "${SIM_DIR}"/closed-loop-startup/records/*.csv \
+  | grep -v -e '-tc.csv' -e '-vs-schematic' | sort | tail -1)"
 if [[ -z "${SEED_CSV}" ]]; then
   echo "run_klt_sim.sh: no seed record in ${SIM_DIR}/closed-loop-startup/records/" >&2
   exit 3
 fi
 SEEDS_OF() {  # $1 corner label, $2 vdd -> prints fb sns1 sns2 vref seeds (27C row)
-  awk -F, -v c="$1" -v v="$2" '$1==c && $6==v && $5=="27" && $8=="PASS" {print $11, $12, $13, $14; exit}' "${SEED_CSV}"
+  # Columns addressed by header name: the 2026-11-18 klu re-run record
+  # (73c420a2) dropped the msense_w column the old positional $8/$11-14
+  # read assumed, so the positional read silently matched nothing against
+  # it (#628). Reads both that schema and the older msense_w one.
+  awk -F, -v c="$1" -v v="$2" '
+    NR==1 { for (i = 1; i <= NF; i++) col[$i] = i; next }
+    $(col["corner_label"]) == c && $(col["vdd_v"]) == v && \
+    $(col["temp_c"]) == "27" && $(col["status"]) == "PASS" \
+      { print $(col["fb_final_v"]), $(col["sns1_final_v"]), \
+               $(col["sns2_final_v"]), $(col["vref_final_v"]); exit }' "${SEED_CSV}"
 }
 
 check_anchors() {  # $1 = enriched report json

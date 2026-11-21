@@ -12,9 +12,9 @@ nothing to splice and the record ships a device-less snapshot.
 This module rewrites, for one report:
 
 * every deck's runner-side netlist include to a local body copy,
-* every `/opt/pdk` reference (deck `.lib` lines and, in the body copy, the
-  two family `.lib` cards the bridge appended) to the local PDK_ROOT, which
-  the adapter then relativizes to `${PDK_ROOT}` in the committed snapshot,
+* every `/opt/pdk` reference, quoted or bare (the deck's own `.lib` card is
+  written unquoted) to the local PDK_ROOT, which the adapter then relativizes
+  to `${PDK_ROOT}` in the committed snapshot,
 * each corner's `artifacts.deck` to the patched copy.
 
 The body copy is a RECORD-side artifact only -- the submission bodies keep

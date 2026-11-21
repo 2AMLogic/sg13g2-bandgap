@@ -146,10 +146,11 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   (#315).
 
 - `2026-11-18-klu-retime-characterization-report/` — issue #518 (T1
-  checklist item 8): the current aggregated characterization report,
-  replacing the 18 Nov one. The name carries a `klu-retime` suffix because
-  the same-day `2026-11-18-` slot is taken by the #557 report it supersedes
-  (byte-identical history). It rotated because issue #518's KLU
+  checklist item 8): **superseded by
+  `2026-11-21-recognition-rebase-characterization-report/`** (below; kept
+  untouched as history). The KLU re-time rotation: the same-day
+  `2026-11-18-` slot is taken by the #557 report it replaced (byte-identical
+  history). It rotated because issue #518's KLU
   direct-solver adoption on the two supply benches re-minted their 45-point
   grids (`sim/closed-loop-iq/records/20261118-072122-3e600d97`,
   `sim/closed-loop-startup/records/20261118-082945-3e600d97`), making them
@@ -163,5 +164,26 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   quoted number move and the spot-check
   block is byte-identical to the 18 Nov report's. Same shape as the earlier
   reports: `README.md`, `spotcheck.py`, `envelope.json` (cited by
+  `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
+  (#315).
+- `2026-11-21-recognition-rebase-characterization-report/` — issue #628
+  (T1 checklist item 8): the current aggregated characterization report,
+  replacing the 18 Nov KLU re-time one. The name carries a
+  `recognition-rebase` suffix because the rotation rides PR #383's
+  recognition-layer rebase onto current `main`: the layout regenerated on
+  the merged generators (recognition layers composed with main's
+  Via1/tap/base-contact helpers; HV PMOS NWell margin widened to 0.68 um to
+  clear the deck's `nwell.enclosing.pactiv.hv.1` 0.62 um floor — DRC
+  clean/0 on all four cells under the DR-0016 pin), and the three
+  post-layout PEX grids re-run on that rebased extraction on the batch
+  fleet (`sim/closed-loop-psrr-pex/records/20261121-104700-f5f3e950`,
+  `sim/closed-loop-zout-pex/records/20261121-104753-f5f3e950`,
+  `sim/startup-trip-point-pex/records/20261121-104844-f5f3e950`, all 45/45
+  PASS and extraction-source bound). Stamped at audited commit `f5f3e950`.
+  The one verdict-table change: **PSRR @ DC is met (measured,
+  post-layout)** at 60.00002 to 99.4862 dB, 45/45 above 60 dB — the
+  0.00002 dB worst-corner margin is reported as measured and its
+  attribution is #631's. Same shape as the earlier reports: `README.md`,
+  `spotcheck.py`, `envelope.json` (cited by
   `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
   (#315).

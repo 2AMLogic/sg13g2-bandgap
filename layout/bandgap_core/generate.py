@@ -648,7 +648,7 @@ def _route(
     # (top) and base rail (bottom) are two separate drawn Metal1 shapes with
     # nothing tying them together -- a single vertical strip both joins them
     # and reaches up to M1's drain pad.
-    sns1_x = (q1["collector_pad"][0] + q1["collector_pad"][2]) / 2
+    sns1_x = q1["tie_x"]
     route_v(b, L_METAL1, sns1_x, q1["base_pad"][1], m1["drain_pad"][3], width=TRUNK_W)
 
     # -- vss: Q1/Q2/Q3 emitters -- all already Metal2, all at the same
@@ -667,15 +667,12 @@ def _route(
     _riser(b, sns2_drain, r2["end_a_pad"], jog_y=_pad_row(r2["end_a_pad"]))
 
     # -- cb2: R2.end_b, Q2.collector, Q2.base -- Q2's own collector/base tie
-    # (mirrors sns1's Q1 tie) plus a riser up to R2's far end. The offset is
-    # +3 stripe pitches (6.475 + 5.55 = 12.025um from stripe 0 = stripe
-    # index 6.5, the middle of the gap between stripes 6 and 7 this strap
-    # already ran through): `draw_npn13g2`'s Metal1 base-contact landing
-    # strips (issue #572) occupy each stripe's x-band, and this strap must
-    # keep `metal1.space.1`'s 0.18um floor clear of the nearest strip's
-    # edge -- at the old +6.0um the strap sat 0.075um from stripe 7's strip.
-    # Centred here it clears both neighbouring strips by 0.525um.
-    cb2_x = (q2["collector_pad"][0] + q2["collector_pad"][2]) / 2 + 3 * HBT_STEP_X_UM
+    # (mirrors sns1's Q1 tie) plus a riser up to R2's far end. `tie_x` is
+    # flush with the right end of the rails and 0.275um clear of the last
+    # stripe's emitter Metal1, so main's #572 stripe-gap offset (which dodged
+    # the old per-stripe base-contact strips this branch's PyCell-faithful
+    # footprint no longer draws) is not needed here (#628 merge note).
+    cb2_x = q2["tie_x"]
     _tie_and_riser(b, q2, cb2_x, r2["end_b_pad"], jog_y=_pad_row(r2["end_b_pad"]))
 
     # -- vref: M3A-M3C.drain (tied together, issue #149), R1.end_a --
@@ -721,7 +718,7 @@ def _route(
     # above the array's own topmost pad) rather than across R1's bottom pad
     # row, because the net's other terminal moved from R1's end B to the
     # ladder's far corner.
-    cb3_x = (q3["collector_pad"][0] + q3["collector_pad"][2]) / 2 + 3.0
+    cb3_x = q3["tie_x"]
     _tie_and_riser_over_top(b, q3, cb3_x, trim["node_pad"][TRIM_UNITS], TRIM_CB3_TOP_Y)
 
 

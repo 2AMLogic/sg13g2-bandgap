@@ -1,0 +1,6 @@
+* Single-device source netlist for the runset-LVS fixture (issue #380): one
+* HV NMOS in the shape design/netlist/bandgap_startup.spice instantiates
+* (MSENSE).
+.subckt hv_nmos det sns1 vss
+XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u ng=1 m=1
+.ends
