@@ -466,7 +466,7 @@
       "name": "d1",
       "pin": true,
       "device_count": 4,
-      "net_id": 9,
+      "net_id": 11,
       "pin_index": 0,
       "label_positions_um": [
         {
@@ -504,7 +504,7 @@
       "name": "det",
       "pin": true,
       "device_count": 3,
-      "net_id": 11,
+      "net_id": 10,
       "pin_index": 2,
       "label_positions_um": [
         {
@@ -708,7 +708,7 @@
       "name": "pn",
       "pin": true,
       "device_count": 4,
-      "net_id": 10,
+      "net_id": 9,
       "pin_index": 8,
       "label_positions_um": [
         {
@@ -1221,7 +1221,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:02c7f5e279ef9fa5ab35b0a931a802ab3a238355bcaf1fb54dd4c06e2737b663",
+      "content_hash": "sha256:d9d21e72274c5f4a7851b072445bcc761e8eaf0ce890355719937cc24b433d24",
       "role": "layout"
     }
   },
@@ -1235,14 +1235,14 @@
   },
   "timing": {
     "stages": {
-      "read_layout": 0.071,
-      "device_extraction": 0.062,
+      "read_layout": 0.001,
+      "device_extraction": 0.136,
       "diagnostics": 0.0,
-      "netlist_write": 0.0,
+      "netlist_write": 0.001,
       "netlist_hash": 0.0,
-      "netlist_normalized_hash": 0.0
+      "netlist_normalized_hash": 0.001
     },
-    "total_seconds": 2.039,
-    "unattributed_seconds": 1.905
+    "total_seconds": 0.241,
+    "unattributed_seconds": 0.103
   }
 }
