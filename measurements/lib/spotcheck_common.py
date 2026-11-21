@@ -101,7 +101,7 @@ def startup(rec, ttr_rec, trip_pex_rec):
     say("startup time-to-release sch trim-bearing", f"{len(rt)}/{len(r)} PASS; release_time_us values {sorted(set(rt))}; "
         f"max {max(float(c) for c in rt):.0f} us (ladder step 100 us)")
     r = rows(trip_pex_rec + ".csv")
-    say("startup trip point PEX (2026-09-05)", f"{sum(x['status']=='PASS' for x in r)}/{len(r)} PASS")
+    say("startup trip point PEX", f"{sum(x['status']=='PASS' for x in r)}/{len(r)} PASS")
 
 
 def trim_coverage(rec, points_rec):

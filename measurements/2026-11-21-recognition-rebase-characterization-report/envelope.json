@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 8,
+  "summary": "aggregated characterization report for all seven spec-table rows (Output reference as nominal/untrimmed/trimmed lines) at audited commit f5f3e950: the layout was regenerated on PR #383 rebased onto current main (#628, recognition layers composed with main's Via1/tap/base-contact helpers; HV PMOS NWell margin widened to clear the deck's nwell.enclosing.pactiv.hv.1 0.62um floor; DRC clean/0 on all four cells under the DR-0016 klt 0.8.0 pin) and the three post-layout PEX grids were re-run on that rebased extraction on the batch fleet (PSRR-PEX 20261121-104700, Zout-PEX 20261121-104753, startup trip-point 20261121-104844, all 45/45 PASS, all binding the extraction by content hash); PSRR @ DC reads 60.00002 to 99.4862 dB, 45/45 above 60 dB with a measured 0.00002 dB worst-corner margin reported as measured (attribution #631's); every other verdict, bound and binding corner unchanged; each row carries bound, verdict, binding corner, statistical flag, newest committed record and a current-or-stale freshness mark; every quoted number spot-checked against its committed CSV; pass attests report completeness and citation honesty, not that every row meets its bound",
+  "source": "README.md",
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:324195340c2c668eef894e9d35926af7ad5e7c92096cac5cf4f8ac9b5b2153fb",
+      "path": "README.md"
+    }
+  }
+}
