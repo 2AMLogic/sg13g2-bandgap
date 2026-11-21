@@ -17,7 +17,7 @@
     "4": "layout/bandgap_top/lvs_report.runset.json",
     "8": {
       "file": "measurements/2026-11-21-recognition-rebase-characterization-report/envelope.json",
-      "content_hash": "sha256:324195340c2c668eef894e9d35926af7ad5e7c92096cac5cf4f8ac9b5b2153fb"
+      "content_hash": "sha256:d4e206ee6f63560631e51cd148635eb7d9152450886a2ae474809daf5fcfe209"
     },
     "10": {
       "file": "manifests/evidence/hygiene.json",

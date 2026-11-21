@@ -651,7 +651,7 @@ Supply grid actually swept by the current records: ['2.97', '3.30', '3.63']
 Iq sch trim-bearing: 45/45 PASS; 19.58..41.78 uA; <50 uA: 45/45; <20 uA: 2/45; worst bcs/125C/3.63V; margin to 50 uA 16.4%; max settle delta 0 A
 startup sch trim-bearing: 45/45 PASS
 startup time-to-release sch trim-bearing: 45/45 PASS; release_time_us values ['100']; max 100 us (ladder step 100 us)
-startup trip point PEX: 45/45 PASS
+startup trip point PEX (2026-11-21): 45/45 PASS
 trim-coverage: 15/15 groups PASS; range up +29.22..+29.72%, down -29.63..-30.12% (worst-case +29.22/-29.63); LSB 0.2309..0.2347 %/step; worst binary-weight deviation 0.2937%; monotonic in 15/15
 trim-coverage points: 169/169 PASS
 trim-MC nominal: N=300 draws, 299 converged (1 excluded); within +/-0.5% over -40..125C: 24.7%; 3*sigma(max_dev) 2.399%; worst draw 4.44%; seeds 20260930..20261229
