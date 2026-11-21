@@ -67,7 +67,7 @@ PY
 }
 
 capture_sources() {
-  python3 - "${REPO_ROOT}" "${EXTRACTION_SOURCES}" "${PEX_SPICE}" "${PEX_REPORT}" <<'PY'
+  python3 - "${REPO_ROOT}" "${WORK}/extraction-sources.json" "${PEX_SPICE}" "${PEX_REPORT}" <<'PY'
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(sys.argv[1]) / "sim" / "harness"))
@@ -88,7 +88,8 @@ case "${MODE}" in
   ( cd "${WORK}" && python3 "${HARNESS_DIR}/cmos5l_klt.py" enrich --kind trip-point \
       report.json -o report-enriched.json )
   anchor_args=(); for a in "${ANCHORS[@]}"; do anchor_args+=(--anchor "$a"); done
-  python3 "${HARNESS_DIR}/cmos5l_klt.py" check-anchors "${WORK}/report-enriched.json" "${anchor_args[@]}"
+  python3 "${HARNESS_DIR}/sanity_anchors.py" "${WORK}/report-enriched.json" \
+    "${anchor_args[@]}" --hint "off the committed record's band (this bench's sanity-gate anchors)"
   ;;
 
 --batch)
