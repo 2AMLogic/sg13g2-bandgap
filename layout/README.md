@@ -2471,6 +2471,24 @@ finding/severity classification moved (per-cell numbers in the LVS tables
 below) — and the ERC verdict is unchanged in kind (`violations`, the same
 10 `erc.missing_tie` findings).
 
+**#633 (2026-11-21) re-minted `sg13cmos5l-bandgap_core`'s and
+`sg13cmos5l-bandgap_top`'s reports under the same 0.8.0 pin** (their GDS
+changed: the pnpMPA base-ring contact repair — see "ERC supply spec"
+below and `draw_pnpmpa`'s own issue-#633 comment): both cells' DRC and
+LVS reports, both `extract_report.json` files (plus `core`'s committed
+`.extracted.spice`), the top's `pex_extract_report.json`/`.pex.spice`
+and `erc_report.json`. Measured deltas: both DRCs stay `clean`/0, both
+LVS verdicts stay `mismatch` with finding-for-finding identical counts
+(the deck models neither the bipolar stack nor the wells the new
+contacts tie, so the repair is LVS- and extraction-neutral — the top's
+`.extracted.spice`/`.pex.spice` re-mint byte-identical), and the ERC
+verdict is unchanged in kind (`violations`, the same 10
+`erc.missing_tie` findings — now physically contradicted only by the
+declaration's single-net schema, klayout-tools#2354, no longer by a
+missing contact). The `amp`/`startup` leaves are untouched (their
+generators re-ran to a byte-identical GDS), so their committed reports
+stay as #561 step 2 minted them.
+
 ## Cell: `sg13cmos5l-bandgap_core`
 
 One-to-one with `design/sg13cmos5l/netlist/bandgap_core.spice` (schematic
@@ -2811,7 +2829,7 @@ paragraph's own re-verification.)
 
 | Cell | Report | Status | Deck (content hash) |
 | --- | --- | --- | --- |
-| `sg13cmos5l-bandgap_top` | `layout/sg13cmos5l-bandgap_top/drc_report.json` | `clean`, 0 violations | `sg13cmos5l`, `sha256:5a43b8eb…` (#561 step-2 `klt 0.8.0` re-mint; all four cells share this one deck hash again — see the per-cell table under "LVS" below) |
+| `sg13cmos5l-bandgap_top` | `layout/sg13cmos5l-bandgap_top/drc_report.json` | `clean`, 0 violations | `sg13cmos5l`, `sha256:5a43b8eb…` (#561 step-2 `klt 0.8.0` re-mint; all four cells share this one deck hash again — see the per-cell table under "LVS" below; #633 re-mint on the base-contact-repair GDS — still `clean`/0) |
 
 Reproduce: `klt drc --check layout/sg13cmos5l-bandgap_top/drc_report.json`
 (or `--rerun` for a full re-check).
@@ -2830,7 +2848,7 @@ Reproduce: `klt drc --check layout/sg13cmos5l-bandgap_top/drc_report.json`
 
 | Report | Status | Engine | nets | devices | pins |
 | --- | --- | --- | --- | --- | --- |
-| `layout/sg13cmos5l-bandgap_top/lvs_report.json` | `mismatch` (17 findings, 15 error-severity — #561 step-2 `klt 0.8.0` re-mint, 2026-11-18; the `0.6.0` mint it retires read 14/14. Devices/nets matched are identical — 14/17 and 5/13 — so the mismatch set is unchanged; the 0.8.0 comparer reclassifies: 6 `device.unmatched` + 9 `topology` errors + 2 `device.geometry_not_compared` warnings, where the 0.6.0 mint printed 9 `device.unmatched` + 2 `net.merged` + 2 `net.split` + 1 `topology`) | `klayout` | layout=13, reference=13, matched=5 | layout=17, reference=20, matched=14 | layout=13, reference=0, matched=13 |
+| `layout/sg13cmos5l-bandgap_top/lvs_report.json` | `mismatch` (17 findings, 15 error-severity — #561 step-2 `klt 0.8.0` re-mint, 2026-11-18; the `0.6.0` mint it retires read 14/14. Devices/nets matched are identical — 14/17 and 5/13 — so the mismatch set is unchanged; the 0.8.0 comparer reclassifies: 6 `device.unmatched` + 9 `topology` errors + 2 `device.geometry_not_compared` warnings, where the 0.6.0 mint printed 9 `device.unmatched` + 2 `net.merged` + 2 `net.split` + 1 `topology`. #633 re-minted it on the base-contact-repair GDS under the same pin: finding-for-finding identical — 17/15, the same 6+9+2, devices 14/17, nets 5/13 — the drawn base contacts are LVS-neutral, since the deck models neither the bipolar stack nor the wells they tie) | `klayout` | layout=13, reference=13, matched=5 | layout=17, reference=20, matched=14 | layout=13, reference=0, matched=13 |
 
 Reproduce: `klt lvs lvs_request.json` from `layout/sg13cmos5l-bandgap_top/`
 (run against `lvs_reference.flatten()`'s own output — `python3
@@ -2870,7 +2888,8 @@ each commit:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | as #174 audited it (report state through `a19b60b`) | 22 | 15 | 2 | 4 | 1 | 2 of 15 | 8 of 17 |
 | after #240's well taps (`c6998b0`, PR #244) | 15 | 9 | 2 | 3 | 1 | 5 of 14 | 14 of 17 |
-| after #243's `e2` trunk fix (`b1d5425`, PR #245) — **current** | **14** | **9** | **2** | **2** | **1** | **5 of 13** | **14 of 17** |
+| after #243's `e2` trunk fix (`b1d5425`, PR #245) | **14** | **9** | **2** | **2** | **1** | **5 of 13** | **14 of 17** |
+| after #633's pnpMPA base-contact repair — **current** (the 0.8.0 comparer's shape: 17 findings / 15 error-severity = 6 `device.unmatched` + 9 `topology` + 2 `device.geometry_not_compared` warnings) | **17** (same mismatch set) | **6** | 0 | 0 | **9** | **5 of 13** | **14 of 17** |
 
 Neither step is a deck or engine drift: both are geometry changes in this
 repo, and each re-minted this cell's own evidence against the toolchain of
@@ -2892,6 +2911,11 @@ its day. What they did, in the terms of the four causes below:
 - **#243 then fixed that defect** (the Q2 emitter trunk's `route_h` span now
   reaches `R2`'s real drop x). `net_count` 14 → 13 — exactly one `e2` net —
   and the duplicate `net.split` entry is gone. 15 → **14**.
+- **#633 drew the pnpMPA base-ring contacts** (the `nSD` marker #240 drew
+  was never a physical tie — see "ERC supply spec" below) — and moved
+  **nothing** here: the deck models neither the bipolar stack nor the
+  wells the contacts tie, so the re-mint is finding-for-finding identical
+  (17/15 in the 0.8.0 comparer's shape; the ledger row above).
 
 **Cause 1 — no bipolar device class (`klayout-tools#1242`) — still fully
 open, unchanged.** The three bipolar instances the composed netlist declares
@@ -3227,7 +3251,12 @@ carrying the four tie fixes since no numbered release past v0.5.0 was tagged
 at the time; and re-minted under the `klt 0.8.0` pin by #561 step 2,
 2026-11-18 — verdict unchanged in kind: `status`/`erc_status` both still
 `violations`, the same 10 `erc.missing_tie` findings, supply-island counts
-identical): the supply-island half of the verdict is unchanged and clean —
+identical; and re-minted again by #633, 2026-11-21, under the same pin
+after its base-contact repair regenerated this cell's GDS *and* the
+spec's `_comment` (the corrected tie narrative below) — verdict still
+unchanged in kind: `violations`/`violations`, the same 10 `erc.missing_tie`
+findings, supply-island counts identical): the supply-island half of the
+verdict is unchanged and clean —
 `erc.net_connectivity:["vdd"]` and `["vss"]` are both in
 `erc_coverage.checked` with **zero** findings naming either supply (each
 resolves to exactly one electrical island: no `erc.unconnected_net`, no
@@ -3258,7 +3287,10 @@ the upstream docs use — a bare `tap_layer` is the unfalsifiable form the
 degenerate-tie rule (klayout-tools#2199) rejects). Issue #233's original
 run reported 12 findings — every well failed with *no tap drawn at all*
 (`Activ ∩ nSD ∩ NWell = ∅` on the then-committed GDS). Issue #240
-resolved both of that run's causes geometrically, and the committed
+resolved the two MOS wells geometrically and drew the pnpMPA marker
+rings; issue #633 then drew the contacts those rings were missing (the
+second population's finding is *both* wrong-net and, until #633,
+no-drawn-contact — see its bullet). The committed
 report now reads **10 findings**, all one class:
 
 - **2 floating MOS wells — FIXED** (`draw_well_tap`,
@@ -3270,24 +3302,39 @@ report now reads **10 findings**, all one class:
   the PMOS bodies extract to `vdd` through the drawn tap (the LVS
   consequence is recorded in each cell's own section below: same four
   documented causes, strictly smaller finding counts).
-- **10 pnpMPA wells — geometry drawn, findings structurally
-  unresolvable on this `klt`**: `draw_pnpmpa` now draws an explicit
-  `nSD` ring over each n+ base ring (the one deviation from the PDK
-  PCell's own mask set #240's issue text sanctions), so the tie that was
-  always physically there — to `vss`, via the base `Metal1` ring — is
-  visible to any marker-keyed derivation. The findings remain because a
-  `ties[]` declaration names ONE net and `klt erc` evaluates every
-  declared tie against **every** `well_layer` island: a well whose
-  correct tie is `vss` can never satisfy a `net: "vdd"` tie, and the
-  symmetric declarations all fail too (verified empirically on this
-  stream: 10 findings with the single honest tie, 12 with a second
+- **10 pnpMPA wells — tie now physically drawn (#633), findings
+  structurally unresolvable on this `klt`**: this one took two issues,
+  and the first fixed only half of it. #240 drew the explicit `nSD` ring
+  over each n+ base ring (the one deviation from the PDK PCell's own mask
+  set #240's issue text sanctions) — which made the tap *region* visible
+  to marker-keyed derivations, but **no physical tie existed as drawn**:
+  the 0.29 µm ring wall was 0.01 µm below `cont_array`'s single-cut
+  minimum (`Cnt_a + 2·Cnt_c` = 0.30 µm), so its fit guard silently drew
+  zero contacts and the base `Activ` ring never touched its `Metal1`
+  ring. #633's census measured exactly that on the pre-fix stream (0
+  cuts on the nSD-marked base ring of all 10 wells; the ten
+  `erc.missing_tie` findings were correct on both counts — the
+  `net: "vdd"` declaration names the wrong net for this population
+  *and* no drawn contact sat under the tie boolean). **#633 then drew
+  the tie**: the wall is widened to 0.30 µm — outward, keeping the PCell
+  formula's inner-edge implant spacing to the emitter `pSD` — so each
+  base ring lands 24 cuts, every one enclosed by its `Activ` wall and
+  its `Metal1` ring and sitting on the single `Metal1` island the `vss`
+  labels name (measured on the regenerated top GDS, klayout 0.30.13:
+  24 cuts × 10 wells; the two MOS well taps stay on the `vdd` island;
+  `sns1`/`e2`/`e3` stay islands distinct from `vss`). The findings
+  remain because a `ties[]` declaration names ONE net and `klt erc`
+  evaluates every declared tie against **every** `well_layer` island: a
+  well whose correct tie is `vss` can never satisfy a `net: "vdd"` tie,
+  and the symmetric declarations all fail too (verified empirically on
+  this stream: 10 findings with the single honest tie, 12 with a second
   `net: "vss"` tie added — each population fails the other's — and 11
   with `tap_boxes` narrowing, which only changes the message). Each of
   the ten residual findings is individually justified by its own bbox:
-  every one is a pnpMPA well whose drawn, nSD-marked base-ring tap
-  verifiably reaches `vss`, the net the schematic ties that well to.
-  Expressing "this well population ties to `vss`, that one to `vdd`"
-  needs an upstream capability — filed as
+  every one is a pnpMPA well whose drawn, nSD-marked, #633-contacted
+  base-ring tie verifiably reaches `vss`, the net the schematic ties
+  that well to. Expressing "this well population ties to `vss`, that
+  one to `vdd`" needs an upstream capability — filed as
   [klayout-tools#2354](https://github.com/2AMLogic/klayout-tools/issues/2354)
   (the well-side, two-net analogue of the substrate-half gap #2255
   already tracks).
@@ -3302,23 +3349,25 @@ signoff job derives precisely `check_failed` from it (ERC findings + the
 unmet LVS half), which is the honest machine-graded state. The remaining
 well-tie evidence on record:
 
-- **PG pin labels in the merged GDS** — all 8 `vdd` and all 27 `vss`
+- **PG pin labels in the merged GDS** — all 10 `vdd` and all 27 `vss`
   `Metal1.pin` (8/2) texts land on the single supply island this very run
   verified, including every leaf cell's own boundary port.
 - **Device-aware extraction** — this cell's committed
-  `extract_report.json` (curated `sg13cmos5l` deck) extracts a net named
-  `vdd` (pin, 7 attached device terminals) and a net named `vss` (pin, 15
-  attached device terminals): the rails reach real device taps through
-  drawn `Activ`/`nSD`/`pSD` contact geometry, not just labels.
+  `extract_report.json` (curated `sg13cmos5l` deck, #633 re-mint) extracts
+  a net named `vdd` (pin, 15 attached device terminals) and a net named
+  `vss` (pin, 15 attached device terminals): the rails reach real device
+  taps through drawn `Activ`/`nSD`/`pSD` contact geometry, not just
+  labels.
 - **The substrate half is undeclarable, not forgotten** — this block sits
   in native p-substrate with no drawn p-well/tub layer, and `klt erc`'s
   `ties[]` requires drawn well-layer geometry, so a substrate tie cannot
   be declared at all (open upstream as
   [klayout-tools#2255](https://github.com/2AMLogic/klayout-tools/issues/2255)).
-  The real substrate ties on record, counted on the committed GDS: the
-  ten pnpMPA collector rings — pSD-covered `Activ` outside every `NWell`
-  (the deck's own `tap_pplus` shape), each contacted up to a
-  `vss`-labelled Metal1 ring (10 polygons, 75.74 um^2 total).
+  The real substrate ties on record, re-counted unchanged on the
+  #633-regenerated GDS: the ten pnpMPA collector rings — pSD-covered
+  `Activ` outside every `NWell` (the deck's own `tap_pplus` shape), each
+  contacted up to a `vss`-labelled Metal1 ring (10 polygons,
+  75.74 um^2 total).
 - **No LVS `net_correspondence` evidence exists yet** — the ladder's
   Analog column additionally requires item 4's own LVS report to have
   carried the supply nets in its `net_correspondence`, and this cell's
@@ -3387,7 +3436,7 @@ and its own `sg13cmos5l_tech.json` `techParams` table, cited per constant in
 
 | Cell | Report | Status | Deck (content hash) |
 | --- | --- | --- | --- |
-| `sg13cmos5l-bandgap_core` | `layout/sg13cmos5l-bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13cmos5l`, `sha256:5a43b8eb…` (#561 step-2 `klt 0.8.0` re-mint) |
+| `sg13cmos5l-bandgap_core` | `layout/sg13cmos5l-bandgap_core/drc_report.json` | `clean`, 0 violations | `sg13cmos5l`, `sha256:5a43b8eb…` (#561 step-2 `klt 0.8.0` re-mint; #633 re-mint on the base-contact-repair GDS — still `clean`/0) |
 | `sg13cmos5l-bandgap_amp` | `layout/sg13cmos5l-bandgap_amp/drc_report.json` | `clean`, 0 violations | `sg13cmos5l`, `sha256:5a43b8eb…` (#561 step-2 `klt 0.8.0` re-mint) |
 | `sg13cmos5l-bandgap_startup` | `layout/sg13cmos5l-bandgap_startup/drc_report.json` | `clean`, 0 violations | `sg13cmos5l`, `sha256:5a43b8eb…` (#561 step-2 `klt 0.8.0` re-mint) |
 

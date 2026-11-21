@@ -258,7 +258,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:1b07a94d9b4e9119ec06c90c8703e50f4fd52bd72ccfe8934473338c12876361",
+      "content_hash": "sha256:02c7f5e279ef9fa5ab35b0a931a802ab3a238355bcaf1fb54dd4c06e2737b663",
       "role": "layout"
     },
     "klayout_version_mismatch": true

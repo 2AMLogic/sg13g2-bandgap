@@ -560,9 +560,29 @@ def draw_pnpmpa(
     b.net_label(emitter_net, x0, y0)
 
     # -- base: n+ Activ ring in the same NWell + Metal1 ring ---------------
-    br_x0, br_y0 = x0 - d["w2act"] - d["dw2act"], y0 - d["h2act"] - d["dh2act"]
-    br_x1, br_y1 = x0 + d["w2act"] + d["dw2act"], y0 + d["h2act"] + d["dh2act"]
-    b.ring(L_ACTIV, br_x0, br_y0, br_x1, br_y1, min(d["dw2act"], d["dh2act"]))
+    # Issue #633: the PCell formula's own wall, ``min(dw2act, dh2act) =
+    # dh2act = 0.29`` um (``dw2act >= 0.3`` always, since it is
+    # ``max(wact, 0.3)``), is 0.01 um too thin to land even one ``Cnt_a``
+    # cut with ``Cnt_c`` Activ enclosure on both sides -- 0.16 + 2*0.07 =
+    # 0.30 um -- so the three ``cont_array`` calls below hit their fit
+    # guard and drew **zero** base-ring contacts: the base ``Activ`` ring,
+    # the well and the ``vss`` Metal1 ring were unconnected conductors (the
+    # #240 ``nSD`` marker made the tap *region* visible, not a physical
+    # tie). Widen the wall to that minimum legal landing, growing the ring
+    # *outward*: the inner edge stays exactly where
+    # :func:`pnpmpa_extent`'s PCell formulae put it (``w2act``/``h2act``,
+    # keeping the ``PSD_C`` implant spacing to the emitter's ``pSD``), and
+    # the outer edge moves at most 0.01 um deeper into the well's own
+    # 0.31 um margin, leaving >= 0.30 um of well beyond the ring for every
+    # instantiated size.
+    pcell_wall = min(d["dw2act"], d["dh2act"])
+    wall = max(pcell_wall, CNT_A + 2 * CNT_C)
+    grow = wall - pcell_wall
+    br_x0, br_y0 = (x0 - d["w2act"] - d["dw2act"] - grow,
+                    y0 - d["h2act"] - d["dh2act"] - grow)
+    br_x1, br_y1 = (x0 + d["w2act"] + d["dw2act"] + grow,
+                    y0 + d["h2act"] + d["dh2act"] + grow)
+    b.ring(L_ACTIV, br_x0, br_y0, br_x1, br_y1, wall)
     # Issue #240: an explicit ``nSD`` ring over the same four walls. The n+
     # base ring has always been n+ *electrically* (the well is the PNP's
     # base, and this ring is its contact), but CMOS5L's own PCell idiom
@@ -570,20 +590,25 @@ def draw_pnpmpa(
     # any marker-keyed derivation (klt erc's ``ties[]`` boolean, the deck's
     # ``tap_nplus``) was structurally blind to it. Drawing the marker makes
     # the physically-real tie gradeable: same coordinates, same wall width
-    # as the ``Activ`` ring above, and strictly inside the well (``wnwell``
-    # clears the ring's outer edge by 0.31 um for every instantiated size,
-    # per :func:`pnpmpa_extent`'s own formulae). It does deviate from the
-    # PDK PCell's own mask set -- the documented trade issue #240 names for
-    # this cause -- and it must never reach the emitter's ``pSD`` (this
-    # ring's inner edge sits ``PSD_C`` outside it, the same implant spacing
-    # the PCell itself keeps between the two).
-    b.ring(L_NSD, br_x0, br_y0, br_x1, br_y1, min(d["dw2act"], d["dh2act"]))
+    # as the ``Activ`` ring above (issue #633's widened landing included),
+    # and strictly inside the well (``wnwell`` clears the ring's outer edge
+    # by >= 0.30 um for every instantiated size, per
+    # :func:`pnpmpa_extent`'s own formulae and the ``grow`` arithmetic
+    # above). It does deviate from the PDK PCell's own mask set -- the
+    # documented trade issue #240 names for this cause -- and it must never
+    # reach the emitter's ``pSD`` (this ring's inner edge sits ``PSD_C``
+    # outside it, the same implant spacing the PCell itself keeps between
+    # the two).
+    b.ring(L_NSD, br_x0, br_y0, br_x1, br_y1, wall)
+    # The Metal1 ring sizes with the wall (the same -0.04 um inset pair the
+    # collector ring below uses), so the single centred contact column each
+    # wall now lands stays covered on both sides by ``M1_c1 = 0.05`` um of
+    # metal -- the same endcap the collector ring's column has always had.
     base_ring_m1 = (br_x0 + 0.02, br_y0 + 0.02, br_x1 - 0.02, br_y1 - 0.02)
     b.ring(
         L_METAL1, *base_ring_m1,
-        width=min(d["dw2act"], d["dh2act"]) - 0.04, open_top=True,
+        width=wall - 0.04, open_top=True,
     )
-    wall = min(d["dw2act"], d["dh2act"])
     cont_array(b, br_x0 + CNT_C, br_y0 + CNT_C, br_x0 + wall - CNT_C, br_y1 - CNT_C)
     cont_array(b, br_x1 - wall + CNT_C, br_y0 + CNT_C, br_x1 - CNT_C, br_y1 - CNT_C)
     cont_array(b, br_x0 + CNT_C, br_y0 + CNT_C, br_x1 - CNT_C, br_y0 + wall - CNT_C)
