@@ -7,6 +7,12 @@
 #   sim/closed-loop-psrr/run_klt_sim.sh --batch   # the 45-point PVT grid, on the batch fleet
 #   sim/closed-loop-psrr/run_klt_sim.sh --record  # mint evidence from the enriched report
 #
+#   PSRR_VARIANT=<name> <any mode>  # run the same bench on a bench-local
+#                                   # PROPOSAL body from variants/<name>.*
+#                                   # instead of the as-built DUT (issue
+#                                   # #631): variant body template, variant
+#                                   # sanity anchors, variant record spec.
+#
 # Cold start: set PDK_ROOT/PDK and run sim/tools/build-osdi.sh once (sim/env.sh),
 # then `--sanity`, `--batch` (which runs the sanity gate first), `--record`.
 # A report from a partial grid is refused by the shard merger (it requires the
@@ -39,20 +45,47 @@ source "${SIM_DIR}/lib/msense_width.sh"
 ( cd "${REPO_ROOT}" && read_msense_width "design/netlist/bandgap_startup.spice" \
     && printf '%s' "${MSENSE_W}" > "${WORK}/msense_w.txt" )
 MSENSE_W="$(<"${WORK}/msense_w.txt")"
+
+# Variant selection (issue #631): PSRR_VARIANT=<name> runs the SAME bench on
+# a bench-local PROPOSAL body under variants/ instead of the as-built DUT --
+# so a candidate can be grid-verified before any committed-design change.
+# The variant carries its own body template, its own sanity anchors (its
+# typ/27C/3.30V point is NOT the as-built record's) and its own record spec
+# (so a minted record names the variant, not the as-built DUT). Unset: the
+# as-built path below, byte-identical to before this hook existed.
+DUT_TEMPLATE="${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
+RECORD_SPEC="${EXP_DIR}/testbench/${STEM}.record-spec.json"
+VARIANT=""
+if [[ -n "${PSRR_VARIANT:-}" ]]; then
+  VARIANT="${PSRR_VARIANT}"
+  if [[ ! -f "${EXP_DIR}/variants/${VARIANT}.body.spice.tmpl" ]]; then
+    echo "run_klt_sim.sh: unknown PSRR_VARIANT '${VARIANT}' (no" \
+         "${EXP_DIR}/variants/${VARIANT}.body.spice.tmpl)" >&2
+    exit 3
+  fi
+  DUT_TEMPLATE="${EXP_DIR}/variants/${VARIANT}.body.spice.tmpl"
+  RECORD_SPEC="${EXP_DIR}/variants/${VARIANT}.record-spec.json"
+  # shellcheck source=/dev/null
+  source "${EXP_DIR}/variants/${VARIANT}.anchors.env"
+  echo "run_klt_sim.sh: PSRR_VARIANT=${VARIANT} (proposal body, variant sanity anchors)"
+fi
 BODY_TEMPLATE="${WORK}/body.spice.tmpl"
-sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl" > "${BODY_TEMPLATE}"
+sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${DUT_TEMPLATE}" > "${BODY_TEMPLATE}"
 IDENT_ARGS+=(--extra "${REPO_ROOT}/design/netlist/bandgap_startup.spice"
   --extra "${REPO_ROOT}/design/netlist/bandgap_core.spice"
   --extra "${REPO_ROOT}/design/netlist/bandgap_amp.spice"
   --extra "${HARNESS_DIR}/enrich_ac_report.py")
 
 # Sanity anchors: the newest committed record's typ/27C/3.30V row (20261001-085737-e5507b2).
+# (A PSRR_VARIANT run replaces these from variants/<name>.anchors.env above.)
 KIND="psrr"
 ANCHOR_NAME="psrr_dc_db"
-ANCHOR_DB="66.0695"
-ANCHOR_DB_TOL="0.1"
-ANCHOR_VREF_OP_V="1.047278"
-ANCHOR_VREF_TOL_V="0.002"
+if [[ -z "${VARIANT}" ]]; then
+  ANCHOR_DB="66.0695"
+  ANCHOR_DB_TOL="0.1"
+  ANCHOR_VREF_OP_V="1.047278"
+  ANCHOR_VREF_TOL_V="0.002"
+fi
 
 case "${MODE}" in
 --sanity)
@@ -78,8 +111,9 @@ case "${MODE}" in
 --record)
   ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
       --report "${WORK}/report-enriched.json" \
-      --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
+      --spec "${RECORD_SPEC}" \
       --experiment "${EXP_DIR}" )
-  echo "run_klt_sim.sh: record minted under ${EXP_DIR}/records/"
+  echo "run_klt_sim.sh: record minted under ${EXP_DIR}/records/" \
+       "${VARIANT:+(variant ${VARIANT})}"
   ;;
 esac
