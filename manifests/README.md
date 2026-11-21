@@ -148,7 +148,7 @@ The binding used here:
   that row covered and the trimmed ±0.5 % line as a **gap** (#303, PR #435
   pending — re-campaign and re-mint when it lands).
   **What the citation does and does not prove.** It proves the statistical
-  machinery ran on real seeded draws: every yield estimate carries its
+  machinery ran on real seeded draws: each empirical yield estimate carries a
   Clopper-Pearson interval, every sample-size verdict is `sufficient`
   (±1 point half-width), and exactly one draw (wcs_125, 1.2215 V) falls
   outside the bounds. It does **not** prove the ±16 % 3σ claim holds: the
@@ -163,12 +163,15 @@ The binding used here:
   what it always was — the harness's own determinism check — and is not
   presented as klt's negative control. The citation carries no
   `content_hash` pin because `klt yield` envelopes record no
-  `provenance.input` block (upstream JSON contract, like `klt lvs`); the
-  freshness chain is the verdict-of-record identity check — the report names
-  its samples document (`samples`: `<id>-yield-samples.json`, committed
-  beside it), `klt signoff` hashes it into every fresh grade, so any change
-  to the samples document or the report rots the committed
-  `sg13g2-bandgap.signoff.json` and fails `check_signoff_manifest.py`.
+  `provenance.input` block (upstream JSON contract, like `klt lvs`); its
+  freshness is three separate checks, none of which hashes the sample
+  set into the verdict: (1) `klt signoff` re-grades the report, and
+  `check_signoff_manifest.py` fails if the resulting grade differs from the
+  committed `sg13g2-bandgap.signoff.json`; (2) the append-only check
+  protects previously committed records; (3) regenerating the samples and
+  report (`klt yield-csv`, `klt yield`) and comparing byte for byte verifies
+  their contents against the source CSV and limits. An edit to the samples
+  or report that leaves the grade unchanged is **not** caught by (1).
 - **Item 11 (Power delivery, structural) — cited as the compound pair
   `layout/bandgap_top/erc_report.json` (pinned to the `bandgap_top.gds`
   hash) + `layout/bandgap_top/lvs_report.runset.json` (item 4's LVS
@@ -247,9 +250,6 @@ of them, but no `klt` envelope grades it yet):
   TC grid on the same 8-point corner set
   (`sim/closed-loop-vref-pvt-boxtc/`, schematic + PEX) — but no `klt sim`
   corner-matrix envelope has ever been produced.
-- **6 (Monte Carlo):** `sim/closed-loop-vref-mc/` holds an N=300 seeded
-  mismatch MC with negative control (issue #215) — but no `klt yield`
-  envelope.
 - **7 (Post-layout):** PEX netlists and post-layout PEX sim records exist
   (`layout/*/*.pex.spice`, `sim/closed-loop-*-pex/`) — but no `klt pex`
   delta report; item 7 rejects every other evidence kind by construction.
