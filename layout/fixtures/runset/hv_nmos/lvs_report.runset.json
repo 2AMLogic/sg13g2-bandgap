@@ -382,16 +382,16 @@
   ],
   "environment": {
     "engine": "klayout-runset",
-    "engine_version": "0.30.3",
-    "klayout_binary": "/tmp/i380/klayout",
+    "engine_version": "0.30.12",
+    "klayout_binary": "/usr/bin/klayout",
     "netgen_binary": null,
     "layout_sha256": "f75bb6630cb29accdae2210a6d4f1ed2c9753b46e6e318fbaaff1383721b59d3",
     "reference_sha256": "b6aaa11e1a763989dbbefad42af1686249706c347dc5320ab37c386e154d89ca",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.7.1.dev2517+g6bb7cf233677",
-    "klayout_version": "0.30.12",
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.13",
     "pdk": null,
     "deck": {
       "name": "sg13g2.lvs",
@@ -406,7 +406,7 @@
       "deck_file": "/home/ubuntu/share/pdk/ihp-sg13g2/libs.tech/klayout/tech/lvs/sg13g2.lvs",
       "deck_vars": {},
       "content_hash": "sha256:e01bcb1ec5858e8069bade8f7fd7ec28c1026fc2fd0590e8f611d3398a5bbbd7",
-      "klayout_application_version": "0.30.3",
+      "klayout_application_version": "0.30.12",
       "exit_status": 0,
       "engine_error_lines": []
     }

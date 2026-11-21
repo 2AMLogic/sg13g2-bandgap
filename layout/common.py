@@ -567,18 +567,25 @@ def draw_hv_mos(
 
     if flavor == "pmos":
         b.box(L_PSD, x_lo - 0.1, y_lo - 0.1, x_hi + 0.1, y_hi + 0.1)
-        # NWell must enclose the tap ring too (the well-tie derivation
-        # requires the tap's own nSD-marked Activ to sit *inside* this same
-        # NWell island) -- extended on whichever side the tap landed on,
-        # past its own outer edge by TAP_NWELL_MARGIN_UM; the opposite edge
-        # keeps the original 0.4um margin unchanged.
-        nwell_y_lo = y_lo - 0.4
-        nwell_y_hi = y_hi + 0.4
+        # NWell must enclose the pSD-marked Activ by >= the deck's
+        # `nwell.enclosing.pactiv.hv.1` 0.62um floor (NW.c1: P+ Activ inside
+        # ThickGateOx needs 0.62um of well around it -- the recognition
+        # stack this branch draws put the pSD under ThickGateOx, so the HV
+        # variant applies, not the 0.31um LV one; found when #628 re-minted
+        # DRC under the 0.8.0 evidence pin, whose deck carries the rule).
+        # 0.68um clears it by the same 0.06um slack TAP_NWELL_MARGIN_UM
+        # uses over its own 0.24um floor (#571), and must still cover the
+        # tap ring too (the well-tie derivation requires the tap's own
+        # nSD-marked Activ to sit *inside* this same NWell island) --
+        # extended on whichever side the tap landed on, past its own outer
+        # edge by TAP_NWELL_MARGIN_UM.
+        nwell_y_lo = y_lo - 0.68
+        nwell_y_hi = y_hi + 0.68
         if tap_at_source:
             nwell_y_hi = max(nwell_y_hi, tap_y_hi + TAP_NWELL_MARGIN_UM)
         else:
             nwell_y_lo = min(nwell_y_lo, tap_y_lo - TAP_NWELL_MARGIN_UM)
-        b.box(L_NWELL, x_lo - 0.4, nwell_y_lo, x_hi + 0.4, nwell_y_hi)
+        b.box(L_NWELL, x_lo - 0.68, nwell_y_lo, x_hi + 0.68, nwell_y_hi)
 
     # Source/drain contact + Metal1 pad, one strip each side of the gate.
     # Cont y-extent is 0.18um (>= the deck's cont.width.1 0.16um floor, same
