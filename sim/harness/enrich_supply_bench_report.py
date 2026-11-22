@@ -135,7 +135,6 @@ def _fail(corner: dict, code: str, message: str) -> None:
 
 def _enrich_ladder_corner(corner: dict, cwd: Path) -> None:
     """Grade one corner of the ladder bench (`--bench startup_release`)."""
-    inject_baked_supply(corner, cwd)
     got = _meas_map(corner)
     checkpoints = ladder_checkpoints(corner)
     if not checkpoints:
@@ -222,6 +221,12 @@ def enrich(report: dict, bench: str) -> dict:
     if bench == LADDER_BENCH:
         corners = report.get("corners", [])
         cwd = Path.cwd()
+        # The baked supply is corner identity, not verdict: inject it on
+        # every corner (a klt-graded FAIL corner keeps its /novdd/ id
+        # otherwise, and the adapter refuses the mixed grid -- issue #629's
+        # first failing-corner record).
+        for corner in corners:
+            inject_baked_supply(corner, cwd)
         for corner in corners:
             if corner.get("status") == "pass":
                 _enrich_ladder_corner(corner, cwd)
@@ -230,9 +235,10 @@ def enrich(report: dict, bench: str) -> dict:
     corners = report.get("corners", [])
     cwd = Path.cwd()
     for corner in corners:
+        inject_baked_supply(corner, cwd)
+    for corner in corners:
         if corner.get("status") != "pass":
             continue
-        inject_baked_supply(corner, cwd)
         got = _meas_map(corner)
         needed = [cfg[k] for k in ("fb", "sns1", "sns2", "det", "i_mkfb")] + list(cfg["magnitudes"])
         if any(k not in got for k in needed):

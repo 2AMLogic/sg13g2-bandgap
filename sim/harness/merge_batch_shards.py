@@ -357,6 +357,25 @@ def rebuild_measurements_rollup(merged: dict, declared: list[dict]) -> None:
     }
 
 
+def refresh_rollup(report: dict) -> None:
+    """Re-aggregate an already-merged report's rollup from its corners.
+
+    The merge builds the rollup before the bench enrichers run, and they
+    legitimately mutate corners afterwards: they rewrite ``/novdd/`` corner
+    ids once the baked supply is injected and re-grade verdicts with the
+    closed-loop criteria. The committed report (issue #629) must carry a
+    rollup consistent with the corners it ships, so the adapter re-derives
+    it from the declared metadata the merge already left in
+    ``report["measurements"]`` -- same rule, same fields, no new inputs.
+    """
+    declared = report.get("measurements")
+    if not isinstance(declared, list) or not declared:
+        return
+    specs = [s for s in declared if isinstance(s, dict) and isinstance(s.get("name"), str)]
+    if specs:
+        rebuild_measurements_rollup(report, specs)
+
+
 def merge(
     report_paths: list[str],
     expected: list[str] | None = None,

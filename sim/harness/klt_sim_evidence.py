@@ -857,6 +857,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+    mbs.refresh_rollup(report)
     spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
     experiment = Path(args.experiment).resolve()
     repo_root = Path(__file__).resolve().parents[2]
