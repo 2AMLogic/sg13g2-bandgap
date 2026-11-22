@@ -242,7 +242,12 @@ snapshots in the fleet artifact store with `klt artifact put` and commits only
   have had: `sim/<exp>/corners/<record-id>/<pt>.log`,
   `sim/<exp>/netlist-snapshots/<record-id>/<pt>.spice`), and
 - `records/<record-id>.md` + `.csv`; the `.md` gains a **Stored evidence**
-  field listing name, size and sha256 per object.
+  field listing name, size and sha256 per object, and
+- `records/<record-id>-report.json` (issue #629) — the run's own `klt sim`
+  report, host paths scrubbed, its request-declared `measurements[]` rollup
+  re-aggregated over the merged grid so a request-level `limits` bound is
+  graded over every corner. This is the citable envelope a `klt signoff`
+  item-5 style citation names; see `manifests/README.md`.
 
 Such a record has **no** `corners/<record-id>/` or
 `netlist-snapshots/<record-id>/` directory, and CI fails if it does. Records

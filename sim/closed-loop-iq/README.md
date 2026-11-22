@@ -105,19 +105,14 @@ circuit with; this experiment simply reads the current it already carries
 (`i(Vvdd)`), the same way `../closed-loop-startup/`'s own `Vmkfb` ammeter
 reads a current without adding a new device to the circuit under test.
 
-**It does not claim conformance to any ratified spec row.**
-`spec/porting-plan.md` §6 is still a **draft, unratified** table (#125) —
-per `klayout-tools`' `docs/design-evidence-tiers.md` T1 checklist
-(referenced from issue #4), no checklist item on #4 closes from this record
-alone, and this README does not compare its own numbers against that draft
-table's `< 50 µA` Iq target as a pass/fail bar. It reports what this run
-measured (**19.98-42.37 µA** across this run's 45 PVT points — see
-`records/<record-id>.csv` for the full per-point table) as **evidence**, not
-a verdict. This experiment is the capability to re-check that number the
-moment a ratified spec row exists — it is not, by itself, a claim that the
-design meets or misses any target. (For context only, since this is not a
-pass/fail claim: every point in this run's own record happens to measure
-below the draft `< 50 µA` target — see "Results summary" below.)
+**Since issue #629 it does claim conformance — graded by the run itself.**
+The spec table is ratified (`spec/decision-records/0007`; the `< 50 µA` Iq
+row included), and the request template now carries that bound as a limit
+on `iq_avg_a` (`min` −5e-5 A, `spec_row iq`), so the run's own report
+grades the row and the committed `records/<record-id>-report.json` is the
+citable T1 item-5 envelope. The current envelope passes 45/45 (worst
+41.78 µA at bcs/125 °C/3.63 V, margin 16.4 % to 50 µA; see
+`records/<record-id>.csv` for the full per-point table).
 
 It also does not claim anything about loop stability/phase margin (see
 [`../loop-gain-phase-margin/`](../loop-gain-phase-margin/README.md)),
