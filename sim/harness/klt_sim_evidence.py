@@ -437,6 +437,11 @@ def build_md(
         lines.append(f"  - Per-point generated netlists: `netlist-snapshots/{rid}/`")
         lines.append(f"  - Per-point raw ngspice logs: `corners/{rid}/`")
     lines.append(f"  - Parsed CSV: `records/{rid}.csv`")
+    lines.append(
+        f"  - Committed `klt sim` report: `records/{rid}-report.json` (the run's own"
+        " response document, host paths scrubbed; the citable envelope for a"
+        " `klt signoff` item-5 style citation, issue #629)"
+    )
     for link in spec.get("extra_links") or []:
         lines.append(f"  - {link}")
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -497,6 +502,7 @@ def emit(
     extraction: list[dict] | None = None,
     expected_grid: list[str] | None = None,
     store: es.Store | None = None,
+    report_path: Path | None = None,
 ) -> tuple[int, int]:
     """Validate a report and publish it as a stored record (issue #379).
 
@@ -537,6 +543,7 @@ def emit(
     records_out = experiment / "records"
     csv_out = records_out / f"{rid}.csv"
     md_out = records_out / f"{rid}.md"
+    report_out = records_out / f"{rid}-report.json"
     try:
         manifest_out = es.manifest_path(repo_root, experiment.name, rid)
     except es.StoreError as exc:
@@ -555,7 +562,7 @@ def emit(
             f"klt_sim_evidence.py: corner ids are not unique after normalisation: {dupes}"
             " (their logs and snapshots would overwrite each other)"
         )
-    _reject_existing(rid, (csv_out, md_out, manifest_out))
+    _reject_existing(rid, (csv_out, md_out, manifest_out, report_out))
 
     logs: dict[str, Path] = {}
     snapshots: dict[str, str] = {}
@@ -584,10 +591,19 @@ def emit(
     if dry_run:
         print(
             f"would store {len(logs)} log(s) + {len(snapshots)} netlist snapshot(s), then write"
-            f" {records_out}/{rid}.{{md,csv}} and {manifest_out}"
+            f" {records_out}/{rid}.{{md,csv,report.json}} and {manifest_out}"
         )
         print(f"  {passed}/{total} PASS; measurement columns: {', '.join(names)}")
         return passed, total
+
+    report_json = json.dumps(
+        sanitize_report_strings(
+            report,
+            report_replacements(report_path, pdk_root) if report_path else [],
+        ),
+        indent=2,
+        sort_keys=False,
+    ) + "\n"
 
     _publish(
         experiment,
@@ -602,11 +618,52 @@ def emit(
         ),
         store or es.Store(),
         recheck=(lambda: xb.verify_captured(extraction, repo_root)) if extraction else None,
+        report_json=report_json,
     )
     return passed, total
 
 
 _SAFE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]*$")
+
+
+def sanitize_report_strings(node, replacements: list[tuple[str, str]]):
+    """Replace absolute host-path prefixes in a report's string values.
+
+    The committed `klt sim` report (issue #629, T1 item 5's citable envelope)
+    carries the corners' `artifacts` paths, the engine binary path and other
+    scratch locations that live under the run's WORK directory or the host's
+    PDK root. Committed evidence pins no machine's directory layout -- the
+    same discipline :func:`inline_deck` applies to netlist snapshots, and
+    `klt sim` itself applies to `environment.models_lib`
+    (klayout-tools #1261/#1274). Only exact string values are rewritten;
+    keys and numbers are untouched, and a path that matches no replacement
+    survives verbatim.
+    """
+    if isinstance(node, dict):
+        return {k: sanitize_report_strings(v, replacements) for k, v in node.items()}
+    if isinstance(node, list):
+        return [sanitize_report_strings(v, replacements) for v in node]
+    if isinstance(node, str):
+        for prefix, placeholder in replacements:
+            if prefix and node.startswith(prefix):
+                return placeholder + node[len(prefix):]
+        return node
+    return node
+
+
+def report_replacements(report_path: Path, pdk_root: str | None) -> list[tuple[str, str]]:
+    """The (prefix, placeholder) pairs for :func:`sanitize_report_strings`:
+    the run's WORK directory, then the PDK root (the `${PDK_ROOT}` convention
+    `sim/env.sh` establishes), then the home directory as a belt."""
+    pairs: list[tuple[str, str]] = []
+    work = report_path.resolve().parent
+    pairs.append((str(work), "<work>"))
+    if pdk_root:
+        pairs.append((str(Path(pdk_root).resolve()), "${PDK_ROOT}"))
+    home = os.environ.get("HOME")
+    if home:
+        pairs.append((home, "<home>"))
+    return pairs
 
 
 def validate_record_id(value: str, *, what: str = "record id") -> None:
@@ -662,6 +719,7 @@ def _publish(
     store: es.Store,
     *,
     recheck=None,
+    report_json: str | None = None,
 ) -> None:
     """Store the raw outputs, then publish manifest + record without overwriting.
 
@@ -674,10 +732,16 @@ def _publish(
     the CSV. Any failure removes only what this call created; a failed put
     leaves the staged bytes in the scratch tree (they are git-ignored) and
     nothing under `sim/` or `manifests/`.
+
+    ``report_json`` (issue #629): the run's own report, host paths scrubbed,
+    committed beside the record as ``records/<rid>-report.json`` -- the
+    citable ``klt sim`` envelope for T1 item 5. Installed just before the CSV
+    so the commit marker stays last.
     """
     records_out = experiment / "records"
     csv_out = records_out / f"{rid}.csv"
     md_out = records_out / f"{rid}.md"
+    report_out = records_out / f"{rid}-report.json"
     manifest_out = es.manifest_path(repo_root, experiment.name, rid)
     manifest_rel = manifest_out.relative_to(repo_root).as_posix()
     prefix = f"sim/{experiment.name}"
@@ -738,6 +802,10 @@ def _publish(
         with open(md_out, "x", encoding="utf-8") as handle:
             handle.write(md_text)
         installed.append(md_out)
+        if report_json is not None:
+            with open(report_out, "x", encoding="utf-8") as handle:
+                handle.write(report_json)
+            installed.append(report_out)
         os.replace(tmp_csv, csv_out)  # commit: the placeholder becomes the record
         reserved = False
     except BaseException as exc:
@@ -789,6 +857,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+    mbs.refresh_rollup(report)
     spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
     experiment = Path(args.experiment).resolve()
     repo_root = Path(__file__).resolve().parents[2]
@@ -810,6 +879,7 @@ def main(argv: list[str] | None = None) -> int:
         dry_run=args.dry_run,
         extraction=extraction,
         expected_grid=mbs.load_expected(args.expected_grid) if args.expected_grid else None,
+        report_path=Path(args.report),
     )
     print(f"klt_sim_evidence.py: {passed}/{total} PASS -> {experiment.name}/records/{rid}.md")
     return 0 if passed == total else 1

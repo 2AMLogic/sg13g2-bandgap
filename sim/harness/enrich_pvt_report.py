@@ -112,11 +112,16 @@ def inject_baked_supply(corner: dict, cwd: Path) -> None:
 def enrich(report: dict) -> dict:
     corners = report.get("corners", [])
     cwd = Path.cwd()
+    # The baked supply is corner identity, not verdict: inject it on every
+    # corner (a klt-graded FAIL corner keeps its /novdd/ id otherwise, and
+    # the adapter refuses the mixed grid -- issue #629's first
+    # failing-corner record).
+    for corner in corners:
+        inject_baked_supply(corner, cwd)
     for corner in corners:
         got = _meas_map(corner)
         if corner.get("status") != "pass":
             continue
-        inject_baked_supply(corner, cwd)
         needed = ("sns1_v", "sns2_v", "vref_2ms_v", "vref_3ms_v")
         if any(k not in got for k in needed):
             corner["status"] = "fail"

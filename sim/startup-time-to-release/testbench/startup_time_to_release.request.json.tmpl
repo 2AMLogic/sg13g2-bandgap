@@ -7,7 +7,22 @@
     "Measurement naming: ngspice `.meas` names in the legacy template are `v_det_<N>u` / `i_mkfb_<N>u`; this repo's klt records name the same quantity `det_<N>u_v` / `i_mkfb_<N>u_a` (the legacy CSV's own column spelling, and the convention sim/closed-loop-startup's request already follows). The record spec's `pass_requires` and run_klt_sim.sh's sanity anchors use these same names.",
     "Every column is a single-vector `.meas ... at=<t>` over a resident `.save` vector. The derived dvsns_<N>u_v columns, the per-checkpoint verdicts and release_time_us are applied by sim/harness/enrich_supply_bench_report.py, the same practice the committed records use. Values arrive at 6 significant figures.",
     "The supply is held from 200 us to 2 ms (the same window the legacy bench and sim/closed-loop-startup use), so the 2000u checkpoint is directly comparable with closed-loop-startup's own t=2ms record.",
-    "`remote.hosts: 3` = one fleet job per temperature point (the box-TC wrapper's measured split, scaled to this grid; not separately measured here)."
+    "`remote.hosts: 3` = one fleet job per temperature point (the box-TC wrapper's measured split, scaled to this grid; not separately measured here).",
+    "",
+    "SPEC BOUND (issue #629, T1 item 5): i_mkfb_1000u_a carries the",
+    "ratified Startup row's '< 1 ms' bound (spec/decision-records/0007) at",
+    "the request level: the mkfb release criterion (|i(Vmkfb)| <= 50 nA,",
+    "the pvt_closed_loop_verdict constant) evaluated at the 1000 us",
+    "checkpoint -- the spec's own deadline. A corner that has not released",
+    "by 1 ms fails this limit and so fails the envelope. The row's other",
+    "half (self-starting) and the remaining release criteria (det <= 0.2*vdd",
+    "supply-relative, |sns1-sns2| <= 20 mV across two measurements, fb not",
+    "railed) are not expressible as per-measurement limits; the enrichment",
+    "re-grades every corner with all four criteria and the committed",
+    "<id>-report.json carries those corner verdicts. This bench is the",
+    "Startup row's citation, not closed-loop-startup, precisely because its",
+    "request can carry the 1 ms bound; the twin's 2 ms final-state grid",
+    "remains the corroborating record."
   ],
   "engine": "ngspice",
   "netlist": "@@BODY@@",
@@ -228,7 +243,10 @@
     },
     {
       "name": "i_mkfb_1000u_a",
-      "spice": ".meas tran i_mkfb_1000u_a find i(Vmkfb) at=1000u"
+      "spice": ".meas tran i_mkfb_1000u_a find i(Vmkfb) at=1000u",
+      "unit": "A",
+      "spec_row": "startup",
+      "limits": {"min": -5e-8, "max": 5e-8}
     },
     {
       "name": "fb_1000u_v",

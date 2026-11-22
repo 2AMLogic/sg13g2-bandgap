@@ -232,7 +232,11 @@ class WriterFailClosedTests(TempDirCase):
         self.assertEqual(self.emit(store), (2, 2))
         t = self.committed()
         self.assertEqual(sorted(p for p in t if p.startswith("sim/demo/")),
-                         ["sim/demo/records/rid1.csv", "sim/demo/records/rid1.md"])
+                         ["sim/demo/records/rid1-report.json", "sim/demo/records/rid1.csv",
+                          "sim/demo/records/rid1.md"])
+        # Design call (#629): the run's own report is committed even when no
+        # `report_path` is supplied (there is then simply nothing to scrub).
+        self.assertEqual(json.loads(t["sim/demo/records/rid1-report.json"])["status"], "pass")
         self.assertIn("manifests/artifacts/demo-rid1.manifest.json", t)
         self.assertFalse(list(self.tmp.glob("sim/demo/corners")), "raw logs must not be written")
         self.assertFalse(list(self.tmp.glob("sim/demo/netlist-snapshots")))
@@ -244,6 +248,28 @@ class WriterFailClosedTests(TempDirCase):
             self.assertTrue(e["uri"].startswith("artifact:"))
             self.assertIn(f"| `{e['name']}` | {e['size']} | `{e['sha256']}` |", md)
         self.assertFalse((self.tmp / es.SCRATCH_DIR).exists(), "scratch is removed on success")
+
+    def test_committed_report_is_scrubbed_of_host_paths(self) -> None:
+        work = self.tmp / "work"
+        work.mkdir(parents=True, exist_ok=True)
+        rep = work / "report.json"
+        rep.write_text("{}", encoding="utf-8")
+        self.assertEqual(
+            kse.emit(self.report(), SPEC, self.exp, self.tmp, "rid1", store=FakeStore(),
+                     report_path=rep), (2, 2))
+        text = (self.exp / "records" / "rid1-report.json").read_text(encoding="utf-8")
+        self.assertNotIn(str(work.resolve()), text)
+        self.assertIn("<work>/27.log", text)
+
+    def test_existing_report_blocks_publication(self) -> None:
+        r = self.exp / "records" / "rid1-report.json"
+        r.parent.mkdir(parents=True)
+        r.write_bytes(b"precious")
+        with self.assertRaises(SystemExit):
+            self.emit(FakeStore())
+        self.assertEqual(r.read_bytes(), b"precious")
+        self.assertFalse((self.exp / "records" / "rid1.csv").exists())
+        self.assertFalse((self.tmp / "manifests/artifacts/demo-rid1.manifest.json").exists())
 
     def test_preflight_failure_writes_nothing(self) -> None:
         for why in ("no artifact broker configured (KLT_ARTIFACT_BROKER is unset)",

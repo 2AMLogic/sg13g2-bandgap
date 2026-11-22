@@ -19,7 +19,15 @@
     "requires (ngspice 46 rewrites `par('...')` to a non-resident `pa_<n>`",
     "parameter); the two derived columns (dvsns_v, vref_settle_delta_v) are",
     "formed by the runner from the reported operands, the same practice the",
-    "committed records use. Values arrive at 6 significant figures."
+    "committed records use. Values arrive at 6 significant figures.",
+    "",
+    "SPEC BOUND (issue #629, T1 item 5): vref_3ms_v carries the settled",
+    "output reference against the +/-16% window [0.882, 1.218] V of the",
+    "1.050 V nominal (spec/decision-records/0011) -- the PVT-extent half of",
+    "the untrimmed line, deterministic per corner; the 3-sigma mismatch half",
+    "is item 6's Monte Carlo evidence (spec_row output-reference-untrimmed).",
+    "The limit is in the request so the run's own report grades it; the",
+    "committed <id>-report.json is the citable envelope."
   ],
   "engine": "ngspice",
   "netlist": "@@BODY@@",
@@ -72,7 +80,10 @@
     },
     {
       "name": "vref_3ms_v",
-      "spice": ".meas tran vref_3ms_v find v(vref) at=3m"
+      "spice": ".meas tran vref_3ms_v find v(vref) at=3m",
+      "unit": "V",
+      "spec_row": "output-reference-nominal",
+      "limits": {"min": 0.882, "max": 1.218}
     },
     {
       "name": "vbeq3_2ms_v",

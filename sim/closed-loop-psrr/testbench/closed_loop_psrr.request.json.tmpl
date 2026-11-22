@@ -23,7 +23,16 @@
     "over single reported values -- a unit conversion, not a differencing,",
     "so the 6-s.f. disposition is not spent. The op-point columns and the",
     "worst-case/frequency columns come from the per-corner log (body-side",
-    "prints)."
+    "prints).",
+    "",
+    "SPEC BOUND (issue #629, T1 item 5): psrr_dc_lin carries the ratified",
+    "PSRR @ DC row (> 60 dB, spec/decision-records/0007) as its linear",
+    "magnitude, the exact form this measurement reports: > 60 dB is",
+    "-20*log10(vm(vref)) > 60, i.e. vm(vref) <= 1e-3, so limits.max is",
+    "0.001. The limit is expected to FAIL at bcs/125C/3.63V (59.685 dB on",
+    "the 2026-11-13 grid, design issue #631) -- cited honestly as a failing",
+    "envelope, not relaxed. A corner reading exactly 60.000 dB would pass",
+    "the <= as a tie; no corner is near the bound except the failing one."
   ],
   "engine": "ngspice",
   "netlist": "@@BODY@@",
@@ -52,7 +61,10 @@
   "measurements": [
     {
       "name": "psrr_dc_lin",
-      "spice": ".meas ac psrr_dc_lin find vm(vref) at=1"
+      "spice": ".meas ac psrr_dc_lin find vm(vref) at=1",
+      "unit": "V",
+      "spec_row": "psrr-dc",
+      "limits": {"max": 0.001}
     },
     {
       "name": "psrr_1khz_lin",

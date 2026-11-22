@@ -155,9 +155,36 @@ def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:
     # rows the hand-transcribed bench itself seeded from), the check uses
     # the same-temperature reference and keeps the fixed 50 mV.
     op_match_slope_v_per_c = 0.002
+    cwd = Path.cwd()
+    # The baked supply is corner identity, not verdict: inject it on every
+    # corner (a klt-graded FAIL corner keeps its /novdd/ id otherwise, and
+    # the adapter refuses the mixed grid -- issue #629's first
+    # failing-corner record).
     for corner in report.get("corners", []):
-        if corner.get("status") != "pass":
+        deck_path = (corner.get("artifacts") or {}).get("deck")
+        if not deck_path:
             continue
+        p = Path(deck_path)
+        if not p.is_absolute():
+            p = cwd / p
+        if not p.exists():
+            continue
+        m = _VDD_RE.search(_splice_deck(p, cwd))
+        if m:
+            vdd_baked = float(m.group(1))
+            corner["supply_v"] = {"Vvdd": vdd_baked}
+            cid = corner.get("corner_id", "")
+            if "/novdd/" in cid:
+                corner["corner_id"] = cid.replace("/novdd/", f"/{vdd_baked:.2f}V/")
+    for corner in report.get("corners", []):
+        # Columns are appended for every corner, klt-graded pass or fail:
+        # the op prints, the dB conversions and the curve extrema are the
+        # log's own facts, and a corner that failed a request-level spec
+        # limit still carries them (issue #629's first failing-corner
+        # record). The closed-loop VERDICT below re-grades only a corner
+        # that entered passing -- an already-failing corner keeps klt's
+        # own diagnostics.
+        verdict_eligible = corner.get("status") == "pass"
         log_path = (corner.get("artifacts") or {}).get("log")
         deck_path = (corner.get("artifacts") or {}).get("deck")
         got = {m["name"]: m.get("value") for m in corner.get("measurements", [])}
@@ -165,7 +192,6 @@ def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:
         curve: list[tuple[float, float]] = []
         seeds: dict[str, float] = {}
         vdd_baked: float | None = None
-        cwd = Path.cwd()
         if log_path:
             p = Path(log_path)
             if not p.is_absolute():
@@ -303,7 +329,7 @@ def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:
         s1, s2 = op.get("sns1_op_v"), op.get("sns2_op_v")
         if s1 is not None and s2 is not None and abs(s1 - s2) > DVSNS_CLOSE_V:
             problems.append("loop_not_closed")
-        if problems:
+        if problems and verdict_eligible:
             corner["status"] = "fail"
             corner["diagnostics"] = [{"code": "ac_bench_verdict", "message": "; ".join(problems)}]
     corners = report["corners"]

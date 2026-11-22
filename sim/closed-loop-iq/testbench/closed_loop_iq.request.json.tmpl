@@ -13,7 +13,15 @@
     "figures under both solvers, and on this bench's hot corner",
     "(typ/125C/2.97V) KLU cut the engine wall ~1.44x (107.2 s -> 74.6 s,",
     "min-of-N); the 27C sanity corner showed no resolved difference.",
-    "timeout_s 1800 is unchanged."
+    "timeout_s 1800 is unchanged.",
+    "",
+    "SPEC BOUND (issue #629, T1 item 5): iq_avg_a carries the ratified Iq",
+    "row (< 50 uA, spec/decision-records/0007) on the steady-state supply",
+    "current averaged over the final 1 ms -- the quantity the record's Iq",
+    "verdict reads. i(Vvdd) is negative while delivering (passive sign",
+    "convention), so the bound rides limits.min = -5e-5 A. The limit is in",
+    "the request so the run's own report grades it; the committed",
+    "<id>-report.json is the citable envelope."
   ],
   "engine": "ngspice",
   "netlist": "@@BODY@@",
@@ -70,7 +78,10 @@
     },
     {
       "name": "iq_avg_a",
-      "spice": ".meas tran iq_avg_a avg i(Vvdd) from=2m to=3m"
+      "spice": ".meas tran iq_avg_a avg i(Vvdd) from=2m to=3m",
+      "unit": "A",
+      "spec_row": "iq",
+      "limits": {"min": -5e-5}
     }
   ],
   "options": {
