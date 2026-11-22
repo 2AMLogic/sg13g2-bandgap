@@ -1954,30 +1954,23 @@ class BoxTcGoldenTests(unittest.TestCase):
     def test_committed_companions_regenerate_byte_identically(self) -> None:
         # The acceptance test for the de-duplication (#465): both benches'
         # committed -boxtc.csv must come back out of the shared module
-        # unchanged. Read-only on sim/ -- output goes to a temp dir.
+        # unchanged, compared as raw bytes so a CRLF slip fails. sim/*/records/
+        # is append-only evidence, so the same call must leave the committed
+        # bytes and mtime untouched (guards against an EXP_DIR-relative
+        # default). Read-only on sim/ -- output goes to a temp dir.
         for exp, stem in BOXTC_BENCHES.items():
             with self.subTest(exp=exp):
                 records = SIM_DIR / exp / "records"
-                want = (records / f"{stem}-boxtc.csv").read_text()
+                committed = records / f"{stem}-boxtc.csv"
+                before_mtime = committed.stat().st_mtime_ns
+                before_bytes = committed.read_bytes()
                 with tempfile.TemporaryDirectory() as tmp:
                     got = Path(tmp) / "companion.csv"
                     bxc.write_companion(records / f"{stem}.csv", got)
-                    self.assertEqual(got.read_text(), want)
-
-    def test_committed_companions_are_not_rewritten(self) -> None:
-        # sim/*/records/ is append-only evidence: deriving must never write
-        # back into it. Guards the module against an EXP_DIR-relative default.
-        for exp, stem in BOXTC_BENCHES.items():
-            with self.subTest(exp=exp):
-                committed = SIM_DIR / exp / "records" / f"{stem}-boxtc.csv"
-                before = committed.stat().st_mtime_ns, committed.read_bytes()
-                with tempfile.TemporaryDirectory() as tmp:
-                    bxc.write_companion(
-                        SIM_DIR / exp / "records" / f"{stem}.csv",
-                        Path(tmp) / "companion.csv",
-                    )
+                    self.assertEqual(got.read_bytes(), before_bytes)
                 self.assertEqual(
-                    (committed.stat().st_mtime_ns, committed.read_bytes()), before
+                    (committed.stat().st_mtime_ns, committed.read_bytes()),
+                    (before_mtime, before_bytes),
                 )
 
 
@@ -2214,30 +2207,23 @@ class EndpointTcGoldenTests(unittest.TestCase):
         # The acceptance test for the de-duplication (#496): both benches'
         # committed -tc.csv must come back out of the shared module
         # unchanged, byte for byte -- including the header and the absence
-        # of CRLF. Read-only on sim/ -- output goes to a temp dir.
+        # of CRLF, which the raw-bytes comparison enforces. sim/*/records/
+        # is append-only evidence, so the same call must leave the committed
+        # bytes and mtime untouched (guards against an EXP_DIR-relative
+        # default). Read-only on sim/ -- output goes to a temp dir.
         for exp, stem in TC_BENCHES.items():
             with self.subTest(exp=exp):
                 records = SIM_DIR / exp / "records"
-                want = (records / f"{stem}-tc.csv").read_text()
+                committed = records / f"{stem}-tc.csv"
+                before_mtime = committed.stat().st_mtime_ns
+                before_bytes = committed.read_bytes()
                 with tempfile.TemporaryDirectory() as tmp:
                     got = Path(tmp) / "companion.csv"
                     tcc.write_companion(records / f"{stem}.csv", got)
-                    self.assertEqual(got.read_text(), want)
-
-    def test_committed_companions_are_not_rewritten(self) -> None:
-        # sim/*/records/ is append-only evidence: deriving must never write
-        # back into it. Guards the module against an EXP_DIR-relative default.
-        for exp, stem in TC_BENCHES.items():
-            with self.subTest(exp=exp):
-                committed = SIM_DIR / exp / "records" / f"{stem}-tc.csv"
-                before = committed.stat().st_mtime_ns, committed.read_bytes()
-                with tempfile.TemporaryDirectory() as tmp:
-                    tcc.write_companion(
-                        SIM_DIR / exp / "records" / f"{stem}.csv",
-                        Path(tmp) / "companion.csv",
-                    )
+                    self.assertEqual(got.read_bytes(), before_bytes)
                 self.assertEqual(
-                    (committed.stat().st_mtime_ns, committed.read_bytes()), before
+                    (committed.stat().st_mtime_ns, committed.read_bytes()),
+                    (before_mtime, before_bytes),
                 )
 
 
