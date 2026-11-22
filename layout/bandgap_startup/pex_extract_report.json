@@ -8,8 +8,8 @@
   "top": "bandgap_startup",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_startup.pex.spice",
-  "netlist_sha256": "892cc05e5975381e5d2ef5e00a0164bc1dd3ed6c04570b8139aa07a000f3faf7",
-  "netlist_normalized_sha256": "37aa5775ec1869e34053d8bce28d2e0c8972d70e25cbe3afdc8d5a5dec785672",
+  "netlist_sha256": "f2e7ee3f8ce0165264a8d333ffae9961cd4e459b13b62b614154299122b5294b",
+  "netlist_normalized_sha256": "0811ed8fa82f5d1e4e7a110bf5d0c0e01b1bc3a7f6e0690929e630981d0e0489",
   "status": "extracted",
   "device_count": 3,
   "net_count": 5,
@@ -41,6 +41,11 @@
       "layer": 28,
       "datatype": 0,
       "shapes": 63
+    },
+    {
+      "layer": 44,
+      "datatype": 0,
+      "shapes": 2
     },
     {
       "layer": 111,
@@ -126,7 +131,7 @@
       "name": "DET",
       "pin": true,
       "device_count": 3,
-      "net_id": 4,
+      "net_id": 2,
       "pin_index": 0,
       "label_positions_um": [
         {
@@ -146,7 +151,7 @@
         },
         {
           "text": "DET",
-          "x_um": 44.272,
+          "x_um": 48.24,
           "y_um": 4.75
         }
       ]
@@ -155,7 +160,7 @@
       "name": "FB",
       "pin": true,
       "device_count": 1,
-      "net_id": 2,
+      "net_id": 5,
       "pin_index": 1,
       "label_positions_um": [
         {
@@ -169,7 +174,7 @@
       "name": "SNS1",
       "pin": true,
       "device_count": 1,
-      "net_id": 3,
+      "net_id": 1,
       "pin_index": 2,
       "label_positions_um": [
         {
@@ -183,7 +188,7 @@
       "name": "VDD",
       "pin": true,
       "device_count": 1,
-      "net_id": 5,
+      "net_id": 3,
       "pin_index": 3,
       "label_positions_um": [
         {
@@ -256,7 +261,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:e8d576056a1685de8b437099cedf05a1259892e4cee144378cf9467270f84f7c",
+      "content_hash": "sha256:00f918fa733aa2b9386afca923bdc7e02e9c8be197fa40f8dfd9b6fd3de375ed",
       "role": "layout"
     }
   },
@@ -265,21 +270,21 @@
     "c_count": 4,
     "cc_count": 0,
     "l_count": 0,
-    "total_resistance_ohm": 32.9726,
-    "total_capacitance_ff": 8.109131,
+    "total_resistance_ohm": 34.4263,
+    "total_capacitance_ff": 8.46496,
     "total_coupling_capacitance_ff": 0.0,
     "total_inductance_nh": 0.0,
     "nets": [
       {
         "net": "DET",
-        "net_id": 4,
-        "resistance_ohm": 20.5272,
-        "capacitance_ff": 5.253342,
+        "net_id": 2,
+        "resistance_ohm": 21.9809,
+        "capacitance_ff": 5.609171,
         "by_layer": [
           {
             "layer": "metal0",
-            "resistance_ohm": 20.5272,
-            "capacitance_ff": 5.253342
+            "resistance_ohm": 21.9809,
+            "capacitance_ff": 5.609171
           }
         ],
         "resistance_ohm_top_cell": null,
@@ -292,19 +297,19 @@
             "device": "$1",
             "terminal": "D",
             "leg_net": "DET__t0",
-            "resistance_ohm": 7.2825
+            "resistance_ohm": 7.9311
           },
           {
             "device": "$2",
             "terminal": "G",
             "leg_net": "DET__t1",
-            "resistance_ohm": 4.6609
+            "resistance_ohm": 4.7461
           },
           {
             "device": "$3",
             "terminal": "B",
             "leg_net": "DET__t2",
-            "resistance_ohm": 8.5838
+            "resistance_ohm": 9.3038
           }
         ],
         "segments": [],
@@ -344,8 +349,8 @@
           },
           "capacitance": {
             "status": "pass",
-            "declared_ff": 5.253342,
-            "computed_ff": 5.253342,
+            "declared_ff": 5.609171,
+            "computed_ff": 5.609171,
             "delta_ff": 0.0,
             "reason": null,
             "tolerance": {
@@ -357,7 +362,7 @@
       },
       {
         "net": "FB",
-        "net_id": 2,
+        "net_id": 5,
         "resistance_ohm": 0.6286,
         "capacitance_ff": 0.21056,
         "by_layer": [
@@ -430,7 +435,7 @@
       },
       {
         "net": "VDD",
-        "net_id": 5,
+        "net_id": 3,
         "resistance_ohm": 0.308,
         "capacitance_ff": 0.174934,
         "by_layer": [
@@ -520,34 +525,34 @@
         "rc_model": "lumped",
         "terminals": [
           {
+            "device": "$3",
+            "terminal": "W",
+            "leg_net": "VSS__t0",
+            "resistance_ohm": 3.9963
+          },
+          {
             "device": "$1",
             "terminal": "S",
-            "leg_net": "VSS__t0",
-            "resistance_ohm": 2.2556
+            "leg_net": "VSS__t1",
+            "resistance_ohm": 2.2913
           },
           {
             "device": "$2",
             "terminal": "S",
-            "leg_net": "VSS__t1",
-            "resistance_ohm": 1.5348
-          },
-          {
-            "device": "$3",
-            "terminal": "W",
             "leg_net": "VSS__t2",
-            "resistance_ohm": 3.9281
+            "resistance_ohm": 1.465
           },
           {
             "device": "$1",
             "terminal": "B",
             "leg_net": "VSS__t3",
-            "resistance_ohm": 2.2556
+            "resistance_ohm": 2.2913
           },
           {
             "device": "$2",
             "terminal": "B",
             "leg_net": "VSS__t4",
-            "resistance_ohm": 1.5348
+            "resistance_ohm": 1.465
           }
         ],
         "segments": [],
@@ -653,21 +658,21 @@
     "extract__capacitor__count": 4,
     "extract__coupling__capacitor__count": 0,
     "extract__inductor__count": 0,
-    "extract__resistance__ohm": 32.9726,
-    "extract__capacitance__ff": 8.109131,
+    "extract__resistance__ohm": 34.4263,
+    "extract__capacitance__ff": 8.46496,
     "extract__coupling__capacitance__ff": 0.0,
     "extract__inductance__nh": 0.0
   },
   "timing": {
     "stages": {
-      "read_layout": 0.001,
-      "device_extraction": 0.028,
+      "read_layout": 0.0,
+      "device_extraction": 0.014,
       "diagnostics": 0.0,
-      "netlist_write": 0.001,
+      "netlist_write": 0.0,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.148,
-    "unattributed_seconds": 0.119
+    "total_seconds": 0.091,
+    "unattributed_seconds": 0.077
   }
 }

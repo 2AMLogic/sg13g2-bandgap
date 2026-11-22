@@ -50,6 +50,7 @@
       "8/1",
       "8/25",
       "28/0",
+      "44/0",
       "63/0",
       "111/0",
       "128/0",
@@ -121,7 +122,12 @@
       "via4.space.1",
       "via4.width.1"
     ],
-    "voltage_domain_warnings": [],
+    "voltage_domain_warnings": [
+      {
+        "marker": "44/0",
+        "description": "ThickGateOx (44/0) marks sg13g2's thick-gate-oxide ('-HV') MOS voltage domain (see general_derivations.lvs's ngate_hv_base/pgate_hv_base). EXTRACTION_DECK models it for MOS device recognition/model binding (issue #1231: sg13_hv_nmos/sg13_hv_pmos under --pdk); this curated deck's DRC rules still apply the general-case ('-LV') thresholds to geometry regardless of ThickGateOx's presence (e.g. the Gat.a1/Gat.a2 channel-length-specific GatPoly widths, not transcribed in this deck yet)."
+      }
+    ],
     "unchecked_rules": [],
     "marker_blind_layers_in_stream": [],
     "deck_scope": [
@@ -388,7 +394,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:97e4ee515400f620ba420c20b470ab2d53b450fa5f155a026ed65fef76619bd7",
+      "content_hash": "sha256:00f918fa733aa2b9386afca923bdc7e02e9c8be197fa40f8dfd9b6fd3de375ed",
       "role": "layout"
     },
     "klayout_version_mismatch": true

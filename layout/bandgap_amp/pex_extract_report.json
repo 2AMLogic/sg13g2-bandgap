@@ -8,7 +8,7 @@
   "top": "bandgap_amp",
   "dbu_um": 0.001,
   "netlist_path": "bandgap_amp.pex.spice",
-  "netlist_sha256": "18684e833f80ccaea665cdfc7da943d77d01e0f10a9f1bb6be2923bf753813fb",
+  "netlist_sha256": "cd3eaa359f31d43ff7104deb6541626d8b23e910606f29d7f1d054771eee6c1b",
   "netlist_normalized_sha256": "726546748517afc486eeeb4e78e44edd7becb491c0ab8fe24bb88b4f4a176116",
   "status": "extracted",
   "device_count": 9,
@@ -31,7 +31,13 @@
       "shapes": 9
     }
   ],
-  "device_recognition_only_layers": [],
+  "device_recognition_only_layers": [
+    {
+      "layer": 44,
+      "datatype": 0,
+      "shapes": 9
+    }
+  ],
   "device_classes": [
     "nfet",
     "pfet",
@@ -552,7 +558,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:219aa2a589fb85fb8f828f4656320cef48d42ef66f5f78d0773240861d364b10",
+      "content_hash": "sha256:6f3646e726f3b499700e6625758740444507935ddeadd6582a0ad43ba79240aa",
       "role": "layout"
     }
   },
@@ -1293,37 +1299,37 @@
           },
           {
             "device": "$7",
-            "terminal": "D",
+            "terminal": "B",
             "leg_net": "VDD__t1",
             "resistance_ohm": 1.8996
           },
           {
             "device": "$7",
-            "terminal": "B",
+            "terminal": "D",
             "leg_net": "VDD__t2",
             "resistance_ohm": 1.8996
           },
           {
             "device": "$9",
-            "terminal": "B",
+            "terminal": "D",
             "leg_net": "VDD__t3",
             "resistance_ohm": 13.297
           },
           {
             "device": "$8",
-            "terminal": "B",
+            "terminal": "D",
             "leg_net": "VDD__t4",
             "resistance_ohm": 5.6987
           },
           {
             "device": "$9",
-            "terminal": "D",
+            "terminal": "B",
             "leg_net": "VDD__t5",
             "resistance_ohm": 13.297
           },
           {
             "device": "$8",
-            "terminal": "D",
+            "terminal": "B",
             "leg_net": "VDD__t6",
             "resistance_ohm": 5.6987
           },
@@ -1574,11 +1580,11 @@
       "read_layout": 0.0,
       "device_extraction": 0.01,
       "diagnostics": 0.0,
-      "netlist_write": 0.001,
+      "netlist_write": 0.002,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.096,
-    "unattributed_seconds": 0.084
+    "total_seconds": 0.093,
+    "unattributed_seconds": 0.081
   }
 }

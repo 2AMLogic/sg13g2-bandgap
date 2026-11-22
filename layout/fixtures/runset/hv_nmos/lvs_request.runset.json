@@ -1,0 +1,12 @@
+{
+  "schema": "klt.lvs.request/1",
+  "engine": "klayout-runset",
+  "layout": {
+    "file": "hv_nmos.gds",
+    "top": "hv_nmos"
+  },
+  "reference": {
+    "netlist": "hv_nmos.lvs_reference.runset.spice"
+  },
+  "options": {}
+}
