@@ -10,7 +10,14 @@ differ, so they get their own small pass over the merged report:
   reported as magnitudes (ngspice's passive sign convention reports i(Vvdd)
   negative while the supply delivers current), ``dvsns_v`` and
   ``iq_settle_delta_a`` (|iq_3ms - iq_2ms|) are derived, and a point is also
-  graded ``not_settled`` when that delta exceeds 100 nA.
+  graded ``not_settled`` when that delta exceeds 100 nA. One convention
+  (issue #646): a measurement the request graded against its own ``limits``
+  is **not** magnitude-rewritten -- its value, limits, margin and status were
+  all graded by ``klt sim`` from one signed value, so the graded value ships
+  exactly as reported and the four keep re-deriving each other in the
+  committed envelope. Rewriting the value alone would pair a signed limit
+  with an unsigned value; rewriting limits and margin alongside it would
+  re-grade what klt already graded.
 * ``--bench startup``: the verdict is read at t=2 ms, ``dvsns_final_v`` is
   derived, and there is no settledness criterion (the legacy bench has none).
 * ``--bench startup_release``: the ladder mode (issue #468). The verdict is read
@@ -234,6 +241,17 @@ def enrich(report: dict, bench: str) -> dict:
     cfg = BENCHES[bench]
     corners = report.get("corners", [])
     cwd = Path.cwd()
+    # Names the request graded against request-level limits (issue #646): the
+    # merged report's declared rollup carries the limits. Their value,
+    # limits, margin and status re-derive each other only while the value
+    # keeps the sign klt graded it with, so the magnitude rewrite below
+    # leaves them alone.
+    graded_names = {
+        entry["name"]
+        for entry in report.get("measurements") or []
+        if isinstance(entry, dict) and isinstance(entry.get("name"), str)
+        and isinstance(entry.get("limits"), dict) and entry["limits"]
+    }
     for corner in corners:
         inject_baked_supply(corner, cwd)
     for corner in corners:
@@ -247,6 +265,11 @@ def enrich(report: dict, bench: str) -> dict:
             continue
         for m in corner["measurements"]:
             if m["name"] in cfg["magnitudes"] and isinstance(m.get("value"), (int, float)):
+                limits = m.get("limits")
+                if m["name"] in graded_names or (isinstance(limits, dict) and limits):
+                    m["spice"] = (m.get("spice", "")
+                                  + f" ; graded against request limits, sign kept {_SEE}")
+                    continue
                 m["value"] = abs(m["value"])
                 m["spice"] = m.get("spice", "") + " ; magnitude (see sim/harness/enrich_supply_bench_report.py)"
         got = _meas_map(corner)

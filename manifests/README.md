@@ -173,10 +173,13 @@ The binding used here:
   The citations carry no `content_hash` pin (a `klt sim` report's
   `provenance.input` names the run's scratch netlist, which is not
   committed) — the same unpinned-citation convention as items 4 and 6;
-  freshness is enforced by `check_signoff_manifest.py` re-grading the
-  committed report (any edit changes the verdict and fails CI), by the
-  append-only rule on `sim/*/records/`, and by the artifact manifests'
-  sha256s over the run's raw logs and netlist snapshots. One more upstream
+  freshness is enforced by the append-only rule on `sim/*/records/`
+  (`check_evidence_formats.py::check_append_only`, the gate that actually
+  blocks an edit to an unpinned citation — `check_signoff_manifest.py`'s
+  re-grade reads the envelope's own `status` fields and does not re-check
+  measurement values against their limits, so a value-only edit changes no
+  verdict; measured in issue #646), and by the artifact manifests' sha256s
+  over the run's raw logs and netlist snapshots. One more upstream
   limitation is disclosed here: the #2668 one-model-library-per-request
   split means each grid runs as 15 requests whose reports this repo's
   merger re-assembles, re-deriving the request-declared `measurements[]`
