@@ -176,7 +176,13 @@ The binding used here:
   freshness is enforced by `check_signoff_manifest.py` re-grading the
   committed report (any edit changes the verdict and fails CI), by the
   append-only rule on `sim/*/records/`, and by the artifact manifests'
-  sha256s over the run's raw logs and netlist snapshots. What a `met` here
+  sha256s over the run's raw logs and netlist snapshots. One more upstream
+  limitation is disclosed here: the #2668 one-model-library-per-request
+  split means each grid runs as 15 requests whose reports this repo's
+  merger re-assembles, re-deriving the request-declared `measurements[]`
+  rollup over the concatenated corners by klt's own aggregation rule
+  (`sim/harness/merge_batch_shards.py`; klayout-tools#7225 asks for a
+  supported form). What a `met` here
   would mean: every cited envelope passing and every declared row covered —
   nothing here relaxes the PSRR miss to get there.
 - **Item 6 (Statistical claims carry Monte Carlo evidence) — cited unpinned:
