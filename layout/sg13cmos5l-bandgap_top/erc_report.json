@@ -125,7 +125,7 @@
     },
     {
       "gate_id": "gate4",
-      "net": "d2",
+      "net": "d1",
       "gate_area_um2": 20.0,
       "antenna_verdict": "unchecked",
       "levels": [
@@ -153,6 +153,34 @@
     },
     {
       "gate_id": "gate5",
+      "net": "d2",
+      "gate_area_um2": 20.0,
+      "antenna_verdict": "unchecked",
+      "levels": [
+        {
+          "layer": "GatPoly",
+          "step_area_um2": 30.36,
+          "cumulative_area_um2": 30.36,
+          "antenna_ratio": 1.518,
+          "antenna_ratio_max": null,
+          "antenna_ratio_source": null,
+          "verdict": "unchecked",
+          "remedy": null
+        },
+        {
+          "layer": "Metal1",
+          "step_area_um2": 17.8675,
+          "cumulative_area_um2": 48.2275,
+          "antenna_ratio": 2.411375,
+          "antenna_ratio_max": null,
+          "antenna_ratio_source": null,
+          "verdict": "unchecked",
+          "remedy": null
+        }
+      ]
+    },
+    {
+      "gate_id": "gate6",
       "net": "pn",
       "gate_area_um2": 20.0,
       "antenna_verdict": "unchecked",
@@ -172,34 +200,6 @@
           "step_area_um2": 21.247,
           "cumulative_area_um2": 56.607,
           "antenna_ratio": 2.83035,
-          "antenna_ratio_max": null,
-          "antenna_ratio_source": null,
-          "verdict": "unchecked",
-          "remedy": null
-        }
-      ]
-    },
-    {
-      "gate_id": "gate6",
-      "net": "d1",
-      "gate_area_um2": 20.0,
-      "antenna_verdict": "unchecked",
-      "levels": [
-        {
-          "layer": "GatPoly",
-          "step_area_um2": 30.36,
-          "cumulative_area_um2": 30.36,
-          "antenna_ratio": 1.518,
-          "antenna_ratio_max": null,
-          "antenna_ratio_source": null,
-          "verdict": "unchecked",
-          "remedy": null
-        },
-        {
-          "layer": "Metal1",
-          "step_area_um2": 17.8675,
-          "cumulative_area_um2": 48.2275,
-          "antenna_ratio": 2.411375,
           "antenna_ratio_max": null,
           "antenna_ratio_source": null,
           "verdict": "unchecked",
@@ -497,11 +497,11 @@
     "pdk": null,
     "deck": null,
     "input": {
-      "content_hash": "sha256:1b07a94d9b4e9119ec06c90c8703e50f4fd52bd72ccfe8934473338c12876361",
+      "content_hash": "sha256:d9d21e72274c5f4a7851b072445bcc761e8eaf0ce890355719937cc24b433d24",
       "role": "layout"
     },
     "spec": {
-      "content_hash": "sha256:d01f01b8b87543fab5ad26e6100d03d744d6e3151a67149e97d0e27d5f2881bf"
+      "content_hash": "sha256:7fccd5a5538236bb9b0cbb831d1b2128b902570a252c97751a888f190896e6bf"
     },
     "devices": [],
     "net_exclusions": [],
