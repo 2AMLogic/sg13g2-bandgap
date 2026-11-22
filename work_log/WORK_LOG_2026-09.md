@@ -2,6 +2,27 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-22
+
+- **PR #238**: chore: add reuse.lock.json in_tree entry for bandgap_amp (evaluate)
+- **PR #239**: feat: register T1 item 11 compound ERC+LVS citation in the signoff manifest
+- **PR #241**: feat: declare checked nwell tie in erc-supply-spec under upgraded klt
+- **Issue #235** (closed): 2am: reuse rule 9 — in-tree bandgap amplifier duplicates sibling canary sg13g2-opamp — add reuse.lock.json in_tree entry (evaluate), then adopt or record
+- **Issue #233** (closed): Declare a checked klt erc tie on an upgraded klt (completes item 11's missing_tie half, follows up #225)
+
+### 2026-09-21
+
+- **PR #227**: docs: add aggregated per-spec-row characterization report under measurements/
+- **PR #228**: spec: renumber duplicate 0007 to 0009, resolve DR-0001/0002 statuses, add CI duplicate-number check
+- **PR #232**: feat: grade T1 state mechanically via klt signoff block manifest
+- **PR #234**: feat: add ERC supply spec + report for sg13cmos5l-bandgap_top
+- **PR #236**: feat: add committed box-method TC testbenches (schematic + PEX) on the 8-point grid
+- **Issue #226** (closed): Commit a klt signoff block manifest so this block's T1 state is graded, not hand-read
+- **Issue #225** (closed): T1 item 11 (power delivery, structural): no klt erc supply spec or report in this repo
+- **Issue #223** (closed): spec: duplicate decision-record number 0007 on main, and DR-0001/DR-0002 left 'proposed' after the table they feed was ratified
+- **Issue #222** (closed): sim: commit a box-method TC testbench (endpoint method understates TC post-retune; box worst corner ~20.2 ppm/°C vs the < 20 stretch)
+- **Issue #15** (closed): Publish an aggregated characterization report under measurements/
+
 ### 2026-09-19
 
 - **PR #224**: ratification: run the two-key review of the target-spec table and record its outcome
