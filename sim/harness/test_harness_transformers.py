@@ -171,6 +171,114 @@ class MergeTests(TempDirCase):
             mbs.merge([str(p)], None)
 
 
+class RollupMergeTests(TempDirCase):
+    """Issue #629: the merged report re-aggregates the request-declared
+    measurements[] rollup across every corner, by klt sim's own rule, so the
+    committed report is a citable grid envelope."""
+
+    @staticmethod
+    def rollup_shard(process: str, points: list[tuple[int, str, dict]]) -> dict:
+        corners = []
+        for temp, status, m in points:
+            corners.append(
+                {
+                    "corner_id": f"{process}/3.300V/{temp}C",
+                    "process": process,
+                    "temperature_c": temp,
+                    "supply_v": {"Vvdd": 3.3},
+                    "status": "fail" if m.get("status") == "fail" else status,
+                    "measurements": [dict(m, name="vref_v")],
+                }
+            )
+        n = lambda s: sum(1 for c in corners if c["status"] == s)  # noqa: E731
+        return {
+            "schema_version": 3,
+            "status": "fail" if n("fail") else ("error" if n("error") else "pass"),
+            "corner_count": len(corners),
+            "passed": n("pass"),
+            "failed": n("fail"),
+            "errored": n("error"),
+            "corners": corners,
+            "measurements": [
+                {
+                    "name": "vref_v",
+                    "unit": "V",
+                    "limits": {"min": 0.882, "max": 1.218},
+                    "status": "pass",
+                    "spec_row": "output-reference-nominal",
+                }
+            ],
+            "coverage": {"measurements_declared": 1, "measurements_with_limits": 1},
+        }
+
+    def test_rollup_reaggregates_across_shards_with_worst_case(self) -> None:
+        a = self.write_json(
+            "a.json",
+            self.rollup_shard("typ", [(-40, "pass", {"value": 1.05, "status": "pass", "margin": 0.168}),
+                                      (27, "pass", {"value": 1.06, "status": "pass", "margin": 0.158})]),
+        )
+        b = self.write_json(
+            "b.json",
+            self.rollup_shard("wcs", [(-40, "fail", {"value": 1.30, "status": "fail", "margin": -0.082})]),
+        )
+        merged = mbs.merge(
+            [str(a), str(b)], ["typ_-40c_3.30v", "typ_27c_3.30v", "wcs_-40c_3.30v"]
+        )
+        (entry,) = merged["measurements"]
+        self.assertEqual(entry["name"], "vref_v")
+        self.assertEqual(entry["status"], "fail")
+        self.assertEqual(entry["spec_row"], "output-reference-nominal")
+        self.assertEqual(entry["limits"], {"min": 0.882, "max": 1.218})
+        self.assertEqual(
+            entry["worst_case"],
+            {"corner_id": "wcs/3.300V/-40C", "value": 1.30, "margin": -0.082},
+        )
+        cov = merged["coverage"]
+        self.assertEqual(cov["corners_simulated"], 3)
+        self.assertEqual(cov["measurements_declared"], 1)
+        self.assertEqual(cov["measurements_with_limits"], 1)
+        self.assertFalse(cov["nothing_checked"])
+        self.assertEqual(len(cov["checked"]), 6)  # 3 corners x 2 bounds
+
+    def test_all_passing_corners_roll_up_pass(self) -> None:
+        a = self.write_json(
+            "a.json",
+            self.rollup_shard("typ", [(-40, "pass", {"value": 1.05, "status": "pass", "margin": 0.1})]),
+        )
+        b = self.write_json(
+            "b.json",
+            self.rollup_shard("wcs", [(125, "pass", {"value": 1.04, "status": "pass", "margin": 0.09})]),
+        )
+        merged = mbs.merge([str(a), str(b)], ["typ_-40c_3.30v", "wcs_125c_3.30v"])
+        self.assertEqual(merged["measurements"][0]["status"], "pass")
+        self.assertEqual(
+            merged["measurements"][0]["worst_case"]["corner_id"], "wcs/3.300V/125C"
+        )
+
+    def test_shards_disagreeing_on_declaration_refuse_the_merge(self) -> None:
+        a = self.write_json(
+            "a.json",
+            self.rollup_shard("typ", [(-40, "pass", {"value": 1.05, "status": "pass", "margin": 0.1})]),
+        )
+        other = self.rollup_shard(
+            "wcs", [(125, "pass", {"value": 1.04, "status": "pass", "margin": 0.1})]
+        )
+        other["measurements"][0]["limits"] = {"max": 1.218}
+        b = self.write_json("b.json", other)
+        with self.assertRaises(mbs.ShardError) as ctx:
+            mbs.merge([str(a), str(b)], ["typ_-40c_3.30v", "wcs_125c_3.30v"])
+        self.assertIn("disagree on the declared measurements", "\n".join(ctx.exception.problems))
+
+    def test_unlimited_rollup_counts_zero_limited(self) -> None:
+        shard = self.rollup_shard("typ", [(-40, "pass", {"value": 1.05, "status": "pass", "margin": None})])
+        del shard["measurements"][0]["limits"]
+        a = self.write_json("a.json", shard)
+        merged = mbs.merge([str(a)], ["typ_-40c_3.30v"])
+        self.assertEqual(merged["coverage"]["measurements_with_limits"], 0)
+        self.assertEqual(merged["coverage"]["checked"], [])
+        self.assertFalse(merged["coverage"]["nothing_checked"])
+
+
 class GridContractTests(TempDirCase):
     """Defect injection for issue #327: nothing incomplete becomes PASS."""
 
@@ -1149,8 +1257,16 @@ class PublicationTests(TempDirCase):
         t = self.tree()
         self.assertEqual(
             sorted(t),
-            ["@artifacts/demo-rid1.manifest.json", "records/rid1.csv", "records/rid1.md"],
+            [
+                "@artifacts/demo-rid1.manifest.json",
+                "records/rid1-report.json",
+                "records/rid1.csv",
+                "records/rid1.md",
+            ],
         )
+        # issue #629: the run's own report is committed beside the record,
+        # as-written (no host paths to scrub in this fixture-less report).
+        self.assertEqual(json.loads(t["records/rid1-report.json"]), self.report(self.corner(27), self.corner(85)))
         self.assertTrue(t["records/rid1.csv"].startswith(b"corner_label,temp_c,vdd_v,status,vref\n"))
         self.assertIn(b"typ,27,3.30,PASS,1.200000e+00\n", t["records/rid1.csv"])
         names = [e["name"] for e in json.loads(t["@artifacts/demo-rid1.manifest.json"])["entries"]]
