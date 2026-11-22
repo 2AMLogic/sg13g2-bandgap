@@ -15,10 +15,38 @@
       "content_hash": "sha256:1c289ecfa0fea1fcc67e6b1ee0ef837f61493708c4e8763ae59da35dbc779665"
     },
     "4": "layout/bandgap_top/lvs_report.runset.json",
+    "5": [
+      {
+        "file": "sim/closed-loop-vref-pvt/records/20261122-181757-c5b84561-report.json",
+        "rows": [
+          "output-reference-nominal"
+        ]
+      },
+      {
+        "file": "sim/closed-loop-psrr/records/20261122-182058-1d0308ad-report.json",
+        "rows": [
+          "psrr-dc"
+        ]
+      },
+      {
+        "file": "sim/closed-loop-iq/records/20261122-181711-c5b84561-report.json",
+        "rows": [
+          "iq"
+        ]
+      },
+      {
+        "file": "sim/startup-time-to-release/records/20261122-183926-90e8e4dd-report.json",
+        "rows": [
+          "startup"
+        ]
+      }
+    ],
     "6": [
       {
         "file": "sim/closed-loop-vref-mc/records/20261120-231009-73ef81b4-yield-report.json",
-        "rows": ["output-reference-untrimmed"]
+        "rows": [
+          "output-reference-untrimmed"
+        ]
       }
     ],
     "8": {
@@ -38,6 +66,36 @@
     ]
   },
   "spec_rows": {
+    "5": [
+      {
+        "id": "output-reference-nominal"
+      },
+      {
+        "id": "psrr-dc"
+      },
+      {
+        "id": "iq"
+      },
+      {
+        "id": "startup"
+      },
+      {
+        "id": "temp-coefficient",
+        "gap": "box-method TC is a figure derived across each (process, supply) group's 8 temperature corners; klt sim grades limits per corner only and item 5's derived row coverage has no cross-corner form (klayout-tools#7184). Measured 20.20-38.62 ppm/C against < 50 ppm/C on the committed 120-point grid (sim/closed-loop-vref-pvt-boxtc 20261116-024010-dc056b4c), not envelope-graded"
+      },
+      {
+        "id": "trim-range",
+        "gap": "trim range is the spread of vref across the trim-code axis' corner runs; no gradeable cross-corner form (klayout-tools#7184). Measured +29.22/-29.63% worst against >= +/-15% (sim/trim-coverage 20261030-061206-03e62489), not envelope-graded"
+      },
+      {
+        "id": "trim-resolution",
+        "gap": "trim resolution is the largest adjacent-code step across the trim-code axis' corner runs; no gradeable cross-corner form (klayout-tools#7184). Measured 0.2347%/step worst against <= 0.25%/step (sim/trim-coverage 20261030-061206-03e62489), not envelope-graded"
+      },
+      {
+        "id": "supply",
+        "gap": "rating argument, not a simulation (spec/decision-records/0002, ratified): the HV flavor's 3.3 V +/-10% is met by construction -- every cited envelope sweeps 2.97/3.30/3.63 V -- and the 1.2 V LV stretch is a flavor statement, not measured"
+      }
+    ],
     "6": [
       {
         "id": "output-reference-untrimmed"
