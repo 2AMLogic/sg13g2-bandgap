@@ -266,13 +266,13 @@ The binding used here:
   `vss` (needs klayout-tools#2354). That residue is *not* resolved by #240's
   closure; either reopen that work or fix it when the port is next touched.
 
-- **Item 8 (Characterization report) — cited: `measurements/2026-11-22-item5-limits-characterization-report/envelope.json`**
+- **Item 8 (Characterization report) — cited: `measurements/2026-11-23-characterization-report/envelope.json`**
   (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
   `README.md` beside it, pinned to that report's sha256). The report is
-  [`measurements/2026-11-22-item5-limits-characterization-report/README.md`](../measurements/2026-11-22-item5-limits-characterization-report/README.md),
-  stamped at the audited commit `1af76710` (the #629 rotation: the four
-  corner-swept benches re-run with their spec row's ratified bound as a
-  request-level limit, every quoted figure unchanged): one entry per row of
+  [`measurements/2026-11-23-characterization-report/README.md`](../measurements/2026-11-23-characterization-report/README.md),
+  stamped at audited commit `275bdc18`. It uses the N=1,200 untrimmed
+  campaign (#635) and the four limit-graded corner grids (#629), with
+  one entry per row of
   the `README.md` target-spec table (the Output-reference row as its
   nominal, untrimmed and trimmed lines), each with bound, verdict, binding
   corner, whether the verdict is statistical, the newest committed `sim/`
@@ -299,18 +299,19 @@ The binding used here:
   freshness is tested, not assumed). The pin alone would not notice the
   report's *dependencies* moving while its bytes stay put, so since #315 the
   report also carries a machine-readable dependency inventory,
-  [`dependencies.json`](../measurements/2026-11-22-item5-limits-characterization-report/dependencies.json),
+  [`dependencies.json`](../measurements/2026-11-23-characterization-report/dependencies.json),
   checked by `.github/scripts/check_report_dependencies.py` (see "Item-8
   dependency drift" below): a change to an audited DUT netlist, a spec-table
   bound, a quoted decision-record status, or a newer record in a summarized
   experiment now fails CI even though the pin still matches (#303 is the
-  change expected to trigger it). The eight earlier reports
+  change expected to trigger it). The nine earlier reports
   (`2026-09-characterization-report/`, `2026-10-characterization-report/`,
   `2026-11-characterization-report/`, `2026-11-04-characterization-report/`,
   `2026-11-13-characterization-report/`,
   `2026-11-16-characterization-report/`,
   `2026-11-18-characterization-report/`,
-  `2026-11-18-klu-retime-characterization-report/`)
+  `2026-11-18-klu-retime-characterization-report/`,
+  `2026-11-22-item5-limits-characterization-report/`)
   are superseded and kept as history; none is required to track newer
   inputs. The list is self-maintaining by rule — every
   `measurements/*characterization-report/` directory except the one

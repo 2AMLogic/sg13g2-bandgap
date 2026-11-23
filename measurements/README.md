@@ -146,8 +146,7 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   (#315).
 
 - `2026-11-18-klu-retime-characterization-report/` — issue #518 (T1
-  checklist item 8): the current aggregated characterization report,
-  replacing the 18 Nov one. The name carries a `klu-retime` suffix because
+  checklist item 8). Superseded by the 22 November item 5 report. The name carries a `klu-retime` suffix because
   the same-day `2026-11-18-` slot is taken by the #557 report it supersedes
   (byte-identical history). It rotated because issue #518's KLU
   direct-solver adoption on the two supply benches re-minted their 45-point
@@ -165,3 +164,12 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   reports: `README.md`, `spotcheck.py`, `envelope.json` (cited by
   `manifests/sg13g2-bandgap.json` for item 8) and `dependencies.json`
   (#315).
+
+- `2026-11-22-item5-limits-characterization-report/` documents #629's four
+  limit-graded corner grids, including the 59.685 dB PSRR miss. The
+  23 November report supersedes it.
+
+- The **23 November characterization report** combines those four grids
+  with #635's N=1,200 untrimmed mismatch measurements. All five points
+  clear the 3σ gate. The trimmed row remains a declared gap for item 6.
+  [Current report](2026-11-23-characterization-report/README.md)

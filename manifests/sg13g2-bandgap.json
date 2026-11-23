@@ -50,8 +50,8 @@
       }
     ],
     "8": {
-      "file": "measurements/2026-11-22-item5-limits-characterization-report/envelope.json",
-      "content_hash": "sha256:76ced7a7edda20e27462709f982eeacb5e6a3e6e60613adc1d52937a60e33aad"
+      "file": "measurements/2026-11-23-characterization-report/envelope.json",
+      "content_hash": "sha256:97b12171802d13f97f529647f42643ce28e332e635792a216660579b222352fe"
     },
     "10": {
       "file": "manifests/evidence/hygiene.json",
