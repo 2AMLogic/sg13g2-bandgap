@@ -96,16 +96,21 @@ def companion_rows(rows: list[dict]) -> list[list]:
     return out
 
 
-def write_companion(src: Path, dst: Path) -> list[list]:
-    """Derive `dst` from the minted record `src`; returns the rows written."""
-    with src.open() as fh:
-        rows = list(csv.DictReader(fh))
-    body = companion_rows(rows)
+def _write_rows(dst: Path, body: list[list]) -> None:
+    """Write the header and `body` rows to `dst`."""
     with dst.open("w", newline="") as fh:
         w = csv.writer(fh, lineterminator="\n")
         w.writerow(HEADER)
         for row in body:
             w.writerow(row)
+
+
+def write_companion(src: Path, dst: Path) -> list[list]:
+    """Derive `dst` from the minted record `src`; returns the rows written."""
+    with src.open() as fh:
+        rows = list(csv.DictReader(fh))
+    body = companion_rows(rows)
+    _write_rows(dst, body)
     return body
 
 
@@ -114,25 +119,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("record", type=Path, help="the minted record CSV")
     ap.add_argument("companion", type=Path, help="the -tc.csv to write")
     args = ap.parse_args(argv)
-    # write_companion() truncates `dst` before the derivation is known to
-    # be empty, so capture what the path held first: the refusal below
-    # either removes the file this run wrote or puts the prior bytes back,
-    # and never leaves a header-only artifact behind (#536).
-    prior = args.companion.read_bytes() if args.companion.exists() else None
-    body = write_companion(args.record, args.companion)
+    with args.record.open() as fh:
+        rows = list(csv.DictReader(fh))
+    body = companion_rows(rows)
     if not body:
-        # The derivation read the record and produced no number: a
-        # header-only CSV must not be blessed with exit 0 (#510), and it
-        # must not stay on disk either (#536) -- records/ is append-only
-        # evidence, and a header-only -tc.csv is one `git add -A` away
-        # from being committed as if it were derived. Remove what this
-        # run wrote; restore what an earlier run's derivation held.
-        if prior is None:
-            args.companion.unlink(missing_ok=True)
-        else:
-            args.companion.write_bytes(prior)
-        with args.record.open() as fh:
-            rows = list(csv.DictReader(fh))
+        # A header-only CSV must not be blessed with exit 0 (#510) nor
+        # land on disk (#536): refuse before the destination is opened,
+        # so a prior companion is never touched.
         if not rows:
             raise SystemExit(
                 f"tc companion: {args.record} carries no rows; "
@@ -141,6 +134,7 @@ def main(argv: list[str] | None = None) -> int:
             f"tc companion: {args.companion} is header-only: every "
             f"(corner, vdd, temp) group missed the grid; keys the record "
             f"carried: {key_summary(rows, ('corner_label', 'vdd_v', 'temp_c'))}")
+    _write_rows(args.companion, body)
     print(f"tc companion: {args.companion}")
     return 0
 
