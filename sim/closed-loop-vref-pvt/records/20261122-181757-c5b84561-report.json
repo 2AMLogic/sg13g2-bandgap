@@ -1,0 +1,5934 @@
+{
+  "schema_version": 3,
+  "netlist": {
+    "path": null,
+    "scope": "external"
+  },
+  "status": "pass",
+  "corner_count": 45,
+  "passed": 45,
+  "failed": 0,
+  "errored": 0,
+  "inconclusive": 0,
+  "diagnostic_counts": {
+    "by_code": {
+      "singular_matrix": 1
+    },
+    "by_severity": {
+      "warning": 1
+    },
+    "corners_with_diagnostics": 1
+  },
+  "metrics": {
+    "sim__corner__count": 3,
+    "sim__corner__passed_count": 3,
+    "sim__corner__failed_count": 0,
+    "sim__corner__errored_count": 0,
+    "sim__corner__inconclusive_count": 0
+  },
+  "environment": {
+    "engine": "ngspice",
+    "engine_version": "47",
+    "ngspice_binary": "/usr/local/bin/ngspice",
+    "engine_build": {
+      "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******",
+      "binary_sha256": null,
+      "probe": "ok",
+      "reason": null
+    },
+    "ngspice_init": {
+      "source": "runner",
+      "lines": null,
+      "sha256": null
+    },
+    "models_lib": {
+      "path": null,
+      "scope": "external"
+    },
+    "models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+    "models_lib_sha256_scope": "client",
+    "netlist_sha256": "5645f005a0d5536164e408485a1fc5d24090e9a2e5ef4a3e0510b9e1a88bc9a5",
+    "netlist_sha256_scope": "staged",
+    "netlist_closure": [
+      {
+        "path": null,
+        "scope": "external",
+        "sha256": "5645f005a0d5536164e408485a1fc5d24090e9a2e5ef4a3e0510b9e1a88bc9a5"
+      },
+      {
+        "target": "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib",
+        "sha256": null,
+        "unhashed_reason": "env_var"
+      },
+      {
+        "target": "$PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib",
+        "sha256": null,
+        "unhashed_reason": "env_var"
+      }
+    ],
+    "netlist_identity": null,
+    "netlist_identity_error": "include(s) resolved by the executing host are not hashable: $PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/models/cornerMOShv.lib, $PDK_ROOT/ihp-sg13g2/libs.tech/ngspice/models/cornerRES.lib",
+    "netlist_source": "schematic",
+    "remote": {
+      "fleet": [
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-fa4e9eb8fb88",
+          "region": "us-east-1",
+          "instance_id": "i-05047208979ccab25",
+          "instance_type": "c7i.4xlarge",
+          "availability_zone": "us-east-1f",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 71,
+          "client_submitted_at": "2026-11-22T17:40:57.510282Z",
+          "client_launched_at": "2026-11-22T17:41:14.585498Z",
+          "client_status_terminal_at": "2026-11-22T17:42:47.311285Z",
+          "client_collected_at": "2026-11-22T17:42:48.118631Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8488C",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-40ac6d968867",
+          "region": "us-east-1",
+          "instance_id": "i-0d1df08ce2796610c",
+          "instance_type": "m7i.4xlarge",
+          "availability_zone": "us-east-1a",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 67,
+          "client_submitted_at": "2026-11-22T17:40:57.513880Z",
+          "client_launched_at": "2026-11-22T17:41:14.775626Z",
+          "client_status_terminal_at": "2026-11-22T17:42:47.493955Z",
+          "client_collected_at": "2026-11-22T17:42:48.356670Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8488C",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-511b7688d12f",
+          "region": "us-east-1",
+          "instance_id": "i-01a089c47ea38b39f",
+          "instance_type": "m7i.4xlarge",
+          "availability_zone": "us-east-1a",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 73,
+          "client_submitted_at": "2026-11-22T17:42:48.179489Z",
+          "client_launched_at": "2026-11-22T17:43:05.924218Z",
+          "client_status_terminal_at": "2026-11-22T17:44:38.755482Z",
+          "client_collected_at": "2026-11-22T17:44:39.495262Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8488C",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-173f29c7306c",
+          "region": "us-east-1",
+          "instance_id": "i-0f5e333d09cf1ba27",
+          "instance_type": "c7i.4xlarge",
+          "availability_zone": "us-east-1f",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 84,
+          "client_submitted_at": "2026-11-22T17:42:48.419832Z",
+          "client_launched_at": "2026-11-22T17:43:05.752690Z",
+          "client_status_terminal_at": "2026-11-22T17:45:09.194286Z",
+          "client_collected_at": "2026-11-22T17:45:09.974655Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8488C",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-caaa931c5802",
+          "region": "us-east-1",
+          "instance_id": "i-068e2365d9387b98e",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1f",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 54,
+          "client_submitted_at": "2026-11-22T17:44:39.553666Z",
+          "client_launched_at": "2026-11-22T17:45:24.584976Z",
+          "client_status_terminal_at": "2026-11-22T17:46:57.402600Z",
+          "client_collected_at": "2026-11-22T17:46:58.174339Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-0e72351e6d8e",
+          "region": "us-east-1",
+          "instance_id": "i-0c56432756d1b2bb6",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1d",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 54,
+          "client_submitted_at": "2026-11-22T17:45:10.028638Z",
+          "client_launched_at": "2026-11-22T17:45:26.772482Z",
+          "client_status_terminal_at": "2026-11-22T17:46:59.680687Z",
+          "client_collected_at": "2026-11-22T17:47:00.475629Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-1d1d7a071282",
+          "region": "us-east-1",
+          "instance_id": "i-06b852243316b165b",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1f",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 57,
+          "client_submitted_at": "2026-11-22T17:57:08.947396Z",
+          "client_launched_at": "2026-11-22T17:58:47.310566Z",
+          "client_status_terminal_at": "2026-11-22T18:00:20.153049Z",
+          "client_collected_at": "2026-11-22T18:00:20.891518Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-51e7a304ba0e",
+          "region": "us-east-1",
+          "instance_id": "i-0a649cc33b1f09fd8",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1f",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 57,
+          "client_submitted_at": "2026-11-22T17:47:00.535261Z",
+          "client_launched_at": "2026-11-22T17:53:50.538506Z",
+          "client_status_terminal_at": "2026-11-22T17:55:23.513001Z",
+          "client_collected_at": "2026-11-22T17:55:24.294529Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-094e3f78759c",
+          "region": "us-east-1",
+          "instance_id": "i-0868956aadfba9384",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1d",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 73,
+          "client_submitted_at": "2026-11-22T17:55:24.349372Z",
+          "client_launched_at": "2026-11-22T17:56:41.952080Z",
+          "client_status_terminal_at": "2026-11-22T17:58:14.748153Z",
+          "client_collected_at": "2026-11-22T17:58:15.482683Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-7d9611c3923b",
+          "region": "us-east-1",
+          "instance_id": "i-0654a848cb642d7d3",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1d",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 78,
+          "client_submitted_at": "2026-11-22T17:58:15.541243Z",
+          "client_launched_at": "2026-11-22T17:58:57.928093Z",
+          "client_status_terminal_at": "2026-11-22T18:00:30.746518Z",
+          "client_collected_at": "2026-11-22T18:00:31.542380Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-b93c88ae12e9",
+          "region": "us-east-1",
+          "instance_id": "i-0d7e133c370053ccf",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1d",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 78,
+          "client_submitted_at": "2026-11-22T18:00:31.597328Z",
+          "client_launched_at": "2026-11-22T18:02:13.525606Z",
+          "client_status_terminal_at": "2026-11-22T18:03:46.601407Z",
+          "client_collected_at": "2026-11-22T18:03:47.878777Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-19efbbab44e5",
+          "region": "us-east-1",
+          "instance_id": "i-0fef60f696e7cb419",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1d",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 80,
+          "client_submitted_at": "2026-11-22T18:03:48.013172Z",
+          "client_launched_at": "2026-11-22T18:04:10.239971Z",
+          "client_status_terminal_at": "2026-11-22T18:05:43.703722Z",
+          "client_collected_at": "2026-11-22T18:05:44.667862Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-ecd1a797ac8d",
+          "region": "us-east-1",
+          "instance_id": "i-0cc4c56d66fd47512",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1d",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 80,
+          "client_submitted_at": "2026-11-22T18:05:44.735136Z",
+          "client_launched_at": "2026-11-22T18:06:03.580192Z",
+          "client_status_terminal_at": "2026-11-22T18:08:07.427701Z",
+          "client_collected_at": "2026-11-22T18:08:08.229955Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-d6bf57350ddb",
+          "region": "us-east-1",
+          "instance_id": "i-0a782fd4e7bd583e8",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1d",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 80,
+          "client_submitted_at": "2026-11-22T18:08:08.305425Z",
+          "client_launched_at": "2026-11-22T18:08:26.136318Z",
+          "client_status_terminal_at": "2026-11-22T18:09:58.916762Z",
+          "client_collected_at": "2026-11-22T18:09:59.687412Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        },
+        {
+          "provider": "aws-batch-fleet",
+          "job_id": "klt-sim-ea1463c7f432",
+          "region": "us-east-1",
+          "instance_id": "i-0892823c705fe259c",
+          "instance_type": "m6i.4xlarge",
+          "availability_zone": "us-east-1d",
+          "ami_id": "ami-09c14f55df4958cbd",
+          "lifecycle": "spot",
+          "spot": true,
+          "state": "done",
+          "exit_code": "0",
+          "concurrency": "1",
+          "physical_cores": "8",
+          "elapsed_seconds": 84,
+          "client_submitted_at": "2026-11-22T18:09:59.750659Z",
+          "client_launched_at": "2026-11-22T18:10:17.901280Z",
+          "client_status_terminal_at": "2026-11-22T18:12:21.948640Z",
+          "client_collected_at": "2026-11-22T18:12:22.696392Z",
+          "runner_klt_version": "0.9.0",
+          "client_klt_version": "0.9.3.dev3062+g1933ce4aa752",
+          "runner_compatibility": "match",
+          "worker_environment": {
+            "capture": "ok",
+            "simulator": {
+              "requested_binary": "ngspice",
+              "binary_source": "PATH",
+              "selected_path": "/usr/local/bin/ngspice",
+              "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******\n",
+              "version_probe": "ok"
+            },
+            "pdk": {
+              "variant": "ihp-sg13g2",
+              "root": "/opt/pdk",
+              "stamp_scheme": null,
+              "stamp_sha256": null,
+              "stamp_text": null,
+              "models_staged": false,
+              "stamp_scope": "executed"
+            },
+            "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+            "omp_num_threads": null,
+            "image_manifest": null,
+            "model_inputs": null,
+            "diagnostics": [
+              "pdk stamp unreadable: FileNotFoundError"
+            ],
+            "pdk_stamp_comparison": {
+              "status": "not_comparable",
+              "reason": "worker_stamp_unavailable"
+            },
+            "ngspice_init": null,
+            "threads_per_worker": 1,
+            "engine_build_comparison": {
+              "status": "match"
+            }
+          },
+          "runner_model_inputs": null,
+          "runner_models_lib_sha256": "bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+          "runner_corner_section_libs": null,
+          "runner_osdi_preload": null,
+          "job_ceiling": {
+            "basis": "conservative_serial_bound",
+            "unit_count": 3,
+            "per_unit_timeout_s": 1800,
+            "overhead_s": 120.0,
+            "job_bound_s": 5520.0,
+            "max_job_seconds": 3600.0,
+            "max_job_seconds_source": "fleet_config",
+            "exceeds_ceiling": true,
+            "check": "warn",
+            "max_units_per_job": 1,
+            "recommended_hosts": 3,
+            "warning": "batch job bound 5520s (options.timeout_s 1800s x 3 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 3 to run one job per shard of at most 1 units, each within the ceiling"
+          },
+          "models_lib_comparison": {
+            "status": "match"
+          }
+        }
+      ]
+    },
+    "engine_host": "worker",
+    "client_ngspice_binary": "<home>/.local/bin/ngspice",
+    "client_engine_build": {
+      "version_banner": "******\n** ngspice-47 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2026, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Fri Nov 13 23:19:32 UTC 2026\n******",
+      "binary_sha256": "39ca1adb826660324c3626f72bd946ec40704f0f3fc8e243c623f76e24b3eee2",
+      "probe": "ok",
+      "reason": null
+    },
+    "backend": {
+      "resolved": "batch",
+      "source": "flag",
+      "requested": "batch"
+    }
+  },
+  "coverage": {
+    "corners_simulated": 45,
+    "measurements_declared": 9,
+    "measurements_with_limits": 1,
+    "unrecognized_limit_keys": [],
+    "schema_version": 1,
+    "known": true,
+    "checked": [
+      "limit:[0, \"typ/2.97V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[0, \"typ/2.97V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[1, \"typ/2.97V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[1, \"typ/2.97V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[2, \"typ/2.97V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[2, \"typ/2.97V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[3, \"typ/3.30V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[3, \"typ/3.30V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[4, \"typ/3.30V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[4, \"typ/3.30V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[5, \"typ/3.30V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[5, \"typ/3.30V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[6, \"typ/3.63V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[6, \"typ/3.63V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[7, \"typ/3.63V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[7, \"typ/3.63V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[8, \"typ/3.63V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[8, \"typ/3.63V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[9, \"bcs/2.97V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[9, \"bcs/2.97V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[10, \"bcs/2.97V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[10, \"bcs/2.97V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[11, \"bcs/2.97V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[11, \"bcs/2.97V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[12, \"bcs/3.30V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[12, \"bcs/3.30V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[13, \"bcs/3.30V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[13, \"bcs/3.30V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[14, \"bcs/3.30V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[14, \"bcs/3.30V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[15, \"bcs/3.63V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[15, \"bcs/3.63V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[16, \"bcs/3.63V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[16, \"bcs/3.63V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[17, \"bcs/3.63V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[17, \"bcs/3.63V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[18, \"wcs/2.97V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[18, \"wcs/2.97V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[19, \"wcs/2.97V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[19, \"wcs/2.97V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[20, \"wcs/2.97V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[20, \"wcs/2.97V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[21, \"wcs/3.30V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[21, \"wcs/3.30V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[22, \"wcs/3.30V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[22, \"wcs/3.30V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[23, \"wcs/3.30V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[23, \"wcs/3.30V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[24, \"wcs/3.63V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[24, \"wcs/3.63V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[25, \"wcs/3.63V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[25, \"wcs/3.63V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[26, \"wcs/3.63V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[26, \"wcs/3.63V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[27, \"sf/2.97V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[27, \"sf/2.97V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[28, \"sf/2.97V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[28, \"sf/2.97V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[29, \"sf/2.97V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[29, \"sf/2.97V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[30, \"sf/3.30V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[30, \"sf/3.30V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[31, \"sf/3.30V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[31, \"sf/3.30V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[32, \"sf/3.30V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[32, \"sf/3.30V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[33, \"sf/3.63V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[33, \"sf/3.63V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[34, \"sf/3.63V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[34, \"sf/3.63V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[35, \"sf/3.63V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[35, \"sf/3.63V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[36, \"fs/2.97V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[36, \"fs/2.97V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[37, \"fs/2.97V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[37, \"fs/2.97V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[38, \"fs/2.97V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[38, \"fs/2.97V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[39, \"fs/3.30V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[39, \"fs/3.30V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[40, \"fs/3.30V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[40, \"fs/3.30V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[41, \"fs/3.30V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[41, \"fs/3.30V/125C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[42, \"fs/3.63V/-40C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[42, \"fs/3.63V/-40C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[43, \"fs/3.63V/27C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[43, \"fs/3.63V/27C\", \"vref_3ms_v\", \"min\"]",
+      "limit:[44, \"fs/3.63V/125C\", \"vref_3ms_v\", \"max\"]",
+      "limit:[44, \"fs/3.63V/125C\", \"vref_3ms_v\", \"min\"]"
+    ],
+    "skipped": [],
+    "inapplicable": [],
+    "unknown": [],
+    "nothing_checked": false,
+    "nothing_checked_reasons": []
+  },
+  "provenance": {
+    "klt_version": "0.9.3.dev3062+g1933ce4aa752",
+    "klt_git_commit": "1933ce4aa752f4161f93591e56335fe9b36fef11",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1933ce4aa752f4161f93591e56335fe9b36fef11",
+    "klayout_version": "0.30.12",
+    "pdk": {
+      "name": "ihp-sg13g2",
+      "source": "PDK_ROOT environment variable",
+      "version": "fetched:0.3.0"
+    },
+    "deck": {
+      "name": "cornerHBT.lib",
+      "content_hash": "sha256:bae3d705445de8d6b8de4aa798a0e3e5e7cab617d6495d9c56473bc5377de462",
+      "released": false
+    },
+    "input": {
+      "content_hash": "sha256:5645f005a0d5536164e408485a1fc5d24090e9a2e5ef4a3e0510b9e1a88bc9a5",
+      "role": "netlist"
+    },
+    "batch_shard_merge": "merged from 15 per-process batch reports (issue #278 bridge: the runner image's single-models.lib request shape cannot vary the process within one request; klayout-tools#2668)"
+  },
+  "measurements": [
+    {
+      "name": "fb_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/2.97V/-40C",
+        "value": 2.13713,
+        "margin": null
+      }
+    },
+    {
+      "name": "sns1_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/2.97V/-40C",
+        "value": 0.784485,
+        "margin": null
+      }
+    },
+    {
+      "name": "sns2_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/2.97V/-40C",
+        "value": 0.78419,
+        "margin": null
+      }
+    },
+    {
+      "name": "det_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/2.97V/-40C",
+        "value": 0.00352165,
+        "margin": null
+      }
+    },
+    {
+      "name": "i_mkfb_a",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/2.97V/-40C",
+        "value": 2.45602e-15,
+        "margin": null
+      }
+    },
+    {
+      "name": "vref_2ms_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/2.97V/-40C",
+        "value": 1.04695,
+        "margin": null
+      }
+    },
+    {
+      "name": "vref_3ms_v",
+      "unit": "V",
+      "limits": {
+        "min": 0.882,
+        "max": 1.218
+      },
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "bcs/2.97V/125C",
+        "value": 1.0406,
+        "margin": 0.15859999999999996
+      },
+      "spec_row": "output-reference-nominal"
+    },
+    {
+      "name": "vbeq3_2ms_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/2.97V/-40C",
+        "value": 0.785088,
+        "margin": null
+      }
+    },
+    {
+      "name": "vbeq3_3ms_v",
+      "unit": null,
+      "limits": null,
+      "status": "pass",
+      "worst_case": {
+        "corner_id": "typ/2.97V/-40C",
+        "value": 0.785088,
+        "margin": null
+      }
+    }
+  ],
+  "corners": [
+    {
+      "corner_id": "typ/2.97V/-40C",
+      "process": "typ",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 36.784,
+      "peak_rss_bytes": 839393280,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.13713,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.784485,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.78419,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00352165,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.45602e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04695,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04695,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16495000000000004
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.785088,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.785088,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0002949999999999342,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-typ-2p97/hbt_typ_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-typ-2p97/hbt_typ_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "typ/2.97V/27C",
+      "process": "typ",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 37.69,
+      "peak_rss_bytes": 839589888,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.16656,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.708133,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.707715,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00763344,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 8.16509e-14,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04705,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04705,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16505000000000003
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.708703,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.708703,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00041800000000002946,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-typ-2p97/hbt_typ_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-typ-2p97/hbt_typ_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "typ/2.97V/125C",
+      "process": "typ",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 63.476,
+      "peak_rss_bytes": 839589888,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.22558,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.589934,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.589309,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0227978,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 4.42142e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04201,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04201,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1600100000000001
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.590415,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.590415,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006249999999999867,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "singular_matrix",
+          "message": "Warning: singular matrix:  check nodes xxtrim.t231 and xxtrim.t240"
+        }
+      ],
+      "artifacts": {
+        "log": "<work>/batch-set/request-typ-2p97/hbt_typ_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-typ-2p97/hbt_typ_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "typ/3.30V/-40C",
+      "process": "typ",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 35.286,
+      "peak_rss_bytes": 839413760,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.46736,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.784495,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.784229,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00392256,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.89119e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04718,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04718,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16518
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.785105,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.785105,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0002660000000000995,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-typ-3p30/hbt_typ_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-typ-3p30/hbt_typ_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "typ/3.30V/27C",
+      "process": "typ",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 35.78,
+      "peak_rss_bytes": 839413760,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.49682,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.708142,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.707748,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00854001,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 9.69388e-14,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04728,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04728,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16527999999999998
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.70872,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.70872,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00039400000000000546,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-typ-3p30/hbt_typ_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-typ-3p30/hbt_typ_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "typ/3.30V/125C",
+      "process": "typ",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 60.534,
+      "peak_rss_bytes": 839708672,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.55589,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.589937,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.589325,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0260548,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 5.20796e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04218,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04218,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1601800000000001
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.590428,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.590428,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006120000000000569,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "singular_matrix",
+          "message": "Warning: singular matrix:  check nodes xxtrim.t231 and xxtrim.t240"
+        }
+      ],
+      "artifacts": {
+        "log": "<work>/batch-set/request-typ-3p30/hbt_typ_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-typ-3p30/hbt_typ_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "typ/3.63V/-40C",
+      "process": "typ",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 39.145,
+      "peak_rss_bytes": 839520256,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.7976,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.784502,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.784256,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00432567,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 3.34999e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04734,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04734,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16533999999999993
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.785116,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.785116,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0002460000000000795,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-typ-3p63/hbt_typ_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-typ-3p63/hbt_typ_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "typ/3.63V/27C",
+      "process": "typ",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 39.646,
+      "peak_rss_bytes": 839520256,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.8271,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.708145,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.707762,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00946095,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 1.15607e-13,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04736,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04736,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16536000000000006
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.708726,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.708726,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0003830000000000222,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-typ-3p63/hbt_typ_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-typ-3p63/hbt_typ_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "typ/3.63V/125C",
+      "process": "typ",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 66.288,
+      "peak_rss_bytes": 839766016,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.88627,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.589926,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.589299,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0295508,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 6.18488e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04206,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04206,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16005999999999998
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.590419,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.590419,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006269999999999332,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "singular_matrix",
+          "message": "Warning: singular matrix:  check nodes xxtrim.t231 and xxtrim.t240"
+        }
+      ],
+      "artifacts": {
+        "log": "<work>/batch-set/request-typ-3p63/hbt_typ_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-typ-3p63/hbt_typ_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/2.97V/-40C",
+      "process": "bcs",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 35.864,
+      "peak_rss_bytes": 839487488,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.1849,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.781797,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.781504,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00268433,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 3.51897e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04666,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04666,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16465999999999992
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.782525,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.782525,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0002929999999999877,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-bcs-2p97/hbt_bcs_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-bcs-2p97/hbt_bcs_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/2.97V/27C",
+      "process": "bcs",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 37.773,
+      "peak_rss_bytes": 839487488,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.21168,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.704676,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.704253,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00539439,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 4.18777e-13,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04638,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04638,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16438000000000008
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.705371,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.705371,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0004229999999999512,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-bcs-2p97/hbt_bcs_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-bcs-2p97/hbt_bcs_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/2.97V/125C",
+      "process": "bcs",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 38.179,
+      "peak_rss_bytes": 839487488,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.26641,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.585329,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.584692,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0145631,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 1.38017e-10,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.0406,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.0406,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.15859999999999996
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.585935,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.585935,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006369999999999987,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-bcs-2p97/hbt_bcs_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-bcs-2p97/hbt_bcs_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/3.30V/-40C",
+      "process": "bcs",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 44.675,
+      "peak_rss_bytes": 839278592,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.51513,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.781807,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.781541,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00298653,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 4.16803e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.0469,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.0469,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16489999999999994
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.782541,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.782541,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00026599999999998847,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-bcs-3p30/hbt_bcs_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-bcs-3p30/hbt_bcs_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/3.30V/27C",
+      "process": "bcs",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 45.881,
+      "peak_rss_bytes": 839434240,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.54194,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.704684,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.704285,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00601354,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 4.93698e-13,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.0466,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.0466,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16459999999999997
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.705387,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.705387,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0003989999999999272,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-bcs-3p30/hbt_bcs_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-bcs-3p30/hbt_bcs_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/3.30V/125C",
+      "process": "bcs",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 45.973,
+      "peak_rss_bytes": 839593984,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.59672,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.585331,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.584704,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0163723,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 1.586e-10,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04076,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04076,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1587599999999999
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.585946,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.585946,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006270000000000442,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-bcs-3p30/hbt_bcs_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-bcs-3p30/hbt_bcs_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/3.63V/-40C",
+      "process": "bcs",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 42.12,
+      "peak_rss_bytes": 839315456,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.84537,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.781814,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.781568,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00328963,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 4.80669e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04705,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04705,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16505000000000003
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.782553,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.782553,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00024599999999996847,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-bcs-3p63/hbt_bcs_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-bcs-3p63/hbt_bcs_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/3.63V/27C",
+      "process": "bcs",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 42.52,
+      "peak_rss_bytes": 839454720,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.87223,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.704685,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.704296,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00663738,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 5.84078e-13,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04668,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04668,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16468000000000005
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.705392,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.705392,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0003889999999999727,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-bcs-3p63/hbt_bcs_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-bcs-3p63/hbt_bcs_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "bcs/3.63V/125C",
+      "process": "bcs",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 44.322,
+      "peak_rss_bytes": 839553024,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.92711,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.585318,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.584672,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0182327,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 1.83124e-10,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04061,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04061,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.15861000000000003
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.585935,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.585935,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006460000000000354,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-bcs-3p63/hbt_bcs_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-bcs-3p63/hbt_bcs_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/2.97V/-40C",
+      "process": "wcs",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 41.519,
+      "peak_rss_bytes": 839487488,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.08839,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.788795,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.788496,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00597976,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.34514e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04914,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04914,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16713999999999996
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.789262,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.789262,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0002990000000000492,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-wcs-2p97/hbt_wcs_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-wcs-2p97/hbt_wcs_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/2.97V/27C",
+      "process": "wcs",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 43.621,
+      "peak_rss_bytes": 839598080,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.12022,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.713697,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.713278,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0149427,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.16504e-14,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.05019,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.05019,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16781000000000001
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.714131,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.714131,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0004190000000000582,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-wcs-2p97/hbt_wcs_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-wcs-2p97/hbt_wcs_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/2.97V/125C",
+      "process": "wcs",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 48.327,
+      "peak_rss_bytes": 839598080,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.18312,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.597368,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.596752,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0588838,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.41741e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04669,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04669,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1646899999999999
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.597715,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.597715,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006160000000000609,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-wcs-2p97/hbt_wcs_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-wcs-2p97/hbt_wcs_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/3.30V/-40C",
+      "process": "wcs",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 44.718,
+      "peak_rss_bytes": 839110656,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.41862,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.788805,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.788535,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00668838,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.7293e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04938,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04938,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16737999999999997
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.789279,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.789279,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00026999999999999247,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-wcs-3p30/hbt_wcs_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-wcs-3p30/hbt_wcs_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/3.30V/27C",
+      "process": "wcs",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 45.127,
+      "peak_rss_bytes": 839110656,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.45047,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.713707,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.713314,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0169858,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.65694e-14,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.05042,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.05042,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16758000000000006
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.714148,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.714148,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0003929999999999767,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-wcs-3p30/hbt_wcs_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-wcs-3p30/hbt_wcs_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/3.30V/125C",
+      "process": "wcs",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 49.428,
+      "peak_rss_bytes": 839110656,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.51343,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.597373,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.596772,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0771023,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 3.75054e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04688,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04688,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16488000000000003
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.597729,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.597729,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006010000000000737,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-wcs-3p30/hbt_wcs_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-wcs-3p30/hbt_wcs_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/3.63V/-40C",
+      "process": "wcs",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 42.319,
+      "peak_rss_bytes": 839475200,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.74886,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.788813,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.788564,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00740767,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 3.26553e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04954,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04954,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1675399999999999
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.789291,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.789291,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0002489999999999437,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-wcs-3p63/hbt_wcs_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-wcs-3p63/hbt_wcs_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/3.63V/27C",
+      "process": "wcs",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 41.82,
+      "peak_rss_bytes": 839348224,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.78075,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.71371,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.71333,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0191454,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 3.32507e-14,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.05052,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.05052,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16748000000000007
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.714155,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.714155,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00037999999999993594,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-wcs-3p63/hbt_wcs_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-wcs-3p63/hbt_wcs_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "wcs/3.63V/125C",
+      "process": "wcs",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 47.827,
+      "peak_rss_bytes": 839639040,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.84379,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.597364,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.596753,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.108007,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 7.44775e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04679,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04679,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1647900000000001
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.597722,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.597722,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006110000000000282,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-wcs-3p63/hbt_wcs_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-wcs-3p63/hbt_wcs_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/2.97V/-40C",
+      "process": "sf",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 42.871,
+      "peak_rss_bytes": 839553024,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.16534,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.784436,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.784147,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0051023,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.44399e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04721,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04721,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16520999999999997
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.785107,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.785107,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0002889999999999837,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-sf-2p97/hbt_typ_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-sf-2p97/hbt_typ_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/2.97V/27C",
+      "process": "sf",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 41.468,
+      "peak_rss_bytes": 839553024,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.19467,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.708085,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.707675,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0120058,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 4.24153e-14,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04733,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04733,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1653300000000001
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.708724,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.708724,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00040999999999991044,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-sf-2p97/hbt_typ_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-sf-2p97/hbt_typ_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/2.97V/125C",
+      "process": "sf",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 69.753,
+      "peak_rss_bytes": 839553024,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.25352,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.589887,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.589273,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0427348,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 3.43583e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.0423,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.0423,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1603
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.590436,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.590436,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006140000000000034,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "singular_matrix",
+          "message": "Warning: singular matrix:  check node n.xxtrim.xru215.nr1#i2"
+        }
+      ],
+      "artifacts": {
+        "log": "<work>/batch-set/request-sf-2p97/hbt_typ_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-sf-2p97/hbt_typ_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/3.30V/-40C",
+      "process": "sf",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 42.619,
+      "peak_rss_bytes": 839147520,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.49557,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.784445,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.784183,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00569509,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.85183e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04744,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04744,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16543999999999992
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.785123,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.785123,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00026199999999998447,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-sf-3p30/hbt_typ_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-sf-3p30/hbt_typ_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/3.30V/27C",
+      "process": "sf",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 44.073,
+      "peak_rss_bytes": 839204864,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.52493,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.708093,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.707706,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0135344,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 5.13171e-14,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04755,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04755,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16554999999999997
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.708739,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.708739,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0003870000000000262,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-sf-3p30/hbt_typ_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-sf-3p30/hbt_typ_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/3.30V/125C",
+      "process": "sf",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 69.902,
+      "peak_rss_bytes": 839548928,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.58383,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.589889,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.589285,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0516556,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 4.4934e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04245,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04245,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1604500000000001
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.590448,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.590448,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006040000000000489,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "singular_matrix",
+          "message": "Warning: singular matrix:  check node n.xxtrim.xru215.nr1#i2"
+        }
+      ],
+      "artifacts": {
+        "log": "<work>/batch-set/request-sf-3p30/hbt_typ_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-sf-3p30/hbt_typ_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/3.63V/-40C",
+      "process": "sf",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 44.235,
+      "peak_rss_bytes": 839479296,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.82582,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.784451,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.784209,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00629393,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 3.35372e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04759,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04759,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16559000000000001
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.785134,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.785134,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00024199999999996447,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-sf-3p63/hbt_typ_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-sf-3p63/hbt_typ_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/3.63V/27C",
+      "process": "sf",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 43.427,
+      "peak_rss_bytes": 839479296,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.85521,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.708094,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.707716,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0151161,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 6.2527e-14,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04762,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04762,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16562
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.708745,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.708745,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00037799999999998946,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-sf-3p63/hbt_typ_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-sf-3p63/hbt_typ_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "sf/3.63V/125C",
+      "process": "sf",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 72.733,
+      "peak_rss_bytes": 839479296,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.91422,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.589877,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.589255,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0630747,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 6.1881e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04231,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04231,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16031000000000006
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.590438,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.590437,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006220000000000114,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "singular_matrix",
+          "message": "Warning: singular matrix:  check node n.xxtrim.xru215.nr1#i2"
+        }
+      ],
+      "artifacts": {
+        "log": "<work>/batch-set/request-sf-3p63/hbt_typ_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-sf-3p63/hbt_typ_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/2.97V/-40C",
+      "process": "fs",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 42.202,
+      "peak_rss_bytes": 839475200,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.10894,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.784535,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.784233,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00257255,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.69415e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04667,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04667,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16466999999999998
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.785068,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.785068,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00030200000000002447,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-fs-2p97/hbt_typ_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-fs-2p97/hbt_typ_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/2.97V/27C",
+      "process": "fs",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 43.371,
+      "peak_rss_bytes": 839475200,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.13847,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.708182,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.707754,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00528762,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 1.7367e-13,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04676,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04676,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1647599999999999
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.708682,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.708682,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00042799999999998395,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-fs-2p97/hbt_typ_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-fs-2p97/hbt_typ_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/2.97V/125C",
+      "process": "fs",
+      "supply_v": {
+        "Vvdd": 2.97
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 70.024,
+      "peak_rss_bytes": 839610368,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.19763,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.58998,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.589345,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0145362,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 7.13424e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04172,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04172,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.15971999999999997
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.590394,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.590394,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006349999999999412,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "singular_matrix",
+          "message": "Warning: singular matrix:  check nodes xxtrim.t253 and n.xxtrim.xru220.nr1#i2"
+        }
+      ],
+      "artifacts": {
+        "log": "<work>/batch-set/request-fs-2p97/hbt_typ_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-fs-2p97/hbt_typ_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/3.30V/-40C",
+      "process": "fs",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 43.426,
+      "peak_rss_bytes": 839602176,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.43916,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.784546,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.784274,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00286252,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 3.1233e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04692,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04692,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16492000000000007
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.785086,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.785086,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00027199999999993896,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-fs-3p30/hbt_typ_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-fs-3p30/hbt_typ_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/3.30V/27C",
+      "process": "fs",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 41.519,
+      "peak_rss_bytes": 839380992,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.46872,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.708192,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.707791,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00589712,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.0449e-13,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.047,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.047,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16499999999999992
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.7087,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.7087,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0004010000000000957,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-fs-3p30/hbt_typ_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-fs-3p30/hbt_typ_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/3.30V/125C",
+      "process": "fs",
+      "supply_v": {
+        "Vvdd": 3.3
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 70.761,
+      "peak_rss_bytes": 839782400,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.52794,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.589985,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.589366,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0163694,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 8.18945e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04191,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04191,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.15990999999999989
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.590408,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.590408,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006190000000000362,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "singular_matrix",
+          "message": "Warning: singular matrix:  check nodes xxtrim.t253 and n.xxtrim.xru220.nr1#i2"
+        }
+      ],
+      "artifacts": {
+        "log": "<work>/batch-set/request-fs-3p30/hbt_typ_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-fs-3p30/hbt_typ_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/3.63V/-40C",
+      "process": "fs",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": -40,
+      "status": "pass",
+      "runtime_s": 43.893,
+      "peak_rss_bytes": 839254016,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.76941,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.784554,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.784304,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00315344,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 3.62653e-15,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04708,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04708,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.16508
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.785098,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.785098,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00024999999999997247,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-fs-3p63/hbt_typ_novdd_n40C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-fs-3p63/hbt_typ_novdd_-40C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/3.63V/27C",
+      "process": "fs",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": 27,
+      "status": "pass",
+      "runtime_s": 42.34,
+      "peak_rss_bytes": 839249920,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.799,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.708195,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.707807,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.00651188,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 2.41606e-13,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.0471,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.0471,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1650999999999999
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.708707,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.708707,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.00038800000000005497,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [],
+      "artifacts": {
+        "log": "<work>/batch-set/request-fs-3p63/hbt_typ_novdd_27C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-fs-3p63/hbt_typ_novdd_27C.cir"
+      },
+      "monte_carlo": null
+    },
+    {
+      "corner_id": "fs/3.63V/125C",
+      "process": "fs",
+      "supply_v": {
+        "Vvdd": 3.63
+      },
+      "temperature_c": 125,
+      "status": "pass",
+      "runtime_s": 73.136,
+      "peak_rss_bytes": 839254016,
+      "engine_exit_code": 0,
+      "engine_killed_by_signal": null,
+      "measurements": [
+        {
+          "name": "fb_v",
+          "value": 2.85831,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns1_v",
+          "value": 0.589976,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "sns2_v",
+          "value": 0.589344,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "det_v",
+          "value": 0.0182623,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "i_mkfb_a",
+          "value": 9.44282e-11,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_2ms_v",
+          "value": 1.04181,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vref_3ms_v",
+          "value": 1.04181,
+          "unit": "V",
+          "status": "pass",
+          "margin": 0.1598099999999999
+        },
+        {
+          "name": "vbeq3_2ms_v",
+          "value": 0.5904,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "vbeq3_3ms_v",
+          "value": 0.5904,
+          "unit": null,
+          "status": "pass",
+          "margin": null
+        },
+        {
+          "name": "dvsns_v",
+          "value": 0.0006319999999999659,
+          "spice": "derived: |sns1_v - sns2_v| (see sim/harness/enrich_pvt_report.py)"
+        },
+        {
+          "name": "vref_settle_delta_v",
+          "value": 0.0,
+          "spice": "derived: |vref_3ms_v - vref_2ms_v| (see sim/harness/enrich_pvt_report.py)"
+        }
+      ],
+      "diagnostics": [
+        {
+          "severity": "warning",
+          "code": "singular_matrix",
+          "message": "Warning: singular matrix:  check nodes xxtrim.t253 and n.xxtrim.xru220.nr1#i2"
+        }
+      ],
+      "artifacts": {
+        "log": "<work>/batch-set/request-fs-3p63/hbt_typ_novdd_125C/ngspice.log",
+        "raw": null,
+        "waveform": null,
+        "deck": "<work>/decks-fixed-fs-3p63/hbt_typ_novdd_125C.cir"
+      },
+      "monte_carlo": null
+    }
+  ],
+  "grid": {
+    "expected": [
+      "typ_-40c_2.97v",
+      "typ_27c_2.97v",
+      "typ_125c_2.97v",
+      "typ_-40c_3.30v",
+      "typ_27c_3.30v",
+      "typ_125c_3.30v",
+      "typ_-40c_3.63v",
+      "typ_27c_3.63v",
+      "typ_125c_3.63v",
+      "bcs_-40c_2.97v",
+      "bcs_27c_2.97v",
+      "bcs_125c_2.97v",
+      "bcs_-40c_3.30v",
+      "bcs_27c_3.30v",
+      "bcs_125c_3.30v",
+      "bcs_-40c_3.63v",
+      "bcs_27c_3.63v",
+      "bcs_125c_3.63v",
+      "wcs_-40c_2.97v",
+      "wcs_27c_2.97v",
+      "wcs_125c_2.97v",
+      "wcs_-40c_3.30v",
+      "wcs_27c_3.30v",
+      "wcs_125c_3.30v",
+      "wcs_-40c_3.63v",
+      "wcs_27c_3.63v",
+      "wcs_125c_3.63v",
+      "sf_-40c_2.97v",
+      "sf_27c_2.97v",
+      "sf_125c_2.97v",
+      "sf_-40c_3.30v",
+      "sf_27c_3.30v",
+      "sf_125c_3.30v",
+      "sf_-40c_3.63v",
+      "sf_27c_3.63v",
+      "sf_125c_3.63v",
+      "fs_-40c_2.97v",
+      "fs_27c_2.97v",
+      "fs_125c_2.97v",
+      "fs_-40c_3.30v",
+      "fs_27c_3.30v",
+      "fs_125c_3.30v",
+      "fs_-40c_3.63v",
+      "fs_27c_3.63v",
+      "fs_125c_3.63v"
+    ],
+    "complete": true,
+    "missing": [],
+    "unexpected": []
+  }
+}

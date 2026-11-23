@@ -242,9 +242,76 @@
         "Both require the spec table itself to be ratified \u2014 verdicts against a draft spec are provisional by construction."
       ],
       "status": "unmet",
-      "reason": "no_evidence",
+      "reason": "check_failed",
       "graded_by_build": true,
-      "citation": null
+      "citation": null,
+      "citations_graded": [
+        {
+          "citation": "sim/closed-loop-vref-pvt/records/20261122-181757-c5b84561-report.json",
+          "rows": [
+            "output-reference-nominal"
+          ],
+          "status": "met",
+          "reason": null
+        },
+        {
+          "citation": "sim/closed-loop-psrr/records/20261122-182058-1d0308ad-report.json",
+          "rows": [
+            "psrr-dc"
+          ],
+          "status": "unmet",
+          "reason": "check_failed"
+        },
+        {
+          "citation": "sim/closed-loop-iq/records/20261122-181711-c5b84561-report.json",
+          "rows": [
+            "iq"
+          ],
+          "status": "met",
+          "reason": null
+        },
+        {
+          "citation": "sim/startup-time-to-release/records/20261122-183926-90e8e4dd-report.json",
+          "rows": [
+            "startup"
+          ],
+          "status": "met",
+          "reason": null
+        }
+      ],
+      "detail": {
+        "failed_citations": [
+          "sim/closed-loop-psrr/records/20261122-182058-1d0308ad-report.json"
+        ],
+        "failed_rows": [
+          "psrr-dc"
+        ],
+        "uncovered_rows": [],
+        "declared_gaps": [
+          {
+            "id": "temp-coefficient",
+            "gap": "box-method TC is a figure derived across each (process, supply) group's 8 temperature corners; klt sim grades limits per corner only and item 5's derived row coverage has no cross-corner form (klayout-tools#7184). Measured 20.20-38.62 ppm/C against < 50 ppm/C on the committed 120-point grid (sim/closed-loop-vref-pvt-boxtc 20261116-024010-dc056b4c), not envelope-graded"
+          },
+          {
+            "id": "trim-range",
+            "gap": "trim range is the spread of vref across the trim-code axis' corner runs; no gradeable cross-corner form (klayout-tools#7184). Measured +29.22/-29.63% worst against >= +/-15% (sim/trim-coverage 20261030-061206-03e62489), not envelope-graded"
+          },
+          {
+            "id": "trim-resolution",
+            "gap": "trim resolution is the largest adjacent-code step across the trim-code axis' corner runs; no gradeable cross-corner form (klayout-tools#7184). Measured 0.2347%/step worst against <= 0.25%/step (sim/trim-coverage 20261030-061206-03e62489), not envelope-graded"
+          },
+          {
+            "id": "supply",
+            "gap": "rating argument, not a simulation (spec/decision-records/0002, ratified): the HV flavor's 3.3 V +/-10% is met by construction -- every cited envelope sweeps 2.97/3.30/3.63 V -- and the 1.2 V LV stretch is a flavor statement, not measured"
+          }
+        ],
+        "unratified_rows": [],
+        "row_sources": {
+          "iq": "derived",
+          "output-reference-nominal": "derived",
+          "startup": "derived"
+        }
+      }
     },
     {
       "tier": "T1",
@@ -307,11 +374,11 @@
       "reason": null,
       "graded_by_build": true,
       "citation": {
-        "file": "measurements/2026-11-21-characterization-report/envelope.json",
+        "file": "measurements/2026-11-22-item5-limits-characterization-report/envelope.json",
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:e01ac441c7cb452b1be1876db768717ddda71fddae22a586f938358a67c0252f",
+        "content_hash": "sha256:76ced7a7edda20e27462709f982eeacb5e6a3e6e60613adc1d52937a60e33aad",
         "input_verified": true,
         "exit_status": 0
       }

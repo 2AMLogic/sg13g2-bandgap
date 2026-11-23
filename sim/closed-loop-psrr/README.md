@@ -102,18 +102,16 @@ never larger than the injected `vdd` ripple) — see "Sign convention" for
 why that is the expected, physically sane result for this convention, not
 an assumption.
 
-**It does not claim conformance to any ratified spec row.**
-`spec/porting-plan.md` §6 carries a **draft, unratified** `PSRR @ DC | > 60
-dB` target row (#125 tracks ratification generally; that number has never
-been checked against real evidence before this testbench). This record's
-own DC-PSRR range (57.1-105.2 dB) straddles that draft number at some
-corners and clears it by a wide margin at others — **this is stated as
-context only, not a pass/fail verdict**: per `klayout-tools`'
-`docs/design-evidence-tiers.md` T1 checklist (referenced from issue #4),
-producing the capability to run this comparison is not the same as running
-it as a ratified check, and no checklist item on #4 is closed by this
-record. It does not claim the design meets any offset/mismatch target
-either (see `../closed-loop-offset/README.md` for that separate,
+**Since issue #629 it does claim conformance — graded by the run itself.**
+The spec table's `PSRR @ DC | > 60 dB` row is ratified
+(`spec/decision-records/0007`), and the request template now carries it as
+a limit on `psrr_dc_lin` (`max` 1e-3, `spec_row psrr-dc`), so the run's own
+report grades the row and the committed `records/<record-id>-report.json`
+is the citable T1 item-5 envelope. The current envelope fails honestly:
+44/45 corners pass, the worst reading 59.685 dB at bcs/125 °C/3.63 V
+(design issue **#631**) — this is a measured failure, not a missing
+measurement. It still does not claim the design meets any offset/mismatch
+target either (see `../closed-loop-offset/README.md` for that separate,
 explicitly-informal characterization).
 
 ## Injection method
@@ -305,6 +303,12 @@ sim/tools/build-osdi.sh              # one-time: build the OSDI models
 sim/closed-loop-psrr/run_klt_sim.sh --sanity   # one local typ/27C/3.30V corner vs the newest record
 sim/closed-loop-psrr/run_klt_sim.sh --batch    # the 45-point grid via `klt sim` on the batch fleet
 sim/closed-loop-psrr/run_klt_sim.sh --record   # mint records/ from the enriched report
+
+PSRR_VARIANT=p12-w2 sim/closed-loop-psrr/run_klt_sim.sh --batch  # same bench on a
+                                    # bench-local PROPOSAL body from variants/
+                                    # (issue #631): variant sanity anchors, variant
+                                    # record spec; --record mints a record that
+                                    # names the variant, never the as-built DUT
 ```
 
 `run_klt_sim.sh` is the cold-start path (issue #415, on the harness described in
@@ -323,6 +327,38 @@ alongside. On a dispatch host a multi-corner grid must go through `--batch`:
 Requires a committed `../closed-loop-startup/records/*.csv` to exist (see
 "DC bias: `.nodeset`" above) — already true in this repo; no separate
 `closed-loop-startup` run is required first.
+
+## Attribution: why DC PSRR misses at `bcs`/125 °C/3.63 V (issue #631)
+
+[`attribution/`](attribution/) holds the local single-corner probe decks and
+results that attribute the row's one miss (59.685 dB, 0.315 dB under the
+> 60 dB bound) and screen bounded fixes. Headline: the limit is a
+**near-cancellation** between the amp output-mirror's vdd feedthrough and
+the loop-mediated supply terms, not a single leaking path — and the loop's
+stability budget is spent, so the only bounded knob that improves every
+binding corner is a wider amp input pair (`p12-w2`, XMP1/XMP2 20u/1u →
+40u/1u: +2.7 dB loop gain, PM 51–55°, no corner regressed across twelve
+probed PVT points). See [`attribution/README.md`](attribution/README.md)
+for the ablation table, the PR #435 coordination numbers (`xmn435`: −7.0 dB
+at `bcs`, +18 dB at `fs`/2.97 V) and the rejected-candidate screen;
+[`spec/decision-records/0017-dc-psrr-bcs-125c-attribution.md`](../../spec/decision-records/0017-dc-psrr-bcs-125c-attribution.md)
+is the decision record.
+
+## Proposal variants (issue #631)
+
+[`variants/`](variants/) carries bench-local PROPOSAL bodies — never the
+as-built DUT — so a candidate can be grid-verified on the fleet before any
+committed-design change (the carry rule issue #631 sets, after PR #435's
+stuck shape). Each variant is three files: `<name>.body.spice.tmpl` (the
+committed body with one bounded change, header-marked as a proposal),
+`<name>.anchors.env` (its own typ/27C/3.30V sanity anchors) and
+`<name>.record-spec.json` (so a minted record names the variant). Select
+with `PSRR_VARIANT=<name>` (above). `p12-w2` is the first resident; the
+fleet record it produced is
+[`records/20261121-095519-80e1511e.md`](records/20261121-095519-80e1511e.md)
+(45/45 points, worst 60.9884 dB at `bcs`/125 °C/3.63 V) with `variant` in
+its Claim and Netlist-provenance fields. Applying it to `design/` is
+tracked in [#638](https://github.com/2AMLogic/sg13g2-bandgap/issues/638).
 
 See `sim/README.md` for the append-only `records/`/`corners/`/
 `netlist-snapshots/` convention every experiment in this tree follows.

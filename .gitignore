@@ -105,3 +105,8 @@ flow/build/
 
 # Repo Skills Codex-side machine-local install metadata (never committed)
 .agents/skills/repo/.install-local.json
+
+# Loom daemon per-runtime agent-account ranking state (written live under
+# .loom/ by the daemon; never committed). Surfaced by issue #631's
+# check-main-clean run after the file appeared un-ignored on a worker.
+.loom/account-ranking.*

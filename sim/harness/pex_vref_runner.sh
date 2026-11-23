@@ -19,6 +19,11 @@
 # sim/harness/tc_companion.py) -- each with its own module, helper and
 # companion file.
 
+# Every vref bench's verdict is graded by enrich_pvt_report.py itself, so
+# the module rides the submission identity of each bench that sources this
+# file (#661). Sourced after pex_runner.sh, which builds IDENT_ARGS.
+IDENT_ARGS+=(--extra "${HARNESS_DIR}/enrich_pvt_report.py")
+
 check_anchors() {  # $1 = report json
   python3 "${HARNESS_DIR}/sanity_anchors.py" "$1" \
     --anchor "vref_3ms_v=${ANCHOR_VREF_V}:${ANCHOR_TOL_V}" \

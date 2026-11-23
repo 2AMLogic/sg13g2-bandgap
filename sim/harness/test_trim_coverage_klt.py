@@ -10,8 +10,10 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import enrich_pvt_report as epr  # noqa: E402
 import trim_coverage_klt as tc  # noqa: E402
 import trim_mc_klt as tm  # noqa: E402
 
@@ -47,6 +49,16 @@ class GridTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             tc.body_text("@@NOPE@@ @@FB_SEED@@", "/o", "typ", 3.30, 27, "10u", seeds, "s.csv")
 
+    def test_unfilled_embedded_placeholder_refused(self):
+        """Issue #652: a placeholder embedded in a word (`v(fb)=@@NOPE@@`,
+        `temp=@@TEMP_C@@C`) is as unfilled as a standalone one -- the old
+        text.split() leftover check was blind to these."""
+        seeds = {("typ", "27", "3.30"): dict(fb_final_v="1", sns1_final_v="1",
+                                              sns2_final_v="1", vref_final_v="1")}
+        with self.assertRaises(SystemExit):
+            tc.body_text("v(fb)=@@FB_SEED@@\ntemp=@@NOPE@@C\n", "/o", "typ", 3.30, 27,
+                         "10u", seeds, "s.csv")
+
     def test_missing_seed_row_refused(self):
         with self.assertRaises(SystemExit):
             tc.seed_row({}, "typ", 27, "3.30", "s.csv")
@@ -81,6 +93,16 @@ class EnrichTests(unittest.TestCase):
         c = corner("typ_code128", 128, 3.30, sns2_v=0.60)
         c["supply_v"] = {"Vvdd": 3.30}
         self.assertEqual(self.run_enrich([c])["status"], "fail")
+
+    def test_verdict_follows_the_shared_constants(self):
+        # Issue #657: the thresholds are enrich_pvt_report's, where the drift
+        # guard reads them, not a copy in this module.
+        c = corner("typ_code128", 128, 3.30)
+        c["supply_v"] = {"Vvdd": 3.30}
+        with mock.patch.object(epr, "DET_RELEASE_FRAC", 0.0):
+            rep = self.run_enrich([c])
+        self.assertEqual(rep["status"], "fail")
+        self.assertIn("startup_not_released", rep["corners"][0]["diagnostics"][0]["message"])
 
 
 class AnalysisTests(unittest.TestCase):

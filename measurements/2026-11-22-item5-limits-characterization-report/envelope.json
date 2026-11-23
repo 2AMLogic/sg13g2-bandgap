@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 8,
+  "summary": "aggregated characterization report for all seven spec-table rows (Output reference as nominal/untrimmed/trimmed lines) at audited commit 1af76710: the only evidence that moved since the 2026-11-18 KLU re-time report is issue #629's four limit-graded re-runs of the corner-swept benches (sim/closed-loop-vref-pvt 20261122-181757-c5b84561, sim/closed-loop-psrr 20261122-182058-1d0308ad, sim/closed-loop-iq 20261122-181711-c5b84561, sim/startup-time-to-release 20261122-183926-90e8e4dd), whose requests now carry each row's ratified bound as a request-level limit so the run's own report grades it; every measured figure reproduces the record it replaces to the digit, and the one verdict-bearing change is that the PSRR grid's bcs/125C/3.63V corner now grades FAIL against > 60 dB (59.68493 dB, the same corner and figure the 2026-11-13 record measured ungraded; design issue #631) -- the failure is machine-graded by the cited item-5 envelope, not only read off the CSV; the three post-layout benches (PSRR-PEX, Zout-PEX, startup trip-point) remain disclosed as predating the current extraction; each row carries bound, verdict, binding corner, statistical flag, newest committed record and a current-or-predates-the-netlist freshness mark; every quoted number spot-checked against its committed CSV; pass attests report completeness and citation honesty, not that every row meets its bound",
+  "source": "README.md",
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:76ced7a7edda20e27462709f982eeacb5e6a3e6e60613adc1d52937a60e33aad",
+      "path": "README.md"
+    }
+  }
+}

@@ -24,9 +24,11 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import boxtc_companion as bxc  # noqa: E402
+import enrich_ac_report as ear  # noqa: E402
 import enrich_pvt_report as epr  # noqa: E402
 import enrich_supply_bench_report as esb  # noqa: E402
 import extraction_binding as xb  # noqa: E402
@@ -169,6 +171,114 @@ class MergeTests(TempDirCase):
         p = self.write_json("p.json", shard("typ", ["pass"]))
         with self.assertRaises(SystemExit):
             mbs.merge([str(p)], None)
+
+
+class RollupMergeTests(TempDirCase):
+    """Issue #629: the merged report re-aggregates the request-declared
+    measurements[] rollup across every corner, by klt sim's own rule, so the
+    committed report is a citable grid envelope."""
+
+    @staticmethod
+    def rollup_shard(process: str, points: list[tuple[int, str, dict]]) -> dict:
+        corners = []
+        for temp, status, m in points:
+            corners.append(
+                {
+                    "corner_id": f"{process}/3.300V/{temp}C",
+                    "process": process,
+                    "temperature_c": temp,
+                    "supply_v": {"Vvdd": 3.3},
+                    "status": "fail" if m.get("status") == "fail" else status,
+                    "measurements": [dict(m, name="vref_v")],
+                }
+            )
+        n = lambda s: sum(1 for c in corners if c["status"] == s)  # noqa: E731
+        return {
+            "schema_version": 3,
+            "status": "fail" if n("fail") else ("error" if n("error") else "pass"),
+            "corner_count": len(corners),
+            "passed": n("pass"),
+            "failed": n("fail"),
+            "errored": n("error"),
+            "corners": corners,
+            "measurements": [
+                {
+                    "name": "vref_v",
+                    "unit": "V",
+                    "limits": {"min": 0.882, "max": 1.218},
+                    "status": "pass",
+                    "spec_row": "output-reference-nominal",
+                }
+            ],
+            "coverage": {"measurements_declared": 1, "measurements_with_limits": 1},
+        }
+
+    def test_rollup_reaggregates_across_shards_with_worst_case(self) -> None:
+        a = self.write_json(
+            "a.json",
+            self.rollup_shard("typ", [(-40, "pass", {"value": 1.05, "status": "pass", "margin": 0.168}),
+                                      (27, "pass", {"value": 1.06, "status": "pass", "margin": 0.158})]),
+        )
+        b = self.write_json(
+            "b.json",
+            self.rollup_shard("wcs", [(-40, "fail", {"value": 1.30, "status": "fail", "margin": -0.082})]),
+        )
+        merged = mbs.merge(
+            [str(a), str(b)], ["typ_-40c_3.30v", "typ_27c_3.30v", "wcs_-40c_3.30v"]
+        )
+        (entry,) = merged["measurements"]
+        self.assertEqual(entry["name"], "vref_v")
+        self.assertEqual(entry["status"], "fail")
+        self.assertEqual(entry["spec_row"], "output-reference-nominal")
+        self.assertEqual(entry["limits"], {"min": 0.882, "max": 1.218})
+        self.assertEqual(
+            entry["worst_case"],
+            {"corner_id": "wcs/3.300V/-40C", "value": 1.30, "margin": -0.082},
+        )
+        cov = merged["coverage"]
+        self.assertEqual(cov["corners_simulated"], 3)
+        self.assertEqual(cov["measurements_declared"], 1)
+        self.assertEqual(cov["measurements_with_limits"], 1)
+        self.assertFalse(cov["nothing_checked"])
+        self.assertEqual(len(cov["checked"]), 6)  # 3 corners x 2 bounds
+
+    def test_all_passing_corners_roll_up_pass(self) -> None:
+        a = self.write_json(
+            "a.json",
+            self.rollup_shard("typ", [(-40, "pass", {"value": 1.05, "status": "pass", "margin": 0.1})]),
+        )
+        b = self.write_json(
+            "b.json",
+            self.rollup_shard("wcs", [(125, "pass", {"value": 1.04, "status": "pass", "margin": 0.09})]),
+        )
+        merged = mbs.merge([str(a), str(b)], ["typ_-40c_3.30v", "wcs_125c_3.30v"])
+        self.assertEqual(merged["measurements"][0]["status"], "pass")
+        self.assertEqual(
+            merged["measurements"][0]["worst_case"]["corner_id"], "wcs/3.300V/125C"
+        )
+
+    def test_shards_disagreeing_on_declaration_refuse_the_merge(self) -> None:
+        a = self.write_json(
+            "a.json",
+            self.rollup_shard("typ", [(-40, "pass", {"value": 1.05, "status": "pass", "margin": 0.1})]),
+        )
+        other = self.rollup_shard(
+            "wcs", [(125, "pass", {"value": 1.04, "status": "pass", "margin": 0.1})]
+        )
+        other["measurements"][0]["limits"] = {"max": 1.218}
+        b = self.write_json("b.json", other)
+        with self.assertRaises(mbs.ShardError) as ctx:
+            mbs.merge([str(a), str(b)], ["typ_-40c_3.30v", "wcs_125c_3.30v"])
+        self.assertIn("disagree on the declared measurements", "\n".join(ctx.exception.problems))
+
+    def test_unlimited_rollup_counts_zero_limited(self) -> None:
+        shard = self.rollup_shard("typ", [(-40, "pass", {"value": 1.05, "status": "pass", "margin": None})])
+        del shard["measurements"][0]["limits"]
+        a = self.write_json("a.json", shard)
+        merged = mbs.merge([str(a)], ["typ_-40c_3.30v"])
+        self.assertEqual(merged["coverage"]["measurements_with_limits"], 0)
+        self.assertEqual(merged["coverage"]["checked"], [])
+        self.assertFalse(merged["coverage"]["nothing_checked"])
 
 
 class GridContractTests(TempDirCase):
@@ -758,6 +868,227 @@ class EnrichStartupReleaseLadderTests(unittest.TestCase):
         )
 
 
+# --------------------------------------------------------------------------
+# enrich_pvt_report's shared verdict check and recount (issue #657)
+# --------------------------------------------------------------------------
+
+
+class ClosedLoopVerdictHelperTests(unittest.TestCase):
+    """enrich_pvt_report.closed_loop_verdict_failures: the one copy of
+    pvt_closed_loop_verdict's 3-criteria form that every klt-path enricher
+    calls, so the constants' drift guard covers all of them."""
+
+    def failures(self, det: float | None = 0.10, i_mkfb: float | None = 1e-9,
+                 dvsns: float | None = 0.005, fb: float | None = 1.0,
+                 vdd: float | None = 3.30) -> list[str]:
+        return epr.closed_loop_verdict_failures(det, i_mkfb, dvsns, fb, vdd)
+
+    def test_healthy_point_passes(self) -> None:
+        self.assertEqual(self.failures(), [])
+
+    def test_each_criterion_is_named_in_the_standard_order(self) -> None:
+        self.assertEqual(self.failures(det=3.0, i_mkfb=1e-6, dvsns=0.1, fb=0.0),
+                         ["startup_not_released", "loop_not_closed", "fb_railed"])
+        self.assertEqual(self.failures(det=3.0), ["startup_not_released"])
+        self.assertEqual(self.failures(dvsns=0.1), ["loop_not_closed"])
+        self.assertEqual(self.failures(fb=0.0), ["fb_railed"])
+
+    def test_release_scales_with_supply_and_tolerates_sign(self) -> None:
+        self.assertEqual(self.failures(det=0.66), [])                 # 0.2 * 3.30, inclusive
+        self.assertEqual(self.failures(det=0.67), ["startup_not_released"])
+        self.assertEqual(self.failures(det=0.67, vdd=3.63), [])        # 0.726 at 3.63 V
+        self.assertEqual(self.failures(i_mkfb=-50e-9), [])             # magnitude, inclusive
+        self.assertEqual(self.failures(i_mkfb=-60e-9), ["startup_not_released"])
+
+    def test_closure_and_rail_boundaries_are_inclusive(self) -> None:
+        self.assertEqual(self.failures(dvsns=0.020), [])
+        self.assertEqual(self.failures(dvsns=0.0201), ["loop_not_closed"])
+        self.assertEqual(self.failures(fb=0.05), [])
+        self.assertEqual(self.failures(fb=0.049), ["fb_railed"])
+        self.assertEqual(self.failures(fb=3.25), [])
+        self.assertEqual(self.failures(fb=3.2501), ["fb_railed"])
+
+    def test_a_none_operand_skips_only_its_own_criterion(self) -> None:
+        # Every caller's own null-guard, in one place: a criterion with no
+        # operand is not graded, and does not stop the others being graded.
+        self.assertEqual(self.failures(det=None, i_mkfb=None), [])
+        self.assertEqual(self.failures(dvsns=None), [])
+        self.assertEqual(self.failures(fb=None), [])
+        self.assertEqual(epr.closed_loop_verdict_failures(None, None, None, None, None), [])
+        # an unresolvable supply skips the two vdd-dependent criteria only
+        self.assertEqual(self.failures(det=3.0, fb=0.0, vdd=None), [])
+        self.assertEqual(self.failures(dvsns=0.1, vdd=None), ["loop_not_closed"])
+
+    def test_the_constants_have_one_home(self) -> None:
+        """Both drift tests pin enrich_pvt_report's constants against
+        pvt_verdict_common.sh; a second assignment elsewhere sits outside them."""
+        harness = Path(__file__).resolve().parent
+        for name in ("DET_RELEASE_FRAC", "I_MKFB_RELEASE_A", "DVSNS_CLOSE_V", "FB_RAIL_MARGIN_V"):
+            with self.subTest(constant=name):
+                homes = [p.name for p in sorted(harness.glob("*.py"))
+                         if re.search(rf"^{name}\s*=", p.read_text(encoding="utf-8"), re.M)]
+                self.assertEqual(homes, ["enrich_pvt_report.py"])
+
+
+class RecountReportHelperTests(unittest.TestCase):
+    """enrich_pvt_report.recount_report: the report-level tally every enricher
+    ends with (issue #657)."""
+
+    @staticmethod
+    def corners(*statuses: str) -> list[dict]:
+        return [{"status": s} for s in statuses]
+
+    def test_counts_and_grade_come_from_the_corners(self) -> None:
+        corners = self.corners("pass", "fail", "error", "pass")
+        report = epr.recount_report(
+            {"passed": 99, "provenance": {"klt_version": "0.5.0"}}, corners)
+        self.assertIs(report["corners"], corners)
+        self.assertEqual(
+            {k: report[k] for k in ("passed", "failed", "errored", "corner_count", "status")},
+            {"passed": 2, "failed": 1, "errored": 1, "corner_count": 4, "status": "fail"},
+        )
+        self.assertEqual(report["provenance"], {"klt_version": "0.5.0"})
+
+    def test_grade_precedence_and_the_empty_report(self) -> None:
+        grade = lambda *s: epr.recount_report({}, self.corners(*s))["status"]  # noqa: E731
+        self.assertEqual(grade("pass", "pass"), "pass")
+        self.assertEqual(grade("pass", "error"), "error")
+        self.assertEqual(grade("error", "fail"), "fail")
+        self.assertEqual(grade(), "pass")
+
+    def test_corners_default_to_the_report_own_list(self) -> None:
+        report = {"corners": self.corners("pass", "fail"), "passed": 0}
+        self.assertIs(epr.recount_report(report), report)
+        self.assertEqual((report["passed"], report["failed"], report["status"]), (1, 1, "fail"))
+        self.assertEqual(epr.recount_report({})["corners"], [])
+
+
+# --------------------------------------------------------------------------
+# enrich_ac_report.enrich
+# --------------------------------------------------------------------------
+
+
+class EnrichAcReportTests(TempDirCase):
+    """enrich_ac_report.enrich (issue #278): the PSRR/Zout benches' enricher.
+    Its supply injection and closed-loop verdict run over enrich_pvt_report's
+    shared helpers (issue #657); the log-side columns are its own."""
+
+    VDD = 3.30
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._n = 0
+        self.write_body()
+        self.deck = self.write("deck.cir", '.include "body.spice"\n')
+
+    def write_body(self, seed_fb: float = 2.5) -> None:
+        self.write("body.spice",
+                   f"Vvdd vdd 0 DC {self.VDD}\n.nodeset v(fb)={seed_fb} v(sns1)=0.7\n")
+
+    def corner(self, status: str = "pass", cid: str = "typ/novdd/27C", **op: float) -> dict:
+        """A PSRR corner over a deck+bode whose baked supply is 3.30 V.
+
+        `op` keys are the log's op prints (`fb`, `sns1`, `sns2`, `det`, ...);
+        the defaults are a healthy closed loop.
+        """
+        self._n += 1
+        values = {"fb": 2.5, "sns1": 0.700, "sns2": 0.695,
+                  "vref": 1.047, "det": 0.10, "imkfb": 1e-9}
+        values.update(op)
+        log = "".join(f"v({k}) = {v:e}\n" for k, v in values.items() if k != "imkfb")
+        log += f"i(vmkfb) = {values['imkfb']:e}\n"
+        log += ("Index   frequency       psrr_db\n"
+                "0       1.0e+03        6.0e+01\n"
+                "1       1.0e+05        4.0e+01\n"
+                "2       1.0e+06        8.0e+01\n")
+        return {
+            "corner_id": cid, "process": "typ", "temperature_c": 27, "status": status,
+            "artifacts": {"deck": str(self.deck),
+                          "log": str(self.write(f"log-{self._n}.log", log))},
+            "measurements": [{"name": f"psrr_{f}_lin", "value": 1e-3}
+                             for f in ("dc", "1khz", "100khz", "1mhz")],
+        }
+
+    def run_enrich(self, *corners: dict) -> dict:
+        report = ear.enrich({"status": "pass", "passed": 99, "corners": list(corners)}, "psrr")
+        return report
+
+    def test_baked_supply_is_injected_on_passing_and_failing_corners(self) -> None:
+        failing = self.corner(status="fail", fb=3.3)
+        failing["diagnostics"] = [{"code": "spec_limit", "message": "psrr_dc_db < 40"}]
+        out = self.run_enrich(self.corner(), failing)
+        for c in out["corners"]:
+            self.assertEqual(c["corner_id"], "typ/3.30V/27C")
+            self.assertEqual(c["supply_v"], {"Vvdd": 3.30})
+        passing, kept = out["corners"]
+        self.assertEqual(passing["status"], "pass", passing.get("diagnostics"))
+        # an already-failing corner keeps klt's own diagnostics, but still
+        # gets its columns: they are the log's own facts
+        self.assertEqual(kept["diagnostics"],
+                         [{"code": "spec_limit", "message": "psrr_dc_db < 40"}])
+        self.assertIn("psrr_dc_db", meas(kept))
+        self.assertEqual(
+            {k: out[k] for k in ("corner_count", "passed", "failed", "errored", "status")},
+            {"corner_count": 2, "passed": 1, "failed": 1, "errored": 0, "status": "fail"},
+        )
+
+    def test_each_deck_is_spliced_once(self) -> None:
+        """The one splice both injects the baked supply and yields the seeds:
+        no second read of the deck and its include closure (issue #657)."""
+        with mock.patch.object(ear, "_splice_deck", wraps=ear._splice_deck) as splice:
+            self.run_enrich(self.corner(), self.corner(cid="bcs/novdd/-40C"))
+        self.assertEqual(splice.call_count, 2)
+
+    def test_log_side_and_derived_columns_are_appended(self) -> None:
+        c = self.run_enrich(self.corner())["corners"][0]
+        got = meas(c)
+        for name in ("fb_op_v", "sns1_op_v", "sns2_op_v", "vref_op_v", "det_op_v", "i_vmkfb_a"):
+            self.assertIn(name, got)
+        self.assertEqual(got["fb_seed_v"], 2.5)
+        for f in ("dc", "1khz", "100khz", "1mhz"):
+            self.assertAlmostEqual(got[f"psrr_{f}_db"], 60.0, places=12)
+        # PSRR's worst case is its minimum, read off the printed sweep
+        self.assertEqual((got["psrr_min_db"], got["psrr_min_freq_hz"]), (40.0, 1.0e5))
+        self.assertEqual(c["status"], "pass", c.get("diagnostics"))
+
+    def test_closed_loop_criteria_are_named_in_the_standard_order(self) -> None:
+        self.write_body(seed_fb=3.3)   # the railed op IS the seed: no op-match complaint
+        c = self.run_enrich(self.corner(det=3.0, sns2=0.80, fb=3.3))["corners"][0]
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["code"], "ac_bench_verdict")
+        self.assertEqual(c["diagnostics"][0]["message"],
+                         "startup_not_released; loop_not_closed; fb_railed")
+
+    def test_op_match_is_named_before_the_loop_criteria(self) -> None:
+        c = self.run_enrich(self.corner(fb=2.6, sns2=0.80))["corners"][0]
+        self.assertEqual(c["diagnostics"][0]["message"],
+                         "op_landed_far_from_seed; loop_not_closed")
+
+    def test_verdict_follows_the_shared_constants(self) -> None:
+        with mock.patch.object(epr, "DET_RELEASE_FRAC", 0.0):
+            c = self.run_enrich(self.corner())["corners"][0]
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["message"], "startup_not_released")
+
+    def test_supply_comes_from_the_corner_id_when_no_deck_is_baked(self) -> None:
+        c = self.corner(cid="typ/2.97V/27C", det=0.61)     # above 0.2 * 2.97 = 0.594
+        c["artifacts"].pop("deck")
+        message = self.run_enrich(c)["corners"][0]["diagnostics"][0]["message"]
+        self.assertEqual(message, "startup_not_released")
+        c = self.corner(cid="typ/3.63V/27C", det=0.61)     # below 0.726: released at 3.63 V
+        c["artifacts"].pop("deck")
+        self.assertEqual(self.run_enrich(c)["corners"][0]["status"], "pass")
+
+    def test_a_missing_log_names_the_absent_columns_and_fails_the_corner(self) -> None:
+        c = self.corner()
+        c["artifacts"].pop("log")
+        out = self.run_enrich(c)["corners"][0]
+        self.assertEqual(out["status"], "fail")
+        message = out["diagnostics"][0]["message"]
+        self.assertIn("missing op print fb_op_v", message)
+        self.assertIn("no AC sweep table in the log", message)
+
+
 class CornerIdTests(unittest.TestCase):
     def test_grammar_and_cell_spellings(self) -> None:
         self.assertEqual(
@@ -1149,8 +1480,16 @@ class PublicationTests(TempDirCase):
         t = self.tree()
         self.assertEqual(
             sorted(t),
-            ["@artifacts/demo-rid1.manifest.json", "records/rid1.csv", "records/rid1.md"],
+            [
+                "@artifacts/demo-rid1.manifest.json",
+                "records/rid1-report.json",
+                "records/rid1.csv",
+                "records/rid1.md",
+            ],
         )
+        # issue #629: the run's own report is committed beside the record,
+        # as-written (no host paths to scrub in this fixture-less report).
+        self.assertEqual(json.loads(t["records/rid1-report.json"]), self.report(self.corner(27), self.corner(85)))
         self.assertTrue(t["records/rid1.csv"].startswith(b"corner_label,temp_c,vdd_v,status,vref\n"))
         self.assertIn(b"typ,27,3.30,PASS,1.200000e+00\n", t["records/rid1.csv"])
         names = [e["name"] for e in json.loads(t["@artifacts/demo-rid1.manifest.json"])["entries"]]
@@ -1892,6 +2231,115 @@ class SetDispatchWiringTests(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# enricher identity coverage (#661): the enrichers import their verdict
+# constants and the 3-criteria closed-loop check from enrich_pvt_report.py,
+# so a runner that hashes its enricher but not that module can resume a
+# shard whose recorded identity matches yet was graded by different
+# threshold code. These static checks tie every harness module a runner's
+# shell chain names (directly or through first-party imports) to the
+# `--extra` list of the submission identity that chain submits with.
+# --------------------------------------------------------------------------
+
+#: Every non-test module in sim/harness/, by import name.
+HARNESS_PY = {
+    p.stem: p
+    for p in HARNESS.glob("*.py")
+    if not p.name.startswith("test_")
+}
+
+#: The shared verdict module every enricher's constants come from (#661).
+VERDICT_MODULE = "enrich_pvt_report"
+
+#: A runner participates in the submission-identity scaffold when its own
+#: script builds an identity (IDENT_ARGS) or enters a shared dispatch main.
+#: sim/closed-loop-vref-mc deliberately does neither -- klt's own --resume
+#: owns reuse there, and no IDENT_ARGS list exists to extend.
+IDENTITY_ENTRY = re.compile(
+    r"IDENT_ARGS|si_shard|si_set_|pex_batch_dispatch|[a-z_]+_main\b"
+)
+
+
+def first_party_import_closure(modules: set) -> set:
+    """MODULES plus everything they import from sim/harness, transitively."""
+    seen: set = set()
+    stack = list(modules)
+    while stack:
+        name = stack.pop()
+        if name in seen or name not in HARNESS_PY:
+            continue
+        seen.add(name)
+        text = HARNESS_PY[name].read_text()
+        imported = set(re.findall(r"^\s*import\s+([a-z_][a-z0-9_]*)", text, re.M))
+        imported |= set(
+            re.findall(r"^\s*from\s+([a-z_][a-z0-9_]*)\s+import", text, re.M)
+        )
+        stack += [n for n in imported if n in HARNESS_PY and n not in seen]
+    return seen
+
+
+def runner_shell_closure(runner: Path) -> list:
+    """RUNNER plus every sim/harness/*.sh it sources, transitively: the
+    family bases and, through them, the shared preamble and identity
+    helpers whose --extra lists build the runner's submission identity.
+    """
+    seen: set = set()
+    stack, texts = [runner], []
+    while stack:
+        path = stack.pop()
+        if path in seen:
+            continue
+        seen.add(path)
+        text = path.read_text()
+        texts.append(text)
+        for match in re.finditer(r'source\s+"([^"]+)"', text):
+            sourced = HARNESS / Path(match.group(1)).name
+            if sourced != path and sourced.is_file():
+                stack.append(sourced)
+    return texts
+
+
+class EnricherIdentityCoverageTests(unittest.TestCase):
+    """#661: an identity-hashed runner whose verdict code depends on
+    enrich_pvt_report must hash that module too, or two shards with one
+    recorded identity could have been graded by different threshold code.
+    """
+
+    def test_epr_dependent_runners_hash_epr_in_an_extra(self) -> None:
+        gaps = {}
+        for script in sorted(SIM_DIR.glob("*/run_klt_sim.sh")):
+            runner_text = script.read_text()
+            if not IDENTITY_ENTRY.search(runner_text):
+                continue
+            closure_texts = runner_shell_closure(script)
+            union = "\n".join(closure_texts)
+            named = {m for m in HARNESS_PY if re.search(rf"\b{m}\.py\b", union)}
+            deps = first_party_import_closure(named)
+            if VERDICT_MODULE not in deps:
+                continue
+            hashed = any(
+                "--extra" in line and f"{VERDICT_MODULE}.py" in line
+                for line in union.splitlines()
+            )
+            if not hashed:
+                gaps[script.parent.name] = "enricher depends on " \
+                    f"{VERDICT_MODULE}.py but no --extra in its shell chain names it"
+        self.assertEqual(gaps, {}, f"submission-identity gaps (#661): {gaps}")
+
+    def test_the_shared_verdict_module_still_exists(self) -> None:
+        # The probe above keys on this module by name; if it is ever renamed
+        # or split, the coverage test above silently stops checking anything.
+        self.assertIn(VERDICT_MODULE, HARNESS_PY)
+        self.assertTrue(
+            any(
+                VERDICT_MODULE in first_party_import_closure({name})
+                for name in ("enrich_supply_bench_report", "enrich_ac_report")
+            ),
+            "the enrichers no longer import the shared verdict module; "
+            "update VERDICT_MODULE",
+        )
+
+
+# --------------------------------------------------------------------------
 # boxtc_companion: the box-method TC derivation (issue #465). It used to be
 # typed twice, inline, in the two benches that share it -- and
 # spec/decision-records/0010-box-method-tc-evidence.md ratifies its output as
@@ -1954,30 +2402,23 @@ class BoxTcGoldenTests(unittest.TestCase):
     def test_committed_companions_regenerate_byte_identically(self) -> None:
         # The acceptance test for the de-duplication (#465): both benches'
         # committed -boxtc.csv must come back out of the shared module
-        # unchanged. Read-only on sim/ -- output goes to a temp dir.
+        # unchanged, compared as raw bytes so a CRLF slip fails. sim/*/records/
+        # is append-only evidence, so the same call must leave the committed
+        # bytes and mtime untouched (guards against an EXP_DIR-relative
+        # default). Read-only on sim/ -- output goes to a temp dir.
         for exp, stem in BOXTC_BENCHES.items():
             with self.subTest(exp=exp):
                 records = SIM_DIR / exp / "records"
-                want = (records / f"{stem}-boxtc.csv").read_text()
+                committed = records / f"{stem}-boxtc.csv"
+                before_mtime = committed.stat().st_mtime_ns
+                before_bytes = committed.read_bytes()
                 with tempfile.TemporaryDirectory() as tmp:
                     got = Path(tmp) / "companion.csv"
                     bxc.write_companion(records / f"{stem}.csv", got)
-                    self.assertEqual(got.read_text(), want)
-
-    def test_committed_companions_are_not_rewritten(self) -> None:
-        # sim/*/records/ is append-only evidence: deriving must never write
-        # back into it. Guards the module against an EXP_DIR-relative default.
-        for exp, stem in BOXTC_BENCHES.items():
-            with self.subTest(exp=exp):
-                committed = SIM_DIR / exp / "records" / f"{stem}-boxtc.csv"
-                before = committed.stat().st_mtime_ns, committed.read_bytes()
-                with tempfile.TemporaryDirectory() as tmp:
-                    bxc.write_companion(
-                        SIM_DIR / exp / "records" / f"{stem}.csv",
-                        Path(tmp) / "companion.csv",
-                    )
+                    self.assertEqual(got.read_bytes(), before_bytes)
                 self.assertEqual(
-                    (committed.stat().st_mtime_ns, committed.read_bytes()), before
+                    (committed.stat().st_mtime_ns, committed.read_bytes()),
+                    (before_mtime, before_bytes),
                 )
 
 
@@ -2214,30 +2655,23 @@ class EndpointTcGoldenTests(unittest.TestCase):
         # The acceptance test for the de-duplication (#496): both benches'
         # committed -tc.csv must come back out of the shared module
         # unchanged, byte for byte -- including the header and the absence
-        # of CRLF. Read-only on sim/ -- output goes to a temp dir.
+        # of CRLF, which the raw-bytes comparison enforces. sim/*/records/
+        # is append-only evidence, so the same call must leave the committed
+        # bytes and mtime untouched (guards against an EXP_DIR-relative
+        # default). Read-only on sim/ -- output goes to a temp dir.
         for exp, stem in TC_BENCHES.items():
             with self.subTest(exp=exp):
                 records = SIM_DIR / exp / "records"
-                want = (records / f"{stem}-tc.csv").read_text()
+                committed = records / f"{stem}-tc.csv"
+                before_mtime = committed.stat().st_mtime_ns
+                before_bytes = committed.read_bytes()
                 with tempfile.TemporaryDirectory() as tmp:
                     got = Path(tmp) / "companion.csv"
                     tcc.write_companion(records / f"{stem}.csv", got)
-                    self.assertEqual(got.read_text(), want)
-
-    def test_committed_companions_are_not_rewritten(self) -> None:
-        # sim/*/records/ is append-only evidence: deriving must never write
-        # back into it. Guards the module against an EXP_DIR-relative default.
-        for exp, stem in TC_BENCHES.items():
-            with self.subTest(exp=exp):
-                committed = SIM_DIR / exp / "records" / f"{stem}-tc.csv"
-                before = committed.stat().st_mtime_ns, committed.read_bytes()
-                with tempfile.TemporaryDirectory() as tmp:
-                    tcc.write_companion(
-                        SIM_DIR / exp / "records" / f"{stem}.csv",
-                        Path(tmp) / "companion.csv",
-                    )
+                    self.assertEqual(got.read_bytes(), before_bytes)
                 self.assertEqual(
-                    (committed.stat().st_mtime_ns, committed.read_bytes()), before
+                    (committed.stat().st_mtime_ns, committed.read_bytes()),
+                    (before_mtime, before_bytes),
                 )
 
 

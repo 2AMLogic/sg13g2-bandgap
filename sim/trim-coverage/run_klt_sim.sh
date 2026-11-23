@@ -58,6 +58,7 @@ else
   MSENSE_W="$(<"${WORK}/msense_w.txt")"
 fi
 IDENT_ARGS+=(--extra "${TC_PY}" --extra "${SEED_CSV}" --declare "msense_w=${MSENSE_W}"
+  --extra "${HARNESS_DIR}/enrich_pvt_report.py"
   --extra "${REPO_ROOT}/design/netlist/bandgap_core.spice"
   --extra "${REPO_ROOT}/design/netlist/bandgap_trim.spice"
   --extra "${REPO_ROOT}/design/netlist/bandgap_amp.spice"

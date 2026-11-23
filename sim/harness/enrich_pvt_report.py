@@ -51,7 +51,6 @@ SETTLE_TOL_V = 0.001
 
 # sim/lib/pvt_preflight.sh's grid: the supply of a corner id like
 # "typ/2.970V/-40C" is the V field; the verdict's vdd term needs it.
-_CORNER_RE = None
 
 
 def _corner_vdd(corner: dict) -> float | None:
@@ -69,6 +68,50 @@ def _meas_map(corner: dict) -> dict[str, float]:
         if isinstance(v, (int, float)):
             out[m["name"]] = float(v)
     return out
+
+
+def closed_loop_verdict_failures(
+    det: float | None, i_mkfb: float | None, dvsns: float | None,
+    fb: float | None, vdd: float | None,
+) -> list[str]:
+    """Failed-criterion names (empty = PASS) of ``pvt_closed_loop_verdict``'s
+    3-criteria form -- sim/lib/pvt_verdict_common.sh: startup released
+    (``det <= DET_RELEASE_FRAC*vdd`` and ``|i_mkfb| <= I_MKFB_RELEASE_A``),
+    loop closed (``dvsns <= DVSNS_CLOSE_V``), fb not railed
+    (``FB_RAIL_MARGIN_V`` away from either rail), in that order.
+
+    The one copy every klt-path enricher shares, so the constants' drift
+    guard (test_cmos5l_harness / test_harness_transformers) covers them all.
+    A criterion whose operand or supply is ``None`` is skipped, which is every
+    caller's own null-guard: an absent operand is never graded on its own.
+    """
+    failed: list[str] = []
+    if vdd is not None and det is not None and i_mkfb is not None:
+        if not (det <= DET_RELEASE_FRAC * vdd and abs(i_mkfb) <= I_MKFB_RELEASE_A):
+            failed.append("startup_not_released")
+    if dvsns is not None and dvsns > DVSNS_CLOSE_V:
+        failed.append("loop_not_closed")
+    if vdd is not None and fb is not None:
+        if not (FB_RAIL_MARGIN_V <= fb <= vdd - FB_RAIL_MARGIN_V):
+            failed.append("fb_railed")
+    return failed
+
+
+def recount_report(report: dict, corners: list | None = None) -> dict:
+    """Recompute the report-level grade and counts from the graded corners.
+
+    ``status`` is ``fail`` if any corner failed, else ``error`` if any
+    errored, else ``pass``. The tally every klt-path enricher ends with.
+    """
+    if corners is None:
+        corners = report.get("corners", [])
+    report["corners"] = corners
+    report["passed"] = sum(1 for c in corners if c.get("status") == "pass")
+    report["failed"] = sum(1 for c in corners if c.get("status") == "fail")
+    report["errored"] = sum(1 for c in corners if c.get("status") == "error")
+    report["corner_count"] = len(corners)
+    report["status"] = "fail" if report["failed"] else ("error" if report["errored"] else "pass")
+    return report
 
 
 _VDD_PWL_RE = re.compile(r"^Vvdd\s+vdd\s+0\s+PWL\(0\s+0\s+[0-9.]+u?\s+([-+0-9.eE]+)", re.M | re.I)
@@ -90,11 +133,10 @@ def inject_baked_supply(corner: dict, cwd: Path) -> None:
         if not dp.is_absolute():
             dp = cwd / dp
         if dp.exists():
-            import re as _re
             m = _VDD_PWL_RE.search(dp.read_text(encoding="utf-8", errors="replace"))
             if not m:
                 for line in dp.read_text(encoding="utf-8", errors="replace").splitlines():
-                    inc = _re.match(r'^\s*\.include\s+"?([^"\s]+)"?', line, _re.I)
+                    inc = re.match(r'^\s*\.include\s+"?([^"\s]+)"?', line, re.I)
                     if inc:
                         bp = Path(inc.group(1))
                         if not bp.is_absolute():
@@ -112,11 +154,16 @@ def inject_baked_supply(corner: dict, cwd: Path) -> None:
 def enrich(report: dict) -> dict:
     corners = report.get("corners", [])
     cwd = Path.cwd()
+    # The baked supply is corner identity, not verdict: inject it on every
+    # corner (a klt-graded FAIL corner keeps its /novdd/ id otherwise, and
+    # the adapter refuses the mixed grid -- issue #629's first
+    # failing-corner record).
+    for corner in corners:
+        inject_baked_supply(corner, cwd)
     for corner in corners:
         got = _meas_map(corner)
         if corner.get("status") != "pass":
             continue
-        inject_baked_supply(corner, cwd)
         needed = ("sns1_v", "sns2_v", "vref_2ms_v", "vref_3ms_v")
         if any(k not in got for k in needed):
             corner["status"] = "fail"
@@ -141,18 +188,9 @@ def enrich(report: dict) -> dict:
             ]
         )
         vdd = _corner_vdd(corner)
-        failed: list[str] = []
-        det = got.get("det_v")
-        i_mkfb = got.get("i_mkfb_a")
-        fb = got.get("fb_v")
-        if vdd is not None and det is not None and i_mkfb is not None:
-            if not (det <= DET_RELEASE_FRAC * vdd and abs(i_mkfb) <= I_MKFB_RELEASE_A):
-                failed.append("startup_not_released")
-        if dvsns > DVSNS_CLOSE_V:
-            failed.append("loop_not_closed")
-        if vdd is not None and fb is not None:
-            if not (FB_RAIL_MARGIN_V <= fb <= vdd - FB_RAIL_MARGIN_V):
-                failed.append("fb_railed")
+        failed = closed_loop_verdict_failures(
+            got.get("det_v"), got.get("i_mkfb_a"), dvsns, got.get("fb_v"), vdd
+        )
         if settle > SETTLE_TOL_V:
             failed.append("not_settled")
         if failed:
@@ -163,16 +201,7 @@ def enrich(report: dict) -> dict:
                     "message": "; ".join(failed),
                 }
             ]
-    passed = sum(1 for c in corners if c.get("status") == "pass")
-    failed = sum(1 for c in corners if c.get("status") == "fail")
-    errored = sum(1 for c in corners if c.get("status") == "error")
-    report["corners"] = corners
-    report["passed"] = passed
-    report["failed"] = failed
-    report["errored"] = errored
-    report["corner_count"] = len(corners)
-    report["status"] = "fail" if failed else ("error" if errored else "pass")
-    return report
+    return recount_report(report, corners)
 
 
 def main(argv: list[str]) -> int:
