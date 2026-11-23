@@ -94,6 +94,7 @@ def _add_quiet_source(lines, ctx):
                  f"Vvddq vddq 0 DC {ctx['vdd']} AC 0")
     return lines
 
+
 def _scale_mos(devices, w_scale, l_scale, desc_line):
     """Scale the w AND l of each named sg13_hv_[pn]mos DUT instance.
 
@@ -205,11 +206,11 @@ ALL_PMOS = CORE_PMOS + AMP_TAIL + AMP_P12 + AMP_P34
 
 VARIANTS = {
     "asbuilt": ("the committed DUT, unchanged (baseline)", []),
-    'xmn435': (
-                "PR #435's unmerged amp NMOS-mirror resize: XMN1-4 w=10u l=1u -> "
+    "xmn435": (
+        "PR #435's unmerged amp NMOS-mirror resize: XMN1-4 w=10u l=1u -> "
         "w=40u l=4u (feature/issue-303 tip 50c460f, only electrical change "
         "in that PR's design/ diff)",
-        [_scale_mos(AMP_NMOS, 4, 4, 'xmn435')]),
+        [_scale_mos(AMP_NMOS, 4, 4, "xmn435")]),
     "quiet-core": (
         "ablation: core PMOS mirror legs XM1, XM2A/B, XM3A/B/C moved to the "
         "ac-quiet rail (removes the core mirror's direct vdd coupling; the "
@@ -248,63 +249,63 @@ VARIANTS = {
         [_quiet_rail(r"^XM(1|2A|2B|3A|3B|3C|TAIL|P1|P2|P3|P4) ", "quiet-all"),
          _quiet_rail(r"^XRPU ", "quiet-all"),
          _add_quiet_source]),
-    'corepmos-l2': (
-                "fix candidate: core PMOS mirror legs at double length, double W "
+    "corepmos-l2": (
+        "fix candidate: core PMOS mirror legs at double length, double W "
         "(same current density and Vgs): XM1 20u/2u, XM2A 18u/2u, XM2B "
         "2u/2u, XM3A 16u/2u, XM3B 2u/2u, XM3C 2u/2u",
-        [_scale_mos(CORE_PMOS, 2, 2, 'corepmos-l2')]),
-    'corepmos-l4': (
-                "fix candidate: core PMOS mirror legs at quadruple length, "
+        [_scale_mos(CORE_PMOS, 2, 2, "corepmos-l2")]),
+    "corepmos-l4": (
+        "fix candidate: core PMOS mirror legs at quadruple length, "
         "quadruple W: XM1 40u/4u, XM2A 36u/4u, XM2B 4u/4u, XM3A 32u/4u, "
         "XM3B 4u/4u, XM3C 4u/4u",
-        [_scale_mos(CORE_PMOS, 4, 4, 'corepmos-l4')]),
-    'xmp34-l2': (
-                "fix candidate: amp PMOS mirror XMP3/XMP4 at double length, double "
+        [_scale_mos(CORE_PMOS, 4, 4, "corepmos-l4")]),
+    "xmp34-l2": (
+        "fix candidate: amp PMOS mirror XMP3/XMP4 at double length, double "
         "W: 10u/1u -> 20u/2u (amp supply coupling + loop-gain term)",
-        [_scale_mos(AMP_P34, 2, 2, 'xmp34-l2')]),
-    'xmp34-l4': (
-                "fix candidate: amp PMOS mirror XMP3/XMP4 at quadruple length, "
+        [_scale_mos(AMP_P34, 2, 2, "xmp34-l2")]),
+    "xmp34-l4": (
+        "fix candidate: amp PMOS mirror XMP3/XMP4 at quadruple length, "
         "quadruple W: 10u/1u -> 40u/4u",
-        [_scale_mos(AMP_P34, 4, 4, 'xmp34-l4')]),
-    'tail-l2': (
-                "fix candidate: amp tail XMTAIL at double length, double W: "
+        [_scale_mos(AMP_P34, 4, 4, "xmp34-l4")]),
+    "tail-l2": (
+        "fix candidate: amp tail XMTAIL at double length, double W: "
         "10u/1u -> 20u/2u",
-        [_scale_mos(AMP_TAIL, 2, 2, 'tail-l2')]),
-    'tail-l4': (
-                "fix candidate: amp tail XMTAIL at quadruple length, quadruple W: "
+        [_scale_mos(AMP_TAIL, 2, 2, "tail-l2")]),
+    "tail-l4": (
+        "fix candidate: amp tail XMTAIL at quadruple length, quadruple W: "
         "10u/1u -> 40u/4u",
-        [_scale_mos(AMP_TAIL, 4, 4, 'tail-l4')]),
-    'p12-l2': (
-                "fix candidate: amp input pair XMP1/XMP2 at double length, double "
+        [_scale_mos(AMP_TAIL, 4, 4, "tail-l4")]),
+    "p12-l2": (
+        "fix candidate: amp input pair XMP1/XMP2 at double length, double "
         "W: 20u/1u -> 40u/2u (same Vgs/current; raises the pair's ro and "
         "with it the amp's DC gain, at the cost of a slower d1/d2 node)",
-        [_scale_mos(AMP_P12, 2, 2, 'p12-l2')]),
-    'p12-w2': (
-                "fix candidate: amp input pair XMP1/XMP2 at double W, same L: "
+        [_scale_mos(AMP_P12, 2, 2, "p12-l2")]),
+    "p12-w2": (
+        "fix candidate: amp input pair XMP1/XMP2 at double W, same L: "
         "20u/1u -> 40u/1u (more gm at the pair's fixed tail current; the "
         "d1/d2 node capacitance doubles but the node keeps l=1u devices)",
-        [_scale_mos(AMP_P12, 2, 1, 'p12-w2')]),
-    'p12-w3': (
-                "fix candidate: amp input pair XMP1/XMP2 at triple W, same L: "
+        [_scale_mos(AMP_P12, 2, 1, "p12-w2")]),
+    "p12-w3": (
+        "fix candidate: amp input pair XMP1/XMP2 at triple W, same L: "
         "20u/1u -> 60u/1u (between p12-w2 and the PM-dead p12-w4)",
-        [_scale_mos(AMP_P12, 3, 1, 'p12-w3')]),
-    'p12-w4': (
-                "fix candidate: amp input pair XMP1/XMP2 at quadruple W, same L: "
+        [_scale_mos(AMP_P12, 3, 1, "p12-w3")]),
+    "p12-w4": (
+        "fix candidate: amp input pair XMP1/XMP2 at quadruple W, same L: "
         "20u/1u -> 80u/1u (the p12-w2 knob taken one step further)",
-        [_scale_mos(AMP_P12, 4, 1, 'p12-w4')]),
-    'xmp34-w2': (
-                "fix candidate: amp output mirror XMP3/XMP4 at double W, same L: "
+        [_scale_mos(AMP_P12, 4, 1, "p12-w4")]),
+    "xmp34-w2": (
+        "fix candidate: amp output mirror XMP3/XMP4 at double W, same L: "
         "10u/1u -> 20u/1u (stiffer pn follower, more gm4; the pn pole "
         "drops only ~1.5x, not the 4x of the l=2u scaling)",
-        [_scale_mos(AMP_P34, 2, 1, 'xmp34-w2')]),
-    'allpmos-l2': (
-                "fix candidate: EVERY sg13_hv_pmos supply device in the DUT at "
+        [_scale_mos(AMP_P34, 2, 1, "xmp34-w2")]),
+    "allpmos-l2": (
+        "fix candidate: EVERY sg13_hv_pmos supply device in the DUT at "
         "double length and double W (core mirror legs, amp tail, input "
         "pair, output mirror): same current density and Vgs everywhere, "
         "lower gds on every vdd-coupled device at once -- the one-knob "
         "version of shrinking all supply-coupling terms together instead "
         "of rebalancing their cancellation",
-        [_scale_mos(ALL_PMOS, 2, 2, 'allpmos-l2')]),
+        [_scale_mos(ALL_PMOS, 2, 2, "allpmos-l2")]),
 }
 
 def newest_seed_csv():
@@ -326,7 +327,6 @@ def msense_w():
     if not m:
         sys.exit("gen_probe_deck.py: XMSENSE w= not found")
     return m.group(1)
-
 
 
 def main():
