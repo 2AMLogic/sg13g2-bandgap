@@ -2231,6 +2231,115 @@ class SetDispatchWiringTests(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
+# enricher identity coverage (#661): the enrichers import their verdict
+# constants and the 3-criteria closed-loop check from enrich_pvt_report.py,
+# so a runner that hashes its enricher but not that module can resume a
+# shard whose recorded identity matches yet was graded by different
+# threshold code. These static checks tie every harness module a runner's
+# shell chain names (directly or through first-party imports) to the
+# `--extra` list of the submission identity that chain submits with.
+# --------------------------------------------------------------------------
+
+#: Every non-test module in sim/harness/, by import name.
+HARNESS_PY = {
+    p.stem: p
+    for p in HARNESS.glob("*.py")
+    if not p.name.startswith("test_")
+}
+
+#: The shared verdict module every enricher's constants come from (#661).
+VERDICT_MODULE = "enrich_pvt_report"
+
+#: A runner participates in the submission-identity scaffold when its own
+#: script builds an identity (IDENT_ARGS) or enters a shared dispatch main.
+#: sim/closed-loop-vref-mc deliberately does neither -- klt's own --resume
+#: owns reuse there, and no IDENT_ARGS list exists to extend.
+IDENTITY_ENTRY = re.compile(
+    r"IDENT_ARGS|si_shard|si_set_|pex_batch_dispatch|[a-z_]+_main\b"
+)
+
+
+def first_party_import_closure(modules: set) -> set:
+    """MODULES plus everything they import from sim/harness, transitively."""
+    seen: set = set()
+    stack = list(modules)
+    while stack:
+        name = stack.pop()
+        if name in seen or name not in HARNESS_PY:
+            continue
+        seen.add(name)
+        text = HARNESS_PY[name].read_text()
+        imported = set(re.findall(r"^\s*import\s+([a-z_][a-z0-9_]*)", text, re.M))
+        imported |= set(
+            re.findall(r"^\s*from\s+([a-z_][a-z0-9_]*)\s+import", text, re.M)
+        )
+        stack += [n for n in imported if n in HARNESS_PY and n not in seen]
+    return seen
+
+
+def runner_shell_closure(runner: Path) -> list:
+    """RUNNER plus every sim/harness/*.sh it sources, transitively: the
+    family bases and, through them, the shared preamble and identity
+    helpers whose --extra lists build the runner's submission identity.
+    """
+    seen: set = set()
+    stack, texts = [runner], []
+    while stack:
+        path = stack.pop()
+        if path in seen:
+            continue
+        seen.add(path)
+        text = path.read_text()
+        texts.append(text)
+        for match in re.finditer(r'source\s+"([^"]+)"', text):
+            sourced = HARNESS / Path(match.group(1)).name
+            if sourced != path and sourced.is_file():
+                stack.append(sourced)
+    return texts
+
+
+class EnricherIdentityCoverageTests(unittest.TestCase):
+    """#661: an identity-hashed runner whose verdict code depends on
+    enrich_pvt_report must hash that module too, or two shards with one
+    recorded identity could have been graded by different threshold code.
+    """
+
+    def test_epr_dependent_runners_hash_epr_in_an_extra(self) -> None:
+        gaps = {}
+        for script in sorted(SIM_DIR.glob("*/run_klt_sim.sh")):
+            runner_text = script.read_text()
+            if not IDENTITY_ENTRY.search(runner_text):
+                continue
+            closure_texts = runner_shell_closure(script)
+            union = "\n".join(closure_texts)
+            named = {m for m in HARNESS_PY if re.search(rf"\b{m}\.py\b", union)}
+            deps = first_party_import_closure(named)
+            if VERDICT_MODULE not in deps:
+                continue
+            hashed = any(
+                "--extra" in line and f"{VERDICT_MODULE}.py" in line
+                for line in union.splitlines()
+            )
+            if not hashed:
+                gaps[script.parent.name] = "enricher depends on " \
+                    f"{VERDICT_MODULE}.py but no --extra in its shell chain names it"
+        self.assertEqual(gaps, {}, f"submission-identity gaps (#661): {gaps}")
+
+    def test_the_shared_verdict_module_still_exists(self) -> None:
+        # The probe above keys on this module by name; if it is ever renamed
+        # or split, the coverage test above silently stops checking anything.
+        self.assertIn(VERDICT_MODULE, HARNESS_PY)
+        self.assertTrue(
+            any(
+                VERDICT_MODULE in first_party_import_closure({name})
+                for name in ("enrich_supply_bench_report", "enrich_ac_report")
+            ),
+            "the enrichers no longer import the shared verdict module; "
+            "update VERDICT_MODULE",
+        )
+
+
+# --------------------------------------------------------------------------
 # boxtc_companion: the box-method TC derivation (issue #465). It used to be
 # typed twice, inline, in the two benches that share it -- and
 # spec/decision-records/0010-box-method-tc-evidence.md ratifies its output as
