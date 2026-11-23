@@ -12,6 +12,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-23
 
+- **PR #669**: fix(sim): state measured probe-fleet bounds in psrr attribution record
+- **Issue #667** (closed): sim(psrr): tighten five claim-precision items in the #631 attribution bench and DR-0017
 - **PR #673**: docs: correct klayout-tools#6974 status in closed-loop MC README
 - **PR #651**: refactor: share the schematic-DUT setup and record mint across the six klt sim wrappers
 - **PR #640**: Pass the untrimmed 3-sigma gate at N=1200: re-run the vref mismatch MC, re-mint the yield evidence, rotate the item-8 report
