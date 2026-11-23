@@ -12,6 +12,12 @@
 # MSENSE_W from pex_schematic_dut_setup). The gate itself is
 # sim/harness/sanity_anchors.py (issue #458); these are its anchor values.
 
+# The enricher below imports its verdict constants and the 3-criteria
+# closed-loop check from enrich_pvt_report.py, so that module rides every
+# AC bench's submission identity too (#661). Sourced after pex_runner.sh,
+# which builds IDENT_ARGS.
+IDENT_ARGS+=(--extra "${HARNESS_DIR}/enrich_pvt_report.py")
+
 # --- node seeds: sim/closed-loop-startup's newest committed record ----------
 SEED_CSV="$(ls -t "${SIM_DIR}"/closed-loop-startup/records/*.csv \
   | grep -v -e '-tc.csv' -e '-vs-schematic' | head -1)"

@@ -14,6 +14,12 @@
 # ngspice's passive sign convention reports i(Vvdd) negative. This is the only
 # family that needs that switch.
 
+# The enricher below imports its verdict constants and the 3-criteria
+# closed-loop check from enrich_pvt_report.py, so that module rides this
+# bench family's submission identity too (#661). Sourced after
+# pex_runner.sh, which builds IDENT_ARGS.
+IDENT_ARGS+=(--extra "${HARNESS_DIR}/enrich_pvt_report.py")
+
 check_anchors() {  # $1 = report json
   local ANCHOR_ARGS=() a
   for a in "${ANCHORS[@]}"; do ANCHOR_ARGS+=(--anchor "${a}"); done

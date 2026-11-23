@@ -238,6 +238,16 @@ def main() -> int:
     case("case 2: a newer record in a summarized experiment fails",
          passes=False, fragment="NEWER RECORD — 20261009-000000-ddddddd now supersedes",
          mutate=lambda t: add_record(t, "iq", "20261009-000000-ddddddd"))
+    case("case 2b: a newer PROPOSAL-VARIANT record does not supersede the as-built record",
+         passes=True, fragment="OK:",
+         mutate=lambda t: write(
+             t, "sim/iq/records/20261009-000000-ddddddd.md",
+             "# iq 20261009-000000-ddddddd\n\n- **Variant**: proposal p12-w2, not the as-built DUT\n"))
+    case("case 2c: a Variant mention in prose (not the field) still supersedes",
+         passes=False, fragment="NEWER RECORD — 20261009-000000-ddddddd now supersedes",
+         mutate=lambda t: write(
+             t, "sim/iq/records/20261009-000000-ddddddd.md",
+             "# iq 20261009-000000-ddddddd\n\nVariant: not a field line\n"))
     case("case 3: a changed spec bound fails, naming the row",
          passes=False, fragment="SPEC ROW CHANGED — 'Iq'",
          mutate=lambda t: write(t, "README.md", TOP_README.replace("< 50 µA", "< 60 µA")))

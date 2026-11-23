@@ -7,6 +7,12 @@
 #   sim/closed-loop-psrr/run_klt_sim.sh --batch   # the 45-point PVT grid, on the batch fleet
 #   sim/closed-loop-psrr/run_klt_sim.sh --record  # mint evidence from the enriched report
 #
+#   PSRR_VARIANT=<name> <any mode>  # run the same bench on a bench-local
+#                                   # PROPOSAL body from variants/<name>.*
+#                                   # instead of the as-built DUT (issue
+#                                   # #631): variant body template, variant
+#                                   # sanity anchors, variant record spec.
+#
 # Cold start: set PDK_ROOT/PDK and run sim/tools/build-osdi.sh once (sim/env.sh),
 # then `--sanity`, `--batch` (which runs the sanity gate first), `--record`.
 # A report from a partial grid is refused by the shard merger (it requires the
@@ -38,13 +44,43 @@ source "${HARNESS_DIR}/pex_ac_runner.sh"
 # submission identity (issue #650).
 pex_schematic_dut_setup "${HARNESS_DIR}/enrich_ac_report.py"
 
+# Variant selection (issue #631): PSRR_VARIANT=<name> runs the SAME bench on
+# a bench-local PROPOSAL body under variants/ instead of the as-built DUT --
+# so a candidate can be grid-verified before any committed-design change.
+# The variant carries its own body template, its own sanity anchors (its
+# typ/27C/3.30V point is NOT the as-built record's) and its own record spec
+# (so a minted record names the variant, not the as-built DUT). Unset: the
+# as-built path set up above, unchanged.
+VARIANT=""
+if [[ -n "${PSRR_VARIANT:-}" ]]; then
+  VARIANT="${PSRR_VARIANT}"
+  for ext in body.spice.tmpl anchors.env record-spec.json; do
+    if [[ ! -f "${EXP_DIR}/variants/${VARIANT}.${ext}" ]]; then
+      echo "run_klt_sim.sh: unknown or incomplete PSRR_VARIANT '${VARIANT}' (no" \
+           "${EXP_DIR}/variants/${VARIANT}.${ext})" >&2
+      exit 3
+    fi
+  done
+  # Re-render the body from the variant template and bind it to the identity.
+  sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${EXP_DIR}/variants/${VARIANT}.body.spice.tmpl" > "${BODY_TEMPLATE}"
+  IDENT_ARGS+=(--extra "${EXP_DIR}/variants/${VARIANT}.body.spice.tmpl")
+  # Read by schematic_record_mint: a minted record names the variant.
+  RECORD_SPEC="${EXP_DIR}/variants/${VARIANT}.record-spec.json"
+  # shellcheck source=/dev/null
+  source "${EXP_DIR}/variants/${VARIANT}.anchors.env"
+  echo "run_klt_sim.sh: PSRR_VARIANT=${VARIANT} (proposal body, variant sanity anchors)"
+fi
+
 # Sanity anchors: the newest committed record's typ/27C/3.30V row (20261001-085737-e5507b2).
+# (A PSRR_VARIANT run replaces these from variants/<name>.anchors.env above.)
 KIND="psrr"
 ANCHOR_NAME="psrr_dc_db"
-ANCHOR_DB="66.0695"
-ANCHOR_DB_TOL="0.1"
-ANCHOR_VREF_OP_V="1.047278"
-ANCHOR_VREF_TOL_V="0.002"
+if [[ -z "${VARIANT}" ]]; then
+  ANCHOR_DB="66.0695"
+  ANCHOR_DB_TOL="0.1"
+  ANCHOR_VREF_OP_V="1.047278"
+  ANCHOR_VREF_TOL_V="0.002"
+fi
 
 # The --sanity | --batch | --record flow is pex_ac_runner.sh's, via the
 # extraction-less twin (issue #650).

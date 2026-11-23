@@ -23,6 +23,7 @@ recorded fs/125 singular-matrix rationale.
 from __future__ import annotations
 
 import csv
+import re
 
 SEED_FIELDS = (("@@FB_SEED@@", "fb_final_v"), ("@@SNS1_SEED@@", "sns1_final_v"),
                ("@@SNS2_SEED@@", "sns2_final_v"), ("@@VREF_SEED@@", "vref_final_v"))
@@ -47,7 +48,10 @@ def seed_row(seeds: dict, label: str, temp: int, vdd: str, seed_csv: str) -> dic
 def fill_deck(text: str, mapping: dict[str, str], kind: str = "deck") -> str:
     for token, value in mapping.items():
         text = text.replace(token, value)
-    left = sorted({w for w in text.split() if w.startswith("@@") and w.endswith("@@")})
+    # Regex, not text.split(): placeholders embedded inside a word or quote
+    # (v(fb)=@@FB_SEED@@, temp=@@TEMP_C@@C, "@@PDK_ROOT@@/...") are just as
+    # unfilled as standalone ones (issue #652).
+    left = sorted(set(re.findall(r"@@[A-Z0-9_]+@@", text)))
     if left:
         raise SystemExit(f"{kind} template has unfilled placeholders: {left}")
     return text

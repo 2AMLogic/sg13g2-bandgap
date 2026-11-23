@@ -32,6 +32,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from enrich_pvt_report import closed_loop_verdict_failures  # noqa: E402
 from seed_deck import SEED_FIELDS, fill_deck, seed_row  # noqa: E402
 from trim_mc_klt import (BAD_LOG, Results, make_ctx,  # noqa: E402
                          op_value, sections_for)
@@ -168,14 +169,12 @@ def draw_rows(a: argparse.Namespace, res: Results) -> list[list[str]]:
 
 
 def closed_loop_ok(g: dict) -> bool:
-    """sim/lib/pvt_verdict_common.sh pvt_closed_loop_verdict() (3-criteria form), ported with
-    its constants: DET_RELEASE_FRAC 0.2, I_MKFB_RELEASE_A 50e-9, DVSNS_CLOSE_V 0.020,
-    FB_RAIL_MARGIN_V 0.05."""
-    vdd = float(VDD)
-    det, i_mkfb, fb = float(g["det"]), abs(float(g["i_mkfb"])), float(g["fb"])
-    dvsns = abs(float(g["sns1"]) - float(g["sns2"]))
-    return (det <= 0.2 * vdd and i_mkfb <= 50e-9 and dvsns <= 0.020
-            and 0.05 <= fb <= vdd - 0.05)
+    """sim/lib/pvt_verdict_common.sh pvt_closed_loop_verdict() (3-criteria
+    form), on enrich_pvt_report's shared check and constants (so the drift
+    guard covers this bench too -- issue #657)."""
+    return not closed_loop_verdict_failures(
+        float(g["det"]), float(g["i_mkfb"]), abs(float(g["sns1"]) - float(g["sns2"])),
+        float(g["fb"]), float(VDD))
 
 
 def stat_block(rows: list[list[str]], point: str) -> list[str]:

@@ -206,7 +206,7 @@ pex_record_mint() {
 schematic_record_mint() {
   ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
       --report "$1" \
-      --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
+      --spec "${RECORD_SPEC:-${EXP_DIR}/testbench/${STEM}.record-spec.json}" \
       --experiment "${EXP_DIR}" )
 }
 
