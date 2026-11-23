@@ -3073,12 +3073,12 @@ class EndpointTcLoudEmptyTests(TempDirCase):
         self.assertNotIn("keys the record carried", err)
         self.assertFalse(dst.exists(), "refused run left the companion on disk")
 
-    def test_a_refusal_restores_a_preexisting_companion_intact(self) -> None:
+    def test_a_refusal_preserves_a_preexisting_companion_intact(self) -> None:
         # Edge #536 leaves to the Builder: the companion path already holds
-        # an earlier good derivation when a rerun refuses. write_companion()
-        # has truncated it by the time the refusal is known, so main() must
-        # put the prior bytes back: a refused run leaves the path exactly as
-        # it found it -- no header-only shell, no destroyed prior evidence.
+        # an earlier good derivation when a rerun refuses. main() refuses
+        # before the destination is ever opened, so the prior companion is
+        # never touched: a refused run leaves the path exactly as it found
+        # it -- no header-only shell, no destroyed prior evidence.
         src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
         write_record(src, RECORD_FIELDS, endpoint_rows(
             [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]))
@@ -3130,12 +3130,12 @@ class BoxTcLoudEmptyTests(TempDirCase):
         self.assertNotIn("keys the record carried", err)
         self.assertFalse(dst.exists(), "refused run left the companion on disk")
 
-    def test_a_refusal_restores_a_preexisting_companion_intact(self) -> None:
+    def test_a_refusal_preserves_a_preexisting_companion_intact(self) -> None:
         # Edge #536 leaves to the Builder: the companion path already holds
-        # an earlier good derivation when a rerun refuses. write_companion()
-        # has truncated it by the time the refusal is known, so main() must
-        # put the prior bytes back: a refused run leaves the path exactly as
-        # it found it -- no header-only shell, no destroyed prior evidence.
+        # an earlier good derivation when a rerun refuses. main() refuses
+        # before the destination is ever opened, so the prior companion is
+        # never touched: a refused run leaves the path exactly as it found
+        # it -- no header-only shell, no destroyed prior evidence.
         src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
         write_record(src, RECORD_FIELDS, boxtc_rows(INTERIOR_EXTREMA))
         exc, err = run_main(bxc.main, [str(src), str(dst)])
