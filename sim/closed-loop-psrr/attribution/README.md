@@ -115,7 +115,7 @@ binds:
 | xmp34-l2 | 64.464 | 64.260 | 64.429 | 60.693 | 60.868 | **−16.5°** | ✗ unstable |
 | xmp34-l4 | 67.949 | 67.218 | 67.232 | 60.610 | 60.810 | (−41° with tail-l2) | ✗ unstable |
 | xmp34-w2 | 49.132 | — | — | 65.867 | — | 57.7° | ✗ destroys the cancellation |
-| allpmos-l2 | 58.045 | 58.409 | 58.818 | 62.573 | 62.695 | marginal-notch shape | ✗ 3.63 V corners worse |
+| allpmos-l2 | 58.045 | 58.409 | 58.818 | 62.573 | 62.695 | unmeasured | ✗ 3.63 V corners worse |
 | p12-l2 (40u/2u) | — | — | — | — | — | REJECT (3.7 dB) | ✗ |
 | p12-w3 (60u/1u) | — | 61.887 | — | — | — | REJECT (4.0 dB) | ✗ |
 | p12-w4 (80u/1u) | — | 62.250 | — | 62.065 | — | REJECT (25.6 dB) | ✗ |
@@ -164,9 +164,10 @@ clear of the 0.001 dB passes this issue rejects, 0.012 dB short of a literal
 1.000 dB). **The grid of record is the fleet variant record
 [`../records/20261121-095519-80e1511e.md`](../records/20261121-095519-80e1511e.md)**
 (`run_klt_sim.sh` with `PSRR_VARIANT=p12-w2`, 15 fleet jobs, 45/45 points,
-worst corner 60.9884 dB at `bcs`/125 °C/3.63 V — the probes above matched it
-to 0.0004 dB); the probes are its corner-level preview, not the evidence of
-record.
+worst corner 60.9884 dB at `bcs`/125 °C/3.63 V — the probes matched it to
+< 0.001 dB across all 14 corners shared with the fleet, worst |Δ| 0.00073 dB
+at `typ`/27 °C/3.30 V); the probes are its corner-level preview, not the
+evidence of record.
 
 ### Candidate costs and regression checks (probe-level; the apply-time gates live in the follow-up issue)
 

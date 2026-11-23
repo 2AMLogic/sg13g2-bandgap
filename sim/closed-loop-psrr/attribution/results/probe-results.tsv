@@ -79,7 +79,6 @@ quiet-startup	bcs	125c	3.63v	PSRR	5.966353e+01	-1.80000e+02	1.040612e+00
 quiet-startup	fs	125c	2.97v	PSRR	6.077068e+01	-1.57232e-04	1.041718e+00							
 quiet-tail	bcs	125c	3.63v	PSRR	2.526946e+01	-1.80000e+02	1.040612e+00							
 quiet-tail	fs	125c	2.97v	PSRR	2.717078e+01	-1.80000e+02	1.041718e+00							
-tail-l2	bcs	125c	3.63v	PSRR	5.672479e+01	1.800000e+02	1.039619e+00							
 tail-l2	fs	125c	2.97v	PSRR	6.155010e+01	-3.80524e-05	1.041027e+00							
 xmn435+quiet-amp	bcs	125c	3.63v	PSRR	4.211249e+01	2.619336e-05	1.042518e+00							
 xmn435+quiet-core	bcs	125c	3.63v	PSRR	3.984728e+01	-1.80000e+02	1.042518e+00							
