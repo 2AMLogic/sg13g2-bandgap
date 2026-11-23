@@ -356,7 +356,9 @@ as history. Three files per mint, beside the run's records (producer
 sigma-to-spec lower bounds clear the 3σ gate — 3.5307 (`nominal`), 3.7195
 (`bcs_n40`), **3.0782** (`bcs_125`), 3.7613 (`wcs_n40`), **3.2389**
 (`wcs_125`) against point estimates 3.6889 / 3.8849 / 3.2189 / 3.9284 /
-3.3857 — so the report passes and item 6 grades `met`. Six of 6,000 draws
+3.3857 — so the report passes and the `output-reference-untrimmed` citation row
+grades `met` (item 6 itself stays `unmet`/`partial_coverage`: the trimmed
+±0.5 % line is a declared gap, #303). Six of 6,000 draws
 fall outside the bounds (empirical yield 0.99917 at four points,
 0.99833 at `wcs_125`, each with its Clopper-Pearson interval). The ±16 %
 line and the 3σ claim are not edited; the passing verdict is the measured

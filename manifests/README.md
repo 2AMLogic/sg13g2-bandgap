@@ -177,12 +177,21 @@ The binding used here:
   campaign's zero-spread `negctrl` point stays the harness's own
   determinism check, not klt's negative control. The citation carries no
   `content_hash` pin because `klt yield` envelopes record no
-  `provenance.input` block (upstream JSON contract, like `klt lvs`); the
-  freshness chain is the verdict-of-record identity check — the report
-  names its samples document (`samples`: `<id>-yield-samples.json`,
-  committed beside it), `klt signoff` hashes it into every fresh grade, so
-  any change to the samples document or the report rots the committed
-  `sg13g2-bandgap.signoff.json` and fails `check_signoff_manifest.py`.
+  `provenance.input` block (upstream JSON contract, like `klt lvs`); its
+  freshness is three separate checks, none of which hashes the sample
+  set into the verdict: (1) `klt signoff` re-grades the report, and
+  `check_signoff_manifest.py` fails if the resulting grade differs from the
+  committed `sg13g2-bandgap.signoff.json`; (2) the append-only check
+  (`APPEND_ONLY_RE` in `check_evidence_formats.py`, covering
+  `sim/*/records/`) protects the committed N=1,200 samples document and
+  report once they are on `main`; (3) regenerating the samples and report
+  (`klt yield-csv`, `klt yield`) from the committed
+  `20261121-194338-b03b10b7-draws.csv` and comparing byte for byte
+  verifies their contents against the source CSV and limits. An edit to
+  the samples or report that leaves the grade unchanged is **not** caught
+  by (1) — it was measured under the pinned grader: perturbing a sample
+  value, or editing the report's `distribution.mean` / `sigma_to_spec`
+  without flipping a verdict, leaves the fresh grade byte-identical.
   The superseded N=300 mint (`20261120-231009-73ef81b4-*`, exit 3, hot
   lower bounds 2.8845 / 2.8632) stays committed as the history that sized
   this campaign.

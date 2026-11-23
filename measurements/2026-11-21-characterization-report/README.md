@@ -122,8 +122,9 @@ Clopper-Pearson intervals (empirical yield 0.99917 at four points,
 producer); the campaign's zero-spread `negctrl` point remains the
 harness's own determinism check. The ±16 % line and the 3σ claim are not
 edited; no spec row moved. With the report passing, T1 item 6 moves from
-`unmet`/`check_failed` to **`met`** — the trimmed ±0.5 % line stays a
-declared `spec_rows` gap (#303, unchanged).
+`unmet`/`check_failed` to `unmet`/`partial_coverage`: the untrimmed
+citation row grades `met`, but the item stays `unmet` because the trimmed
+±0.5 % line remains a declared `spec_rows` gap (#303, unchanged).
 
 The deterministic negative control is retained: `negctrl` (same seeds
 against the plain non-mismatch sections) reads a single distinct
