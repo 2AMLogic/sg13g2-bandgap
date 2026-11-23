@@ -512,6 +512,9 @@ def check_inventory(root: Path, inv_path: Path, report_path: Path,
         if not (records_dir / f"{selected}.md").is_file():
             report.problem(f"{w}: MISSING DEPENDENCY — selected record {selected}.md does not exist")
             continue
+        # Proposal variants carry `- **Variant**:` and do not supersede as-built
+        # evidence; `as_built` is empty only if an experiment has no non-variant
+        # records at all (when `selected` is as-built, it is itself in `as_built`).
         as_built = [p for p in records_dir.glob("*.md") if not is_variant_record(p)]
         newest = sorted(as_built)[-1].stem if as_built else selected
         if newest != selected:

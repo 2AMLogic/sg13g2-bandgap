@@ -9,7 +9,8 @@ so every number below is ONE `ngspice -b` run on the committed bench body,
 seeds from [`../../closed-loop-startup/records/`](../../closed-loop-startup/records/)'s
 newest committed record (per-corner rows). The full-grid verification of the
 surviving candidate is a separate `klt sim` fleet record minted by
-[`run_probe.sh`]'s sibling path — see
+[`../run_klt_sim.sh`](../run_klt_sim.sh) ([`run_probe.sh`](run_probe.sh)'s
+sibling fleet path) — see
 [`../records/`](../records/)'s newest variant record and
 [`../variants/`](../variants/).
 
@@ -108,30 +109,31 @@ binds:
 | candidate | `bcs` 3.63 | `sf` 3.63 | `typ` 3.63 | `fs` 2.97 | `wcs` 2.97 | PM | verdict |
 |---|---:|---:|---:|---:|---:|---|---|
 | as-built | 59.685 | 60.040 | 60.465 | 60.760 | 60.867 | 96–104° | — |
-| corepmos-l2 / -l4 | 58.213 / 57.649 | — | — | — | — | not reached | ✗ wrong direction at the miss corner |
+| corepmos-l2 / -l4 | 58.213 / 57.649 | — | — | 61.829 / — | — | not reached | ✗ wrong direction at the miss corner |
 | tail-l2 | 56.725 | — | — | 61.550 | — | 83.7° | ✗ −3.0 dB at `bcs` |
 | tail-l4 (with xmp34-l4) | 59.741 | 60.025 | 60.367 | 61.679 | 61.760 | — | ✗ 3.63 V corners unchanged |
 | xmp34-l2 | 64.464 | 64.260 | 64.429 | 60.693 | 60.868 | **−16.5°** | ✗ unstable |
 | xmp34-l4 | 67.949 | 67.218 | 67.232 | 60.610 | 60.810 | (−41° with tail-l2) | ✗ unstable |
 | xmp34-w2 | 49.132 | — | — | 65.867 | — | 57.7° | ✗ destroys the cancellation |
-| allpmos-l2 | 58.045 | 58.409 | 58.818 | 62.573 | 62.270 | marginal-notch shape | ✗ 3.63 V corners worse |
-| p12-l2 (40u/2u) | 60.760 | — | — | — | — | REJECT (3.7 dB) | ✗ |
-| p12-w3 (60u/1u) | 62.250 | 62.065 | — | — | — | REJECT (4.0 dB) | ✗ |
-| p12-w4 (80u/1u) | 62.250 | 62.065 | — | — | — | REJECT (25.6 dB) | ✗ |
+| allpmos-l2 | 58.045 | 58.409 | 58.818 | 62.573 | 62.695 | marginal-notch shape | ✗ 3.63 V corners worse |
+| p12-l2 (40u/2u) | — | — | — | — | — | REJECT (3.7 dB) | ✗ |
+| p12-w3 (60u/1u) | — | 61.887 | — | — | — | REJECT (4.0 dB) | ✗ |
+| p12-w4 (80u/1u) | — | 62.250 | — | 62.065 | — | REJECT (25.6 dB) | ✗ |
 | **p12-w2 (40u/1u)** | **60.988** | **61.291** | **61.705** | **61.544** | **61.622** | **51.0–54.8°, quality OK** | ✓ carried forward |
 
 Two structural findings fall out of the screen:
 
 - **The amp's stability budget is spent.** The unity crossover sits at
   40–50 MHz with the internal poles (pn, d1/d2) just above it; ANY length
-  scaling of XMP3/XMP4 collapses the pn pole (×4 length ⇒ PM −41°; ×2 ⇒
-  −16.5°) and the ×2/×4 input-pair scalings fail the solve-quality gate the
-  same way. The only resize family that keeps the loop healthy is a WIDER
-  input pair at unchanged length, which buys loop gain (+2.7 dB at
-  `wcs`/125 °C/2.97 V) without adding length-capacitance to d1/d2.
+  scaling of XMP3/XMP4 collapses the pn pole (×4 length with tail ×2 ⇒ PM
+  −41°; ×2 ⇒ −16.5°) and the ×2-length (`p12-l2`) and ×3/×4-width (`p12-w3`,
+  `p12-w4`) input-pair scalings fail the solve-quality gate the same way. The
+  only resize family that keeps the loop healthy is a WIDER input pair at
+  unchanged length, which buys loop gain (+2.7 dB at `wcs`/125 °C/2.97 V)
+  without adding length-capacitance to d1/d2.
 - **Single-term scaling cannot fix this row.** Every candidate that scales
   one cancellation term improves some corners and degrades others
-  (`tail-*`: +0.8 at 2.97 V, −3 at `bcs`; `allpmos-l2`: +1.3 at 2.97 V,
+  (`tail-*`: +0.8 at 2.97 V, −3 at `bcs`; `allpmos-l2`: +1.8 at 2.97 V,
   −1.6 at `bcs`). The one knob that helps everywhere is more loop gain
   through the input pair's gm.
 
@@ -173,8 +175,9 @@ record.
   terms; no term is rebalanced (that is why no corner regresses).
 - **Area**: +2×20 µm of gate width on XMP1/XMP2 (≈80 µm² gate area) — small
   against the trim ladder's 255 segments.
-- **Iq**: 41.846 µA at `bcs`/125 °C/3.63 V vs 41.777 µA as-built (+0.07 µA;
-  row < 50 µA).
+- **Iq**: 41.846 µA (probe) at `bcs`/125 °C/3.63 V vs 41.777 µA as-built from
+  `sim/closed-loop-iq` (+0.07 µA; row < 50 µA; the earlier as-built 125 °C
+  probe rows predate the `iq_a` print).
 - **Headroom**: none consumed — same L, same nodes, and the pair's |Vgs|
   drops slightly at fixed tail current.
 - **TC (op-level span, −40→125 °C)**: `typ`/3.30 V −28.9 → −26.6,

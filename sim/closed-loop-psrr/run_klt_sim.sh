@@ -58,11 +58,13 @@ RECORD_SPEC="${EXP_DIR}/testbench/${STEM}.record-spec.json"
 VARIANT=""
 if [[ -n "${PSRR_VARIANT:-}" ]]; then
   VARIANT="${PSRR_VARIANT}"
-  if [[ ! -f "${EXP_DIR}/variants/${VARIANT}.body.spice.tmpl" ]]; then
-    echo "run_klt_sim.sh: unknown PSRR_VARIANT '${VARIANT}' (no" \
-         "${EXP_DIR}/variants/${VARIANT}.body.spice.tmpl)" >&2
-    exit 3
-  fi
+  for ext in body.spice.tmpl anchors.env record-spec.json; do
+    if [[ ! -f "${EXP_DIR}/variants/${VARIANT}.${ext}" ]]; then
+      echo "run_klt_sim.sh: unknown or incomplete PSRR_VARIANT '${VARIANT}' (no" \
+           "${EXP_DIR}/variants/${VARIANT}.${ext})" >&2
+      exit 3
+    fi
+  done
   DUT_TEMPLATE="${EXP_DIR}/variants/${VARIANT}.body.spice.tmpl"
   RECORD_SPEC="${EXP_DIR}/variants/${VARIANT}.record-spec.json"
   # shellcheck source=/dev/null
@@ -71,7 +73,8 @@ if [[ -n "${PSRR_VARIANT:-}" ]]; then
 fi
 BODY_TEMPLATE="${WORK}/body.spice.tmpl"
 sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${DUT_TEMPLATE}" > "${BODY_TEMPLATE}"
-IDENT_ARGS+=(--extra "${REPO_ROOT}/design/netlist/bandgap_startup.spice"
+IDENT_ARGS+=(--extra "${DUT_TEMPLATE}"
+  --extra "${REPO_ROOT}/design/netlist/bandgap_startup.spice"
   --extra "${REPO_ROOT}/design/netlist/bandgap_core.spice"
   --extra "${REPO_ROOT}/design/netlist/bandgap_amp.spice"
   --extra "${HARNESS_DIR}/enrich_ac_report.py")

@@ -8,7 +8,7 @@
 
 The T1 item-5 PSRR-@-DC row (> 60 dB) misses at exactly one of 45 PVT
 points: `bcs`/125 °C/3.63 V reads 59.685 dB in the schematic record of
-reference ([`sim/closed-loop-psrr/records/20261113-085406-9d568b91.csv](../sim/closed-loop-psrr/records/20261113-085406-9d568b91.csv)),
+reference ([`sim/closed-loop-psrr/records/20261113-085406-9d568b91.csv`](../../sim/closed-loop-psrr/records/20261113-085406-9d568b91.csv)),
 and the row has been marginal on the layout side too (post-layout worst
 60.001 dB, then 59.997 dB on PR #383's extraction, per #387). Issue #631
 asked for (a) a measured attribution of what sets the limit, (b) a bounded
@@ -16,7 +16,7 @@ fix proposal carried **without** editing `design/` — PR #435 has demonstrated
 the stuck shape a premature netlist change produces (red hygiene since
 2026-10-30 on the PEX-generator self-test, waiting on the #436 re-layout) —
 and (c) a fleet grid proving the candidate. The attribution
-([`sim/closed-loop-psrr/attribution/`](../sim/closed-loop-psrr/attribution/))
+([`sim/closed-loop-psrr/attribution/`](../../sim/closed-loop-psrr/attribution/))
 found the limit is not a leak but a **near-cancellation**: at the binding
 corners the vdd→vref transfer is a ~1 µV/V residue of opposing tens-of-µV/V
 terms — the amp output-mirror feedthrough (XMP3/XMP4, ≈ −73 µV/V) against
@@ -26,7 +26,8 @@ the loop-mediated terms (XMP3/4's tail, pair and core-mirror counterparts,
 then measured that **every single-term scaling fails**: core-mirror or tail
 lengthening moves the wrong corners (−1.6 to −3.0 dB at `bcs`), and ANY
 length scaling of XMP3/XMP4 — the term that dominates — collapses the pn
-pole into the loop's 40–50 MHz crossover (PM −16.5° at ×2, −41° at ×4; the
+pole into the loop's 40–50 MHz crossover (PM −16.5° at ×2, −41° at ×4 with
+tail ×2; the
 same solve-quality-gated probe that reproduces the committed loop-gain
 record's margins to 0.3°). The one bounded knob that helps every binding
 corner without destabilizing the loop is **more input-pair gm at unchanged
@@ -38,13 +39,13 @@ op-level TC spans improved 2–3 ppm/°C.
 
 1. The DC-PSRR row's limit at `bcs`/125 °C/3.63 V is **recorded as the
    cancellation residue measured in
-   [`sim/closed-loop-psrr/attribution/README.md`](../sim/closed-loop-psrr/attribution/README.md)**,
+   [`sim/closed-loop-psrr/attribution/README.md`](../../sim/closed-loop-psrr/attribution/README.md)**,
    with the fix screen and the two structural findings (stability budget
    spent; single-term scaling cannot fix the row). No spec row or bound
    changes.
 2. The bounded fix proposal is **XMP1/XMP2 widened 20u/1u → 40u/1u**,
    carried as the bench-local variant
-   [`sim/closed-loop-psrr/variants/p12-w2.body.spice.tmpl`](../sim/closed-loop-psrr/variants/p12-w2.body.spice.tmpl)
+   [`sim/closed-loop-psrr/variants/p12-w2.body.spice.tmpl`](../../sim/closed-loop-psrr/variants/p12-w2.body.spice.tmpl)
    — a proposal, not the as-built DUT — grid-verified by the variant fleet
    record named in §3 below (`run_klt_sim.sh` with `PSRR_VARIANT=p12-w2`,
    the mechanism this record adds). `design/` and `design/netlist/` stay
@@ -64,7 +65,8 @@ op-level TC spans improved 2–3 ppm/°C.
 ## Alternatives considered
 
 - **Lengthen XMP3/XMP4 (×2 or ×4)** — numerically fixes `bcs` (+4.8 to
-  +8.3 dB) but measured unstable (PM −16.5°/−41°, solve-quality OK solves);
+  +8.3 dB) but measured unstable (PM −16.5° at ×2, −41° at ×4 with tail ×2,
+  solve-quality OK solves);
   rejected on the stability evidence, not on PSRR.
 - **Lengthen the core PMOS mirror or the amp tail** — measured wrong-direction
   at the miss corner (−1.6 to −3.0 dB) while helping 2.97 V corners; rejected.
@@ -84,7 +86,7 @@ op-level TC spans improved 2–3 ppm/°C.
 
 - The > 60 dB row keeps its bound; the schematic grid of record for the
   candidate is variant fleet record
-  [`sim/closed-loop-psrr/records/20261121-095519-80e1511e.md`](../sim/closed-loop-psrr/records/20261121-095519-80e1511e.md):
+  [`sim/closed-loop-psrr/records/20261121-095519-80e1511e.md`](../../sim/closed-loop-psrr/records/20261121-095519-80e1511e.md):
   45/45 points above 60 dB, worst corner `bcs`/125 °C/3.63 V at 60.9884 dB —
   a +0.988 dB margin (0.012 dB short of a literal 1.000 dB; the probes
   matched the fleet to 0.0004 dB).
