@@ -34,8 +34,8 @@ the record carried rows but none matched the grid -- `main()` exits
 non-zero and names the keys the record carried: empty evidence must be
 loud, not a header-only companion reporting success (issue #510). The
 refused run leaves no header-only file on disk either (issue #536): the
-companion path is removed if this run created it, or restored
-byte-identically if an earlier run's derivation was already there.
+derivation is checked before the companion path is opened, so a refusal
+never creates the file and leaves an earlier run's derivation untouched.
 
 Usage (the shell side is `pex_endpoint_tc_companion` in
 sim/harness/pex_vref_runner.sh, which picks the newest minted record):
