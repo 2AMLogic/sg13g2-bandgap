@@ -24,9 +24,11 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import boxtc_companion as bxc  # noqa: E402
+import enrich_ac_report as ear  # noqa: E402
 import enrich_pvt_report as epr  # noqa: E402
 import enrich_supply_bench_report as esb  # noqa: E402
 import extraction_binding as xb  # noqa: E402
@@ -864,6 +866,227 @@ class EnrichStartupReleaseLadderTests(unittest.TestCase):
             {k: report[k] for k in ("corner_count", "passed", "failed", "errored", "status")},
             {"corner_count": 3, "passed": 1, "failed": 1, "errored": 1, "status": "fail"},
         )
+
+
+# --------------------------------------------------------------------------
+# enrich_pvt_report's shared verdict check and recount (issue #657)
+# --------------------------------------------------------------------------
+
+
+class ClosedLoopVerdictHelperTests(unittest.TestCase):
+    """enrich_pvt_report.closed_loop_verdict_failures: the one copy of
+    pvt_closed_loop_verdict's 3-criteria form that every klt-path enricher
+    calls, so the constants' drift guard covers all of them."""
+
+    def failures(self, det: float | None = 0.10, i_mkfb: float | None = 1e-9,
+                 dvsns: float | None = 0.005, fb: float | None = 1.0,
+                 vdd: float | None = 3.30) -> list[str]:
+        return epr.closed_loop_verdict_failures(det, i_mkfb, dvsns, fb, vdd)
+
+    def test_healthy_point_passes(self) -> None:
+        self.assertEqual(self.failures(), [])
+
+    def test_each_criterion_is_named_in_the_standard_order(self) -> None:
+        self.assertEqual(self.failures(det=3.0, i_mkfb=1e-6, dvsns=0.1, fb=0.0),
+                         ["startup_not_released", "loop_not_closed", "fb_railed"])
+        self.assertEqual(self.failures(det=3.0), ["startup_not_released"])
+        self.assertEqual(self.failures(dvsns=0.1), ["loop_not_closed"])
+        self.assertEqual(self.failures(fb=0.0), ["fb_railed"])
+
+    def test_release_scales_with_supply_and_tolerates_sign(self) -> None:
+        self.assertEqual(self.failures(det=0.66), [])                 # 0.2 * 3.30, inclusive
+        self.assertEqual(self.failures(det=0.67), ["startup_not_released"])
+        self.assertEqual(self.failures(det=0.67, vdd=3.63), [])        # 0.726 at 3.63 V
+        self.assertEqual(self.failures(i_mkfb=-50e-9), [])             # magnitude, inclusive
+        self.assertEqual(self.failures(i_mkfb=-60e-9), ["startup_not_released"])
+
+    def test_closure_and_rail_boundaries_are_inclusive(self) -> None:
+        self.assertEqual(self.failures(dvsns=0.020), [])
+        self.assertEqual(self.failures(dvsns=0.0201), ["loop_not_closed"])
+        self.assertEqual(self.failures(fb=0.05), [])
+        self.assertEqual(self.failures(fb=0.049), ["fb_railed"])
+        self.assertEqual(self.failures(fb=3.25), [])
+        self.assertEqual(self.failures(fb=3.2501), ["fb_railed"])
+
+    def test_a_none_operand_skips_only_its_own_criterion(self) -> None:
+        # Every caller's own null-guard, in one place: a criterion with no
+        # operand is not graded, and does not stop the others being graded.
+        self.assertEqual(self.failures(det=None, i_mkfb=None), [])
+        self.assertEqual(self.failures(dvsns=None), [])
+        self.assertEqual(self.failures(fb=None), [])
+        self.assertEqual(epr.closed_loop_verdict_failures(None, None, None, None, None), [])
+        # an unresolvable supply skips the two vdd-dependent criteria only
+        self.assertEqual(self.failures(det=3.0, fb=0.0, vdd=None), [])
+        self.assertEqual(self.failures(dvsns=0.1, vdd=None), ["loop_not_closed"])
+
+    def test_the_constants_have_one_home(self) -> None:
+        """Both drift tests pin enrich_pvt_report's constants against
+        pvt_verdict_common.sh; a second assignment elsewhere sits outside them."""
+        harness = Path(__file__).resolve().parent
+        for name in ("DET_RELEASE_FRAC", "I_MKFB_RELEASE_A", "DVSNS_CLOSE_V", "FB_RAIL_MARGIN_V"):
+            with self.subTest(constant=name):
+                homes = [p.name for p in sorted(harness.glob("*.py"))
+                         if re.search(rf"^{name}\s*=", p.read_text(encoding="utf-8"), re.M)]
+                self.assertEqual(homes, ["enrich_pvt_report.py"])
+
+
+class RecountReportHelperTests(unittest.TestCase):
+    """enrich_pvt_report.recount_report: the report-level tally every enricher
+    ends with (issue #657)."""
+
+    @staticmethod
+    def corners(*statuses: str) -> list[dict]:
+        return [{"status": s} for s in statuses]
+
+    def test_counts_and_grade_come_from_the_corners(self) -> None:
+        corners = self.corners("pass", "fail", "error", "pass")
+        report = epr.recount_report(
+            {"passed": 99, "provenance": {"klt_version": "0.5.0"}}, corners)
+        self.assertIs(report["corners"], corners)
+        self.assertEqual(
+            {k: report[k] for k in ("passed", "failed", "errored", "corner_count", "status")},
+            {"passed": 2, "failed": 1, "errored": 1, "corner_count": 4, "status": "fail"},
+        )
+        self.assertEqual(report["provenance"], {"klt_version": "0.5.0"})
+
+    def test_grade_precedence_and_the_empty_report(self) -> None:
+        grade = lambda *s: epr.recount_report({}, self.corners(*s))["status"]  # noqa: E731
+        self.assertEqual(grade("pass", "pass"), "pass")
+        self.assertEqual(grade("pass", "error"), "error")
+        self.assertEqual(grade("error", "fail"), "fail")
+        self.assertEqual(grade(), "pass")
+
+    def test_corners_default_to_the_report_own_list(self) -> None:
+        report = {"corners": self.corners("pass", "fail"), "passed": 0}
+        self.assertIs(epr.recount_report(report), report)
+        self.assertEqual((report["passed"], report["failed"], report["status"]), (1, 1, "fail"))
+        self.assertEqual(epr.recount_report({})["corners"], [])
+
+
+# --------------------------------------------------------------------------
+# enrich_ac_report.enrich
+# --------------------------------------------------------------------------
+
+
+class EnrichAcReportTests(TempDirCase):
+    """enrich_ac_report.enrich (issue #278): the PSRR/Zout benches' enricher.
+    Its supply injection and closed-loop verdict run over enrich_pvt_report's
+    shared helpers (issue #657); the log-side columns are its own."""
+
+    VDD = 3.30
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._n = 0
+        self.write_body()
+        self.deck = self.write("deck.cir", '.include "body.spice"\n')
+
+    def write_body(self, seed_fb: float = 2.5) -> None:
+        self.write("body.spice",
+                   f"Vvdd vdd 0 DC {self.VDD}\n.nodeset v(fb)={seed_fb} v(sns1)=0.7\n")
+
+    def corner(self, status: str = "pass", cid: str = "typ/novdd/27C", **op: float) -> dict:
+        """A PSRR corner over a deck+bode whose baked supply is 3.30 V.
+
+        `op` keys are the log's op prints (`fb`, `sns1`, `sns2`, `det`, ...);
+        the defaults are a healthy closed loop.
+        """
+        self._n += 1
+        values = {"fb": 2.5, "sns1": 0.700, "sns2": 0.695,
+                  "vref": 1.047, "det": 0.10, "imkfb": 1e-9}
+        values.update(op)
+        log = "".join(f"v({k}) = {v:e}\n" for k, v in values.items() if k != "imkfb")
+        log += f"i(vmkfb) = {values['imkfb']:e}\n"
+        log += ("Index   frequency       psrr_db\n"
+                "0       1.0e+03        6.0e+01\n"
+                "1       1.0e+05        4.0e+01\n"
+                "2       1.0e+06        8.0e+01\n")
+        return {
+            "corner_id": cid, "process": "typ", "temperature_c": 27, "status": status,
+            "artifacts": {"deck": str(self.deck),
+                          "log": str(self.write(f"log-{self._n}.log", log))},
+            "measurements": [{"name": f"psrr_{f}_lin", "value": 1e-3}
+                             for f in ("dc", "1khz", "100khz", "1mhz")],
+        }
+
+    def run_enrich(self, *corners: dict) -> dict:
+        report = ear.enrich({"status": "pass", "passed": 99, "corners": list(corners)}, "psrr")
+        return report
+
+    def test_baked_supply_is_injected_on_passing_and_failing_corners(self) -> None:
+        failing = self.corner(status="fail", fb=3.3)
+        failing["diagnostics"] = [{"code": "spec_limit", "message": "psrr_dc_db < 40"}]
+        out = self.run_enrich(self.corner(), failing)
+        for c in out["corners"]:
+            self.assertEqual(c["corner_id"], "typ/3.30V/27C")
+            self.assertEqual(c["supply_v"], {"Vvdd": 3.30})
+        passing, kept = out["corners"]
+        self.assertEqual(passing["status"], "pass", passing.get("diagnostics"))
+        # an already-failing corner keeps klt's own diagnostics, but still
+        # gets its columns: they are the log's own facts
+        self.assertEqual(kept["diagnostics"],
+                         [{"code": "spec_limit", "message": "psrr_dc_db < 40"}])
+        self.assertIn("psrr_dc_db", meas(kept))
+        self.assertEqual(
+            {k: out[k] for k in ("corner_count", "passed", "failed", "errored", "status")},
+            {"corner_count": 2, "passed": 1, "failed": 1, "errored": 0, "status": "fail"},
+        )
+
+    def test_each_deck_is_spliced_once(self) -> None:
+        """The one splice both injects the baked supply and yields the seeds:
+        no second read of the deck and its include closure (issue #657)."""
+        with mock.patch.object(ear, "_splice_deck", wraps=ear._splice_deck) as splice:
+            self.run_enrich(self.corner(), self.corner(cid="bcs/novdd/-40C"))
+        self.assertEqual(splice.call_count, 2)
+
+    def test_log_side_and_derived_columns_are_appended(self) -> None:
+        c = self.run_enrich(self.corner())["corners"][0]
+        got = meas(c)
+        for name in ("fb_op_v", "sns1_op_v", "sns2_op_v", "vref_op_v", "det_op_v", "i_vmkfb_a"):
+            self.assertIn(name, got)
+        self.assertEqual(got["fb_seed_v"], 2.5)
+        for f in ("dc", "1khz", "100khz", "1mhz"):
+            self.assertAlmostEqual(got[f"psrr_{f}_db"], 60.0, places=12)
+        # PSRR's worst case is its minimum, read off the printed sweep
+        self.assertEqual((got["psrr_min_db"], got["psrr_min_freq_hz"]), (40.0, 1.0e5))
+        self.assertEqual(c["status"], "pass", c.get("diagnostics"))
+
+    def test_closed_loop_criteria_are_named_in_the_standard_order(self) -> None:
+        self.write_body(seed_fb=3.3)   # the railed op IS the seed: no op-match complaint
+        c = self.run_enrich(self.corner(det=3.0, sns2=0.80, fb=3.3))["corners"][0]
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["code"], "ac_bench_verdict")
+        self.assertEqual(c["diagnostics"][0]["message"],
+                         "startup_not_released; loop_not_closed; fb_railed")
+
+    def test_op_match_is_named_before_the_loop_criteria(self) -> None:
+        c = self.run_enrich(self.corner(fb=2.6, sns2=0.80))["corners"][0]
+        self.assertEqual(c["diagnostics"][0]["message"],
+                         "op_landed_far_from_seed; loop_not_closed")
+
+    def test_verdict_follows_the_shared_constants(self) -> None:
+        with mock.patch.object(epr, "DET_RELEASE_FRAC", 0.0):
+            c = self.run_enrich(self.corner())["corners"][0]
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["message"], "startup_not_released")
+
+    def test_supply_comes_from_the_corner_id_when_no_deck_is_baked(self) -> None:
+        c = self.corner(cid="typ/2.97V/27C", det=0.61)     # above 0.2 * 2.97 = 0.594
+        c["artifacts"].pop("deck")
+        message = self.run_enrich(c)["corners"][0]["diagnostics"][0]["message"]
+        self.assertEqual(message, "startup_not_released")
+        c = self.corner(cid="typ/3.63V/27C", det=0.61)     # below 0.726: released at 3.63 V
+        c["artifacts"].pop("deck")
+        self.assertEqual(self.run_enrich(c)["corners"][0]["status"], "pass")
+
+    def test_a_missing_log_names_the_absent_columns_and_fails_the_corner(self) -> None:
+        c = self.corner()
+        c["artifacts"].pop("log")
+        out = self.run_enrich(c)["corners"][0]
+        self.assertEqual(out["status"], "fail")
+        message = out["diagnostics"][0]["message"]
+        self.assertIn("missing op print fb_op_v", message)
+        self.assertIn("no AC sweep table in the log", message)
 
 
 class CornerIdTests(unittest.TestCase):
