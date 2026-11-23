@@ -333,8 +333,9 @@ as history. Three files per mint, beside the run's records (producer
   errored draws; the seed rule (`20260909 + draw_index`, N=1,200 per
   population) is readable from the draws' own `seed` column — `klt
   yield-csv` 0.9.2 cannot emit a `provenance` block, so the report's
-  `source.provenance` is null (klayout-tools#6974, re-checked at mint
-  time: still open, no released producer attaches a control or provenance
+  `source.provenance` is null (klayout-tools#6974: closed upstream on
+  2026-11-22, after this mint, but unreleased — PyPI latest is 0.9.2,
+  2026-11-14, so no released producer attaches a control or provenance
   to a CSV-derived sample set).
 - `records/20261121-195500-b03b10b7-yield-limits.json` — the spec-limits
   file: 0.882–1.218 V (±16 % of 1.050 V, DR-0011) on the five mismatch
@@ -365,7 +366,7 @@ line and the 3σ claim are not edited; the passing verdict is the measured
 outcome #635 was sized to determine, not a relaxation. The **klt negative
 control is not declared** (`negative_control: null` + the report's own
 warning): no released CLI path attaches a control to a CSV-derived sample
-set (klayout-tools#6974 — re-checked at re-mint, still unlanded), and the
+set (klayout-tools#6974 — the fix landed upstream on 2026-11-22, but no PyPI release carries it yet; latest is 0.9.2, 2026-11-14), and the
 campaign's zero-spread `negctrl` point stays what it always was — the
 harness's own determinism check, not klt's negative control. When #6974
 lands a released CSV-control producer, the next re-mint should declare the
