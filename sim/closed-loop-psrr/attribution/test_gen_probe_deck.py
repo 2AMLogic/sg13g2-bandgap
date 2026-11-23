@@ -59,8 +59,12 @@ class GenProbeDeck(unittest.TestCase):
             self.assertIsNotNone(m, path.name)
             lg, variant, corner, temp, vdd = m.groups()
             with self.subTest(deck=path.name):
-                self.assertEqual(norm(gen(corner, temp, vdd, variant, bool(lg))),
-                                 norm(path.read_text()))
+                expected = path.read_text()
+                seed = re.search(r"^\* [^\n]*; seeds from ([\w.-]+\.csv)$", expected, re.M)
+                self.assertIsNotNone(seed, "missing seed filename in deck header")
+                seed_csv = HERE.parent.parent / "closed-loop-startup" / "records" / seed[1]
+                actual = gen(corner, temp, vdd, variant, bool(lg), seed_csv=seed_csv)
+                self.assertEqual(norm(actual), norm(expected))
 
     def test_corner_sections_is_the_harness_table(self):
         self.assertIs(g.CORNER_SECTIONS, klt_corner_bundle.CORNER_SECTIONS)
@@ -92,6 +96,15 @@ class GenProbeDeck(unittest.TestCase):
         deck = gen("bcs", 125, 3.63, "corepmos-l2")
         self.assertRegex(deck, r"(?m)^XM1 sns1 fb vdd vdd sg13_hv_pmos w=20u l=2u")
         self.assertRegex(deck, r"(?m)^XM2A sns2 fb vdd vdd sg13_hv_pmos w=18u l=2u")
+
+    def test_resize_rejects_reused_instance_name(self):
+        xmp1 = "XMP1 d1 sns2 tail vdd sg13_hv_pmos w=20u l=1u"
+        xmp2 = "XMP2 d2 sns1 tail vdd sg13_hv_pmos w=20u l=1u"
+        lines = [".subckt bandgap_trim in out sub", xmp1, ".ends", xmp1, xmp2]
+        _, transforms = g.VARIANTS["p12-w2"]
+        with self.assertRaisesRegex(SystemExit, "duplicate instance XMP1"):
+            for transform in transforms:
+                lines = transform(lines, {})
 
 
 if __name__ == "__main__":

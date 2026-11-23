@@ -100,9 +100,9 @@ def _scale_mos(devices, w_scale, l_scale, desc_line):
 
     Numerically scales each device's own w/l (they differ: 8u/9u/10u/20u
     legs), so the rewrite cannot be a single regex substitution; it parses
-    each line's own numbers. Fails closed if any expected line is missed or
-    does not parse, and matches either supply rail (vdd or the quiet vddq),
-    so it commutes with the quiet-* ablations.
+    each line's own numbers. Each requested name must occur exactly once
+    with parseable dimensions. Either supply rail (vdd or the quiet vddq)
+    matches, so the resize commutes with the quiet-* ablations.
     """
     pat = re.compile(r"^((X\S+) .* sg13_hv_[pn]mos )w=([0-9.]+)u l=([0-9.]+)u(.*)$")
 
@@ -112,6 +112,8 @@ def _scale_mos(devices, w_scale, l_scale, desc_line):
             name = l.split(" ", 1)[0]
             if name not in devices:
                 continue
+            if name in seen:
+                sys.exit(f"gen_probe_deck.py: variant {desc_line!r}: duplicate instance {name}")
             m = pat.match(l)
             if not m:
                 sys.exit("gen_probe_deck.py: variant %r: line %r does not"
