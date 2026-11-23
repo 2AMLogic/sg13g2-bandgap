@@ -19,9 +19,13 @@
 #     without `shopt -s inherit_errexit`, which would silently change the
 #     pre-extraction behavior on a malformed/missing w= (see below).
 #   - Two call shapes are supported: source this file at the experiment
-#     script's top level and call `read_msense_width` there (every sim/*/
-#     bench), or source and call it from inside a shared runner function
-#     (sim/harness/cmos5l_runner.sh's cmos5l_main does both). Either way
+#     script's top level and call `read_msense_width` there (e.g.
+#     sim/closed-loop-offset/run_offset_check.sh:38, a plain call, and
+#     sim/closed-loop-iq/run_klt_sim.sh:37, an `&&` list), or source and call
+#     it from inside a shared runner function
+#     (sim/harness/cmos5l_runner.sh's cmos5l_main does both, with the call
+#     at :88 a plain call that sim/sg13cmos5l-closed-loop-startup/
+#     run_klt_sim.sh reaches by delegation). Either way
 #     the diagnostic prefix -- `${BASH_SOURCE[1]}` inside
 #     read_msense_width -- names the file containing the call expression,
 #     not the file where the `source` statement ran, matching
@@ -40,8 +44,8 @@
 #   Reads NETLIST's (a repo-relative path, resolved against REPO_ROOT)
 #   XMSENSE line and parses its w= value. Sets MSENSE_W (caller-visible, not
 #   local -- matches sim/lib/pvt_preflight.sh's run_pvt_point() convention of
-#   this file's own header comment above) to the parsed width (without the
-#   trailing "u"), or prints a message naming the immediate calling file and
+#   this file's own header comment above) to the parsed width including its
+#   unit suffix (w=7u gives MSENSE_W=7u), or prints a message naming the immediate calling file and
 #   `exit 3`s if XMSENSE's w= cannot be parsed. The name comes from
 #   `${BASH_SOURCE[1]}` (matching sim/lib/nodeset_seed.sh's caller_name
 #   convention): the file containing the call expression, not the file where
@@ -56,10 +60,10 @@
 #       the caller's own shell, the failing `grep`/pipe assignment itself
 #       is subject to `set -e` exactly as pre-extraction, and the script
 #       exits immediately -- status 1, nothing on stderr.
-#     - Non-final command of an `&&` list (every bench's
+#     - Non-final command of an `&&` list (e.g. the
 #       `( cd "${REPO_ROOT}" && read_msense_width ... && printf ... )`
-#       subshell, in the bench's own script or inside a shared runner
-#       function): bash suppresses errexit inside a function invoked there,
+#       subshell in sim/closed-loop-iq/run_klt_sim.sh:37, or the same
+#       shape inside a shared runner function): bash suppresses errexit inside a function invoked there,
 #       so the failed assignment merely leaves MSENSE_W empty and control
 #       reaches the explicit "could not parse" message below -- status 3,
 #       stderr prefixed with the file containing the call expression
