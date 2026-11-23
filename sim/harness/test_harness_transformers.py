@@ -2370,6 +2370,64 @@ SOURCE_SH_RE = re.compile(
 )
 
 
+#: A `source` in command position (line start, or after `;` `&` `|` `(` `{`,
+#: `then`/`do`/`else`, or `$(`/backtick), independent of SOURCE_SH_RE (#680).
+SOURCE_CMD_RE = re.compile(
+    r"(?:^|[;&|({`]|\b(?:then|do|else)\b)\s*source\s+(?P<arg>[^\n]*)"
+)
+_SH_BASENAME_RE = re.compile(r"([A-Za-z0-9_.-]+\.sh)\b")
+
+
+def executable_harness_sources(text: str, harness_names: set) -> list:
+    """(lineno, helper, line) for every executable `source` command whose
+    first literal `*.sh` argument is a sim/harness helper. Found without
+    SOURCE_SH_RE, so a sourcing idiom the regex cannot see is still listed.
+    Comment lines, trailing comments, and `source` inside an open double
+    quote (echo/printf prose, `${VAR:?...(source x)...}` diagnostics) are
+    not commands and are skipped.
+    """
+    found = []
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if line.lstrip().startswith("#"):
+            continue
+        for m in SOURCE_CMD_RE.finditer(line):
+            before = line[: m.start("arg")]
+            if before.count('"') % 2 or before.count("'") % 2:
+                continue  # inside a quoted string: prose, not a command
+            arg = m.group("arg").split(" #")[0]
+            hit = _SH_BASENAME_RE.search(arg)
+            if hit and hit.group(1) in harness_names:
+                found.append((lineno, hit.group(1), line))
+                break
+    return found
+
+
+def unrecognized_harness_sources(
+    scripts, harness_names: set, root: Path = SIM_DIR
+) -> list:
+    """(script, lineno, helper) for each executable harness `source` that
+    SOURCE_SH_RE does not recognize *at that line*, so a second recognized
+    source of the same helper cannot mask it.
+    """
+    misses = []
+    for script in scripts:
+        for lineno, helper, line in executable_harness_sources(
+            script.read_text(), harness_names
+        ):
+            match = SOURCE_SH_RE.search(line)
+            if not match or match.group(1) != helper:
+                try:
+                    shown = script.relative_to(root.parent)
+                except ValueError:
+                    shown = script
+                misses.append((str(shown), lineno, helper))
+    return misses
+
+
+def harness_shell_names() -> set:
+    return {p.name for p in HARNESS.glob("*.sh")}
+
+
 def runner_shell_closure(runner: Path) -> dict[Path, str]:
     """RUNNER plus every sim/harness/*.sh it sources, transitively: the
     family bases and, through them, the shared preamble and identity
@@ -2460,10 +2518,16 @@ class EnricherIdentityCoverageTests(unittest.TestCase):
         )
 
         # Every runner that sources pex_runner.sh must resolve the full chain.
+        # Discovery is independent of SOURCE_SH_RE (#680), so a mid-line
+        # source cannot hide a runner from this loop.
+        names_h = harness_shell_names()
         pex_runners = [
             s
             for s in sorted(SIM_DIR.glob("*/run_klt_sim.sh"))
-            if re.search(r"^\s*source\s+.*pex_runner\.sh", s.read_text(), re.MULTILINE)
+            if any(
+                h == "pex_runner.sh"
+                for _, h, _ in executable_harness_sources(s.read_text(), names_h)
+            )
         ]
         self.assertGreater(len(pex_runners), 0)
         for script in pex_runners:
@@ -2486,6 +2550,70 @@ class EnricherIdentityCoverageTests(unittest.TestCase):
             )
             names = {p.name for p in runner_shell_closure(script)}
         self.assertEqual(names, {"run_klt_sim.sh", "pex_merge_call.sh"})
+
+    def test_shell_closure_regex_recognizes_every_harness_source(self) -> None:
+        # #680: SOURCE_SH_RE is line-anchored on purpose; make that assumption
+        # a checked one so an unsupported idiom fails loudly, not silently.
+        names = harness_shell_names()
+        scripts = sorted(SIM_DIR.rglob("*.sh"))
+        self.assertTrue(
+            any(executable_harness_sources(p.read_text(), names) for p in scripts)
+        )
+        misses = unrecognized_harness_sources(scripts, names)
+        self.assertEqual(
+            misses, [], f"harness source the closure regex cannot see: {misses}"
+        )
+
+    def test_shell_closure_reports_unrecognized_source_idioms(self) -> None:
+        names = {"pex_runner.sh", "pex_merge_call.sh"}
+        cases = {
+            "standalone": ('  source "${H}/pex_runner.sh"\n', []),
+            "nested": (
+                'source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pex_runner.sh"\n',
+                [],
+            ),
+            "and_list": ('[[ -f x ]] && source "${H}/pex_runner.sh"\n', [1]),
+            "inline_then": (
+                'if [[ -n "${P}" ]]; then source "${H}/pex_runner.sh"; fi\n',
+                [1],
+            ),
+            "cmd_subst": ('x=$(source "${H}/pex_runner.sh")\n', [1]),
+            "masked_by_second": (
+                'source "${H}/pex_runner.sh"\n'
+                '[[ -f x ]] && source "${H}/pex_runner.sh"\n',
+                [2],
+            ),
+            "comment": ('# [[ x ]] && source "${H}/pex_runner.sh"\n', []),
+            "echo": ('echo "source ${H}/pex_runner.sh"\n', []),
+            "printf": ("printf 'a; source %s/pex_runner.sh' x\n", []),
+            "diagnostic": (
+                ': "${PDK_ROOT:?set PDK_ROOT (source ${H}/pex_runner.sh) or export it}"\n',
+                [],
+            ),
+            "trailing_comment": (
+                'source "${H}/pex_merge_call.sh" # unlike pex_runner.sh\n',
+                [],
+            ),
+        }
+        with tempfile.TemporaryDirectory() as td:
+            for label, (body, expected) in cases.items():
+                script = Path(td) / f"{label}.sh"
+                script.write_text("#!/usr/bin/env bash\n" + body)
+                got = unrecognized_harness_sources([script], names, root=Path(td))
+                # lines are offset by the shebang line
+                self.assertEqual(
+                    [lineno - 1 for _, lineno, _ in got], expected, label
+                )
+                for _, _, helper in got:
+                    self.assertIn(helper, names, label)
+
+    def test_shell_closure_discovers_mid_line_pex_runner_source(self) -> None:
+        names = {"pex_runner.sh"}
+        text = '[[ -f x ]] && source "${H}/pex_runner.sh"\n'
+        self.assertEqual(
+            [h for _, h, _ in executable_harness_sources(text, names)],
+            ["pex_runner.sh"],
+        )
 
     def test_the_shared_verdict_module_still_exists(self) -> None:
         # The probe above keys on this module by name; if it is ever renamed
