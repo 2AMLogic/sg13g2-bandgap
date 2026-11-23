@@ -18,9 +18,17 @@
 #     propagation for the commands inside this function on bash < 4.4
 #     without `shopt -s inherit_errexit`, which would silently change the
 #     pre-extraction behavior on a malformed/missing w= (see below).
-#   - Source this file directly from the experiment script's top level (not
-#     from inside a function) so `${BASH_SOURCE[1]}` inside
-#     read_msense_width resolves to the calling script's own path, matching
+#   - Two call shapes are supported: source this file at the experiment
+#     script's top level and call `read_msense_width` there (e.g.
+#     sim/closed-loop-offset/run_offset_check.sh:38, a plain call, and
+#     sim/closed-loop-iq/run_klt_sim.sh:37, an `&&` list), or source and call
+#     it from inside a shared runner function
+#     (sim/harness/cmos5l_runner.sh's cmos5l_main does both, with the call
+#     at :88 a plain call that sim/sg13cmos5l-closed-loop-startup/
+#     run_klt_sim.sh reaches by delegation). Either way
+#     the diagnostic prefix -- `${BASH_SOURCE[1]}` inside
+#     read_msense_width -- names the file containing the call expression,
+#     not the file where the `source` statement ran, matching
 #     sim/lib/pvt_preflight.sh's SCRIPT_DIR and sim/lib/nodeset_seed.sh's
 #     caller_name conventions.
 #
@@ -36,23 +44,36 @@
 #   Reads NETLIST's (a repo-relative path, resolved against REPO_ROOT)
 #   XMSENSE line and parses its w= value. Sets MSENSE_W (caller-visible, not
 #   local -- matches sim/lib/pvt_preflight.sh's run_pvt_point() convention of
-#   this file's own header comment above) to the parsed width (without the
-#   trailing "u"), or prints a message naming the caller's own script (via
-#   `${BASH_SOURCE[1]}`, matching sim/lib/nodeset_seed.sh's caller_name
-#   convention) and `exit 3`s if XMSENSE's w= cannot be parsed.
+#   this file's own header comment above) to the parsed width including its
+#   unit suffix (w=7u gives MSENSE_W=7u), or prints a message naming the immediate calling file and
+#   `exit 3`s if XMSENSE's w= cannot be parsed. The name comes from
+#   `${BASH_SOURCE[1]}` (matching sim/lib/nodeset_seed.sh's caller_name
+#   convention): the file containing the call expression, not the file where
+#   the `source` statement ran -- moving the call into a shared runner
+#   function makes the runner, not the bench, the named file.
 #
-#   Called as a plain statement (see caller contract above), this function
-#   runs in the caller's own shell, so a failing `grep`/pipe inside it is
-#   still subject to the caller's `set -euo pipefail` exactly as it was
-#   pre-extraction: a missing XMSENSE line, or an XMSENSE line with no w=
-#   field, fails the grep/pipe assignment itself and the script exits
-#   immediately via `set -e` -- the explicit "could not parse" message below
-#   is reachable only if a later maintenance change relaxes that pipeline
-#   (e.g. drops -o from grep) to where it can produce an empty MSENSE_W
-#   without itself failing first. Preserving this exact ordering (rather
-#   than "fixing" it to always print the message) is what keeps this
-#   extraction's observable behavior byte-for-byte identical to the
-#   pre-extraction block.
+#   Distinct failure paths on a malformed netlist (no XMSENSE line, or an
+#   XMSENSE line with no w= field), all under the caller's `set -euo
+#   pipefail`; a parseable w= returns 0 with MSENSE_W set in every shape:
+#     - Plain statement (function invoked as a simple command, as inside
+#       sim/harness/cmos5l_runner.sh's cmos5l_main): this function runs in
+#       the caller's own shell, the failing `grep`/pipe assignment itself
+#       is subject to `set -e` exactly as pre-extraction, and the script
+#       exits immediately -- status 1, nothing on stderr.
+#     - Non-final command of an `&&` list (e.g. the
+#       `( cd "${REPO_ROOT}" && read_msense_width ... && printf ... )`
+#       subshell in sim/closed-loop-iq/run_klt_sim.sh:37, or the same
+#       shape inside a shared runner function): bash suppresses errexit inside a function invoked there,
+#       so the failed assignment merely leaves MSENSE_W empty and control
+#       reaches the explicit "could not parse" message below -- status 3,
+#       stderr prefixed with the file containing the call expression
+#       (run_klt_sim.sh for the bench's own list; the runner, e.g.
+#       pex_runner.sh, once the list lives in it).
+#   Which path fires is decided by bash's errexit rules at the call site,
+#   not by anything in this function. Preserving the assignment-then-check
+#   ordering (rather than "fixing" it to always print the message) is what
+#   keeps this extraction's observable behavior byte-for-byte identical to
+#   the pre-extraction block.
 read_msense_width() {
   local netlist="$1"
   local caller_name
