@@ -923,11 +923,17 @@ class ClosedLoopVerdictHelperTests(unittest.TestCase):
         """Both drift tests pin enrich_pvt_report's constants against
         pvt_verdict_common.sh; a second assignment elsewhere sits outside them."""
         harness = Path(__file__).resolve().parent
+        sim = harness.parent
         for name in ("DET_RELEASE_FRAC", "I_MKFB_RELEASE_A", "DVSNS_CLOSE_V", "FB_RAIL_MARGIN_V"):
             with self.subTest(constant=name):
                 homes = [p.name for p in sorted(harness.glob("*.py"))
                          if re.search(rf"^{name}\s*=", p.read_text(encoding="utf-8"), re.M)]
                 self.assertEqual(homes, ["enrich_pvt_report.py"])
+            with self.subTest(constant=name, surface="shell"):
+                homes = [str(p.relative_to(sim)) for p in sorted(sim.rglob("*.sh"))
+                         if p != sim / "lib" / "pvt_verdict_common.sh"
+                         and re.search(rf"^{name}\s*=", p.read_text(encoding="utf-8"), re.M)]
+                self.assertEqual(homes, [])
 
 
 class RecountReportHelperTests(unittest.TestCase):
