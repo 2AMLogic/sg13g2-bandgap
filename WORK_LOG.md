@@ -10,8 +10,25 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-23
+
+- **PR #658**: docs(sim): document runner-function call shape and msense failure paths
+- **PR #662**: fix: hash enrich_pvt_report.py in affected runners' submission identity
+- **PR #659**: refactor: consolidate the closed-loop verdict constants, 3-criteria check and recount into enrich_pvt_report
+- **PR #655**: refactor: dedupe klt_trim_axis.py onto the shared sim/harness modules
+- **PR #649**: manifests: point the item-8 bullet at the pinned report and CI-check it
+- **Issue #654** (closed): Document read_msense_width caller attribution and parse failures in shared runners
+- **Issue #661** (closed): Submission identity does not hash enrich_pvt_report.py, which five enrichers now depend on
+- **Issue #657** (closed): Consolidate closed-loop verdict constants, 3-criteria check, report recount, and dead/redundant code across sim/harness enrichers
+- **Issue #652** (closed): Deduplicate klt_trim_axis.py onto shared sim/harness modules (CORNER_SECTIONS, seed_deck, klt_sim_evidence, provision default)
+- **Issue #647** (closed): manifests/README.md item-8 paragraph links a superseded report: heading cites the pinned rotation, body still points at 2026-11-18
+
 ### 2026-11-22
 
+- **PR #645**: Cite the four klt sim corner-matrix envelopes for T1 item 5, grading each row's bound in the run itself
+- **PR #644**: test: fold TC golden append-only check into one byte-exact regeneration per fixture
+- **Issue #629** (closed): T1 item 5 (corner verification): cite the klt sim corner-matrix envelopes per spec row and declare the row set, so the item grades on evidence instead of no_evidence
+- **Issue #643** (closed): Compare TC companion fixtures byte-for-byte in one regeneration per fixture
 - **PR #637**: fix: draw pnpMPA base-ring contacts by widening the wall to 0.30 um
 - **Issue #633** (closed): sg13cmos5l-bandgap_top: pnpMPA base rings carry zero contacts (draw_pnpmpa cont_array underflow at w=1u l=2u) — the base tie does not exist as drawn
 
