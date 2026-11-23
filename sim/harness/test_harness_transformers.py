@@ -2214,14 +2214,12 @@ class SetDispatchWiringTests(unittest.TestCase):
             occurrences,
             [
                 'BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"',
-                # pex_schematic_dut_setup's render source (#650): reads the
-                # committed per-stem template and writes the WORK override --
-                # the post-source assignment the header above documents.
-                '  sed "s|@@MSENSE_W@@|${MSENSE_W}|g" '
-                # DUT_TEMPLATE (#631) is the PSRR variant's override; unset it
-                # is that same committed template.
-                '"${DUT_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}" '
-                '> "${BODY_TEMPLATE}"',
+                # pex_schematic_dut_setup's default render source (#650): the
+                # committed per-stem template. An override reaches the render
+                # only as the explicit --dut-template flag, never an ambient
+                # DUT_TEMPLATE variable (#670), so the sed itself names no
+                # template path.
+                '  local default_dut="${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"',
             ],
         )
 
@@ -2311,6 +2309,199 @@ class SchematicDutSeamTests(unittest.TestCase):
         # One flow, not two: the arms live once, in _ac_main.
         for arm in ("--sanity)", "--batch)", "--record)"):
             self.assertEqual(runner.count(arm), 1, arm)
+
+    # -- #670: the render source and record spec are explicit flags on the
+    # shared setup, not ambient variables the caller's environment can set.
+    # The tests below run the real function bodies (extracted from
+    # pex_runner.sh) in a stubbed subshell: a fake msense_width.sh, a fake
+    # klt_sim_evidence.py that captures its argv, and small committed /
+    # variant / decoy template+spec files. No SPICE, no PDK, no klt.
+
+    def _schematic_stub_tree(self) -> Path:
+        tmp = tempfile.TemporaryDirectory(prefix="schematic-dut-seam-")
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        for rel in ("sim/lib", "repo", "exp/testbench", "exp/variants",
+                    "work", "harness"):
+            (root / rel).mkdir(parents=True)
+        (root / "sim" / "lib" / "msense_width.sh").write_text(
+            'read_msense_width() { MSENSE_W="0.42"; }\n'
+        )
+        (root / "exp" / "testbench" / "stubstem.body.spice.tmpl").write_text(
+            "body @@MSENSE_W@@ committed\n"
+        )
+        (root / "exp" / "testbench" / "stubstem.record-spec.json").write_text("{}\n")
+        (root / "exp" / "variants" / "proposal.body.spice.tmpl").write_text(
+            "body @@MSENSE_W@@ variant\n"
+        )
+        (root / "exp" / "variants" / "proposal.record-spec.json").write_text("{}\n")
+        # The decoys an exported DUT_TEMPLATE / RECORD_SPEC / _SCHEMATIC_
+        # RECORD_SPEC would point at: distinguishable by content.
+        (root / "evil.body.spice.tmpl").write_text("body evil-dut\n")
+        (root / "evil.record-spec.json").write_text("{}\n")
+        (root / "harness" / "klt_sim_evidence.py").write_text(
+            "import os, sys\n"
+            'open(os.environ["SPEC_CAPTURE"], "w").write("\\n".join(sys.argv[1:]))\n'
+        )
+        return root
+
+    def _run_schematic_setup(self, root: Path, call: str) -> subprocess.CompletedProcess:
+        """Run the real pex_schematic_dut_setup + schematic_record_mint
+        bodies from sim/harness/pex_runner.sh in a stubbed `set -euo
+        pipefail` subshell, with the environment polluted exactly the way
+        #670 fears, then dump IDENT_ARGS, the spec state and the mint's
+        captured argv for the assertions."""
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        setup = driver.split("pex_schematic_dut_setup() {", 1)[1].split("\n}\n", 1)[0]
+        mint = driver.split("schematic_record_mint() {", 1)[1].split("\n}\n", 1)[0]
+        default_spec = root / "exp" / "testbench" / "stubstem.record-spec.json"
+        script = "\n".join([
+            "set -euo pipefail",
+            f'SIM_DIR="{root}/sim"',
+            f'REPO_ROOT="{root}/repo"',
+            f'EXP_DIR="{root}/exp"',
+            'STEM="stubstem"',
+            f'WORK="{root}/work"',
+            f'HARNESS_DIR="{root}/harness"',
+            f'SPEC_CAPTURE="{root}/spec-capture.txt"',
+            "export SPEC_CAPTURE",
+            # The pollution under test: exported harness-generic names.
+            f'export DUT_TEMPLATE="{root}/evil.body.spice.tmpl"',
+            f'export RECORD_SPEC="{root}/evil.record-spec.json"',
+            f'export _SCHEMATIC_RECORD_SPEC="{root}/evil.record-spec.json"',
+            # What pex_runner.sh's source time already contributed: the
+            # committed per-stem template rides the identity from there.
+            "IDENT_ARGS=("
+            f'--extra "{root}/exp/testbench/stubstem.body.spice.tmpl")',
+            f"pex_schematic_dut_setup() {{\n{setup}\n}}",
+            f"schematic_record_mint() {{\n{mint}\n}}",
+            call,
+            f'printf \'%s\\n\' "${{_SCHEMATIC_RECORD_SPEC}}" > "{root}/spec-state.txt"',
+            f'printf \'%s\\n\' "${{IDENT_ARGS[@]}}" > "{root}/ident.txt"',
+            'schematic_record_mint report.json',
+        ])
+        return subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+
+    def _ident(self, root: Path) -> list[str]:
+        return (root / "ident.txt").read_text().splitlines()
+
+    def test_exported_dut_template_and_record_spec_cannot_reach_the_helpers(self) -> None:
+        root = self._schematic_stub_tree()
+        enricher = root / "harness" / "enricher.py"
+        enricher.write_text("# enricher\n")
+        default_spec = root / "exp" / "testbench" / "stubstem.record-spec.json"
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root,
+            # The wrapper's exact call pattern (closed-loop-psrr): the empty
+            # VARIANT_SETUP_ARGS must expand cleanly under `set -u` on the
+            # as-built path (#670).
+            f'VARIANT_SETUP_ARGS=(); pex_schematic_dut_setup "{enricher}" '
+            '"${VARIANT_SETUP_ARGS[@]}"',
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        # The render came from the committed template, not the decoy.
+        self.assertEqual(
+            (root / "work" / "body.spice.tmpl").read_text(), "body 0.42 committed\n"
+        )
+        # The identity kept the source-time committed template exactly once
+        # (no duplicate re-add) and gained exactly the netlists + enricher.
+        self.assertEqual(self._ident(root), [
+            "--extra", str(committed),
+            "--extra", f"{root}/repo/design/netlist/bandgap_startup.spice",
+            "--extra", f"{root}/repo/design/netlist/bandgap_core.spice",
+            "--extra", f"{root}/repo/design/netlist/bandgap_amp.spice",
+            "--extra", str(enricher),
+        ])
+        # The mint bound the harness default spec, not the exported decoys.
+        self.assertEqual(
+            (root / "spec-state.txt").read_text().strip(), str(default_spec)
+        )
+        argv = (root / "spec-capture.txt").read_text().splitlines()
+        self.assertEqual(
+            argv[argv.index("--spec") + 1], str(default_spec)
+        )
+
+    def test_dut_template_flag_binds_the_variant_render_source_to_the_identity(self) -> None:
+        root = self._schematic_stub_tree()
+        enricher = root / "harness" / "enricher.py"
+        enricher.write_text("# enricher\n")
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        variant = root / "exp" / "variants" / "proposal.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root,
+            f'pex_schematic_dut_setup "{enricher}" --dut-template "{variant}"',
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (root / "work" / "body.spice.tmpl").read_text(), "body 0.42 variant\n"
+        )
+        ident = self._ident(root)
+        # Both templates ride the identity, each exactly once: the committed
+        # one from source time, the variant one from the flag (#670).
+        self.assertEqual(ident.count(str(committed)), 1)
+        self.assertEqual(ident.count(str(variant)), 1)
+
+    def test_dut_template_equal_to_the_default_leaves_the_identity_alone(self) -> None:
+        root = self._schematic_stub_tree()
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root, f'pex_schematic_dut_setup --dut-template "{committed}"'
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        # submission_identity.py refuses a duplicate --extra basename; an
+        # explicit default must not re-add what source time already hashed.
+        self.assertEqual(self._ident(root).count(str(committed)), 1)
+
+    def test_record_spec_flag_is_forwarded_to_the_shared_mint(self) -> None:
+        root = self._schematic_stub_tree()
+        variant_spec = root / "exp" / "variants" / "proposal.record-spec.json"
+        r = self._run_schematic_setup(
+            root, f'pex_schematic_dut_setup --record-spec "{variant_spec}"'
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (root / "spec-state.txt").read_text().strip(), str(variant_spec)
+        )
+        argv = (root / "spec-capture.txt").read_text().splitlines()
+        self.assertEqual(argv[argv.index("--spec") + 1], str(variant_spec))
+
+    def test_unknown_and_valueless_options_fail_closed(self) -> None:
+        for call in ("pex_schematic_dut_setup --bogus",
+                     "pex_schematic_dut_setup --dut-template"):
+            with self.subTest(call=call):
+                root = self._schematic_stub_tree()
+                r = self._run_schematic_setup(root, call)
+                self.assertEqual(r.returncode, 2, r.stderr)
+                # Failed before any render: no WORK side effects.
+                self.assertFalse((root / "work" / "body.spice.tmpl").exists())
+
+    def test_the_psrr_wrapper_passes_variant_overrides_as_explicit_flags(self) -> None:
+        # #670: the variant render source and record spec reach the shared
+        # setup as --dut-template / --record-spec flags; the wrapper no
+        # longer sets ambient DUT_TEMPLATE / RECORD_SPEC variables or
+        # appends the identity --extra itself.
+        script = (SIM_DIR / "closed-loop-psrr" / "run_klt_sim.sh").read_text()
+        self.assertIn("--dut-template", script)
+        self.assertIn("--record-spec", script)
+        self.assertIn("VARIANT_SETUP_ARGS=()", script)
+        self.assertNotIn("DUT_TEMPLATE=", script)
+        self.assertNotIn("RECORD_SPEC=", script)
+        self.assertNotIn('IDENT_ARGS+=(--extra "${DUT_TEMPLATE}")', script)
+
+    def test_the_driver_binds_the_record_spec_as_harness_state_only(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        # Unconditional at source time: an inherited _SCHEMATIC_RECORD_SPEC
+        # is overwritten the moment the driver is sourced (#670).
+        self.assertIn(
+            '_SCHEMATIC_RECORD_SPEC="${EXP_DIR}/testbench/${STEM}.record-spec.json"',
+            driver,
+        )
+        mint = driver.split("schematic_record_mint() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn('--spec "${_SCHEMATIC_RECORD_SPEC}"', mint)
+        # The ambient-environment seam is gone, not merely shadowed.
+        self.assertNotIn("${DUT_TEMPLATE", driver)
+        self.assertNotIn("${RECORD_SPEC", driver)
 
 
 # --------------------------------------------------------------------------

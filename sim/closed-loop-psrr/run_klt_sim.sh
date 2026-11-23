@@ -47,6 +47,7 @@ source "${HARNESS_DIR}/pex_ac_runner.sh"
 # (so a minted record names the variant, not the as-built DUT). Unset: the
 # as-built path, unchanged.
 VARIANT=""
+VARIANT_SETUP_ARGS=()
 if [[ -n "${PSRR_VARIANT:-}" ]]; then
   VARIANT="${PSRR_VARIANT}"
   for ext in body.spice.tmpl anchors.env record-spec.json; do
@@ -56,12 +57,13 @@ if [[ -n "${PSRR_VARIANT:-}" ]]; then
       exit 3
     fi
   done
-  # DUT_TEMPLATE is the render source pex_schematic_dut_setup honors; the
-  # variant template also rides the submission identity. RECORD_SPEC is read
-  # by schematic_record_mint: a minted record names the variant.
-  DUT_TEMPLATE="${EXP_DIR}/variants/${VARIANT}.body.spice.tmpl"
-  IDENT_ARGS+=(--extra "${DUT_TEMPLATE}")
-  RECORD_SPEC="${EXP_DIR}/variants/${VARIANT}.record-spec.json"
+  # The variant's render source and record spec reach the shared setup as
+  # explicit flags (#670), never ambient variables: the variant template
+  # rides the submission identity from inside pex_schematic_dut_setup, and
+  # a minted record names the variant via --record-spec.
+  VARIANT_SETUP_ARGS=(
+    --dut-template "${EXP_DIR}/variants/${VARIANT}.body.spice.tmpl"
+    --record-spec "${EXP_DIR}/variants/${VARIANT}.record-spec.json")
   # shellcheck source=/dev/null
   source "${EXP_DIR}/variants/${VARIANT}.anchors.env"
   echo "run_klt_sim.sh: PSRR_VARIANT=${VARIANT} (proposal body, variant sanity anchors)"
@@ -69,8 +71,10 @@ fi
 
 # The schematic DUT: XMSENSE's width, the width-rendered WORK body
 # template and the three netlists, plus this bench's enricher, in the
-# submission identity (issue #650).
-pex_schematic_dut_setup "${HARNESS_DIR}/enrich_ac_report.py"
+# submission identity (issue #650). VARIANT_SETUP_ARGS is empty on the
+# as-built path and carries the variant's --dut-template / --record-spec
+# under PSRR_VARIANT (#631, #670).
+pex_schematic_dut_setup "${HARNESS_DIR}/enrich_ac_report.py" "${VARIANT_SETUP_ARGS[@]}"
 
 # Sanity anchors: the newest committed record's typ/27C/3.30V row (20261001-085737-e5507b2).
 # (A PSRR_VARIANT run replaces these from variants/<name>.anchors.env above.)
