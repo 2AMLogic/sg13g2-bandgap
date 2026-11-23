@@ -57,13 +57,11 @@ import sys
 from pathlib import Path
 
 from enrich_pvt_report import (
-    DET_RELEASE_FRAC,
-    DVSNS_CLOSE_V,
-    FB_RAIL_MARGIN_V,
-    I_MKFB_RELEASE_A,
     _corner_vdd,
     _meas_map,
+    closed_loop_verdict_failures,
     inject_baked_supply,
+    recount_report,
 )
 
 IQ_SETTLE_TOL_A = 1e-7
@@ -170,13 +168,7 @@ def _enrich_ladder_corner(corner: dict, cwd: Path) -> None:
         })
         # The same three criteria, same constants, as pvt_closed_loop_verdict
         # -- evaluated per checkpoint instead of once at a final time.
-        failed = []
-        if not (det <= DET_RELEASE_FRAC * vdd and abs(i_mkfb) <= I_MKFB_RELEASE_A):
-            failed.append("startup_not_released")
-        if dvsns > DVSNS_CLOSE_V:
-            failed.append("loop_not_closed")
-        if not (FB_RAIL_MARGIN_V <= fb <= vdd - FB_RAIL_MARGIN_V):
-            failed.append("fb_railed")
+        failed = closed_loop_verdict_failures(det, i_mkfb, dvsns, fb, vdd)
         verdicts.append((checkpoint, "FAIL" if failed else "PASS"))
         last_criteria = failed
 
@@ -206,17 +198,6 @@ def _enrich_ladder_corner(corner: dict, cwd: Path) -> None:
         _fail(corner, "closed_loop_verdict", "; ".join(problems))
 
 
-def _recount(report: dict, corners: list) -> dict:
-    """Recompute the report-level grade and counts from the graded corners."""
-    report["corners"] = corners
-    report["passed"] = sum(1 for c in corners if c.get("status") == "pass")
-    report["failed"] = sum(1 for c in corners if c.get("status") == "fail")
-    report["errored"] = sum(1 for c in corners if c.get("status") == "error")
-    report["corner_count"] = len(corners)
-    report["status"] = "fail" if report["failed"] else ("error" if report["errored"] else "pass")
-    return report
-
-
 def enrich(report: dict, bench: str) -> dict:
     if bench == LADDER_BENCH:
         corners = report.get("corners", [])
@@ -230,7 +211,7 @@ def enrich(report: dict, bench: str) -> dict:
         for corner in corners:
             if corner.get("status") == "pass":
                 _enrich_ladder_corner(corner, cwd)
-        return _recount(report, corners)
+        return recount_report(report, corners)
     cfg = BENCHES[bench]
     corners = report.get("corners", [])
     cwd = Path.cwd()
@@ -264,20 +245,14 @@ def enrich(report: dict, bench: str) -> dict:
             })
         corner["measurements"].extend(derived)
         vdd = _corner_vdd(corner)
-        failed: list[str] = []
         det, i_mkfb, fb = got[cfg["det"]], got[cfg["i_mkfb"]], got[cfg["fb"]]
-        if vdd is not None and not (det <= DET_RELEASE_FRAC * vdd and abs(i_mkfb) <= I_MKFB_RELEASE_A):
-            failed.append("startup_not_released")
-        if dvsns > DVSNS_CLOSE_V:
-            failed.append("loop_not_closed")
-        if vdd is not None and not (FB_RAIL_MARGIN_V <= fb <= vdd - FB_RAIL_MARGIN_V):
-            failed.append("fb_railed")
+        failed = closed_loop_verdict_failures(det, i_mkfb, dvsns, fb, vdd)
         if settle is not None and settle > IQ_SETTLE_TOL_A:
             failed.append("not_settled")
         if failed:
             corner["status"] = "fail"
             corner["diagnostics"] = [{"code": "closed_loop_verdict", "message": "; ".join(failed)}]
-    return _recount(report, corners)
+    return recount_report(report, corners)
 
 
 def main(argv: list[str]) -> int:

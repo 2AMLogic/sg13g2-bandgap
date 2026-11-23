@@ -41,6 +41,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import klt_corner_bundle as bundle  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
+from enrich_pvt_report import _meas_map, closed_loop_verdict_failures, recount_report  # noqa: E402
 from seed_deck import SEED_FIELDS, fill_deck, load_seeds, seed_row  # noqa: E402
 
 CODES = (0, 1, 2, 4, 8, 16, 32, 64, 128, 129, 255)
@@ -51,12 +52,6 @@ PROBE_CODES = (128, 129)
 VREF_TARGET_V = 1.050
 RANGE_FLOOR_PCT = 15.0
 RES_CAP_PCT = 0.25
-
-# sim/lib/pvt_verdict_common.sh
-DET_RELEASE_FRAC = 0.2
-I_MKFB_RELEASE_A = 50e-9
-DVSNS_CLOSE_V = 0.020
-FB_RAIL_MARGIN_V = 0.05
 
 
 def shard_plan() -> list[tuple[str, float, int, tuple[int, ...]]]:
@@ -172,16 +167,11 @@ def merge(a: argparse.Namespace) -> None:
     print(f"merged {len(merged['corners'])} points: {merged['status']}")
 
 
-def _meas(corner: dict) -> dict[str, float]:
-    return {m["name"]: float(m["value"]) for m in corner.get("measurements", [])
-            if isinstance(m.get("value"), (int, float))}
-
-
 def enrich(a: argparse.Namespace) -> None:
     report = json.loads(Path(a.report).read_text())
     for corner in report["corners"]:
         code = (corner.get("params") or {}).get("trim_code")
-        got = _meas(corner)
+        got = _meas_map(corner)
         if corner.get("status") != "pass":
             continue
         need = ("sns1_v", "sns2_v", "fb_v", "det_v", "i_mkfb_a", "vref_v")
@@ -197,22 +187,12 @@ def enrich(a: argparse.Namespace) -> None:
              "spice": "the request's corners.params.trim_code for this point"},
         ])
         vdd = next(iter(corner["supply_v"].values()))
-        failed: list[str] = []
-        if not (got["det_v"] <= DET_RELEASE_FRAC * vdd and abs(got["i_mkfb_a"]) <= I_MKFB_RELEASE_A):
-            failed.append("startup_not_released")
-        if dvsns > DVSNS_CLOSE_V:
-            failed.append("loop_not_closed")
-        if not (FB_RAIL_MARGIN_V <= got["fb_v"] <= vdd - FB_RAIL_MARGIN_V):
-            failed.append("fb_railed")
+        failed = closed_loop_verdict_failures(got["det_v"], got["i_mkfb_a"],
+                                              dvsns, got["fb_v"], vdd)
         if failed:
             corner["status"] = "fail"
             corner["diagnostics"] = [{"code": "closed_loop_verdict", "message": "; ".join(failed)}]
-    cs = report["corners"]
-    report["passed"] = sum(c["status"] == "pass" for c in cs)
-    report["failed"] = sum(c["status"] == "fail" for c in cs)
-    report["errored"] = sum(c["status"] == "error" for c in cs)
-    report["corner_count"] = len(cs)
-    report["status"] = "fail" if report["failed"] else ("error" if report["errored"] else "pass")
+    recount_report(report)
     Path(a.output).write_text(json.dumps(report, indent=2) + "\n")
     print(f"enriched: {report['status']} passed={report['passed']} failed={report['failed']} "
           f"errored={report['errored']}")
