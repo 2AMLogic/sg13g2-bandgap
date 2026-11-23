@@ -35,10 +35,6 @@ layout/
     lvs_report.json           committed klt lvs report
     bandgap_core.pex.spice    klt extract --parasitics output (issue #14)
     pex_extract_report.json   committed klt extract --format json report
-    probe/                    one-point ngspice sanity probe of the
-                              extraction above (issue #272) -- a generator,
-                              its generated netlist and its log. NOT an
-                              evidence record; see "One-point probe"
   bandgap_startup/
     generate.py               draws + routes bandgap_startup.gds
     bandgap_startup.gds       committed, deterministic layout
@@ -326,10 +322,12 @@ protect the segments the trim does not use.
 The straps are drawn metal, so their resistance is a real series term where
 the schematic models an ideal 1 mΩ. `klt extract --parasitics` measures it:
 the merged tap net carries **16 star-hub legs** of 0.7–4.3 Ω each. Measured
-end-to-end in a one-point ngspice probe of the extracted netlist (typ /
-27 °C / 3.30 V, see "One-point probe" below), the summing resistor's
-effective value lands at **66,123 Ω** against the pre-trim single-bar
-layout's 66,092 Ω — **+30 Ω, +0.046%**, worth ~0.3 mV on `vref`, about an
+end-to-end in the one-point ngspice probe of the extracted netlist (typ /
+27 °C / 3.30 V) before that probe was retired — see "One-point probe
+(retired)" below and the `core-open-loop-bias-pex` grid it was superseded
+by — the summing resistor's effective value landed at **66,123 Ω**
+against the pre-trim single-bar layout's 66,092 Ω — **+30 Ω, +0.046%**,
+worth ~0.3 mV on `vref`, about an
 eighth of the ladder's own 2.443 mV trim step. Nearly all of that is strap
 metal: `design/bandgap_trim_network.md` §3 puts the *intrinsic*
 ladder-at-128 vs 511 µm-bar difference at −3 Ω, so the measured +30 Ω is
@@ -338,64 +336,24 @@ ladder-at-128 vs 511 µm-bar difference at −3 Ω, so the measured +30 Ω is
 have been ~3× larger), and it is a PEX-only effect the schematic-level
 benches cannot show.
 
-### One-point probe (not an evidence record)
+### One-point probe (retired)
 
-The five `*-pex` experiments' own grid re-runs are deferred to **#275** (see
-"Evidence freshness" below and that issue for why: this repo's
-`run_pvt_sweep.sh` corner loops are not runnable on the dispatch hosts, and
-a mask-option PEX DUT has no `trim_code` for `check_evidence_formats.py`'s
-D2 rule to compare against). What *was* run here, as a single operating
-point, is a direct sanity probe of the refreshed extraction — 257 `rppd` +
-6 `pfet` device cards and all 833 wire-parasitic cards (533 R / 255 C /
-44 coupling C / 1 substrate DC tie) taken from `bandgap_core.pex.spice`,
-bipolars spliced from `design/netlist/bandgap_core.spice`, the same
-FIXTURE 1–3 the committed `core-open-loop-bias-pex` template uses.
-
-**It is committed and re-runnable** — `layout/bandgap_core/probe/`:
-
-```bash
-layout/bandgap_core/probe/run_probe.sh     # ~0.3 s, one corner, local
-```
-
-`make_probe_netlist.py` *generates* `tb_core_pex_probe.spice` from the
-committed extraction rather than hand-splicing a copy of it (issue #176's
-lesson: a hand-spliced copy goes stale silently), and `run_probe.sh` runs
-`--check` before simulating, so a probe result can never come from a
-netlist that has drifted from the `.pex.spice` it claims to probe. The
-numbers below are that script's own output:
-
-| quantity | pre-trim PEX (`core-open-loop-bias-pex` record `20260905-033431`) | trim-bearing PEX probe | trim-bearing schematic (#264, `core-open-loop-bias` record `20261001-082455`) |
-| --- | --- | --- | --- |
-| `vref` | 1.052841 V | **1.053002 V** | 1.052707 V |
-| `R1_eff` | 66,092 Ω | **66,123 Ω** | 66,057 Ω |
-| `i_leg3` | 5.200783 µA | 5.200775 µA | 5.201476 µA |
-
-The refreshed extraction reproduces the pre-trim PEX point to **+0.161 mV
-(+0.015%)**, and the trim-bearing schematic point to +0.30 mV. The ladder
-measures as 128 units independently of the device walk above:
-`(v(tn0) − v(cb3)) / (v(vref) − v(tn0))` = **12.630**, against the design's
-`128·R_unit / R1_base` = 12.64 nominal ratio (the 0.08% shortfall is the
-strap metal above, which sits inside the ladder half of that ratio).
-
-Two deliberate differences from the `core-open-loop-bias-pex` template, both
-visible in the generator: the probe keeps the extraction's **body**-side hub
-legs rather than dropping them (they carry no current it measures, so this
-is only simpler, not more accurate — it is worth 7 pA on `i_leg3`, the whole
-gap to the pre-trim column above), and it addresses the merged tap net by
-`klt`'s own name under an ngspice-legal alias (`tn0_merged`) rather than
-pretending the eight shorted tap nodes are still distinct.
-
-One point is not a PVT grid and is **not** committed as evidence — `sim/`
-records are minted by `run_pvt_sweep.sh`, and #275 owns that; nothing in
-`probe/` is under `sim/`, and the probe's log is overwritten on each run
-rather than appended. It exists because it is what makes the claim "the PEX
-netlist matches the trim-bearing schematic" checkable rather than asserted.
+The one-point sanity probe #272 committed under `bandgap_core/` — a
+single-corner (typ / 27 °C / 3.30 V) ngspice run of the refreshed
+extraction, standing in while the `*-pex` grid re-runs were deferred to
+#275 — is **deleted**: the trim-bearing core grid has landed and
+supersedes it. Its reading is kept here as history: **`vref` = 1.053002 V,
+`R1_eff` = 66,123 Ω, `i_leg3` = 5.200775 µA**. The superseding evidence is
+the 45-point [`core-open-loop-bias-pex` grid, record
+`20261003-235104-1a04906d`](../sim/core-open-loop-bias-pex/records/20261003-235104-1a04906d.md)
+(the broader five-experiment re-run effort is tracked in #278); its
+nominal CSV row, same corner, reports 1.053000 V.
 
 ### Verdicts
 
 | cell | DRC | LVS | extraction |
 | --- | --- | --- | --- |
-| `bandgap_core` | `clean`, **0 violations** — re-minted 2026-11-18 under the **`klt 0.8.0` pin** (#561 step 2's all-pin standard; deck `sha256:1c95db40…`) on the #572 merged GDS: `nwell.enclosing.nactiv.1` is closed at the source by #571's tap-margin fix (landed via #576/#579) and every Via1 class is **0** (`metal2.enclosing.via1.1`/`via1.width.1` closed by #574, composed by the #579 rebase). The last class the containment deck surfaces, `metal1.enclosing.cont.1` ×18, is closed at the source by #572's Metal1 base-contact landing strips in `draw_npn13g2` (`layout/common.py`) — every Cont row now lands inside its own Metal1 strip (0.10 µm enclosure per side) — measured **18 → 0** under the containment deck itself (#557's mint and the #579 rebase carried the cell at 18; the `klt 0.9.3.dev1023` re-mint read 0), so the closure is real under the deck that sees the class; the pin's deck does not fire it, the deck difference #561 step 2 measured rather than assumed | `mismatch`, 7 findings / **4 error-severity** — re-minted 2026-11-18 under the **`klayout-tools==0.8.0` pin** (klayout 0.30.13) on the #572 merged GDS against #561 step 1's re-derived reference, with counts identical to the #579/#561-step-2 mints on the pre-#572 GDS — the landing strips are LVS-neutral exactly as #572's same-tool differential measured (finding-for-finding identical with vs without the fix): devices **263/263** matched (reference 266: the 3 reference-side `NPN13G2` `device.unmatched`), nets **253/257** matched, `category_error_counts` exactly `{device.unmatched: 3, topology: 1}` — the permanent bipolar-recognition cause (the curated deck recognises no bipolar class — first documented at top's 0.8.0 re-mint, DR-0016), plus 2 warning-severity disclosures (`device.bulk_reconciled`, `device.geometry_not_compared`) and the benign `nfet` topology note | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C — **re-minted under the 0.8.0 pin** against the #572 merged GDS (input-gds anchor fresh, so #571's core waiver self-expired and is deleted): same card counts as every post-#556 mint, values moved by the strips' mΩ/fF (see the one-point probe below) |
+| `bandgap_core` | `clean`, **0 violations** — re-minted 2026-11-18 under the **`klt 0.8.0` pin** (#561 step 2's all-pin standard; deck `sha256:1c95db40…`) on the #572 merged GDS: `nwell.enclosing.nactiv.1` is closed at the source by #571's tap-margin fix (landed via #576/#579) and every Via1 class is **0** (`metal2.enclosing.via1.1`/`via1.width.1` closed by #574, composed by the #579 rebase). The last class the containment deck surfaces, `metal1.enclosing.cont.1` ×18, is closed at the source by #572's Metal1 base-contact landing strips in `draw_npn13g2` (`layout/common.py`) — every Cont row now lands inside its own Metal1 strip (0.10 µm enclosure per side) — measured **18 → 0** under the containment deck itself (#557's mint and the #579 rebase carried the cell at 18; the `klt 0.9.3.dev1023` re-mint read 0), so the closure is real under the deck that sees the class; the pin's deck does not fire it, the deck difference #561 step 2 measured rather than assumed | `mismatch`, 7 findings / **4 error-severity** — re-minted 2026-11-18 under the **`klayout-tools==0.8.0` pin** (klayout 0.30.13) on the #572 merged GDS against #561 step 1's re-derived reference, with counts identical to the #579/#561-step-2 mints on the pre-#572 GDS — the landing strips are LVS-neutral exactly as #572's same-tool differential measured (finding-for-finding identical with vs without the fix): devices **263/263** matched (reference 266: the 3 reference-side `NPN13G2` `device.unmatched`), nets **253/257** matched, `category_error_counts` exactly `{device.unmatched: 3, topology: 1}` — the permanent bipolar-recognition cause (the curated deck recognises no bipolar class — first documented at top's 0.8.0 re-mint, DR-0016), plus 2 warning-severity disclosures (`device.bulk_reconciled`, `device.geometry_not_compared`) and the benign `nfet` topology note | `extracted`, `{"pfet": 6, "rppd": 257}`, 533 wire R / 255 C / 44 coupling C — **re-minted under the 0.8.0 pin** against the #572 merged GDS (input-gds anchor fresh, so #571's core waiver self-expired and is deleted): same card counts as every post-#556 mint, values moved by the strips' mΩ/fF (see "One-point probe (retired)" below and the `core-open-loop-bias-pex` grid) |
 | `bandgap_top` | `clean`, 0 violations — re-minted 2026-11-18 under the **`klt 0.8.0` pin** (#561 step 2's standard) on the post-#572/#593 merged GDS, which composes #572's core landing strips and #573's grid-constrained RPU fold into the #579 merged assembly. `drc_waivers.json` is now **empty** (the file keeps its comment as the convention record): per its own rule ("when a class is fixed, its waiver entries are deleted in the same PR"), #572's PR deleted the 18 `metal1.enclosing.cont.1` → #572 entry (closed at the source inside `bandgap_core` by the landing strips) and #573's PR deletes the 4 `cont.ongrid.1` → #573 entry (closed at the source by the fold fix) — shrinking the waived set 22 → 0 across the two PRs. A dev-build deck carrying every recent rule grades this GDS's remaining markers as **0** of every waived class — `metal1.enclosing.cont.1` 0 (#572), `cont.ongrid.1` 0 (was 4 pre-#573), `nwell.enclosing.nactiv.1` 0 (closed by #571's tap-margin fix via #576/#579), every Via1 class 0 (closed by #574) — so the verdict reads clean with no `--waivers` flag at all while the list is empty (the retired `klt 0.9.3.dev980` mint read clean 0 with all 22 waived; the `dev1023` re-mint read clean 0 with 4 waived), and the assembled GDS carries #556's amp via-fix refresh | `mismatch`, 8 findings / **4 error-severity** — re-minted 2026-11-18 under the **`0.8.0` pin** on the post-#572/#593 merged GDS against #561 step 1's re-derived reference, with counts identical to the #579/#561-step-2/#572 mints: devices **275/275** matched (reference 278: the 3 reference-side `NPN13G2` `device.unmatched`), nets **257/261** matched, `category_error_counts` exactly `{device.unmatched: 3, topology: 1}` — the permanent bipolar-recognition cause, unchanged in kind from every prior mint — plus 4 warning-severity disclosures (`device.bulk_reconciled` 2, `device.geometry_not_compared` 2) and zero resistor findings under the `rppd.sym`-derived reference. #572's core fix and #573's fold are both LVS-neutral here (the strips land Metal1 on Conts whose conductor nets already exist, and the fold only re-spaces `RPU`'s own legs; extraction gains no devices and no net merges) | `extracted`, `{"nfet": 6, "pfet": 11, "rhigh": 1, "rppd": 257}`, 842 wire R / 261 C / 59 coupling C — the committed netlist is the audited item-8 DUT bytes kept under the re-opened deferral: #573's fold moves the extracted parasitic values (`RPU`'s own and the nets routed around the wider block; re-extraction was measured under the pin — device counts and parasitic-class counts unchanged, 331 netlist lines of wire-R/C values move), but `bandgap_top.pex.spice` is hash-pinned by the actively cited item-8 characterization report (`measurements/2026-11-18-characterization-report/dependencies.json`), whose only sanctioned remedy is a new dated characterization report. The input-gds anchor is waived in `layout/evidence-freshness-waivers.json` (tracking #573; the PEX re-runs stay tracked in #278/#275) — the same deferral pattern #579 set for #571's then-un-auditable re-extraction |
 
 Every report in this table — DRC, LVS, PEX, ERC — is minted under the
@@ -563,10 +521,11 @@ can only express it at one width.
 compares `R` against a reference computed with the *same* sheet formula, so
 both sides agree (445.9 vs 445.9). And every simulated value comes from the
 real `rppd` PDK subckt at the extracted *geometry*, not from `r_ohm` — which
-is why the one-point probe above lands at 66,123 Ω rather than at `r_ohm`'s
-61,911 Ω. What the gap does affect is any estimate read straight out of
-`pex_extract_report.json`; treat `r_ohm` on a short segment as a lower bound
-until #2652 lands.
+is why the retired one-point probe read 66,123 Ω rather than `r_ohm`'s
+61,911 Ω ("One-point probe (retired)" above; the `core-open-loop-bias-pex`
+grid's nominal row corroborates at 66,123 Ω). What the gap does affect is
+any estimate read straight out of `pex_extract_report.json`; treat `r_ohm`
+on a short segment as a lower bound until #2652 lands.
 
 (Dated amendment, #561 step 1, 2026-11-18: the LVS half of this changed —
 the reference no longer uses the sheet formula. Once #2652 landed in the
@@ -1009,10 +968,6 @@ klt lvs  lvs_request.json               --format json > lvs_report.json
 klt extract --deck sg13g2 --parasitics bandgap_core.gds \
   -o bandgap_core.pex.spice --format json > pex_extract_report.json
 # then the same three per cell, substituting that cell's own file names
-
-cd ../..
-python3 layout/bandgap_core/probe/make_probe_netlist.py   # tracks the extraction
-layout/bandgap_core/probe/run_probe.sh                    # ~0.3 s sanity probe
 ```
 
 (`uv run --with klayout python3 ...` if `klayout` is not already on the
@@ -1588,9 +1543,12 @@ LVS-matched layout with a fresh extraction at both levels) but not the grid
 re-runs themselves: this repo's `run_pvt_sweep.sh` corner loops are not
 runnable on the dispatch hosts, and a mask-option PEX DUT has no `trim_code`
 for the checker's D2 rule to compare against. #275 owns both questions, and
-each entry self-expires when its own experiment re-runs. The one-point probe
-under "Trim ladder layout (issue #272)" above is what stands in for grid
-evidence until then — and is explicitly *not* committed as a record.
+each entry self-expires when its own experiment re-runs. For
+`core-open-loop-bias-pex` the re-run has landed — the 45-point record
+`20261003-235104-1a04906d` is the grid evidence, and the one-point probe
+that stood in until then is retired ("One-point probe (retired)" under
+"Trim ladder layout (issue #272)" above); the broader five-experiment
+effort is tracked in #278.
 
 ### Re-mint quality: the regression guard (`layout/report-regression-waivers.json`)
 
