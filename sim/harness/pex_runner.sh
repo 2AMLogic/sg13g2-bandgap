@@ -219,7 +219,9 @@ schematic_record_mint() {
 # override the header above documents, so the identity keeps hashing the
 # committed template -- and the three schematic netlists plus each
 # EXTRA_IDENT_FILE (the report enricher whose output the record binds to)
-# appended to IDENT_ARGS. Call it AFTER sourcing this file and BEFORE the
+# appended to IDENT_ARGS. An optional DUT_TEMPLATE (set before the call; the
+# PSRR bench's PROPOSAL variants, #631) replaces the committed render source.
+# Call it AFTER sourcing this file and BEFORE the
 # family runner's main.
 pex_schematic_dut_setup() {
   # XMSENSE's width from the live startup netlist, as every closed-loop bench does.
@@ -229,7 +231,7 @@ pex_schematic_dut_setup() {
       && printf '%s' "${MSENSE_W}" > "${WORK}/msense_w.txt" )
   MSENSE_W="$(<"${WORK}/msense_w.txt")"
   BODY_TEMPLATE="${WORK}/body.spice.tmpl"
-  sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl" > "${BODY_TEMPLATE}"
+  sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${DUT_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}" > "${BODY_TEMPLATE}"
   local f
   IDENT_ARGS+=(--extra "${REPO_ROOT}/design/netlist/bandgap_startup.spice"
     --extra "${REPO_ROOT}/design/netlist/bandgap_core.spice"

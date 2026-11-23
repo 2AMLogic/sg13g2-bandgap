@@ -2218,7 +2218,10 @@ class SetDispatchWiringTests(unittest.TestCase):
                 # committed per-stem template and writes the WORK override --
                 # the post-source assignment the header above documents.
                 '  sed "s|@@MSENSE_W@@|${MSENSE_W}|g" '
-                '"${EXP_DIR}/testbench/${STEM}.body.spice.tmpl" > "${BODY_TEMPLATE}"',
+                # DUT_TEMPLATE (#631) is the PSRR variant's override; unset it
+                # is that same committed template.
+                '"${DUT_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}" '
+                '> "${BODY_TEMPLATE}"',
             ],
         )
 
