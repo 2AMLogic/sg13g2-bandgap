@@ -2360,25 +2360,34 @@ def first_party_import_closure(modules: set) -> set:
     return seen
 
 
-def runner_shell_closure(runner: Path) -> list:
+#: Non-comment `source` statement targeting a `.sh` file (#663). Handles nested
+#: double quotes inside `$(...)` such as `$(dirname "${BASH_SOURCE[0]}")/...`
+#: and `$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/...`, while stopping
+#: before `#` comments so prose/comment mentions do not over-match.
+SOURCE_SH_RE = re.compile(
+    r'^\s*source\s+["\']?(?:[^\n#]*?/)?([A-Za-z0-9_.-]+\.sh)(?:["\'\s;&|<>#]|$)',
+    re.MULTILINE,
+)
+
+
+def runner_shell_closure(runner: Path) -> dict[Path, str]:
     """RUNNER plus every sim/harness/*.sh it sources, transitively: the
     family bases and, through them, the shared preamble and identity
     helpers whose --extra lists build the runner's submission identity.
     """
-    seen: set = set()
-    stack, texts = [runner], []
+    closure: dict[Path, str] = {}
+    stack = [runner]
     while stack:
         path = stack.pop()
-        if path in seen:
+        if path in closure:
             continue
-        seen.add(path)
         text = path.read_text()
-        texts.append(text)
-        for match in re.finditer(r'source\s+"([^"]+)"', text):
-            sourced = HARNESS / Path(match.group(1)).name
+        closure[path] = text
+        for match in SOURCE_SH_RE.finditer(text):
+            sourced = HARNESS / match.group(1)
             if sourced != path and sourced.is_file():
                 stack.append(sourced)
-    return texts
+    return closure
 
 
 class EnricherIdentityCoverageTests(unittest.TestCase):
@@ -2393,8 +2402,8 @@ class EnricherIdentityCoverageTests(unittest.TestCase):
             runner_text = script.read_text()
             if not IDENTITY_ENTRY.search(runner_text):
                 continue
-            closure_texts = runner_shell_closure(script)
-            union = "\n".join(closure_texts)
+            closure = runner_shell_closure(script)
+            union = "\n".join(closure.values())
             named = {m for m in HARNESS_PY if re.search(rf"\b{m}\.py\b", union)}
             deps = first_party_import_closure(named)
             if VERDICT_MODULE not in deps:
@@ -2407,6 +2416,76 @@ class EnricherIdentityCoverageTests(unittest.TestCase):
                 gaps[script.parent.name] = "enricher depends on " \
                     f"{VERDICT_MODULE}.py but no --extra in its shell chain names it"
         self.assertEqual(gaps, {}, f"submission-identity gaps (#661): {gaps}")
+
+    def test_shell_closure_resolves_shared_runners_and_transitive_deps(self) -> None:
+        # #663: guard against the source-line regex silently dropping
+        # nested-quote idioms such as `$(dirname "${BASH_SOURCE[0]}")/...`.
+        expected_pex_chain = {
+            "pex_runner.sh",
+            "klt_sim_preamble.sh",
+            "submission_identity.sh",
+            "pex_merge_call.sh",
+        }
+        iq_names = {
+            p.name for p in runner_shell_closure(SIM_DIR / "closed-loop-iq/run_klt_sim.sh")
+        }
+        self.assertTrue(
+            expected_pex_chain | {"supply_bench_runner.sh"} <= iq_names,
+            f"closed-loop-iq closure missing expected harness scripts: {sorted(iq_names)}",
+        )
+
+        # Edge case: pre-resolved variable (`source "${_here}/../harness/pex_runner.sh"`).
+        boxtc_names = {
+            p.name
+            for p in runner_shell_closure(
+                SIM_DIR / "closed-loop-vref-pvt-pex-boxtc/run_klt_sim.sh"
+            )
+        }
+        self.assertTrue(
+            expected_pex_chain | {"pex_vref_runner.sh"} <= boxtc_names,
+            f"closed-loop-vref-pvt-pex-boxtc closure incomplete: {sorted(boxtc_names)}",
+        )
+
+        # CMOS5L base also sources klt_sim_preamble.sh via nested quotes.
+        cmos5l_names = {
+            p.name
+            for p in runner_shell_closure(
+                SIM_DIR / "sg13cmos5l-closed-loop-startup/run_klt_sim.sh"
+            )
+        }
+        self.assertTrue(
+            {"cmos5l_runner.sh", "klt_sim_preamble.sh", "submission_identity.sh"}
+            <= cmos5l_names,
+            f"sg13cmos5l-closed-loop-startup closure incomplete: {sorted(cmos5l_names)}",
+        )
+
+        # Every runner that sources pex_runner.sh must resolve the full chain.
+        pex_runners = [
+            s
+            for s in sorted(SIM_DIR.glob("*/run_klt_sim.sh"))
+            if re.search(r"^\s*source\s+.*pex_runner\.sh", s.read_text(), re.MULTILINE)
+        ]
+        self.assertGreater(len(pex_runners), 0)
+        for script in pex_runners:
+            names = {p.name for p in runner_shell_closure(script)}
+            self.assertTrue(
+                expected_pex_chain <= names,
+                f"{script.parent.name} closure missing transitive pex_runner chain: {sorted(names)}",
+            )
+
+    def test_shell_closure_ignores_comments_and_prose(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            script = Path(td) / "run_klt_sim.sh"
+            script.write_text(
+                "#!/usr/bin/env bash\n"
+                '# source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_ac_runner.sh"\n'
+                "# prose mention of ../harness/pex_vref_runner.sh\n"
+                'echo "source ../harness/supply_bench_runner.sh"\n'
+                'source "${HARNESS_DIR}/pex_merge_call.sh" # unlike ../harness/pex_ac_runner.sh\n'
+                'source "${EXP_DIR}/foo.env" # unlike ../harness/pex_vref_runner.sh\n'
+            )
+            names = {p.name for p in runner_shell_closure(script)}
+        self.assertEqual(names, {"run_klt_sim.sh", "pex_merge_call.sh"})
 
     def test_the_shared_verdict_module_still_exists(self) -> None:
         # The probe above keys on this module by name; if it is ever renamed
