@@ -257,40 +257,56 @@ The binding used here:
 - **Item 8 (Characterization report) — cited: `measurements/2026-11-22-item5-limits-characterization-report/envelope.json`**
   (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
   `README.md` beside it, pinned to that report's sha256). The report is
-  [`measurements/2026-11-18-characterization-report/README.md`](../measurements/2026-11-18-characterization-report/README.md),
-  stamped at the audited commit `11a18b96`: one entry per row of the
-  `README.md` target-spec table (the Output-reference row as its nominal,
-  untrimmed and trimmed lines), each with bound, verdict, binding corner,
-  whether the verdict is statistical, the newest committed `sim/` record
-  behind it, and a current-or-"predates the current netlist" mark; every
-  quoted number is re-derived from its CSV by the report's `spotcheck.py`.
+  [`measurements/2026-11-22-item5-limits-characterization-report/README.md`](../measurements/2026-11-22-item5-limits-characterization-report/README.md),
+  stamped at the audited commit `1af76710` (the #629 rotation: the four
+  corner-swept benches re-run with their spec row's ratified bound as a
+  request-level limit, every quoted figure unchanged): one entry per row of
+  the `README.md` target-spec table (the Output-reference row as its
+  nominal, untrimmed and trimmed lines), each with bound, verdict, binding
+  corner, whether the verdict is statistical, the newest committed `sim/`
+  record behind it, and a current-or-stale mark; every quoted number is
+  re-derived from its CSV by the report's `spotcheck.py`.
   **What an item 8 `met` means here — and what it does not.** It means the
   report exists, is current at the stamped commit and cites its evidence. It
   is **not** a statement that every spec row passes: the report itself
   records the trimmed ±0.5% line as measured unmet (3σ ≈ 2.4%), the PSRR
-  row as not met on current evidence (the post-layout grid that cleared it
-  by 0.0013 dB predates the current extraction), and five stale records:
-  two pre-trim-DUT records waived in
-  `sim/evidence-freshness-waivers.json`, plus three post-layout benches
-  disclosed against the pre-#557 extraction. Whether the
-  block conforms to its spec is item 5's question, and item 5 stays unmet.
+  row as not met on current evidence — and, since #629, machine-graded: the
+  schematic grid's own report reads 44/45 PASS, its bcs/125 °C/3.63 V
+  corner at 59.685 dB below the > 60 dB bound (design issue #631), while
+  the post-layout grid that cleared it by 0.0013 dB predates the current
+  extraction — and six stale records: two pre-trim-DUT PEX records waived
+  under #275 in `sim/evidence-freshness-waivers.json`, three post-layout
+  benches disclosed against the pre-#557 extraction (the PSRR-PEX and
+  Zout-PEX grids, the startup trip-point sweep), and the pre-trim
+  solver-aids A/B record, disclosed as run on the pre-trim core (2
+  corners). Whether the block conforms to its spec is item 5's question,
+  and item 5 stays unmet.
   **The pin binds the report, not the envelope**: the grader re-hashes the
   report file, so editing the report without regenerating the envelope and
   this manifest's pin fails `check_signoff_manifest.py` (the exact-bytes
   freshness is tested, not assumed). The pin alone would not notice the
   report's *dependencies* moving while its bytes stay put, so since #315 the
   report also carries a machine-readable dependency inventory,
-  [`dependencies.json`](../measurements/2026-11-18-characterization-report/dependencies.json),
+  [`dependencies.json`](../measurements/2026-11-22-item5-limits-characterization-report/dependencies.json),
   checked by `.github/scripts/check_report_dependencies.py` (see "Item-8
   dependency drift" below): a change to an audited DUT netlist, a spec-table
   bound, a quoted decision-record status, or a newer record in a summarized
   experiment now fails CI even though the pin still matches (#303 is the
-  change expected to trigger it). The six earlier reports
+  change expected to trigger it). The eight earlier reports
   (`2026-09-characterization-report/`, `2026-10-characterization-report/`,
   `2026-11-characterization-report/`, `2026-11-04-characterization-report/`,
   `2026-11-13-characterization-report/`,
-  `2026-11-16-characterization-report/`)
-  are superseded and kept as history; none is required to track newer inputs.
+  `2026-11-16-characterization-report/`,
+  `2026-11-18-characterization-report/`,
+  `2026-11-18-klu-retime-characterization-report/`)
+  are superseded and kept as history; none is required to track newer
+  inputs. The list is self-maintaining by rule — every
+  `measurements/*characterization-report/` directory except the one
+  `evidence["8"]` pins is superseded history — so a rotation moves the
+  links, the audited commit and the narrative to the incoming report and
+  adds the outgoing one to the list;
+  `check_report_dependencies.py` fails CI when the item-8 bullet names or
+  links anything but the actively pinned report.
 
 Items deliberately left **uncited** (they render `unmet` / `no_evidence`,
 which is the honest machine-readable gap — repo evidence exists for several
@@ -382,6 +398,15 @@ records:
   passes, provided its `disclosure` phrase appears in the report and its
   `waiver_issue` (if any) matches a live waiver. Experiments not listed are
   not looked at.
+
+The checker also follows the pin into **this README's own item-8 bullet**
+(#647, the rotation the 2026-11-22 report exposed): the bullet must name
+the actively cited `envelope.json` path, every markdown link into
+`measurements/` inside it must resolve inside the actively cited report's
+directory (superseded reports stay backticked names, never links), and it
+must link the active report's `README.md` and `dependencies.json` — so the
+next rotation cannot move the manifest pin while the heading, the links or
+both keep describing the superseded report.
 
 Every path must be repository-relative and stay inside the repository;
 missing, malformed or changed inputs fail with the row or experiment they

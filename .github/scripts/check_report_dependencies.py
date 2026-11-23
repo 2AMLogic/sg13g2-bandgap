@@ -56,6 +56,16 @@ What the inventory records, and what is checked against it:
    Experiments not listed are not looked at: a new record elsewhere in
    `sim/` does not force a new report.
 
+The manifest README. When a `README.md` sits beside the block manifest, its
+hand-maintained item-8 bullet is checked structurally too (issue #647): the
+bullet must name the manifest's actively cited `evidence["8"]` envelope
+path, every markdown link into `measurements/` inside the bullet must
+resolve inside the actively cited report's directory (superseded reports
+are named in backticks, never linked), and the bullet must link the active
+report's `README.md` and `dependencies.json`. Links only, no prose regex:
+the narrative itself stays hand-written, but the next rotation cannot leave
+the heading, the links or both pointing at the superseded report.
+
 Every inventory path must be repository-relative and stay inside the
 repository; absolute, escaping, missing or malformed entries fail. When this
 check fails the remedy is always the same and never automatic: write a new
@@ -95,6 +105,15 @@ SCHEMA_VERSION = 1
 FRESHNESS_VALUES = {"current", "stale"}
 
 SIM_WAIVER_FILE = "sim/evidence-freshness-waivers.json"
+
+#: The hand-maintained citation prose beside the block manifests, when present.
+MANIFEST_README_NAME = "README.md"
+
+#: A `- **Item 8 ...**` bullet heading in the manifest README.
+_ITEM8_BULLET_RE = re.compile(r"^\s*-\s*\*\*Item 8\b")
+
+#: A markdown link `[label](target)`.
+_MARKDOWN_LINK_RE = re.compile(r"\[([^\]]*)\]\(\s*([^)\s]+)\s*\)")
 
 _SEPARATOR_CELL_RE = re.compile(r"^:?-{3,}:?$")
 _STATUS_RE = re.compile(r"^\s*-\s*\*\*Status\*\*\s*:\s*([A-Za-z-]+)", re.MULTILINE)
@@ -193,6 +212,119 @@ def load_sim_waivers(root: Path) -> dict[str, list[dict]]:
         if isinstance(entry, dict) and isinstance(entry.get("report"), str):
             by_record.setdefault(entry["report"], []).append(entry)
     return by_record
+
+
+def item8_bullet(text: str) -> "list[str] | None":
+    """The `- **Item 8 ...` bullet: its heading line plus indented continuations.
+
+    None when the README carries no such bullet. A blank line or a
+    non-indented line ends the bullet.
+    """
+    lines = text.splitlines()
+    start = next(
+        (i for i, line in enumerate(lines) if _ITEM8_BULLET_RE.match(line)), None
+    )
+    if start is None:
+        return None
+    bullet = [lines[start]]
+    for line in lines[start + 1:]:
+        if not (line.startswith(" ") or line.startswith("\t")):
+            break
+        bullet.append(line)
+    return bullet
+
+
+def check_readme_item8(root: Path, readme_path: Path, envelope_rel: str,
+                       report: Report) -> None:
+    """Check one manifest README's item-8 bullet against its manifest's pin.
+
+    Issue #647: the README beside the block manifest hand-maintains the
+    item-8 prose, so a rotation that moves the manifest pin can leave the
+    heading, the links and the narrative pointing at the superseded report.
+    Checked structurally, never by prose regex: the bullet must name the
+    actively cited `envelope.json` path, every markdown link into
+    `measurements/` inside the bullet must resolve inside the actively
+    cited report's directory (superseded reports stay backticked names,
+    never links), and the bullet must link the active report's `README.md`
+    and `dependencies.json`.
+    """
+    where = str(readme_path.relative_to(root))
+    bullet = item8_bullet(readme_path.read_text(encoding="utf-8"))
+    if bullet is None:
+        report.problem(
+            f"{where}: README ITEM-8 DRIFT — no '- **Item 8' bullet found; the "
+            "README beside the manifest hand-maintains the item-8 citation prose "
+            "and must carry the bullet"
+        )
+        return
+    problems_before = len(report.problems)
+    bullet_text = "\n".join(bullet)
+    env_dir = envelope_rel.rsplit("/", 1)[0] if "/" in envelope_rel else ""
+    if envelope_rel not in bullet_text:
+        report.problem(
+            f"{where}: README ITEM-8 DRIFT — the item-8 bullet does not name the "
+            f"actively cited envelope {envelope_rel}; a rotation must move the "
+            "bullet with the manifest pin"
+        )
+    linked: set[str] = set()
+    for label, target in _MARKDOWN_LINK_RE.findall(bullet_text):
+        if target.startswith(("#", "http:", "https:", "mailto:")):
+            continue
+        resolved = (readme_path.parent / target.split("#")[0]).resolve()
+        try:
+            rel = resolved.relative_to(root.resolve()).as_posix()
+        except ValueError:
+            continue  # outside the repository: the dangling-links check owns it
+        if not rel.startswith("measurements/"):
+            continue
+        if env_dir and (rel == env_dir or rel.startswith(env_dir + "/")):
+            linked.add(rel[len(env_dir):].lstrip("/"))
+        else:
+            report.problem(
+                f"{where}: README ITEM-8 DRIFT — link [{label}]({target}) leaves "
+                f"the actively cited report {env_dir}/; superseded reports are "
+                "named in backticks, never linked"
+            )
+    for required in ("README.md", INVENTORY_NAME):
+        if not any(name == required for name in linked):
+            report.problem(
+                f"{where}: README ITEM-8 DRIFT — the item-8 bullet does not link "
+                f"the actively cited report's {required}"
+            )
+    if len(report.problems) == problems_before:
+        report.checked += 1
+
+
+def check_manifest_readmes(root: Path, manifest_paths: list[Path],
+                           report: Report) -> None:
+    """Check every manifest README's item-8 bullet against its manifest's pin.
+
+    Skipped cleanly when no `README.md` sits beside the manifests, so repos
+    (and self-test fixtures) that hand-maintain none are unaffected.
+    """
+    seen: set[tuple[Path, str]] = set()
+    for manifest_path in manifest_paths:
+        readme_path = manifest_path.parent / MANIFEST_README_NAME
+        if not readme_path.is_file():
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue  # cited_envelopes() already reported the unreadable manifest
+        entry = (manifest.get("evidence") or {}).get(ITEM_ID) \
+            if isinstance(manifest, dict) else None
+        if entry is None:
+            continue
+        for citation in entry if isinstance(entry, list) else [entry]:
+            rel = citation if isinstance(citation, str) else \
+                (citation.get("file") if isinstance(citation, dict) else None)
+            if not isinstance(rel, str) or not rel.strip():
+                continue  # malformed citation: cited_envelopes() reports it
+            key = (readme_path.resolve(), rel)
+            if key in seen:
+                continue
+            seen.add(key)
+            check_readme_item8(root, readme_path, rel, report)
 
 
 def check_inventory(root: Path, inv_path: Path, report_path: Path,
@@ -486,6 +618,8 @@ def main(argv: list[str] | None = None) -> int:
             continue
         check_inventory(root, inv_path, report_path, recorded_hash, report)
         report.note(f"{inv_path.relative_to(root)}: checked (actively cited for item {ITEM_ID})")
+
+    check_manifest_readmes(root, manifest_paths, report)
 
     for other in sorted((root / "measurements").glob(f"*/{INVENTORY_NAME}")):
         if other.resolve() not in active_inventories:
