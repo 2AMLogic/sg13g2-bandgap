@@ -92,6 +92,16 @@ INVENTORY_NAME = "dependencies.json"
 
 SCHEMA_VERSION = 1
 
+#: A record whose top-level `- **Variant**: ...` field is present describes a
+#: proposal variant, not the as-built DUT. It is evidence in its own right but
+#: never supersedes the as-built record an active report cites, so the
+#: NEWER RECORD freshness comparison skips it. Keyed off this field, not Claim prose.
+VARIANT_FIELD_RE = re.compile(r"^- \*\*Variant\*\*:\s*\S", re.MULTILINE)
+
+
+def is_variant_record(record_md: Path) -> bool:
+    return bool(VARIANT_FIELD_RE.search(record_md.read_text(encoding="utf-8")))
+
 FRESHNESS_VALUES = {"current", "stale"}
 
 SIM_WAIVER_FILE = "sim/evidence-freshness-waivers.json"
@@ -370,7 +380,8 @@ def check_inventory(root: Path, inv_path: Path, report_path: Path,
         if not (records_dir / f"{selected}.md").is_file():
             report.problem(f"{w}: MISSING DEPENDENCY — selected record {selected}.md does not exist")
             continue
-        newest = sorted(records_dir.glob("*.md"))[-1].stem
+        as_built = [p for p in records_dir.glob("*.md") if not is_variant_record(p)]
+        newest = sorted(as_built)[-1].stem if as_built else selected
         if newest != selected:
             report.problem(
                 f"{w}: NEWER RECORD — {newest} now supersedes the selected record "
