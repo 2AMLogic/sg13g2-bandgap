@@ -1,0 +1,41 @@
+{
+  "confidence": 0.95,
+  "target_ci_halfwidth": 0.01,
+  "measurements": {
+    "nominal": {
+      "min": 0.882,
+      "max": 1.218,
+      "target_sigma": 3,
+      "min_converged_samples": 300,
+      "spec_row": "output-reference-untrimmed"
+    },
+    "bcs_n40": {
+      "min": 0.882,
+      "max": 1.218,
+      "target_sigma": 3,
+      "min_converged_samples": 300,
+      "spec_row": "output-reference-untrimmed"
+    },
+    "bcs_125": {
+      "min": 0.882,
+      "max": 1.218,
+      "target_sigma": 3,
+      "min_converged_samples": 300,
+      "spec_row": "output-reference-untrimmed"
+    },
+    "wcs_n40": {
+      "min": 0.882,
+      "max": 1.218,
+      "target_sigma": 3,
+      "min_converged_samples": 300,
+      "spec_row": "output-reference-untrimmed"
+    },
+    "wcs_125": {
+      "min": 0.882,
+      "max": 1.218,
+      "target_sigma": 3,
+      "min_converged_samples": 300,
+      "spec_row": "output-reference-untrimmed"
+    }
+  }
+}

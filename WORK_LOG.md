@@ -10,6 +10,17 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-22
+
+- **PR #637**: fix: draw pnpMPA base-ring contacts by widening the wall to 0.30 um
+- **Issue #633** (closed): sg13cmos5l-bandgap_top: pnpMPA base rings carry zero contacts (draw_pnpmpa cont_array underflow at w=1u l=2u) — the base tie does not exist as drawn
+
+### 2026-11-21
+
+- **PR #636**: Mint klt yield evidence for the untrimmed Output-reference MC line (T1 item 6)
+- **Issue #630** (closed): T1 item 6 (Monte Carlo): produce and cite a klt yield report for the untrimmed Output-reference line, with a real negative control and the statistical row set declared
+- **Issue #628** (closed): Rebase PR #383 (runset recognition layers, #380 + #387) onto current main: resolve 38 conflicts, regenerate layout, re-mint evidence, re-run the three PEX benches
+
 ### 2026-11-19
 
 - **PR #596**: docs: document merge-time staleness hazard for layout evidence
@@ -419,25 +430,4 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 - **Issue #246** (closed): loom:blocked silently lost on issue #4 across claim/settle cycles
 - **Issue #243** (closed): sg13cmos5l-bandgap_core: R2's e2 drop (x=58) lands in free field, disjoint from the Q2 emitter trunk (x=123.6..165.9) — the e2 net is split as drawn
 - **Issue #240** (closed): Zero out the 12 erc.missing_tie findings on sg13cmos5l-bandgap_top (2 floating MOS wells + 10 marker-less pnpMPA base rings)
-
-### 2026-09-22
-
-- **PR #238**: chore: add reuse.lock.json in_tree entry for bandgap_amp (evaluate)
-- **PR #239**: feat: register T1 item 11 compound ERC+LVS citation in the signoff manifest
-- **PR #241**: feat: declare checked nwell tie in erc-supply-spec under upgraded klt
-- **Issue #235** (closed): 2am: reuse rule 9 — in-tree bandgap amplifier duplicates sibling canary sg13g2-opamp — add reuse.lock.json in_tree entry (evaluate), then adopt or record
-- **Issue #233** (closed): Declare a checked klt erc tie on an upgraded klt (completes item 11's missing_tie half, follows up #225)
-
-### 2026-09-21
-
-- **PR #227**: docs: add aggregated per-spec-row characterization report under measurements/
-- **PR #228**: spec: renumber duplicate 0007 to 0009, resolve DR-0001/0002 statuses, add CI duplicate-number check
-- **PR #232**: feat: grade T1 state mechanically via klt signoff block manifest
-- **PR #234**: feat: add ERC supply spec + report for sg13cmos5l-bandgap_top
-- **PR #236**: feat: add committed box-method TC testbenches (schematic + PEX) on the 8-point grid
-- **Issue #226** (closed): Commit a klt signoff block manifest so this block's T1 state is graded, not hand-read
-- **Issue #225** (closed): T1 item 11 (power delivery, structural): no klt erc supply spec or report in this repo
-- **Issue #223** (closed): spec: duplicate decision-record number 0007 on main, and DR-0001/DR-0002 left 'proposed' after the table they feed was ratified
-- **Issue #222** (closed): sim: commit a box-method TC testbench (endpoint method understates TC post-retune; box worst corner ~20.2 ppm/°C vs the < 20 stretch)
-- **Issue #15** (closed): Publish an aggregated characterization report under measurements/
 

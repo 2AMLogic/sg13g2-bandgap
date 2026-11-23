@@ -108,24 +108,22 @@ TC_ppm_per_C = 1e6 * (vref(125C) - vref(-40C)) / (165 * vref(27C))
 to convert an absolute V/°C slope into the relative ppm/°C figure
 `spec/porting-plan.md` §6's own draft target row uses.)
 
-**It does not claim conformance to any ratified spec row.**
-`spec/porting-plan.md` §6 is still a **draft, unratified** table (#125) — per
-`klayout-tools`' `docs/design-evidence-tiers.md` T1 checklist (referenced
-from issue #4), no checklist item on #4 closes from this record alone, and
-this README does not compare
-its own numbers against that draft table's `< 50 ppm/°C` TC target as a
-pass/fail bar. It reports what the endpoint-method computation finds
-(**~349-376 ppm/°C** across this run's 15 corner/supply groups — see
-`records/<record-id>-tc.csv` for the full table) as **evidence**, not a
-verdict. That number is not a surprise given `design/README.md`'s own
-explicit scope cut: **no trim network exists in this design yet**
-("Neither sibling repo's first-pass core had one either" —
-`design/README.md`'s "Explicitly out of scope" section for issue #9), and
-an untrimmed VBE-based bandgap reference's TC is expected to be in the
-hundreds-of-ppm/°C range without one. This experiment is the capability to
-re-check that number the moment a trim network and a ratified spec row both
-exist — it is not, by itself, a claim that the design meets or misses any
-target.
+**Since issue #629 the nominal row is claimed — graded by the run itself.**
+The spec table is ratified (`spec/decision-records/0007`, re-cast by
+`0011`), and the request template now carries the Output-reference nominal
+row's deterministic bound as a limit on `vref_3ms_v` ([0.882, 1.218] V —
+the ±16 % window of the 1.050 V nominal, `spec_row
+output-reference-nominal`), so the run's own report grades it and the
+committed `records/<record-id>-report.json` is the citable T1 item-5
+envelope (currently passing 45/45). The **endpoint-method TC companion
+stays informal**: the ratified TC row (`< 50 ppm/°C`) is a box-method
+figure this bench does not measure — see
+[`../closed-loop-vref-pvt-boxtc/`](../closed-loop-vref-pvt-boxtc/README.md)
+and the gap declaration in `manifests/sg13g2-bandgap.json`
+(klayout-tools#7184). The endpoint computation finds **~349-376 ppm/°C**
+across this run's 15 corner/supply groups (see
+`records/<record-id>-tc.csv`) — reported as evidence, not a verdict
+against the box-method row.
 
 It also does not claim anything about loop stability/phase margin (see
 [`../loop-gain-phase-margin/`](../loop-gain-phase-margin/README.md) for

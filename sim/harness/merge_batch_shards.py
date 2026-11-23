@@ -200,6 +200,182 @@ def check_grid(identities: list[str], expected: list[str], where: str) -> tuple[
     return problems, missing, unexpected
 
 
+#: Status tokens a per-corner measurement entry can carry (klt sim's response
+#: contract), in :func:`_aggregate_status`'s precedence order. ``inconclusive``
+#: is substituted from a distrusted corner wholesale (klt issue #2492/#2493's
+#: rule -- see ``_aggregate_measurement_status`` in klt's sim.py, which this
+#: mirrors); ``not_reached``/``absent`` only aggregate when every entry is one.
+_AGG_ERROR = "error"
+_AGG_INCONCLUSIVE = "inconclusive"
+_AGG_FAIL = "fail"
+_AGG_NOT_REACHED = "not_reached"
+_AGG_ABSENT = "absent"
+
+_ROLLUP_META_KEYS = ("unit", "limits", "spec_row")
+
+
+def _aggregate_status(entries: list[tuple[dict, dict]]) -> str:
+    """One measurement's aggregate status across every merged corner that
+    reported it, by klt sim's own rule: ``error > inconclusive > fail >
+    pass``, all-``not_reached`` / all-``absent`` kept as such, and a
+    distrusted (``inconclusive``) corner's verdict pulled down onto its
+    measurements. Mirrors ``_aggregate_measurement_status`` in klt's sim.py
+    so a merged report is graded by exactly the rule a single request is.
+    """
+    statuses = {
+        (
+            _AGG_INCONCLUSIVE
+            if corner.get("status") == _AGG_INCONCLUSIVE
+            else str(m.get("status"))
+        )
+        for corner, m in entries
+    }
+    for token in (_AGG_ERROR, _AGG_INCONCLUSIVE, _AGG_FAIL):
+        if token in statuses:
+            return token
+    if statuses == {_AGG_NOT_REACHED}:
+        return _AGG_NOT_REACHED
+    if statuses == {_AGG_ABSENT}:
+        return _AGG_ABSENT
+    return "pass"
+
+
+def declared_measurements(reports: list[dict]) -> list[dict] | None:
+    """The request-declared measurement metadata every shard rollup agrees
+    on (``name``/``unit``/``limits``/``spec_row``), or ``None`` when no shard
+    carries a rollup. All shards run the same request template, so a
+    disagreement is a merge anomaly and aborts the merge: a grid envelope
+    must not mix two declarations."""
+    specs: list[list[dict]] = []
+    for report in reports:
+        rollup = report.get("measurements")
+        specs.append(rollup if isinstance(rollup, list) else [])
+    if not any(specs):
+        return None
+    problems: list[str] = []
+    if not all(specs):
+        problems.append(
+            "some shard rollups carry a measurements[] block and others do not"
+        )
+        raise ShardError(problems)
+    first: list[dict] = []
+    for spec in specs[0]:
+        if not isinstance(spec, dict) or not isinstance(spec.get("name"), str):
+            continue
+        first.append(spec)
+    base = {s.get("name"): tuple(s.get(k) for k in _ROLLUP_META_KEYS) for s in first}
+    for spec in specs[1:]:
+        other = {
+            s.get("name"): tuple(s.get(k) for k in _ROLLUP_META_KEYS)
+            for s in spec
+            if isinstance(s, dict)
+        }
+        if other != base:
+            problems.append(
+                "shard rollups disagree on the declared measurements (same request "
+                "template must declare the same names/units/limits/spec_row)"
+            )
+            break
+    if problems:
+        raise ShardError(problems)
+    return first
+
+
+def rebuild_measurements_rollup(merged: dict, declared: list[dict]) -> None:
+    """Re-aggregate the request-declared ``measurements[]`` rollup and the
+    ``coverage`` block across **every** merged corner.
+
+    The deep-copied first shard's rollup describes only its own corners; a
+    grid envelope cited for T1 item 5 (issue #629) must aggregate over the
+    whole grid -- status by klt's own precedence rule, ``worst_case`` the
+    minimum-margin corner -- and its ``coverage`` must count the grid, not
+    one shard. Values, statuses and margins are the shards' own; only the
+    aggregation is rebuilt here, by the rule klt applies to one request.
+    """
+    corners = merged.get("corners") or []
+    rollup: list[dict] = []
+    checked: list[str] = []
+    reported_any = False
+    for spec in declared:
+        name = spec.get("name")
+        entries: list[tuple[dict, dict]] = []
+        for corner in corners:
+            for m in corner.get("measurements") or []:
+                if isinstance(m, dict) and m.get("name") == name:
+                    entries.append((corner, m))
+                    break
+        if entries:
+            reported_any = True
+        worst: dict | None = None
+        worst_margin = None
+        for corner, m in entries:
+            if m.get("status") == _AGG_ABSENT:
+                continue
+            margin = m.get("margin")
+            sort_key = margin if isinstance(margin, (int, float)) else float("-inf")
+            if worst is None or sort_key < worst_margin:
+                worst_margin = sort_key
+                worst = {
+                    "corner_id": corner.get("corner_id"),
+                    "value": m.get("value"),
+                    "margin": margin,
+                }
+        entry = {
+            "name": name,
+            "unit": spec.get("unit"),
+            "limits": spec.get("limits"),
+            "status": _aggregate_status(entries) if entries else _AGG_ABSENT,
+            "worst_case": worst,
+        }
+        if spec.get("spec_row") is not None:
+            entry["spec_row"] = spec["spec_row"]
+        rollup.append(entry)
+        limits = spec.get("limits")
+        if isinstance(limits, dict):
+            for index, corner in enumerate(corners):
+                for bound in sorted(limits):
+                    checked.append(
+                        f'limit:[{index}, "{corner.get("corner_id")}", "{name}", "{bound}"]'
+                    )
+    with_limits = sum(
+        1 for spec in declared if isinstance(spec.get("limits"), dict) and spec["limits"]
+    )
+    merged["measurements"] = rollup
+    merged["coverage"] = {
+        "corners_simulated": len(corners),
+        "measurements_declared": len(declared),
+        "measurements_with_limits": with_limits,
+        "unrecognized_limit_keys": [],
+        "schema_version": 1,
+        "known": True,
+        "checked": checked,
+        "skipped": [],
+        "inapplicable": [],
+        "unknown": [],
+        "nothing_checked": not reported_any,
+        "nothing_checked_reasons": [] if reported_any else ["no declared measurement reported a value"],
+    }
+
+
+def refresh_rollup(report: dict) -> None:
+    """Re-aggregate an already-merged report's rollup from its corners.
+
+    The merge builds the rollup before the bench enrichers run, and they
+    legitimately mutate corners afterwards: they rewrite ``/novdd/`` corner
+    ids once the baked supply is injected and re-grade verdicts with the
+    closed-loop criteria. The committed report (issue #629) must carry a
+    rollup consistent with the corners it ships, so the adapter re-derives
+    it from the declared metadata the merge already left in
+    ``report["measurements"]`` -- same rule, same fields, no new inputs.
+    """
+    declared = report.get("measurements")
+    if not isinstance(declared, list) or not declared:
+        return
+    specs = [s for s in declared if isinstance(s, dict) and isinstance(s.get("name"), str)]
+    if specs:
+        rebuild_measurements_rollup(report, specs)
+
+
 def merge(
     report_paths: list[str],
     expected: list[str] | None = None,
@@ -280,6 +456,9 @@ def merge(
     merged.setdefault("environment", {})
     if any_remote:
         merged["environment"]["remote"] = {"fleet": fleet}
+    declared = declared_measurements(reports)
+    if declared is not None:
+        rebuild_measurements_rollup(merged, declared)
     prov = merged.setdefault("provenance", {})
     note = (
         "merged from %d per-process batch reports (issue #278 bridge: the "

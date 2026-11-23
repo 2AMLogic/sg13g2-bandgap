@@ -156,8 +156,8 @@ so the honest per-row status is:
   row in #134 sets both the output level and the PTAT gain; at the TC-null
   ratio the measured post-layout output is 1.04309–1.05667 V across the
   45-point PVT grid, nominal point 1.05048 V — holding 1.2 V instead is the
-  measured 349–376 ppm/°C pre-retune core). The untrimmed line is set to
-  what the block's own mismatch evidence supports: **±16% (3σ)**, derived
+  measured 349–376 ppm/°C pre-retune core). Decision record 0011 set
+  the untrimmed target at **±16% (3σ)**, derived
   from the N=300 mismatch Monte Carlo (3σ/mean 13.04% at typ/27 °C,
   12.09–14.60% across corner points) plus the corner-mean offset — an
   order of magnitude wider than the gf180/sky130 ±2% lines because this
@@ -188,10 +188,12 @@ so the honest per-row status is:
   relaxed**: the ±4.5% re-cast (PR #270, closed) was declined by operator
   ruling 2026-10-08 after both ratification keys refused it, and the
   disposition is the design fix tracked in **#303** (resize the core
-  against mismatch and re-aim the trim; one-point trim only per `0014`);
-  the committed evidence also
-  still demonstrates the untrimmed ±16% line
-  (`sim/closed-loop-vref-mc/`, issue #215).
+  against mismatch and re-aim the trim, with one-point trim only per `0014`).
+  For the untrimmed line, the N=300-per-point yield report in #636 missed
+  the 3σ requirement at both 125 °C corners. The 95% lower confidence
+  bounds on sigma-to-spec were 2.8845 at `bcs` and 2.8632 at `wcs`.
+  [N=300 yield report](sim/closed-loop-vref-mc/records/20261120-231009-73ef81b4-yield-report.json)
+  · [Follow-up campaign #635](https://github.com/2AMLogic/sg13g2-bandgap/issues/635).
 
 See `0007` for full per-row evidence and the Output-reference-vs-TC trade-off,
 `0008` for what the two-key review changed about the status above, and `0011`

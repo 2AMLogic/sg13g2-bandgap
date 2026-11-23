@@ -186,8 +186,7 @@ python3 .github/scripts/check_spotcheck_outputs.py
 ### The `signoff-manifest` job
 
 Added by #226. This is the one job that *does* run `klt` — in read-only
-grading mode over committed envelope JSON (no PDK, no klayout, no evidence
-minting). It installs a **pinned** upstream
+grading mode over committed envelope JSON. It installs a **pinned** upstream
 [`klayout-tools`](https://github.com/2AMLogic/klayout-tools) PyPI release
 (`==0.8.0`; a git build reports a dev version that no longer satisfies an
 exact pin, klayout-tools#2823), prints `klt --version`, and then:
@@ -207,6 +206,9 @@ exact pin, klayout-tools#2823), prints `klt --version`, and then:
   the envelope names. `klt`'s exit 3 ("graded, not yet T1") is a valid
   verdict — the block is honestly not at T1, and this job's purpose is to
   keep that statement fresh, not to force it green.
+- **`layout/test_sg13cmos5l_pnp_contacts.py`** reads the committed CMOS5L
+  core and top GDS with the KLayout Python bindings and checks raw PNP base
+  and collector cuts for size, spacing, and active and Metal1 enclosure.
 
 Bumping the pinned rev changes the governing checklist hash, the fresh
 grade changes, and this job fails until the regenerated report is committed

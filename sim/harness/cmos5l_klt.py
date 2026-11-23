@@ -381,10 +381,6 @@ def merge_manifest(manifest: Path, request_template: Path, work: Path) -> dict:
 # --------------------------------------------------------------------------
 
 
-def _meas(corner: dict) -> dict[str, float]:
-    return epr._meas_map(corner)
-
-
 def _vdd_of(corner: dict) -> float | None:
     supplies = corner.get("supply_v") or {}
     if len(supplies) == 1:
@@ -422,16 +418,10 @@ def verdict_trip_point(m: dict[str, float], vdd: float) -> list[str]:
 def verdict_closed_loop(m: dict[str, float], vdd: float, dvsns: float) -> list[str]:
     """Failed-criterion names: `pvt_closed_loop_verdict`'s 3-criteria form
     (no settledness term -- the startup-release check is the settledness
-    claim for the closed-loop-startup* variants)."""
-    failed: list[str] = []
-    if not (m["det_final_v"] <= epr.DET_RELEASE_FRAC * vdd
-            and abs(m["i_mkfb_final_a"]) <= epr.I_MKFB_RELEASE_A):
-        failed.append("startup_not_released")
-    if dvsns > epr.DVSNS_CLOSE_V:
-        failed.append("loop_not_closed")
-    if not (epr.FB_RAIL_MARGIN_V <= m["fb_final_v"] <= vdd - epr.FB_RAIL_MARGIN_V):
-        failed.append("fb_railed")
-    return failed
+    claim for the closed-loop-startup* variants), on enrich_pvt_report's
+    shared check and constants."""
+    return epr.closed_loop_verdict_failures(
+        m["det_final_v"], m["i_mkfb_final_a"], dvsns, m["fb_final_v"], vdd)
 
 
 REQUIRED_FOR_VERDICT = {
@@ -460,7 +450,7 @@ def enrich(report: dict, kind: str, cwd: Path | None = None) -> dict:
             epr.inject_baked_supply(corner, cwd)
         if corner.get("status") != "pass":
             continue
-        got = _meas(corner)
+        got = epr._meas_map(corner)
         needed = REQUIRED_FOR_VERDICT[kind]
         absent = [k for k in needed if k not in got]
         if absent:
@@ -484,13 +474,7 @@ def enrich(report: dict, kind: str, cwd: Path | None = None) -> dict:
             failed = []
         if failed:
             _fail(corner, f"{kind.replace('-', '_')}_verdict", "; ".join(failed))
-    report["corners"] = corners
-    report["passed"] = sum(1 for c in corners if c.get("status") == "pass")
-    report["failed"] = sum(1 for c in corners if c.get("status") == "fail")
-    report["errored"] = sum(1 for c in corners if c.get("status") == "error")
-    report["corner_count"] = len(corners)
-    report["status"] = "fail" if report["failed"] else ("error" if report["errored"] else "pass")
-    return report
+    return epr.recount_report(report, corners)
 
 
 def augment_spec(spec: dict, msense_w: str | None) -> dict:

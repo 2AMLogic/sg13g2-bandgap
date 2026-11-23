@@ -3,7 +3,7 @@
 Current repository work state, generated from GitHub labels by the Guide role.
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-20T19:08:32Z (snapshot; compare against live labels)_
+_Generated: 2026-11-22T05:39:36Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -14,7 +14,7 @@ _None._
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-- **#628**: Rebase PR #383 (runset recognition layers, #380 + #387) onto current main: resolve 38 conflicts, regenerate layout, re-mint evidence, re-run the three PEX benches
+_None._
 
 ## Important
 
@@ -23,15 +23,14 @@ _None._
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
 - **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(held)*
 - **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(held)*
+- **#629**: T1 item 5 (corner verification): cite the klt sim corner-matrix envelopes per spec row and declare the row set, so the item grades on evidence instead of no_evidence *(held)*
+- **#635**: Untrimmed MC 3-sigma gate fails at the 125 C corners (sigma LB 2.8845 / 2.8632 vs 3): size and run the follow-up campaign
 
 ## Ready
 
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-- **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
-- **#628**: Rebase PR #383 (runset recognition layers, #380 + #387) onto current main: resolve 38 conflicts, regenerate layout, re-mint evidence, re-run the three PEX benches
-- **#629**: T1 item 5 (corner verification): cite the klt sim corner-matrix envelopes per spec row and declare the row set, so the item grades on evidence instead of no_evidence
-- **#630**: T1 item 6 (Monte Carlo): produce and cite a klt yield report for the untrimmed Output-reference line, with a real negative control and the statistical row set declared
+- **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6) *(implementation PR #435 is on operator hold)*
 
 ## In Progress
 
@@ -39,12 +38,13 @@ Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
 - **#631**: design: PSRR @ DC misses the > 60 dB row at bcs/125 C/3.63 V (59.685 dB schematic); attribute the limit and propose a bounded fix
+- **#635**: Untrimmed MC 3-sigma gate fails at the 125 C corners (sigma LB 2.8845 / 2.8632 vs 3): size and run the follow-up campaign
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#639**: sim(psrr): attribute the DC-PSRR miss at bcs/125C/3.63V and grid-verify the p12-w2 input-pair candidate (45/45 above 60 dB)
 
 ## Approved (Awaiting Merge)
 
@@ -65,10 +65,9 @@ Issues carrying `loom:curated`.
 - **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)* *(held)*
 - **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(curated)* *(held)*
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)* *(held)*
-- **#628**: Rebase PR #383 (runset recognition layers, #380 + #387) onto current main: resolve 38 conflicts, regenerate layout, re-mint evidence, re-run the three PEX benches *(curated)*
-- **#629**: T1 item 5 (corner verification): cite the klt sim corner-matrix envelopes per spec row and declare the row set, so the item grades on evidence instead of no_evidence *(curated)*
-- **#630**: T1 item 6 (Monte Carlo): produce and cite a klt yield report for the untrimmed Output-reference line, with a real negative control and the statistical row set declared *(curated)*
+- **#629**: T1 item 5 (corner verification): cite the klt sim corner-matrix envelopes per spec row and declare the row set, so the item grades on evidence instead of no_evidence *(curated)* *(held)*
 - **#631**: design: PSRR @ DC misses the > 60 dB row at bcs/125 C/3.63 V (59.685 dB schematic); attribute the limit and propose a bounded fix *(curated)*
+- **#635**: Untrimmed MC 3-sigma gate fails at the 125 C corners (sigma LB 2.8845 / 2.8632 vs 3): size and run the follow-up campaign *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -84,13 +83,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Very important | 1 |
-| Important | 3 |
-| Ready (`loom:issue`, net of holds/building/merge-pending) | 4 |
-| In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 0 |
+| Very important | 0 |
+| Important | 5 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
+| In Progress (`loom:building`) | 3 |
+| PRs awaiting review | 1 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 13 |
+| Curated | 12 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

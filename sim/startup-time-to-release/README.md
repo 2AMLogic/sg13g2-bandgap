@@ -6,11 +6,18 @@ a ratified spec"). PR #128's EE-key review (the still-open spec-ratification
 PR, #125) found that while `closed-loop-startup`, `closed-loop-vref-pvt` and
 `closed-loop-iq` all prove the assembled block self-starts and settles across
 the full PVT grid, **no committed testbench in this tree reports an explicit
-time-to-release figure** to compare directly against the draft
-"Startup: self-starting, < 1 ms" spec row (`spec/porting-plan.md` §6, still
-unratified — #125) — every prior testbench only checks the release criteria
+time-to-release figure** to compare directly against the
+"Startup: self-starting, < 1 ms" spec row (since ratified,
+`spec/decision-records/0007`) — every prior testbench only checks the release
+criteria
 at one or two fixed checkpoints (`t=20us`/`t=2ms`), never asks "how fast".
-This experiment is that missing measurement.
+This experiment is that missing measurement — and since issue #629 it is the
+Startup row's T1 item-5 citation: the request carries the mkfb release
+criterion at the spec's own 1 ms deadline as a limit on `i_mkfb_1000u_a`
+(±50 nA, `spec_row startup`), so the run's own report anchors the < 1 ms
+bound and the committed `records/<record-id>-report.json` is the citable
+envelope (currently passing 45/45, worst 0.183 nA at bcs/125 °C/3.63 V,
+every corner released by the first 100 µs checkpoint).
 
 ## Trim-bearing DUT refresh (issue #264)
 

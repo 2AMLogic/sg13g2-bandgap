@@ -67,6 +67,19 @@ netlist** (waived, #273) |
 | Iq | `sim/iq/records/{IQ_REC}.csv` | Current |
 """
 
+MANIFESTS_README = f"""# fixture manifest README
+
+Intro prose, one paragraph.
+
+- **Item 8 (Characterization report) — cited: `{REPORT_DIR}/envelope.json`**
+  The report is
+  [`{REPORT_DIR}/README.md`](../{REPORT_DIR}/README.md), stamped at the
+  audited commit `abcdef0`; its dependency inventory is
+  [`dependencies.json`](../{REPORT_DIR}/dependencies.json). The earlier
+  `{OLD_REPORT_DIR}/` is superseded history and stays a backticked name,
+  never a link.
+"""
+
 DR_TEXT = "# 0007: Ratification\n\n- **Status**: ratified\n- **Date**: 2026-09-15\n"
 
 
@@ -388,6 +401,32 @@ def main() -> int:
             print("       stdout:", proc.stdout.strip()[:600])
             print("       stderr:", proc.stderr.strip()[:600])
         failures += not ok
+
+    # ---- the manifest README's item-8 bullet (issue #647) ----
+    def with_readme(text: str):
+        return lambda t: write(t, "manifests/README.md", text)
+
+    case("case 28: a matching item-8 bullet in the manifest README passes "
+         "(backticked superseded names do not false-positive)",
+         passes=True, fragment="OK:",
+         mutate=with_readme(MANIFESTS_README))
+    case("case 29: a stale heading envelope in the README bullet fails",
+         passes=False, fragment="does not name the actively cited envelope",
+         mutate=with_readme(MANIFESTS_README.replace(
+             f"`{REPORT_DIR}/envelope.json`", f"`{OLD_REPORT_DIR}/envelope.json`")))
+    case("case 30: a body link to a superseded report fails",
+         passes=False, fragment="leaves the actively cited report",
+         mutate=with_readme(MANIFESTS_README.replace(
+             f"[`{REPORT_DIR}/README.md`](../{REPORT_DIR}/README.md)",
+             f"[`{OLD_REPORT_DIR}/README.md`](../{OLD_REPORT_DIR}/README.md)")))
+    case("case 31: a bullet that does not link dependencies.json fails",
+         passes=False,
+         fragment="does not link the actively cited report's dependencies.json",
+         mutate=with_readme(MANIFESTS_README.replace(
+             f" [`dependencies.json`](../{REPORT_DIR}/dependencies.json).", "")))
+    case("case 32: a manifest README without an item-8 bullet fails",
+         passes=False, fragment="no '- **Item 8' bullet",
+         mutate=with_readme("# fixture manifest README\n\nOnly intro prose.\n"))
 
     if failures:
         print(f"\n{failures} case(s) failed", file=sys.stderr)

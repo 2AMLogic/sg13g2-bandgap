@@ -14,11 +14,19 @@ that produced it.
 - `sg13g2-bandgap.signoff.json` — the committed **verdict of record**: the
   exact output of `klt signoff --manifest manifests/sg13g2-bandgap.json
   --format json`.
-  As of the commit that last regenerated it (#572's Metal1 base-contact
-  landing re-mint, on post-#579 main): **tier: none — 5/11 T1
-  items met** (items 1, 2, 3, 8, 10; read the count from the report's
-  `t1_met_count`, not from this sentence). That is the honest state; an
-  all-`unmet` manifest is a correct result, and nothing here inflates it.
+  As of the commit that last regenerated it (#629's item-5 corner-verification
+  citations): **tier: none — 5/11 T1 items met** (items 1, 2, 3, 8, 10; read
+  the count from the report's `t1_met_count`, not from this sentence). That
+  is the honest state; an all-`unmet` manifest is a correct result, and
+  nothing here inflates it. Item 6 moved from `unmet`/`no_evidence` to
+  `unmet`/`check_failed` — the honest grade of a yield report whose two
+  125 °C points miss their 3σ lower-bound gate (see the item 6 entry below).
+  Item 5 moved the same way (#629): from `unmet`/`no_evidence` to
+  `unmet`/`check_failed` — four `klt sim` grid envelopes now grade the
+  corner-swept rows at their ratified bounds, and one of them (PSRR @ DC,
+  59.685 dB against > 60 dB at bcs/125 °C/3.63 V, design issue #631) fails
+  honestly; the signoff report now distinguishes a measured failure from a
+  missing measurement.
 - `artifacts/` — **stored-run manifests** (issue #379, DR-0015): one
   `<bench>-<run-id>.manifest.json` per new `klt sim` run, naming the run's raw
   logs and netlist snapshots in the fleet artifact store by sha256. See
@@ -131,6 +139,91 @@ The binding used here:
   `provenance.input` block (upstream JSON contract) — its freshness is
   enforced by `check_evidence_formats.py`'s layout-report staleness gate
   instead, which re-derives every committed report's input hashes.
+- **Item 5 (PVT corners) — cited as four `klt sim` grid envelopes, one per
+  expressible spec row** (issue #629): the committed run reports
+  `records/<id>-report.json` of `sim/closed-loop-vref-pvt`
+  (`20261122-181757-c5b84561`), `sim/closed-loop-psrr`
+  (`20261122-182058-1d0308ad`), `sim/closed-loop-iq`
+  (`20261122-181711-c5b84561`) and `sim/startup-time-to-release`
+  (`20261122-183926-90e8e4dd`), each carrying its row's ratified bound as a
+  request-level `limits` on the measurement that measures it (with a
+  `spec_row` tag), so the run's own report grades the row — the envelope's
+  `measurements[]` rollup records status, limits and the binding
+  `worst_case` corner, and `spec_rows["5"]` declares the full row set.
+  Grades `unmet` / `check_failed`, honestly: the PSRR envelope **fails** at
+  its binding corner — `psrr_dc_lin` 0.00103694 V (59.685 dB) against
+  `max` 1e-3 (> 60 dB) at bcs / 125 °C / 3.63 V, matching the 2026-11-13
+  grid to the digit; the failing row names design issue **#631**. The other
+  three rows pass with machine-**derived** coverage (`row_sources`):
+  `output-reference-nominal` (settled `vref_3ms_v` ∈ [0.882, 1.218] V at
+  every corner — the ±16 % window of the 1.050 V nominal, DR-0011's
+  *deterministic PVT-extent half*; the 3σ mismatch half is item 6's), `iq`
+  (`iq_avg_a ≥ −50 µA`, worst 41.78 µA at bcs/125 °C/3.63 V) and `startup`
+  (`i_mkfb_1000u_a` within ±50 nA at the spec's own 1 ms checkpoint, worst
+  0.183 nA; the ladder bench — not `closed-loop-startup` — is the Startup
+  citation precisely because its request can carry the 1 ms bound, and its
+  enrichment records the full per-checkpoint release-criteria verdicts).
+  Four rows are **declared gaps** in `spec_rows["5"]`: the box-method
+  temp-coefficient and the trim range/resolution are deterministic figures
+  derived *across* corners of one swept axis, which `klt sim` cannot grade
+  (klayout-tools#7184) — their committed measurements (20.20–38.62 ppm/°C;
+  +29.22/−29.63 %; 0.2347 %/step) are quoted in the gap reasons but are
+  not envelope-graded — and the Supply row is a rating argument
+  (DR-0002), not a simulation: every cited envelope sweeps 2.97/3.30/3.63 V.
+  The citations carry no `content_hash` pin (a `klt sim` report's
+  `provenance.input` names the run's scratch netlist, which is not
+  committed) — the same unpinned-citation convention as items 4 and 6;
+  freshness is enforced by `check_signoff_manifest.py` re-grading the
+  committed report (any edit changes the verdict and fails CI), by the
+  append-only rule on `sim/*/records/`, and by the artifact manifests'
+  sha256s over the run's raw logs and netlist snapshots. One more upstream
+  limitation is disclosed here: the #2668 one-model-library-per-request
+  split means each grid runs as 15 requests whose reports this repo's
+  merger re-assembles, re-deriving the request-declared `measurements[]`
+  rollup over the concatenated corners by klt's own aggregation rule
+  (`sim/harness/merge_batch_shards.py`; klayout-tools#7225 asks for a
+  supported form). What a `met` here
+  would mean: every cited envelope passing and every declared row covered —
+  nothing here relaxes the PSRR miss to get there.
+- **Item 6 (Statistical claims carry Monte Carlo evidence) — cited unpinned:
+  `sim/closed-loop-vref-mc/records/20261120-231009-73ef81b4-yield-report.json`**:
+  a `klt yield` JSON report minted (producer `klayout-tools[yield]==0.9.2`,
+  graded under the CI pin `0.8.0` — both versions in #630) from the
+  **committed** `20261104-201955-2a0f04d7-draws.csv` campaign via
+  `klt yield-csv` (same CSV sha256 in the sample set's `derivation` block);
+  it is a re-analysis of that run, not a new campaign. Five measurements
+  (the mismatch points `nominal`, `bcs_n40`, `bcs_125`, `wcs_n40`,
+  `wcs_125`, N=300 each, seed rule `20260909 + draw_index` readable from the
+  draws' own seed column; the zero-spread `negctrl` rows are excluded) carry
+  the ±16 % bounds 0.882–1.218 V, `target_sigma: 3`, `min_converged_samples:
+  300`, `spec_row: output-reference-untrimmed`; `spec_rows["6"]` declares
+  that row covered and the trimmed ±0.5 % line as a **gap** (#303, PR #435
+  pending — re-campaign and re-mint when it lands).
+  **What the citation does and does not prove.** It proves the statistical
+  machinery ran on real seeded draws: each empirical yield estimate carries a
+  Clopper-Pearson interval, every sample-size verdict is `sufficient`
+  (±1 point half-width), and exactly one draw (wcs_125, 1.2215 V) falls
+  outside the bounds. It does **not** prove the ±16 % 3σ claim holds: the
+  sigma-to-spec lower bounds at the hot corners are **2.8845** (`bcs_125`)
+  and **2.8632** (`wcs_125`), below 3, so the report's `status` is `fail`
+  and the item grades `unmet`/`check_failed` with the untrimmed row in
+  `detail.failed_rows` — committed as graded, follow-up campaign sized in
+  #635. The **negative control is not declared** (`not_declared`): the
+  report carries klt's own null + warning because `klt yield-csv` 0.9.2
+  cannot attach a control and `klt yield-samples` rejects CSV-derived sample
+  sets (klayout-tools#6974); the campaign's zero-spread `negctrl` point stays
+  what it always was — the harness's own determinism check — and is not
+  presented as klt's negative control. The citation carries no
+  `content_hash` pin because `klt yield` envelopes record no
+  `provenance.input` block (upstream JSON contract, like `klt lvs`); its
+  freshness is three separate checks, none of which hashes the sample
+  set into the verdict: (1) `klt signoff` re-grades the report, and
+  `check_signoff_manifest.py` fails if the resulting grade differs from the
+  committed `sg13g2-bandgap.signoff.json`; (2) the append-only check
+  protects previously committed records; (3) regenerating the samples and
+  report (`klt yield-csv`, `klt yield`) and comparing byte for byte verifies
+  their contents against the source CSV and limits. An edit to the samples
+  or report that leaves the grade unchanged is **not** caught by (1).
 - **Item 11 (Power delivery, structural) — cited as the compound pair
   `layout/bandgap_top/erc_report.json` (pinned to the `bandgap_top.gds`
   hash) + `layout/bandgap_top/lvs_report.runset.json` (item 4's LVS
@@ -161,57 +254,64 @@ The binding used here:
   `vss` (needs klayout-tools#2354). That residue is *not* resolved by #240's
   closure; either reopen that work or fix it when the port is next touched.
 
-- **Item 8 (Characterization report) — cited: `measurements/2026-11-18-characterization-report/envelope.json`**
+- **Item 8 (Characterization report) — cited: `measurements/2026-11-22-item5-limits-characterization-report/envelope.json`**
   (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
   `README.md` beside it, pinned to that report's sha256). The report is
-  [`measurements/2026-11-18-characterization-report/README.md`](../measurements/2026-11-18-characterization-report/README.md),
-  stamped at the audited commit `11a18b96`: one entry per row of the
-  `README.md` target-spec table (the Output-reference row as its nominal,
-  untrimmed and trimmed lines), each with bound, verdict, binding corner,
-  whether the verdict is statistical, the newest committed `sim/` record
-  behind it, and a current-or-"predates the current netlist" mark; every
-  quoted number is re-derived from its CSV by the report's `spotcheck.py`.
+  [`measurements/2026-11-22-item5-limits-characterization-report/README.md`](../measurements/2026-11-22-item5-limits-characterization-report/README.md),
+  stamped at the audited commit `1af76710` (the #629 rotation: the four
+  corner-swept benches re-run with their spec row's ratified bound as a
+  request-level limit, every quoted figure unchanged): one entry per row of
+  the `README.md` target-spec table (the Output-reference row as its
+  nominal, untrimmed and trimmed lines), each with bound, verdict, binding
+  corner, whether the verdict is statistical, the newest committed `sim/`
+  record behind it, and a current-or-stale mark; every quoted number is
+  re-derived from its CSV by the report's `spotcheck.py`.
   **What an item 8 `met` means here — and what it does not.** It means the
   report exists, is current at the stamped commit and cites its evidence. It
   is **not** a statement that every spec row passes: the report itself
   records the trimmed ±0.5% line as measured unmet (3σ ≈ 2.4%), the PSRR
-  row as not met on current evidence (the post-layout grid that cleared it
-  by 0.0013 dB predates the current extraction), and five stale records:
-  two pre-trim-DUT records waived in
-  `sim/evidence-freshness-waivers.json`, plus three post-layout benches
-  disclosed against the pre-#557 extraction. Whether the
-  block conforms to its spec is item 5's question, and item 5 stays unmet.
+  row as not met on current evidence — and, since #629, machine-graded: the
+  schematic grid's own report reads 44/45 PASS, its bcs/125 °C/3.63 V
+  corner at 59.685 dB below the > 60 dB bound (design issue #631), while
+  the post-layout grid that cleared it by 0.0013 dB predates the current
+  extraction — and six stale records: two pre-trim-DUT PEX records waived
+  under #275 in `sim/evidence-freshness-waivers.json`, three post-layout
+  benches disclosed against the pre-#557 extraction (the PSRR-PEX and
+  Zout-PEX grids, the startup trip-point sweep), and the pre-trim
+  solver-aids A/B record, disclosed as run on the pre-trim core (2
+  corners). Whether the block conforms to its spec is item 5's question,
+  and item 5 stays unmet.
   **The pin binds the report, not the envelope**: the grader re-hashes the
   report file, so editing the report without regenerating the envelope and
   this manifest's pin fails `check_signoff_manifest.py` (the exact-bytes
   freshness is tested, not assumed). The pin alone would not notice the
   report's *dependencies* moving while its bytes stay put, so since #315 the
   report also carries a machine-readable dependency inventory,
-  [`dependencies.json`](../measurements/2026-11-18-characterization-report/dependencies.json),
+  [`dependencies.json`](../measurements/2026-11-22-item5-limits-characterization-report/dependencies.json),
   checked by `.github/scripts/check_report_dependencies.py` (see "Item-8
   dependency drift" below): a change to an audited DUT netlist, a spec-table
   bound, a quoted decision-record status, or a newer record in a summarized
   experiment now fails CI even though the pin still matches (#303 is the
-  change expected to trigger it). The six earlier reports
+  change expected to trigger it). The eight earlier reports
   (`2026-09-characterization-report/`, `2026-10-characterization-report/`,
   `2026-11-characterization-report/`, `2026-11-04-characterization-report/`,
   `2026-11-13-characterization-report/`,
-  `2026-11-16-characterization-report/`)
-  are superseded and kept as history; none is required to track newer inputs.
+  `2026-11-16-characterization-report/`,
+  `2026-11-18-characterization-report/`,
+  `2026-11-18-klu-retime-characterization-report/`)
+  are superseded and kept as history; none is required to track newer
+  inputs. The list is self-maintaining by rule — every
+  `measurements/*characterization-report/` directory except the one
+  `evidence["8"]` pins is superseded history — so a rotation moves the
+  links, the audited commit and the narrative to the incoming report and
+  adds the outgoing one to the list;
+  `check_report_dependencies.py` fails CI when the item-8 bullet links any
+  report but the actively pinned one, or stops naming its `envelope.json`.
 
 Items deliberately left **uncited** (they render `unmet` / `no_evidence`,
 which is the honest machine-readable gap — repo evidence exists for several
 of them, but no `klt` envelope grades it yet):
 
-- **5 (PVT corners):** the ratified spec exists
-  (`spec/decision-records/0007`) and `sim/closed-loop-vref-pvt/` holds
-  append-only CSV/MD corner records — joined since #236 by the box-method
-  TC grid on the same 8-point corner set
-  (`sim/closed-loop-vref-pvt-boxtc/`, schematic + PEX) — but no `klt sim`
-  corner-matrix envelope has ever been produced.
-- **6 (Monte Carlo):** `sim/closed-loop-vref-mc/` holds an N=300 seeded
-  mismatch MC with negative control (issue #215) — but no `klt yield`
-  envelope.
 - **7 (Post-layout):** PEX netlists and post-layout PEX sim records exist
   (`layout/*/*.pex.spice`, `sim/closed-loop-*-pex/`) — but no `klt pex`
   delta report; item 7 rejects every other evidence kind by construction.
@@ -298,6 +398,15 @@ records:
   passes, provided its `disclosure` phrase appears in the report and its
   `waiver_issue` (if any) matches a live waiver. Experiments not listed are
   not looked at.
+
+The checker also follows the pin into **this README's own item-8 bullet**
+(#647, the rotation the 2026-11-22 report exposed): the bullet must name
+the actively cited `envelope.json` path, every markdown link into
+`measurements/` inside it must resolve inside the actively cited report's
+directory (superseded reports stay backticked names, never links), and it
+must link the active report's `README.md` and `dependencies.json` — so the
+next rotation cannot move the manifest pin while the heading, the links or
+both keep describing the superseded report.
 
 Every path must be repository-relative and stay inside the repository;
 missing, malformed or changed inputs fail with the row or experiment they

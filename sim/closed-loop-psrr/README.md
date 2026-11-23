@@ -102,18 +102,16 @@ never larger than the injected `vdd` ripple) — see "Sign convention" for
 why that is the expected, physically sane result for this convention, not
 an assumption.
 
-**It does not claim conformance to any ratified spec row.**
-`spec/porting-plan.md` §6 carries a **draft, unratified** `PSRR @ DC | > 60
-dB` target row (#125 tracks ratification generally; that number has never
-been checked against real evidence before this testbench). This record's
-own DC-PSRR range (57.1-105.2 dB) straddles that draft number at some
-corners and clears it by a wide margin at others — **this is stated as
-context only, not a pass/fail verdict**: per `klayout-tools`'
-`docs/design-evidence-tiers.md` T1 checklist (referenced from issue #4),
-producing the capability to run this comparison is not the same as running
-it as a ratified check, and no checklist item on #4 is closed by this
-record. It does not claim the design meets any offset/mismatch target
-either (see `../closed-loop-offset/README.md` for that separate,
+**Since issue #629 it does claim conformance — graded by the run itself.**
+The spec table's `PSRR @ DC | > 60 dB` row is ratified
+(`spec/decision-records/0007`), and the request template now carries it as
+a limit on `psrr_dc_lin` (`max` 1e-3, `spec_row psrr-dc`), so the run's own
+report grades the row and the committed `records/<record-id>-report.json`
+is the citable T1 item-5 envelope. The current envelope fails honestly:
+44/45 corners pass, the worst reading 59.685 dB at bcs/125 °C/3.63 V
+(design issue **#631**) — this is a measured failure, not a missing
+measurement. It still does not claim the design meets any offset/mismatch
+target either (see `../closed-loop-offset/README.md` for that separate,
 explicitly-informal characterization).
 
 ## Injection method

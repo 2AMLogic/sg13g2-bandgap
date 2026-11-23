@@ -43,10 +43,11 @@ import re
 import sys
 from pathlib import Path
 
-DET_RELEASE_FRAC = 0.2
-I_MKFB_RELEASE_A = 50e-9
-DVSNS_CLOSE_V = 0.020
-FB_RAIL_MARGIN_V = 0.05
+from enrich_pvt_report import (
+    _corner_vdd,
+    closed_loop_verdict_failures,
+    recount_report,
+)
 
 _MEAS_RE = re.compile(r"^([a-z_][a-z0-9_]*)\s*=\s*([-+0-9.eE]+)\s*$", re.M)
 _OP_PRINT_RE = re.compile(
@@ -130,9 +131,6 @@ def _splice_deck(deck_path: Path, cwd: Path) -> str:
     return read_with_includes(deck_path)
 
 
-_STARTUP_RE = None  # per-point seed rows, loaded lazily from --seed-csv
-
-
 def _load_seed_rows(path: str) -> dict:
     import csv
 
@@ -155,9 +153,16 @@ def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:
     # rows the hand-transcribed bench itself seeded from), the check uses
     # the same-temperature reference and keeps the fixed 50 mV.
     op_match_slope_v_per_c = 0.002
+    cwd = Path.cwd()
     for corner in report.get("corners", []):
-        if corner.get("status") != "pass":
-            continue
+        # Columns are appended for every corner, klt-graded pass or fail:
+        # the op prints, the dB conversions and the curve extrema are the
+        # log's own facts, and a corner that failed a request-level spec
+        # limit still carries them (issue #629's first failing-corner
+        # record). The closed-loop VERDICT below re-grades only a corner
+        # that entered passing -- an already-failing corner keeps klt's
+        # own diagnostics.
+        verdict_eligible = corner.get("status") == "pass"
         log_path = (corner.get("artifacts") or {}).get("log")
         deck_path = (corner.get("artifacts") or {}).get("deck")
         got = {m["name"]: m.get("value") for m in corner.get("measurements", [])}
@@ -165,7 +170,6 @@ def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:
         curve: list[tuple[float, float]] = []
         seeds: dict[str, float] = {}
         vdd_baked: float | None = None
-        cwd = Path.cwd()
         if log_path:
             p = Path(log_path)
             if not p.is_absolute():
@@ -188,7 +192,10 @@ def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:
             # ngspice 46), so the request carries no supply axis and the
             # corner id has no V token. The adapter's corner-id grammar
             # requires exactly one supply: inject the baked value here,
-            # where the deck itself is the evidence for it.
+            # where the deck itself is the evidence for it -- on every
+            # corner, klt-graded pass or fail (a FAIL corner keeps its
+            # /novdd/ id otherwise, and the adapter refuses the mixed
+            # grid -- issue #629's first failing-corner record).
             corner["supply_v"] = {"Vvdd": vdd_baked}
             cid = corner.get("corner_id", "")
             if "/novdd/" in cid:
@@ -269,13 +276,9 @@ def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:
         # temperature-aware band (the body bakes one seed set per
         # corner/supply; the seed is a convergence aid, and fb legitimately
         # moves ~0.6 mV/C away from it).
-        vdd = None
         cid = corner.get("corner_id", "")
         temp_c = corner.get("temperature_c")
-        try:
-            vdd = float(cid.split("/")[1].rstrip("V"))
-        except (IndexError, ValueError):
-            pass
+        vdd = _corner_vdd(corner)
         fb_ref = None
         tol = op_match_tol_v
         if seed_rows and temp_c is not None and vdd is not None:
@@ -292,29 +295,15 @@ def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:
         if fb_ref is not None and "fb_op_v" in op:
             if abs(op["fb_op_v"] - fb_ref) > tol:
                 problems.append("op_landed_far_from_seed")
-        fb = op.get("fb_op_v")
-        if vdd is not None and fb is not None and not (FB_RAIL_MARGIN_V <= fb <= vdd - FB_RAIL_MARGIN_V):
-            problems.append("fb_railed")
-        det = op.get("det_op_v")
-        imk = op.get("i_vmkfb_a")
-        if vdd is not None and det is not None and imk is not None:
-            if not (det <= DET_RELEASE_FRAC * vdd and abs(imk) <= I_MKFB_RELEASE_A):
-                problems.append("startup_not_released")
         s1, s2 = op.get("sns1_op_v"), op.get("sns2_op_v")
-        if s1 is not None and s2 is not None and abs(s1 - s2) > DVSNS_CLOSE_V:
-            problems.append("loop_not_closed")
-        if problems:
+        problems.extend(closed_loop_verdict_failures(
+            op.get("det_op_v"), op.get("i_vmkfb_a"),
+            abs(s1 - s2) if s1 is not None and s2 is not None else None,
+            op.get("fb_op_v"), vdd))
+        if problems and verdict_eligible:
             corner["status"] = "fail"
             corner["diagnostics"] = [{"code": "ac_bench_verdict", "message": "; ".join(problems)}]
-    corners = report["corners"]
-    passed = sum(1 for c in corners if c.get("status") == "pass")
-    failed = sum(1 for c in corners if c.get("status") == "fail")
-    errored = sum(1 for c in corners if c.get("status") == "error")
-    report.update(
-        passed=passed, failed=failed, errored=errored, corner_count=len(corners),
-        status="fail" if failed else ("error" if errored else "pass"),
-    )
-    return report
+    return recount_report(report)
 
 
 def main(argv: list[str]) -> int:
