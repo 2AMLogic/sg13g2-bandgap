@@ -12,6 +12,13 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-23
 
+- **PR #673**: docs: correct klayout-tools#6974 status in closed-loop MC README
+- **PR #651**: refactor: share the schematic-DUT setup and record mint across the six klt sim wrappers
+- **PR #640**: Pass the untrimmed 3-sigma gate at N=1200: re-run the vref mismatch MC, re-mint the yield evidence, rotate the item-8 report
+- **Issue #672** (closed): Declare item-6's negative control once a PyPI release carries the klayout-tools#6974 CSV-control fix (and correct the 'still unlanded' note)
+- **Issue #671** (closed): Judge docs-only fast path is permanently NOT ELIGIBLE on gh 2.102.0 (unsupported `baseRepository` field)
+- **Issue #650** (closed): Deduplicate schematic-DUT setup across 6 run_klt_sim.sh wrappers and share schematic_ac_main in pex_ac_runner.sh
+- **Issue #635** (closed): Untrimmed MC 3-sigma gate fails at the 125 C corners (sigma LB 2.8845 / 2.8632 vs 3): size and run the follow-up campaign
 - **PR #639**: sim(psrr): attribute the DC-PSRR miss at bcs/125C/3.63V and grid-verify the p12-w2 input-pair candidate (45/45 above 60 dB)
 - **Issue #631** (closed): design: PSRR @ DC misses the > 60 dB row at bcs/125 C/3.63 V (59.685 dB schematic); attribute the limit and propose a bounded fix
 - **PR #658**: docs(sim): document runner-function call shape and msense failure paths
@@ -440,13 +447,4 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - **PR #249**: Add pinned-comment convention for tracker issues at the addComment cap
 - **Issue #248** (closed): Issue #4 hit GitHub's 2500-comment hard cap: addComment now permanently disabled
-
-### 2026-09-23
-
-- **PR #244**: fix: draw the CMOS5L well taps (2 floating MOS wells fixed, 10 pnpMPA base rings nSD-marked; ERC 12 -> 10)
-- **PR #245**: fix(sg13cmos5l-bandgap_core): extend Q2 emitter trunk to reach R2's e2 drop
-- **PR #247**: feat(loom): sticky-blocked registry with atomic settle and drift repair for issue #4
-- **Issue #246** (closed): loom:blocked silently lost on issue #4 across claim/settle cycles
-- **Issue #243** (closed): sg13cmos5l-bandgap_core: R2's e2 drop (x=58) lands in free field, disjoint from the Q2 emitter trunk (x=123.6..165.9) — the e2 net is split as drawn
-- **Issue #240** (closed): Zero out the 12 erc.missing_tie findings on sg13cmos5l-bandgap_top (2 floating MOS wells + 10 marker-less pnpMPA base rings)
 
