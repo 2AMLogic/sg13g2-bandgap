@@ -1,14 +1,15 @@
-# db_summary_common.awk -- shared parse/DC/extremum/interpolate core for the
-# wrdata-format AC-sweep summary scripts under sim/*/tools/. Extracted for
-# issue #194 from the near-identical logic previously duplicated between
-# sim/closed-loop-psrr/tools/psrr_summary.awk and
-# sim/closed-loop-zout-pex/tools/zout_summary.awk -- diffing the two showed
-# the only functional difference between them was the extremum comparison
+# db_summary_common.awk -- shared parse/DC/extremum/interpolate summariser
+# for wrdata-format AC sweeps. Extracted for issue #194 from the
+# near-identical logic then duplicated between two per-experiment wrapper
+# files (header-only companions to this file, one per AC bench) -- diffing
+# them showed the only functional difference was the extremum comparison
 # operator (`>` vs `<`); the parse, the DC pickoff, the log10(freq)-linear
 # interpolation at three fixed target frequencies, and the printf format
-# were all byte-for-byte identical. Mirrors the sim/lib/*.sh shared-helper
-# convention (sim/lib/pvt_verdict_common.sh, sim/lib/pvt_sed_common.sh,
-# etc.) already used by every run_pvt_sweep.sh.
+# were all byte-for-byte identical. Those wrappers were removed with their
+# sweep-script callers in #460 after the klt sim conversion (#438) moved
+# the AC summary into sim/harness/enrich_ac_report.py; this file is now
+# invoked directly. Mirrors the sim/lib/*.sh shared-helper convention
+# (sim/lib/pvt_verdict_common.sh, sim/lib/pvt_sed_common.sh, etc.).
 # (sim/loop-gain-phase-margin/tools/find_crossover.awk does a meaningfully
 # different unity-gain-crossing search, not this DC/extremum/3-point-
 # interpolation shape, so it is deliberately NOT folded in here.)
@@ -20,21 +21,12 @@
 # here).
 #
 # Caller contract:
-#   - Invoke with `-v extremum=min` or `-v extremum=max` (checked in this
-#     file's own BEGIN block; `-v` assignments happen before every BEGIN
-#     rule runs, regardless of `-f` file order, so this works no matter
-#     which `-f` file is listed first), e.g.:
-#       awk -v extremum=min -f db_summary_common.awk -f psrr_summary.awk \
-#           <wrdata-file>
+#   - Invoke directly with `-v extremum=min` or `-v extremum=max` (checked
+#     in this file's own BEGIN block), e.g.:
+#       awk -v extremum=min -f sim/lib/db_summary_common.awk <wrdata-file>
 #     Use `min` for a worst-case dip (e.g. PSRR), `max` for a worst-case
 #     peak (e.g. closed-loop Zout). Any other value aborts with a message
 #     to stderr and a nonzero exit.
-#   - The caller's own file (e.g. psrr_summary.awk) is expected to
-#     contribute no program logic of its own -- it exists solely to carry
-#     its own domain-specific header comment (the "why this metric, why
-#     these numbers matter" rationale, which is genuinely different per
-#     experiment and stays out of this shared file on purpose) for
-#     `awk -f <caller>.awk <file>`-style documentation/discoverability.
 #
 # Prints one line to stdout, matching every prior caller's own printf
 # format exactly (byte-identical -- see issue #194's verification
