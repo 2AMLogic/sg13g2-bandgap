@@ -143,10 +143,10 @@ so the honest per-row status is:
   pre-trim characterization stands as a historical reading on the superseded
   pre-trim core.
 - **PSRR @ DC** misses the `> 60 dB` target at one of 45 schematic
-  operating points. At `bcs`, 125 °C and 3.63 V, the November 13 sweep
+  operating points. At `bcs`, 125 °C and 3.63 V, the limit-graded November 22 sweep
   measured **59.685 dB**. The October 4 post-layout sweep measured
   **60.0013 dB** at the same corner and predates the current extraction.
-  [Characterization report](measurements/2026-11-18-klu-retime-characterization-report/README.md#psrr--dc)
+  [Characterization report](measurements/2026-11-23-characterization-report/README.md#psrr--dc)
   · [Design issue #631](https://github.com/2AMLogic/sg13g2-bandgap/issues/631).
 - **Output reference — re-cast by decision record
   [`0011`](spec/decision-records/0011-output-reference-row-disposition.md)
@@ -189,11 +189,11 @@ so the honest per-row status is:
   ruling 2026-10-08 after both ratification keys refused it, and the
   disposition is the design fix tracked in **#303** (resize the core
   against mismatch and re-aim the trim, with one-point trim only per `0014`).
-  For the untrimmed line, the N=300-per-point yield report in #636 missed
-  the 3σ requirement at both 125 °C corners. The 95% lower confidence
-  bounds on sigma-to-spec were 2.8845 at `bcs` and 2.8632 at `wcs`.
-  [N=300 yield report](sim/closed-loop-vref-mc/records/20261120-231009-73ef81b4-yield-report.json)
-  · [Follow-up campaign #635](https://github.com/2AMLogic/sg13g2-bandgap/issues/635).
+  The N=1,200 follow-up (#635) passes the untrimmed 3σ gate at all five
+  mismatch points. The 95% lower bounds at 125 °C are **3.0782** at
+  `bcs` and **3.2389** at `wcs`, up from 2.8845 and 2.8632 at N=300.
+  Item 6 remains unmet because the trimmed row is a declared gap.
+  [N=1,200 yield report](sim/closed-loop-vref-mc/records/20261121-195500-b03b10b7-yield-report.json).
 
 See `0007` for full per-row evidence and the Output-reference-vs-TC trade-off,
 `0008` for what the two-key review changed about the status above, and `0011`

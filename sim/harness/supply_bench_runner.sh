@@ -2,10 +2,9 @@
 # Shared `--sanity | --batch | --record` flow for the closed-loop Iq and Startup
 # `klt sim` runners (issue #414): schematic-DUT PWL-ramp benches whose reports are
 # enriched by sim/harness/enrich_supply_bench_report.py. Source it AFTER
-# pex_runner.sh, with
+# pex_runner.sh and call pex_schematic_dut_setup (which renders BODY_TEMPLATE
+# with @@MSENSE_W@@, sets MSENSE_W, and appends the enricher to IDENT_ARGS), with
 #   ENRICH_BENCH   iq | startup (enrich_supply_bench_report.py --bench)
-#   BODY_TEMPLATE  the body template with @@MSENSE_W@@ pre-filled
-#   MSENSE_W       the live startup netlist's XMSENSE width
 #   ANCHORS        array of "measurement=value:tolerance" sanity anchors, read
 #                  on the single local typ/27C/3.30V corner
 # then call `supply_bench_main`.
@@ -41,10 +40,7 @@ supply_bench_main() {
       "${WORK}/report-merged.json" -o "${WORK}/report-enriched.json"
     ;;
   --record)
-    ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
-        --report "${WORK}/report-enriched.json" \
-        --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
-        --experiment "${EXP_DIR}" )
+    schematic_record_mint "${WORK}/report-enriched.json"
     ;;
   esac
 }

@@ -12,6 +12,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-23
 
+- **PR #639**: sim(psrr): attribute the DC-PSRR miss at bcs/125C/3.63V and grid-verify the p12-w2 input-pair candidate (45/45 above 60 dB)
+- **Issue #631** (closed): design: PSRR @ DC misses the > 60 dB row at bcs/125 C/3.63 V (59.685 dB schematic); attribute the limit and propose a bounded fix
 - **PR #658**: docs(sim): document runner-function call shape and msense failure paths
 - **PR #662**: fix: hash enrich_pvt_report.py in affected runners' submission identity
 - **PR #659**: refactor: consolidate the closed-loop verdict constants, 3-criteria check and recount into enrich_pvt_report

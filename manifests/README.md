@@ -14,19 +14,12 @@ that produced it.
 - `sg13g2-bandgap.signoff.json` — the committed **verdict of record**: the
   exact output of `klt signoff --manifest manifests/sg13g2-bandgap.json
   --format json`.
-  As of the commit that last regenerated it (#629's item-5 corner-verification
-  citations): **tier: none — 5/11 T1 items met** (items 1, 2, 3, 8, 10; read
-  the count from the report's `t1_met_count`, not from this sentence). That
-  is the honest state; an all-`unmet` manifest is a correct result, and
-  nothing here inflates it. Item 6 moved from `unmet`/`no_evidence` to
-  `unmet`/`check_failed` — the honest grade of a yield report whose two
-  125 °C points miss their 3σ lower-bound gate (see the item 6 entry below).
-  Item 5 moved the same way (#629): from `unmet`/`no_evidence` to
-  `unmet`/`check_failed` — four `klt sim` grid envelopes now grade the
-  corner-swept rows at their ratified bounds, and one of them (PSRR @ DC,
-  59.685 dB against > 60 dB at bcs/125 °C/3.63 V, design issue #631) fails
-  honestly; the signoff report now distinguishes a measured failure from a
-  missing measurement.
+  The pinned grader reports **tier none, 5/11 T1 items met** (1, 2, 3, 8
+  and 10). In item 6, the N=1,200 yield report passes the untrimmed row.
+  The trimmed row remains a declared gap (#303), so the item grades
+  `unmet`/`partial_coverage`. Item 5 grades `unmet`/`check_failed`.
+  Its PSRR grid measures 59.685 dB against the > 60 dB bound at
+  bcs/125 °C/3.63 V.
 - `artifacts/` — **stored-run manifests** (issue #379, DR-0015): one
   `<bench>-<run-id>.manifest.json` per new `klt sim` run, naming the run's raw
   logs and netlist snapshots in the fleet artifact store by sha256. See
@@ -186,44 +179,63 @@ The binding used here:
   would mean: every cited envelope passing and every declared row covered —
   nothing here relaxes the PSRR miss to get there.
 - **Item 6 (Statistical claims carry Monte Carlo evidence) — cited unpinned:
-  `sim/closed-loop-vref-mc/records/20261120-231009-73ef81b4-yield-report.json`**:
+  `sim/closed-loop-vref-mc/records/20261121-195500-b03b10b7-yield-report.json`**:
   a `klt yield` JSON report minted (producer `klayout-tools[yield]==0.9.2`,
-  graded under the CI pin `0.8.0` — both versions in #630) from the
-  **committed** `20261104-201955-2a0f04d7-draws.csv` campaign via
-  `klt yield-csv` (same CSV sha256 in the sample set's `derivation` block);
-  it is a re-analysis of that run, not a new campaign. Five measurements
-  (the mismatch points `nominal`, `bcs_n40`, `bcs_125`, `wcs_n40`,
-  `wcs_125`, N=300 each, seed rule `20260909 + draw_index` readable from the
-  draws' own seed column; the zero-spread `negctrl` rows are excluded) carry
-  the ±16 % bounds 0.882–1.218 V, `target_sigma: 3`, `min_converged_samples:
-  300`, `spec_row: output-reference-untrimmed`; `spec_rows["6"]` declares
-  that row covered and the trimmed ±0.5 % line as a **gap** (#303, PR #435
+  graded under the CI pin `0.8.0` — both versions re-pinned in #635) from the
+  **committed N=1200 campaign** `20261121-194338-b03b10b7-draws.csv` (the
+  #635 follow-up: 6 points x 1,200 draws, 7,200/7,200 PASS on the batch
+  fleet, 72 job ids in the run record's `environment.remote`; its first 300
+  draw indices reproduce the 2026-11-04 N=300 record draw-for-draw at
+  recorded precision — 1,797/1,800 `vref` byte-identical, 3 draws differing
+  by 1 in the last digit, 0 status mismatches) via `klt yield-csv` (same CSV
+  sha256 in the sample set's `derivation` block). Five measurements (the
+  mismatch points `nominal`, `bcs_n40`, `bcs_125`, `wcs_n40`, `wcs_125`,
+  N=1,200 each, seed rule `20260909 + draw_index` readable from the draws'
+  own seed column; the zero-spread `negctrl` rows are excluded — 1,200
+  draws, one distinct `vref`) carry the ±16 % bounds 0.882–1.218 V,
+  `target_sigma: 3`, `min_converged_samples: 1200`,
+  `spec_row: output-reference-untrimmed`; `spec_rows["6"]` declares that
+  row covered and the trimmed ±0.5 % line as a **gap** (#303, PR #435
   pending — re-campaign and re-mint when it lands).
   **What the citation does and does not prove.** It proves the statistical
-  machinery ran on real seeded draws: each empirical yield estimate carries a
-  Clopper-Pearson interval, every sample-size verdict is `sufficient`
-  (±1 point half-width), and exactly one draw (wcs_125, 1.2215 V) falls
-  outside the bounds. It does **not** prove the ±16 % 3σ claim holds: the
-  sigma-to-spec lower bounds at the hot corners are **2.8845** (`bcs_125`)
-  and **2.8632** (`wcs_125`), below 3, so the report's `status` is `fail`
-  and the item grades `unmet`/`check_failed` with the untrimmed row in
-  `detail.failed_rows` — committed as graded, follow-up campaign sized in
-  #635. The **negative control is not declared** (`not_declared`): the
-  report carries klt's own null + warning because `klt yield-csv` 0.9.2
-  cannot attach a control and `klt yield-samples` rejects CSV-derived sample
-  sets (klayout-tools#6974); the campaign's zero-spread `negctrl` point stays
-  what it always was — the harness's own determinism check — and is not
-  presented as klt's negative control. The citation carries no
+  machinery ran on real seeded draws and that the ratified 3σ claim, in the
+  form `klt yield` grades it (sigma-to-spec lower bound at two-sided 95 %
+  confidence), now **holds at every point**: lower bounds 3.5307 /
+  3.7195 / **3.0782** / 3.7613 / **3.2389** (nominal / bcs_n40 / bcs_125 /
+  wcs_n40 / wcs_125) against point estimates 3.6889 / 3.8849 / 3.2189 /
+  3.9284 / 3.3857 — the N=300 mint's hot-corner misses (2.8845 / 2.8632)
+  were confidence-bound width, not observed spread, exactly what #635's
+  1/√N sizing projected. Every sample-size verdict is `sufficient`
+  (±1-point half-width), all 6,000 requested mismatch draws converged, and
+  6 of 6,000 draws fall outside the bounds (empirical yield 0.99917 at
+  four points, 0.99833 at `wcs_125`, each with its Clopper-Pearson
+  interval). It does **not** settle item 6: the trimmed ±0.5 % line stays
+  a declared gap, so the item grades `unmet`/`partial_coverage` with the
+  untrimmed row `met` — reported as graded. The **negative control is not
+  declared** (`not_declared`): the report carries klt's own null + warning
+  because `klt yield-csv` 0.9.2 cannot attach a control (klayout-tools#6974,
+  re-checked at re-mint: still no released CSV-control producer); the
+  campaign's zero-spread `negctrl` point stays the harness's own
+  determinism check, not klt's negative control. The citation carries no
   `content_hash` pin because `klt yield` envelopes record no
   `provenance.input` block (upstream JSON contract, like `klt lvs`); its
   freshness is three separate checks, none of which hashes the sample
   set into the verdict: (1) `klt signoff` re-grades the report, and
   `check_signoff_manifest.py` fails if the resulting grade differs from the
   committed `sg13g2-bandgap.signoff.json`; (2) the append-only check
-  protects previously committed records; (3) regenerating the samples and
-  report (`klt yield-csv`, `klt yield`) and comparing byte for byte verifies
-  their contents against the source CSV and limits. An edit to the samples
-  or report that leaves the grade unchanged is **not** caught by (1).
+  (`APPEND_ONLY_RE` in `check_evidence_formats.py`, covering
+  `sim/*/records/`) protects the committed N=1,200 samples document and
+  report once they are on `main`; (3) regenerating the samples and report
+  (`klt yield-csv`, `klt yield`) from the committed
+  `20261121-194338-b03b10b7-draws.csv` and comparing byte for byte
+  verifies their contents against the source CSV and limits. An edit to
+  the samples or report that leaves the grade unchanged is **not** caught
+  by (1) — it was measured under the pinned grader: perturbing a sample
+  value, or editing the report's `distribution.mean` / `sigma_to_spec`
+  without flipping a verdict, leaves the fresh grade byte-identical.
+  The superseded N=300 mint (`20261120-231009-73ef81b4-*`, exit 3, hot
+  lower bounds 2.8845 / 2.8632) stays committed as the history that sized
+  this campaign.
 - **Item 11 (Power delivery, structural) — cited as the compound pair
   `layout/bandgap_top/erc_report.json` (pinned to the `bandgap_top.gds`
   hash) + `layout/bandgap_top/lvs_report.runset.json` (item 4's LVS
@@ -254,13 +266,13 @@ The binding used here:
   `vss` (needs klayout-tools#2354). That residue is *not* resolved by #240's
   closure; either reopen that work or fix it when the port is next touched.
 
-- **Item 8 (Characterization report) — cited: `measurements/2026-11-22-item5-limits-characterization-report/envelope.json`**
+- **Item 8 (Characterization report) — cited: `measurements/2026-11-23-characterization-report/envelope.json`**
   (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
   `README.md` beside it, pinned to that report's sha256). The report is
-  [`measurements/2026-11-22-item5-limits-characterization-report/README.md`](../measurements/2026-11-22-item5-limits-characterization-report/README.md),
-  stamped at the audited commit `1af76710` (the #629 rotation: the four
-  corner-swept benches re-run with their spec row's ratified bound as a
-  request-level limit, every quoted figure unchanged): one entry per row of
+  [`measurements/2026-11-23-characterization-report/README.md`](../measurements/2026-11-23-characterization-report/README.md),
+  stamped at audited commit `275bdc18`. It uses the N=1,200 untrimmed
+  campaign (#635) and the four limit-graded corner grids (#629), with
+  one entry per row of
   the `README.md` target-spec table (the Output-reference row as its
   nominal, untrimmed and trimmed lines), each with bound, verdict, binding
   corner, whether the verdict is statistical, the newest committed `sim/`
@@ -287,18 +299,19 @@ The binding used here:
   freshness is tested, not assumed). The pin alone would not notice the
   report's *dependencies* moving while its bytes stay put, so since #315 the
   report also carries a machine-readable dependency inventory,
-  [`dependencies.json`](../measurements/2026-11-22-item5-limits-characterization-report/dependencies.json),
+  [`dependencies.json`](../measurements/2026-11-23-characterization-report/dependencies.json),
   checked by `.github/scripts/check_report_dependencies.py` (see "Item-8
   dependency drift" below): a change to an audited DUT netlist, a spec-table
   bound, a quoted decision-record status, or a newer record in a summarized
   experiment now fails CI even though the pin still matches (#303 is the
-  change expected to trigger it). The eight earlier reports
+  change expected to trigger it). The nine earlier reports
   (`2026-09-characterization-report/`, `2026-10-characterization-report/`,
   `2026-11-characterization-report/`, `2026-11-04-characterization-report/`,
   `2026-11-13-characterization-report/`,
   `2026-11-16-characterization-report/`,
   `2026-11-18-characterization-report/`,
-  `2026-11-18-klu-retime-characterization-report/`)
+  `2026-11-18-klu-retime-characterization-report/`,
+  `2026-11-22-item5-limits-characterization-report/`)
   are superseded and kept as history; none is required to track newer
   inputs. The list is self-maintaining by rule — every
   `measurements/*characterization-report/` directory except the one

@@ -31,17 +31,9 @@ VDDS=(2.97 3.30 3.63)
 source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_runner.sh"
 source "${HARNESS_DIR}/pex_vref_runner.sh"
 
-# XMSENSE's width from the live startup netlist, as every closed-loop bench does.
-# shellcheck source=../lib/msense_width.sh
-source "${SIM_DIR}/lib/msense_width.sh"
-( cd "${REPO_ROOT}" && read_msense_width "design/netlist/bandgap_startup.spice" \
-    && printf '%s' "${MSENSE_W}" > "${WORK}/msense_w.txt" )
-MSENSE_W="$(<"${WORK}/msense_w.txt")"
-BODY_TEMPLATE="${WORK}/body.spice.tmpl"
-sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl" > "${BODY_TEMPLATE}"
-IDENT_ARGS+=(--extra "${REPO_ROOT}/design/netlist/bandgap_startup.spice"
-  --extra "${REPO_ROOT}/design/netlist/bandgap_core.spice"
-  --extra "${REPO_ROOT}/design/netlist/bandgap_amp.spice")
+# The schematic DUT: XMSENSE's width, the width-rendered WORK body
+# template and the three netlists in the submission identity (issue #650).
+pex_schematic_dut_setup
 
 # Sanity anchor: this bench's own newest committed record, typ/27C/3.30V
 # vref_3ms (trim-bearing, 20261001 refresh) -- the same anchor
