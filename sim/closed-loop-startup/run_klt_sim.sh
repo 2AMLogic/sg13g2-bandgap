@@ -31,18 +31,10 @@ VDDS=(2.97 3.30 3.63)
 source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_runner.sh"
 source "${HARNESS_DIR}/supply_bench_runner.sh"
 
-# XMSENSE's width from the live startup netlist, as every closed-loop bench does.
-# shellcheck source=../lib/msense_width.sh
-source "${SIM_DIR}/lib/msense_width.sh"
-( cd "${REPO_ROOT}" && read_msense_width "design/netlist/bandgap_startup.spice" \
-    && printf '%s' "${MSENSE_W}" > "${WORK}/msense_w.txt" )
-MSENSE_W="$(<"${WORK}/msense_w.txt")"
-BODY_TEMPLATE="${WORK}/body.spice.tmpl"
-sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${EXP_DIR}/testbench/${STEM}.body.spice.tmpl" > "${BODY_TEMPLATE}"
-IDENT_ARGS+=(--extra "${REPO_ROOT}/design/netlist/bandgap_startup.spice"
-  --extra "${REPO_ROOT}/design/netlist/bandgap_core.spice"
-  --extra "${REPO_ROOT}/design/netlist/bandgap_amp.spice"
-  --extra "${HARNESS_DIR}/enrich_supply_bench_report.py")
+# The schematic DUT: XMSENSE's width, the width-rendered WORK body
+# template and the three netlists, plus this bench's enricher, in the
+# submission identity (issue #650).
+pex_schematic_dut_setup "${HARNESS_DIR}/enrich_supply_bench_report.py"
 
 ENRICH_BENCH="startup"
 # Sanity anchors: the newest committed record's typ/27C/3.30V row (20261001-083332-e5507b2).

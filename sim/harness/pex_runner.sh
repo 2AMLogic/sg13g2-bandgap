@@ -13,9 +13,10 @@
 #          experiment's own ${EXP_DIR}/testbench/${STEM}.body.spice.tmpl.
 #          Set BEFORE sourcing to make the submission identity below hash
 #          the override too (the shared-wrapper case, issue #472); the
-#          schematic benches assign it after sourcing instead, handing
-#          --batch a pre-filled WORK copy, and keep the identity on their
-#          own committed template
+#          schematic benches call pex_schematic_dut_setup (below) after
+#          sourcing instead, which renders their WORK copy with the live
+#          XMSENSE width, and the identity stays on their own committed
+#          template
 #   PEX_BATCH_MAX_IN_FLIGHT  (optional) submit --batch's per-variant requests
 #          concurrently, as one `klt sim --batch-set` with this many in
 #          flight, instead of one blocking `klt sim` per request (#402);
@@ -196,4 +197,44 @@ pex_record_mint() {
       --extraction-sources "${WORK}/extraction-sources.json" \
       --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
       --experiment "${EXP_DIR}" )
+}
+
+# schematic_record_mint REPORT
+# The schematic twin of pex_record_mint: same adapter call, same WORK-
+# relative artifact paths, but no extraction to bind -- the DUT is the
+# committed schematic, so there is no --extraction-sources.
+schematic_record_mint() {
+  ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
+      --report "$1" \
+      --spec "${RECORD_SPEC:-${EXP_DIR}/testbench/${STEM}.record-spec.json}" \
+      --experiment "${EXP_DIR}" )
+}
+
+# pex_schematic_dut_setup [EXTRA_IDENT_FILE ...]
+# (Shared by the six schematic-DUT benches, issue #650 -- the block every one
+# of them used to re-type after sourcing this file and its family runner.)
+# XMSENSE's width from the live startup netlist (sim/lib/msense_width.sh,
+# cached in WORK/msense_w.txt), the experiment's committed body template
+# rendered with @@MSENSE_W@@ into WORK -- the post-source BODY_TEMPLATE
+# override the header above documents, so the identity keeps hashing the
+# committed template -- and the three schematic netlists plus each
+# EXTRA_IDENT_FILE (the report enricher whose output the record binds to)
+# appended to IDENT_ARGS. An optional DUT_TEMPLATE (set before the call; the
+# PSRR bench's PROPOSAL variants, #631) replaces the committed render source.
+# Call it AFTER sourcing this file and BEFORE the
+# family runner's main.
+pex_schematic_dut_setup() {
+  # XMSENSE's width from the live startup netlist, as every closed-loop bench does.
+  # shellcheck source=../lib/msense_width.sh
+  source "${SIM_DIR}/lib/msense_width.sh"
+  ( cd "${REPO_ROOT}" && read_msense_width "design/netlist/bandgap_startup.spice" \
+      && printf '%s' "${MSENSE_W}" > "${WORK}/msense_w.txt" )
+  MSENSE_W="$(<"${WORK}/msense_w.txt")"
+  BODY_TEMPLATE="${WORK}/body.spice.tmpl"
+  sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${DUT_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}" > "${BODY_TEMPLATE}"
+  local f
+  IDENT_ARGS+=(--extra "${REPO_ROOT}/design/netlist/bandgap_startup.spice"
+    --extra "${REPO_ROOT}/design/netlist/bandgap_core.spice"
+    --extra "${REPO_ROOT}/design/netlist/bandgap_amp.spice")
+  for f in "$@"; do IDENT_ARGS+=(--extra "${f}"); done
 }

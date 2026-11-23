@@ -7,7 +7,7 @@
 # set, define `pex_record_companion` (run after the record is minted, to write
 # the experiment's TC companion CSV), then call `pex_vref_main` (or, for the schematic twins that have no
 # extraction, `schematic_vref_main`, which needs MSENSE_W from
-# sim/lib/msense_width.sh). The gate
+# pex_schematic_dut_setup in sim/harness/pex_runner.sh). The gate
 # itself is sim/harness/sanity_anchors.py (issue #458).
 #
 # All four vref benches delegate their companion hook: the two box-method
@@ -90,10 +90,7 @@ schematic_vref_main() {
       -o "${WORK}/report-enriched.json"
     ;;
   --record)
-    ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
-        --report "${WORK}/report-enriched.json" \
-        --spec "${EXP_DIR}/testbench/${STEM}.record-spec.json" \
-        --experiment "${EXP_DIR}" )
+    schematic_record_mint "${WORK}/report-enriched.json"
     pex_record_companion
     ;;
   esac
