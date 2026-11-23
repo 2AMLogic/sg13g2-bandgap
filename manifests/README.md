@@ -305,8 +305,8 @@ The binding used here:
   `evidence["8"]` pins is superseded history — so a rotation moves the
   links, the audited commit and the narrative to the incoming report and
   adds the outgoing one to the list;
-  `check_report_dependencies.py` fails CI when the item-8 bullet names or
-  links anything but the actively pinned report.
+  `check_report_dependencies.py` fails CI when the item-8 bullet links any
+  report but the actively pinned one, or stops naming its `envelope.json`.
 
 Items deliberately left **uncited** (they render `unmet` / `no_evidence`,
 which is the honest machine-readable gap — repo evidence exists for several
