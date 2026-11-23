@@ -2373,14 +2373,25 @@ SOURCE_SH_RE = re.compile(
 #: A `source` in command position (line start, or after `;` `&` `|` `(` `{`,
 #: `then`/`do`/`else`, or `$(`/backtick), independent of SOURCE_SH_RE (#680).
 SOURCE_CMD_RE = re.compile(
-    r"(?:^|[;&|({`]|\b(?:then|do|else)\b)\s*source\s+(?P<arg>[^\n]*)"
+    r"(?:^|[;&|({`]|\b(?:then|do|else)\b)\s*source\s+(?=(?P<arg>[^\n]*))"
 )
 _SH_BASENAME_RE = re.compile(r"([A-Za-z0-9_.-]+\.sh)\b")
 
 
+def _inside_quotes(prefix: str) -> bool:
+    """True when PREFIX ends inside an open '...' or "..." string; a quote of
+    the other kind inside an open string is literal (`"it's"`)."""
+    state = None
+    for ch in prefix:
+        if ch in "\"'" and state in (None, ch):
+            state = None if state else ch
+    return state is not None
+
+
 def executable_harness_sources(text: str, harness_names: set) -> list:
-    """(lineno, helper, line) for every executable `source` command whose
-    first literal `*.sh` argument is a sim/harness helper. Found without
+    """(lineno, helper, line) for every executable `source` command (several
+    per line are each considered) whose first literal `*.sh` argument is a
+    sim/harness helper. Found without
     SOURCE_SH_RE, so a sourcing idiom the regex cannot see is still listed.
     Comment lines, trailing comments, and `source` inside an open double
     quote (echo/printf prose, `${VAR:?...(source x)...}` diagnostics) are
@@ -2392,13 +2403,12 @@ def executable_harness_sources(text: str, harness_names: set) -> list:
             continue
         for m in SOURCE_CMD_RE.finditer(line):
             before = line[: m.start("arg")]
-            if before.count('"') % 2 or before.count("'") % 2:
+            if _inside_quotes(before):
                 continue  # inside a quoted string: prose, not a command
             arg = m.group("arg").split(" #")[0]
             hit = _SH_BASENAME_RE.search(arg)
             if hit and hit.group(1) in harness_names:
                 found.append((lineno, hit.group(1), line))
-                break
     return found
 
 
@@ -2407,15 +2417,14 @@ def unrecognized_harness_sources(
 ) -> list:
     """(script, lineno, helper) for each executable harness `source` that
     SOURCE_SH_RE does not recognize *at that line*, so a second recognized
-    source of the same helper cannot mask it.
+    source of the same helper on another line cannot mask it.
     """
     misses = []
     for script in scripts:
         for lineno, helper, line in executable_harness_sources(
             script.read_text(), harness_names
         ):
-            match = SOURCE_SH_RE.search(line)
-            if not match or match.group(1) != helper:
+            if helper not in {m.group(1) for m in SOURCE_SH_RE.finditer(line)}:
                 try:
                     shown = script.relative_to(root.parent)
                 except ValueError:
@@ -2582,6 +2591,22 @@ class EnricherIdentityCoverageTests(unittest.TestCase):
                 'source "${H}/pex_runner.sh"\n'
                 '[[ -f x ]] && source "${H}/pex_runner.sh"\n',
                 [2],
+            ),
+            "two_sources_one_line": (
+                'source "${H}/pex_merge_call.sh" && source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "two_sources_semicolon": (
+                'source "${H}/pex_merge_call.sh"; source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "nonharness_then_harness": (
+                'source "${H}/env.sh" && source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "apostrophe_earlier": (
+                'echo "it\'s fine"; source "${H}/pex_runner.sh"\n',
+                [1],
             ),
             "comment": ('# [[ x ]] && source "${H}/pex_runner.sh"\n', []),
             "echo": ('echo "source ${H}/pex_runner.sh"\n', []),
