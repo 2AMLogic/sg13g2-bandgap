@@ -2397,7 +2397,7 @@ class SchematicDutSeamTests(unittest.TestCase):
             # VARIANT_SETUP_ARGS must expand cleanly under `set -u` on the
             # as-built path (#670).
             f'VARIANT_SETUP_ARGS=(); pex_schematic_dut_setup "{enricher}" '
-            '"${VARIANT_SETUP_ARGS[@]}"',
+            '${VARIANT_SETUP_ARGS[@]+"${VARIANT_SETUP_ARGS[@]}"}',
         )
         self.assertEqual(r.returncode, 0, r.stderr)
         # The render came from the committed template, not the decoy.
@@ -2468,13 +2468,49 @@ class SchematicDutSeamTests(unittest.TestCase):
 
     def test_unknown_and_valueless_options_fail_closed(self) -> None:
         for call in ("pex_schematic_dut_setup --bogus",
-                     "pex_schematic_dut_setup --dut-template"):
+                     "pex_schematic_dut_setup --dut-template",
+                     "pex_schematic_dut_setup --record-spec",
+                     "pex_schematic_dut_setup --record-spec --bogus",
+                     'pex_schematic_dut_setup --record-spec ""',
+                     "pex_schematic_dut_setup --dut-template --help"):
             with self.subTest(call=call):
                 root = self._schematic_stub_tree()
                 r = self._run_schematic_setup(root, call)
                 self.assertEqual(r.returncode, 2, r.stderr)
                 # Failed before any render: no WORK side effects.
                 self.assertFalse((root / "work" / "body.spice.tmpl").exists())
+
+    def test_empty_extras_and_bash43_unbound_arrays(self) -> None:
+        # Zero positional extras under `set -u` (Bash < 4.4 treats an empty
+        # array expansion as unbound).
+        root = self._schematic_stub_tree()
+        r = self._run_schematic_setup(root, "pex_schematic_dut_setup")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_record_spec_relative_path_is_anchored_to_the_caller(self) -> None:
+        root = self._schematic_stub_tree()
+        (root / "chosen.json").write_text('{"who": "caller"}\n')
+        (root / "work" / "chosen.json").write_text('{"who": "work"}\n')
+        r = self._run_schematic_setup(
+            root,
+            f'cd "{root}"; pex_schematic_dut_setup --record-spec chosen.json; '
+            f'cd "{root}/work"',
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (root / "spec-state.txt").read_text().strip(), str(root / "chosen.json")
+        )
+
+    def test_relative_spelling_of_the_committed_template_is_the_default(self) -> None:
+        root = self._schematic_stub_tree()
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root,
+            f'cd "{root}"; pex_schematic_dut_setup '
+            "--dut-template exp/testbench/stubstem.body.spice.tmpl",
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self._ident(root).count(str(committed)), 1)
 
     def test_the_psrr_wrapper_passes_variant_overrides_as_explicit_flags(self) -> None:
         # #670: the variant render source and record spec reach the shared

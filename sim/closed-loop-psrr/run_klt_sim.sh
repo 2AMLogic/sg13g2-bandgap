@@ -74,7 +74,8 @@ fi
 # submission identity (issue #650). VARIANT_SETUP_ARGS is empty on the
 # as-built path and carries the variant's --dut-template / --record-spec
 # under PSRR_VARIANT (#631, #670).
-pex_schematic_dut_setup "${HARNESS_DIR}/enrich_ac_report.py" "${VARIANT_SETUP_ARGS[@]}"
+pex_schematic_dut_setup "${HARNESS_DIR}/enrich_ac_report.py" \
+  ${VARIANT_SETUP_ARGS[@]+"${VARIANT_SETUP_ARGS[@]}"}
 
 # Sanity anchors: the newest committed record's typ/27C/3.30V row (20261001-085737-e5507b2).
 # (A PSRR_VARIANT run replaces these from variants/<name>.anchors.env above.)

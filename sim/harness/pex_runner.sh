@@ -242,14 +242,19 @@ pex_schematic_dut_setup() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --dut-template|--record-spec)
-        if [[ $# -lt 2 ]]; then
-          echo "pex_schematic_dut_setup: $1 needs a value" >&2
+        # A missing, empty or dash-prefixed value is a swallowed flag, not
+        # a path; a dash-leading filename is spelled ./-name.
+        if [[ $# -lt 2 || -z "$2" || "$2" == -* ]]; then
+          echo "pex_schematic_dut_setup: $1 needs a value (got '${2-}')" >&2
           return 2
         fi
+        # Anchor to the caller's directory now: the mint later runs from WORK.
+        local val="$2"
+        [[ "${val}" == /* ]] || val="${PWD}/${val}"
         if [[ "$1" == "--dut-template" ]]; then
-          dut_template="$2"
+          dut_template="${val}"
         else
-          _SCHEMATIC_RECORD_SPEC="$2"
+          _SCHEMATIC_RECORD_SPEC="${val}"
         fi
         shift 2
         ;;
@@ -278,7 +283,11 @@ pex_schematic_dut_setup() {
   # A non-default render source is bound to the identity here (#670): the
   # committed template already rides IDENT_ARGS from source time, and
   # re-adding it would trip submission_identity.py's duplicate --extra name.
-  [[ "${dut_template}" != "${default_dut}" ]] \
-    && IDENT_ARGS+=(--extra "${dut_template}")
-  for f in "${extra_ident[@]}"; do IDENT_ARGS+=(--extra "${f}"); done
+  # Compare resolved files, so a relative spelling of the committed
+  # template is still recognised as the default.
+  if [[ "$(readlink -f -- "${dut_template}")" != "$(readlink -f -- "${default_dut}")" ]]; then
+    IDENT_ARGS+=(--extra "${dut_template}")
+  fi
+  # ${arr[@]+...}: an empty array is unbound under set -u on Bash < 4.4.
+  for f in ${extra_ident[@]+"${extra_ident[@]}"}; do IDENT_ARGS+=(--extra "${f}"); done
 }
