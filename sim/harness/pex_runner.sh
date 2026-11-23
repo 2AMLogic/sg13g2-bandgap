@@ -64,6 +64,11 @@ klt_sim_batch_defaults
 # that shared template instead (issue #472).
 BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"
 
+# The schematic benches' record spec (#670): harness state, set unconditionally
+# at source time and reset by pex_schematic_dut_setup -- a caller's exported
+# RECORD_SPEC or _SCHEMATIC_RECORD_SPEC never reaches schematic_record_mint.
+_SCHEMATIC_RECORD_SPEC="${EXP_DIR}/testbench/${STEM}.record-spec.json"
+
 klt_sim_resume_scaffold
 IDENT_ARGS+=(
   --declare "batch_lib_root=submitter-pdk-root"
@@ -206,11 +211,12 @@ pex_record_mint() {
 schematic_record_mint() {
   ( cd "${WORK}" && python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
       --report "$1" \
-      --spec "${RECORD_SPEC:-${EXP_DIR}/testbench/${STEM}.record-spec.json}" \
+      --spec "${_SCHEMATIC_RECORD_SPEC}" \
       --experiment "${EXP_DIR}" )
 }
 
-# pex_schematic_dut_setup [EXTRA_IDENT_FILE ...]
+# pex_schematic_dut_setup [--dut-template PATH] [--record-spec PATH]
+#                         [EXTRA_IDENT_FILE ...]
 # (Shared by the six schematic-DUT benches, issue #650 -- the block every one
 # of them used to re-type after sourcing this file and its family runner.)
 # XMSENSE's width from the live startup netlist (sim/lib/msense_width.sh,
@@ -219,11 +225,49 @@ schematic_record_mint() {
 # override the header above documents, so the identity keeps hashing the
 # committed template -- and the three schematic netlists plus each
 # EXTRA_IDENT_FILE (the report enricher whose output the record binds to)
-# appended to IDENT_ARGS. An optional DUT_TEMPLATE (set before the call; the
-# PSRR bench's PROPOSAL variants, #631) replaces the committed render source.
-# Call it AFTER sourcing this file and BEFORE the
-# family runner's main.
+# appended to IDENT_ARGS. A render source other than the committed template
+# (the PSRR bench's PROPOSAL variants, #631) is the explicit --dut-template
+# flag, never an ambient DUT_TEMPLATE variable (#670), and rides the identity
+# from here. --record-spec names the spec schematic_record_mint binds records
+# with; unknown flags are refused. Call it AFTER sourcing this file and
+# BEFORE the family runner's main.
 pex_schematic_dut_setup() {
+  local default_dut="${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
+  local dut_template="${default_dut}"
+  local extra_ident=()
+  # Harness state, not caller environment (#670): the reset keeps an
+  # inherited _SCHEMATIC_RECORD_SPEC (or one left by an earlier call) from
+  # renaming minted evidence; --record-spec is the only override.
+  _SCHEMATIC_RECORD_SPEC="${EXP_DIR}/testbench/${STEM}.record-spec.json"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --dut-template|--record-spec)
+        # A missing, empty or dash-prefixed value is a swallowed flag, not
+        # a path; a dash-leading filename is spelled ./-name.
+        if [[ $# -lt 2 || -z "$2" || "$2" == -* ]]; then
+          echo "pex_schematic_dut_setup: $1 needs a value (got '${2-}')" >&2
+          return 2
+        fi
+        # Anchor to the caller's directory now: the mint later runs from WORK.
+        local val="$2"
+        [[ "${val}" == /* ]] || val="${PWD}/${val}"
+        if [[ "$1" == "--dut-template" ]]; then
+          dut_template="${val}"
+        else
+          _SCHEMATIC_RECORD_SPEC="${val}"
+        fi
+        shift 2
+        ;;
+      -*)
+        echo "pex_schematic_dut_setup: unknown option $1" >&2
+        return 2
+        ;;
+      *)
+        extra_ident+=("$1")
+        shift
+        ;;
+    esac
+  done
   # XMSENSE's width from the live startup netlist, as every closed-loop bench does.
   # shellcheck source=../lib/msense_width.sh
   source "${SIM_DIR}/lib/msense_width.sh"
@@ -231,10 +275,19 @@ pex_schematic_dut_setup() {
       && printf '%s' "${MSENSE_W}" > "${WORK}/msense_w.txt" )
   MSENSE_W="$(<"${WORK}/msense_w.txt")"
   BODY_TEMPLATE="${WORK}/body.spice.tmpl"
-  sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${DUT_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}" > "${BODY_TEMPLATE}"
+  sed "s|@@MSENSE_W@@|${MSENSE_W}|g" "${dut_template}" > "${BODY_TEMPLATE}"
   local f
   IDENT_ARGS+=(--extra "${REPO_ROOT}/design/netlist/bandgap_startup.spice"
     --extra "${REPO_ROOT}/design/netlist/bandgap_core.spice"
     --extra "${REPO_ROOT}/design/netlist/bandgap_amp.spice")
-  for f in "$@"; do IDENT_ARGS+=(--extra "${f}"); done
+  # A non-default render source is bound to the identity here (#670): the
+  # committed template already rides IDENT_ARGS from source time, and
+  # re-adding it would trip submission_identity.py's duplicate --extra name.
+  # Compare resolved files, so a relative spelling of the committed
+  # template is still recognised as the default.
+  if [[ "$(readlink -f -- "${dut_template}")" != "$(readlink -f -- "${default_dut}")" ]]; then
+    IDENT_ARGS+=(--extra "${dut_template}")
+  fi
+  # ${arr[@]+...}: an empty array is unbound under set -u on Bash < 4.4.
+  for f in ${extra_ident[@]+"${extra_ident[@]}"}; do IDENT_ARGS+=(--extra "${f}"); done
 }
