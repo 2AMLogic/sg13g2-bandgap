@@ -29,7 +29,7 @@ length scaling of XMP3/XMP4 — the term that dominates — collapses the pn
 pole into the loop's 40–50 MHz crossover (PM −16.5° at ×2, −41° at ×4 with
 tail ×2; the
 same solve-quality-gated probe that reproduces the committed loop-gain
-record's margins to 0.3°). The one bounded knob that helps every binding
+record's margins to ≤ 0.33°). The one bounded knob that helps every binding
 corner without destabilizing the loop is **more input-pair gm at unchanged
 length**: XMP1/XMP2 20u/1u → 40u/1u (`p12-w2`), +2.7 dB loop gain, no
 corner regressed across twelve probed PVT points, PM 51–55°, Iq +0.07 µA,
@@ -89,7 +89,7 @@ op-level TC spans improved 2–3 ppm/°C.
   [`sim/closed-loop-psrr/records/20261121-095519-80e1511e.md`](../../sim/closed-loop-psrr/records/20261121-095519-80e1511e.md):
   45/45 points above 60 dB, worst corner `bcs`/125 °C/3.63 V at 60.9884 dB —
   a +0.988 dB margin (0.012 dB short of a literal 1.000 dB; the probes
-  matched the fleet to 0.0004 dB).
+  matched the fleet to < 0.001 dB, worst |Δ| 0.00073 dB at `typ`/27 °C/3.30 V).
 - The amp's phase margin budget is the binding constraint this record adds
   to the design's common knowledge: future PSRR or gain work must budget
   against the 40–50 MHz crossover, and any XMN1-4 / XMP3-4 change must

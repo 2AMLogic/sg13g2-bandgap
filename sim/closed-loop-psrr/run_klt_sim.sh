@@ -52,7 +52,13 @@ MSENSE_W="$(<"${WORK}/msense_w.txt")"
 # The variant carries its own body template, its own sanity anchors (its
 # typ/27C/3.30V point is NOT the as-built record's) and its own record spec
 # (so a minted record names the variant, not the as-built DUT). Unset: the
-# as-built path below, byte-identical to before this hook existed.
+# as-built path below. The GENERATED deck stays byte-identical to before this
+# hook existed, but the submission identity does not: DUT_TEMPLATE rides
+# IDENT_ARGS unconditionally further down, so the template now feeds the
+# submission digest (sim/harness/submission_identity.py hashes every --extra).
+# A saved as-built report therefore fails the identity match and is refused
+# as stale by default -- fail-safe re-submission, never a false reuse;
+# KLT_SIM_REDISPATCH_STALE=1 is the explicit resubmission opt-in.
 DUT_TEMPLATE="${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"
 RECORD_SPEC="${EXP_DIR}/testbench/${STEM}.record-spec.json"
 VARIANT=""
