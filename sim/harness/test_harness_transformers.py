@@ -1989,7 +1989,14 @@ class SetDispatchWiringTests(unittest.TestCase):
         ]
         self.assertEqual(
             occurrences,
-            ['BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"'],
+            [
+                'BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"',
+                # pex_schematic_dut_setup's render source (#650): reads the
+                # committed per-stem template and writes the WORK override --
+                # the post-source assignment the header above documents.
+                '  sed "s|@@MSENSE_W@@|${MSENSE_W}|g" '
+                '"${EXP_DIR}/testbench/${STEM}.body.spice.tmpl" > "${BODY_TEMPLATE}"',
+            ],
         )
 
     def test_shared_pex_body_template_exists_and_the_per_stem_copy_does_not(self) -> None:
@@ -2005,6 +2012,79 @@ class SetDispatchWiringTests(unittest.TestCase):
             / "testbench" / "closed_loop_vref_pvt_pex_boxtc.body.spice.tmpl"
         )
         self.assertFalse(per_stem.exists(), per_stem)
+
+
+class SchematicDutSeamTests(unittest.TestCase):
+    """The shell side of the six schematic-DUT benches: one shared setup,
+    one shared record mint, one shared AC flow -- kept shared (#650).
+    """
+
+    #: the six schematic-DUT wrappers and the identity extra each appends
+    WRAPPERS = {
+        "closed-loop-iq": "enrich_supply_bench_report.py",
+        "closed-loop-startup": "enrich_supply_bench_report.py",
+        "startup-time-to-release": "enrich_supply_bench_report.py",
+        "closed-loop-vref-pvt": None,
+        "closed-loop-vref-pvt-boxtc": None,
+        "closed-loop-psrr": "enrich_ac_report.py",
+    }
+
+    NETLISTS = ("bandgap_startup.spice", "bandgap_core.spice", "bandgap_amp.spice")
+
+    def test_every_wrapper_delegates_to_the_shared_setup(self) -> None:
+        for exp, extra in self.WRAPPERS.items():
+            with self.subTest(exp=exp):
+                script = (SIM_DIR / exp / "run_klt_sim.sh").read_text()
+                call = "pex_schematic_dut_setup"
+                if extra is not None:
+                    call += f' "${{HARNESS_DIR}}/{extra}"'
+                self.assertIn(call, script)
+                # The setup must not be re-typed here -- that is the
+                # duplication #650 removed. No msense read, no template
+                # render, no netlist list.
+                self.assertNotIn("read_msense_width", script)
+                self.assertNotIn("@@MSENSE_W@@", script)
+                for netlist in self.NETLISTS:
+                    self.assertNotIn(
+                        f'--extra "${{REPO_ROOT}}/design/netlist/{netlist}"', script)
+                # The flow is the family runner's, not a local case block.
+                self.assertNotIn('case "${MODE}"', script)
+
+    def test_the_shared_setup_carries_the_schematic_dut(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        body = driver.split("pex_schematic_dut_setup() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn('source "${SIM_DIR}/lib/msense_width.sh"', body)
+        self.assertIn('"${WORK}/msense_w.txt"', body)
+        self.assertIn('BODY_TEMPLATE="${WORK}/body.spice.tmpl"', body)
+        for netlist in self.NETLISTS:
+            self.assertIn(f'--extra "${{REPO_ROOT}}/design/netlist/{netlist}"', body)
+
+    def test_every_schematic_record_delegates_to_the_shared_mint(self) -> None:
+        # The --extraction-sources-less twin of pex_record_mint: defined once
+        # beside it, and none of its callers re-types the adapter call.
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        self.assertIn("schematic_record_mint() {", driver)
+        mint = driver.split("schematic_record_mint() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("klt_sim_evidence.py", mint)
+        self.assertNotIn("--extraction-sources", mint)
+        for rel in ("harness/pex_vref_runner.sh", "harness/supply_bench_runner.sh"):
+            with self.subTest(rel=rel):
+                text = (SIM_DIR / rel).read_text()
+                self.assertIn("schematic_record_mint", text)
+                self.assertNotIn("klt_sim_evidence.py", text)
+
+    def test_the_psrr_wrapper_delegates_its_flow_to_the_ac_runner(self) -> None:
+        # closed-loop-psrr used to re-type pex_ac_main's --sanity/--batch/
+        # --record arms inline; the schematic twin is a runner function now.
+        script = (SIM_DIR / "closed-loop-psrr" / "run_klt_sim.sh").read_text()
+        self.assertIn("schematic_ac_main", script)
+        self.assertNotIn("klt_sim_evidence.py", script)
+        runner = (SIM_DIR / "harness" / "pex_ac_runner.sh").read_text()
+        self.assertIn("schematic_ac_main() {", runner)
+        self.assertIn("_ac_main() {", runner)
+        # One flow, not two: the arms live once, in _ac_main.
+        for arm in ("--sanity)", "--batch)", "--record)"):
+            self.assertEqual(runner.count(arm), 1, arm)
 
 
 # --------------------------------------------------------------------------
