@@ -47,6 +47,16 @@ class GridTests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             tc.body_text("@@NOPE@@ @@FB_SEED@@", "/o", "typ", 3.30, 27, "10u", seeds, "s.csv")
 
+    def test_unfilled_embedded_placeholder_refused(self):
+        """Issue #652: a placeholder embedded in a word (`v(fb)=@@NOPE@@`,
+        `temp=@@TEMP_C@@C`) is as unfilled as a standalone one -- the old
+        text.split() leftover check was blind to these."""
+        seeds = {("typ", "27", "3.30"): dict(fb_final_v="1", sns1_final_v="1",
+                                              sns2_final_v="1", vref_final_v="1")}
+        with self.assertRaises(SystemExit):
+            tc.body_text("v(fb)=@@FB_SEED@@\ntemp=@@NOPE@@C\n", "/o", "typ", 3.30, 27,
+                         "10u", seeds, "s.csv")
+
     def test_missing_seed_row_refused(self):
         with self.assertRaises(SystemExit):
             tc.seed_row({}, "typ", 27, "3.30", "s.csv")
