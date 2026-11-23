@@ -113,10 +113,15 @@ Only three things are new here:
 2. The transient `vdd` ramp is replaced by a DC supply carrying the 1 V / 0°
    AC stimulus (so this bench needs no `rshunt`/`gmin`/`reltol` convergence
    aids — there is no near-singular ramp instant to get through).
-3. `run_pvt_sweep.sh` (removed in #438) uses the **sibling experiment's own**
-   `../closed-loop-psrr/tools/psrr_summary.awk` rather than a copy, so the
-   two benches' DC/worst-case/interpolated numbers cannot drift apart and
-   quietly invalidate the cross-bench comparison below.
+3. The summariser is shared, not copied. The removed `run_pvt_sweep.sh`
+   (#438) passed the sibling experiment's header-only summary wrapper (a
+   companion over `sim/lib/db_summary_common.awk`, deleted with its
+   callers in #460); the `klt sim` sweeps' DC/worst-case/interpolated
+   columns now come from the shared `sim/harness/enrich_ac_report.py`,
+   and `tools/vsubs_tie_sensitivity.sh` invokes
+   `sim/lib/db_summary_common.awk` directly -- so the two benches'
+   numbers cannot drift apart and quietly invalidate the cross-bench
+   comparison below.
 
 ## The vsubs tie matters here
 

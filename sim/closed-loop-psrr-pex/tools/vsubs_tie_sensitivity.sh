@@ -17,7 +17,8 @@
 # number in ../vsubs-tie-sensitivity.md rather than an asserted argument.
 #
 # Reads only committed artifacts (a record's own netlist snapshots and the
-# sibling summariser); writes nothing into the append-only evidence tree --
+# shared summariser sim/lib/db_summary_common.awk); writes nothing into the
+# append-only evidence tree --
 # scratch output goes to a mktemp dir. Requires ngspice + the OSDI models
 # (sim/tools/build-osdi.sh), same as any sweep in this tree.
 set -euo pipefail
@@ -25,7 +26,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXPERIMENT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SIM_DIR="$(cd "${EXPERIMENT_DIR}/.." && pwd)"
-SUMMARY_AWK="${SIM_DIR}/closed-loop-psrr/tools/psrr_summary.awk"
 COMMON_AWK="${SIM_DIR}/lib/db_summary_common.awk"
 
 if ! command -v ngspice >/dev/null 2>&1; then
@@ -71,7 +71,7 @@ for point in "${POINTS[@]}"; do
           -e "s|^wrdata .*|wrdata ${ac_out} psrr_db vref_phase_deg|" "${snap}" > "${netlist}"
     fi
     ngspice -b "${netlist}" > "${WORK}/${point}.${tie}.log" 2>&1
-    read -r dc mn mnf k1 k100 m1 < <(awk -v extremum=min -f "${COMMON_AWK}" -f "${SUMMARY_AWK}" "${ac_out}")
+    read -r dc mn mnf k1 k100 m1 < <(awk -v extremum=min -f "${COMMON_AWK}" "${ac_out}")
     echo "${point},${tie},${dc},${mn},${mnf},${k1},${k100},${m1}"
   done
 done
