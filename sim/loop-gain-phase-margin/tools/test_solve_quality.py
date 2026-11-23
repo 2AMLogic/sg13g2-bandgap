@@ -205,6 +205,20 @@ class DecideTests(unittest.TestCase):
         self.assertEqual(sq.decide(ok, True, status, float(pm), False)[0], "FAIL")
 
 
+class PrepareTests(unittest.TestCase):
+    """cmd_prepare's batch guard (issue #652): --provision-script has no
+    host-path default any more, so a batch prepare without it must refuse
+    before writing any request."""
+
+    def test_batch_target_without_provision_script_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = argparse.Namespace(work=tmp, target="batch", only=None, plan="pvt",
+                                      codes=None, batch_pdk_root="/opt/pdk",
+                                      provision_script=None)
+            with self.assertRaises(SystemExit):
+                kta.cmd_prepare(args)
+
+
 def write_raw(path: Path, rows: list[sq.Row], op_fb: float) -> None:
     names = ["frequency", "v(fb_src)", "v(fb_load)", "v(op_fb)"]
     lines = ["Title: test", "Plotname: AC Analysis", "Flags: complex", f"No. Variables: {len(names)}",
@@ -227,7 +241,7 @@ class RecorderPathTests(unittest.TestCase):
 
     def test_record_rejects_corrupt_and_publishes_clean(self):
         seeds = kta.lookup_seeds("wcs", "125", "2.97")
-        seed_fb = float(seeds["fb"])
+        seed_fb = float(seeds["fb_final_v"])
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             work = tmp / "work"
@@ -269,7 +283,7 @@ class RecorderPathTests(unittest.TestCase):
     def test_np_twin_must_be_clean_and_op_checked(self):
         """A control (np) row cannot take equilibrium evidence from a corrupted probe twin."""
         seeds = kta.lookup_seeds("wcs", "125", "2.97")
-        seed_fb = float(seeds["fb"])
+        seed_fb = float(seeds["fb_final_v"])
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             work = tmp / "work"
