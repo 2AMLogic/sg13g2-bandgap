@@ -2322,8 +2322,9 @@ port's post-layout evidence is extracted once against the assembled top
 cell, not per leaf):
 
 ```
-    sg13cmos5l-bandgap_top.pex.spice   klt extract output (no --parasitics
-                                        -- see below for why), consumed by
+    sg13cmos5l-bandgap_top.pex.spice   klt extract --parasitics output
+                                        (regenerated with real wire R/C in
+                                        issue #480), consumed by
                                         sim/sg13cmos5l-closed-loop-startup-pex/
     pex_extract_report.json            committed klt extract --format json
                                         report for the file above
@@ -2427,7 +2428,12 @@ unchanged `device_counts`; the LVS verdicts stay `mismatch` with identical
 devices/nets-matched counts everywhere — only the 0.8.0 comparer's
 finding/severity classification moved (per-cell numbers in the LVS tables
 below) — and the ERC verdict is unchanged in kind (`violations`, the same
-10 `erc.missing_tie` findings).
+10 `erc.missing_tie` findings). (History, superseded: the top's
+`pex_extract_report.json`/`.pex.spice` bytes this re-mint produced were
+still a plain extraction — `--parasitics` did not work for `sg13cmos5l`
+yet; issue #480 later regenerated that pair with real wire R/C once the
+pin carried the upstream fix — see "SG13CMOS5L: Post-layout parasitic
+extraction" below.)
 
 **#633 (2026-11-21) re-minted `sg13cmos5l-bandgap_core`'s and
 `sg13cmos5l-bandgap_top`'s reports under the same 0.8.0 pin** (their GDS
@@ -2437,7 +2443,10 @@ LVS reports, both `extract_report.json` files (plus `core`'s committed
 `.extracted.spice`), the top's `pex_extract_report.json`/`.pex.spice`
 and `erc_report.json`. Both DRCs report zero violations. Both LVS reports
 retain their mismatch findings, and all three extracted SPICE files
-reproduce byte-for-byte. The pinned deck models the n-well (31/0) and
+reproduce byte-for-byte (the top's `.pex.spice` has since been regenerated
+with `--parasitics` — issue #480 — and now reproduces byte-for-byte under
+that flag instead; see "SG13CMOS5L: Post-layout parasitic extraction"
+below). The pinned deck models the n-well (31/0) and
 n+ tap (7/0) but has no PNP device class. Top ERC retains ten
 `erc.missing_tie` findings because the declaration checks every well
 against `vdd`, including the ten bases tied to `vss`. The `amp` and
@@ -3838,64 +3847,85 @@ on this cell therefore remains expected;
 the check that it is *only* the underpass is that `merged_net_labels` is
 empty and `klt lvs` finds no `net.merged` between two schematic nets.
 
-## SG13CMOS5L: Post-layout parasitic extraction (issue #84)
+## SG13CMOS5L: Post-layout parasitic extraction (issues #84, #480)
 
 Per issue #84's own dependency text, LVS's `mismatch` status above (fully
 attributed to the same four causes every leaf cell already carries) is the
 allowed extraction input, same convention issue #14 established for the
-SG13G2 side. **Device-level extraction succeeded, cleanly, against the
-assembled top cell**:
+SG13G2 side. **Parasitic extraction succeeds against the assembled top
+cell** — regenerated under the section's evidence-standard pin in issue #480
+(operator ruling 2026-11-23), once that pin carried the upstream fix:
 
 ```bash
 cd layout/sg13cmos5l-bandgap_top
-klt extract --deck sg13cmos5l sg13cmos5l-bandgap_top.gds \
+klt extract --deck sg13cmos5l --parasitics sg13cmos5l-bandgap_top.gds \
   -o sg13cmos5l-bandgap_top.pex.spice --format json > pex_extract_report.json
 ```
 
-`status: "extracted"`, no errors, `device_count: 14` (`device_counts:
-{"nfet": 6, "pfet": 8}`, matching "Cell: `sg13cmos5l-bandgap_top`"'s own
-device-count accounting above). `sg13cmos5l-bandgap_top.pex.spice` and its
-`pex_extract_report.json` companion are committed as read-only extraction
-artifacts — see
+run via `uvx --from "klayout-tools==0.8.0"` (the DR-0016 pin; the committed
+report records `provenance.klt_version 0.8.0` and the same deck
+`content_hash sha256:5a43b8eb…` every #561-step-2/#633 mint in this section
+carries, so the verdict stays same-deck comparable). `status: "extracted"`,
+no errors, `device_count: 17` (`device_counts: {"nfet": 6, "pfet": 8,
+"rhigh": 1, "rppd": 2}`, matching "Cell: `sg13cmos5l-bandgap_top`"'s own
+device-count accounting above — the stale count of `14` this paragraph
+carried before #480 predated the #177/#243 re-extraction and had never been
+refreshed). The netlist is 229 lines carrying **79 R/C device lines**
+(`grep -ciE '^[rc]'`): 65 lumped star wire resistors (`R<net>_tN` cards),
+13 net-to-substrate capacitors, and the 1 TΩ `Rvsubs_dctie` substrate DC
+tie — the same parasitic model shape the SG13G2 `.pex.spice` headers
+document (lumped single-R-per-net star, quasi-static, vertical-overlap
+coupling only). Reported totals: 835.0669 Ω summed wire resistance,
+272.6214 fF summed capacitance, zero coupling capacitors (`cc_count: 0` —
+no `--critical-net` was named). Determinism, checked: two consecutive runs
+under the pin produce a byte-identical netlist (sha256
+`df3f763ccc42574c1cc28581a67081b701a9f0c35018e057f66df96032fee66f`,
+recorded as the report's own `netlist_sha256`; the JSON report differs
+between runs only in its `timing` block).
+`sg13cmos5l-bandgap_top.pex.spice` and its `pex_extract_report.json`
+companion are committed as read-only extraction artifacts — see
 `sim/sg13cmos5l-closed-loop-startup-pex/README.md` for the full account of
 what this extraction does and does not model, and the resulting PVT-sweep
 evidence under `sim/`.
 
-**`--parasitics` does not work for this deck — found and filed this
-pass, not silently worked around.** The obvious next command,
-
-```bash
-klt extract --deck sg13cmos5l --parasitics sg13cmos5l-bandgap_top.gds \
-  -o sg13cmos5l-bandgap_top.pex.spice --format json
-```
-
-fails outright: `{"error": {"message": "unknown deck 'sg13cmos5l'
+**History: `--parasitics` used to fail outright for this deck — found and
+filed that pass, not silently worked around (issue #84).** The original mint
+of this pair ran the plain extraction because the obvious next command
+failed outright: `{"error": {"message": "unknown deck 'sg13cmos5l'
 (available: gf180mcu, sg13g2, sky130)"}}`, exit 1 — even though `klt deck
-info --deck sg13cmos5l` reports the deck installed and `klt extract --deck
-sg13cmos5l` (no `--parasitics`) succeeds normally, as above. Root cause,
-traced directly in the installed package source:
-`klayout_tools.decks.__init__._parasitics_registry()` hardcodes its deck
-import/dict to three decks (`sky130`, `gf180mcu`, `sg13g2`) and never
-imports `sg13cmos5l` — every *other* per-deck lookup table in that same
-file (the extraction-deck registry, the layer-name table, the
-unmodelled-voltage-marker list, the nominal-DBU table) already includes
-`sg13cmos5l`; only this one function's import list was never updated when
-`decks/sg13cmos5l.py` was added. This directly contradicts that module's
-own comment above its `PARASITICS = ParasiticsDeck()` declaration, which
-documents `--parasitics` against `sg13cmos5l` as intended to succeed today
-(reporting zero R/C for every net, the same graceful degradation any deck
-with no curated sheet-resistance table gets) — not fail outright. Filed
-generically, per `CLAUDE.md`'s friction protocol, as
+info --deck sg13cmos5l` reported the deck installed and the plain
+extraction succeeded. Root cause, traced directly in the installed package
+source: `klayout_tools.decks.__init__._parasitics_registry()` hardcoded its
+deck import/dict to three decks (`sky130`, `gf180mcu`, `sg13g2`) and never
+imported `sg13cmos5l` — every *other* per-deck lookup table in that same
+file already included it. Filed generically, per `CLAUDE.md`'s friction
+protocol, as
 [klayout-tools#1440](https://github.com/2AMLogic/klayout-tools/issues/1440)
-— distinct from (and found on top of) the already-filed device-class gaps
-below, since even a fixed registry would still report zero R/C for this
-starter deck (no coefficient table exists yet), so this pass used the
-plain (working) extraction mode above rather than block on the registry
-fix. Consequence: `sim/sg13cmos5l-closed-loop-startup-pex/` (issue #84)
-extracts real device geometry (`w`/`l`/`as`/`ad`/`ps`/`pd`) but models zero
-wire (metal) parasitics — a materially weaker claim than the SG13G2 PEX
-pair's own wire-RC-inclusive evidence (issue #37). See that experiment's
-README for the full disclosure.
+— **closed/completed upstream 2026-09-19**; the `klayout-tools==0.8.0` pin
+(released 2026-10-24) carries the fix, which is what the regeneration above
+ran under. Consequence of that history: `sim/sg13cmos5l-closed-loop-startup-pex/`
+(issue #84) was minted against the pre-#480 plain-extraction bytes — its
+records extract real device geometry (`w`/`l`/`as`/`ad`/`ps`/`pd`) but
+model zero wire (metal) parasitics, a materially weaker claim than the
+SG13G2 PEX pair's own wire-RC-inclusive evidence (issue #37). That
+experiment's testbench is hand-transcribed geometry with no
+extraction-source binding, so re-running it against the parasitic-bearing
+netlist is template work plus a multi-corner PVT sweep — split out of #480
+as its own tracker, #698 (see that experiment's README for the full
+disclosure; `sim/` evidence is append-only and is not edited by #480).
+
+**Post-regeneration duplication re-assessment (#480's ruling, step two).**
+The cell's two extraction pairs are now legitimately distinct, and both
+stay: `sg13cmos5l-bandgap_top.extracted.spice` + `extract_report.json` are
+the plain device extraction the uniform seven-file convention above
+mandates for every cell in this section, and
+`sg13cmos5l-bandgap_top.pex.spice` + `pex_extract_report.json` are the
+parasitic extraction of that same GDS. Before #480 the two netlists were
+byte-identical — the `pex`-named pair was a plain extraction wearing the
+name, because `--parasitics` could not run — so the duplication was a
+symptom of klayout-tools#1440, and it dissolves with the regeneration: no
+cited evidence is deleted, and the seven-file convention survives
+untouched.
 
 ## Reference netlist
 
@@ -3967,9 +3997,10 @@ generically against the tool, not worked around in this repo. The status
 column was re-checked live for issue #174 rather than left as filed —
 several of these have since been fixed upstream, and the LVS narratives
 above are written against what the deck does *today*, not what it did when
-each issue was filed:
+each issue was filed (the #1440 row's status was re-checked live again in
+issue #480):
 
-| Gap | Upstream issue | Status (re-checked, issue #174) |
+| Gap | Upstream issue | Status (re-checked, issues #174/#480) |
 |---|---|---|
 | No well/substrate tap layers in the `sg13cmos5l` deck | [klayout-tools#1414](https://github.com/2AMLogic/klayout-tools/issues/1414) | **closed/completed** — deck declares `tap_nplus`/`tap_pplus`; this design still draws no tie |
 | No poly-resistor recognition; unmodelled body shorts its terminals | [klayout-tools#1415](https://github.com/2AMLogic/klayout-tools/issues/1415) | **closed/completed** — `rppd`/`rhigh` now extracted as real devices; they still do not pair here |
@@ -3977,7 +4008,7 @@ each issue was filed:
 | Only `Metal1` modelled, no via — forces planar single-metal layout | [klayout-tools#1417](https://github.com/2AMLogic/klayout-tools/issues/1417) | **closed/completed** — deck now declares `Metal2`–`TopMetal1` + vias |
 | `sg13cmos5l` missing from `--deck` help text and from `drc.md`/`lvs.md`/`pdk.md` | [klayout-tools#1418](https://github.com/2AMLogic/klayout-tools/issues/1418) | **closed/completed** |
 | An intentional poly underpass is reported as an unmodelled resistor body, with no way to annotate it | [klayout-tools#1425](https://github.com/2AMLogic/klayout-tools/issues/1425) (issue #74) | **closed/completed** — an `ExtractionDeck.poly_interconnect` annotation layer now exists, but `sg13cmos5l` declares none, so the behaviour here is unchanged |
-| `--parasitics` fails outright for `sg13cmos5l` (`_parasitics_registry()` never registers this deck) | [klayout-tools#1440](https://github.com/2AMLogic/klayout-tools/issues/1440) (issue #84) | open |
+| `--parasitics` fails outright for `sg13cmos5l` (`_parasitics_registry()` never registers this deck) | [klayout-tools#1440](https://github.com/2AMLogic/klayout-tools/issues/1440) (issue #84) | **closed/completed** (2026-09-19) — the `klt 0.8.0` pin carries the fix, and #480 regenerated the top's `.pex.spice` with real wire R/C under it |
 
 Bipolar (`pnpMPA`) recognition is deliberately **not** re-filed: see cause 1
 above — it is the same source file, and the same finding, klayout-tools#1242
