@@ -43,53 +43,20 @@ Run the emitted deck with run_probe.sh (it stages the PDK's sibling
 """
 
 import argparse
-import csv
 import os
 import re
 import sys
 
 REPO_HERE = os.path.dirname(os.path.abspath(__file__))
-
-CORNER_SECTIONS = {
-    # same pairing as sim/harness/klt_corner_bundle.py's CORNER_SECTIONS
-    "typ": ("hbt_typ", "mos_tt", "res_typ"),
-    "bcs": ("hbt_bcs", "mos_ff", "res_bcs"),
-    "wcs": ("hbt_wcs", "mos_ss", "res_wcs"),
-    "sf": ("hbt_typ", "mos_sf", "res_typ"),
-    "fs": ("hbt_typ", "mos_fs", "res_typ"),
-}
+sys.path.insert(0, os.path.join(REPO_HERE, "..", "..", "harness"))
+from klt_corner_bundle import CORNER_LIBS, CORNER_SECTIONS  # noqa: E402  (#682)
+from seed_deck import SEED_FIELDS, fill_deck, load_seeds, seed_row  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Variant transforms. Each entry: (one-line description, [functions]).
 # A transform takes (lines, ctx) and returns rewritten lines; ctx carries
 # vdd so quiet rails can hold the same DC potential.
 # ---------------------------------------------------------------------------
-
-def _sub(pattern, repl, desc_line):
-    """Regex line-rewrite; exactly one line must match."""
-    def fn(lines, ctx):
-        hit = [i for i, l in enumerate(lines) if re.search(pattern, l)]
-        if len(hit) != 1:
-            sys.exit(f"gen_probe_deck.py: variant {desc_line!r}: pattern "
-                     f"{pattern!r} matched {len(hit)} lines (need exactly 1)")
-        lines[hit[0]] = re.sub(pattern, repl, lines[hit[0]])
-        return lines
-    return fn
-
-
-def _subn(pattern, repl, expect, desc_line):
-    def fn(lines, ctx):
-        n = 0
-        for i, l in enumerate(lines):
-            if re.search(pattern, l):
-                lines[i] = re.sub(pattern, repl, l)
-                n += 1
-        if n != expect:
-            sys.exit(f"gen_probe_deck.py: variant {desc_line!r}: pattern "
-                     f"{pattern!r} matched {n} lines (need exactly {expect})")
-        return lines
-    return fn
-
 
 def _quiet_rail(dev_pattern, desc_line):
     """Move every device line matching dev_pattern onto the ac-quiet rail.
@@ -128,35 +95,37 @@ def _add_quiet_source(lines, ctx):
     return lines
 
 
-def _double_all_pmos(desc_line):
-    """Scale every DUT sg13_hv_pmos instance's w AND l by 2 (same W/L).
+def _scale_mos(devices, w_scale, l_scale, desc_line):
+    """Scale the w AND l of each named sg13_hv_[pn]mos DUT instance.
 
-    Numerically doubles each device's own w/l (they differ: 8u/9u/10u/20u
+    Numerically scales each device's own w/l (they differ: 8u/9u/10u/20u
     legs), so the rewrite cannot be a single regex substitution; it parses
-    each line's own numbers. Fails closed if any expected line is missed.
+    each line's own numbers. Each requested name must occur exactly once
+    with parseable dimensions. Either supply rail (vdd or the quiet vddq)
+    matches, so the resize commutes with the quiet-* ablations.
     """
-    want = ("XM1 ", "XM2A ", "XM2B ", "XM3A ", "XM3B ", "XM3C ",
-            "XMTAIL ", "XMP1 ", "XMP2 ", "XMP3 ", "XMP4 ")
-    pat = re.compile(r"^(XM(?:1|2A|2B|3A|3B|3C|TAIL|P1|P2|P3|P4) .*"
-                     r" sg13_hv_pmos )w=([0-9.]+)u l=([0-9.]+)u(.*)$")
+    pat = re.compile(r"^((X\S+) .* sg13_hv_[pn]mos )w=([0-9.]+)u l=([0-9.]+)u(.*)$")
 
     def fn(lines, ctx):
         seen = set()
         for i, l in enumerate(lines):
-            if not l.startswith(want):
+            name = l.split(" ", 1)[0]
+            if name not in devices:
                 continue
+            if name in seen:
+                sys.exit(f"gen_probe_deck.py: variant {desc_line!r}: duplicate instance {name}")
             m = pat.match(l)
             if not m:
                 sys.exit("gen_probe_deck.py: variant %r: line %r does not"
                          " parse" % (desc_line, l))
-            head, w, ln, tail_m = m.groups()
+            head, _, w, ln, tail_m = m.groups()
             lines[i] = "%sw=%.6gu l=%.6gu%s" % (
-                head, 2 * float(w), 2 * float(ln), tail_m)
-            seen.add(l.split()[0])
-        missing = set(x.strip() for x in want) - seen
+                head, w_scale * float(w), l_scale * float(ln), tail_m)
+            seen.add(name)
+        missing = sorted(set(devices) - seen)
         if missing:
             sys.exit("gen_probe_deck.py: variant %r: missed %s"
-                     % (desc_line, sorted(missing)))
+                     % (desc_line, missing))
         return lines
     return fn
 
@@ -228,62 +197,53 @@ def _loop_gain_break(desc_line):
         return lines
     return fn
 
+# DUT device groups for the resize variants (instance names as in the body).
+CORE_PMOS = ("XM1", "XM2A", "XM2B", "XM3A", "XM3B", "XM3C")
+AMP_NMOS = ("XMN1", "XMN2", "XMN3", "XMN4")
+AMP_P12 = ("XMP1", "XMP2")
+AMP_P34 = ("XMP3", "XMP4")
+AMP_TAIL = ("XMTAIL",)
+ALL_PMOS = CORE_PMOS + AMP_TAIL + AMP_P12 + AMP_P34
+
+
 VARIANTS = {
     "asbuilt": ("the committed DUT, unchanged (baseline)", []),
-
     "xmn435": (
         "PR #435's unmerged amp NMOS-mirror resize: XMN1-4 w=10u l=1u -> "
         "w=40u l=4u (feature/issue-303 tip 50c460f, only electrical change "
         "in that PR's design/ diff)",
-        [
-            _sub(r"^(XMN1 d1 d1 vss vss sg13_hv_nmos) w=10u l=1u",
-                 r"\1 w=40u l=4u", "XMN1"),
-            _sub(r"^(XMN2 d2 d2 vss vss sg13_hv_nmos) w=10u l=1u",
-                 r"\1 w=40u l=4u", "XMN2"),
-            _sub(r"^(XMN3 fb d1 vss vss sg13_hv_nmos) w=10u l=1u",
-                 r"\1 w=40u l=4u", "XMN3"),
-            _sub(r"^(XMN4 pn d2 vss vss sg13_hv_nmos) w=10u l=1u",
-                 r"\1 w=40u l=4u", "XMN4"),
-        ]),
-
-
+        [_scale_mos(AMP_NMOS, 4, 4, "xmn435")]),
     "quiet-core": (
         "ablation: core PMOS mirror legs XM1, XM2A/B, XM3A/B/C moved to the "
         "ac-quiet rail (removes the core mirror's direct vdd coupling; the "
         "amp, startup and bipolars keep seeing ripple)",
         [_quiet_rail(r"^XM(1|2A|2B|3A|3B|3C) ", "quiet-core"),
          _add_quiet_source]),
-
     "quiet-amp": (
         "ablation: amp supply devices XMTAIL, XMP1-XMP4 (sources/bulks) "
         "moved to the ac-quiet rail (removes the amplifier's own vdd "
         "coupling; core and startup keep seeing ripple)",
         [_quiet_rail(r"^XM(TAIL|P1|P2|P3|P4) ", "quiet-amp"),
          _add_quiet_source]),
-
     "quiet-startup": (
         "ablation: startup pull-up XRPU fed from the ac-quiet rail (removes "
         "the startup branch's vdd coupling; core and amp keep seeing ripple)",
         [_quiet_rail(r"^XRPU ", "quiet-startup"),
          _add_quiet_source]),
-
     "quiet-tail": (
         "sub-ablation: only the amp tail XMTAIL on the ac-quiet rail",
         [_quiet_rail(r"^XMTAIL ", "quiet-tail"),
          _add_quiet_source]),
-
     "quiet-p34": (
         "sub-ablation: only the amp output mirror XMP3/XMP4 on the "
         "ac-quiet rail",
         [_quiet_rail(r"^XMP[34] ", "quiet-p34"),
          _add_quiet_source]),
-
     "quiet-p12": (
         "sub-ablation: only the amp input pair bulks XMP1/XMP2 on the "
         "ac-quiet rail",
         [_quiet_rail(r"^XMP[12] ", "quiet-p12"),
          _add_quiet_source]),
-
     "quiet-all": (
         "ablation: core + amp + startup all on the ac-quiet rail (no vdd "
         "coupling should remain; the method's null control -- PSRR must "
@@ -291,111 +251,55 @@ VARIANTS = {
         [_quiet_rail(r"^XM(1|2A|2B|3A|3B|3C|TAIL|P1|P2|P3|P4) ", "quiet-all"),
          _quiet_rail(r"^XRPU ", "quiet-all"),
          _add_quiet_source]),
-
     "corepmos-l2": (
         "fix candidate: core PMOS mirror legs at double length, double W "
         "(same current density and Vgs): XM1 20u/2u, XM2A 18u/2u, XM2B "
         "2u/2u, XM3A 16u/2u, XM3B 2u/2u, XM3C 2u/2u",
-        [_sub(r"^(XM1 sns1 fb vddq? vddq? sg13_hv_pmos) w=10u l=1u",
-              r"\1 w=20u l=2u", "XM1"),
-         _sub(r"^(XM2A sns2 fb vddq? vddq? sg13_hv_pmos) w=9u l=1u",
-              r"\1 w=18u l=2u", "XM2A"),
-         _sub(r"^(XM2B sns2 fb vddq? vddq? sg13_hv_pmos) w=1u l=1u",
-              r"\1 w=2u l=2u", "XM2B"),
-         _sub(r"^(XM3A vref fb vddq? vddq? sg13_hv_pmos) w=8u l=1u",
-              r"\1 w=16u l=2u", "XM3A"),
-         _sub(r"^(XM3B vref fb vddq? vddq? sg13_hv_pmos) w=1u l=1u",
-              r"\1 w=2u l=2u", "XM3B"),
-         _sub(r"^(XM3C vref fb vddq? vddq? sg13_hv_pmos) w=1u l=1u",
-              r"\1 w=2u l=2u", "XM3C")]),
-
+        [_scale_mos(CORE_PMOS, 2, 2, "corepmos-l2")]),
     "corepmos-l4": (
         "fix candidate: core PMOS mirror legs at quadruple length, "
         "quadruple W: XM1 40u/4u, XM2A 36u/4u, XM2B 4u/4u, XM3A 32u/4u, "
         "XM3B 4u/4u, XM3C 4u/4u",
-        [_sub(r"^(XM1 sns1 fb vddq? vddq? sg13_hv_pmos) w=10u l=1u",
-              r"\1 w=40u l=4u", "XM1"),
-         _sub(r"^(XM2A sns2 fb vddq? vddq? sg13_hv_pmos) w=9u l=1u",
-              r"\1 w=36u l=4u", "XM2A"),
-         _sub(r"^(XM2B sns2 fb vddq? vddq? sg13_hv_pmos) w=1u l=1u",
-              r"\1 w=4u l=4u", "XM2B"),
-         _sub(r"^(XM3A vref fb vddq? vddq? sg13_hv_pmos) w=8u l=1u",
-              r"\1 w=32u l=4u", "XM3A"),
-         _sub(r"^(XM3B vref fb vddq? vddq? sg13_hv_pmos) w=1u l=1u",
-              r"\1 w=4u l=4u", "XM3B"),
-         _sub(r"^(XM3C vref fb vddq? vddq? sg13_hv_pmos) w=1u l=1u",
-              r"\1 w=4u l=4u", "XM3C")]),
-
+        [_scale_mos(CORE_PMOS, 4, 4, "corepmos-l4")]),
     "xmp34-l2": (
         "fix candidate: amp PMOS mirror XMP3/XMP4 at double length, double "
         "W: 10u/1u -> 20u/2u (amp supply coupling + loop-gain term)",
-        [_sub(r"^(XMP3 pn pn vddq? vddq? sg13_hv_pmos) w=10u l=1u",
-              r"\1 w=20u l=2u", "XMP3"),
-         _sub(r"^(XMP4 fb pn vddq? vddq? sg13_hv_pmos) w=10u l=1u",
-              r"\1 w=20u l=2u", "XMP4")]),
-
+        [_scale_mos(AMP_P34, 2, 2, "xmp34-l2")]),
     "xmp34-l4": (
         "fix candidate: amp PMOS mirror XMP3/XMP4 at quadruple length, "
         "quadruple W: 10u/1u -> 40u/4u",
-        [_sub(r"^(XMP3 pn pn vddq? vddq? sg13_hv_pmos) w=10u l=1u",
-              r"\1 w=40u l=4u", "XMP3"),
-         _sub(r"^(XMP4 fb pn vddq? vddq? sg13_hv_pmos) w=10u l=1u",
-              r"\1 w=40u l=4u", "XMP4")]),
-
+        [_scale_mos(AMP_P34, 4, 4, "xmp34-l4")]),
     "tail-l2": (
         "fix candidate: amp tail XMTAIL at double length, double W: "
         "10u/1u -> 20u/2u",
-        [_sub(r"^(XMTAIL tail fb vddq? vddq? sg13_hv_pmos) w=10u l=1u",
-              r"\1 w=20u l=2u", "XMTAIL")]),
-
+        [_scale_mos(AMP_TAIL, 2, 2, "tail-l2")]),
     "tail-l4": (
         "fix candidate: amp tail XMTAIL at quadruple length, quadruple W: "
         "10u/1u -> 40u/4u",
-        [_sub(r"^(XMTAIL tail fb vddq? vddq? sg13_hv_pmos) w=10u l=1u",
-              r"\1 w=40u l=4u", "XMTAIL")]),
-
+        [_scale_mos(AMP_TAIL, 4, 4, "tail-l4")]),
     "p12-l2": (
         "fix candidate: amp input pair XMP1/XMP2 at double length, double "
         "W: 20u/1u -> 40u/2u (same Vgs/current; raises the pair's ro and "
         "with it the amp's DC gain, at the cost of a slower d1/d2 node)",
-        [_sub(r"^(XMP1 d1 sns2 tail vdd sg13_hv_pmos) w=20u l=1u",
-              r"\1 w=40u l=2u", "XMP1"),
-         _sub(r"^(XMP2 d2 sns1 tail vdd sg13_hv_pmos) w=20u l=1u",
-              r"\1 w=40u l=2u", "XMP2")]),
-
+        [_scale_mos(AMP_P12, 2, 2, "p12-l2")]),
     "p12-w2": (
         "fix candidate: amp input pair XMP1/XMP2 at double W, same L: "
         "20u/1u -> 40u/1u (more gm at the pair's fixed tail current; the "
         "d1/d2 node capacitance doubles but the node keeps l=1u devices)",
-        [_sub(r"^(XMP1 d1 sns2 tail vdd sg13_hv_pmos) w=20u l=1u",
-              r"\1 w=40u l=1u", "XMP1"),
-         _sub(r"^(XMP2 d2 sns1 tail vdd sg13_hv_pmos) w=20u l=1u",
-              r"\1 w=40u l=1u", "XMP2")]),
-
+        [_scale_mos(AMP_P12, 2, 1, "p12-w2")]),
     "p12-w3": (
         "fix candidate: amp input pair XMP1/XMP2 at triple W, same L: "
         "20u/1u -> 60u/1u (between p12-w2 and the PM-dead p12-w4)",
-        [_sub(r"^(XMP1 d1 sns2 tail vdd sg13_hv_pmos) w=20u l=1u",
-              r"\1 w=60u l=1u", "XMP1"),
-         _sub(r"^(XMP2 d2 sns1 tail vdd sg13_hv_pmos) w=20u l=1u",
-              r"\1 w=60u l=1u", "XMP2")]),
+        [_scale_mos(AMP_P12, 3, 1, "p12-w3")]),
     "p12-w4": (
         "fix candidate: amp input pair XMP1/XMP2 at quadruple W, same L: "
         "20u/1u -> 80u/1u (the p12-w2 knob taken one step further)",
-        [_sub(r"^(XMP1 d1 sns2 tail vdd sg13_hv_pmos) w=20u l=1u",
-              r"\1 w=80u l=1u", "XMP1"),
-         _sub(r"^(XMP2 d2 sns1 tail vdd sg13_hv_pmos) w=20u l=1u",
-              r"\1 w=80u l=1u", "XMP2")]),
-
+        [_scale_mos(AMP_P12, 4, 1, "p12-w4")]),
     "xmp34-w2": (
         "fix candidate: amp output mirror XMP3/XMP4 at double W, same L: "
         "10u/1u -> 20u/1u (stiffer pn follower, more gm4; the pn pole "
         "drops only ~1.5x, not the 4x of the l=2u scaling)",
-        [_sub(r"^(XMP3 pn pn vddq? vddq? sg13_hv_pmos) w=10u l=1u",
-              r"\1 w=20u l=1u", "XMP3"),
-         _sub(r"^(XMP4 fb pn vddq? vddq? sg13_hv_pmos) w=10u l=1u",
-              r"\1 w=20u l=1u", "XMP4")]),
-
+        [_scale_mos(AMP_P34, 2, 1, "xmp34-w2")]),
     "allpmos-l2": (
         "fix candidate: EVERY sg13_hv_pmos supply device in the DUT at "
         "double length and double W (core mirror legs, amp tail, input "
@@ -403,9 +307,8 @@ VARIANTS = {
         "lower gds on every vdd-coupled device at once -- the one-knob "
         "version of shrinking all supply-coupling terms together instead "
         "of rebalancing their cancellation",
-        [_double_all_pmos("allpmos-l2")]),
+        [_scale_mos(ALL_PMOS, 2, 2, "allpmos-l2")]),
 }
-
 
 def newest_seed_csv():
     startup_records = os.path.join(REPO_HERE, "..", "..",
@@ -415,20 +318,6 @@ def newest_seed_csv():
     if not cands:
         sys.exit("gen_probe_deck.py: no closed-loop-startup records")
     return os.path.join(startup_records, cands[-1])
-
-
-def seeds_for(csv_path, corner, temp_c, vdd_v):
-    want_vdd = f"{float(vdd_v):.2f}"
-    with open(csv_path) as fh:
-        for row in csv.DictReader(fh):
-            if (row["corner_label"] == corner
-                    and float(row["temp_c"]) == float(temp_c)
-                    and abs(float(row["vdd_v"]) - float(want_vdd)) < 1e-9):
-                return {k: row[k] for k in
-                        ("fb_final_v", "sns1_final_v", "sns2_final_v",
-                         "vref_final_v")}
-    sys.exit(f"gen_probe_deck.py: no seed row for {corner}/{temp_c}C/"
-             f"{vdd_v}V in {csv_path}")
 
 
 def msense_w():
@@ -472,7 +361,8 @@ def main():
     text = open(tmpl_path).read()
 
     seed_csv = newest_seed_csv()
-    seeds = seeds_for(seed_csv, args.corner, args.temp, args.vdd)
+    seed = seed_row(load_seeds(seed_csv), args.corner, f"{args.temp:g}",
+                    f"{args.vdd:.2f}", seed_csv)
     pdk = "ihp-sg13g2"
     osdi = "${PDK_ROOT}/%s/libs.tech/ngspice/osdi" % pdk if args.token_paths \
         else "%s/%s/libs.tech/ngspice/osdi" % (args.pdk_root, pdk)
@@ -480,15 +370,10 @@ def main():
         if args.token_paths else \
         "%s/%s/libs.tech/ngspice/models" % (args.pdk_root, pdk)
 
-    text = (text
-            .replace("@@OSDI_DIR@@", osdi)
-            .replace("@@VDD@@", "%.2f" % args.vdd)
-            .replace("@@FB_SEED@@", seeds["fb_final_v"])
-            .replace("@@SNS1_SEED@@", seeds["sns1_final_v"])
-            .replace("@@SNS2_SEED@@", seeds["sns2_final_v"])
-            .replace("@@VREF_SEED@@", seeds["vref_final_v"])
-            .replace("@@MSENSE_W@@", msense_w())
-            .replace("@@CORNER_LABEL@@", args.corner))
+    mapping = {"@@OSDI_DIR@@": osdi, "@@VDD@@": "%.2f" % args.vdd,
+               "@@MSENSE_W@@": msense_w()}
+    mapping.update({tok: seed[col] for tok, col in SEED_FIELDS})
+    text = fill_deck(text, mapping, "body")
 
     # probe additions inside the body's own .control block (PSRR mode only;
     # loop-gain mode swaps the control tail wholesale in _loop_gain_break)
@@ -547,16 +432,15 @@ def main():
     text = "\n".join(lines) + "\n"
 
     # corner libs + temp + .end (the body itself has none of these)
-    hbt, mos, res = CORNER_SECTIONS[args.corner]
+    libs = "".join('.lib "%s/%s" %s\n' % (models, lib, sec)
+                   for lib, sec in zip(CORNER_LIBS, CORNER_SECTIONS[args.corner]))
     text += (
         "\n* ---- standalone-probe wrap (issue #631; the klt sim request "
         "supplies these in the harness path) ----\n"
-        '.lib "%s/cornerHBT.lib" %s\n'
-        '.lib "%s/cornerMOShv.lib" %s\n'
-        '.lib "%s/cornerRES.lib" %s\n'
+        + libs +
         ".options temp=%s tnom=27\n"
         ".end\n"
-        % (models, hbt, models, mos, models, res, ("%g" % args.temp)))
+        % ("%g" % args.temp))
 
     text = text.replace("${AC_OUT}",
                         os.path.abspath(args.output) + ".ac.txt")
