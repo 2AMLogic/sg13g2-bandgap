@@ -12,6 +12,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-24
 
+- **PR #703**: refactor(sim): dedupe the Monte Carlo klt-sim plumbing and preamble guards
+- **Issue #702** (closed): Dedupe remaining Monte Carlo klt-sim plumbing and shared runner preamble guards
 - **PR #699**: layout: regenerate sg13cmos5l-bandgap_top PEX with real wire R/C under the 0.8.0 pin
 - **Issue #480** (closed): Regenerate real parasitic extraction for sg13cmos5l-bandgap_top (pex.spice carries no R/C)
 - **PR #692**: test: catch multi-char augmented ops and name-first tuple targets in Python one-home guard
