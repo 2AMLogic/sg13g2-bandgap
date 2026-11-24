@@ -88,8 +88,10 @@ class SharedSeamTests(unittest.TestCase):
     both harnesses keep running and minting passing evidence against *different*
     PDK corner sections -- so identity, not equality, is what is asserted."""
 
-    #: Names this module is required to take from trim_mc_klt, not define.
-    IMPORTED = ("sections_for", "make_ctx", "op_value", "Results", "BAD_LOG", "SEED_FIELDS")
+    #: Names this module is required to take from trim_mc_klt, not define
+    #: (the request/report/spec mechanics joined the seam in #702).
+    IMPORTED = ("sections_for", "make_ctx", "op_value", "Results", "BAD_LOG", "SEED_FIELDS",
+                "request_for", "build_report", "fill_record_spec")
     #: Names it must not hold a copy of; it reaches these through sections_for.
     NOT_COPIED = IMPORTED + ("HBT", "MOS", "RES", "load_seeds")
 

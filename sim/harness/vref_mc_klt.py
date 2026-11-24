@@ -34,8 +34,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from enrich_pvt_report import closed_loop_verdict_failures  # noqa: E402
 from seed_deck import SEED_FIELDS, fill_deck, seed_row  # noqa: E402
-from trim_mc_klt import (BAD_LOG, Results, make_ctx,  # noqa: E402
-                         op_value, sections_for)
+from trim_mc_klt import (BAD_LOG, Results, build_report,  # noqa: E402
+                         fill_record_spec, make_ctx, op_value,
+                         request_for, sections_for)
 
 POINTS = ("nominal", "negctrl", "bcs_n40", "bcs_125", "wcs_n40", "wcs_125")
 CORNER_OF = {"nominal": "typ", "negctrl": "typ", "bcs_n40": "bcs", "bcs_125": "bcs",
@@ -89,19 +90,6 @@ def render_deck(template: str, ctx: dict, point: str, draw: int) -> str:
     return fill_deck(template, mapping)
 
 
-def request_for(entries: list[dict], a: argparse.Namespace, backend: str | None) -> dict:
-    req = {"engine": "ngspice", "decks": entries, "options": {"timeout_s": UNIT_TIMEOUT_S}}
-    if backend == "local":
-        req.update(backend="local", models={"pdk_root": a.local_pdk_root})
-        return req
-    # models.pdk_root names the runner image's baked root: the decks' absolute `.lib`
-    # paths sit under it, so klt ships them verbatim.
-    req.update(backend="batch", models={"pdk": a.pdk, "pdk_root": a.batch_pdk_root},
-               batch={"provision_script_path": a.provision,
-                      "capacity_wait_s": a.capacity_wait_s})
-    return req
-
-
 def prepare(a: argparse.Namespace) -> None:
     work = Path(a.work)
     template = Path(a.template).read_text()
@@ -115,7 +103,8 @@ def prepare(a: argparse.Namespace) -> None:
             (work / rel).write_text(render_deck(template, ctx, "nominal", d))
             entries.append({"id": unit_id("nominal", d), "deck": rel, "timeout_s": UNIT_TIMEOUT_S})
         (work / "request-probe.json").write_text(
-            json.dumps(request_for(entries, a, a.probe_backend), indent=2) + "\n")
+            json.dumps(request_for(entries, a, a.probe_backend, timeout_s=UNIT_TIMEOUT_S),
+                       indent=2) + "\n")
         return
     ctx = make_ctx(a, local=False)
     manifest = []
@@ -129,7 +118,9 @@ def prepare(a: argparse.Namespace) -> None:
                 (work / rel).write_text(render_deck(template, ctx, point, d))
                 entries.append({"id": uid, "deck": rel, "timeout_s": UNIT_TIMEOUT_S})
                 ids.append(uid)
-            (work / f"{stem}.json").write_text(json.dumps(request_for(entries, a, None), indent=2) + "\n")
+            (work / f"{stem}.json").write_text(
+                json.dumps(request_for(entries, a, None, timeout_s=UNIT_TIMEOUT_S),
+                           indent=2) + "\n")
             manifest.append({"request": f"{stem}.json", "stem": stem, "point": point, "ids": ids})
     (work / "manifest-mc.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(f"prepared {a.n * len(POINTS)} decks in {len(manifest)} requests")
@@ -237,32 +228,13 @@ def assemble(a: argparse.Namespace) -> None:
             "artifacts": {"log": str(rep / f"{cid}.log"), "deck": str(rep / f"{cid}.spice")},
         })
         print(f"{label}@{temp}C: {cells}")
-    job_ids: list[str] = []
-    if a.job_log and Path(a.job_log).is_file():
-        for jid in re.findall(r"batch job (\S+) submitting", Path(a.job_log).read_text()):
-            if jid not in job_ids:
-                job_ids.append(jid)
-    report = {
-        "status": "pass" if all(c["status"] == "pass" for c in corners) else "fail",
-        "passed": sum(c["status"] == "pass" for c in corners),
-        "failed": sum(c["status"] == "fail" for c in corners), "errored": 0,
-        "corner_count": len(corners), "corners": corners,
-        "environment": {"engine_version": res.engine_version(),
-                        "remote": {"job_ids": job_ids, "n_decks": len(res.where)} if job_ids else None},
-        "provenance": {"klt_version": a.klt_version},
-    }
+    report = build_report(corners, res, a.klt_version, a.job_log, deck_count_key="n_decks")
     Path(a.report_out).write_text(json.dumps(report, indent=2) + "\n")
     print(f"assembled {len(rows)} draws -> {a.draws_out}; report {a.report_out}")
 
 
 def spec(a: argparse.Namespace) -> None:
-    data = json.loads(Path(a.spec).read_text())
-    extra = data.get("extra_columns") or {}
-    extra["msense_w"] = {digest_label(p): a.msense_w for p in POINTS}
-    data["extra_columns"] = extra
-    for k in ("Corner matrix run", "Claim"):
-        data[k] = data[k].replace("@@N@@", str(a.n))
-    Path(a.output).write_text(json.dumps(data, indent=2) + "\n")
+    fill_record_spec(a.spec, a.output, {digest_label(p): a.msense_w for p in POINTS}, a.n)
 
 
 def check_probe(a: argparse.Namespace) -> None:
