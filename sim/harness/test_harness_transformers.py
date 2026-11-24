@@ -919,6 +919,73 @@ class ClosedLoopVerdictHelperTests(unittest.TestCase):
         self.assertEqual(self.failures(det=3.0, fb=0.0, vdd=None), [])
         self.assertEqual(self.failures(dvsns=0.1, vdd=None), ["loop_not_closed"])
 
+    _SHELL_TOKEN_RE = re.compile(
+        r'''("(?:\\.|[^"\\])*")|('[^']*')|((?:^|(?<=[ \t;&|()]))#[^\n]*)''',
+        re.M,
+    )
+    _QUOTED_ASSIGN_RE = re.compile(
+        r'''^['"]([A-Za-z_][A-Za-z0-9_]*(?:\[[^\]\n]+\])?\+?=).*['"]$''',
+        re.S,
+    )
+    _QUOTED_IDENT_RE = re.compile(
+        r'''^['"]([A-Za-z_][A-Za-z0-9_]*(?:\[[^\]\n]+\])?)['"]$''',
+    )
+
+    @classmethod
+    def _has_shell_constant_assignment(cls, text: str, name: str) -> bool:
+        """True if shell source *text* assigns or declares *name* anywhere
+        (indented blocks, compound lines, readonly/export/declare/typeset/local/
+        unset, parameter default-assignment, printf -v / read, or (( ... )))."""
+        def scrub_no_single(m: re.Match[str]) -> str:
+            dq, sq, _comment = m.groups()
+            if dq is not None:
+                return dq
+            if sq is not None:
+                qa = cls._QUOTED_ASSIGN_RE.match(sq)
+                if qa:
+                    return f'"{qa.group(1)}"'
+                qi = cls._QUOTED_IDENT_RE.match(sq)
+                return f'"{qi.group(1)}"' if qi else "''"
+            return ""
+
+        def scrub_both(m: re.Match[str]) -> str:
+            dq, sq, _comment = m.groups()
+            q = dq or sq
+            if q is not None:
+                qa = cls._QUOTED_ASSIGN_RE.match(q)
+                if qa:
+                    return f'"{qa.group(1)}"'
+                qi = cls._QUOTED_IDENT_RE.match(q)
+                return f'"{qi.group(1)}"' if qi else '""'
+            return ""
+
+        no_single = re.sub(r"\\\n[ \t]*", " ", cls._SHELL_TOKEN_RE.sub(scrub_no_single, text))
+        if re.search(rf"\$\{{{name}:?=(?!=)", no_single):
+            return True
+
+        unquoted = re.sub(r"\\\n[ \t]*", " ", cls._SHELL_TOKEN_RE.sub(scrub_both, text))
+        stmt = r"(?:^|[;&|(){}]|\b(?:then|do|else|elif)\b)[ \t]*"
+        val = r"[^ \t;&|()\n]*"
+        lhs = rf"{name}(?:\[[^\]\n]+\])?"
+        patterns = (
+            stmt + rf"(?:env[ \t]+)?(?:[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]\n]+\])?\+?={val}[ \t]+)*{lhs}\+?=(?!=)",
+            stmt
+            + r"(?:(?:builtin|command)[ \t]+)?(?:readonly|export|declare|typeset|local|unset)\b"
+            + rf'(?:[ \t]+(?:[-+][a-zA-Z]+|--|"?[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]\n]+\])?(?:\+?={val})?"?))*'
+            + rf'[ \t]+"?{lhs}(?:\+?=(?!=)"?|"?(?=$|[ \t;&|()]))',
+            stmt + rf"(?:printf[ \t]+-v[ \t]+{name}\b|read\b[^;&|()\n]*[ \t]+{name}\b)",
+            rf"\(\([^)\n]*\b{name}[ \t]*[-+*/%&|^]?=(?!=)",
+        )
+        return any(re.search(p, unquoted, re.M) for p in patterns)
+
+    @classmethod
+    def _shell_constant_homes(cls, sim: Path, name: str) -> list[str]:
+        return [
+            str(p.relative_to(sim))
+            for p in sorted(sim.rglob("*.sh"))
+            if cls._has_shell_constant_assignment(p.read_text(encoding="utf-8"), name)
+        ]
+
     def test_the_constants_have_one_home(self) -> None:
         """Both drift tests pin enrich_pvt_report's constants against
         pvt_verdict_common.sh; a second assignment elsewhere sits outside them."""
@@ -930,10 +997,56 @@ class ClosedLoopVerdictHelperTests(unittest.TestCase):
                          if re.search(rf"^{name}\s*=", p.read_text(encoding="utf-8"), re.M)]
                 self.assertEqual(homes, ["enrich_pvt_report.py"])
             with self.subTest(constant=name, surface="shell"):
-                homes = [str(p.relative_to(sim)) for p in sorted(sim.rglob("*.sh"))
-                         if p != sim / "lib" / "pvt_verdict_common.sh"
-                         and re.search(rf"^{name}\s*=", p.read_text(encoding="utf-8"), re.M)]
-                self.assertEqual(homes, [])
+                self.assertEqual(self._shell_constant_homes(sim, name),
+                                 ["lib/pvt_verdict_common.sh"])
+
+    def test_shell_one_home_guard_catches_indented_and_declared_assignments(self) -> None:
+        constants = ("DET_RELEASE_FRAC", "I_MKFB_RELEASE_A", "DVSNS_CLOSE_V", "FB_RAIL_MARGIN_V")
+        with tempfile.TemporaryDirectory() as td:
+            sim = Path(td)
+            (sim / "lib").mkdir()
+            (sim / "lib" / "pvt_verdict_common.sh").write_text(
+                "".join(f'{c}="0.2"\n' for c in constants),
+                encoding="utf-8",
+            )
+            (sim / "bench").mkdir()
+            (sim / "bench" / "uses_only.sh").write_text(
+                "# DET_RELEASE_FRAC=0.8\n"
+                "  # readonly I_MKFB_RELEASE_A=1\n"
+                'echo "  v(det) <= ${DET_RELEASE_FRAC}*vdd" # DVSNS_CLOSE_V=0.5\n'
+                'echo "(note) FB_RAIL_MARGIN_V=0.5"\n'
+                '[[ "${DET_RELEASE_FRAC}" == "0.2" ]]\n',
+                encoding="utf-8",
+            )
+            for name in constants:
+                self.assertEqual(self._shell_constant_homes(sim, name),
+                                 ["lib/pvt_verdict_common.sh"])
+
+            cases = [
+                ("harness/indented_if.sh", "DET_RELEASE_FRAC", "if true; then\n  DET_RELEASE_FRAC=0.8\nfi\n"),
+                ("harness/top_readonly.sh", "DET_RELEASE_FRAC", "readonly DET_RELEASE_FRAC=0.8\n"),
+                ("bench/tab_indented.sh", "I_MKFB_RELEASE_A", '\tI_MKFB_RELEASE_A="1e-6"\n'),
+                ("bench/declare_ro.sh", "DVSNS_CLOSE_V", '  declare -r DVSNS_CLOSE_V="0.1"\n'),
+                ("bench/export_inline.sh", "FB_RAIL_MARGIN_V", "if true; then export FB_RAIL_MARGIN_V=0.2; fi\n"),
+                ("zzz/local_shadow.sh", "DET_RELEASE_FRAC", "f() {\n  local DET_RELEASE_FRAC=0.8\n}\n"),
+                ("zzz/quoted_decl.sh", "DET_RELEASE_FRAC", 'readonly "FOO=a ; b" "DET_RELEASE_FRAC=0.8"\n'),
+                ("zzz/continued_decl.sh", "I_MKFB_RELEASE_A", "readonly \\\n  I_MKFB_RELEASE_A=1e-6\n"),
+                ("zzz/param_default.sh", "DVSNS_CLOSE_V", ': "${DVSNS_CLOSE_V:=0.1}"\n'),
+            ]
+            for rel, name, body in cases:
+                with self.subTest(rel=rel, constant=name):
+                    rogue = sim / rel
+                    rogue.parent.mkdir(parents=True, exist_ok=True)
+                    rogue.write_text(body, encoding="utf-8")
+                    try:
+                        with self.assertRaises(AssertionError) as cm:
+                            self.assertEqual(
+                                self._shell_constant_homes(sim, name),
+                                ["lib/pvt_verdict_common.sh"],
+                            )
+                        self.assertIn(rel, str(cm.exception))
+                    finally:
+                        rogue.unlink()
 
 
 class RecountReportHelperTests(unittest.TestCase):
