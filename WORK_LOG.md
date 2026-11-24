@@ -12,6 +12,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-24
 
+- **PR #664**: sim: source shared verdict constants in boxtc-pretrim-aidsfree run_one_point
+- **Issue #660** (closed): Shell bench run_one_point.sh keeps a 5th unguarded copy of the four closed-loop verdict constants
 - **PR #686**: chore(layout): remove the superseded one-point PEX probe
 - **PR #684**: refactor(sim): dedupe gen_probe_deck onto shared harness and collapse resize variants
 - **Issue #682** (closed): Deduplicate gen_probe_deck.py onto shared sim/harness modules and collapse per-instance _sub resize tables
