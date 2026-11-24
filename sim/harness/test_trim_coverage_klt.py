@@ -13,7 +13,9 @@ from pathlib import Path
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import enrich_ac_report as acr  # noqa: E402
 import enrich_pvt_report as epr  # noqa: E402
+import seed_deck  # noqa: E402
 import trim_coverage_klt as tc  # noqa: E402
 import trim_mc_klt as tm  # noqa: E402
 
@@ -226,6 +228,69 @@ class SharedSeamTests(unittest.TestCase):
             seeds = tc.load_seeds(str(csv_path))
             self.assertEqual(list(seeds), [("typ", "27", "3.30")])
             self.assertEqual(seeds[("typ", "27", "3.30")]["fb_final_v"], "2.0")
+
+    def test_enrich_ac_report_seed_loader_is_seed_decks(self):
+        """Issue #707: enrich_ac_report's private seed-CSV reader (which
+        skipped the PASS filter) is retired onto seed_deck.load_seeds."""
+        self.assertIs(acr.load_seeds, seed_deck.load_seeds)
+
+    def test_enrich_ac_report_never_uses_fail_seed_rows_as_reference(self):
+        with tempfile.TemporaryDirectory() as d:
+            log = Path(d) / "c.log"
+            log.write_text("v(fb) = 2.0\n", encoding="utf-8")
+
+            def messages(status):
+                seed_csv = Path(d) / f"{status}.csv"
+                seed_csv.write_text(
+                    "corner_label,temp_c,vdd_v,status,fb_final_v\n"
+                    f"typ,27,3.30,{status},9.9\n", encoding="utf-8")
+                corner = {"corner_id": "typ/3.30V/27C/ac", "process": "typ",
+                          "temperature_c": 27, "supply_v": {"Vvdd": 3.30},
+                          "status": "pass", "measurements": [],
+                          "artifacts": {"log": str(log)}}
+                report = acr.enrich({"corners": [corner]}, "psrr",
+                                    acr.load_seeds(str(seed_csv)))
+                return "; ".join(x.get("message", "")
+                                 for x in report["corners"][0].get("diagnostics", []))
+
+            # positive control: the PASS row IS the op-match reference and
+            # trips the band (fb_op 2.0 vs fb_final 9.9) -- the pre-#707
+            # loader would have tripped it for the FAIL row too.
+            msgs = {status: messages(status) for status in ("PASS", "FAIL")}
+        self.assertIn("op_landed_far_from_seed", msgs["PASS"])
+        self.assertNotIn("op_landed_far_from_seed", msgs["FAIL"])
+
+    def test_newest_seed_csv_skips_companion_csvs(self):
+        with tempfile.TemporaryDirectory() as d:
+            records = Path(d) / "closed-loop-startup" / "records"
+            records.mkdir(parents=True)
+            self.assertRaises(SystemExit, seed_deck.newest_seed_csv, d)
+            for name in ("20260101-000000-a.csv", "20260101-000000-a-tc.csv",
+                         "20260101-000001-b-vs-schematic.csv",
+                         "20260101-000002-c.csv"):
+                (records / name).write_text("", encoding="utf-8")
+            picked = seed_deck.newest_seed_csv(d)
+        self.assertEqual(picked.name, "20260101-000002-c.csv")
+
+    def test_read_msense_width_parses_w_and_rejects_missing(self):
+        with tempfile.TemporaryDirectory() as d:
+            net = Path(d) / "startup.spice"
+            net.write_text("XMSENSE det sns1 vss vss sg13_hv_nmos w=10u l=0.5u\n",
+                           encoding="utf-8")
+            self.assertEqual(seed_deck.read_msense_width(net), "10u")
+            net.write_text("XMSENSE det sns1 vss vss sg13_hv_nmos l=0.5u\n",
+                           encoding="utf-8")
+            self.assertRaises(SystemExit, seed_deck.read_msense_width, net)
+            net.write_text("* no msense device here\n", encoding="utf-8")
+            self.assertRaises(SystemExit, seed_deck.read_msense_width, net)
+
+    def test_pex_vref_runner_mode_arms_appear_once(self):
+        """Issue #707: the --sanity | --batch | --record switch is shared
+        (_vref_main), so each arm appears exactly once in the file."""
+        text = (Path(__file__).resolve().parent / "pex_vref_runner.sh").read_text(
+            encoding="utf-8")
+        for arm in ("--sanity)", "--batch)", "--record)"):
+            self.assertEqual(text.count(arm), 1, arm)
 
 
 if __name__ == "__main__":

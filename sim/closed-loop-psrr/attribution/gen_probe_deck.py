@@ -50,7 +50,17 @@ import sys
 REPO_HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(REPO_HERE, "..", "..", "harness"))
 from klt_corner_bundle import CORNER_LIBS, CORNER_SECTIONS  # noqa: E402  (#682)
-from seed_deck import SEED_FIELDS, fill_deck, load_seeds, seed_row  # noqa: E402
+import seed_deck  # noqa: E402  (#707)
+from seed_deck import (  # noqa: E402
+    SEED_FIELDS,
+    fill_deck,
+    load_seeds,
+    read_msense_width,
+    seed_row,
+)
+
+STARTUP_NETLIST = os.path.join(REPO_HERE, "..", "..", "..", "design", "netlist",
+                               "bandgap_startup.spice")
 
 # ---------------------------------------------------------------------------
 # Variant transforms. Each entry: (one-line description, [functions]).
@@ -311,24 +321,9 @@ VARIANTS = {
 }
 
 def newest_seed_csv():
-    startup_records = os.path.join(REPO_HERE, "..", "..",
-                                   "closed-loop-startup", "records")
-    cands = sorted(f for f in os.listdir(startup_records)
-                   if f.endswith(".csv"))
-    if not cands:
-        sys.exit("gen_probe_deck.py: no closed-loop-startup records")
-    return os.path.join(startup_records, cands[-1])
-
-
-def msense_w():
-    path = os.path.join(REPO_HERE, "..", "..", "..", "design", "netlist",
-                        "bandgap_startup.spice")
-    text = open(path).read()
-    m = re.search(r"^XMSENSE .*\bw=([0-9.]+u)\b.*$",
-                  text, re.M)
-    if not m:
-        sys.exit("gen_probe_deck.py: XMSENSE w= not found")
-    return m.group(1)
+    # seed_deck's discovery (issue #707) behind this module-level binding, so
+    # test_gen_probe_deck's seed_csv monkeypatch hook keeps working.
+    return str(seed_deck.newest_seed_csv(os.path.join(REPO_HERE, "..", "..")))
 
 
 def main():
@@ -371,7 +366,7 @@ def main():
         "%s/%s/libs.tech/ngspice/models" % (args.pdk_root, pdk)
 
     mapping = {"@@OSDI_DIR@@": osdi, "@@VDD@@": "%.2f" % args.vdd,
-               "@@MSENSE_W@@": msense_w()}
+               "@@MSENSE_W@@": read_msense_width(STARTUP_NETLIST)}
     mapping.update({tok: seed[col] for tok, col in SEED_FIELDS})
     text = fill_deck(text, mapping, "body")
 

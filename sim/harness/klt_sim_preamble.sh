@@ -107,12 +107,16 @@ klt_sim_batch_defaults() {  # [PDK_ROOT_OVERRIDE_VAR]
 # --- batch provision guard -----------------------------------------------------
 # Every runner that dispatches `klt sim --batch-set` refuses to start unless
 # the provision script klt shells out to is executable (five re-typed copies
-# collapsed here, issue #702). Returns 3 -- this preamble's return-not-exit
-# contract -- so cmos5l_runner.sh keeps its `return 3` and the top-level
-# runners keep their `|| exit $?`.
-klt_sim_require_provision() {
+# collapsed here, issue #702; the last two inline checks in sim/ retired onto
+# it, issue #707). Returns 3 -- this preamble's return-not-exit contract --
+# so cmos5l_runner.sh keeps its `return 3` and the top-level runners keep
+# their `|| exit $?`. CALLER_NAME (optional) replaces the diagnostic's
+# run_klt_sim.sh prefix, so a standalone caller (sim/harness/probe/run_probe.sh,
+# sim/loop-gain-phase-margin/run_klt_trim_axis.sh) names itself.
+klt_sim_require_provision() {  # [CALLER_NAME]
+  local caller="${1:-run_klt_sim.sh}"
   if [[ ! -x "${BATCH_PROVISION_SCRIPT}" ]]; then
-    echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2
+    echo "${caller}: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2
     echo "             (KLT_BATCH_PROVISION_SCRIPT) -- see klt sim docs, 'Batch backend'." >&2
     return 3
   fi

@@ -124,11 +124,7 @@ else
   # Batch preflights: the PDK, ngspice, and the OSDI models live on the
   # runner image; this host only submits (S3 job contract via the fleet's
   # provision script -- an aws PROFILE name, never a credential).
-  if [[ ! -x "${BATCH_PROVISION_SCRIPT}" ]]; then
-    echo "run_probe.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2
-    echo "             (KLT_BATCH_PROVISION_SCRIPT) -- see klt sim docs, 'Batch backend'." >&2
-    exit 3
-  fi
+  klt_sim_require_provision run_probe.sh || exit $?
   OSDI_DIR="${BATCH_PDK_ROOT}/${PDK:-ihp-sg13g2}/libs.tech/ngspice/osdi"
   echo "run_probe.sh: batch mode (image PDK root ${BATCH_PDK_ROOT})"
 fi

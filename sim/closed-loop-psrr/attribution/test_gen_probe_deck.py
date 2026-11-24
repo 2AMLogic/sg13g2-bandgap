@@ -12,6 +12,7 @@ from __future__ import annotations
 import contextlib
 import io
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -105,6 +106,63 @@ class GenProbeDeck(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "duplicate instance XMP1"):
             for transform in transforms:
                 lines = transform(lines, {})
+
+
+class EmitResultTests(unittest.TestCase):
+    """run_probe.sh's consolidated log parser (issue #707): the two
+    back-to-back `python3 -` grab() heredocs are one emit_result helper now.
+    These run the helper's embedded python directly, with the same argv shape
+    `python3 - "$@"` gives it."""
+
+    @classmethod
+    def setUpClass(cls):
+        text = (HERE / "run_probe.sh").read_text(encoding="utf-8")
+        fn = text.index("emit_result() {")
+        heredoc = text.index("<<'PY'", fn)
+        cls.payload = text[heredoc + len("<<'PY'\n"):text.index("\nPY\n", heredoc)]
+
+    def emit(self, log_text, *args):
+        with tempfile.TemporaryDirectory() as td:
+            log = Path(td) / "x.log"
+            log.write_text(log_text, encoding="utf-8")
+            return subprocess.run([sys.executable, "-", str(log), *args],
+                                  input=self.payload, capture_output=True,
+                                  text=True)
+
+    def test_psrr_result_line_shape(self):
+        log_text = ("psrr_dc_probe_db = 5.9685e+01\n"
+                    "vref_dc_phase_deg = 1.5e+00\n"
+                    "v(fb) = 2.49e+00\nv(vref) = 1.05e+00\n"
+                    "i(vvdd) = -1.2e-04\n")
+        r = self.emit(
+            log_text,
+            "psrr_dc_db=psrr_dc_probe_db = ([0-9.eE+-]+)",
+            "vref_dc_phase_deg=vref_dc_phase_deg = ([0-9.eE+-]+)",
+            "fb_op_v=v\\(fb\\) = ([0-9.eE+-]+)",
+            "vref_op_v=v\\(vref\\) = ([0-9.eE+-]+)",
+            "iq_a=i\\(vvdd\\) = (-?[0-9.eE+-]+)",
+            "--", "corner=bcs", "temp=125", "vdd=3.63", "variant=asbuilt",
+            "psrr_dc_db={psrr_dc_db}", "vref_dc_phase_deg={vref_dc_phase_deg}",
+            "fb_op_v={fb_op_v}", "vref_op_v={vref_op_v}", "iq_a={iq_a}")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            r.stdout,
+            "RESULT corner=bcs temp=125 vdd=3.63 variant=asbuilt "
+            "psrr_dc_db=5.9685e+01 vref_dc_phase_deg=1.5e+00 "
+            "fb_op_v=2.49e+00 vref_op_v=1.05e+00 iq_a=-1.2e-04\n")
+
+    def test_missing_grab_exits_naming_the_field(self):
+        r = self.emit("nothing to parse here\n",
+                      "fb_op_v=v\\(fb\\) = ([0-9.eE+-]+)",
+                      "--", "fb_op_v={fb_op_v}")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("fb_op_v", r.stderr)
+
+    def test_one_definition_two_call_sites_no_stray_grab(self):
+        text = (HERE / "run_probe.sh").read_text(encoding="utf-8")
+        self.assertEqual(text.count("emit_result() {"), 1)
+        self.assertEqual(text.count('emit_result "${STEM}.log"'), 2)
+        self.assertNotIn("def grab(", text)
 
 
 if __name__ == "__main__":

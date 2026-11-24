@@ -57,30 +57,28 @@ pex_vref_main() {
   # --- the DUT body (generated, top cell) -----------------------------------
   python3 "${SIM_DIR}/tools/gen_pex_netlist_body.py" --cell top -o "${WORK}/pex_body.inc" \
     --sources-out "${WORK}/extraction-sources.json"
-  case "${MODE}" in
-  --sanity)
-    pex_instantiate_body "${OSDI_DIR}" "${WORK}/pex_body.inc" VDD=3.30 > "${WORK}/body.spice"
-    pex_sanity_local
-    check_anchors "${WORK}/report.json"
-    ;;
-  --batch)
-    pex_batch_dispatch --supply-word "ramp target"
-    python3 "${HARNESS_DIR}/enrich_pvt_report.py" "${WORK}/report-merged.json" \
-      -o "${WORK}/report-enriched.json"
-    ;;
-  --record)
-    pex_record_mint "${WORK}/report-enriched.json"
-    pex_record_companion
-    ;;
-  esac
+  _vref_main "${WORK}/pex_body.inc" pex_record_mint
 }
 
 # (Shared by the schematic benches, issue #512.) pex_vref_main generates the PEX body and states the extraction; the
 # schematic has neither, so this is its body-less twin.
 schematic_vref_main() {
+  _vref_main "unused" schematic_record_mint MSENSE_W="${MSENSE_W}"
+}
+
+# _vref_main BODY_REF RECORD_MINT [EXTRA pex_instantiate_body KEY=VALUE ...]
+# The shared --sanity | --batch | --record flow behind pex_vref_main and
+# schematic_vref_main, mirroring _ac_main in pex_ac_runner.sh (issues
+# #650/#707): BODY_REF is the DUT include the body template takes ("unused"
+# on the schematic benches), RECORD_MINT the record-side twin (pex_record_mint
+# / schematic_record_mint), and each EXTRA KEY=VALUE pair rides the --sanity
+# instantiation (the schematic's MSENSE_W fill).
+_vref_main() {
+  local body_ref="$1" record_mint="$2"
+  shift 2
   case "${MODE}" in
   --sanity)
-    pex_instantiate_body "${OSDI_DIR}" "unused" VDD=3.30 MSENSE_W="${MSENSE_W}" > "${WORK}/body.spice"
+    pex_instantiate_body "${OSDI_DIR}" "${body_ref}" VDD=3.30 "$@" > "${WORK}/body.spice"
     pex_sanity_local
     check_anchors "${WORK}/report.json"
     ;;
@@ -90,7 +88,7 @@ schematic_vref_main() {
       -o "${WORK}/report-enriched.json"
     ;;
   --record)
-    schematic_record_mint "${WORK}/report-enriched.json"
+    "${record_mint}" "${WORK}/report-enriched.json"
     pex_record_companion
     ;;
   esac
