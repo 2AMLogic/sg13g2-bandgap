@@ -104,6 +104,41 @@ klt_sim_batch_defaults() {  # [PDK_ROOT_OVERRIDE_VAR]
   BATCH_PROVISION_SCRIPT="${KLT_BATCH_PROVISION_SCRIPT:-${HOME}/GitHub/2am/infra/aws/batch-fleet-provision.sh}"
 }
 
+# --- batch provision guard -----------------------------------------------------
+# Every runner that dispatches `klt sim --batch-set` refuses to start unless
+# the provision script klt shells out to is executable (five re-typed copies
+# collapsed here, issue #702). Returns 3 -- this preamble's return-not-exit
+# contract -- so cmos5l_runner.sh keeps its `return 3` and the top-level
+# runners keep their `|| exit $?`.
+klt_sim_require_provision() {
+  if [[ ! -x "${BATCH_PROVISION_SCRIPT}" ]]; then
+    echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2
+    echo "             (KLT_BATCH_PROVISION_SCRIPT) -- see klt sim docs, 'Batch backend'." >&2
+    return 3
+  fi
+}
+
+# --- MSENSE width read/cache ---------------------------------------------------
+# XMSENSE's width from the live startup netlist, as every closed-loop bench
+# reads it: in --record mode the work dir's cached msense_w.txt wins (the
+# record must re-read the value its --batch run dispatched with); otherwise
+# read_msense_width runs against REPO_ROOT and the value is cached for the
+# later --record pass (three re-typed copies collapsed here, issue #702).
+# NETLIST is repo-relative. The failure diagnostic names this file, not the
+# bench: read_msense_width's caller_name convention (sim/lib/msense_width.sh)
+# is "the file containing the call expression", and the call lives here now.
+klt_sim_read_msense_width() {  # NETLIST
+  # shellcheck source=../lib/msense_width.sh
+  source "${SIM_DIR}/lib/msense_width.sh"
+  if [[ "${MODE}" == "--record" && -f "${WORK}/msense_w.txt" ]]; then
+    MSENSE_W="$(<"${WORK}/msense_w.txt")"
+  else
+    ( cd "${REPO_ROOT}" && read_msense_width "${1}" \
+        && printf '%s' "${MSENSE_W}" > "${WORK}/msense_w.txt" )
+    MSENSE_W="$(<"${WORK}/msense_w.txt")"
+  fi
+}
+
 # --- resume safety (#332) ------------------------------------------------------
 # A saved report is reused only when its committed submission identity matches
 # the inputs about to be submitted (sim/harness/submission_identity.py).

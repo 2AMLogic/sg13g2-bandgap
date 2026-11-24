@@ -121,11 +121,7 @@ PY
 # device-less snapshots). Leaves WORK/report-merged.json.
 pex_batch_dispatch() {
   local label vdd vid v
-  if [[ ! -x "${BATCH_PROVISION_SCRIPT}" ]]; then
-    echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2
-    echo "             (KLT_BATCH_PROVISION_SCRIPT) -- see klt sim docs, 'Batch backend'." >&2
-    exit 3
-  fi
+  klt_sim_require_provision || exit $?
   # The gate: no grid before the local sanity anchor passes.
   echo "run_klt_sim.sh: sanity gate before dispatch"
   "${SCRIPT_DIR}/run_klt_sim.sh" --sanity

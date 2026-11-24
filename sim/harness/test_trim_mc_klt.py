@@ -395,5 +395,50 @@ class SanityGateTests(unittest.TestCase):
             self.run_gate("7.40e-01", "7.14e-01")
 
 
+class CheckBatchSetTests(unittest.TestCase):
+    """The fail-closed `--batch-set` submit guard (`check-batch-set`, moved
+    out of the two MC runners' inline `python3 - <<'PY'` heredocs, issue #702):
+    exit codes 0 and 4 pass (4 = a unit errored/timed out, a FAIL row); a
+    refusal code, an error envelope, any other exit code, or no parseable
+    report at all refuses the run -- there is no local fallback."""
+
+    def report(self, tmp, name, text):
+        p = Path(tmp) / name
+        p.write_text(text)
+        return str(p)
+
+    def test_clean_and_unit_error_reports_pass(self):
+        with tempfile.TemporaryDirectory() as d:
+            rep = self.report(d, "ok.json", json.dumps(
+                {"requests": [{"request": "a", "exit_code": 0},
+                              {"request": "b", "exit_code": 4}]}))
+            tm.check_batch_set_report(rep, 0)
+            tm.check_batch_set_report(rep, 4)
+
+    def test_nonzero_exit_code_and_error_envelope_are_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            for bad in ({"request": "a", "exit_code": 2},
+                        {"request": "a", "exit_code": 0, "error": "boom"}):
+                rep = self.report(d, "bad.json", json.dumps({"requests": [bad]}))
+                with self.assertRaises(SystemExit) as cm:
+                    tm.check_batch_set_report(rep, 1)
+                self.assertIn("no local fallback", str(cm.exception))
+
+    def test_refused_codes_are_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            rep = self.report(d, "refused.json", json.dumps(
+                {"refused_codes": ["batch_no_capacity"], "requests": []}))
+            with self.assertRaises(SystemExit) as cm:
+                tm.check_batch_set_report(rep, 3)
+            self.assertIn("refused_codes=['batch_no_capacity']", str(cm.exception))
+
+    def test_malformed_report_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            rep = self.report(d, "broken.json", "{not json")
+            with self.assertRaises(SystemExit) as cm:
+                tm.check_batch_set_report(rep, 99)
+            self.assertIn("no report", str(cm.exception))
+
+
 if __name__ == "__main__":
     unittest.main()
