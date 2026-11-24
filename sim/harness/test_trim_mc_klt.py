@@ -439,6 +439,15 @@ class CheckBatchSetTests(unittest.TestCase):
                 tm.check_batch_set_report(rep, 99)
             self.assertIn("no report", str(cm.exception))
 
+    def test_absent_or_unreadable_report_is_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            absent = str(Path(d) / "absent.json")
+            for path in (absent, d):  # missing file, then a directory: both OSError
+                with self.assertRaises(SystemExit) as cm:
+                    tm.check_batch_set_report(path, 7)
+                self.assertIn(f"no report: {path}", str(cm.exception))
+                self.assertIn("no local fallback", str(cm.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

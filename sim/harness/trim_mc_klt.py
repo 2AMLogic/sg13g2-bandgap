@@ -502,7 +502,7 @@ def check_batch_set_report(report_path: str, rc: int) -> None:
     path = Path(report_path)
     try:
         rep = json.loads(path.read_text())
-    except ValueError:
+    except (OSError, ValueError):
         raise SystemExit(f"run_klt_sim.sh: batch submit failed (klt exit {rc}), no report: {path}\n"
                          "  no local fallback -- fix the cause and re-run with the same "
                          "KLT_SIM_WORK to resume")
