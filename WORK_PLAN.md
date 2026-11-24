@@ -27,6 +27,7 @@ Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a h
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
+- **#480**: Regenerate real parasitic extraction for sg13cmos5l-bandgap_top (pex.spice carries no R/C)
 
 ## In Progress
 
@@ -60,11 +61,12 @@ Issues carrying `loom:curated`.
 - **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)*
 - **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(curated)*
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)*
+- **#480**: Regenerate real parasitic extraction for sg13cmos5l-bandgap_top (pex.spice carries no R/C) *(curated)*
 - **#646**: Item-5 iq citation pairs a signed limit with an enricher-magnitude value, so its bound is not re-derivable from the envelope *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-- **#480**: Collapse the sg13cmos5l-bandgap_top duplicate extraction pair: extract_report.json and pex_extract_report.json differ only in one string *(hermit)*
+_None._
 
 ## Epics
 
@@ -77,11 +79,11 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 1 |
 | Important | 2 |
-| Ready (`loom:issue`) | 1 |
+| Ready (`loom:issue`) | 2 |
 | In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 10 |
-| Architect / Hermit proposals | 1 |
+| Curated | 11 |
+| Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
