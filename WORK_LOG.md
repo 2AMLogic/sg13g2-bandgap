@@ -12,6 +12,10 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-24
 
+- **PR #692**: test: catch multi-char augmented ops and name-first tuple targets in Python one-home guard
+- **PR #689**: test: make Python one-home guard recursive and form-aware
+- **Issue #690** (closed): One-home guard (Python): multi-char augmented ops and name-first tuple targets escape the matcher
+- **Issue #688** (closed): One-home drift guard: Python pass still column-one-only and non-recursive (shell pass is now neither)
 - **PR #664**: sim: source shared verdict constants in boxtc-pretrim-aidsfree run_one_point
 - **Issue #660** (closed): Shell bench run_one_point.sh keeps a 5th unguarded copy of the four closed-loop verdict constants
 - **PR #686**: chore(layout): remove the superseded one-point PEX probe
