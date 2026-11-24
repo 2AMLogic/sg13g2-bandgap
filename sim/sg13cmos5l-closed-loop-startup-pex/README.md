@@ -1,5 +1,14 @@
 # sg13cmos5l-closed-loop-startup-pex
 
+> **Superseded input (issue #480):** the claims below that `klt extract
+> --deck sg13cmos5l --parasitics` "fails outright" (klayout-tools#1440) are
+> historical. Under the `klayout-tools==0.8.0` pin that flag works for this
+> deck, and the committed
+> `layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.pex.spice` now carries
+> real wire R/C (65 R / 13 C). The committed records in `records/` were
+> produced from the earlier plain extraction and are append-only evidence;
+> re-running this sweep against the new netlist is tracked in #698.
+
 > **Resolved (issue #176, `records/20260905-033836-fe97115.{md,csv}` —
 > the current record):** unlike its two SG13G2 siblings, this experiment
 > never spliced a wire-parasitic block at all (`klt extract --deck
@@ -105,7 +114,9 @@ authoritative, fuller account.
   inconsequential here — disclosed, not silently assumed, mirroring the
   SG13G2 precedent's own equivalent finding.
 
-**NOT modelled (disclosed, not silently omitted):**
+**NOT modelled (disclosed, not silently omitted) — as of the committed
+records, which used the earlier plain-extraction netlist (superseded input,
+see the note at the top; #480 / #698):**
 
 - **No wire (metal) parasitics anywhere in this netlist.** This is the one
   material way this experiment is *weaker* than its SG13G2 counterpart
@@ -204,16 +215,16 @@ splices schematic devices into. Regenerate that input with:
 
 ```bash
 cd layout/sg13cmos5l-bandgap_top
-klt extract --deck sg13cmos5l sg13cmos5l-bandgap_top.gds \
-  -o sg13cmos5l-bandgap_top.pex.spice --format json > pex_extract_report.json
+uvx --from "klayout-tools==0.8.0" klt extract --deck sg13cmos5l --parasitics \
+  sg13cmos5l-bandgap_top.gds -o sg13cmos5l-bandgap_top.pex.spice \
+  --format json > pex_extract_report.json
 ```
 
-(No `--parasitics` — see "What this does and does not model" above for
-why; a re-attempt is worth trying first, in case
-[klayout-tools#1440](https://github.com/2AMLogic/klayout-tools/issues/1440)
-has since been fixed upstream — if `--parasitics` starts succeeding with a
-non-`unknown deck` result, re-derive whether it reports non-zero R/C before
-assuming this experiment should be extended to model wire parasitics.)
+(`--parasitics` is required: the committed netlist carries real wire R/C as
+of issue #480, and a plain `klt extract` would overwrite it with a
+device-only extraction. klayout-tools#1440 is fixed in the 0.8.0 pin. The
+"What this does and does not model" text above describes the earlier
+plain-extraction netlist the committed records were run against.)
 
 **Re-verify the deck version before regenerating.** The committed
 `pex_extract_report.json`/`sg13cmos5l-bandgap_top.pex.spice` (issue #84,
