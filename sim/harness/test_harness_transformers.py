@@ -1011,23 +1011,40 @@ class ClosedLoopVerdictHelperTests(unittest.TestCase):
     @classmethod
     def _has_python_constant_assignment(cls, text: str, name: str) -> bool:
         """True if Python source *text* binds *name* anywhere: indented or
-        after a semicolon, annotated ``NAME: float =``, augmented ``NAME +=``,
-        walrus ``NAME :=``, plain ``NAME =``, or chained / tuple targets
-        (``OTHER = NAME = v``, ``A, NAME = ...``). Comments and strings never
-        count. A keyword-argument spelling at the start of a continuation
-        line can trip the plain form — a use, but unusual enough that failing
-        loudly suits a one-home guard."""
+        after a semicolon, annotated ``NAME: float =``, augmented with a
+        single- or multi-character operator (``NAME +=``, ``NAME //=``,
+        ``NAME **=``, ``NAME >>=``, ``NAME <<=``, ...), walrus ``NAME :=``,
+        plain ``NAME =``, or chained / tuple targets with *name* anywhere in
+        the target list (``OTHER = NAME = v``, ``A, NAME = ...``,
+        ``NAME, M = ...``, ``A, NAME, B = ...``). Comments and strings never
+        count. Keyword-argument spellings at the start of a continuation
+        line can trip the plain and tuple forms — a use, but unusual enough
+        that failing loudly suits a one-home guard."""
         scrubbed = cls._python_source_scrubbed(text)
         anchor = r"(?:^|;)[ \t]*"
         if re.search(
-            rf"{anchor}{name}[ \t]*(?::[^=\n]+)?[ \t]*(?:[-+*/%&|^@]=|=(?!=))",
+            rf"{anchor}{name}[ \t]*(?::[^=\n]+)?[ \t]*(?:(?:[-+*/%&|^@]|//|\*\*|>>|<<)=|=(?!=))",
             scrubbed,
             re.M,
         ):
             return True
         if re.search(rf"\b{name}[ \t]*:=", scrubbed):  # walrus binds wherever it appears
             return True
-        return bool(re.search(rf"[=,][ \t]*{name}[ \t]*=(?!=)", scrubbed, re.M))
+        # Target lists anchored at a statement boundary: simple (optionally
+        # starred) targets around *name*, so name-first and name-middle tuple
+        # unpacking binds too. Non-simple prefixes (``a.b, NAME = ...``,
+        # ``d[k], NAME = ...``) still fall through to the legacy comma-
+        # anchored arm, keeping detection a strict superset of the #689 guard.
+        target = r"\*?[A-Za-z_][A-Za-z0-9_]*"
+        return bool(
+            re.search(rf"[=,][ \t]*{name}[ \t]*=(?!=)", scrubbed, re.M)
+            or re.search(
+                rf"(?:^|;|=)[ \t]*(?:{target}[ \t]*,[ \t]*)*{name}"
+                rf"(?:[ \t]*,[ \t]*{target})*[ \t]*=(?!=)",
+                scrubbed,
+                re.M,
+            )
+        )
 
     @classmethod
     def _python_constant_homes(cls, sim: Path, name: str) -> list[str]:
@@ -1124,7 +1141,8 @@ class ClosedLoopVerdictHelperTests(unittest.TestCase):
                 "DET_RELEASE_FRAC = 0.8\n"
                 '"""\n'
                 "if DET_RELEASE_FRAC == 0.2 and I_MKFB_RELEASE_A <= 50e-9:\n"
-                "    print(DVSNS_CLOSE_V, FB_RAIL_MARGIN_V)\n",
+                "    print(DVSNS_CLOSE_V, FB_RAIL_MARGIN_V)\n"
+                "kwarg_call = call(DET_RELEASE_FRAC, x=1)\n",
                 encoding="utf-8",
             )
             for name in constants:
@@ -1141,6 +1159,12 @@ class ClosedLoopVerdictHelperTests(unittest.TestCase):
                 ("zzz/semicolon.py", "I_MKFB_RELEASE_A", "x = 1; I_MKFB_RELEASE_A = 50e-9\n"),
                 ("zzz/walrus.py", "DVSNS_CLOSE_V", "if (DVSNS_CLOSE_V := 0.020) <= 0.020:\n    pass\n"),
                 ("zzz/tuple_target.py", "FB_RAIL_MARGIN_V", "MARGIN, FB_RAIL_MARGIN_V = 0.05, 0.05\n"),
+                ("zzz/augmented_floordiv.py", "DET_RELEASE_FRAC", "DET_RELEASE_FRAC //= 2\n"),
+                ("zzz/augmented_pow.py", "I_MKFB_RELEASE_A", "I_MKFB_RELEASE_A **= 2\n"),
+                ("zzz/augmented_rshift.py", "DVSNS_CLOSE_V", "DVSNS_CLOSE_V >>= 1\n"),
+                ("zzz/augmented_lshift.py", "FB_RAIL_MARGIN_V", "FB_RAIL_MARGIN_V <<= 1\n"),
+                ("zzz/tuple_target_first.py", "DET_RELEASE_FRAC", "DET_RELEASE_FRAC, MARGIN = 0.8, 0.05\n"),
+                ("zzz/tuple_target_middle.py", "DVSNS_CLOSE_V", "LOW, DVSNS_CLOSE_V, HIGH = 0.01, 0.020, 0.1\n"),
             ]
             for rel, name, body in cases:
                 with self.subTest(rel=rel, constant=name):
