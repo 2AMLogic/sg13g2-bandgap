@@ -12,6 +12,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-24
 
+- **PR #705**: fix(sim): catch missing batch-set reports with the no-local-fallback diagnostic
+- **Issue #704** (closed): check-batch-set refuses a missing --batch-set report with a traceback instead of its no-local-fallback diagnostic
 - **PR #703**: refactor(sim): dedupe the Monte Carlo klt-sim plumbing and preamble guards
 - **Issue #702** (closed): Dedupe remaining Monte Carlo klt-sim plumbing and shared runner preamble guards
 - **PR #699**: layout: regenerate sg13cmos5l-bandgap_top PEX with real wire R/C under the 0.8.0 pin
