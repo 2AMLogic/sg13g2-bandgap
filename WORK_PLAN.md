@@ -34,13 +34,12 @@ Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
 - **#646**: Item-5 iq citation pairs a signed limit with an enricher-magnitude value, so its bound is not re-derivable from the envelope
-- **#688**: One-home drift guard: Python pass still column-one-only and non-recursive (shell pass is now neither)
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#689**: test: make Python one-home guard recursive and form-aware
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -62,7 +61,6 @@ Issues carrying `loom:curated`.
 - **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(curated)*
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)*
 - **#646**: Item-5 iq citation pairs a signed limit with an enricher-magnitude value, so its bound is not re-derivable from the envelope *(curated)*
-- **#688**: One-home drift guard: Python pass still column-one-only and non-recursive (shell pass is now neither) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -80,10 +78,10 @@ _None._
 | Very important | 1 |
 | Important | 2 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 3 |
-| PRs awaiting review | 1 |
+| In Progress (`loom:building`) | 2 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 11 |
+| Curated | 10 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
