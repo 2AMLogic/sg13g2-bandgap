@@ -22,6 +22,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import tokenize
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -978,6 +979,64 @@ class ClosedLoopVerdictHelperTests(unittest.TestCase):
         )
         return any(re.search(p, unquoted, re.M) for p in patterns)
 
+    _PY_FSTRING_MIDDLE = getattr(tokenize, "FSTRING_MIDDLE", -1)
+
+    @classmethod
+    def _python_source_scrubbed(cls, text: str) -> str:
+        """*text* with comments and string-literal contents blanked (line and
+        column layout preserved), so line-anchored name matching cannot fire
+        inside prose, comments, or literals."""
+        blank_types = {tokenize.COMMENT, tokenize.STRING, cls._PY_FSTRING_MIDDLE}
+        spans: list[tuple[tuple[int, int], tuple[int, int]]] = []
+        try:
+            for tok in tokenize.generate_tokens(io.StringIO(text).readline):
+                if tok.type in blank_types:
+                    spans.append((tok.start, tok.end))
+        except (tokenize.TokenError, IndentationError):
+            pass  # scrub what parsed; an over-match fails loudly, never silently
+        lines = text.splitlines(keepends=True)
+        for (r0, c0), (r1, c1) in spans:
+            for row_n in range(r0, min(r1, len(lines)) + 1):
+                row = lines[row_n - 1]
+                a = c0 if row_n == r0 else 0
+                b = min(c1 if row_n == r1 else len(row), len(row))
+                if b > a:
+                    lines[row_n - 1] = (
+                        row[:a]
+                        + "".join(ch if ch == "\n" else " " for ch in row[a:b])
+                        + row[b:]
+                    )
+        return "".join(lines)
+
+    @classmethod
+    def _has_python_constant_assignment(cls, text: str, name: str) -> bool:
+        """True if Python source *text* binds *name* anywhere: indented or
+        after a semicolon, annotated ``NAME: float =``, augmented ``NAME +=``,
+        walrus ``NAME :=``, plain ``NAME =``, or chained / tuple targets
+        (``OTHER = NAME = v``, ``A, NAME = ...``). Comments and strings never
+        count. A keyword-argument spelling at the start of a continuation
+        line can trip the plain form — a use, but unusual enough that failing
+        loudly suits a one-home guard."""
+        scrubbed = cls._python_source_scrubbed(text)
+        anchor = r"(?:^|;)[ \t]*"
+        if re.search(
+            rf"{anchor}{name}[ \t]*(?::[^=\n]+)?[ \t]*(?:[-+*/%&|^@]=|=(?!=))",
+            scrubbed,
+            re.M,
+        ):
+            return True
+        if re.search(rf"\b{name}[ \t]*:=", scrubbed):  # walrus binds wherever it appears
+            return True
+        return bool(re.search(rf"[=,][ \t]*{name}[ \t]*=(?!=)", scrubbed, re.M))
+
+    @classmethod
+    def _python_constant_homes(cls, sim: Path, name: str) -> list[str]:
+        return [
+            str(p.relative_to(sim))
+            for p in sorted(sim.rglob("*.py"))
+            if cls._has_python_constant_assignment(p.read_text(encoding="utf-8"), name)
+        ]
+
     @classmethod
     def _shell_constant_homes(cls, sim: Path, name: str) -> list[str]:
         return [
@@ -993,9 +1052,8 @@ class ClosedLoopVerdictHelperTests(unittest.TestCase):
         sim = harness.parent
         for name in ("DET_RELEASE_FRAC", "I_MKFB_RELEASE_A", "DVSNS_CLOSE_V", "FB_RAIL_MARGIN_V"):
             with self.subTest(constant=name):
-                homes = [p.name for p in sorted(harness.glob("*.py"))
-                         if re.search(rf"^{name}\s*=", p.read_text(encoding="utf-8"), re.M)]
-                self.assertEqual(homes, ["enrich_pvt_report.py"])
+                self.assertEqual(self._python_constant_homes(sim, name),
+                                 ["harness/enrich_pvt_report.py"])
             with self.subTest(constant=name, surface="shell"):
                 self.assertEqual(self._shell_constant_homes(sim, name),
                                  ["lib/pvt_verdict_common.sh"])
@@ -1043,6 +1101,57 @@ class ClosedLoopVerdictHelperTests(unittest.TestCase):
                             self.assertEqual(
                                 self._shell_constant_homes(sim, name),
                                 ["lib/pvt_verdict_common.sh"],
+                            )
+                        self.assertIn(rel, str(cm.exception))
+                    finally:
+                        rogue.unlink()
+
+    def test_python_one_home_guard_catches_indented_annotated_augmented_chained(self) -> None:
+        constants = ("DET_RELEASE_FRAC", "I_MKFB_RELEASE_A", "DVSNS_CLOSE_V", "FB_RAIL_MARGIN_V")
+        with tempfile.TemporaryDirectory() as td:
+            sim = Path(td)
+            (sim / "harness").mkdir()
+            (sim / "harness" / "enrich_pvt_report.py").write_text(
+                "".join(f"{c} = 0.2\n" for c in constants),
+                encoding="utf-8",
+            )
+            (sim / "tools").mkdir()
+            (sim / "tools" / "uses_only.py").write_text(
+                "# DET_RELEASE_FRAC = 0.8\n"
+                'uses = f"{DVSNS_CLOSE_V=} {FB_RAIL_MARGIN_V!r}"\n'
+                'doc = """\n'
+                "    I_MKFB_RELEASE_A = 1e-6\n"
+                "DET_RELEASE_FRAC = 0.8\n"
+                '"""\n'
+                "if DET_RELEASE_FRAC == 0.2 and I_MKFB_RELEASE_A <= 50e-9:\n"
+                "    print(DVSNS_CLOSE_V, FB_RAIL_MARGIN_V)\n",
+                encoding="utf-8",
+            )
+            for name in constants:
+                self.assertEqual(self._python_constant_homes(sim, name),
+                                 ["harness/enrich_pvt_report.py"])
+
+            cases = [
+                ("harness/indented_if.py", "DET_RELEASE_FRAC", "if True:\n    DET_RELEASE_FRAC = 0.8\n"),
+                ("tools/annotated.py", "I_MKFB_RELEASE_A", "I_MKFB_RELEASE_A: float = 50e-9\n"),
+                ("loop-gain-phase-margin/tools/augmented.py", "DVSNS_CLOSE_V", "DVSNS_CLOSE_V += 0.001\n"),
+                ("closed-loop-psrr/attribution/chained.py", "FB_RAIL_MARGIN_V", "MARGIN = FB_RAIL_MARGIN_V = 0.05\n"),
+                ("harness/nested/global_shadow.py", "DET_RELEASE_FRAC",
+                 "def f():\n    global DET_RELEASE_FRAC\n    DET_RELEASE_FRAC = 0.8\n"),
+                ("zzz/semicolon.py", "I_MKFB_RELEASE_A", "x = 1; I_MKFB_RELEASE_A = 50e-9\n"),
+                ("zzz/walrus.py", "DVSNS_CLOSE_V", "if (DVSNS_CLOSE_V := 0.020) <= 0.020:\n    pass\n"),
+                ("zzz/tuple_target.py", "FB_RAIL_MARGIN_V", "MARGIN, FB_RAIL_MARGIN_V = 0.05, 0.05\n"),
+            ]
+            for rel, name, body in cases:
+                with self.subTest(rel=rel, constant=name):
+                    rogue = sim / rel
+                    rogue.parent.mkdir(parents=True, exist_ok=True)
+                    rogue.write_text(body, encoding="utf-8")
+                    try:
+                        with self.assertRaises(AssertionError) as cm:
+                            self.assertEqual(
+                                self._python_constant_homes(sim, name),
+                                ["harness/enrich_pvt_report.py"],
                             )
                         self.assertIn(rel, str(cm.exception))
                     finally:
