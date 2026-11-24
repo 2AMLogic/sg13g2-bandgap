@@ -2430,10 +2430,12 @@ finding/severity classification moved (per-cell numbers in the LVS tables
 below) — and the ERC verdict is unchanged in kind (`violations`, the same
 10 `erc.missing_tie` findings). (History, superseded: the top's
 `pex_extract_report.json`/`.pex.spice` bytes this re-mint produced were
-still a plain extraction — `--parasitics` did not work for `sg13cmos5l`
-yet; issue #480 later regenerated that pair with real wire R/C once the
-pin carried the upstream fix — see "SG13CMOS5L: Post-layout parasitic
-extraction" below.)
+still a plain extraction — not because the pinned tool could not do
+better (the 0.8.0 pin already carried the klayout-tools#1440 fix at that
+mint), but because this section's own "`--parasitics` fails outright"
+narrative had not been re-checked against the pin; issue #480 later
+regenerated that pair with real wire R/C — see "SG13CMOS5L: Post-layout
+parasitic extraction" below.)
 
 **#633 (2026-11-21) re-minted `sg13cmos5l-bandgap_core`'s and
 `sg13cmos5l-bandgap_top`'s reports under the same 0.8.0 pin** (their GDS
@@ -3854,7 +3856,9 @@ attributed to the same four causes every leaf cell already carries) is the
 allowed extraction input, same convention issue #14 established for the
 SG13G2 side. **Parasitic extraction succeeds against the assembled top
 cell** — regenerated under the section's evidence-standard pin in issue #480
-(operator ruling 2026-11-23), once that pin carried the upstream fix:
+(operator ruling 2026-11-23); that pin already carried the upstream fix
+(klayout-tools#1440), the earlier plain-extraction bytes simply predated a
+re-check of the section's stale "fails outright" narrative:
 
 ```bash
 cd layout/sg13cmos5l-bandgap_top
@@ -3865,7 +3869,16 @@ klt extract --deck sg13cmos5l --parasitics sg13cmos5l-bandgap_top.gds \
 run via `uvx --from "klayout-tools==0.8.0"` (the DR-0016 pin; the committed
 report records `provenance.klt_version 0.8.0` and the same deck
 `content_hash sha256:5a43b8eb…` every #561-step-2/#633 mint in this section
-carries, so the verdict stays same-deck comparable). `status: "extracted"`,
+carries, so the verdict stays same-deck comparable). **Engine-version
+disclosure:** the committed report records `provenance.klayout_version
+0.30.14`, whereas every other `klayout_version` committed under `layout/**`
+(including this section's own evidence-standard text above) is `0.30.13`.
+`klayout-tools==0.8.0` does not pin its KLayout runtime, so a fresh
+`uvx --from "klayout-tools==0.8.0"` resolves whatever KLayout is current
+(0.30.14 at regeneration time); the klt pin plus deck `content_hash` therefore
+fixes the tool and deck but not the extraction engine, and these bytes are
+not guaranteed byte-reproducible across time. (Re-derived independently under
+the same pin: byte-identical.) `status: "extracted"`,
 no errors, `device_count: 17` (`device_counts: {"nfet": 6, "pfet": 8,
 "rhigh": 1, "rppd": 2}`, matching "Cell: `sg13cmos5l-bandgap_top`"'s own
 device-count accounting above — the stale count of `14` this paragraph
