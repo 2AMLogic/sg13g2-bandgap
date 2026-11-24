@@ -27,7 +27,6 @@ Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a h
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
-- **#480**: Regenerate real parasitic extraction for sg13cmos5l-bandgap_top (pex.spice carries no R/C)
 
 ## In Progress
 
@@ -35,6 +34,7 @@ Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
 - **#646**: Item-5 iq citation pairs a signed limit with an enricher-magnitude value, so its bound is not re-derivable from the envelope
+- **#698**: Re-run sim/sg13cmos5l-closed-loop-startup-pex against the parasitic-bearing sg13cmos5l-bandgap_top.pex.spice (post-#480)
 
 ## PRs Awaiting Review
 
@@ -61,8 +61,8 @@ Issues carrying `loom:curated`.
 - **#414**: sim: add klt sim wrappers for closed-loop-iq and closed-loop-startup (Part of #412) *(curated)*
 - **#436**: Re-layout and re-extract bandgap_top after NMOS mirror resize (PR #435); PEX generator self-test fails *(curated)*
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)*
-- **#480**: Regenerate real parasitic extraction for sg13cmos5l-bandgap_top (pex.spice carries no R/C) *(curated)*
 - **#646**: Item-5 iq citation pairs a signed limit with an enricher-magnitude value, so its bound is not re-derivable from the envelope *(curated)*
+- **#698**: Re-run sim/sg13cmos5l-closed-loop-startup-pex against the parasitic-bearing sg13cmos5l-bandgap_top.pex.spice (post-#480) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -79,8 +79,8 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 1 |
 | Important | 2 |
-| Ready (`loom:issue`) | 2 |
-| In Progress (`loom:building`) | 2 |
+| Ready (`loom:issue`) | 1 |
+| In Progress (`loom:building`) | 3 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
 | Curated | 11 |

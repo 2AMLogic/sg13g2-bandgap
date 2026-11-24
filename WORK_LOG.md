@@ -12,6 +12,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-24
 
+- **PR #699**: layout: regenerate sg13cmos5l-bandgap_top PEX with real wire R/C under the 0.8.0 pin
+- **Issue #480** (closed): Regenerate real parasitic extraction for sg13cmos5l-bandgap_top (pex.spice carries no R/C)
 - **PR #692**: test: catch multi-char augmented ops and name-first tuple targets in Python one-home guard
 - **Issue #690** (closed): One-home guard (Python): multi-char augmented ops and name-first tuple targets escape the matcher
 - **PR #689**: test: make Python one-home guard recursive and form-aware
