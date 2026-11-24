@@ -52,52 +52,65 @@ for f in "${MODELS}"/*.lib; do ln -sf "${f}" "$(basename "${f}")"; done
 ngspice -b "${STEM}.spice" > "${STEM}.log" 2>&1 \
   || { echo "ngspice failed (see ${STEM}.log)" >&2; exit 1; }
 
+# emit_result LOG NAME=REGEX ... -- FIELD ...
+# One RESULT line per probe run: the two back-to-back `python3 - "${STEM}.log"`
+# grab() heredocs this file used to carry, collapsed into one parameterized
+# helper (issue #707). Each NAME=REGEX grab takes its first capture group out
+# of LOG (split at the FIRST '=', so the regex itself may contain '='), then
+# the FIELD words print after the RESULT keyword with {NAME} references
+# resolved to the grabbed values. A grab that does not match exits naming
+# the field.
+emit_result() {
+  python3 - "$@" <<'PY'
+import re, sys
+args = sys.argv[1:]
+sep = args.index("--")
+log = open(args[0]).read()
+grabbed = {}
+for pair in args[1:sep]:
+    name, pat = pair.split("=", 1)
+    m = re.search(pat, log)
+    if not m:
+        sys.exit(f"run_probe.sh: {name} not found in {args[0]}")
+    grabbed[name] = m.group(1)
+fields = []
+for field in args[sep + 1:]:
+    for name, value in grabbed.items():
+        field = field.replace("{" + name + "}", value)
+    fields.append(field)
+print("RESULT " + " ".join(fields))
+PY
+}
+
 if [[ "${LG}" == 1 ]]; then
   # Loop-gain post-processing with the loop-gain bench's OWN tools (no
   # re-derivation): the solve-quality gate (#289/#297) and the crossover/
   # phase-margin finder, applied to the same wrdata shape that bench emits.
   LG_DIR="${HERE}/../../loop-gain-phase-margin/tools"
   QUALITY="$(python3 "${LG_DIR}/solve_quality.py" check "${STEM}.spice.ac.txt")"
+  # shellcheck disable=SC2034  # Q_REASON only consumes the check line's third
+  # word so Q_WORD/Q_RIPPLE bind; the RESULT line carries the quality word.
   read -r Q_WORD Q_RIPPLE Q_REASON <<< "${QUALITY}"
   XOVER="$(awk -f "${LG_DIR}/find_crossover.awk" "${STEM}.spice.ac.txt")"
   read -r X_STATUS X_FREQ X_PM X_DCGAIN X_NCROSS X_NOTCH X_NOTCHF <<< "${XOVER}"
-  python3 - "${STEM}.log" "${CORNER}" "${TEMP}" "${VDD}" "${VARIANT}" \
-    "${Q_WORD}" "${Q_RIPPLE}" "${Q_REASON}" "${X_STATUS}" "${X_FREQ}" \
-    "${X_PM}" "${X_DCGAIN}" "${X_NCROSS}" "${X_NOTCH}" "${X_NOTCHF}" <<'PY'
-import re, sys
-log = open(sys.argv[1]).read()
-def grab(pat, what):
-    m = re.search(pat, log)
-    if not m:
-        sys.exit(f"run_probe.sh: {what} not found in {sys.argv[1]}")
-    return m.group(1)
-fb = grab(r"v\(fb_load\) = ([0-9.eE+-]+)", "v(fb_load)")
-vref = grab(r"v\(vref\) = ([0-9.eE+-]+)", "v(vref)")
-print(f"RESULT corner={sys.argv[2]} temp={sys.argv[3]} vdd={sys.argv[4]} "
-      f"variant={sys.argv[5]} lg_quality={sys.argv[6]} "
-      f"lg_ripple_db={sys.argv[7]} lg_status={sys.argv[9]} "
-      f"lg_crossover_hz={sys.argv[10]} lg_phase_margin_deg={sys.argv[11]} "
-      f"lg_dc_gain_db={sys.argv[12]} lg_n_crossings={sys.argv[13]} "
-      f"lg_notch_min_db={sys.argv[14]} lg_notch_min_hz={sys.argv[15]} "
-      f"fb_load_op_v={fb} vref_op_v={vref}")
-PY
+  emit_result "${STEM}.log" \
+    'fb_load_op_v=v\(fb_load\) = ([0-9.eE+-]+)' \
+    'vref_op_v=v\(vref\) = ([0-9.eE+-]+)' \
+    -- "corner=${CORNER}" "temp=${TEMP}" "vdd=${VDD}" "variant=${VARIANT}" \
+    "lg_quality=${Q_WORD}" "lg_ripple_db=${Q_RIPPLE}" "lg_status=${X_STATUS}" \
+    "lg_crossover_hz=${X_FREQ}" "lg_phase_margin_deg=${X_PM}" \
+    "lg_dc_gain_db=${X_DCGAIN}" "lg_n_crossings=${X_NCROSS}" \
+    "lg_notch_min_db=${X_NOTCH}" "lg_notch_min_hz=${X_NOTCHF}" \
+    'fb_load_op_v={fb_load_op_v}' 'vref_op_v={vref_op_v}'
   exit 0
 fi
 
-python3 - "${STEM}.log" "${CORNER}" "${TEMP}" "${VDD}" "${VARIANT}" <<'PY'
-import re, sys
-log = open(sys.argv[1]).read()
-def grab(pat, what):
-    m = re.search(pat, log)
-    if not m:
-        sys.exit(f"run_probe.sh: {what} not found in {sys.argv[1]}")
-    return m.group(1)
-psrr = grab(r"psrr_dc_probe_db = ([0-9.eE+-]+)", "psrr_dc_probe_db")
-ph = grab(r"vref_dc_phase_deg = ([0-9.eE+-]+)", "vref_dc_phase_deg")
-fb = grab(r"v\(fb\) = ([0-9.eE+-]+)", "v(fb)")
-vref = grab(r"v\(vref\) = ([0-9.eE+-]+)", "v(vref)")
-iq = grab(r"i\(vvdd\) = (-?[0-9.eE+-]+)", "i(Vvdd)")
-print(f"RESULT corner={sys.argv[2]} temp={sys.argv[3]} vdd={sys.argv[4]} "
-      f"variant={sys.argv[5]} psrr_dc_db={psrr} vref_dc_phase_deg={ph} "
-      f"fb_op_v={fb} vref_op_v={vref} iq_a={iq}")
-PY
+emit_result "${STEM}.log" \
+  'psrr_dc_db=psrr_dc_probe_db = ([0-9.eE+-]+)' \
+  'vref_dc_phase_deg=vref_dc_phase_deg = ([0-9.eE+-]+)' \
+  'fb_op_v=v\(fb\) = ([0-9.eE+-]+)' \
+  'vref_op_v=v\(vref\) = ([0-9.eE+-]+)' \
+  'iq_a=i\(vvdd\) = (-?[0-9.eE+-]+)' \
+  -- "corner=${CORNER}" "temp=${TEMP}" "vdd=${VDD}" "variant=${VARIANT}" \
+  'psrr_dc_db={psrr_dc_db}' 'vref_dc_phase_deg={vref_dc_phase_deg}' \
+  'fb_op_v={fb_op_v}' 'vref_op_v={vref_op_v}' 'iq_a={iq_a}'

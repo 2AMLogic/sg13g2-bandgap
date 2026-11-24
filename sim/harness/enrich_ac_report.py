@@ -48,6 +48,7 @@ from enrich_pvt_report import (
     closed_loop_verdict_failures,
     recount_report,
 )
+from seed_deck import load_seeds  # noqa: F401  (the seam test asserts this binding)
 
 _MEAS_RE = re.compile(r"^([a-z_][a-z0-9_]*)\s*=\s*([-+0-9.eE]+)\s*$", re.M)
 _OP_PRINT_RE = re.compile(
@@ -129,16 +130,6 @@ def _splice_deck(deck_path: Path, cwd: Path) -> str:
         return "\n".join(out)
 
     return read_with_includes(deck_path)
-
-
-def _load_seed_rows(path: str) -> dict:
-    import csv
-
-    rows: dict[tuple[str, str, str], dict] = {}
-    with open(path, newline="") as fh:
-        for row in csv.DictReader(fh):
-            rows[(row["corner_label"], row["temp_c"], row["vdd_v"])] = row
-    return rows
 
 
 def enrich(report: dict, kind: str, seed_rows: dict | None = None) -> dict:
@@ -315,7 +306,7 @@ def main(argv: list[str]) -> int:
                     "op references for the op-match check")
     ap.add_argument("-o", "--output", type=Path, required=True)
     args = ap.parse_args(argv)
-    seed_rows = _load_seed_rows(str(args.seed_csv)) if args.seed_csv else None
+    seed_rows = load_seeds(str(args.seed_csv)) if args.seed_csv else None
     report = enrich(json.loads(args.report.read_text(encoding="utf-8")), args.kind, seed_rows)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     for c in report["corners"]:

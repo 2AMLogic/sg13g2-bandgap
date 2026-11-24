@@ -68,10 +68,19 @@ from solve_quality import RIPPLE_BAND_HZ, RIPPLE_MAX_DB, ripple_db  # noqa: E402
 import klt_sim_evidence as adapter  # noqa: E402
 from klt_corner_bundle import CORNER_SECTIONS  # noqa: E402  (issue #652)
 # The nodeset-seed contract shared with trim_mc_klt / vref_mc_klt /
-# trim_coverage_klt (issue #486); issue #652 retires this file's own copy.
-from seed_deck import SEED_FIELDS, fill_deck, load_seeds, seed_row  # noqa: E402
+# trim_coverage_klt (issue #486); issue #652 retires this file's own copy,
+# issue #707 its seed-record discovery and XMSENSE-width parses.
+from seed_deck import (  # noqa: E402
+    SEED_FIELDS,
+    fill_deck,
+    load_seeds,
+    newest_seed_csv,
+    read_msense_width,
+    seed_row,
+)
 
 REPO_ROOT = SIM_DIR.parent
+STARTUP_NETLIST = REPO_ROOT / "design" / "netlist" / "bandgap_startup.spice"
 TEMPLATE = EXPERIMENT_DIR / "testbench" / "tb_loop_gain.spice.tmpl"
 CROSSOVER_AWK = EXPERIMENT_DIR / "tools" / "find_crossover.awk"
 
@@ -229,33 +238,18 @@ def git_short(path: str) -> str:
     return out.stdout.strip() or "unknown"
 
 
-def seed_csv() -> Path:
-    csvs = sorted((SIM_DIR / "closed-loop-startup" / "records").glob("*.csv"))
-    if not csvs:
-        raise SystemExit("klt_trim_axis.py: no sim/closed-loop-startup/records/*.csv seed record")
-    return csvs[-1]
-
-
 def lookup_seeds(corner: str, temp: str, vdd: str) -> dict[str, str]:
     """The PASS seed row for a PVT point, via the shared seed_deck contract
     (issue #486) -- previously this file's own fifth copy of that parser."""
-    csv_path = str(seed_csv())
+    csv_path = str(newest_seed_csv(SIM_DIR))
     return seed_row(load_seeds(csv_path), corner, int(temp), vdd, csv_path)
-
-
-def msense_width() -> str:
-    text = (REPO_ROOT / "design" / "netlist" / "bandgap_startup.spice").read_text(encoding="utf-8")
-    match = re.search(r"^XMSENSE\s.*?\bw=(\S+)", text, re.M)
-    if match is None:
-        raise SystemExit("klt_trim_axis.py: cannot parse XMSENSE w= from bandgap_startup.spice")
-    return match.group(1)
 
 
 def render_body(corner: str, temp: str, vdd: str, pdk_root: str, pdk: str, osdi_dir: str,
                 probe: bool = True) -> str:
     hbt, mos, res = CORNER_SECTIONS[corner]
     seeds = lookup_seeds(corner, temp, vdd)
-    seed_rel = os.path.relpath(seed_csv(), REPO_ROOT)
+    seed_rel = os.path.relpath(newest_seed_csv(SIM_DIR), REPO_ROOT)
     subs = {
         "@@CORNER_LABEL@@": corner,
         "@@TEMP_C@@": temp,
@@ -266,7 +260,7 @@ def render_body(corner: str, temp: str, vdd: str, pdk_root: str, pdk: str, osdi_
         "@@HBT_SECTION@@": hbt,
         "@@MOS_SECTION@@": mos,
         "@@RES_SECTION@@": res,
-        "@@MSENSE_W@@": msense_width(),
+        "@@MSENSE_W@@": read_msense_width(STARTUP_NETLIST),
         "@@AC_OUT@@": "(not used: klt sim writes the rawfile)",
         "@@DUT_GIT_SHA@@": (
             f"core={git_short('design/netlist/bandgap_core.spice')} "
@@ -537,7 +531,7 @@ def cmd_record(args: argparse.Namespace) -> None:
               "notch_margin_flag", "ripple_db", "quality", "reject_reason"]
     rows: list[dict] = []
     jobs: list[dict] = []
-    width = msense_width()
+    width = read_msense_width(STARTUP_NETLIST)
 
     # Pass 1: every unit -> a row with its loop-gain numbers; status deferred.
     for c, temp, vdd, grid, _codes, variant in PLANS[args.plan]:
@@ -675,7 +669,7 @@ def cmd_record(args: argparse.Namespace) -> None:
 
 def write_md(path: Path, rid: str, rows, passed, failed, marginal, jobs, args,
              inconclusive) -> None:
-    seed_rel = os.path.relpath(seed_csv(), REPO_ROOT)
+    seed_rel = os.path.relpath(newest_seed_csv(SIM_DIR), REPO_ROOT)
     engines = sorted({j.get("engine") or "unknown" for j in jobs})
     backends = sorted({"batch" if j.get("job_id") else "local" for j in jobs})
     points = sorted({(r["corner_label"].split("_code")[0], r["temp_c"], r["vdd_v"]) for r in rows})
@@ -728,7 +722,7 @@ def write_md(path: Path, rid: str, rows, passed, failed, marginal, jobs, args,
         + " by `alter` of the strap resistors (`corners.supply_v` keys",
         "  r.xxtrim.rs0..rs7). Per-request job ids, instance types and engine",
         f"  versions: `records/{rid}.jobs.json`.",
-        "- **XMSENSE width this run used**: w=" + msense_width(),
+        "- **XMSENSE width this run used**: w=" + read_msense_width(STARTUP_NETLIST),
         "- **Devices**: all real PDK compact models, all three DUTs copied",
         "  verbatim from design/netlist/bandgap_core.spice,",
         "  design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice",
@@ -829,14 +823,12 @@ def cmd_ripple_scan(args: argparse.Namespace) -> None:
     """`ripple_db` (same definition as the record column) for every committed
     `*.ac.txt` in a record's corners/ dir -- run_pvt_sweep.sh's own `wrdata`
     files included -- so a solve-quality reading of an EXISTING record is
-    reproducible from committed data alone."""
+    reproducible from committed data alone. The parse itself is
+    solve_quality.read_ac_txt's (issue #707): missing/empty files read as no
+    data and a malformed token becomes a NaN row, not a crash."""
     results = []
     for ac in sorted(Path(args.corners).glob("*.ac.txt")):
-        rows = []
-        for line in ac.read_text(encoding="utf-8").splitlines():
-            parts = line.split()
-            if len(parts) >= 4:
-                rows.append((float(parts[0]), float(parts[1]), float(parts[3])))
+        rows = solve_quality.read_ac_txt(ac) or []
         results.append((ripple_db(rows), ac.name[:-len(".ac.txt")]))
     for value, name in sorted(results, reverse=True):
         print(f"{value:8.4f}  {name}")
