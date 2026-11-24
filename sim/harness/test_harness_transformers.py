@@ -2331,7 +2331,15 @@ class SetDispatchWiringTests(unittest.TestCase):
         ]
         self.assertEqual(
             occurrences,
-            ['BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"'],
+            [
+                'BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"',
+                # pex_schematic_dut_setup's default render source (#650): the
+                # committed per-stem template. An override reaches the render
+                # only as the explicit --dut-template flag, never an ambient
+                # DUT_TEMPLATE variable (#670), so the sed itself names no
+                # template path.
+                '  local default_dut="${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"',
+            ],
         )
 
     def test_shared_pex_body_template_exists_and_the_per_stem_copy_does_not(self) -> None:
@@ -2347,6 +2355,308 @@ class SetDispatchWiringTests(unittest.TestCase):
             / "testbench" / "closed_loop_vref_pvt_pex_boxtc.body.spice.tmpl"
         )
         self.assertFalse(per_stem.exists(), per_stem)
+
+
+class SchematicDutSeamTests(unittest.TestCase):
+    """The shell side of the six schematic-DUT benches: one shared setup,
+    one shared record mint, one shared AC flow -- kept shared (#650).
+    """
+
+    #: the six schematic-DUT wrappers and the identity extra each appends
+    WRAPPERS = {
+        "closed-loop-iq": "enrich_supply_bench_report.py",
+        "closed-loop-startup": "enrich_supply_bench_report.py",
+        "startup-time-to-release": "enrich_supply_bench_report.py",
+        "closed-loop-vref-pvt": None,
+        "closed-loop-vref-pvt-boxtc": None,
+        "closed-loop-psrr": "enrich_ac_report.py",
+    }
+
+    NETLISTS = ("bandgap_startup.spice", "bandgap_core.spice", "bandgap_amp.spice")
+
+    def test_every_wrapper_delegates_to_the_shared_setup(self) -> None:
+        for exp, extra in self.WRAPPERS.items():
+            with self.subTest(exp=exp):
+                script = (SIM_DIR / exp / "run_klt_sim.sh").read_text()
+                call = "pex_schematic_dut_setup"
+                if extra is not None:
+                    call += f' "${{HARNESS_DIR}}/{extra}"'
+                self.assertIn(call, script)
+                # The setup must not be re-typed here -- that is the
+                # duplication #650 removed. No msense read, no template
+                # render, no netlist list.
+                self.assertNotIn("read_msense_width", script)
+                self.assertNotIn("@@MSENSE_W@@", script)
+                for netlist in self.NETLISTS:
+                    self.assertNotIn(
+                        f'--extra "${{REPO_ROOT}}/design/netlist/{netlist}"', script)
+                # The flow is the family runner's, not a local case block.
+                self.assertNotIn('case "${MODE}"', script)
+
+    def test_the_shared_setup_carries_the_schematic_dut(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        body = driver.split("pex_schematic_dut_setup() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn('source "${SIM_DIR}/lib/msense_width.sh"', body)
+        self.assertIn('"${WORK}/msense_w.txt"', body)
+        self.assertIn('BODY_TEMPLATE="${WORK}/body.spice.tmpl"', body)
+        for netlist in self.NETLISTS:
+            self.assertIn(f'--extra "${{REPO_ROOT}}/design/netlist/{netlist}"', body)
+
+    def test_every_schematic_record_delegates_to_the_shared_mint(self) -> None:
+        # The --extraction-sources-less twin of pex_record_mint: defined once
+        # beside it, and none of its callers re-types the adapter call.
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        self.assertIn("schematic_record_mint() {", driver)
+        mint = driver.split("schematic_record_mint() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("klt_sim_evidence.py", mint)
+        self.assertNotIn("--extraction-sources", mint)
+        for rel in ("harness/pex_vref_runner.sh", "harness/supply_bench_runner.sh"):
+            with self.subTest(rel=rel):
+                text = (SIM_DIR / rel).read_text()
+                self.assertIn("schematic_record_mint", text)
+                self.assertNotIn("klt_sim_evidence.py", text)
+
+    def test_the_psrr_wrapper_delegates_its_flow_to_the_ac_runner(self) -> None:
+        # closed-loop-psrr used to re-type pex_ac_main's --sanity/--batch/
+        # --record arms inline; the schematic twin is a runner function now.
+        script = (SIM_DIR / "closed-loop-psrr" / "run_klt_sim.sh").read_text()
+        self.assertIn("schematic_ac_main", script)
+        self.assertNotIn("klt_sim_evidence.py", script)
+        runner = (SIM_DIR / "harness" / "pex_ac_runner.sh").read_text()
+        self.assertIn("schematic_ac_main() {", runner)
+        self.assertIn("_ac_main() {", runner)
+        # One flow, not two: the arms live once, in _ac_main.
+        for arm in ("--sanity)", "--batch)", "--record)"):
+            self.assertEqual(runner.count(arm), 1, arm)
+
+    # -- #670: the render source and record spec are explicit flags on the
+    # shared setup, not ambient variables the caller's environment can set.
+    # The tests below run the real function bodies (extracted from
+    # pex_runner.sh) in a stubbed subshell: a fake msense_width.sh, a fake
+    # klt_sim_evidence.py that captures its argv, and small committed /
+    # variant / decoy template+spec files. No SPICE, no PDK, no klt.
+
+    def _schematic_stub_tree(self) -> Path:
+        tmp = tempfile.TemporaryDirectory(prefix="schematic-dut-seam-")
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        for rel in ("sim/lib", "repo", "exp/testbench", "exp/variants",
+                    "work", "harness"):
+            (root / rel).mkdir(parents=True)
+        (root / "sim" / "lib" / "msense_width.sh").write_text(
+            'read_msense_width() { MSENSE_W="0.42"; }\n'
+        )
+        (root / "exp" / "testbench" / "stubstem.body.spice.tmpl").write_text(
+            "body @@MSENSE_W@@ committed\n"
+        )
+        (root / "exp" / "testbench" / "stubstem.record-spec.json").write_text("{}\n")
+        (root / "exp" / "variants" / "proposal.body.spice.tmpl").write_text(
+            "body @@MSENSE_W@@ variant\n"
+        )
+        (root / "exp" / "variants" / "proposal.record-spec.json").write_text("{}\n")
+        # The decoys an exported DUT_TEMPLATE / RECORD_SPEC / _SCHEMATIC_
+        # RECORD_SPEC would point at: distinguishable by content.
+        (root / "evil.body.spice.tmpl").write_text("body evil-dut\n")
+        (root / "evil.record-spec.json").write_text("{}\n")
+        (root / "harness" / "klt_sim_evidence.py").write_text(
+            "import os, sys\n"
+            'open(os.environ["SPEC_CAPTURE"], "w").write("\\n".join(sys.argv[1:]))\n'
+        )
+        return root
+
+    def _run_schematic_setup(self, root: Path, call: str) -> subprocess.CompletedProcess:
+        """Run the real pex_schematic_dut_setup + schematic_record_mint
+        bodies from sim/harness/pex_runner.sh in a stubbed `set -euo
+        pipefail` subshell, with the environment polluted exactly the way
+        #670 fears, then dump IDENT_ARGS, the spec state and the mint's
+        captured argv for the assertions."""
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        setup = driver.split("pex_schematic_dut_setup() {", 1)[1].split("\n}\n", 1)[0]
+        mint = driver.split("schematic_record_mint() {", 1)[1].split("\n}\n", 1)[0]
+        default_spec = root / "exp" / "testbench" / "stubstem.record-spec.json"
+        script = "\n".join([
+            "set -euo pipefail",
+            f'SIM_DIR="{root}/sim"',
+            f'REPO_ROOT="{root}/repo"',
+            f'EXP_DIR="{root}/exp"',
+            'STEM="stubstem"',
+            f'WORK="{root}/work"',
+            f'HARNESS_DIR="{root}/harness"',
+            f'SPEC_CAPTURE="{root}/spec-capture.txt"',
+            "export SPEC_CAPTURE",
+            # The pollution under test: exported harness-generic names.
+            f'export DUT_TEMPLATE="{root}/evil.body.spice.tmpl"',
+            f'export RECORD_SPEC="{root}/evil.record-spec.json"',
+            f'export _SCHEMATIC_RECORD_SPEC="{root}/evil.record-spec.json"',
+            # What pex_runner.sh's source time already contributed: the
+            # committed per-stem template rides the identity from there.
+            "IDENT_ARGS=("
+            f'--extra "{root}/exp/testbench/stubstem.body.spice.tmpl")',
+            f"pex_schematic_dut_setup() {{\n{setup}\n}}",
+            f"schematic_record_mint() {{\n{mint}\n}}",
+            call,
+            f'printf \'%s\\n\' "${{_SCHEMATIC_RECORD_SPEC}}" > "{root}/spec-state.txt"',
+            f'printf \'%s\\n\' "${{IDENT_ARGS[@]}}" > "{root}/ident.txt"',
+            'schematic_record_mint report.json',
+        ])
+        return subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+
+    def _ident(self, root: Path) -> list[str]:
+        return (root / "ident.txt").read_text().splitlines()
+
+    def test_exported_dut_template_and_record_spec_cannot_reach_the_helpers(self) -> None:
+        root = self._schematic_stub_tree()
+        enricher = root / "harness" / "enricher.py"
+        enricher.write_text("# enricher\n")
+        default_spec = root / "exp" / "testbench" / "stubstem.record-spec.json"
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root,
+            # The wrapper's exact call pattern (closed-loop-psrr): the empty
+            # VARIANT_SETUP_ARGS must expand cleanly under `set -u` on the
+            # as-built path (#670).
+            f'VARIANT_SETUP_ARGS=(); pex_schematic_dut_setup "{enricher}" '
+            '${VARIANT_SETUP_ARGS[@]+"${VARIANT_SETUP_ARGS[@]}"}',
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        # The render came from the committed template, not the decoy.
+        self.assertEqual(
+            (root / "work" / "body.spice.tmpl").read_text(), "body 0.42 committed\n"
+        )
+        # The identity kept the source-time committed template exactly once
+        # (no duplicate re-add) and gained exactly the netlists + enricher.
+        self.assertEqual(self._ident(root), [
+            "--extra", str(committed),
+            "--extra", f"{root}/repo/design/netlist/bandgap_startup.spice",
+            "--extra", f"{root}/repo/design/netlist/bandgap_core.spice",
+            "--extra", f"{root}/repo/design/netlist/bandgap_amp.spice",
+            "--extra", str(enricher),
+        ])
+        # The mint bound the harness default spec, not the exported decoys.
+        self.assertEqual(
+            (root / "spec-state.txt").read_text().strip(), str(default_spec)
+        )
+        argv = (root / "spec-capture.txt").read_text().splitlines()
+        self.assertEqual(
+            argv[argv.index("--spec") + 1], str(default_spec)
+        )
+
+    def test_dut_template_flag_binds_the_variant_render_source_to_the_identity(self) -> None:
+        root = self._schematic_stub_tree()
+        enricher = root / "harness" / "enricher.py"
+        enricher.write_text("# enricher\n")
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        variant = root / "exp" / "variants" / "proposal.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root,
+            f'pex_schematic_dut_setup "{enricher}" --dut-template "{variant}"',
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (root / "work" / "body.spice.tmpl").read_text(), "body 0.42 variant\n"
+        )
+        ident = self._ident(root)
+        # Both templates ride the identity, each exactly once: the committed
+        # one from source time, the variant one from the flag (#670).
+        self.assertEqual(ident.count(str(committed)), 1)
+        self.assertEqual(ident.count(str(variant)), 1)
+
+    def test_dut_template_equal_to_the_default_leaves_the_identity_alone(self) -> None:
+        root = self._schematic_stub_tree()
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root, f'pex_schematic_dut_setup --dut-template "{committed}"'
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        # submission_identity.py refuses a duplicate --extra basename; an
+        # explicit default must not re-add what source time already hashed.
+        self.assertEqual(self._ident(root).count(str(committed)), 1)
+
+    def test_record_spec_flag_is_forwarded_to_the_shared_mint(self) -> None:
+        root = self._schematic_stub_tree()
+        variant_spec = root / "exp" / "variants" / "proposal.record-spec.json"
+        r = self._run_schematic_setup(
+            root, f'pex_schematic_dut_setup --record-spec "{variant_spec}"'
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (root / "spec-state.txt").read_text().strip(), str(variant_spec)
+        )
+        argv = (root / "spec-capture.txt").read_text().splitlines()
+        self.assertEqual(argv[argv.index("--spec") + 1], str(variant_spec))
+
+    def test_unknown_and_valueless_options_fail_closed(self) -> None:
+        for call in ("pex_schematic_dut_setup --bogus",
+                     "pex_schematic_dut_setup --dut-template",
+                     "pex_schematic_dut_setup --record-spec",
+                     "pex_schematic_dut_setup --record-spec --bogus",
+                     'pex_schematic_dut_setup --record-spec ""',
+                     "pex_schematic_dut_setup --dut-template --help"):
+            with self.subTest(call=call):
+                root = self._schematic_stub_tree()
+                r = self._run_schematic_setup(root, call)
+                self.assertEqual(r.returncode, 2, r.stderr)
+                # Failed before any render: no WORK side effects.
+                self.assertFalse((root / "work" / "body.spice.tmpl").exists())
+
+    def test_empty_extras_and_bash43_unbound_arrays(self) -> None:
+        # Zero positional extras under `set -u` (Bash < 4.4 treats an empty
+        # array expansion as unbound).
+        root = self._schematic_stub_tree()
+        r = self._run_schematic_setup(root, "pex_schematic_dut_setup")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_record_spec_relative_path_is_anchored_to_the_caller(self) -> None:
+        root = self._schematic_stub_tree()
+        (root / "chosen.json").write_text('{"who": "caller"}\n')
+        (root / "work" / "chosen.json").write_text('{"who": "work"}\n')
+        r = self._run_schematic_setup(
+            root,
+            f'cd "{root}"; pex_schematic_dut_setup --record-spec chosen.json; '
+            f'cd "{root}/work"',
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (root / "spec-state.txt").read_text().strip(), str(root / "chosen.json")
+        )
+
+    def test_relative_spelling_of_the_committed_template_is_the_default(self) -> None:
+        root = self._schematic_stub_tree()
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root,
+            f'cd "{root}"; pex_schematic_dut_setup '
+            "--dut-template exp/testbench/stubstem.body.spice.tmpl",
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self._ident(root).count(str(committed)), 1)
+
+    def test_the_psrr_wrapper_passes_variant_overrides_as_explicit_flags(self) -> None:
+        # #670: the variant render source and record spec reach the shared
+        # setup as --dut-template / --record-spec flags; the wrapper no
+        # longer sets ambient DUT_TEMPLATE / RECORD_SPEC variables or
+        # appends the identity --extra itself.
+        script = (SIM_DIR / "closed-loop-psrr" / "run_klt_sim.sh").read_text()
+        self.assertIn("--dut-template", script)
+        self.assertIn("--record-spec", script)
+        self.assertIn("VARIANT_SETUP_ARGS=()", script)
+        self.assertNotIn("DUT_TEMPLATE=", script)
+        self.assertNotIn("RECORD_SPEC=", script)
+        self.assertNotIn('IDENT_ARGS+=(--extra "${DUT_TEMPLATE}")', script)
+
+    def test_the_driver_binds_the_record_spec_as_harness_state_only(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        # Unconditional at source time: an inherited _SCHEMATIC_RECORD_SPEC
+        # is overwritten the moment the driver is sourced (#670).
+        self.assertIn(
+            '_SCHEMATIC_RECORD_SPEC="${EXP_DIR}/testbench/${STEM}.record-spec.json"',
+            driver,
+        )
+        mint = driver.split("schematic_record_mint() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn('--spec "${_SCHEMATIC_RECORD_SPEC}"', mint)
+        # The ambient-environment seam is gone, not merely shadowed.
+        self.assertNotIn("${DUT_TEMPLATE", driver)
+        self.assertNotIn("${RECORD_SPEC", driver)
 
 
 # --------------------------------------------------------------------------
@@ -2396,25 +2706,101 @@ def first_party_import_closure(modules: set) -> set:
     return seen
 
 
-def runner_shell_closure(runner: Path) -> list:
+#: Non-comment `source` statement targeting a `.sh` file (#663). Handles nested
+#: double quotes inside `$(...)` such as `$(dirname "${BASH_SOURCE[0]}")/...`
+#: and `$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/...`, while stopping
+#: before `#` comments so prose/comment mentions do not over-match.
+SOURCE_SH_RE = re.compile(
+    r'^\s*source\s+["\']?(?:[^\n#]*?/)?([A-Za-z0-9_.-]+\.sh)(?:["\'\s;&|<>#]|$)',
+    re.MULTILINE,
+)
+
+
+#: A `source` in command position (line start, or after `;` `&` `|` `(` `{`,
+#: `then`/`do`/`else`, or `$(`/backtick), independent of SOURCE_SH_RE (#680).
+SOURCE_CMD_RE = re.compile(
+    r"(?:^|[;&|({`]|\b(?:then|do|else)\b)\s*source\s+(?=(?P<arg>[^\n]*))"
+)
+_SH_BASENAME_RE = re.compile(r"([A-Za-z0-9_.-]+\.sh)\b")
+
+
+def _inside_quotes(prefix: str) -> bool:
+    """True when PREFIX ends inside an open '...' or "..." string; a quote of
+    the other kind inside an open string is literal (`"it's"`)."""
+    state = None
+    for ch in prefix:
+        if ch in "\"'" and state in (None, ch):
+            state = None if state else ch
+    return state is not None
+
+
+def executable_harness_sources(text: str, harness_names: set) -> list:
+    """(lineno, helper, line) for every executable `source` command (several
+    per line are each considered) whose first literal `*.sh` argument is a
+    sim/harness helper. Found without
+    SOURCE_SH_RE, so a sourcing idiom the regex cannot see is still listed.
+    Comment lines, trailing comments, and `source` inside an open double
+    quote (echo/printf prose, `${VAR:?...(source x)...}` diagnostics) are
+    not commands and are skipped.
+    """
+    found = []
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if line.lstrip().startswith("#"):
+            continue
+        for m in SOURCE_CMD_RE.finditer(line):
+            before = line[: m.start("arg")]
+            if _inside_quotes(before):
+                continue  # inside a quoted string: prose, not a command
+            arg = m.group("arg").split(" #")[0]
+            hit = _SH_BASENAME_RE.search(arg)
+            if hit and hit.group(1) in harness_names:
+                found.append((lineno, hit.group(1), line))
+    return found
+
+
+def unrecognized_harness_sources(
+    scripts, harness_names: set, root: Path = SIM_DIR
+) -> list:
+    """(script, lineno, helper) for each executable harness `source` that
+    SOURCE_SH_RE does not recognize *at that line*, so a second recognized
+    source of the same helper on another line cannot mask it.
+    """
+    misses = []
+    for script in scripts:
+        for lineno, helper, line in executable_harness_sources(
+            script.read_text(), harness_names
+        ):
+            if helper not in {m.group(1) for m in SOURCE_SH_RE.finditer(line)}:
+                try:
+                    shown = script.relative_to(root.parent)
+                except ValueError:
+                    shown = script
+                misses.append((str(shown), lineno, helper))
+    return misses
+
+
+def harness_shell_names() -> set:
+    return {p.name for p in HARNESS.glob("*.sh")}
+
+
+def runner_shell_closure(runner: Path) -> dict[Path, str]:
     """RUNNER plus every sim/harness/*.sh it sources, transitively: the
     family bases and, through them, the shared preamble and identity
     helpers whose --extra lists build the runner's submission identity.
     """
-    seen: set = set()
-    stack, texts = [runner], []
+    closure: dict[Path, str] = {}
+    stack = [runner]
     while stack:
         path = stack.pop()
-        if path in seen:
+        if path in closure:
             continue
-        seen.add(path)
         text = path.read_text()
-        texts.append(text)
-        for match in re.finditer(r'source\s+"([^"]+)"', text):
-            sourced = HARNESS / Path(match.group(1)).name
+        closure[path] = text
+        for match in SOURCE_SH_RE.finditer(text):
+            sourced = HARNESS / match.group(1)
             if sourced != path and sourced.is_file():
                 stack.append(sourced)
-    return texts
+    return closure
 
 
 class EnricherIdentityCoverageTests(unittest.TestCase):
@@ -2429,8 +2815,8 @@ class EnricherIdentityCoverageTests(unittest.TestCase):
             runner_text = script.read_text()
             if not IDENTITY_ENTRY.search(runner_text):
                 continue
-            closure_texts = runner_shell_closure(script)
-            union = "\n".join(closure_texts)
+            closure = runner_shell_closure(script)
+            union = "\n".join(closure.values())
             named = {m for m in HARNESS_PY if re.search(rf"\b{m}\.py\b", union)}
             deps = first_party_import_closure(named)
             if VERDICT_MODULE not in deps:
@@ -2443,6 +2829,162 @@ class EnricherIdentityCoverageTests(unittest.TestCase):
                 gaps[script.parent.name] = "enricher depends on " \
                     f"{VERDICT_MODULE}.py but no --extra in its shell chain names it"
         self.assertEqual(gaps, {}, f"submission-identity gaps (#661): {gaps}")
+
+    def test_shell_closure_resolves_shared_runners_and_transitive_deps(self) -> None:
+        # #663: guard against the source-line regex silently dropping
+        # nested-quote idioms such as `$(dirname "${BASH_SOURCE[0]}")/...`.
+        expected_pex_chain = {
+            "pex_runner.sh",
+            "klt_sim_preamble.sh",
+            "submission_identity.sh",
+            "pex_merge_call.sh",
+        }
+        iq_names = {
+            p.name for p in runner_shell_closure(SIM_DIR / "closed-loop-iq/run_klt_sim.sh")
+        }
+        self.assertTrue(
+            expected_pex_chain | {"supply_bench_runner.sh"} <= iq_names,
+            f"closed-loop-iq closure missing expected harness scripts: {sorted(iq_names)}",
+        )
+
+        # Edge case: pre-resolved variable (`source "${_here}/../harness/pex_runner.sh"`).
+        boxtc_names = {
+            p.name
+            for p in runner_shell_closure(
+                SIM_DIR / "closed-loop-vref-pvt-pex-boxtc/run_klt_sim.sh"
+            )
+        }
+        self.assertTrue(
+            expected_pex_chain | {"pex_vref_runner.sh"} <= boxtc_names,
+            f"closed-loop-vref-pvt-pex-boxtc closure incomplete: {sorted(boxtc_names)}",
+        )
+
+        # CMOS5L base also sources klt_sim_preamble.sh via nested quotes.
+        cmos5l_names = {
+            p.name
+            for p in runner_shell_closure(
+                SIM_DIR / "sg13cmos5l-closed-loop-startup/run_klt_sim.sh"
+            )
+        }
+        self.assertTrue(
+            {"cmos5l_runner.sh", "klt_sim_preamble.sh", "submission_identity.sh"}
+            <= cmos5l_names,
+            f"sg13cmos5l-closed-loop-startup closure incomplete: {sorted(cmos5l_names)}",
+        )
+
+        # Every runner that sources pex_runner.sh must resolve the full chain.
+        # Discovery is independent of SOURCE_SH_RE (#680), so a mid-line
+        # source cannot hide a runner from this loop.
+        names_h = harness_shell_names()
+        pex_runners = [
+            s
+            for s in sorted(SIM_DIR.glob("*/run_klt_sim.sh"))
+            if any(
+                h == "pex_runner.sh"
+                for _, h, _ in executable_harness_sources(s.read_text(), names_h)
+            )
+        ]
+        self.assertGreater(len(pex_runners), 0)
+        for script in pex_runners:
+            names = {p.name for p in runner_shell_closure(script)}
+            self.assertTrue(
+                expected_pex_chain <= names,
+                f"{script.parent.name} closure missing transitive pex_runner chain: {sorted(names)}",
+            )
+
+    def test_shell_closure_ignores_comments_and_prose(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            script = Path(td) / "run_klt_sim.sh"
+            script.write_text(
+                "#!/usr/bin/env bash\n"
+                '# source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_ac_runner.sh"\n'
+                "# prose mention of ../harness/pex_vref_runner.sh\n"
+                'echo "source ../harness/supply_bench_runner.sh"\n'
+                'source "${HARNESS_DIR}/pex_merge_call.sh" # unlike ../harness/pex_ac_runner.sh\n'
+                'source "${EXP_DIR}/foo.env" # unlike ../harness/pex_vref_runner.sh\n'
+            )
+            names = {p.name for p in runner_shell_closure(script)}
+        self.assertEqual(names, {"run_klt_sim.sh", "pex_merge_call.sh"})
+
+    def test_shell_closure_regex_recognizes_every_harness_source(self) -> None:
+        # #680: SOURCE_SH_RE is line-anchored on purpose; make that assumption
+        # a checked one so an unsupported idiom fails loudly, not silently.
+        names = harness_shell_names()
+        scripts = sorted(SIM_DIR.rglob("*.sh"))
+        self.assertTrue(
+            any(executable_harness_sources(p.read_text(), names) for p in scripts)
+        )
+        misses = unrecognized_harness_sources(scripts, names)
+        self.assertEqual(
+            misses, [], f"harness source the closure regex cannot see: {misses}"
+        )
+
+    def test_shell_closure_reports_unrecognized_source_idioms(self) -> None:
+        names = {"pex_runner.sh", "pex_merge_call.sh"}
+        cases = {
+            "standalone": ('  source "${H}/pex_runner.sh"\n', []),
+            "nested": (
+                'source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pex_runner.sh"\n',
+                [],
+            ),
+            "and_list": ('[[ -f x ]] && source "${H}/pex_runner.sh"\n', [1]),
+            "inline_then": (
+                'if [[ -n "${P}" ]]; then source "${H}/pex_runner.sh"; fi\n',
+                [1],
+            ),
+            "cmd_subst": ('x=$(source "${H}/pex_runner.sh")\n', [1]),
+            "masked_by_second": (
+                'source "${H}/pex_runner.sh"\n'
+                '[[ -f x ]] && source "${H}/pex_runner.sh"\n',
+                [2],
+            ),
+            "two_sources_one_line": (
+                'source "${H}/pex_merge_call.sh" && source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "two_sources_semicolon": (
+                'source "${H}/pex_merge_call.sh"; source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "nonharness_then_harness": (
+                'source "${H}/env.sh" && source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "apostrophe_earlier": (
+                'echo "it\'s fine"; source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "comment": ('# [[ x ]] && source "${H}/pex_runner.sh"\n', []),
+            "echo": ('echo "source ${H}/pex_runner.sh"\n', []),
+            "printf": ("printf 'a; source %s/pex_runner.sh' x\n", []),
+            "diagnostic": (
+                ': "${PDK_ROOT:?set PDK_ROOT (source ${H}/pex_runner.sh) or export it}"\n',
+                [],
+            ),
+            "trailing_comment": (
+                'source "${H}/pex_merge_call.sh" # unlike pex_runner.sh\n',
+                [],
+            ),
+        }
+        with tempfile.TemporaryDirectory() as td:
+            for label, (body, expected) in cases.items():
+                script = Path(td) / f"{label}.sh"
+                script.write_text("#!/usr/bin/env bash\n" + body)
+                got = unrecognized_harness_sources([script], names, root=Path(td))
+                # lines are offset by the shebang line
+                self.assertEqual(
+                    [lineno - 1 for _, lineno, _ in got], expected, label
+                )
+                for _, _, helper in got:
+                    self.assertIn(helper, names, label)
+
+    def test_shell_closure_discovers_mid_line_pex_runner_source(self) -> None:
+        names = {"pex_runner.sh"}
+        text = '[[ -f x ]] && source "${H}/pex_runner.sh"\n'
+        self.assertEqual(
+            [h for _, h, _ in executable_harness_sources(text, names)],
+            ["pex_runner.sh"],
+        )
 
     def test_the_shared_verdict_module_still_exists(self) -> None:
         # The probe above keys on this module by name; if it is ever renamed
@@ -3030,12 +3572,12 @@ class EndpointTcLoudEmptyTests(TempDirCase):
         self.assertNotIn("keys the record carried", err)
         self.assertFalse(dst.exists(), "refused run left the companion on disk")
 
-    def test_a_refusal_restores_a_preexisting_companion_intact(self) -> None:
+    def test_a_refusal_preserves_a_preexisting_companion_intact(self) -> None:
         # Edge #536 leaves to the Builder: the companion path already holds
-        # an earlier good derivation when a rerun refuses. write_companion()
-        # has truncated it by the time the refusal is known, so main() must
-        # put the prior bytes back: a refused run leaves the path exactly as
-        # it found it -- no header-only shell, no destroyed prior evidence.
+        # an earlier good derivation when a rerun refuses. main() refuses
+        # before the destination is ever opened, so the prior companion is
+        # never touched: a refused run leaves the path exactly as it found
+        # it -- no header-only shell, no destroyed prior evidence.
         src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
         write_record(src, RECORD_FIELDS, endpoint_rows(
             [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]))
@@ -3087,12 +3629,12 @@ class BoxTcLoudEmptyTests(TempDirCase):
         self.assertNotIn("keys the record carried", err)
         self.assertFalse(dst.exists(), "refused run left the companion on disk")
 
-    def test_a_refusal_restores_a_preexisting_companion_intact(self) -> None:
+    def test_a_refusal_preserves_a_preexisting_companion_intact(self) -> None:
         # Edge #536 leaves to the Builder: the companion path already holds
-        # an earlier good derivation when a rerun refuses. write_companion()
-        # has truncated it by the time the refusal is known, so main() must
-        # put the prior bytes back: a refused run leaves the path exactly as
-        # it found it -- no header-only shell, no destroyed prior evidence.
+        # an earlier good derivation when a rerun refuses. main() refuses
+        # before the destination is ever opened, so the prior companion is
+        # never touched: a refused run leaves the path exactly as it found
+        # it -- no header-only shell, no destroyed prior evidence.
         src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
         write_record(src, RECORD_FIELDS, boxtc_rows(INTERIOR_EXTREMA))
         exc, err = run_main(bxc.main, [str(src), str(dst)])

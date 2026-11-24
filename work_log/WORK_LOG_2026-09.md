@@ -2,6 +2,15 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-23
+
+- **PR #244**: fix: draw the CMOS5L well taps (2 floating MOS wells fixed, 10 pnpMPA base rings nSD-marked; ERC 12 -> 10)
+- **PR #245**: fix(sg13cmos5l-bandgap_core): extend Q2 emitter trunk to reach R2's e2 drop
+- **PR #247**: feat(loom): sticky-blocked registry with atomic settle and drift repair for issue #4
+- **Issue #246** (closed): loom:blocked silently lost on issue #4 across claim/settle cycles
+- **Issue #243** (closed): sg13cmos5l-bandgap_core: R2's e2 drop (x=58) lands in free field, disjoint from the Q2 emitter trunk (x=123.6..165.9) — the e2 net is split as drawn
+- **Issue #240** (closed): Zero out the 12 erc.missing_tie findings on sg13cmos5l-bandgap_top (2 floating MOS wells + 10 marker-less pnpMPA base rings)
+
 ### 2026-09-22
 
 - **PR #238**: chore: add reuse.lock.json in_tree entry for bandgap_amp (evaluate)
