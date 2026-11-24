@@ -10,8 +10,27 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-24
+
+- **PR #686**: chore(layout): remove the superseded one-point PEX probe
+- **PR #684**: refactor(sim): dedupe gen_probe_deck onto shared harness and collapse resize variants
+- **Issue #682** (closed): Deduplicate gen_probe_deck.py onto shared sim/harness modules and collapse per-instance _sub resize tables
+- **Issue #656** (closed): Remove superseded one-point PEX probe (layout/bandgap_core/probe): its #275 stopgap condition is met
+
 ### 2026-11-23
 
+- **PR #685**: test(sim): fail loudly when a harness source escapes the shell-closure regex
+- **PR #683**: docs(sim): describe the pre-open refusal in the preserved-companion tests
+- **PR #679**: refactor(sim): refuse empty TC companion derivations before opening output
+- **PR #678**: fix: resolve nested-quote source paths in runner_shell_closure
+- **PR #674**: fix(sim): make the schematic-DUT render source and record spec explicit flags
+- **PR #665**: sim: drop logic-free psrr/zout summary wrappers, invoke db_summary_common.awk directly
+- **Issue #681** (closed): TC companion preservation tests still document the removed write-and-restore mechanism
+- **Issue #680** (closed): runner_shell_closure: line-start anchor is an unchecked assumption about how runners source harness scripts
+- **Issue #675** (closed): Remove write-and-restore handling from both TC companion commands
+- **Issue #670** (closed): Shared schematic-DUT helpers read DUT_TEMPLATE/RECORD_SPEC from the environment without binding them to the submission identity
+- **Issue #663** (closed): EnricherIdentityCoverageTests' shell closure misses pex_runner.sh (source-line regex)
+- **Issue #460** (closed): Remove two logic-free awk wrappers (zout_summary.awk, psrr_summary.awk) left behind by the klt sim conversion
 - **PR #669**: fix(sim): state measured probe-fleet bounds in psrr attribution record
 - **Issue #667** (closed): sim(psrr): tighten five claim-precision items in the #631 attribution bench and DR-0017
 - **PR #673**: docs: correct klayout-tools#6974 status in closed-loop MC README
