@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import argparse
 import cmath
+import contextlib
 import csv
+import io
 import json
 import math
 import subprocess
@@ -18,6 +20,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 TOOLS = Path(__file__).resolve().parent
 EXP = TOOLS.parent
@@ -205,6 +208,60 @@ class DecideTests(unittest.TestCase):
         self.assertEqual(sq.decide(ok, True, status, float(pm), False)[0], "FAIL")
 
 
+class PrepareTests(unittest.TestCase):
+    """cmd_prepare's batch guard (issue #652): --provision-script has no
+    host-path default any more, so a batch prepare without it must refuse
+    before writing any request."""
+
+    def test_batch_target_without_provision_script_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = argparse.Namespace(work=tmp, target="batch", only=None, plan="pvt",
+                                      codes=None, batch_pdk_root="/opt/pdk",
+                                      provision_script=None)
+            with self.assertRaises(SystemExit):
+                kta.cmd_prepare(args)
+
+
+class RippleScanTests(unittest.TestCase):
+    """cmd_ripple_scan delegates its `wrdata` parse to
+    solve_quality.read_ac_txt (issue #707): the inline float() loop it used
+    to carry crashed on a malformed token where read_ac_txt carries it as a
+    NaN row through ripple_db."""
+
+    def scan(self, corners_dir):
+        seen = []
+        orig = sq.read_ac_txt
+
+        def spy(path):
+            seen.append(Path(path).name)
+            return orig(path)
+
+        buf = io.StringIO()
+        with mock.patch.object(sq, "read_ac_txt", side_effect=spy), \
+                contextlib.redirect_stdout(buf):
+            kta.cmd_ripple_scan(argparse.Namespace(corners=str(corners_dir)))
+        return seen, buf.getvalue()
+
+    def test_every_file_goes_through_read_ac_txt(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            kta.write_ac_txt(smooth_rows(), tmp / "b.ac.txt")
+            kta.write_ac_txt(smooth_rows(), tmp / "a.ac.txt")
+            seen, out = self.scan(tmp)
+        self.assertEqual(seen, ["a.ac.txt", "b.ac.txt"])  # sorted glob order
+        self.assertEqual(len(out.strip().splitlines()), 2)
+
+    def test_malformed_token_is_a_nan_row_not_a_crash(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            (tmp / "bad.ac.txt").write_text(
+                " 1.0e+00  3.0e+01  1.0e+00  0.0e+00\n"
+                " 2.0e+00  oops     2.0e+00  0.0e+00\n", encoding="utf-8")
+            seen, out = self.scan(tmp)
+        self.assertEqual(seen, ["bad.ac.txt"])
+        self.assertIn("bad", out)
+
+
 def write_raw(path: Path, rows: list[sq.Row], op_fb: float) -> None:
     names = ["frequency", "v(fb_src)", "v(fb_load)", "v(op_fb)"]
     lines = ["Title: test", "Plotname: AC Analysis", "Flags: complex", f"No. Variables: {len(names)}",
@@ -227,7 +284,7 @@ class RecorderPathTests(unittest.TestCase):
 
     def test_record_rejects_corrupt_and_publishes_clean(self):
         seeds = kta.lookup_seeds("wcs", "125", "2.97")
-        seed_fb = float(seeds["fb"])
+        seed_fb = float(seeds["fb_final_v"])
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             work = tmp / "work"
@@ -269,7 +326,7 @@ class RecorderPathTests(unittest.TestCase):
     def test_np_twin_must_be_clean_and_op_checked(self):
         """A control (np) row cannot take equilibrium evidence from a corrupted probe twin."""
         seeds = kta.lookup_seeds("wcs", "125", "2.97")
-        seed_fb = float(seeds["fb"])
+        seed_fb = float(seeds["fb_final_v"])
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             work = tmp / "work"

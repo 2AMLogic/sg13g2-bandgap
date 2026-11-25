@@ -7,8 +7,16 @@
 #   ANCHOR_NAME     the measurement name gated on (e.g. zout_dc_db)
 #   ANCHOR_DB / ANCHOR_DB_TOL   its sanity band (dB)
 #   ANCHOR_VREF_OP_V / ANCHOR_VREF_TOL_V   the vref_op band (V)
-# set, then call `pex_ac_main`. The gate itself is
+# set, then call `pex_ac_main` (or, for the schematic twin that has no
+# extraction -- closed-loop-psrr -- `schematic_ac_main`, which needs
+# MSENSE_W from pex_schematic_dut_setup). The gate itself is
 # sim/harness/sanity_anchors.py (issue #458); these are its anchor values.
+
+# The enricher below imports its verdict constants and the 3-criteria
+# closed-loop check from enrich_pvt_report.py, so that module rides every
+# AC bench's submission identity too (#661). Sourced after pex_runner.sh,
+# which builds IDENT_ARGS.
+IDENT_ARGS+=(--extra "${HARNESS_DIR}/enrich_pvt_report.py")
 
 # --- node seeds: sim/closed-loop-startup's newest committed record ----------
 SEED_CSV="$(ls -t "${SIM_DIR}"/closed-loop-startup/records/*.csv \
@@ -32,6 +40,26 @@ pex_ac_main() {
   # --- the DUT body (generated, top cell) -----------------------------------
   python3 "${SIM_DIR}/tools/gen_pex_netlist_body.py" --cell top -o "${WORK}/pex_body.inc" \
     --sources-out "${WORK}/extraction-sources.json"
+  _ac_main "${WORK}/pex_body.inc" pex_record_mint
+}
+
+# (Shared by the schematic twin, issue #650.) No generated body and no
+# extraction: the DUT rides in the body template pex_schematic_dut_setup
+# rendered with @@MSENSE_W@@, so the body reference is "unused" and the
+# record mints unbound (schematic_record_mint).
+schematic_ac_main() {
+  _ac_main "unused" schematic_record_mint MSENSE_W="${MSENSE_W}"
+}
+
+# _ac_main BODY_REF RECORD_MINT [EXTRA pex_instantiate_body KEY=VALUE ...]
+# The shared --sanity | --batch | --record flow behind pex_ac_main and
+# schematic_ac_main: BODY_REF is the DUT include the template's @@PEX_BODY@@
+# takes ("unused" on the schematic bench), RECORD_MINT the record-side twin
+# (pex_record_mint / schematic_record_mint), and each EXTRA KEY=VALUE pair
+# rides pex_instantiate_body (the schematic's MSENSE_W fill).
+_ac_main() {
+  local body_ref="$1" record_mint="$2"
+  shift 2
   case "${MODE}" in
   --sanity)
     local FB S1 S2 VR
@@ -40,9 +68,9 @@ pex_ac_main() {
       echo "run_klt_sim.sh: no typ/27C/3.30 seed row in ${SEED_CSV}" >&2
       exit 3
     fi
-    pex_instantiate_body "${OSDI_DIR}" "${WORK}/pex_body.inc" VDD=3.30 \
+    pex_instantiate_body "${OSDI_DIR}" "${body_ref}" VDD=3.30 \
       FB_SEED="${FB}" SNS1_SEED="${S1}" SNS2_SEED="${S2}" VREF_SEED="${VR}" \
-      > "${WORK}/body.spice"
+      "$@" > "${WORK}/body.spice"
     pex_sanity_local
     ( cd "${WORK}" && python3 "${HARNESS_DIR}/enrich_ac_report.py" report.json \
         --kind "${KIND}" -o report-enriched.json )
@@ -55,9 +83,12 @@ pex_ac_main() {
         --kind "${KIND}" --seed-csv "${SEED_CSV}" -o report-enriched.json )
     ;;
   --record)
-    pex_record_mint "${WORK}/report-enriched.json"
+    "${record_mint}" "${WORK}/report-enriched.json"
     echo "run_klt_sim.sh: record minted under ${EXP_DIR}/records/"
-    echo "  next: delete this experiment's #275 waiver entry in sim/evidence-freshness-waivers.json"
+    if [[ "${record_mint}" == pex_record_mint ]]; then
+      # PEX-only follow-up: the #275 freshness waiver this mint retires.
+      echo "  next: delete this experiment's #275 waiver entry in sim/evidence-freshness-waivers.json"
+    fi
     ;;
   esac
 }

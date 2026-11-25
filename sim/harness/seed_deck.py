@@ -23,6 +23,8 @@ recorded fs/125 singular-matrix rationale.
 from __future__ import annotations
 
 import csv
+import re
+from pathlib import Path
 
 SEED_FIELDS = (("@@FB_SEED@@", "fb_final_v"), ("@@SNS1_SEED@@", "sns1_final_v"),
                ("@@SNS2_SEED@@", "sns2_final_v"), ("@@VREF_SEED@@", "vref_final_v"))
@@ -44,10 +46,40 @@ def seed_row(seeds: dict, label: str, temp: int, vdd: str, seed_csv: str) -> dic
     return row
 
 
+def newest_seed_csv(sim_dir: str | Path) -> Path:
+    """The newest committed startup-seed record under sim_dir
+    (`closed-loop-startup/records/*.csv`), skipping the TC companions a
+    previous enrichment derived from it (`*-tc.csv`, `*-vs-schematic*` -- the
+    same discovery set sim/harness/pex_ac_runner.sh uses). Record ids lead
+    with a UTC timestamp, so the lexicographic tail IS the newest record
+    (issues #486/#707: the deck generators' private glob copies retired)."""
+    records = Path(sim_dir) / "closed-loop-startup" / "records"
+    cands = sorted(p for p in records.glob("*.csv")
+                   if "-tc.csv" not in p.name and "-vs-schematic" not in p.name)
+    if not cands:
+        raise SystemExit(f"seed_deck.py: no seed record in {records}")
+    return cands[-1]
+
+
+def read_msense_width(netlist_path: str | Path) -> str:
+    """XMSENSE's w= (with its unit suffix) from the live startup netlist --
+    the Python twin of sim/lib/msense_width.sh's `w=[0-9.]+u` parse (issues
+    #105/#473/#707): same `^XMSENSE` anchor, same required u suffix, first
+    w= on the line (the shell's `grep -oE | head -1`)."""
+    text = Path(netlist_path).read_text(encoding="utf-8")
+    m = re.search(r"^XMSENSE\s.*?\bw=([0-9.]+u)\b", text, re.M)
+    if m is None:
+        raise SystemExit(f"seed_deck.py: cannot parse XMSENSE w= from {netlist_path}")
+    return m.group(1)
+
+
 def fill_deck(text: str, mapping: dict[str, str], kind: str = "deck") -> str:
     for token, value in mapping.items():
         text = text.replace(token, value)
-    left = sorted({w for w in text.split() if w.startswith("@@") and w.endswith("@@")})
+    # Regex, not text.split(): placeholders embedded inside a word or quote
+    # (v(fb)=@@FB_SEED@@, temp=@@TEMP_C@@C, "@@PDK_ROOT@@/...") are just as
+    # unfilled as standalone ones (issue #652).
+    left = sorted(set(re.findall(r"@@[A-Z0-9_]+@@", text)))
     if left:
         raise SystemExit(f"{kind} template has unfilled placeholders: {left}")
     return text

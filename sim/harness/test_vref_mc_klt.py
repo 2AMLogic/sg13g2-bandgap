@@ -6,8 +6,10 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import enrich_pvt_report as epr  # noqa: E402
 import trim_mc_klt as tm  # noqa: E402
 import vref_mc_klt as vm  # noqa: E402
 
@@ -54,6 +56,14 @@ class VerdictTests(unittest.TestCase):
         self.assertFalse(vm.closed_loop_ok({**self.G, "fb": "3.29"}))
         self.assertFalse(vm.closed_loop_ok({**self.G, "det": "1.0"}))
 
+    def test_closed_loop_ok_follows_the_shared_constants(self):
+        # Issue #657: the thresholds are enrich_pvt_report's, where the drift
+        # guard reads them, not literals of this module.  With the margin at
+        # 1 V, fb 2.5 sits within 1 V of the 3.30 V rail and is railed.
+        with mock.patch.object(epr, "FB_RAIL_MARGIN_V", 1.0):
+            self.assertFalse(vm.closed_loop_ok(self.G))
+        self.assertTrue(vm.closed_loop_ok(self.G))
+
 
 class StatTests(unittest.TestCase):
     def row(self, point, v, status="PASS"):
@@ -78,8 +88,10 @@ class SharedSeamTests(unittest.TestCase):
     both harnesses keep running and minting passing evidence against *different*
     PDK corner sections -- so identity, not equality, is what is asserted."""
 
-    #: Names this module is required to take from trim_mc_klt, not define.
-    IMPORTED = ("sections_for", "make_ctx", "op_value", "Results", "BAD_LOG", "SEED_FIELDS")
+    #: Names this module is required to take from trim_mc_klt, not define
+    #: (the request/report/spec mechanics joined the seam in #702).
+    IMPORTED = ("sections_for", "make_ctx", "op_value", "Results", "BAD_LOG", "SEED_FIELDS",
+                "request_for", "build_report", "fill_record_spec")
     #: Names it must not hold a copy of; it reaches these through sections_for.
     NOT_COPIED = IMPORTED + ("HBT", "MOS", "RES", "load_seeds")
 

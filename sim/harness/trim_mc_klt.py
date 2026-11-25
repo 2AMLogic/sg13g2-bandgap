@@ -40,6 +40,7 @@ from pathlib import Path
 
 # The deck's nodeset-seed contract lives in seed_deck.py (with the deck-template
 # side of it, sim/*/testbench/*.tmpl's @@*_SEED@@ tokens); issue #486.
+from klt_corner_bundle import CORNER_SECTIONS
 from seed_deck import SEED_FIELDS, fill_deck, load_seeds, seed_row
 
 POINTS = ("nominal", "negctrl", "bcs", "wcs")
@@ -50,10 +51,13 @@ DIGEST_LABEL_OF = {"nominal": "typ_mismatch", "negctrl": "typ_negctrl",
 # sim/lib/pvt_preflight.sh -- the one copy of the corner -> model-section mapping
 # for this harness family: vref_mc_klt.py imports these three maps (and
 # sections_for below) rather than restating them, so a PDK section rename lands
-# in both Monte Carlo campaigns at once. Issue #463.
-HBT = {"typ": "hbt_typ", "bcs": "hbt_bcs", "wcs": "hbt_wcs"}
-MOS = {"typ": "mos_tt", "bcs": "mos_ff", "wcs": "mos_ss"}
-RES = {"typ": "res_typ", "bcs": "res_bcs", "wcs": "res_wcs"}
+# in both Monte Carlo campaigns at once. Issue #463. Since #702 the triples are
+# klt_corner_bundle.CORNER_SECTIONS's -- mechanically verified against that
+# shell file by sections_from_preflight -- rather than a third Python copy,
+# filtered to the corners this family's points resolve to.
+HBT = {c: trio[0] for c, trio in CORNER_SECTIONS.items() if c in CORNER_OF.values()}
+MOS = {c: trio[1] for c, trio in CORNER_SECTIONS.items() if c in CORNER_OF.values()}
+RES = {c: trio[2] for c, trio in CORNER_SECTIONS.items() if c in CORNER_OF.values()}
 
 VDD = "3.30"
 TEMP_TRIM_C = 27
@@ -133,6 +137,27 @@ def make_ctx(a: argparse.Namespace, local: bool) -> dict:
     }
 
 
+def request_for(entries: list[dict], a: argparse.Namespace, backend: str | None,
+                *, timeout_s: int = UNIT_TIMEOUT_S) -> dict:
+    """One `decks` request, the payload shape every Monte Carlo site ships
+    (moved from vref_mc_klt.py, issue #702, so both campaigns assemble it in
+    one place). `timeout_s` is a parameter because each module keeps its own
+    UNIT_TIMEOUT_S knob (#463). backend "local" is the sanity/probe shape
+    (host PDK root only); None or "batch" is the fleet shape.
+    """
+    req = {"engine": "ngspice", "decks": entries, "options": {"timeout_s": timeout_s}}
+    if backend == "local":
+        req.update(backend="local", models={"pdk_root": a.local_pdk_root})
+        return req
+    # models.pdk_root names the runner image's baked root: the decks' absolute
+    # `.lib` paths sit under it, so klt ships them verbatim (and accepts a path
+    # that does not exist on this host as runner-valid).
+    req.update(backend="batch", models={"pdk": a.pdk, "pdk_root": a.batch_pdk_root},
+               batch={"provision_script_path": a.provision,
+                      "capacity_wait_s": a.capacity_wait_s})
+    return req
+
+
 def write_requests(work: Path, stage: str, units: list[dict], a: argparse.Namespace) -> None:
     """Chunk UNITS ({point, draw, id, text}) into one decks request per
     (point, DRAWS_PER_REQUEST draws); write decks + requests + a manifest."""
@@ -148,14 +173,7 @@ def write_requests(work: Path, stage: str, units: list[dict], a: argparse.Namesp
             rel = f"decks/{u['id']}.spice"
             (work / rel).write_text(u["text"])
             entries.append({"id": u["id"], "deck": rel, "timeout_s": UNIT_TIMEOUT_S})
-        # models.pdk_root names the runner image's baked root: the decks' absolute
-        # `.lib` paths sit under it, so klt ships them verbatim (and accepts a path
-        # that does not exist on this host as runner-valid).
-        req = {"engine": "ngspice", "backend": "batch",
-               "models": {"pdk": a.pdk, "pdk_root": a.batch_pdk_root},
-               "decks": entries, "options": {"timeout_s": UNIT_TIMEOUT_S},
-               "batch": {"provision_script_path": a.provision,
-                         "capacity_wait_s": a.capacity_wait_s}}
+        req = request_for(entries, a, None)
         (work / f"{stem}.json").write_text(json.dumps(req, indent=2) + "\n")
         manifest.append({"request": f"{stem}.json", "stem": stem, "point": point,
                          "ids": [u["id"] for u in members]})
@@ -177,13 +195,7 @@ def prepare(a: argparse.Namespace) -> None:
             rel = f"decks/sanity-{point}.spice"
             (work / rel).write_text(render_deck(template, ctx, point, 0, TEMP_TRIM_C, 0, "fit"))
             entries.append({"id": f"sanity-{point}", "deck": rel, "timeout_s": UNIT_TIMEOUT_S})
-        req = {"engine": "ngspice", "backend": a.sanity_backend, "decks": entries,
-               "models": {"pdk_root": a.local_pdk_root},
-               "options": {"timeout_s": UNIT_TIMEOUT_S}}
-        if a.sanity_backend == "batch":
-            req["models"] = {"pdk": a.pdk, "pdk_root": a.batch_pdk_root}
-            req["batch"] = {"provision_script_path": a.provision,
-                            "capacity_wait_s": a.capacity_wait_s}
+        req = request_for(entries, a, a.sanity_backend)
         (work / "request-sanity.json").write_text(json.dumps(req, indent=2) + "\n")
         return
     ctx = make_ctx(a, local=False)
@@ -373,6 +385,36 @@ def digest_row(a: argparse.Namespace, point: str, rows: list[list[str]]) -> tupl
                  "claim_fail": MODE_OF[point] == "mismatch" and float(cells[3]) > TRIM_BUDGET_PCT}
 
 
+def build_report(corners: list[dict], res: Results, klt_version: str | None,
+                 job_log: str | None, *, deck_count_key: str,
+                 extra: dict | None = None) -> dict:
+    """The corner-shaped report envelope both MC assemblies write (issue #702).
+    klt announces each fleet job on stderr ("batch job <id> submitting"); the
+    wrapper keeps that stream, which survives a --resume pass that rewrites
+    the per-request reports. `deck_count_key` names the remote deck count each
+    campaign reports (vref's `n_decks`, trim's `n_verify_decks`); `extra`
+    appends campaign-specific tail keys (trim's `claim_failed_points`).
+    """
+    job_ids: list[str] = []
+    if job_log and Path(job_log).is_file():
+        for jid in re.findall(r"batch job (\S+) submitting", Path(job_log).read_text()):
+            if jid not in job_ids:
+                job_ids.append(jid)
+    report = {
+        "status": "pass" if all(c["status"] == "pass" for c in corners) else "fail",
+        "passed": sum(c["status"] == "pass" for c in corners),
+        "failed": sum(c["status"] == "fail" for c in corners), "errored": 0,
+        "corner_count": len(corners), "corners": corners,
+        "environment": {"engine_version": res.engine_version(),
+                        "remote": {"job_ids": job_ids,
+                                   deck_count_key: len(res.where)} if job_ids else None},
+        "provenance": {"klt_version": klt_version},
+    }
+    if extra:
+        report.update(extra)
+    return report
+
+
 def assemble(a: argparse.Namespace) -> None:
     work = Path(a.work)
     fits = json.loads((work / "codes.json").read_text())
@@ -423,36 +465,52 @@ def assemble(a: argparse.Namespace) -> None:
             "artifacts": {"log": str(rep / f"{cid}.log"), "deck": str(rep / f"{cid}.spice")},
         })
         print(f"{label}: {row[8:]}")
-    # klt announces each fleet job on stderr ("batch job <id> submitting"); the
-    # wrapper keeps that stream, which survives a --resume pass that rewrites the
-    # per-request reports.
-    job_ids: list[str] = []
-    if a.job_log and Path(a.job_log).is_file():
-        for jid in re.findall(r"batch job (\S+) submitting", Path(a.job_log).read_text()):
-            if jid not in job_ids:
-                job_ids.append(jid)
-    report = {
-        "status": "pass" if all(c["status"] == "pass" for c in corners) else "fail",
-        "passed": sum(c["status"] == "pass" for c in corners),
-        "failed": sum(c["status"] == "fail" for c in corners), "errored": 0,
-        "corner_count": len(corners), "corners": corners,
-        "environment": {"engine_version": res.engine_version(),
-                        "remote": {"job_ids": job_ids, "n_verify_decks": len(res.where)} if job_ids else None},
-        "provenance": {"klt_version": a.klt_version},
-        "claim_failed_points": claim_fail,
-    }
+    report = build_report(corners, res, a.klt_version, a.job_log,
+                          deck_count_key="n_verify_decks",
+                          extra={"claim_failed_points": claim_fail})
     Path(a.report_out).write_text(json.dumps(report, indent=2) + "\n")
     print(f"assembled {len(rows)} draws -> {draws_csv.name}; report {a.report_out}")
 
 
-def spec(a: argparse.Namespace) -> None:
-    data = json.loads(Path(a.spec).read_text())
+def fill_record_spec(src: str, dst: str, labels: dict[str, str], n: int) -> None:
+    """Fill a record-spec template (issue #702): the per-corner-label
+    `msense_w` extra column (the caller passes the label -> width mapping,
+    because each campaign derives its labels from its own point set) and the
+    `@@N@@` draw count in the two narrative fields.
+    """
+    data = json.loads(Path(src).read_text())
     extra = data.get("extra_columns") or {}
-    extra["msense_w"] = {DIGEST_LABEL_OF[p]: a.msense_w for p in POINTS}
+    extra["msense_w"] = labels
     data["extra_columns"] = extra
-    data["Corner matrix run"] = data["Corner matrix run"].replace("@@N@@", str(a.n))
-    data["Claim"] = data["Claim"].replace("@@N@@", str(a.n))
-    Path(a.output).write_text(json.dumps(data, indent=2) + "\n")
+    for k in ("Corner matrix run", "Claim"):
+        data[k] = data[k].replace("@@N@@", str(n))
+    Path(dst).write_text(json.dumps(data, indent=2) + "\n")
+
+
+def spec(a: argparse.Namespace) -> None:
+    fill_record_spec(a.spec, a.output, {DIGEST_LABEL_OF[p]: a.msense_w for p in POINTS}, a.n)
+
+
+def check_batch_set_report(report_path: str, rc: int) -> None:
+    """The fail-closed `--batch-set` submit guard both MC runners share (moved
+    out of their inline `python3 - <<'PY'` heredocs for unit-test coverage,
+    issue #702 -- the pattern sanity_anchors.py set, see sim/harness/README.md
+    "Sanity gates"). exit_code 4 = some unit errored/timed out (a FAIL row);
+    anything else nonzero or a refusal means the request did not run: report
+    it, never run it locally.
+    """
+    path = Path(report_path)
+    try:
+        rep = json.loads(path.read_text())
+    except (OSError, ValueError):
+        raise SystemExit(f"run_klt_sim.sh: batch submit failed (klt exit {rc}), no report: {path}\n"
+                         "  no local fallback -- fix the cause and re-run with the same "
+                         "KLT_SIM_WORK to resume")
+    bad = [r for r in rep.get("requests", []) if r.get("error") or r.get("exit_code") not in (0, 4)]
+    if rep.get("refused_codes") or bad:
+        raise SystemExit(f"run_klt_sim.sh: batch submit failed: refused_codes={rep.get('refused_codes')} "
+                         f"requests={[(r['request'], r.get('exit_code'), r.get('error')) for r in bad][:3]}\n"
+                         "  no local fallback -- re-run with the same KLT_SIM_WORK to resume")
 
 
 def check_sanity(a: argparse.Namespace) -> None:
@@ -538,6 +596,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--seed", type=int, required=True)
     p.add_argument("--tol", type=float, default=5e-4)
     p.set_defaults(fn=check_sanity)
+
+    p = sub.add_parser("check-batch-set")
+    p.add_argument("report")
+    p.add_argument("rc", type=int)
+    p.set_defaults(fn=lambda a: check_batch_set_report(a.report, a.rc))
 
     a = ap.parse_args(argv)
     a.fn(a)

@@ -114,6 +114,10 @@ jobs:
         # Issue #432: guards gen_pex_batch_requests.py (klt 0.8.x .lib-root fix).
         run: python3 sim/harness/test_gen_pex_batch_requests.py
 
+      - name: closed-loop-psrr attribution probe-deck generator self-test
+        # Issue #682: guards gen_probe_deck.py (committed decks regenerate byte-for-byte).
+        run: python3 sim/closed-loop-psrr/attribution/test_gen_probe_deck.py
+
       - name: Self-test wiring guard self-test
         # Issue #444: hermetic temp-git-repo cases for the guard below.
         run: python3 .github/scripts/test_check_selftests_wired.py

@@ -1,0 +1,541 @@
+{
+  "samples": "20261121-195500-b03b10b7-yield-samples.json",
+  "limits": "20261121-195500-b03b10b7-yield-limits.json",
+  "source": {
+    "kind": "sample-set",
+    "netlist": null,
+    "monte_carlo": null,
+    "provenance": null,
+    "sample_count": 6000,
+    "native": {
+      "module": "klt_yield_native",
+      "version": "0.1.0"
+    }
+  },
+  "schema_version": 1,
+  "confidence": 0.95,
+  "target_ci_halfwidth": 0.01,
+  "min_samples": 2,
+  "status": "pass",
+  "measurement_count": 5,
+  "measurements": [
+    {
+      "name": "nominal",
+      "unit": "V",
+      "n": 1200,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "censored": 0,
+      "inconclusive": 0,
+      "limits": {
+        "min": 0.882,
+        "max": 1.218,
+        "target_sigma": 3.0,
+        "min_converged_samples": 1200
+      },
+      "source_corners": [],
+      "distribution": {
+        "model": "normal",
+        "mean": 1.0500421419166661,
+        "stddev": 0.04553121027043332,
+        "min": 0.9075133,
+        "max": 1.240609,
+        "median": 1.0491465,
+        "skewness": 0.17485405195459602,
+        "excess_kurtosis": 0.16473154323410366,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 0.5788644071758735,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "consistent"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 0.9991666666666666,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9953657984850546,
+            "high": 0.9999789020492447
+          },
+          "n": 1200
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.9997755476485551,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9996453077009677,
+            "high": 0.9999057875961426
+          },
+          "n": 1200
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": 1.229925575608185,
+        "cpk": 1.2296170552444181,
+        "cpk_confidence_interval": {
+          "low": 1.1769125865611798,
+          "high": 1.2823215239276564
+        },
+        "sigma_to_spec": 3.6888511657332543,
+        "sigma_to_spec_confidence_interval": {
+          "low": 3.5307377596835394,
+          "high": 3.8469645717829692
+        },
+        "limiting_side": "upper"
+      },
+      "sample_size": {
+        "n": 1200,
+        "observed_ci_halfwidth": 0.0023065517820950454,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 32,
+        "required_n_for_target": null,
+        "verdict": "sufficient",
+        "method": "normal-approximation",
+        "variance_reduced": null
+      },
+      "negative_control": null,
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "sigma_target": {
+        "k": 3.0,
+        "sigma_to_spec": 3.6888511657332543,
+        "lower_bound": 3.5307377596835394,
+        "gate": "lower_bound",
+        "met": true
+      },
+      "converged_n": {
+        "n_requested": 1200,
+        "n_converged": 1200,
+        "min_converged_samples": 1200,
+        "verdict": "sufficient"
+      },
+      "status": "pass",
+      "warnings": [],
+      "spec_row": "output-reference-untrimmed"
+    },
+    {
+      "name": "bcs_n40",
+      "unit": "V",
+      "n": 1200,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "censored": 0,
+      "inconclusive": 0,
+      "limits": {
+        "min": 0.882,
+        "max": 1.218,
+        "target_sigma": 3.0,
+        "min_converged_samples": 1200
+      },
+      "source_corners": [],
+      "distribution": {
+        "model": "normal",
+        "mean": 1.0493207507500013,
+        "stddev": 0.043069131126539414,
+        "min": 0.9114439,
+        "max": 1.222246,
+        "median": 1.048052,
+        "skewness": 0.16298068575431862,
+        "excess_kurtosis": 0.09335880652246509,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 0.5084995517870143,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "consistent"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 0.9991666666666666,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9953657984850546,
+            "high": 0.9999789020492447
+          },
+          "n": 1200
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.9999038950021453,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9998419525863129,
+            "high": 0.9999658374179776
+          },
+          "n": 1200
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": 1.300235192473909,
+        "cpk": 1.2949781461684935,
+        "cpk_confidence_interval": {
+          "low": 1.2398229281501316,
+          "high": 1.3501333641868554
+        },
+        "sigma_to_spec": 3.8849344385054803,
+        "sigma_to_spec_confidence_interval": {
+          "low": 3.719468784450395,
+          "high": 4.050400092560566
+        },
+        "limiting_side": "lower"
+      },
+      "sample_size": {
+        "n": 1200,
+        "observed_ci_halfwidth": 0.0023065517820950454,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 32,
+        "required_n_for_target": null,
+        "verdict": "sufficient",
+        "method": "normal-approximation",
+        "variance_reduced": null
+      },
+      "negative_control": null,
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "sigma_target": {
+        "k": 3.0,
+        "sigma_to_spec": 3.8849344385054803,
+        "lower_bound": 3.719468784450395,
+        "gate": "lower_bound",
+        "met": true
+      },
+      "converged_n": {
+        "n_requested": 1200,
+        "n_converged": 1200,
+        "min_converged_samples": 1200,
+        "verdict": "sufficient"
+      },
+      "status": "pass",
+      "warnings": [],
+      "spec_row": "output-reference-untrimmed"
+    },
+    {
+      "name": "bcs_125",
+      "unit": "V",
+      "n": 1200,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "censored": 0,
+      "inconclusive": 0,
+      "limits": {
+        "min": 0.882,
+        "max": 1.218,
+        "target_sigma": 3.0,
+        "min_converged_samples": 1200
+      },
+      "source_corners": [],
+      "distribution": {
+        "model": "normal",
+        "mean": 1.044015464916667,
+        "stddev": 0.050332690741245446,
+        "min": 0.8927119,
+        "max": 1.262315,
+        "median": 1.0436290000000001,
+        "skewness": 0.17344381893687055,
+        "excess_kurtosis": 0.2375552872500415,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 0.6134089731573674,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "consistent"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 0.9991666666666666,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9953657984850546,
+            "high": 0.9999789020492447
+          },
+          "n": 1200
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.9990831376741223,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9986482702095535,
+            "high": 0.999518005138691
+          },
+          "n": 1200
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": 1.1125969856825164,
+        "cpk": 1.0729637970252102,
+        "cpk_confidence_interval": {
+          "low": 1.0260603923345795,
+          "high": 1.1198672017158409
+        },
+        "sigma_to_spec": 3.2188913910756307,
+        "sigma_to_spec_confidence_interval": {
+          "low": 3.0781811770037386,
+          "high": 3.359601605147523
+        },
+        "limiting_side": "lower"
+      },
+      "sample_size": {
+        "n": 1200,
+        "observed_ci_halfwidth": 0.0023065517820950454,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 32,
+        "required_n_for_target": null,
+        "verdict": "sufficient",
+        "method": "normal-approximation",
+        "variance_reduced": null
+      },
+      "negative_control": null,
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "sigma_target": {
+        "k": 3.0,
+        "sigma_to_spec": 3.2188913910756307,
+        "lower_bound": 3.0781811770037386,
+        "gate": "lower_bound",
+        "met": true
+      },
+      "converged_n": {
+        "n_requested": 1200,
+        "n_converged": 1200,
+        "min_converged_samples": 1200,
+        "verdict": "sufficient"
+      },
+      "status": "pass",
+      "warnings": [],
+      "spec_row": "output-reference-untrimmed"
+    },
+    {
+      "name": "wcs_n40",
+      "unit": "V",
+      "n": 1200,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "censored": 0,
+      "inconclusive": 0,
+      "limits": {
+        "min": 0.882,
+        "max": 1.218,
+        "target_sigma": 3.0,
+        "min_converged_samples": 1200
+      },
+      "source_corners": [],
+      "distribution": {
+        "model": "normal",
+        "mean": 1.051732856750001,
+        "stddev": 0.04232393643252665,
+        "min": 0.91715,
+        "max": 1.220889,
+        "median": 1.0504335,
+        "skewness": 0.161874402754197,
+        "excess_kurtosis": 0.09161993215206321,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 0.5030947021388098,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "consistent"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 0.9991666666666666,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9953657984850546,
+            "high": 0.9999789020492447
+          },
+          "n": 1200
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.9999269338146722,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9998783187885146,
+            "high": 0.9999755488408298
+          },
+          "n": 1200
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": 1.3231283458067729,
+        "cpk": 1.3094807750618382,
+        "cpk_confidence_interval": {
+          "low": 1.2537797350461097,
+          "high": 1.3651818150775668
+        },
+        "sigma_to_spec": 3.9284423251855145,
+        "sigma_to_spec_confidence_interval": {
+          "low": 3.761339205138329,
+          "high": 4.0955454452327
+        },
+        "limiting_side": "upper"
+      },
+      "sample_size": {
+        "n": 1200,
+        "observed_ci_halfwidth": 0.0023065517820950454,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 32,
+        "required_n_for_target": null,
+        "verdict": "sufficient",
+        "method": "normal-approximation",
+        "variance_reduced": null
+      },
+      "negative_control": null,
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "sigma_target": {
+        "k": 3.0,
+        "sigma_to_spec": 3.9284423251855145,
+        "lower_bound": 3.761339205138329,
+        "gate": "lower_bound",
+        "met": true
+      },
+      "converged_n": {
+        "n_requested": 1200,
+        "n_converged": 1200,
+        "min_converged_samples": 1200,
+        "verdict": "sufficient"
+      },
+      "status": "pass",
+      "warnings": [],
+      "spec_row": "output-reference-untrimmed"
+    },
+    {
+      "name": "wcs_125",
+      "unit": "V",
+      "n": 1200,
+      "errored": 0,
+      "failed_unmeasurable": 0,
+      "censored": 0,
+      "inconclusive": 0,
+      "limits": {
+        "min": 0.882,
+        "max": 1.218,
+        "target_sigma": 3.0,
+        "min_converged_samples": 1200
+      },
+      "source_corners": [],
+      "distribution": {
+        "model": "normal",
+        "mean": 1.0501034230000008,
+        "stddev": 0.04958926430868432,
+        "min": 0.9019809,
+        "max": 1.264654,
+        "median": 1.0496645,
+        "skewness": 0.17983797890001546,
+        "excess_kurtosis": 0.2292593539925063,
+        "normality": {
+          "test": "anderson-darling",
+          "statistic": 0.6130384492670266,
+          "critical_value": 0.787,
+          "significance": 0.05,
+          "verdict": "consistent"
+        }
+      },
+      "yield": {
+        "empirical": {
+          "method": "clopper-pearson",
+          "estimate": 0.9983333333333333,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9939925192038823,
+            "high": 0.999798095165612
+          },
+          "n": 1200
+        },
+        "normal": {
+          "method": "normal-delta",
+          "estimate": 0.9992955020770234,
+          "confidence": 0.95,
+          "confidence_interval": {
+            "low": 0.9989473813079159,
+            "high": 0.999643622846131
+          },
+          "n": 1200
+        },
+        "variance_reduced": null
+      },
+      "capability": {
+        "cp": 1.1292766847963298,
+        "cpk": 1.1285814872810167,
+        "cpk_confidence_interval": {
+          "low": 1.079631726927312,
+          "high": 1.1775312476347215
+        },
+        "sigma_to_spec": 3.38574446184305,
+        "sigma_to_spec_confidence_interval": {
+          "low": 3.2388951807819355,
+          "high": 3.5325937429041643
+        },
+        "limiting_side": "upper"
+      },
+      "sample_size": {
+        "n": 1200,
+        "observed_ci_halfwidth": 0.0029027879808648516,
+        "target_ci_halfwidth": 0.01,
+        "required_n": 64,
+        "required_n_for_target": null,
+        "verdict": "sufficient",
+        "method": "normal-approximation",
+        "variance_reduced": null
+      },
+      "negative_control": null,
+      "analytic_cross_check": null,
+      "sampling": {
+        "strategy": "plain_random",
+        "replicates": null,
+        "effective_sample_size": null
+      },
+      "sigma_target": {
+        "k": 3.0,
+        "sigma_to_spec": 3.38574446184305,
+        "lower_bound": 3.2388951807819355,
+        "gate": "lower_bound",
+        "met": true
+      },
+      "converged_n": {
+        "n_requested": 1200,
+        "n_converged": 1200,
+        "min_converged_samples": 1200,
+        "verdict": "sufficient"
+      },
+      "status": "pass",
+      "warnings": [],
+      "spec_row": "output-reference-untrimmed"
+    }
+  ],
+  "warnings": [
+    "no measurement declared a negative_control -- this campaign has no seeded, known-bad variant demonstrating that the statistics above can actually detect a degraded design; see docs/cli/yield.md#negative-control"
+  ]
+}

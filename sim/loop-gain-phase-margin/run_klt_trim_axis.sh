@@ -81,7 +81,7 @@ fi
 PLAN_NAME=characterization
 [[ "${MODE}" == "--pvt" ]] && PLAN_NAME=pvt
 
-[[ -x "${BATCH_PROVISION_SCRIPT}" ]] || { echo "run_klt_trim_axis.sh: no provision script at ${BATCH_PROVISION_SCRIPT}" >&2; exit 3; }
+klt_sim_require_provision run_klt_trim_axis.sh || exit $?
 # shellcheck disable=SC2086
 python3 "${TOOL}" prepare --work "${WORK}" --target batch --plan "${PLAN_NAME}" \
   --batch-pdk-root "${BATCH_PDK_ROOT}" \

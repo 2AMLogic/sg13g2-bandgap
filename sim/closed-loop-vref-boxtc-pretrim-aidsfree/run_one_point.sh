@@ -93,6 +93,9 @@ DUT_GIT_SHA="d83f7c4"
 source "${SIM_DIR}/lib/msense_width.sh"
 read_msense_width "design/netlist/bandgap_startup.spice"
 
+# shellcheck source=../lib/pvt_verdict_common.sh
+source "${SIM_DIR}/lib/pvt_verdict_common.sh"
+
 SNAPSHOTS_OUT="${EXPERIMENT_DIR}/netlist-snapshots/${RECORD_ID}"
 CORNERS_OUT="${EXPERIMENT_DIR}/corners/${RECORD_ID}"
 ROWS_OUT="${EXPERIMENT_DIR}/.rows/${RECORD_ID}"
@@ -149,10 +152,9 @@ v_vref_3ms=$(extract_measure '^v_vref_3ms')
 v_vbeq3_2ms=$(extract_measure '^v_vbeq3_2ms')
 v_vbeq3_3ms=$(extract_measure '^v_vbeq3_3ms')
 
-DVSNS_CLOSE_V="0.020"
-FB_RAIL_MARGIN_V="0.05"
-DET_RELEASE_FRAC="0.2"
-I_MKFB_RELEASE_A="50e-9"
+# Caller-local settledness bound (issue #660): the four shared closed-loop
+# verdict constants now come from sim/lib/pvt_verdict_common.sh; this one is
+# deliberately NOT shared (see that lib's own header), so it stays here.
 SETTLE_TOL_V="0.001"
 
 VERDICT="FAIL"
@@ -162,20 +164,7 @@ if [[ ${RC} -eq 0 && -n "${v_det_v}" && -n "${i_mkfb_a}" && -n "${v_sns1_v}" \
       && -n "${v_sns2_v}" && -n "${v_fb_v}" && -n "${v_vref_2ms}" && -n "${v_vref_3ms}" ]]; then
   DVSNS_V=$(awk -v a="${v_sns1_v}" -v b="${v_sns2_v}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
   SETTLE_DELTA=$(awk -v a="${v_vref_2ms}" -v b="${v_vref_3ms}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
-  VERDICT=$(awk -v det_v="${v_det_v}" -v i_mkfb_a="${i_mkfb_a}" -v vdd="${VDD}" \
-      -v det_frac="${DET_RELEASE_FRAC}" -v i_thresh="${I_MKFB_RELEASE_A}" \
-      -v dvsns="${DVSNS_V}" -v dvsns_thresh="${DVSNS_CLOSE_V}" \
-      -v fb="${v_fb_v}" -v rail_margin="${FB_RAIL_MARGIN_V}" \
-      -v sdelta="${SETTLE_DELTA}" -v sdelta_thresh="${SETTLE_TOL_V}" \
-    'BEGIN{
-       i_abs = (i_mkfb_a < 0) ? -i_mkfb_a : i_mkfb_a;
-       startup_released = (det_v <= det_frac*vdd) && (i_abs <= i_thresh);
-       loop_closed = (dvsns <= dvsns_thresh);
-       not_railed = (fb >= rail_margin) && (fb <= vdd - rail_margin);
-       settled = (sdelta <= sdelta_thresh);
-       ok = startup_released && loop_closed && not_railed && settled;
-       print ok ? "PASS" : "FAIL";
-     }')
+  VERDICT="$(pvt_closed_loop_verdict "${v_det_v}" "${i_mkfb_a}" "${v_fb_v}" "${DVSNS_V}" "${VDD}" "${SETTLE_DELTA}" "${SETTLE_TOL_V}")"
 fi
 
 ROW_FILE="${ROWS_OUT}/${CORNER_ID}.row"

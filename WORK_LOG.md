@@ -10,8 +10,74 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-25
+
+- **PR #711**: docs(layout): add unpinned-KLayout-runtime row to the friction table
+- **Issue #700** (closed): Record klayout-tools#7824 (pinned klt does not pin its KLayout runtime) in layout/README.md's friction table
+
+### 2026-11-24
+
+- **PR #710**: refactor(sim): dedupe remaining seed_deck, pex_vref_runner, AC/probe parser, and preamble stragglers
+- **Issue #707** (closed): Dedupe remaining seed_deck, pex_vref_runner, AC/probe parser, and preamble stragglers across sim/
+- **PR #705**: fix(sim): catch missing batch-set reports with the no-local-fallback diagnostic
+- **Issue #704** (closed): check-batch-set refuses a missing --batch-set report with a traceback instead of its no-local-fallback diagnostic
+- **PR #703**: refactor(sim): dedupe the Monte Carlo klt-sim plumbing and preamble guards
+- **Issue #702** (closed): Dedupe remaining Monte Carlo klt-sim plumbing and shared runner preamble guards
+- **PR #699**: layout: regenerate sg13cmos5l-bandgap_top PEX with real wire R/C under the 0.8.0 pin
+- **Issue #480** (closed): Regenerate real parasitic extraction for sg13cmos5l-bandgap_top (pex.spice carries no R/C)
+- **PR #692**: test: catch multi-char augmented ops and name-first tuple targets in Python one-home guard
+- **Issue #690** (closed): One-home guard (Python): multi-char augmented ops and name-first tuple targets escape the matcher
+- **PR #689**: test: make Python one-home guard recursive and form-aware
+- **Issue #688** (closed): One-home drift guard: Python pass still column-one-only and non-recursive (shell pass is now neither)
+- **PR #664**: sim: source shared verdict constants in boxtc-pretrim-aidsfree run_one_point
+- **Issue #660** (closed): Shell bench run_one_point.sh keeps a 5th unguarded copy of the four closed-loop verdict constants
+- **PR #686**: chore(layout): remove the superseded one-point PEX probe
+- **PR #684**: refactor(sim): dedupe gen_probe_deck onto shared harness and collapse resize variants
+- **Issue #682** (closed): Deduplicate gen_probe_deck.py onto shared sim/harness modules and collapse per-instance _sub resize tables
+- **Issue #656** (closed): Remove superseded one-point PEX probe (layout/bandgap_core/probe): its #275 stopgap condition is met
+
+### 2026-11-23
+
+- **PR #685**: test(sim): fail loudly when a harness source escapes the shell-closure regex
+- **PR #683**: docs(sim): describe the pre-open refusal in the preserved-companion tests
+- **PR #679**: refactor(sim): refuse empty TC companion derivations before opening output
+- **PR #678**: fix: resolve nested-quote source paths in runner_shell_closure
+- **PR #674**: fix(sim): make the schematic-DUT render source and record spec explicit flags
+- **PR #665**: sim: drop logic-free psrr/zout summary wrappers, invoke db_summary_common.awk directly
+- **Issue #681** (closed): TC companion preservation tests still document the removed write-and-restore mechanism
+- **Issue #680** (closed): runner_shell_closure: line-start anchor is an unchecked assumption about how runners source harness scripts
+- **Issue #675** (closed): Remove write-and-restore handling from both TC companion commands
+- **Issue #670** (closed): Shared schematic-DUT helpers read DUT_TEMPLATE/RECORD_SPEC from the environment without binding them to the submission identity
+- **Issue #663** (closed): EnricherIdentityCoverageTests' shell closure misses pex_runner.sh (source-line regex)
+- **Issue #460** (closed): Remove two logic-free awk wrappers (zout_summary.awk, psrr_summary.awk) left behind by the klt sim conversion
+- **PR #669**: fix(sim): state measured probe-fleet bounds in psrr attribution record
+- **Issue #667** (closed): sim(psrr): tighten five claim-precision items in the #631 attribution bench and DR-0017
+- **PR #673**: docs: correct klayout-tools#6974 status in closed-loop MC README
+- **PR #651**: refactor: share the schematic-DUT setup and record mint across the six klt sim wrappers
+- **PR #640**: Pass the untrimmed 3-sigma gate at N=1200: re-run the vref mismatch MC, re-mint the yield evidence, rotate the item-8 report
+- **Issue #672** (closed): Declare item-6's negative control once a PyPI release carries the klayout-tools#6974 CSV-control fix (and correct the 'still unlanded' note)
+- **Issue #671** (closed): Judge docs-only fast path is permanently NOT ELIGIBLE on gh 2.102.0 (unsupported `baseRepository` field)
+- **Issue #650** (closed): Deduplicate schematic-DUT setup across 6 run_klt_sim.sh wrappers and share schematic_ac_main in pex_ac_runner.sh
+- **Issue #635** (closed): Untrimmed MC 3-sigma gate fails at the 125 C corners (sigma LB 2.8845 / 2.8632 vs 3): size and run the follow-up campaign
+- **PR #639**: sim(psrr): attribute the DC-PSRR miss at bcs/125C/3.63V and grid-verify the p12-w2 input-pair candidate (45/45 above 60 dB)
+- **Issue #631** (closed): design: PSRR @ DC misses the > 60 dB row at bcs/125 C/3.63 V (59.685 dB schematic); attribute the limit and propose a bounded fix
+- **PR #658**: docs(sim): document runner-function call shape and msense failure paths
+- **PR #662**: fix: hash enrich_pvt_report.py in affected runners' submission identity
+- **PR #659**: refactor: consolidate the closed-loop verdict constants, 3-criteria check and recount into enrich_pvt_report
+- **PR #655**: refactor: dedupe klt_trim_axis.py onto the shared sim/harness modules
+- **PR #649**: manifests: point the item-8 bullet at the pinned report and CI-check it
+- **Issue #654** (closed): Document read_msense_width caller attribution and parse failures in shared runners
+- **Issue #661** (closed): Submission identity does not hash enrich_pvt_report.py, which five enrichers now depend on
+- **Issue #657** (closed): Consolidate closed-loop verdict constants, 3-criteria check, report recount, and dead/redundant code across sim/harness enrichers
+- **Issue #652** (closed): Deduplicate klt_trim_axis.py onto shared sim/harness modules (CORNER_SECTIONS, seed_deck, klt_sim_evidence, provision default)
+- **Issue #647** (closed): manifests/README.md item-8 paragraph links a superseded report: heading cites the pinned rotation, body still points at 2026-11-18
+
 ### 2026-11-22
 
+- **PR #645**: Cite the four klt sim corner-matrix envelopes for T1 item 5, grading each row's bound in the run itself
+- **PR #644**: test: fold TC golden append-only check into one byte-exact regeneration per fixture
+- **Issue #629** (closed): T1 item 5 (corner verification): cite the klt sim corner-matrix envelopes per spec row and declare the row set, so the item grades on evidence instead of no_evidence
+- **Issue #643** (closed): Compare TC companion fixtures byte-for-byte in one regeneration per fixture
 - **PR #637**: fix: draw pnpMPA base-ring contacts by widening the wall to 0.30 um
 - **Issue #633** (closed): sg13cmos5l-bandgap_top: pnpMPA base rings carry zero contacts (draw_pnpmpa cont_array underflow at w=1u l=2u) — the base tie does not exist as drawn
 
@@ -421,13 +487,4 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - **PR #249**: Add pinned-comment convention for tracker issues at the addComment cap
 - **Issue #248** (closed): Issue #4 hit GitHub's 2500-comment hard cap: addComment now permanently disabled
-
-### 2026-09-23
-
-- **PR #244**: fix: draw the CMOS5L well taps (2 floating MOS wells fixed, 10 pnpMPA base rings nSD-marked; ERC 12 -> 10)
-- **PR #245**: fix(sg13cmos5l-bandgap_core): extend Q2 emitter trunk to reach R2's e2 drop
-- **PR #247**: feat(loom): sticky-blocked registry with atomic settle and drift repair for issue #4
-- **Issue #246** (closed): loom:blocked silently lost on issue #4 across claim/settle cycles
-- **Issue #243** (closed): sg13cmos5l-bandgap_core: R2's e2 drop (x=58) lands in free field, disjoint from the Q2 emitter trunk (x=123.6..165.9) — the e2 net is split as drawn
-- **Issue #240** (closed): Zero out the 12 erc.missing_tie findings on sg13cmos5l-bandgap_top (2 floating MOS wells + 10 marker-less pnpMPA base rings)
 

@@ -625,7 +625,9 @@ verdicts) and [`cmos5l_runner.sh`](cmos5l_runner.sh)
 too: [`klt_sim_preamble.sh`](klt_sim_preamble.sh) holds the mode check,
 directory/klt/PDK/OSDI resolution, work-dir mint, batch defaults and
 resume-safety scaffold that `pex_runner.sh` and `cmos5l_runner.sh` had
-retyped, and the batch defaults + resume scaffold keep their --batch-only
+retyped; #702 added the `klt_sim_require_provision` batch-provision guard
+and the `klt_sim_read_msense_width` XMSENSE-width read/cache to it as well,
+and the batch defaults + resume scaffold keep their --batch-only
 timing on the CMOS5L side. Since #503 the two standalone batch submitters
 source it as well: `probe/run_probe.sh` and
 `sim/loop-gain-phase-margin/run_klt_trim_axis.sh` call only

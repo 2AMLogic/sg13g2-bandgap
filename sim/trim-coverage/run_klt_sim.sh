@@ -48,16 +48,9 @@ ANCHOR_VREF_V="1.047278"   # records/20260930-195507-9530863.csv typ_code128 27C
 ANCHOR_TOL_V="0.0005"
 
 # XMSENSE's width from the live startup netlist, as every closed-loop bench does.
-# shellcheck source=../lib/msense_width.sh
-source "${SIM_DIR}/lib/msense_width.sh"
-if [[ "${MODE}" == "--record" && -f "${WORK}/msense_w.txt" ]]; then
-  MSENSE_W="$(<"${WORK}/msense_w.txt")"
-else
-  ( cd "${REPO_ROOT}" && read_msense_width "design/netlist/bandgap_startup.spice" \
-      && printf '%s' "${MSENSE_W}" > "${WORK}/msense_w.txt" )
-  MSENSE_W="$(<"${WORK}/msense_w.txt")"
-fi
+klt_sim_read_msense_width "design/netlist/bandgap_startup.spice"
 IDENT_ARGS+=(--extra "${TC_PY}" --extra "${SEED_CSV}" --declare "msense_w=${MSENSE_W}"
+  --extra "${HARNESS_DIR}/enrich_pvt_report.py"
   --extra "${REPO_ROOT}/design/netlist/bandgap_core.spice"
   --extra "${REPO_ROOT}/design/netlist/bandgap_trim.spice"
   --extra "${REPO_ROOT}/design/netlist/bandgap_amp.spice"
@@ -102,11 +95,7 @@ PY
 }
 
 tc_batch() {
-  if [[ ! -x "${BATCH_PROVISION_SCRIPT}" ]]; then
-    echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2
-    echo "             (KLT_BATCH_PROVISION_SCRIPT) -- see klt sim docs, 'Batch backend'." >&2
-    exit 3
-  fi
+  klt_sim_require_provision || exit $?
   echo "run_klt_sim.sh: sanity gate before dispatch"
   tc_sanity
 

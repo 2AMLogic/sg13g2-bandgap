@@ -133,11 +133,7 @@ cmos5l_batch() {
     echo "             CMOS5L-provisioned image is demonstrated." >&2
     return 5
   fi
-  if [[ ! -x "${BATCH_PROVISION_SCRIPT}" ]]; then
-    echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2
-    echo "             (KLT_BATCH_PROVISION_SCRIPT) -- see klt sim docs, 'Batch backend'." >&2
-    return 3
-  fi
+  klt_sim_require_provision || return $?
   echo "run_klt_sim.sh: sanity gate before dispatch"
   cmos5l_sanity
 
@@ -150,7 +146,8 @@ cmos5l_batch() {
     --extra "${TB}/${STEM}.body.spice.tmpl"
     --extra "${BATCH_PROVISION_SCRIPT}"
     --extra "${CMOS5L_PY}"
-    --extra "${HARNESS_DIR}/klt_corner_bundle.py")
+    --extra "${HARNESS_DIR}/klt_corner_bundle.py"
+    --extra "${HARNESS_DIR}/enrich_pvt_report.py")
 
   python3 "${CMOS5L_PY}" prepare --mode batch --kind "${KIND}" --families "${FAMILIES}" \
     --request-template "${TB}/${STEM}.request.json.tmpl" \

@@ -9,7 +9,7 @@
   "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models baked into the batch runner image (#277).",
   "Corner matrix run": "6 points {typ mismatch, typ negative control, bcs/wcs mismatch x -40/125 C} x N=@@N@@ seeded draws = one `.op` deck per draw, submitted as `decks` requests of 100 draws -- digested to one row per point",
   "request": "sim/harness/vref_mc_klt.py deck-list requests (request-mc-<point>-<chunk>.json)",
-  "author": "Loom Builder (agent), issue #403",
+  "author": "Loom Builder (agent), issue #635 (harness: #403)",
   "pass_requires": [
     "n_draws",
     "n_pass",

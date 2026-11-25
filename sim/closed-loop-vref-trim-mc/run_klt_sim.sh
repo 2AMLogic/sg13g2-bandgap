@@ -51,15 +51,9 @@ SEED_CSV="$(ls -1 "${SIM_DIR}/closed-loop-startup/records/"*.csv | sort | tail -
 ANCHOR_CSV="${EXP_DIR}/records/20260930-232155-affdefe-draws.csv"   # the committed #229 record
 ANCHOR_SEED=20260930
 
-# shellcheck source=../lib/msense_width.sh
-source "${SIM_DIR}/lib/msense_width.sh"
-if [[ "${MODE}" == "--record" && -f "${WORK}/msense_w.txt" ]]; then
-  MSENSE_W="$(<"${WORK}/msense_w.txt")"
-else
-  ( cd "${REPO_ROOT}" && read_msense_width "design/netlist/bandgap_startup.spice" \
-      && printf '%s' "${MSENSE_W}" > "${WORK}/msense_w.txt" )
-  MSENSE_W="$(<"${WORK}/msense_w.txt")"
-fi
+# XMSENSE's width from the live startup netlist, cached in the work dir so
+# --record re-reads the value the --batch run dispatched with.
+klt_sim_read_msense_width "design/netlist/bandgap_startup.spice"
 
 dut_git_sha() { git -C "${REPO_ROOT}" log -1 --format=%h -- "$1" 2>/dev/null || echo unknown; }
 DUT_SHA="core=$(dut_git_sha design/netlist/bandgap_core.spice) trim=$(dut_git_sha design/netlist/bandgap_trim.spice) amp=$(dut_git_sha design/netlist/bandgap_amp.spice) startup=$(dut_git_sha design/netlist/bandgap_startup.spice) seeds=${SEED_CSV##*/}@$(dut_git_sha "${SEED_CSV#"${REPO_ROOT}/"}")"
@@ -95,30 +89,11 @@ tm_stage() {
       2> >(tee -a klt-stderr.log >&2) ) || rc=$?
   # Unit-level failures (timeouts, engine errors) are verify-FAIL rows; a request the
   # fleet refused or never ran is a submit failure: report it, never run it locally.
-  python3 - "${WORK}/report-${stage}.json" "${rc}" <<'PY'
-import json, pathlib, sys
-path, rc = pathlib.Path(sys.argv[1]), int(sys.argv[2])
-try:
-    rep = json.loads(path.read_text())
-except ValueError:
-    raise SystemExit(f"run_klt_sim.sh: batch submit failed (klt exit {rc}), no report: {path}\n"
-                     "  no local fallback -- fix the cause and re-run with the same KLT_SIM_WORK to resume")
-# exit_code 4 is "some unit errored or timed out" (a verify-FAIL row, below); anything else
-# nonzero, an error envelope, or a refusal code means the request itself did not run.
-bad = [r for r in rep.get("requests", []) if r.get("error") or r.get("exit_code") not in (0, 4)]
-if rep.get("refused_codes") or bad:
-    raise SystemExit(f"run_klt_sim.sh: batch submit failed: refused_codes={rep.get('refused_codes')} "
-                     f"requests={[(r['request'], r.get('exit_code'), r.get('error')) for r in bad][:3]}\n"
-                     "  no local fallback -- re-run with the same KLT_SIM_WORK to resume")
-PY
+  python3 "${TM_PY}" check-batch-set "${WORK}/report-${stage}.json" "${rc}"
 }
 
 tm_batch() {
-  if [[ ! -x "${BATCH_PROVISION_SCRIPT}" ]]; then
-    echo "run_klt_sim.sh: batch provision script not executable at ${BATCH_PROVISION_SCRIPT}" >&2
-    echo "             (KLT_BATCH_PROVISION_SCRIPT) -- see klt sim docs, 'Batch backend'." >&2
-    exit 3
-  fi
+  klt_sim_require_provision || exit $?
   echo "run_klt_sim.sh: sanity gate before dispatch"
   tm_sanity
 

@@ -22,11 +22,14 @@ import subprocess
 import sys
 import tempfile
 import time
+import tokenize
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import boxtc_companion as bxc  # noqa: E402
+import enrich_ac_report as ear  # noqa: E402
 import enrich_pvt_report as epr  # noqa: E402
 import enrich_supply_bench_report as esb  # noqa: E402
 import extraction_binding as xb  # noqa: E402
@@ -938,6 +941,478 @@ class EnrichStartupReleaseLadderTests(unittest.TestCase):
             {k: report[k] for k in ("corner_count", "passed", "failed", "errored", "status")},
             {"corner_count": 3, "passed": 1, "failed": 1, "errored": 1, "status": "fail"},
         )
+
+
+# --------------------------------------------------------------------------
+# enrich_pvt_report's shared verdict check and recount (issue #657)
+# --------------------------------------------------------------------------
+
+
+class ClosedLoopVerdictHelperTests(unittest.TestCase):
+    """enrich_pvt_report.closed_loop_verdict_failures: the one copy of
+    pvt_closed_loop_verdict's 3-criteria form that every klt-path enricher
+    calls, so the constants' drift guard covers all of them."""
+
+    def failures(self, det: float | None = 0.10, i_mkfb: float | None = 1e-9,
+                 dvsns: float | None = 0.005, fb: float | None = 1.0,
+                 vdd: float | None = 3.30) -> list[str]:
+        return epr.closed_loop_verdict_failures(det, i_mkfb, dvsns, fb, vdd)
+
+    def test_healthy_point_passes(self) -> None:
+        self.assertEqual(self.failures(), [])
+
+    def test_each_criterion_is_named_in_the_standard_order(self) -> None:
+        self.assertEqual(self.failures(det=3.0, i_mkfb=1e-6, dvsns=0.1, fb=0.0),
+                         ["startup_not_released", "loop_not_closed", "fb_railed"])
+        self.assertEqual(self.failures(det=3.0), ["startup_not_released"])
+        self.assertEqual(self.failures(dvsns=0.1), ["loop_not_closed"])
+        self.assertEqual(self.failures(fb=0.0), ["fb_railed"])
+
+    def test_release_scales_with_supply_and_tolerates_sign(self) -> None:
+        self.assertEqual(self.failures(det=0.66), [])                 # 0.2 * 3.30, inclusive
+        self.assertEqual(self.failures(det=0.67), ["startup_not_released"])
+        self.assertEqual(self.failures(det=0.67, vdd=3.63), [])        # 0.726 at 3.63 V
+        self.assertEqual(self.failures(i_mkfb=-50e-9), [])             # magnitude, inclusive
+        self.assertEqual(self.failures(i_mkfb=-60e-9), ["startup_not_released"])
+
+    def test_closure_and_rail_boundaries_are_inclusive(self) -> None:
+        self.assertEqual(self.failures(dvsns=0.020), [])
+        self.assertEqual(self.failures(dvsns=0.0201), ["loop_not_closed"])
+        self.assertEqual(self.failures(fb=0.05), [])
+        self.assertEqual(self.failures(fb=0.049), ["fb_railed"])
+        self.assertEqual(self.failures(fb=3.25), [])
+        self.assertEqual(self.failures(fb=3.2501), ["fb_railed"])
+
+    def test_a_none_operand_skips_only_its_own_criterion(self) -> None:
+        # Every caller's own null-guard, in one place: a criterion with no
+        # operand is not graded, and does not stop the others being graded.
+        self.assertEqual(self.failures(det=None, i_mkfb=None), [])
+        self.assertEqual(self.failures(dvsns=None), [])
+        self.assertEqual(self.failures(fb=None), [])
+        self.assertEqual(epr.closed_loop_verdict_failures(None, None, None, None, None), [])
+        # an unresolvable supply skips the two vdd-dependent criteria only
+        self.assertEqual(self.failures(det=3.0, fb=0.0, vdd=None), [])
+        self.assertEqual(self.failures(dvsns=0.1, vdd=None), ["loop_not_closed"])
+
+    _SHELL_TOKEN_RE = re.compile(
+        r'''("(?:\\.|[^"\\])*")|('[^']*')|((?:^|(?<=[ \t;&|()]))#[^\n]*)''',
+        re.M,
+    )
+    _QUOTED_ASSIGN_RE = re.compile(
+        r'''^['"]([A-Za-z_][A-Za-z0-9_]*(?:\[[^\]\n]+\])?\+?=).*['"]$''',
+        re.S,
+    )
+    _QUOTED_IDENT_RE = re.compile(
+        r'''^['"]([A-Za-z_][A-Za-z0-9_]*(?:\[[^\]\n]+\])?)['"]$''',
+    )
+
+    @classmethod
+    def _has_shell_constant_assignment(cls, text: str, name: str) -> bool:
+        """True if shell source *text* assigns or declares *name* anywhere
+        (indented blocks, compound lines, readonly/export/declare/typeset/local/
+        unset, parameter default-assignment, printf -v / read, or (( ... )))."""
+        def scrub_no_single(m: re.Match[str]) -> str:
+            dq, sq, _comment = m.groups()
+            if dq is not None:
+                return dq
+            if sq is not None:
+                qa = cls._QUOTED_ASSIGN_RE.match(sq)
+                if qa:
+                    return f'"{qa.group(1)}"'
+                qi = cls._QUOTED_IDENT_RE.match(sq)
+                return f'"{qi.group(1)}"' if qi else "''"
+            return ""
+
+        def scrub_both(m: re.Match[str]) -> str:
+            dq, sq, _comment = m.groups()
+            q = dq or sq
+            if q is not None:
+                qa = cls._QUOTED_ASSIGN_RE.match(q)
+                if qa:
+                    return f'"{qa.group(1)}"'
+                qi = cls._QUOTED_IDENT_RE.match(q)
+                return f'"{qi.group(1)}"' if qi else '""'
+            return ""
+
+        no_single = re.sub(r"\\\n[ \t]*", " ", cls._SHELL_TOKEN_RE.sub(scrub_no_single, text))
+        if re.search(rf"\$\{{{name}:?=(?!=)", no_single):
+            return True
+
+        unquoted = re.sub(r"\\\n[ \t]*", " ", cls._SHELL_TOKEN_RE.sub(scrub_both, text))
+        stmt = r"(?:^|[;&|(){}]|\b(?:then|do|else|elif)\b)[ \t]*"
+        val = r"[^ \t;&|()\n]*"
+        lhs = rf"{name}(?:\[[^\]\n]+\])?"
+        patterns = (
+            stmt + rf"(?:env[ \t]+)?(?:[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]\n]+\])?\+?={val}[ \t]+)*{lhs}\+?=(?!=)",
+            stmt
+            + r"(?:(?:builtin|command)[ \t]+)?(?:readonly|export|declare|typeset|local|unset)\b"
+            + rf'(?:[ \t]+(?:[-+][a-zA-Z]+|--|"?[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]\n]+\])?(?:\+?={val})?"?))*'
+            + rf'[ \t]+"?{lhs}(?:\+?=(?!=)"?|"?(?=$|[ \t;&|()]))',
+            stmt + rf"(?:printf[ \t]+-v[ \t]+{name}\b|read\b[^;&|()\n]*[ \t]+{name}\b)",
+            rf"\(\([^)\n]*\b{name}[ \t]*[-+*/%&|^]?=(?!=)",
+        )
+        return any(re.search(p, unquoted, re.M) for p in patterns)
+
+    _PY_FSTRING_MIDDLE = getattr(tokenize, "FSTRING_MIDDLE", -1)
+
+    @classmethod
+    def _python_source_scrubbed(cls, text: str) -> str:
+        """*text* with comments and string-literal contents blanked (line and
+        column layout preserved), so line-anchored name matching cannot fire
+        inside prose, comments, or literals."""
+        blank_types = {tokenize.COMMENT, tokenize.STRING, cls._PY_FSTRING_MIDDLE}
+        spans: list[tuple[tuple[int, int], tuple[int, int]]] = []
+        try:
+            for tok in tokenize.generate_tokens(io.StringIO(text).readline):
+                if tok.type in blank_types:
+                    spans.append((tok.start, tok.end))
+        except (tokenize.TokenError, IndentationError):
+            pass  # scrub what parsed; an over-match fails loudly, never silently
+        lines = text.splitlines(keepends=True)
+        for (r0, c0), (r1, c1) in spans:
+            for row_n in range(r0, min(r1, len(lines)) + 1):
+                row = lines[row_n - 1]
+                a = c0 if row_n == r0 else 0
+                b = min(c1 if row_n == r1 else len(row), len(row))
+                if b > a:
+                    lines[row_n - 1] = (
+                        row[:a]
+                        + "".join(ch if ch == "\n" else " " for ch in row[a:b])
+                        + row[b:]
+                    )
+        return "".join(lines)
+
+    @classmethod
+    def _has_python_constant_assignment(cls, text: str, name: str) -> bool:
+        """True if Python source *text* binds *name* anywhere: indented or
+        after a semicolon, annotated ``NAME: float =``, augmented with a
+        single- or multi-character operator (``NAME +=``, ``NAME //=``,
+        ``NAME **=``, ``NAME >>=``, ``NAME <<=``, ...), walrus ``NAME :=``,
+        plain ``NAME =``, or chained / tuple targets with *name* anywhere in
+        the target list (``OTHER = NAME = v``, ``A, NAME = ...``,
+        ``NAME, M = ...``, ``A, NAME, B = ...``). Comments and strings never
+        count. Keyword-argument spellings at the start of a continuation
+        line can trip the plain and tuple forms — a use, but unusual enough
+        that failing loudly suits a one-home guard."""
+        scrubbed = cls._python_source_scrubbed(text)
+        anchor = r"(?:^|;)[ \t]*"
+        if re.search(
+            rf"{anchor}{name}[ \t]*(?::[^=\n]+)?[ \t]*(?:(?:[-+*/%&|^@]|//|\*\*|>>|<<)=|=(?!=))",
+            scrubbed,
+            re.M,
+        ):
+            return True
+        if re.search(rf"\b{name}[ \t]*:=", scrubbed):  # walrus binds wherever it appears
+            return True
+        # Target lists anchored at a statement boundary: simple (optionally
+        # starred) targets around *name*, so name-first and name-middle tuple
+        # unpacking binds too. Non-simple prefixes (``a.b, NAME = ...``,
+        # ``d[k], NAME = ...``) still fall through to the legacy comma-
+        # anchored arm, keeping detection a strict superset of the #689 guard.
+        target = r"\*?[A-Za-z_][A-Za-z0-9_]*"
+        return bool(
+            re.search(rf"[=,][ \t]*{name}[ \t]*=(?!=)", scrubbed, re.M)
+            or re.search(
+                rf"(?:^|;|=)[ \t]*(?:{target}[ \t]*,[ \t]*)*{name}"
+                rf"(?:[ \t]*,[ \t]*{target})*[ \t]*=(?!=)",
+                scrubbed,
+                re.M,
+            )
+        )
+
+    @classmethod
+    def _python_constant_homes(cls, sim: Path, name: str) -> list[str]:
+        return [
+            str(p.relative_to(sim))
+            for p in sorted(sim.rglob("*.py"))
+            if cls._has_python_constant_assignment(p.read_text(encoding="utf-8"), name)
+        ]
+
+    @classmethod
+    def _shell_constant_homes(cls, sim: Path, name: str) -> list[str]:
+        return [
+            str(p.relative_to(sim))
+            for p in sorted(sim.rglob("*.sh"))
+            if cls._has_shell_constant_assignment(p.read_text(encoding="utf-8"), name)
+        ]
+
+    def test_the_constants_have_one_home(self) -> None:
+        """Both drift tests pin enrich_pvt_report's constants against
+        pvt_verdict_common.sh; a second assignment elsewhere sits outside them."""
+        harness = Path(__file__).resolve().parent
+        sim = harness.parent
+        for name in ("DET_RELEASE_FRAC", "I_MKFB_RELEASE_A", "DVSNS_CLOSE_V", "FB_RAIL_MARGIN_V"):
+            with self.subTest(constant=name):
+                self.assertEqual(self._python_constant_homes(sim, name),
+                                 ["harness/enrich_pvt_report.py"])
+            with self.subTest(constant=name, surface="shell"):
+                self.assertEqual(self._shell_constant_homes(sim, name),
+                                 ["lib/pvt_verdict_common.sh"])
+
+    def test_shell_one_home_guard_catches_indented_and_declared_assignments(self) -> None:
+        constants = ("DET_RELEASE_FRAC", "I_MKFB_RELEASE_A", "DVSNS_CLOSE_V", "FB_RAIL_MARGIN_V")
+        with tempfile.TemporaryDirectory() as td:
+            sim = Path(td)
+            (sim / "lib").mkdir()
+            (sim / "lib" / "pvt_verdict_common.sh").write_text(
+                "".join(f'{c}="0.2"\n' for c in constants),
+                encoding="utf-8",
+            )
+            (sim / "bench").mkdir()
+            (sim / "bench" / "uses_only.sh").write_text(
+                "# DET_RELEASE_FRAC=0.8\n"
+                "  # readonly I_MKFB_RELEASE_A=1\n"
+                'echo "  v(det) <= ${DET_RELEASE_FRAC}*vdd" # DVSNS_CLOSE_V=0.5\n'
+                'echo "(note) FB_RAIL_MARGIN_V=0.5"\n'
+                '[[ "${DET_RELEASE_FRAC}" == "0.2" ]]\n',
+                encoding="utf-8",
+            )
+            for name in constants:
+                self.assertEqual(self._shell_constant_homes(sim, name),
+                                 ["lib/pvt_verdict_common.sh"])
+
+            cases = [
+                ("harness/indented_if.sh", "DET_RELEASE_FRAC", "if true; then\n  DET_RELEASE_FRAC=0.8\nfi\n"),
+                ("harness/top_readonly.sh", "DET_RELEASE_FRAC", "readonly DET_RELEASE_FRAC=0.8\n"),
+                ("bench/tab_indented.sh", "I_MKFB_RELEASE_A", '\tI_MKFB_RELEASE_A="1e-6"\n'),
+                ("bench/declare_ro.sh", "DVSNS_CLOSE_V", '  declare -r DVSNS_CLOSE_V="0.1"\n'),
+                ("bench/export_inline.sh", "FB_RAIL_MARGIN_V", "if true; then export FB_RAIL_MARGIN_V=0.2; fi\n"),
+                ("zzz/local_shadow.sh", "DET_RELEASE_FRAC", "f() {\n  local DET_RELEASE_FRAC=0.8\n}\n"),
+                ("zzz/quoted_decl.sh", "DET_RELEASE_FRAC", 'readonly "FOO=a ; b" "DET_RELEASE_FRAC=0.8"\n'),
+                ("zzz/continued_decl.sh", "I_MKFB_RELEASE_A", "readonly \\\n  I_MKFB_RELEASE_A=1e-6\n"),
+                ("zzz/param_default.sh", "DVSNS_CLOSE_V", ': "${DVSNS_CLOSE_V:=0.1}"\n'),
+            ]
+            for rel, name, body in cases:
+                with self.subTest(rel=rel, constant=name):
+                    rogue = sim / rel
+                    rogue.parent.mkdir(parents=True, exist_ok=True)
+                    rogue.write_text(body, encoding="utf-8")
+                    try:
+                        with self.assertRaises(AssertionError) as cm:
+                            self.assertEqual(
+                                self._shell_constant_homes(sim, name),
+                                ["lib/pvt_verdict_common.sh"],
+                            )
+                        self.assertIn(rel, str(cm.exception))
+                    finally:
+                        rogue.unlink()
+
+    def test_python_one_home_guard_catches_indented_annotated_augmented_chained(self) -> None:
+        constants = ("DET_RELEASE_FRAC", "I_MKFB_RELEASE_A", "DVSNS_CLOSE_V", "FB_RAIL_MARGIN_V")
+        with tempfile.TemporaryDirectory() as td:
+            sim = Path(td)
+            (sim / "harness").mkdir()
+            (sim / "harness" / "enrich_pvt_report.py").write_text(
+                "".join(f"{c} = 0.2\n" for c in constants),
+                encoding="utf-8",
+            )
+            (sim / "tools").mkdir()
+            (sim / "tools" / "uses_only.py").write_text(
+                "# DET_RELEASE_FRAC = 0.8\n"
+                'uses = f"{DVSNS_CLOSE_V=} {FB_RAIL_MARGIN_V!r}"\n'
+                'doc = """\n'
+                "    I_MKFB_RELEASE_A = 1e-6\n"
+                "DET_RELEASE_FRAC = 0.8\n"
+                '"""\n'
+                "if DET_RELEASE_FRAC == 0.2 and I_MKFB_RELEASE_A <= 50e-9:\n"
+                "    print(DVSNS_CLOSE_V, FB_RAIL_MARGIN_V)\n"
+                "kwarg_call = call(DET_RELEASE_FRAC, x=1)\n",
+                encoding="utf-8",
+            )
+            for name in constants:
+                self.assertEqual(self._python_constant_homes(sim, name),
+                                 ["harness/enrich_pvt_report.py"])
+
+            cases = [
+                ("harness/indented_if.py", "DET_RELEASE_FRAC", "if True:\n    DET_RELEASE_FRAC = 0.8\n"),
+                ("tools/annotated.py", "I_MKFB_RELEASE_A", "I_MKFB_RELEASE_A: float = 50e-9\n"),
+                ("loop-gain-phase-margin/tools/augmented.py", "DVSNS_CLOSE_V", "DVSNS_CLOSE_V += 0.001\n"),
+                ("closed-loop-psrr/attribution/chained.py", "FB_RAIL_MARGIN_V", "MARGIN = FB_RAIL_MARGIN_V = 0.05\n"),
+                ("harness/nested/global_shadow.py", "DET_RELEASE_FRAC",
+                 "def f():\n    global DET_RELEASE_FRAC\n    DET_RELEASE_FRAC = 0.8\n"),
+                ("zzz/semicolon.py", "I_MKFB_RELEASE_A", "x = 1; I_MKFB_RELEASE_A = 50e-9\n"),
+                ("zzz/walrus.py", "DVSNS_CLOSE_V", "if (DVSNS_CLOSE_V := 0.020) <= 0.020:\n    pass\n"),
+                ("zzz/tuple_target.py", "FB_RAIL_MARGIN_V", "MARGIN, FB_RAIL_MARGIN_V = 0.05, 0.05\n"),
+                ("zzz/augmented_floordiv.py", "DET_RELEASE_FRAC", "DET_RELEASE_FRAC //= 2\n"),
+                ("zzz/augmented_pow.py", "I_MKFB_RELEASE_A", "I_MKFB_RELEASE_A **= 2\n"),
+                ("zzz/augmented_rshift.py", "DVSNS_CLOSE_V", "DVSNS_CLOSE_V >>= 1\n"),
+                ("zzz/augmented_lshift.py", "FB_RAIL_MARGIN_V", "FB_RAIL_MARGIN_V <<= 1\n"),
+                ("zzz/tuple_target_first.py", "DET_RELEASE_FRAC", "DET_RELEASE_FRAC, MARGIN = 0.8, 0.05\n"),
+                ("zzz/tuple_target_middle.py", "DVSNS_CLOSE_V", "LOW, DVSNS_CLOSE_V, HIGH = 0.01, 0.020, 0.1\n"),
+            ]
+            for rel, name, body in cases:
+                with self.subTest(rel=rel, constant=name):
+                    rogue = sim / rel
+                    rogue.parent.mkdir(parents=True, exist_ok=True)
+                    rogue.write_text(body, encoding="utf-8")
+                    try:
+                        with self.assertRaises(AssertionError) as cm:
+                            self.assertEqual(
+                                self._python_constant_homes(sim, name),
+                                ["harness/enrich_pvt_report.py"],
+                            )
+                        self.assertIn(rel, str(cm.exception))
+                    finally:
+                        rogue.unlink()
+
+
+class RecountReportHelperTests(unittest.TestCase):
+    """enrich_pvt_report.recount_report: the report-level tally every enricher
+    ends with (issue #657)."""
+
+    @staticmethod
+    def corners(*statuses: str) -> list[dict]:
+        return [{"status": s} for s in statuses]
+
+    def test_counts_and_grade_come_from_the_corners(self) -> None:
+        corners = self.corners("pass", "fail", "error", "pass")
+        report = epr.recount_report(
+            {"passed": 99, "provenance": {"klt_version": "0.5.0"}}, corners)
+        self.assertIs(report["corners"], corners)
+        self.assertEqual(
+            {k: report[k] for k in ("passed", "failed", "errored", "corner_count", "status")},
+            {"passed": 2, "failed": 1, "errored": 1, "corner_count": 4, "status": "fail"},
+        )
+        self.assertEqual(report["provenance"], {"klt_version": "0.5.0"})
+
+    def test_grade_precedence_and_the_empty_report(self) -> None:
+        grade = lambda *s: epr.recount_report({}, self.corners(*s))["status"]  # noqa: E731
+        self.assertEqual(grade("pass", "pass"), "pass")
+        self.assertEqual(grade("pass", "error"), "error")
+        self.assertEqual(grade("error", "fail"), "fail")
+        self.assertEqual(grade(), "pass")
+
+    def test_corners_default_to_the_report_own_list(self) -> None:
+        report = {"corners": self.corners("pass", "fail"), "passed": 0}
+        self.assertIs(epr.recount_report(report), report)
+        self.assertEqual((report["passed"], report["failed"], report["status"]), (1, 1, "fail"))
+        self.assertEqual(epr.recount_report({})["corners"], [])
+
+
+# --------------------------------------------------------------------------
+# enrich_ac_report.enrich
+# --------------------------------------------------------------------------
+
+
+class EnrichAcReportTests(TempDirCase):
+    """enrich_ac_report.enrich (issue #278): the PSRR/Zout benches' enricher.
+    Its supply injection and closed-loop verdict run over enrich_pvt_report's
+    shared helpers (issue #657); the log-side columns are its own."""
+
+    VDD = 3.30
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._n = 0
+        self.write_body()
+        self.deck = self.write("deck.cir", '.include "body.spice"\n')
+
+    def write_body(self, seed_fb: float = 2.5) -> None:
+        self.write("body.spice",
+                   f"Vvdd vdd 0 DC {self.VDD}\n.nodeset v(fb)={seed_fb} v(sns1)=0.7\n")
+
+    def corner(self, status: str = "pass", cid: str = "typ/novdd/27C", **op: float) -> dict:
+        """A PSRR corner over a deck+bode whose baked supply is 3.30 V.
+
+        `op` keys are the log's op prints (`fb`, `sns1`, `sns2`, `det`, ...);
+        the defaults are a healthy closed loop.
+        """
+        self._n += 1
+        values = {"fb": 2.5, "sns1": 0.700, "sns2": 0.695,
+                  "vref": 1.047, "det": 0.10, "imkfb": 1e-9}
+        values.update(op)
+        log = "".join(f"v({k}) = {v:e}\n" for k, v in values.items() if k != "imkfb")
+        log += f"i(vmkfb) = {values['imkfb']:e}\n"
+        log += ("Index   frequency       psrr_db\n"
+                "0       1.0e+03        6.0e+01\n"
+                "1       1.0e+05        4.0e+01\n"
+                "2       1.0e+06        8.0e+01\n")
+        return {
+            "corner_id": cid, "process": "typ", "temperature_c": 27, "status": status,
+            "artifacts": {"deck": str(self.deck),
+                          "log": str(self.write(f"log-{self._n}.log", log))},
+            "measurements": [{"name": f"psrr_{f}_lin", "value": 1e-3}
+                             for f in ("dc", "1khz", "100khz", "1mhz")],
+        }
+
+    def run_enrich(self, *corners: dict) -> dict:
+        report = ear.enrich({"status": "pass", "passed": 99, "corners": list(corners)}, "psrr")
+        return report
+
+    def test_baked_supply_is_injected_on_passing_and_failing_corners(self) -> None:
+        failing = self.corner(status="fail", fb=3.3)
+        failing["diagnostics"] = [{"code": "spec_limit", "message": "psrr_dc_db < 40"}]
+        out = self.run_enrich(self.corner(), failing)
+        for c in out["corners"]:
+            self.assertEqual(c["corner_id"], "typ/3.30V/27C")
+            self.assertEqual(c["supply_v"], {"Vvdd": 3.30})
+        passing, kept = out["corners"]
+        self.assertEqual(passing["status"], "pass", passing.get("diagnostics"))
+        # an already-failing corner keeps klt's own diagnostics, but still
+        # gets its columns: they are the log's own facts
+        self.assertEqual(kept["diagnostics"],
+                         [{"code": "spec_limit", "message": "psrr_dc_db < 40"}])
+        self.assertIn("psrr_dc_db", meas(kept))
+        self.assertEqual(
+            {k: out[k] for k in ("corner_count", "passed", "failed", "errored", "status")},
+            {"corner_count": 2, "passed": 1, "failed": 1, "errored": 0, "status": "fail"},
+        )
+
+    def test_each_deck_is_spliced_once(self) -> None:
+        """The one splice both injects the baked supply and yields the seeds:
+        no second read of the deck and its include closure (issue #657)."""
+        with mock.patch.object(ear, "_splice_deck", wraps=ear._splice_deck) as splice:
+            self.run_enrich(self.corner(), self.corner(cid="bcs/novdd/-40C"))
+        self.assertEqual(splice.call_count, 2)
+
+    def test_log_side_and_derived_columns_are_appended(self) -> None:
+        c = self.run_enrich(self.corner())["corners"][0]
+        got = meas(c)
+        for name in ("fb_op_v", "sns1_op_v", "sns2_op_v", "vref_op_v", "det_op_v", "i_vmkfb_a"):
+            self.assertIn(name, got)
+        self.assertEqual(got["fb_seed_v"], 2.5)
+        for f in ("dc", "1khz", "100khz", "1mhz"):
+            self.assertAlmostEqual(got[f"psrr_{f}_db"], 60.0, places=12)
+        # PSRR's worst case is its minimum, read off the printed sweep
+        self.assertEqual((got["psrr_min_db"], got["psrr_min_freq_hz"]), (40.0, 1.0e5))
+        self.assertEqual(c["status"], "pass", c.get("diagnostics"))
+
+    def test_closed_loop_criteria_are_named_in_the_standard_order(self) -> None:
+        self.write_body(seed_fb=3.3)   # the railed op IS the seed: no op-match complaint
+        c = self.run_enrich(self.corner(det=3.0, sns2=0.80, fb=3.3))["corners"][0]
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["code"], "ac_bench_verdict")
+        self.assertEqual(c["diagnostics"][0]["message"],
+                         "startup_not_released; loop_not_closed; fb_railed")
+
+    def test_op_match_is_named_before_the_loop_criteria(self) -> None:
+        c = self.run_enrich(self.corner(fb=2.6, sns2=0.80))["corners"][0]
+        self.assertEqual(c["diagnostics"][0]["message"],
+                         "op_landed_far_from_seed; loop_not_closed")
+
+    def test_verdict_follows_the_shared_constants(self) -> None:
+        with mock.patch.object(epr, "DET_RELEASE_FRAC", 0.0):
+            c = self.run_enrich(self.corner())["corners"][0]
+        self.assertEqual(c["status"], "fail")
+        self.assertEqual(c["diagnostics"][0]["message"], "startup_not_released")
+
+    def test_supply_comes_from_the_corner_id_when_no_deck_is_baked(self) -> None:
+        c = self.corner(cid="typ/2.97V/27C", det=0.61)     # above 0.2 * 2.97 = 0.594
+        c["artifacts"].pop("deck")
+        message = self.run_enrich(c)["corners"][0]["diagnostics"][0]["message"]
+        self.assertEqual(message, "startup_not_released")
+        c = self.corner(cid="typ/3.63V/27C", det=0.61)     # below 0.726: released at 3.63 V
+        c["artifacts"].pop("deck")
+        self.assertEqual(self.run_enrich(c)["corners"][0]["status"], "pass")
+
+    def test_a_missing_log_names_the_absent_columns_and_fails_the_corner(self) -> None:
+        c = self.corner()
+        c["artifacts"].pop("log")
+        out = self.run_enrich(c)["corners"][0]
+        self.assertEqual(out["status"], "fail")
+        message = out["diagnostics"][0]["message"]
+        self.assertIn("missing op print fb_op_v", message)
+        self.assertIn("no AC sweep table in the log", message)
 
 
 class CornerIdTests(unittest.TestCase):
@@ -2063,7 +2538,15 @@ class SetDispatchWiringTests(unittest.TestCase):
         ]
         self.assertEqual(
             occurrences,
-            ['BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"'],
+            [
+                'BODY_TEMPLATE="${BODY_TEMPLATE:-${EXP_DIR}/testbench/${STEM}.body.spice.tmpl}"',
+                # pex_schematic_dut_setup's default render source (#650): the
+                # committed per-stem template. An override reaches the render
+                # only as the explicit --dut-template flag, never an ambient
+                # DUT_TEMPLATE variable (#670), so the sed itself names no
+                # template path.
+                '  local default_dut="${EXP_DIR}/testbench/${STEM}.body.spice.tmpl"',
+            ],
         )
 
     def test_shared_pex_body_template_exists_and_the_per_stem_copy_does_not(self) -> None:
@@ -2079,6 +2562,649 @@ class SetDispatchWiringTests(unittest.TestCase):
             / "testbench" / "closed_loop_vref_pvt_pex_boxtc.body.spice.tmpl"
         )
         self.assertFalse(per_stem.exists(), per_stem)
+
+
+class SchematicDutSeamTests(unittest.TestCase):
+    """The shell side of the six schematic-DUT benches: one shared setup,
+    one shared record mint, one shared AC flow -- kept shared (#650).
+    """
+
+    #: the six schematic-DUT wrappers and the identity extra each appends
+    WRAPPERS = {
+        "closed-loop-iq": "enrich_supply_bench_report.py",
+        "closed-loop-startup": "enrich_supply_bench_report.py",
+        "startup-time-to-release": "enrich_supply_bench_report.py",
+        "closed-loop-vref-pvt": None,
+        "closed-loop-vref-pvt-boxtc": None,
+        "closed-loop-psrr": "enrich_ac_report.py",
+    }
+
+    NETLISTS = ("bandgap_startup.spice", "bandgap_core.spice", "bandgap_amp.spice")
+
+    def test_every_wrapper_delegates_to_the_shared_setup(self) -> None:
+        for exp, extra in self.WRAPPERS.items():
+            with self.subTest(exp=exp):
+                script = (SIM_DIR / exp / "run_klt_sim.sh").read_text()
+                call = "pex_schematic_dut_setup"
+                if extra is not None:
+                    call += f' "${{HARNESS_DIR}}/{extra}"'
+                self.assertIn(call, script)
+                # The setup must not be re-typed here -- that is the
+                # duplication #650 removed. No msense read, no template
+                # render, no netlist list.
+                self.assertNotIn("read_msense_width", script)
+                self.assertNotIn("@@MSENSE_W@@", script)
+                for netlist in self.NETLISTS:
+                    self.assertNotIn(
+                        f'--extra "${{REPO_ROOT}}/design/netlist/{netlist}"', script)
+                # The flow is the family runner's, not a local case block.
+                self.assertNotIn('case "${MODE}"', script)
+
+    def test_the_shared_setup_carries_the_schematic_dut(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        body = driver.split("pex_schematic_dut_setup() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn('source "${SIM_DIR}/lib/msense_width.sh"', body)
+        self.assertIn('"${WORK}/msense_w.txt"', body)
+        self.assertIn('BODY_TEMPLATE="${WORK}/body.spice.tmpl"', body)
+        for netlist in self.NETLISTS:
+            self.assertIn(f'--extra "${{REPO_ROOT}}/design/netlist/{netlist}"', body)
+
+    def test_every_schematic_record_delegates_to_the_shared_mint(self) -> None:
+        # The --extraction-sources-less twin of pex_record_mint: defined once
+        # beside it, and none of its callers re-types the adapter call.
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        self.assertIn("schematic_record_mint() {", driver)
+        mint = driver.split("schematic_record_mint() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn("klt_sim_evidence.py", mint)
+        self.assertNotIn("--extraction-sources", mint)
+        for rel in ("harness/pex_vref_runner.sh", "harness/supply_bench_runner.sh"):
+            with self.subTest(rel=rel):
+                text = (SIM_DIR / rel).read_text()
+                self.assertIn("schematic_record_mint", text)
+                self.assertNotIn("klt_sim_evidence.py", text)
+
+    def test_the_psrr_wrapper_delegates_its_flow_to_the_ac_runner(self) -> None:
+        # closed-loop-psrr used to re-type pex_ac_main's --sanity/--batch/
+        # --record arms inline; the schematic twin is a runner function now.
+        script = (SIM_DIR / "closed-loop-psrr" / "run_klt_sim.sh").read_text()
+        self.assertIn("schematic_ac_main", script)
+        self.assertNotIn("klt_sim_evidence.py", script)
+        runner = (SIM_DIR / "harness" / "pex_ac_runner.sh").read_text()
+        self.assertIn("schematic_ac_main() {", runner)
+        self.assertIn("_ac_main() {", runner)
+        # One flow, not two: the arms live once, in _ac_main.
+        for arm in ("--sanity)", "--batch)", "--record)"):
+            self.assertEqual(runner.count(arm), 1, arm)
+
+    # -- #670: the render source and record spec are explicit flags on the
+    # shared setup, not ambient variables the caller's environment can set.
+    # The tests below run the real function bodies (extracted from
+    # pex_runner.sh) in a stubbed subshell: a fake msense_width.sh, a fake
+    # klt_sim_evidence.py that captures its argv, and small committed /
+    # variant / decoy template+spec files. No SPICE, no PDK, no klt.
+
+    def _schematic_stub_tree(self) -> Path:
+        tmp = tempfile.TemporaryDirectory(prefix="schematic-dut-seam-")
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        for rel in ("sim/lib", "repo", "exp/testbench", "exp/variants",
+                    "work", "harness"):
+            (root / rel).mkdir(parents=True)
+        (root / "sim" / "lib" / "msense_width.sh").write_text(
+            'read_msense_width() { MSENSE_W="0.42"; }\n'
+        )
+        (root / "exp" / "testbench" / "stubstem.body.spice.tmpl").write_text(
+            "body @@MSENSE_W@@ committed\n"
+        )
+        (root / "exp" / "testbench" / "stubstem.record-spec.json").write_text("{}\n")
+        (root / "exp" / "variants" / "proposal.body.spice.tmpl").write_text(
+            "body @@MSENSE_W@@ variant\n"
+        )
+        (root / "exp" / "variants" / "proposal.record-spec.json").write_text("{}\n")
+        # The decoys an exported DUT_TEMPLATE / RECORD_SPEC / _SCHEMATIC_
+        # RECORD_SPEC would point at: distinguishable by content.
+        (root / "evil.body.spice.tmpl").write_text("body evil-dut\n")
+        (root / "evil.record-spec.json").write_text("{}\n")
+        (root / "harness" / "klt_sim_evidence.py").write_text(
+            "import os, sys\n"
+            'open(os.environ["SPEC_CAPTURE"], "w").write("\\n".join(sys.argv[1:]))\n'
+        )
+        return root
+
+    def _run_schematic_setup(self, root: Path, call: str) -> subprocess.CompletedProcess:
+        """Run the real pex_schematic_dut_setup + schematic_record_mint
+        bodies from sim/harness/pex_runner.sh in a stubbed `set -euo
+        pipefail` subshell, with the environment polluted exactly the way
+        #670 fears, then dump IDENT_ARGS, the spec state and the mint's
+        captured argv for the assertions."""
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        setup = driver.split("pex_schematic_dut_setup() {", 1)[1].split("\n}\n", 1)[0]
+        mint = driver.split("schematic_record_mint() {", 1)[1].split("\n}\n", 1)[0]
+        default_spec = root / "exp" / "testbench" / "stubstem.record-spec.json"
+        script = "\n".join([
+            "set -euo pipefail",
+            f'SIM_DIR="{root}/sim"',
+            f'REPO_ROOT="{root}/repo"',
+            f'EXP_DIR="{root}/exp"',
+            'STEM="stubstem"',
+            f'WORK="{root}/work"',
+            f'HARNESS_DIR="{root}/harness"',
+            f'SPEC_CAPTURE="{root}/spec-capture.txt"',
+            "export SPEC_CAPTURE",
+            # The pollution under test: exported harness-generic names.
+            f'export DUT_TEMPLATE="{root}/evil.body.spice.tmpl"',
+            f'export RECORD_SPEC="{root}/evil.record-spec.json"',
+            f'export _SCHEMATIC_RECORD_SPEC="{root}/evil.record-spec.json"',
+            # What pex_runner.sh's source time already contributed: the
+            # committed per-stem template rides the identity from there.
+            "IDENT_ARGS=("
+            f'--extra "{root}/exp/testbench/stubstem.body.spice.tmpl")',
+            f"pex_schematic_dut_setup() {{\n{setup}\n}}",
+            f"schematic_record_mint() {{\n{mint}\n}}",
+            call,
+            f'printf \'%s\\n\' "${{_SCHEMATIC_RECORD_SPEC}}" > "{root}/spec-state.txt"',
+            f'printf \'%s\\n\' "${{IDENT_ARGS[@]}}" > "{root}/ident.txt"',
+            'schematic_record_mint report.json',
+        ])
+        return subprocess.run(["bash", "-c", script], capture_output=True, text=True)
+
+    def _ident(self, root: Path) -> list[str]:
+        return (root / "ident.txt").read_text().splitlines()
+
+    def test_exported_dut_template_and_record_spec_cannot_reach_the_helpers(self) -> None:
+        root = self._schematic_stub_tree()
+        enricher = root / "harness" / "enricher.py"
+        enricher.write_text("# enricher\n")
+        default_spec = root / "exp" / "testbench" / "stubstem.record-spec.json"
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root,
+            # The wrapper's exact call pattern (closed-loop-psrr): the empty
+            # VARIANT_SETUP_ARGS must expand cleanly under `set -u` on the
+            # as-built path (#670).
+            f'VARIANT_SETUP_ARGS=(); pex_schematic_dut_setup "{enricher}" '
+            '${VARIANT_SETUP_ARGS[@]+"${VARIANT_SETUP_ARGS[@]}"}',
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        # The render came from the committed template, not the decoy.
+        self.assertEqual(
+            (root / "work" / "body.spice.tmpl").read_text(), "body 0.42 committed\n"
+        )
+        # The identity kept the source-time committed template exactly once
+        # (no duplicate re-add) and gained exactly the netlists + enricher.
+        self.assertEqual(self._ident(root), [
+            "--extra", str(committed),
+            "--extra", f"{root}/repo/design/netlist/bandgap_startup.spice",
+            "--extra", f"{root}/repo/design/netlist/bandgap_core.spice",
+            "--extra", f"{root}/repo/design/netlist/bandgap_amp.spice",
+            "--extra", str(enricher),
+        ])
+        # The mint bound the harness default spec, not the exported decoys.
+        self.assertEqual(
+            (root / "spec-state.txt").read_text().strip(), str(default_spec)
+        )
+        argv = (root / "spec-capture.txt").read_text().splitlines()
+        self.assertEqual(
+            argv[argv.index("--spec") + 1], str(default_spec)
+        )
+
+    def test_dut_template_flag_binds_the_variant_render_source_to_the_identity(self) -> None:
+        root = self._schematic_stub_tree()
+        enricher = root / "harness" / "enricher.py"
+        enricher.write_text("# enricher\n")
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        variant = root / "exp" / "variants" / "proposal.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root,
+            f'pex_schematic_dut_setup "{enricher}" --dut-template "{variant}"',
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (root / "work" / "body.spice.tmpl").read_text(), "body 0.42 variant\n"
+        )
+        ident = self._ident(root)
+        # Both templates ride the identity, each exactly once: the committed
+        # one from source time, the variant one from the flag (#670).
+        self.assertEqual(ident.count(str(committed)), 1)
+        self.assertEqual(ident.count(str(variant)), 1)
+
+    def test_dut_template_equal_to_the_default_leaves_the_identity_alone(self) -> None:
+        root = self._schematic_stub_tree()
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root, f'pex_schematic_dut_setup --dut-template "{committed}"'
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        # submission_identity.py refuses a duplicate --extra basename; an
+        # explicit default must not re-add what source time already hashed.
+        self.assertEqual(self._ident(root).count(str(committed)), 1)
+
+    def test_record_spec_flag_is_forwarded_to_the_shared_mint(self) -> None:
+        root = self._schematic_stub_tree()
+        variant_spec = root / "exp" / "variants" / "proposal.record-spec.json"
+        r = self._run_schematic_setup(
+            root, f'pex_schematic_dut_setup --record-spec "{variant_spec}"'
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (root / "spec-state.txt").read_text().strip(), str(variant_spec)
+        )
+        argv = (root / "spec-capture.txt").read_text().splitlines()
+        self.assertEqual(argv[argv.index("--spec") + 1], str(variant_spec))
+
+    def test_unknown_and_valueless_options_fail_closed(self) -> None:
+        for call in ("pex_schematic_dut_setup --bogus",
+                     "pex_schematic_dut_setup --dut-template",
+                     "pex_schematic_dut_setup --record-spec",
+                     "pex_schematic_dut_setup --record-spec --bogus",
+                     'pex_schematic_dut_setup --record-spec ""',
+                     "pex_schematic_dut_setup --dut-template --help"):
+            with self.subTest(call=call):
+                root = self._schematic_stub_tree()
+                r = self._run_schematic_setup(root, call)
+                self.assertEqual(r.returncode, 2, r.stderr)
+                # Failed before any render: no WORK side effects.
+                self.assertFalse((root / "work" / "body.spice.tmpl").exists())
+
+    def test_empty_extras_and_bash43_unbound_arrays(self) -> None:
+        # Zero positional extras under `set -u` (Bash < 4.4 treats an empty
+        # array expansion as unbound).
+        root = self._schematic_stub_tree()
+        r = self._run_schematic_setup(root, "pex_schematic_dut_setup")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_record_spec_relative_path_is_anchored_to_the_caller(self) -> None:
+        root = self._schematic_stub_tree()
+        (root / "chosen.json").write_text('{"who": "caller"}\n')
+        (root / "work" / "chosen.json").write_text('{"who": "work"}\n')
+        r = self._run_schematic_setup(
+            root,
+            f'cd "{root}"; pex_schematic_dut_setup --record-spec chosen.json; '
+            f'cd "{root}/work"',
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(
+            (root / "spec-state.txt").read_text().strip(), str(root / "chosen.json")
+        )
+
+    def test_relative_spelling_of_the_committed_template_is_the_default(self) -> None:
+        root = self._schematic_stub_tree()
+        committed = root / "exp" / "testbench" / "stubstem.body.spice.tmpl"
+        r = self._run_schematic_setup(
+            root,
+            f'cd "{root}"; pex_schematic_dut_setup '
+            "--dut-template exp/testbench/stubstem.body.spice.tmpl",
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(self._ident(root).count(str(committed)), 1)
+
+    def test_the_psrr_wrapper_passes_variant_overrides_as_explicit_flags(self) -> None:
+        # #670: the variant render source and record spec reach the shared
+        # setup as --dut-template / --record-spec flags; the wrapper no
+        # longer sets ambient DUT_TEMPLATE / RECORD_SPEC variables or
+        # appends the identity --extra itself.
+        script = (SIM_DIR / "closed-loop-psrr" / "run_klt_sim.sh").read_text()
+        self.assertIn("--dut-template", script)
+        self.assertIn("--record-spec", script)
+        self.assertIn("VARIANT_SETUP_ARGS=()", script)
+        self.assertNotIn("DUT_TEMPLATE=", script)
+        self.assertNotIn("RECORD_SPEC=", script)
+        self.assertNotIn('IDENT_ARGS+=(--extra "${DUT_TEMPLATE}")', script)
+
+    def test_the_driver_binds_the_record_spec_as_harness_state_only(self) -> None:
+        driver = (SIM_DIR / "harness" / "pex_runner.sh").read_text()
+        # Unconditional at source time: an inherited _SCHEMATIC_RECORD_SPEC
+        # is overwritten the moment the driver is sourced (#670).
+        self.assertIn(
+            '_SCHEMATIC_RECORD_SPEC="${EXP_DIR}/testbench/${STEM}.record-spec.json"',
+            driver,
+        )
+        mint = driver.split("schematic_record_mint() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn('--spec "${_SCHEMATIC_RECORD_SPEC}"', mint)
+        # The ambient-environment seam is gone, not merely shadowed.
+        self.assertNotIn("${DUT_TEMPLATE", driver)
+        self.assertNotIn("${RECORD_SPEC", driver)
+
+
+# --------------------------------------------------------------------------
+# enricher identity coverage (#661): the enrichers import their verdict
+# constants and the 3-criteria closed-loop check from enrich_pvt_report.py,
+# so a runner that hashes its enricher but not that module can resume a
+# shard whose recorded identity matches yet was graded by different
+# threshold code. These static checks tie every harness module a runner's
+# shell chain names (directly or through first-party imports) to the
+# `--extra` list of the submission identity that chain submits with.
+# --------------------------------------------------------------------------
+
+#: Every non-test module in sim/harness/, by import name.
+HARNESS_PY = {
+    p.stem: p
+    for p in HARNESS.glob("*.py")
+    if not p.name.startswith("test_")
+}
+
+#: The shared verdict module every enricher's constants come from (#661).
+VERDICT_MODULE = "enrich_pvt_report"
+
+#: A runner participates in the submission-identity scaffold when its own
+#: script builds an identity (IDENT_ARGS) or enters a shared dispatch main.
+#: sim/closed-loop-vref-mc deliberately does neither -- klt's own --resume
+#: owns reuse there, and no IDENT_ARGS list exists to extend.
+IDENTITY_ENTRY = re.compile(
+    r"IDENT_ARGS|si_shard|si_set_|pex_batch_dispatch|[a-z_]+_main\b"
+)
+
+
+def first_party_import_closure(modules: set) -> set:
+    """MODULES plus everything they import from sim/harness, transitively."""
+    seen: set = set()
+    stack = list(modules)
+    while stack:
+        name = stack.pop()
+        if name in seen or name not in HARNESS_PY:
+            continue
+        seen.add(name)
+        text = HARNESS_PY[name].read_text()
+        imported = set(re.findall(r"^\s*import\s+([a-z_][a-z0-9_]*)", text, re.M))
+        imported |= set(
+            re.findall(r"^\s*from\s+([a-z_][a-z0-9_]*)\s+import", text, re.M)
+        )
+        stack += [n for n in imported if n in HARNESS_PY and n not in seen]
+    return seen
+
+
+#: Non-comment `source` statement targeting a `.sh` file (#663). Handles nested
+#: double quotes inside `$(...)` such as `$(dirname "${BASH_SOURCE[0]}")/...`
+#: and `$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/...`, while stopping
+#: before `#` comments so prose/comment mentions do not over-match.
+SOURCE_SH_RE = re.compile(
+    r'^\s*source\s+["\']?(?:[^\n#]*?/)?([A-Za-z0-9_.-]+\.sh)(?:["\'\s;&|<>#]|$)',
+    re.MULTILINE,
+)
+
+
+#: A `source` in command position (line start, or after `;` `&` `|` `(` `{`,
+#: `then`/`do`/`else`, or `$(`/backtick), independent of SOURCE_SH_RE (#680).
+SOURCE_CMD_RE = re.compile(
+    r"(?:^|[;&|({`]|\b(?:then|do|else)\b)\s*source\s+(?=(?P<arg>[^\n]*))"
+)
+_SH_BASENAME_RE = re.compile(r"([A-Za-z0-9_.-]+\.sh)\b")
+
+
+def _inside_quotes(prefix: str) -> bool:
+    """True when PREFIX ends inside an open '...' or "..." string; a quote of
+    the other kind inside an open string is literal (`"it's"`)."""
+    state = None
+    for ch in prefix:
+        if ch in "\"'" and state in (None, ch):
+            state = None if state else ch
+    return state is not None
+
+
+def executable_harness_sources(text: str, harness_names: set) -> list:
+    """(lineno, helper, line) for every executable `source` command (several
+    per line are each considered) whose first literal `*.sh` argument is a
+    sim/harness helper. Found without
+    SOURCE_SH_RE, so a sourcing idiom the regex cannot see is still listed.
+    Comment lines, trailing comments, and `source` inside an open double
+    quote (echo/printf prose, `${VAR:?...(source x)...}` diagnostics) are
+    not commands and are skipped.
+    """
+    found = []
+    for lineno, line in enumerate(text.splitlines(), 1):
+        if line.lstrip().startswith("#"):
+            continue
+        for m in SOURCE_CMD_RE.finditer(line):
+            before = line[: m.start("arg")]
+            if _inside_quotes(before):
+                continue  # inside a quoted string: prose, not a command
+            arg = m.group("arg").split(" #")[0]
+            hit = _SH_BASENAME_RE.search(arg)
+            if hit and hit.group(1) in harness_names:
+                found.append((lineno, hit.group(1), line))
+    return found
+
+
+def unrecognized_harness_sources(
+    scripts, harness_names: set, root: Path = SIM_DIR
+) -> list:
+    """(script, lineno, helper) for each executable harness `source` that
+    SOURCE_SH_RE does not recognize *at that line*, so a second recognized
+    source of the same helper on another line cannot mask it.
+    """
+    misses = []
+    for script in scripts:
+        for lineno, helper, line in executable_harness_sources(
+            script.read_text(), harness_names
+        ):
+            if helper not in {m.group(1) for m in SOURCE_SH_RE.finditer(line)}:
+                try:
+                    shown = script.relative_to(root.parent)
+                except ValueError:
+                    shown = script
+                misses.append((str(shown), lineno, helper))
+    return misses
+
+
+def harness_shell_names() -> set:
+    return {p.name for p in HARNESS.glob("*.sh")}
+
+
+def runner_shell_closure(runner: Path) -> dict[Path, str]:
+    """RUNNER plus every sim/harness/*.sh it sources, transitively: the
+    family bases and, through them, the shared preamble and identity
+    helpers whose --extra lists build the runner's submission identity.
+    """
+    closure: dict[Path, str] = {}
+    stack = [runner]
+    while stack:
+        path = stack.pop()
+        if path in closure:
+            continue
+        text = path.read_text()
+        closure[path] = text
+        for match in SOURCE_SH_RE.finditer(text):
+            sourced = HARNESS / match.group(1)
+            if sourced != path and sourced.is_file():
+                stack.append(sourced)
+    return closure
+
+
+class EnricherIdentityCoverageTests(unittest.TestCase):
+    """#661: an identity-hashed runner whose verdict code depends on
+    enrich_pvt_report must hash that module too, or two shards with one
+    recorded identity could have been graded by different threshold code.
+    """
+
+    def test_epr_dependent_runners_hash_epr_in_an_extra(self) -> None:
+        gaps = {}
+        for script in sorted(SIM_DIR.glob("*/run_klt_sim.sh")):
+            runner_text = script.read_text()
+            if not IDENTITY_ENTRY.search(runner_text):
+                continue
+            closure = runner_shell_closure(script)
+            union = "\n".join(closure.values())
+            named = {m for m in HARNESS_PY if re.search(rf"\b{m}\.py\b", union)}
+            deps = first_party_import_closure(named)
+            if VERDICT_MODULE not in deps:
+                continue
+            hashed = any(
+                "--extra" in line and f"{VERDICT_MODULE}.py" in line
+                for line in union.splitlines()
+            )
+            if not hashed:
+                gaps[script.parent.name] = "enricher depends on " \
+                    f"{VERDICT_MODULE}.py but no --extra in its shell chain names it"
+        self.assertEqual(gaps, {}, f"submission-identity gaps (#661): {gaps}")
+
+    def test_shell_closure_resolves_shared_runners_and_transitive_deps(self) -> None:
+        # #663: guard against the source-line regex silently dropping
+        # nested-quote idioms such as `$(dirname "${BASH_SOURCE[0]}")/...`.
+        expected_pex_chain = {
+            "pex_runner.sh",
+            "klt_sim_preamble.sh",
+            "submission_identity.sh",
+            "pex_merge_call.sh",
+        }
+        iq_names = {
+            p.name for p in runner_shell_closure(SIM_DIR / "closed-loop-iq/run_klt_sim.sh")
+        }
+        self.assertTrue(
+            expected_pex_chain | {"supply_bench_runner.sh"} <= iq_names,
+            f"closed-loop-iq closure missing expected harness scripts: {sorted(iq_names)}",
+        )
+
+        # Edge case: pre-resolved variable (`source "${_here}/../harness/pex_runner.sh"`).
+        boxtc_names = {
+            p.name
+            for p in runner_shell_closure(
+                SIM_DIR / "closed-loop-vref-pvt-pex-boxtc/run_klt_sim.sh"
+            )
+        }
+        self.assertTrue(
+            expected_pex_chain | {"pex_vref_runner.sh"} <= boxtc_names,
+            f"closed-loop-vref-pvt-pex-boxtc closure incomplete: {sorted(boxtc_names)}",
+        )
+
+        # CMOS5L base also sources klt_sim_preamble.sh via nested quotes.
+        cmos5l_names = {
+            p.name
+            for p in runner_shell_closure(
+                SIM_DIR / "sg13cmos5l-closed-loop-startup/run_klt_sim.sh"
+            )
+        }
+        self.assertTrue(
+            {"cmos5l_runner.sh", "klt_sim_preamble.sh", "submission_identity.sh"}
+            <= cmos5l_names,
+            f"sg13cmos5l-closed-loop-startup closure incomplete: {sorted(cmos5l_names)}",
+        )
+
+        # Every runner that sources pex_runner.sh must resolve the full chain.
+        # Discovery is independent of SOURCE_SH_RE (#680), so a mid-line
+        # source cannot hide a runner from this loop.
+        names_h = harness_shell_names()
+        pex_runners = [
+            s
+            for s in sorted(SIM_DIR.glob("*/run_klt_sim.sh"))
+            if any(
+                h == "pex_runner.sh"
+                for _, h, _ in executable_harness_sources(s.read_text(), names_h)
+            )
+        ]
+        self.assertGreater(len(pex_runners), 0)
+        for script in pex_runners:
+            names = {p.name for p in runner_shell_closure(script)}
+            self.assertTrue(
+                expected_pex_chain <= names,
+                f"{script.parent.name} closure missing transitive pex_runner chain: {sorted(names)}",
+            )
+
+    def test_shell_closure_ignores_comments_and_prose(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            script = Path(td) / "run_klt_sim.sh"
+            script.write_text(
+                "#!/usr/bin/env bash\n"
+                '# source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_ac_runner.sh"\n'
+                "# prose mention of ../harness/pex_vref_runner.sh\n"
+                'echo "source ../harness/supply_bench_runner.sh"\n'
+                'source "${HARNESS_DIR}/pex_merge_call.sh" # unlike ../harness/pex_ac_runner.sh\n'
+                'source "${EXP_DIR}/foo.env" # unlike ../harness/pex_vref_runner.sh\n'
+            )
+            names = {p.name for p in runner_shell_closure(script)}
+        self.assertEqual(names, {"run_klt_sim.sh", "pex_merge_call.sh"})
+
+    def test_shell_closure_regex_recognizes_every_harness_source(self) -> None:
+        # #680: SOURCE_SH_RE is line-anchored on purpose; make that assumption
+        # a checked one so an unsupported idiom fails loudly, not silently.
+        names = harness_shell_names()
+        scripts = sorted(SIM_DIR.rglob("*.sh"))
+        self.assertTrue(
+            any(executable_harness_sources(p.read_text(), names) for p in scripts)
+        )
+        misses = unrecognized_harness_sources(scripts, names)
+        self.assertEqual(
+            misses, [], f"harness source the closure regex cannot see: {misses}"
+        )
+
+    def test_shell_closure_reports_unrecognized_source_idioms(self) -> None:
+        names = {"pex_runner.sh", "pex_merge_call.sh"}
+        cases = {
+            "standalone": ('  source "${H}/pex_runner.sh"\n', []),
+            "nested": (
+                'source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pex_runner.sh"\n',
+                [],
+            ),
+            "and_list": ('[[ -f x ]] && source "${H}/pex_runner.sh"\n', [1]),
+            "inline_then": (
+                'if [[ -n "${P}" ]]; then source "${H}/pex_runner.sh"; fi\n',
+                [1],
+            ),
+            "cmd_subst": ('x=$(source "${H}/pex_runner.sh")\n', [1]),
+            "masked_by_second": (
+                'source "${H}/pex_runner.sh"\n'
+                '[[ -f x ]] && source "${H}/pex_runner.sh"\n',
+                [2],
+            ),
+            "two_sources_one_line": (
+                'source "${H}/pex_merge_call.sh" && source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "two_sources_semicolon": (
+                'source "${H}/pex_merge_call.sh"; source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "nonharness_then_harness": (
+                'source "${H}/env.sh" && source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "apostrophe_earlier": (
+                'echo "it\'s fine"; source "${H}/pex_runner.sh"\n',
+                [1],
+            ),
+            "comment": ('# [[ x ]] && source "${H}/pex_runner.sh"\n', []),
+            "echo": ('echo "source ${H}/pex_runner.sh"\n', []),
+            "printf": ("printf 'a; source %s/pex_runner.sh' x\n", []),
+            "diagnostic": (
+                ': "${PDK_ROOT:?set PDK_ROOT (source ${H}/pex_runner.sh) or export it}"\n',
+                [],
+            ),
+            "trailing_comment": (
+                'source "${H}/pex_merge_call.sh" # unlike pex_runner.sh\n',
+                [],
+            ),
+        }
+        with tempfile.TemporaryDirectory() as td:
+            for label, (body, expected) in cases.items():
+                script = Path(td) / f"{label}.sh"
+                script.write_text("#!/usr/bin/env bash\n" + body)
+                got = unrecognized_harness_sources([script], names, root=Path(td))
+                # lines are offset by the shebang line
+                self.assertEqual(
+                    [lineno - 1 for _, lineno, _ in got], expected, label
+                )
+                for _, _, helper in got:
+                    self.assertIn(helper, names, label)
+
+    def test_shell_closure_discovers_mid_line_pex_runner_source(self) -> None:
+        names = {"pex_runner.sh"}
+        text = '[[ -f x ]] && source "${H}/pex_runner.sh"\n'
+        self.assertEqual(
+            [h for _, h, _ in executable_harness_sources(text, names)],
+            ["pex_runner.sh"],
+        )
+
+    def test_the_shared_verdict_module_still_exists(self) -> None:
+        # The probe above keys on this module by name; if it is ever renamed
+        # or split, the coverage test above silently stops checking anything.
+        self.assertIn(VERDICT_MODULE, HARNESS_PY)
+        self.assertTrue(
+            any(
+                VERDICT_MODULE in first_party_import_closure({name})
+                for name in ("enrich_supply_bench_report", "enrich_ac_report")
+            ),
+            "the enrichers no longer import the shared verdict module; "
+            "update VERDICT_MODULE",
+        )
 
 
 # --------------------------------------------------------------------------
@@ -2653,12 +3779,12 @@ class EndpointTcLoudEmptyTests(TempDirCase):
         self.assertNotIn("keys the record carried", err)
         self.assertFalse(dst.exists(), "refused run left the companion on disk")
 
-    def test_a_refusal_restores_a_preexisting_companion_intact(self) -> None:
+    def test_a_refusal_preserves_a_preexisting_companion_intact(self) -> None:
         # Edge #536 leaves to the Builder: the companion path already holds
-        # an earlier good derivation when a rerun refuses. write_companion()
-        # has truncated it by the time the refusal is known, so main() must
-        # put the prior bytes back: a refused run leaves the path exactly as
-        # it found it -- no header-only shell, no destroyed prior evidence.
+        # an earlier good derivation when a rerun refuses. main() refuses
+        # before the destination is ever opened, so the prior companion is
+        # never touched: a refused run leaves the path exactly as it found
+        # it -- no header-only shell, no destroyed prior evidence.
         src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
         write_record(src, RECORD_FIELDS, endpoint_rows(
             [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]))
@@ -2710,12 +3836,12 @@ class BoxTcLoudEmptyTests(TempDirCase):
         self.assertNotIn("keys the record carried", err)
         self.assertFalse(dst.exists(), "refused run left the companion on disk")
 
-    def test_a_refusal_restores_a_preexisting_companion_intact(self) -> None:
+    def test_a_refusal_preserves_a_preexisting_companion_intact(self) -> None:
         # Edge #536 leaves to the Builder: the companion path already holds
-        # an earlier good derivation when a rerun refuses. write_companion()
-        # has truncated it by the time the refusal is known, so main() must
-        # put the prior bytes back: a refused run leaves the path exactly as
-        # it found it -- no header-only shell, no destroyed prior evidence.
+        # an earlier good derivation when a rerun refuses. main() refuses
+        # before the destination is ever opened, so the prior companion is
+        # never touched: a refused run leaves the path exactly as it found
+        # it -- no header-only shell, no destroyed prior evidence.
         src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
         write_record(src, RECORD_FIELDS, boxtc_rows(INTERIOR_EXTREMA))
         exc, err = run_main(bxc.main, [str(src), str(dst)])

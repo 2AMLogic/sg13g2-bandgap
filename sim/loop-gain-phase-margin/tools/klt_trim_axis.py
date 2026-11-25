@@ -49,7 +49,6 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime
-import importlib.util
 import json
 import math
 import os
@@ -59,13 +58,29 @@ import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import solve_quality  # noqa: E402  (shared with run_pvt_sweep.sh; issue #289)
-from solve_quality import RIPPLE_BAND_HZ, RIPPLE_MAX_DB, ripple_db  # noqa: E402,F401
-
 EXPERIMENT_DIR = Path(__file__).resolve().parents[1]
 SIM_DIR = EXPERIMENT_DIR.parent
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(SIM_DIR / "harness"))
+import solve_quality  # noqa: E402  (shared with run_pvt_sweep.sh; issue #289)
+from solve_quality import RIPPLE_BAND_HZ, RIPPLE_MAX_DB, ripple_db  # noqa: E402,F401
+import klt_sim_evidence as adapter  # noqa: E402
+from klt_corner_bundle import CORNER_SECTIONS  # noqa: E402  (issue #652)
+# The nodeset-seed contract shared with trim_mc_klt / vref_mc_klt /
+# trim_coverage_klt (issue #486); issue #652 retires this file's own copy,
+# issue #707 its seed-record discovery and XMSENSE-width parses.
+from seed_deck import (  # noqa: E402
+    SEED_FIELDS,
+    fill_deck,
+    load_seeds,
+    newest_seed_csv,
+    read_msense_width,
+    seed_row,
+)
+
 REPO_ROOT = SIM_DIR.parent
+STARTUP_NETLIST = REPO_ROOT / "design" / "netlist" / "bandgap_startup.spice"
 TEMPLATE = EXPERIMENT_DIR / "testbench" / "tb_loop_gain.spice.tmpl"
 CROSSOVER_AWK = EXPERIMENT_DIR / "tools" / "find_crossover.awk"
 
@@ -84,14 +99,6 @@ ANCHOR = {
     "dc_gain_db": 46.3857,
     "phase_margin_deg": 36.3046,
     "crossover_hz": 3.016466e07,
-}
-
-CORNER_SECTIONS = {
-    "typ": ("hbt_typ", "mos_tt", "res_typ"),
-    "bcs": ("hbt_bcs", "mos_ff", "res_bcs"),
-    "wcs": ("hbt_wcs", "mos_ss", "res_wcs"),
-    "sf": ("hbt_typ", "mos_sf", "res_typ"),
-    "fs": ("hbt_typ", "mos_fs", "res_typ"),
 }
 
 CODES = [0, 32, 64, 96, 128, 160, 192, 224, 255]
@@ -231,70 +238,39 @@ def git_short(path: str) -> str:
     return out.stdout.strip() or "unknown"
 
 
-def seed_csv() -> Path:
-    csvs = sorted((SIM_DIR / "closed-loop-startup" / "records").glob("*.csv"))
-    if not csvs:
-        raise SystemExit("klt_trim_axis.py: no sim/closed-loop-startup/records/*.csv seed record")
-    return csvs[-1]
-
-
 def lookup_seeds(corner: str, temp: str, vdd: str) -> dict[str, str]:
-    with seed_csv().open(newline="", encoding="utf-8") as handle:
-        for row in csv.DictReader(handle):
-            if (row["corner_label"], row["temp_c"], row["vdd_v"], row["status"]) == (
-                corner, temp, vdd, "PASS"
-            ):
-                return {
-                    "fb": row["fb_final_v"],
-                    "sns1": row["sns1_final_v"],
-                    "sns2": row["sns2_final_v"],
-                    "vref": row["vref_final_v"],
-                }
-    raise SystemExit(f"klt_trim_axis.py: no PASS seed row for {corner}/{temp}/{vdd}")
-
-
-def msense_width() -> str:
-    text = (REPO_ROOT / "design" / "netlist" / "bandgap_startup.spice").read_text(encoding="utf-8")
-    match = re.search(r"^XMSENSE\s.*?\bw=(\S+)", text, re.M)
-    if match is None:
-        raise SystemExit("klt_trim_axis.py: cannot parse XMSENSE w= from bandgap_startup.spice")
-    return match.group(1)
+    """The PASS seed row for a PVT point, via the shared seed_deck contract
+    (issue #486) -- previously this file's own fifth copy of that parser."""
+    csv_path = str(newest_seed_csv(SIM_DIR))
+    return seed_row(load_seeds(csv_path), corner, int(temp), vdd, csv_path)
 
 
 def render_body(corner: str, temp: str, vdd: str, pdk_root: str, pdk: str, osdi_dir: str,
                 probe: bool = True) -> str:
     hbt, mos, res = CORNER_SECTIONS[corner]
     seeds = lookup_seeds(corner, temp, vdd)
-    seed_rel = os.path.relpath(seed_csv(), REPO_ROOT)
+    seed_rel = os.path.relpath(newest_seed_csv(SIM_DIR), REPO_ROOT)
     subs = {
-        "CORNER_LABEL": corner,
-        "TEMP_C": temp,
-        "VDD": vdd,
-        "PDK": pdk,
-        "PDK_ROOT": pdk_root,
-        "OSDI_DIR": osdi_dir,
-        "HBT_SECTION": hbt,
-        "MOS_SECTION": mos,
-        "RES_SECTION": res,
-        "MSENSE_W": msense_width(),
-        "FB_SEED": seeds["fb"],
-        "SNS1_SEED": seeds["sns1"],
-        "SNS2_SEED": seeds["sns2"],
-        "VREF_SEED": seeds["vref"],
-        "AC_OUT": "(not used: klt sim writes the rawfile)",
-        "DUT_GIT_SHA": (
+        "@@CORNER_LABEL@@": corner,
+        "@@TEMP_C@@": temp,
+        "@@VDD@@": vdd,
+        "@@PDK@@": pdk,
+        "@@PDK_ROOT@@": pdk_root,
+        "@@OSDI_DIR@@": osdi_dir,
+        "@@HBT_SECTION@@": hbt,
+        "@@MOS_SECTION@@": mos,
+        "@@RES_SECTION@@": res,
+        "@@MSENSE_W@@": read_msense_width(STARTUP_NETLIST),
+        "@@AC_OUT@@": "(not used: klt sim writes the rawfile)",
+        "@@DUT_GIT_SHA@@": (
             f"core={git_short('design/netlist/bandgap_core.spice')} "
             f"amp={git_short('design/netlist/bandgap_amp.spice')} "
             f"startup={git_short('design/netlist/bandgap_startup.spice')} "
             f"seeds={Path(seed_rel).name}@{git_short(seed_rel)}"
         ),
     }
-    text = TEMPLATE.read_text(encoding="utf-8")
-    for key, value in subs.items():
-        text = text.replace(f"@@{key}@@", value)
-    leftover = sorted(set(re.findall(r"@@[A-Z0-9_]+@@", text)))
-    if leftover:
-        raise SystemExit(f"klt_trim_axis.py: unsubstituted template tokens {leftover}")
+    subs.update({token: seeds[field] for token, field in SEED_FIELDS})
+    text = fill_deck(TEMPLATE.read_text(encoding="utf-8"), subs, "body")
 
     lines = text.splitlines()
     out: list[str] = [
@@ -379,6 +355,10 @@ def cmd_prepare(args: argparse.Namespace) -> None:
     work.mkdir(parents=True, exist_ok=True)
     pdk = os.environ.get("PDK", "ihp-sg13g2")
     if args.target == "batch":
+        if not args.provision_script:
+            raise SystemExit(
+                "klt_trim_axis.py: --target batch needs --provision-script "
+                "(run_klt_trim_axis.sh passes it; or set KLT_BATCH_PROVISION_SCRIPT)")
         pdk_root = args.batch_pdk_root
         batch = {"provision_script_path": args.provision_script}
     else:
@@ -490,15 +470,7 @@ def crossover(ac_txt: Path) -> list[str]:
     return out.stdout.split()
 
 
-def load_adapter():
-    spec = importlib.util.spec_from_file_location(
-        "klt_sim_evidence", SIM_DIR / "harness" / "klt_sim_evidence.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def snapshot_text(deck: Path, body: Path, pdk_root: str, adapter) -> str:
+def snapshot_text(deck: Path, body: Path, pdk_root: str) -> str:
     """The unit's generated deck with the body inlined and host paths made
     ${PDK_ROOT}-relative. A batch deck `.include`s the body under the fleet
     instance's own job directory; repoint that at the local body (byte-for-byte
@@ -544,7 +516,6 @@ def cmd_record(args: argparse.Namespace) -> None:
     work = Path(args.work).resolve()
     exp = Path(args.experiment).resolve()
     rid = args.record_id
-    adapter = load_adapter()
     corners_dir = exp / "corners" / rid
     snaps_dir = exp / "netlist-snapshots" / rid
     for d in (corners_dir, snaps_dir):
@@ -560,7 +531,7 @@ def cmd_record(args: argparse.Namespace) -> None:
               "notch_margin_flag", "ripple_db", "quality", "reject_reason"]
     rows: list[dict] = []
     jobs: list[dict] = []
-    width = msense_width()
+    width = read_msense_width(STARTUP_NETLIST)
 
     # Pass 1: every unit -> a row with its loop-gain numbers; status deferred.
     for c, temp, vdd, grid, _codes, variant in PLANS[args.plan]:
@@ -593,7 +564,7 @@ def cmd_record(args: argparse.Namespace) -> None:
                    "res_section": res, "temp_c": temp, "vdd_v": vdd, "msense_w": width,
                    "trim_code": unit["code"], "ac_grid": GRIDS[grid].replace(" ", "_"),
                    "deck": variant, "op_check": "seed" if variant == "probe" else "twin_dc_gain",
-                   "fb_seed_v": seeds["fb"],
+                   "fb_seed_v": seeds["fb_final_v"],
                    "_cid": cid, "_klt": unit["klt_status"], "_grid": grid, "_variant": variant,
                    "_point": (c, temp, vdd)}
             for key in ("fb_op_v", "sns1_op_v", "sns2_op_v", "vref_op_v"):
@@ -634,7 +605,7 @@ def cmd_record(args: argparse.Namespace) -> None:
             deck = unit["arts"].get("deck")
             body = point_dir / "body.spice"
             if deck and Path(deck).is_file():
-                snap = snapshot_text(Path(deck), body, meta["pdk_root"], adapter)
+                snap = snapshot_text(Path(deck), body, meta["pdk_root"])
             else:
                 snap = body.read_text(encoding="utf-8").replace(
                     meta["pdk_root"].rstrip("/") + "/", "${PDK_ROOT}/")
@@ -698,7 +669,7 @@ def cmd_record(args: argparse.Namespace) -> None:
 
 def write_md(path: Path, rid: str, rows, passed, failed, marginal, jobs, args,
              inconclusive) -> None:
-    seed_rel = os.path.relpath(seed_csv(), REPO_ROOT)
+    seed_rel = os.path.relpath(newest_seed_csv(SIM_DIR), REPO_ROOT)
     engines = sorted({j.get("engine") or "unknown" for j in jobs})
     backends = sorted({"batch" if j.get("job_id") else "local" for j in jobs})
     points = sorted({(r["corner_label"].split("_code")[0], r["temp_c"], r["vdd_v"]) for r in rows})
@@ -751,7 +722,7 @@ def write_md(path: Path, rid: str, rows, passed, failed, marginal, jobs, args,
         + " by `alter` of the strap resistors (`corners.supply_v` keys",
         "  r.xxtrim.rs0..rs7). Per-request job ids, instance types and engine",
         f"  versions: `records/{rid}.jobs.json`.",
-        "- **XMSENSE width this run used**: w=" + msense_width(),
+        "- **XMSENSE width this run used**: w=" + read_msense_width(STARTUP_NETLIST),
         "- **Devices**: all real PDK compact models, all three DUTs copied",
         "  verbatim from design/netlist/bandgap_core.spice,",
         "  design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice",
@@ -852,14 +823,12 @@ def cmd_ripple_scan(args: argparse.Namespace) -> None:
     """`ripple_db` (same definition as the record column) for every committed
     `*.ac.txt` in a record's corners/ dir -- run_pvt_sweep.sh's own `wrdata`
     files included -- so a solve-quality reading of an EXISTING record is
-    reproducible from committed data alone."""
+    reproducible from committed data alone. The parse itself is
+    solve_quality.read_ac_txt's (issue #707): missing/empty files read as no
+    data and a malformed token becomes a NaN row, not a crash."""
     results = []
     for ac in sorted(Path(args.corners).glob("*.ac.txt")):
-        rows = []
-        for line in ac.read_text(encoding="utf-8").splitlines():
-            parts = line.split()
-            if len(parts) >= 4:
-                rows.append((float(parts[0]), float(parts[1]), float(parts[3])))
+        rows = solve_quality.read_ac_txt(ac) or []
         results.append((ripple_db(rows), ac.name[:-len(".ac.txt")]))
     for value, name in sorted(results, reverse=True):
         print(f"{value:8.4f}  {name}")
@@ -877,8 +846,7 @@ def main(argv: list[str] | None = None) -> int:
                         "PVT grid at code 128 (issue #289)")
     p.add_argument("--codes", help="override the code list, e.g. 128 (single-unit local anchor)")
     p.add_argument("--batch-pdk-root", default="/opt/pdk")
-    p.add_argument("--provision-script",
-                   default=os.path.expanduser("~/GitHub/2am/infra/aws/batch-fleet-provision.sh"))
+    p.add_argument("--provision-script", default=os.environ.get("KLT_BATCH_PROVISION_SCRIPT"))
     p.set_defaults(func=cmd_prepare)
     r = sub.add_parser("record")
     r.add_argument("--work", required=True)

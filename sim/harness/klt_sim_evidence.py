@@ -400,7 +400,7 @@ def build_md(
     lines = [f"# Record {rid}", ""]
     for field in ("Experiment", "Claim"):
         lines.append(f"- **{field}**: {spec[field]}")
-    for field in ("Devices", "Netlist provenance"):
+    for field in ("Variant", "Devices", "Netlist provenance"):
         if spec.get(field):
             lines.append(f"- **{field}**: {spec[field]}")
     lines.append(f"- **PDK**: {spec['PDK']}")
