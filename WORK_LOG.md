@@ -10,8 +10,15 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-25
+
+- **PR #711**: docs(layout): add unpinned-KLayout-runtime row to the friction table
+- **Issue #700** (closed): Record klayout-tools#7824 (pinned klt does not pin its KLayout runtime) in layout/README.md's friction table
+
 ### 2026-11-24
 
+- **PR #710**: refactor(sim): dedupe remaining seed_deck, pex_vref_runner, AC/probe parser, and preamble stragglers
+- **Issue #707** (closed): Dedupe remaining seed_deck, pex_vref_runner, AC/probe parser, and preamble stragglers across sim/
 - **PR #705**: fix(sim): catch missing batch-set reports with the no-local-fallback diagnostic
 - **Issue #704** (closed): check-batch-set refuses a missing --batch-set report with a traceback instead of its no-local-fallback diagnostic
 - **PR #703**: refactor(sim): dedupe the Monte Carlo klt-sim plumbing and preamble guards
