@@ -7,7 +7,7 @@ Current repository work state, generated from GitHub labels by the Guide role.
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-- **#648**: fix: skip the magnitude rewrite for limit-graded supply-bench measurements
+_None._
 
 ## Very Important
 
@@ -34,7 +34,6 @@ Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
 - **#646**: Item-5 iq citation pairs a signed limit with an enricher-magnitude value, so its bound is not re-derivable from the envelope
-- **#707**: Dedupe remaining seed_deck, pex_vref_runner, AC/probe parser, and preamble stragglers across sim/
 
 ## PRs Awaiting Review
 
@@ -46,7 +45,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#648**: fix: skip the magnitude rewrite for limit-graded supply-bench measurements
+_None._
 
 ## Proposed
 
@@ -63,7 +62,6 @@ Issues carrying `loom:curated`.
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)*
 - **#646**: Item-5 iq citation pairs a signed limit with an enricher-magnitude value, so its bound is not re-derivable from the envelope *(curated)*
 - **#698**: Re-run sim/sg13cmos5l-closed-loop-startup-pex against the parasitic-bearing sg13cmos5l-bandgap_top.pex.spice (post-#480) *(curated)*
-- **#700**: Record klayout-tools#7824 (pinned klt does not pin its KLayout runtime) in layout/README.md's friction table *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -77,14 +75,14 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 1 |
+| Operator merge-risk holds | 0 |
 | Very important | 1 |
 | Important | 2 |
 | Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 3 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
-| Curated | 12 |
+| Approved PRs awaiting merge | 0 |
+| Curated | 11 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
