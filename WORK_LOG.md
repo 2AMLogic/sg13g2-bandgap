@@ -12,6 +12,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-25
 
+- **PR #715**: refactor: share LVS resistor formulas across IHP PDKs
+- **Issue #714** (closed): Remove unreachable flat-sheet fallback and duplicate resistor formula helpers in layout/lvs_reference.py
 - **PR #711**: docs(layout): add unpinned-KLayout-runtime row to the friction table
 - **Issue #700** (closed): Record klayout-tools#7824 (pinned klt does not pin its KLayout runtime) in layout/README.md's friction table
 
