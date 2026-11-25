@@ -3877,7 +3877,10 @@ disclosure:** the committed report records `provenance.klayout_version
 `uvx --from "klayout-tools==0.8.0"` resolves whatever KLayout is current
 (0.30.14 at regeneration time); the klt pin plus deck `content_hash` therefore
 fixes the tool and deck but not the extraction engine, and these bytes are
-not guaranteed byte-reproducible across time. (Re-derived independently under
+not guaranteed byte-reproducible across time (filed upstream as
+[klayout-tools#7824](https://github.com/2AMLogic/klayout-tools/issues/7824); see
+the last row of [Tooling friction filed
+upstream](#tooling-friction-filed-upstream)). (Re-derived independently under
 the same pin: byte-identical.) `status: "extracted"`,
 no errors, `device_count: 17` (`device_counts: {"nfet": 6, "pfet": 8,
 "rhigh": 1, "rppd": 2}`, matching "Cell: `sg13cmos5l-bandgap_top`"'s own
@@ -4010,8 +4013,8 @@ generically against the tool, not worked around in this repo. The status
 column was re-checked live for issue #174 rather than left as filed —
 several of these have since been fixed upstream, and the LVS narratives
 above are written against what the deck does *today*, not what it did when
-each issue was filed (the #1440 row's status was re-checked live again in
-issue #480):
+each issue was filed (the #1440 and #7824 rows' statuses were re-checked live in
+issue #480 / #700):
 
 | Gap | Upstream issue | Status (re-checked, issues #174/#480) |
 |---|---|---|
@@ -4022,6 +4025,7 @@ issue #480):
 | `sg13cmos5l` missing from `--deck` help text and from `drc.md`/`lvs.md`/`pdk.md` | [klayout-tools#1418](https://github.com/2AMLogic/klayout-tools/issues/1418) | **closed/completed** |
 | An intentional poly underpass is reported as an unmodelled resistor body, with no way to annotate it | [klayout-tools#1425](https://github.com/2AMLogic/klayout-tools/issues/1425) (issue #74) | **closed/completed** — an `ExtractionDeck.poly_interconnect` annotation layer now exists, but `sg13cmos5l` declares none, so the behaviour here is unchanged |
 | `--parasitics` fails outright for `sg13cmos5l` (`_parasitics_registry()` never registers this deck) | [klayout-tools#1440](https://github.com/2AMLogic/klayout-tools/issues/1440) (issue #84) | **closed/completed** (2026-09-19) — the `klt 0.8.0` pin carries the fix, and #480 regenerated the top's `.pex.spice` with real wire R/C under it |
+| A pinned `klayout-tools` release does not pin its KLayout runtime (`klayout>=0.30`, no upper bound), so evidence produced under the pin is not byte-reproducible over time | [klayout-tools#7824](https://github.com/2AMLogic/klayout-tools/issues/7824) (issue #480 / PR #699) | **closed/completed** (2026-11-24) — upstream now warns on an engine mismatch in `klt extract` and documents replaying a report with its recorded engine; this repo's pin is unchanged (DR-0016) and the committed `klayout_version` values still differ, as disclosed in the ["Engine-version disclosure" paragraph](#sg13cmos5l-post-layout-parasitic-extraction-issues-84-480) of the PEX section |
 
 Bipolar (`pnpMPA`) recognition is deliberately **not** re-filed: see cause 1
 above — it is the same source file, and the same finding, klayout-tools#1242
