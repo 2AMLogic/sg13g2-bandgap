@@ -137,6 +137,19 @@ class MappingTests(TempDirCase):
             self.assertEqual(ck.check_legacy_mapping(), [])
         parser.assert_called_once_with(preflight)
 
+    def test_trailing_comment_cannot_mask_active_corner_drift(self) -> None:
+        text = (SIM_DIR / "lib" / "pvt_preflight.sh").read_text(encoding="utf-8")
+        for family, expected, active in (("MOS", "mos_ff", "mos_ss"), ("RES", "res_bcs", "res_wcs")):
+            with self.subTest(family=family):
+                declaration = next(line for line in text.splitlines()
+                                   if line.startswith(f"declare -A {family}_SECTION_OF="))
+                entry = f"[bcs]={expected}"
+                drifted = declaration.replace(entry, f"[bcs]={active}") + f" # formerly {entry}"
+                self.write("lib/pvt_preflight.sh", text.replace(declaration, drifted))
+                self.assertEqual(ck.check_legacy_mapping(self.tmp), [
+                    f"bcs: {family} section {expected!r} != pvt_preflight.sh {active!r}",
+                ])
+
     def test_commented_out_map_is_reported_as_drift(self) -> None:
         """The private regex this check used matched inside a comment line and
         passed; the shared line-based parser does not see the map at all."""
@@ -408,6 +421,16 @@ class PrepareTests(TempDirCase):
         path = self.write("req.json", json.dumps(req))
         with self.assertRaises(SystemExit):
             ck.prepare_batch(self.args("sg13cmos5l-core-open-loop-bias", "batch", request_template=str(path)))
+
+    def test_batch_provision_placeholder_is_refused_before_writing_requests(self) -> None:
+        for token in ("@@PROVISION2@@", "@@VDD@@"):
+            with self.subTest(token=token):
+                args = self.args("sg13cmos5l-core-open-loop-bias", "batch",
+                                 provision=f"/infra/{token}.sh")
+                with self.assertRaisesRegex(SystemExit, f"request.*{token}"):
+                    ck.prepare_batch(args)
+                self.assertEqual(list(Path(args.work).glob("request-*.json")), [])
+                self.assertFalse((Path(args.work) / "manifest.tsv").exists())
 
     def test_bench_devices_match_the_legacy_templates(self) -> None:
         """Every X-device line of a legacy template is in the new body (and v.v.)."""

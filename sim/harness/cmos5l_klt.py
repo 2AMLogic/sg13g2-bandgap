@@ -303,7 +303,8 @@ def prepare_batch(args: argparse.Namespace) -> None:
         if vdd is not None and "supply_v" in req["corners"]:
             req["corners"]["supply_v"] = {"Vvdd": [vdd]}
         req["batch"] = {"provision_script_path": args.provision}
-        (work / f"request-{sid}.json").write_text(json.dumps(req, indent=2) + "\n", encoding="utf-8")
+        request_text = fill_deck(json.dumps(req, indent=2), {}, "request")
+        (work / f"request-{sid}.json").write_text(request_text + "\n", encoding="utf-8")
         rows.append("\t".join([
             sid, label, "-" if vdd is None else _fmt(vdd),
             f"request-{sid}.json", f"report-{sid}.json", f"artifacts-{sid}",
