@@ -2,6 +2,11 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-26
+
+- **PR #249**: Add pinned-comment convention for tracker issues at the addComment cap
+- **Issue #248** (closed): Issue #4 hit GitHub's 2500-comment hard cap: addComment now permanently disabled
+
 ### 2026-09-23
 
 - **PR #244**: fix: draw the CMOS5L well taps (2 floating MOS wells fixed, 10 pnpMPA base rings nSD-marked; ERC 12 -> 10)
