@@ -95,6 +95,8 @@ def sections_from_preflight(preflight_path: str) -> dict[str, tuple[str, str, st
             name, entries = match.groups()
             if name not in _PREFLIGHT_MAPS:
                 continue
+            # Bash's compound assignment replaces the whole associative array.
+            found[name].clear()
             for token in entries.split():
                 key, _, value = token.partition("]=")
                 found[name][key.lstrip("[")] = value

@@ -150,6 +150,21 @@ class MappingTests(TempDirCase):
                     f"bcs: {family} section {expected!r} != pvt_preflight.sh {active!r}",
                 ])
 
+    def test_redeclared_map_drops_earlier_corners(self) -> None:
+        text = (SIM_DIR / "lib" / "pvt_preflight.sh").read_text(encoding="utf-8")
+        for family, section in (("MOS", "mos_fs"), ("RES", "res_typ"), ("HBT", "hbt_typ")):
+            with self.subTest(family=family):
+                redeclared = f"declare -A {family}_SECTION_OF=( [fs]={section} )"
+                path = self.write("lib/pvt_preflight.sh", f"{text}\n{redeclared}\n")
+                with contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(kcb.main(["--check-preflight", str(path)]), 1)
+                if family in ("MOS", "RES"):
+                    problems = ck.check_legacy_mapping(self.tmp)
+                    self.assertEqual(
+                        {p.split(":")[0] for p in problems if f": {family} section" in p},
+                        {"typ", "bcs", "wcs", "sf"},
+                    )
+
     def test_commented_out_map_is_reported_as_drift(self) -> None:
         """The private regex this check used matched inside a comment line and
         passed; the shared line-based parser does not see the map at all."""
