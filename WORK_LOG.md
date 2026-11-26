@@ -12,6 +12,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-26
 
+- **PR #726**: refactor(sim): reuse the shared corner tally in batch shard reports
+- **Issue #722** (closed): Reuse the shared corner tally when merging batch shards
+- **PR #724**: fix(sim): derive Iq settle delta before the magnitude rewrite
+- **Issue #720** (closed): Keep the Iq settle delta independent of which time sample carries limits
+- **Issue #723** (closed): Assign the Iq evidence refresh to a batch-authorized worker
 - **PR #648**: fix: skip the magnitude rewrite for limit-graded supply-bench measurements
 - **Issue #646** (closed): Item-5 iq citation pairs a signed limit with an enricher-magnitude value, so its bound is not re-derivable from the envelope
 
