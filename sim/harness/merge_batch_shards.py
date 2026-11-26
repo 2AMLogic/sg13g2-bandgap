@@ -53,6 +53,8 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from enrich_pvt_report import recount_report
 
 KNOWN_STATUSES = ("pass", "fail", "error")
 
@@ -429,24 +431,10 @@ def merge(
     dup_problems = [p for p in grid_problems if "duplicate" in p or "repeats" in p]
     if dup_problems or (grid_problems and not allow_incomplete):
         raise ShardError(grid_problems)
-    passed = sum(1 for c in corners if c.get("status") == "pass")
-    failed = sum(1 for c in corners if c.get("status") == "fail")
-    errored = sum(1 for c in corners if c.get("status") == "error")
-    if failed:
-        status = "fail"
-    elif errored:
-        status = "error"
-    else:
-        status = "pass"
+    recount_report(merged, corners)
     complete = not (missing or unexpected)
     if not complete:
-        status = "incomplete"
-    merged["corners"] = corners
-    merged["corner_count"] = len(corners)
-    merged["passed"] = passed
-    merged["failed"] = failed
-    merged["errored"] = errored
-    merged["status"] = status
+        merged["status"] = "incomplete"
     merged["grid"] = {
         "expected": list(expected),
         "complete": complete,
