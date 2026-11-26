@@ -3,12 +3,12 @@
     "sg13g2-bandgap -- record spec for closed-loop-iq on the `klt sim` harness (issue #414, part of #412). Mechanics: sim/harness/klt_sim_evidence.py; argument: this file."
   ],
   "Experiment": "closed-loop-iq",
-  "Claim": "Through the co-simulated closed-loop schematic (bandgap_core + bandgap_amp + bandgap_startup, trim-bearing core at trim_code=128, wired as design/bandgap_top.sch), total vdd quiescent supply current (Iq) across the 45-point PVT grid, reported as a magnitude and confirmed settled (|i(Vvdd)(3ms)-i(Vvdd)(2ms)| <= 100 nA) at a genuine closed-loop operating point (startup released, loop closed within 20 mV, fb not railed). GRADED AGAINST THE RATIFIED SPEC ROW since issue #629 (T1 item 5): the request carries iq_avg_a limits.min = -5e-5 A (Iq < 50 uA, spec/decision-records/0007) and spec_row iq, so the run's own report grades the row and the committed <id>-report.json is the citable envelope.",
+  "Claim": "The co-simulated closed-loop schematic (bandgap_core + bandgap_amp + bandgap_startup, trim-bearing core at trim_code=128, wired as design/bandgap_top.sch) measures total vdd quiescent supply current (Iq) across the 45-point PVT grid. At each settled operating point (startup released, loop closed within 20 mV, fb not railed), iq_2ms_a and iq_3ms_a report current magnitudes. The settling tolerance is |i(Vvdd)(3ms)-i(Vvdd)(2ms)| <= 100 nA. The graded average iq_avg_a is the signed average of i(Vvdd) over 2-3 ms, negative while the supply delivers current, and ships with the sign klt sim graded it with. For T1 item 5 (issue #629), klt sim grades that signed average against limits.min = -5e-5 A (spec_row iq, Iq < 50 uA, spec/decision-records/0007), so the run's own report grades the row and the committed <id>-report.json is the citable envelope: its margin is iq_avg_a minus that lower limit.",
   "Netlist provenance": "design/netlist/bandgap_core.spice (trim-bearing, trim_code=128), design/netlist/bandgap_amp.spice and design/netlist/bandgap_startup.spice, carried verbatim into sim/closed-loop-iq/testbench/closed_loop_iq.body.spice.tmpl (XMSENSE w= read from the live startup netlist).",
   "PDK": "`ihp-sg13g2` -- pinned release in sim/pdk.json; OSDI models built by sim/tools/build-osdi.sh (local) / baked into the batch runner image (#277).",
   "Corner matrix run": "process {typ,bcs,wcs,sf,fs} x temperature {-40,27,125} C x supply {2.97,3.30,3.63} V (45 points)",
   "request": "sim/closed-loop-iq/testbench/closed_loop_iq.request.json.tmpl",
-  "author": "Loom Builder (agent), issue #414",
+  "author": "Loom Builder (agent), issue #414; signed-average Claim per issue #653",
   "pass_requires": [
     "iq_avg_a",
     "iq_3ms_a",
