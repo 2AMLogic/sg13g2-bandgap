@@ -208,6 +208,9 @@ jobs:
         # only; never runs xschem and never refreshes the attestation.
         run: python3 .github/scripts/check_design_source_dependencies.py
 
+      - name: Characterization spot-check figures
+        run: python3 measurements/lib/test_spotcheck_common.py
+
       - name: Spot-check output-block checker self-test
         # Issue #516: hermetic defect injection (drifted block digit, missing
         # section/fence, unclosed fence, non-zero spotcheck exit, CRLF and

@@ -667,6 +667,80 @@ class EnrichSupplyBenchTests(unittest.TestCase):
         self.assertEqual(c["status"], "fail")
         self.assertEqual(c["diagnostics"][0]["message"], "not_settled")
 
+    @staticmethod
+    def graded_iq_report(value: float, margin: float, corner_status: str = "pass") -> dict:
+        """A merged iq report whose request grades ``iq_avg_a`` against limits.
+
+        The shape klt sim plus the shard merger produce since issue #629:
+        corner measurements carry klt's own grading (``status``/``margin``
+        derived from the *signed* value against the request's limits) and the
+        declared rollup carries those ``limits``. Issue #646: the enricher
+        must leave such a measurement's value exactly as graded, so value,
+        limits, margin and status keep re-deriving each other in the
+        committed envelope.
+        """
+        meas_status = "pass" if margin >= 0 else "fail"
+        measurements = [
+            {"name": "fb_v", "value": 1.0, "unit": None, "status": "pass", "margin": None},
+            {"name": "sns1_v", "value": 0.700, "unit": None, "status": "pass", "margin": None},
+            {"name": "sns2_v", "value": 0.695, "unit": None, "status": "pass", "margin": None},
+            {"name": "det_v", "value": 0.1, "unit": None, "status": "pass", "margin": None},
+            {"name": "i_mkfb_a", "value": 1e-9, "unit": None, "status": "pass", "margin": None},
+            {"name": "iq_2ms_a", "value": value, "unit": None, "status": "pass", "margin": None},
+            {"name": "iq_3ms_a", "value": value, "unit": None, "status": "pass", "margin": None},
+            {"name": "iq_avg_a", "value": value, "unit": "A", "status": meas_status, "margin": margin},
+        ]
+        return {
+            "status": corner_status,
+            "corners": [{"corner_id": "bcs/3.63V/125C", "status": corner_status,
+                         "measurements": measurements}],
+            "measurements": [{
+                "name": "iq_avg_a", "unit": "A", "limits": {"min": -5e-05},
+                "status": meas_status, "spec_row": "iq",
+                "worst_case": {"corner_id": "bcs/3.63V/125C", "value": value, "margin": margin},
+            }],
+        }
+
+    def test_iq_limit_bearing_measurement_keeps_graded_sign(self) -> None:
+        report = self.graded_iq_report(-4.2e-5, margin=-4.2e-5 - (-5e-5))
+        out = esb.enrich(report, "iq")
+        c = out["corners"][0]
+        self.assertEqual(c["status"], "pass", c.get("diagnostics"))
+        m = [m for m in c["measurements"] if m["name"] == "iq_avg_a"][0]
+        # the graded value ships as klt sim reported it -- sign kept
+        self.assertAlmostEqual(m["value"], -4.2e-5, places=15)
+        self.assertNotIn("magnitude", m.get("spice", ""))
+        # value/limits/margin re-derive the status: margin == value - min >= 0
+        self.assertAlmostEqual(m["margin"], m["value"] - (-5e-5), places=15)
+        self.assertGreaterEqual(m["margin"], 0.0)
+        self.assertEqual(m["status"], "pass")
+        # the limit-less magnitude behaviour is unchanged in the same report
+        self.assertAlmostEqual(meas(c)["iq_2ms_a"], 4.2e-5, places=15)
+        self.assertAlmostEqual(meas(c)["iq_3ms_a"], 4.2e-5, places=15)
+        # end to end: the adapter re-derives the committed rollup from these
+        # corners, and it stays as re-derivable as the corner itself
+        mbs.refresh_rollup(out)
+        entry = out["measurements"][0]
+        self.assertEqual(entry["limits"], {"min": -5e-05})
+        self.assertEqual(entry["status"], "pass")
+        worst = entry["worst_case"]
+        self.assertAlmostEqual(worst["value"], -4.2e-5, places=15)
+        self.assertAlmostEqual(worst["margin"], worst["value"] - entry["limits"]["min"], places=15)
+
+    def test_iq_limit_bearing_envelope_re_derives_a_fail(self) -> None:
+        # the same fixture 10x over the bound, as klt would have graded it:
+        # corner fail, and value + limits still re-derive that verdict
+        report = self.graded_iq_report(-5e-4, margin=-5e-4 - (-5e-5), corner_status="fail")
+        out = esb.enrich(report, "iq")
+        c = out["corners"][0]
+        self.assertEqual(c["status"], "fail")
+        self.assertNotIn("dvsns_v", meas(c))  # a graded-fail corner is not regraded
+        m = [m for m in c["measurements"] if m["name"] == "iq_avg_a"][0]
+        self.assertAlmostEqual(m["value"], -5e-4, places=15)
+        self.assertAlmostEqual(m["margin"], m["value"] - (-5e-5), places=15)
+        self.assertLess(m["margin"], 0.0)  # the derived check fails
+        self.assertEqual(m["status"], "fail")
+
     def test_startup_verdict_criteria(self) -> None:
         self.assertEqual(self.run_one("startup")["status"], "pass")
         self.assertAlmostEqual(meas(self.run_one("startup"))["dvsns_final_v"], 0.005, places=12)

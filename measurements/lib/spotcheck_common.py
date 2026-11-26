@@ -85,8 +85,9 @@ def supply_grid(recs):
 def iq(rec):
     r = rows(rec + ".csv")
     ok = [x for x in r if x["status"] == "PASS"]
-    q = [f(x, "iq_avg_a") * 1e6 for x in ok]
-    w = max(ok, key=lambda x: f(x, "iq_avg_a"))
+    # Limit-graded CSVs retain the SPICE supply-current sign. Iq is quoted as a magnitude.
+    q = [abs(f(x, "iq_avg_a")) * 1e6 for x in ok]
+    w = max(ok, key=lambda x: abs(f(x, "iq_avg_a")))
     say("Iq sch trim-bearing", f"{len(ok)}/{len(r)} PASS; {min(q):.2f}..{max(q):.2f} uA; <50 uA: "
         f"{sum(c<50 for c in q)}/{len(q)}; <20 uA: {sum(c<20 for c in q)}/{len(q)}; worst "
         f"{w['corner_label']}/{w['temp_c']}C/{w['vdd_v']}V; margin to 50 uA {100*(1-max(q)/50):.1f}%; "
