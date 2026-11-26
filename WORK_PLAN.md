@@ -66,6 +66,7 @@ Issues carrying `loom:curated`.
 ## Proposed (Architect / Hermit)
 
 - **#708**: Remove the unusable dpkg-deb recovery recipe from the Linux OSDI bootstrap *(hermit)*
+- **#718**: Simplify the Python verdict-constant guard with ast.Store *(hermit)*
 
 ## Epics
 
@@ -83,6 +84,6 @@ _None._
 | PRs awaiting review | 1 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 11 |
-| Architect / Hermit proposals | 1 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
