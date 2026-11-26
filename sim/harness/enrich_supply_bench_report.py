@@ -253,7 +253,6 @@ def enrich(report: dict, bench: str) -> dict:
                     continue
                 m["value"] = abs(m["value"])
                 m["spice"] = m.get("spice", "") + " ; magnitude (see sim/harness/enrich_supply_bench_report.py)"
-        got = _meas_map(corner)
         dvsns = abs(got[cfg["sns1"]] - got[cfg["sns2"]])
         derived = [{
             "name": cfg["dvsns"], "value": dvsns,
