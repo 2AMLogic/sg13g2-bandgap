@@ -12,12 +12,14 @@ nothing under sim/ is written.
 
 from __future__ import annotations
 
+import ast
 import contextlib
 import csv
 import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -2095,6 +2097,30 @@ class ResumeIdentityTests(TempDirCase):
         self.assertEqual(r.returncode, si.EXIT_REFUSE)
         self.assertIn("declared", r.stderr)
 
+    def test_seed_renderer_provenance_on_resume(self) -> None:
+        request = self.work / "request-typ.json"
+        report = self.work / "report-typ.json"
+        seeds = self.write("seeds.csv", "corner_label,temp_c\ntyp,27\n")
+        renderer = self.write("seed_deck.py", (HARNESS / "seed_deck.py").read_text())
+        old_extras = [self.tmpl, seeds]
+        extras = [*old_extras, renderer]
+
+        def bind(files: list[Path]) -> None:
+            si.begin(request, report, files, {})
+            report.write_text('{"status": "pass"}')
+            si.commit(report)
+
+        bind(old_extras)
+        self.assertEqual(si.check(request, report, old_extras, {}, env={})[0], si.EXIT_REUSE)
+        self.assertEqual(si.check(request, report, extras, {}, env={})[0], si.EXIT_REFUSE)
+        bind(extras)
+        self.assertEqual(si.check(request, report, extras, {}, env={})[0], si.EXIT_REUSE)
+        with renderer.open("a") as f:
+            f.write("\n# renderer edit\n")
+        rc, message = si.check(request, report, extras, {}, env={})
+        self.assertEqual(rc, si.EXIT_REFUSE)
+        self.assertIn("changed: extras", message)
+
     def test_legacy_report_without_sidecar_is_refused_not_trusted(self) -> None:
         (self.work / "report-typ.json").write_text('{"status": "pass"}')
         r = self.shard()
@@ -2908,13 +2934,8 @@ class SchematicDutSeamTests(unittest.TestCase):
 
 
 # --------------------------------------------------------------------------
-# enricher identity coverage (#661): the enrichers import their verdict
-# constants and the 3-criteria closed-loop check from enrich_pvt_report.py,
-# so a runner that hashes its enricher but not that module can resume a
-# shard whose recorded identity matches yet was graded by different
-# threshold code. These static checks tie every harness module a runner's
-# shell chain names (directly or through first-party imports) to the
-# `--extra` list of the submission identity that chain submits with.
+# Runner identity coverage (#661, #729). Changes to request generation or
+# the shared verdict code must invalidate the reports produced with them.
 # --------------------------------------------------------------------------
 
 #: Every non-test module in sim/harness/, by import name.
@@ -2936,21 +2957,20 @@ IDENTITY_ENTRY = re.compile(
 )
 
 
-def first_party_import_closure(modules: set) -> set:
-    """MODULES plus everything they import from sim/harness, transitively."""
+def first_party_import_closure(modules: set, *, exclude=()) -> set:
+    """Follow imports within sim/harness, stopping at excluded modules."""
     seen: set = set()
     stack = list(modules)
     while stack:
         name = stack.pop()
-        if name in seen or name not in HARNESS_PY:
+        if name in seen or name in exclude or name not in HARNESS_PY:
             continue
         seen.add(name)
-        text = HARNESS_PY[name].read_text()
-        imported = set(re.findall(r"^\s*import\s+([a-z_][a-z0-9_]*)", text, re.M))
-        imported |= set(
-            re.findall(r"^\s*from\s+([a-z_][a-z0-9_]*)\s+import", text, re.M)
-        )
-        stack += [n for n in imported if n in HARNESS_PY and n not in seen]
+        for node in ast.walk(ast.parse(HARNESS_PY[name].read_text())):
+            if isinstance(node, ast.Import):
+                stack.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                stack.append(node.module)
     return seen
 
 
@@ -3051,32 +3071,68 @@ def runner_shell_closure(runner: Path) -> dict[Path, str]:
     return closure
 
 
-class EnricherIdentityCoverageTests(unittest.TestCase):
-    """#661: an identity-hashed runner whose verdict code depends on
-    enrich_pvt_report must hash that module too, or two shards with one
-    recorded identity could have been graded by different threshold code.
-    """
+class EnricherIdentityCoverageTests(TempDirCase):
+    """Bind request generators, their request-shaping imports, and verdict code."""
 
-    def test_epr_dependent_runners_hash_epr_in_an_extra(self) -> None:
-        gaps = {}
+    def _batch_probe_env(self) -> dict:
+        """Run the batch generators and capture the first shard's check arguments.
+
+        The model files satisfy the shell preflight. Stub extraction, klt
+        and sanity checks so the probe needs neither a simulator nor a PDK.
+        """
+        for pdk in ("ihp-sg13g2", "ihp-sg13cmos5l"):
+            for model in ("osdi/psp103.osdi", "osdi/r3_cmc.osdi",
+                          "models/cornerMOShv.lib", "models/cornerRES.lib"):
+                self.write(f"{pdk}/libs.tech/ngspice/{model}", "")
+        probe = self.write("probe.sh", r'''
+python3() {
+  if [[ "$1" == */submission_identity.py && "$2" == check ]]; then
+    printf '%s\n' "${@:5}" > "${WORK}/identity-args"
+    exit 0
+  fi
+  if [[ "${MODE}" == --batch && " $* " == *" --request-template "* &&
+        " $* " != *" --mode sanity "* ]]; then
+    printf '%s\n' "$1" >> "${WORK}/generators"
+    command python3 "$@"
+  fi
+}
+''')
+        return {
+            "PATH": os.environ["PATH"], "HOME": str(self.tmp), "BASH_ENV": str(probe),
+            "PDK_ROOT": str(self.tmp), "KLT_SIM_CMOS5L_BATCH_READY": "1",
+            "KLT_SIM_KLT": "true", "KLT_BATCH_PROVISION_SCRIPT": shutil.which("true"),
+        }
+
+    def test_runners_hash_request_generators_and_verdict_code(self) -> None:
+        env = self._batch_probe_env()
         for script in sorted(SIM_DIR.glob("*/run_klt_sim.sh")):
-            runner_text = script.read_text()
-            if not IDENTITY_ENTRY.search(runner_text):
+            if not IDENTITY_ENTRY.search(script.read_text()):
                 continue
-            closure = runner_shell_closure(script)
-            union = "\n".join(closure.values())
-            named = {m for m in HARNESS_PY if re.search(rf"\b{m}\.py\b", union)}
-            deps = first_party_import_closure(named)
-            if VERDICT_MODULE not in deps:
-                continue
-            hashed = any(
-                "--extra" in line and f"{VERDICT_MODULE}.py" in line
-                for line in union.splitlines()
-            )
-            if not hashed:
-                gaps[script.parent.name] = "enricher depends on " \
-                    f"{VERDICT_MODULE}.py but no --extra in its shell chain names it"
-        self.assertEqual(gaps, {}, f"submission-identity gaps (#661): {gaps}")
+            with self.subTest(runner=script.parent.name):
+                work = self.tmp / script.parent.name
+                run = subprocess.run(
+                    ["bash", str(script), "--batch"], cwd=SIM_DIR.parent,
+                    env={**env, "KLT_SIM_WORK": str(work)}, capture_output=True, text=True,
+                )
+                self.assertEqual(run.returncode, 0, run.stderr)
+                generators = {Path(s).resolve() for s in (work / "generators").read_text().splitlines()}
+                self.assertTrue(generators)
+                for generator in generators:
+                    self.assertEqual(generator, HARNESS_PY.get(generator.stem))
+                # The multi-command generators also import their merge and
+                # enrichment code. Only prepare shapes the shard request.
+                required = first_party_import_closure(
+                    {g.stem for g in generators}, exclude={"merge_batch_shards", VERDICT_MODULE})
+                union = "\n".join(runner_shell_closure(script).values())
+                named = {m for m in HARNESS_PY if re.search(rf"\b{m}\.py\b", union)}
+                if VERDICT_MODULE in first_party_import_closure(named):
+                    required.add(VERDICT_MODULE)
+                args = (work / "identity-args").read_text().splitlines()
+                extras = [Path(value).resolve() for flag, value in zip(args, args[1:])
+                          if flag == "--extra"]
+                for module in sorted(required):
+                    with self.subTest(module=module):
+                        self.assertEqual(extras.count(HARNESS_PY[module]), 1)
 
     def test_shell_closure_resolves_shared_runners_and_transitive_deps(self) -> None:
         # #663: guard against the source-line regex silently dropping
