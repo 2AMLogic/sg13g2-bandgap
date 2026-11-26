@@ -668,7 +668,10 @@ class EnrichSupplyBenchTests(unittest.TestCase):
         self.assertEqual(c["diagnostics"][0]["message"], "not_settled")
 
     @staticmethod
-    def graded_iq_report(value: float, margin: float, corner_status: str = "pass") -> dict:
+    def graded_iq_report(
+        value: float, margin: float, corner_status: str = "pass",
+        graded_sample: str | None = None,
+    ) -> dict:
         """A merged iq report whose request grades ``iq_avg_a`` against limits.
 
         The shape klt sim plus the shard merger produce since issue #629:
@@ -678,6 +681,10 @@ class EnrichSupplyBenchTests(unittest.TestCase):
         must leave such a measurement's value exactly as graded, so value,
         limits, margin and status keep re-deriving each other in the
         committed envelope.
+
+        ``graded_sample`` (issue #720) also grades ``iq_2ms_a`` or
+        ``iq_3ms_a`` against the same limits, as a request that limits a time
+        sample does; all three readings share ``value``.
         """
         meas_status = "pass" if margin >= 0 else "fail"
         measurements = [
@@ -690,15 +697,20 @@ class EnrichSupplyBenchTests(unittest.TestCase):
             {"name": "iq_3ms_a", "value": value, "unit": None, "status": "pass", "margin": None},
             {"name": "iq_avg_a", "value": value, "unit": "A", "status": meas_status, "margin": margin},
         ]
+        rollup = [{
+            "name": "iq_avg_a", "unit": "A", "limits": {"min": -5e-05},
+            "status": meas_status, "spec_row": "iq",
+            "worst_case": {"corner_id": "bcs/3.63V/125C", "value": value, "margin": margin},
+        }]
+        if graded_sample is not None:
+            reading = next(m for m in measurements if m["name"] == graded_sample)
+            reading.update(unit="A", status=meas_status, margin=margin)
+            rollup.append(dict(rollup[0], name=graded_sample))
         return {
             "status": corner_status,
             "corners": [{"corner_id": "bcs/3.63V/125C", "status": corner_status,
                          "measurements": measurements}],
-            "measurements": [{
-                "name": "iq_avg_a", "unit": "A", "limits": {"min": -5e-05},
-                "status": meas_status, "spec_row": "iq",
-                "worst_case": {"corner_id": "bcs/3.63V/125C", "value": value, "margin": margin},
-            }],
+            "measurements": rollup,
         }
 
     def test_iq_limit_bearing_measurement_keeps_graded_sign(self) -> None:
@@ -740,6 +752,35 @@ class EnrichSupplyBenchTests(unittest.TestCase):
         self.assertAlmostEqual(m["margin"], m["value"] - (-5e-5), places=15)
         self.assertLess(m["margin"], 0.0)  # the derived check fails
         self.assertEqual(m["status"], "fail")
+
+    def test_iq_settle_delta_is_independent_of_the_graded_sample(self) -> None:
+        for graded in (None, "iq_2ms_a", "iq_3ms_a"):
+            with self.subTest(graded=graded):
+                report = self.graded_iq_report(-42e-6, 8e-6, graded_sample=graded)
+                c = esb.enrich(report, "iq")["corners"][0]
+                self.assertEqual(c["status"], "pass", c.get("diagnostics"))
+                self.assertEqual(meas(c)["iq_settle_delta_a"], 0.0)
+                self.assertAlmostEqual(meas(c)["iq_avg_a"], -42e-6, places=15)
+                for name in ("iq_2ms_a", "iq_3ms_a"):
+                    m = next(m for m in c["measurements"] if m["name"] == name)
+                    if name == graded:
+                        self.assertAlmostEqual(m["value"], -42e-6, places=15)
+                        self.assertEqual(m["margin"], 8e-6)
+                    else:
+                        self.assertAlmostEqual(m["value"], 42e-6, places=15)
+
+    def test_iq_graded_sample_settle_delta_is_the_signed_difference(self) -> None:
+        for graded, other in (("iq_2ms_a", "iq_3ms_a"), ("iq_3ms_a", "iq_2ms_a")):
+            for drift, status in ((5e-8, "pass"), (2e-7, "fail")):
+                with self.subTest(graded=graded, drift=drift):
+                    report = self.graded_iq_report(-42e-6, 8e-6, graded_sample=graded)
+                    reading = next(m for m in report["corners"][0]["measurements"] if m["name"] == other)
+                    reading["value"] = -42e-6 - drift
+                    c = esb.enrich(report, "iq")["corners"][0]
+                    self.assertAlmostEqual(meas(c)["iq_settle_delta_a"], drift, places=15)
+                    self.assertEqual(c["status"], status, c.get("diagnostics"))
+                    if status == "fail":
+                        self.assertEqual(c["diagnostics"][0]["message"], "not_settled")
 
     def test_startup_verdict_criteria(self) -> None:
         self.assertEqual(self.run_one("startup")["status"], "pass")
