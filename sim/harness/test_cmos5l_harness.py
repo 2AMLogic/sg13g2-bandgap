@@ -20,12 +20,19 @@ What it pins, per the issue's acceptance criteria:
     provenance text, and the PEX record refusing to publish unbound;
   * the legacy verdict formulas, including partial corner failure;
   * the runners' fail-closed behaviour (no batch without the provisioning
-    acknowledgement).
+    acknowledgement);
+  * the shared seams (issue #725): decks fill through `seed_deck.fill_deck`,
+    the corner map's MOS/resistor columns come from
+    `klt_corner_bundle.sections_from_preflight`, the enriched-report tail is
+    `enrich_pvt_report.write_enriched_report`, and the probe's own anchor
+    gate calls `sanity_anchors.py`.
 """
 
 from __future__ import annotations
 
+import contextlib
 import csv
+import io
 import json
 import os
 import re
@@ -34,6 +41,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import cmos5l_klt as ck  # noqa: E402
@@ -42,6 +50,7 @@ import klt_corner_bundle as kcb  # noqa: E402
 import klt_sim_evidence as kse  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
 import sanity_anchors as sa  # noqa: E402
+import seed_deck  # noqa: E402
 from test_evidence_store import FakeStore  # noqa: E402
 
 SIM_DIR = Path(__file__).resolve().parents[1]
@@ -117,6 +126,30 @@ class MappingTests(TempDirCase):
         self.assertEqual(len(problems), 1)
         self.assertIn("bcs: MOS section", problems[0])
 
+    def test_mapping_columns_read_through_the_shared_preflight_parser(self) -> None:
+        """Issue #725: the `declare -A` maps are read by
+        klt_corner_bundle.sections_from_preflight -- the one parser of
+        sim/lib/pvt_preflight.sh -- not by a private copy in this module."""
+        self.assertFalse(hasattr(ck, "parse_shell_map"))
+        preflight = str(SIM_DIR / "lib" / "pvt_preflight.sh")
+        with mock.patch.object(kcb, "sections_from_preflight",
+                               wraps=kcb.sections_from_preflight) as parser:
+            self.assertEqual(ck.check_legacy_mapping(), [])
+        parser.assert_called_once_with(preflight)
+
+    def test_commented_out_map_is_reported_as_drift(self) -> None:
+        """The private regex this check used matched inside a comment line and
+        passed; the shared line-based parser does not see the map at all."""
+        sim = self.tmp / "sim"
+        (sim / "lib").mkdir(parents=True)
+        text = (SIM_DIR / "lib" / "pvt_preflight.sh").read_text(encoding="utf-8")
+        (sim / "lib" / "pvt_preflight.sh").write_text(
+            text.replace("declare -A RES_SECTION_OF=", "# declare -A RES_SECTION_OF="),
+            encoding="utf-8")
+        problems = ck.check_legacy_mapping(sim)
+        self.assertEqual(len(problems), len(ck.CORNER_SECTIONS), problems)
+        self.assertTrue(all(": RES section" in p for p in problems), problems)
+
     def fake_models(self, drop: str | None = None) -> Path:
         models = self.tmp / "models"
         files = {
@@ -191,9 +224,10 @@ class TemplateTests(unittest.TestCase):
         for exp, (_s, _k, fam, *_r) in EXPERIMENTS.items():
             with self.subTest(exp=exp):
                 cols = spec(exp)["extra_columns"]
+                column_names = ("pnp_section", "mos_section", "res_section")
                 index = {"pnp": 0, "mos": 1, "res": 2}
                 want = {
-                    ck.EXTRA_COLUMN_NAMES[index[f]]: {l: t[index[f]] for l, t in ck.CORNER_SECTIONS.items()}
+                    column_names[index[f]]: {l: t[index[f]] for l, t in ck.CORNER_SECTIONS.items()}
                     for f in fam.split(",")
                 }
                 self.assertEqual(cols, want)
@@ -351,6 +385,22 @@ class PrepareTests(TempDirCase):
         tmpl.write_text("Vvdd vdd 0 dc @@NEW_TOKEN@@\n.control\n@@OSDI_DIR@@\n.endc\n")
         with self.assertRaises(SystemExit):
             ck.prepare_batch(self.args("sg13cmos5l-core-open-loop-bias", "batch", body_template=str(tmpl)))
+
+    def test_digit_bearing_placeholder_is_refused(self) -> None:
+        """Issue #725: the retired local leftover check matched @@[A-Z_]+@@, so
+        a digit-bearing token such as @@SNS1_SEED@@ sailed through unfilled;
+        seed_deck.fill_deck's guard (#652) sees it -- in a body and in a
+        request alike."""
+        with self.assertRaises(SystemExit) as ctx:
+            ck.build_body("v(sns1)=@@SNS1_SEED@@\n", "/osdi", "closed-loop", 3.30, "10u")
+        self.assertIn("@@SNS1_SEED@@", str(ctx.exception))
+        req = request("sg13cmos5l-core-open-loop-bias")
+        req["models"]["lib"] = "@@CORNER_BUNDLE2@@"
+        path = self.write("req.json", json.dumps(req))
+        with self.assertRaises(SystemExit) as ctx:
+            ck.prepare_sanity(self.args("sg13cmos5l-core-open-loop-bias", "sanity",
+                                        request_template=str(path)))
+        self.assertIn("@@CORNER_BUNDLE2@@", str(ctx.exception))
 
     def test_process_axis_drift_refused(self) -> None:
         req = request("sg13cmos5l-core-open-loop-bias")
@@ -596,6 +646,46 @@ class BakedSupplyTests(TempDirCase):
 
 
 # --------------------------------------------------------------------------
+# the shared seams: deck fill + enriched-report tail
+# --------------------------------------------------------------------------
+
+
+class SharedSeamTests(TempDirCase):
+    """Issue #725: what cmos5l_klt.py once kept a private copy of is the
+    shared one -- the deck fill (seed_deck.fill_deck) and the enriched-report
+    tail (enrich_pvt_report.write_enriched_report)."""
+
+    NON_PASS_LINES = (
+        "  typ/3.300V/125C: fail vtrip_not_above_zero",
+        "enriched: fail passed=1 failed=1 errored=0",
+    )
+
+    def test_fill_deck_is_seed_decks(self) -> None:
+        self.assertIs(ck.fill_deck, seed_deck.fill_deck)
+
+    def test_write_enriched_report_names_each_non_pass_corner(self) -> None:
+        report = ck.enrich(rep(corner(TRIP_OK), corner({**TRIP_OK, "vtrip_v": 0.0}, t=125)),
+                           "trip-point")
+        out = self.tmp / "enriched.json"
+        printed = io.StringIO()
+        with contextlib.redirect_stdout(printed):
+            epr.write_enriched_report(report, out)
+        self.assertEqual(out.read_text(encoding="utf-8"), json.dumps(report, indent=2) + "\n")
+        self.assertEqual(tuple(printed.getvalue().splitlines()), self.NON_PASS_LINES)
+
+    def test_enrich_cli_reports_through_the_shared_writer(self) -> None:
+        src = self.write("merged.json", json.dumps(
+            rep(corner(TRIP_OK), corner({**TRIP_OK, "vtrip_v": 0.0}, t=125))))
+        out = self.tmp / "enriched.json"
+        printed = io.StringIO()
+        with contextlib.redirect_stdout(printed):
+            rc = ck.main(["enrich", "--kind", "trip-point", str(src), "-o", str(out)])
+        self.assertEqual(rc, 0)
+        self.assertEqual(json.loads(out.read_text(encoding="utf-8"))["status"], "fail")
+        self.assertEqual(tuple(printed.getvalue().splitlines()), self.NON_PASS_LINES)
+
+
+# --------------------------------------------------------------------------
 # sanity gate
 # --------------------------------------------------------------------------
 
@@ -752,7 +842,17 @@ class AnchorCallSiteTests(unittest.TestCase):
         "harness/cmos5l_runner.sh",
         "core-open-loop-bias-pex/run_klt_sim.sh",
         "trim-coverage/run_klt_sim.sh",
+        "harness/probe/run_probe.sh",
     )
+
+    @staticmethod
+    def gate_files() -> list[Path]:
+        """Every file that carries a gate: the `*/run_klt_sim.sh` runners, the
+        `harness/*_runner.sh` family bases, and the probe -- one level below
+        both globs, which is how its heredoc outlived #458 (issue #725)."""
+        return (sorted(SIM_DIR.glob("*/run_klt_sim.sh"))
+                + sorted(SIM_DIR.glob("harness/*_runner.sh"))
+                + [SIM_DIR / "harness" / "probe" / "run_probe.sh"])
 
     def test_every_gate_calls_the_shared_cli(self) -> None:
         for rel in self.GATE_OWNERS:
@@ -761,9 +861,16 @@ class AnchorCallSiteTests(unittest.TestCase):
                 self.assertIn("sanity_anchors.py", text)
                 self.assertIn("--anchor ", text)
 
+    def test_probe_hands_both_committed_anchors_to_the_gate(self) -> None:
+        """Issue #725: the probe's gate names both anchors the script defines,
+        so neither can drop out of the gate silently."""
+        text = (SIM_DIR / "harness" / "probe" / "run_probe.sh").read_text()
+        self.assertIn('--anchor "vref_v=${ANCHOR_VREF_V}:${ANCHOR_TOL_V}"', text)
+        self.assertIn('--anchor "r1_ohm=${ANCHOR_R1_OHM}:${ANCHOR_TOL_OHM}"', text)
+
     def test_no_runner_reimplements_the_comparison(self) -> None:
         """No heredoc gate left: the tells are the unpack and the delta compare."""
-        for path in sorted(SIM_DIR.glob("*/run_klt_sim.sh")) + sorted(SIM_DIR.glob("harness/*_runner.sh")):
+        for path in self.gate_files():
             with self.subTest(path=path.name):
                 text = path.read_text()
                 self.assertNotIn('(corner,) = report["corners"]', text)
@@ -772,10 +879,61 @@ class AnchorCallSiteTests(unittest.TestCase):
 
     def test_only_the_supply_benches_compare_magnitudes(self) -> None:
         """Copy 3's magnitude switch is carried over, and only there."""
-        users = [path.name for path in sorted(SIM_DIR.glob("harness/*_runner.sh"))
-                 + sorted(SIM_DIR.glob("*/run_klt_sim.sh"))
-                 if "--magnitude" in path.read_text()]
+        users = [path.name for path in self.gate_files() if "--magnitude" in path.read_text()]
         self.assertEqual(users, ["supply_bench_runner.sh"])
+
+
+class ProbeHeredocTests(TempDirCase):
+    """The probe's inline `python3 - <<'PY'` blocks (issue #725).
+
+    sim/harness/probe/run_probe.sh needs klt, the PDK and ngspice, so this
+    self-test cannot run it; what it can run is the Python it feeds to stdin,
+    extracted from the script.
+    """
+
+    PROBE = SIM_DIR / "harness" / "probe" / "run_probe.sh"
+
+    @classmethod
+    def heredocs(cls) -> list[str]:
+        return re.findall(r"<<'PY'\n(.*?)\nPY\n", cls.PROBE.read_text(encoding="utf-8"), re.S)
+
+    def test_every_heredoc_compiles(self) -> None:
+        """`bash -n` and shellcheck never see inside a quoted heredoc."""
+        blocks = self.heredocs()
+        self.assertGreaterEqual(len(blocks), 4)
+        for index, block in enumerate(blocks):
+            with self.subTest(block=index):
+                compile(block, f"{self.PROBE.name}:heredoc[{index}]", "exec")
+
+    def test_batch_rewrite_loads_the_bundle_table_off_the_harness_dir(self) -> None:
+        """The batch-only rewrite imports klt_corner_bundle from the harness
+        dir it is handed (argv[5]), so it runs from any cwd."""
+        (block,) = [b for b in self.heredocs()
+                    if "provision_script, harness_dir = sys.argv[1:6]" in b]
+        work = self.tmp / "work"
+        work.mkdir()
+        request, body = work / "request.json", work / "body.spice"
+        request.write_text(json.dumps({
+            "models": {"lib": "UNUSED-BATCH-REWRITTEN-BELOW"}, "corners": {"process": ["typ"]},
+        }), encoding="utf-8")
+        body.write_text("* body\n", encoding="utf-8")
+        r = subprocess.run(
+            [sys.executable, "-", str(request), str(body), "/opt/pdk", "/prov.sh",
+             str(SIM_DIR / "harness")],
+            input=block, capture_output=True, text=True, cwd=self.tmp, check=False,
+            env={"PATH": os.environ["PATH"], "PDK": "ihp-sg13g2"})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        hbt, mos, res = kcb.CORNER_SECTIONS["typ"]
+        self.assertEqual(json.loads(request.read_text(encoding="utf-8")), {
+            "corners": {"process": [hbt]}, "backend": "batch",
+            "models": {"pdk": "ihp-sg13g2", "lib": "libs.tech/ngspice/models/cornerHBT.lib"},
+            "batch": {"provision_script_path": "/prov.sh"},
+        })
+        models = "/opt/pdk/ihp-sg13g2/libs.tech/ngspice/models"
+        appended = body.read_text(encoding="utf-8")
+        self.assertTrue(appended.startswith("* body\n"), appended)
+        self.assertIn(f'.lib "{models}/cornerMOShv.lib" {mos}\n', appended)
+        self.assertIn(f'.lib "{models}/cornerRES.lib" {res}\n', appended)
 
 
 # --------------------------------------------------------------------------
@@ -968,6 +1126,13 @@ class RunnerTests(TempDirCase):
             self.assertNotIn(banned, runner)
         self.assertIn("--backend local", runner)       # the sanity corner only
         self.assertEqual(runner.count("--backend local"), 1)
+
+    def test_submission_identity_hashes_the_deck_fill_module(self) -> None:
+        """Issue #725 (the #661 rule): cmos5l_klt.py fills its decks through
+        seed_deck.fill_deck, so the shard identity hashes seed_deck.py too."""
+        lines = (SIM_DIR / "harness" / "cmos5l_runner.sh").read_text().splitlines()
+        self.assertTrue(any("--extra" in line and "seed_deck.py" in line for line in lines),
+                        "no --extra in cmos5l_runner.sh names seed_deck.py")
 
 
 if __name__ == "__main__":

@@ -114,6 +114,25 @@ def recount_report(report: dict, corners: list | None = None) -> dict:
     return report
 
 
+def write_enriched_report(report: dict, output: str | Path) -> None:
+    """Write an enriched report and report it: the tail every klt-path
+    enricher ends with (issue #725).
+
+    The JSON file (2-space indent, trailing newline), then one line per
+    non-pass corner naming its diagnostics, then the ``enriched: ...``
+    tally. ``recount_report`` has already set the four tally fields.
+    """
+    Path(output).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    for c in report["corners"]:
+        if c.get("status") != "pass":
+            diag = "; ".join(d.get("message", "") for d in c.get("diagnostics", []))
+            print(f"  {c.get('corner_id')}: {c['status']} {diag[:100]}")
+    print(
+        f"enriched: {report['status']} passed={report['passed']} "
+        f"failed={report['failed']} errored={report['errored']}"
+    )
+
+
 _VDD_PWL_RE = re.compile(r"^Vvdd\s+vdd\s+0\s+PWL\(0\s+0\s+[0-9.]+u?\s+([-+0-9.eE]+)", re.M | re.I)
 
 
@@ -210,15 +229,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("-o", "--output", type=Path, required=True)
     args = ap.parse_args(argv)
     report = enrich(json.loads(args.report.read_text(encoding="utf-8")))
-    args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    for c in report["corners"]:
-        if c.get("status") != "pass":
-            diag = "; ".join(d.get("message", "") for d in c.get("diagnostics", []))
-            print(f"  {c.get('corner_id')}: {c['status']} {diag[:100]}")
-    print(
-        f"enriched: {report['status']} passed={report['passed']} "
-        f"failed={report['failed']} errored={report['errored']}"
-    )
+    write_enriched_report(report, args.output)
     return 0
 
 

@@ -18,7 +18,9 @@ vref_mc_klt and trim_coverage_klt, whose lookups are one idiom: an exact
 pre-formatted (the MC harnesses' `VDD` string constant; trim_coverage_klt's
 f"{vdd:.2f}" at its call site). gen_pex_batch_requests deliberately keeps its
 own `seed_row` variant: it bakes the 125 C row with a 27 C fallback -- see its
-recorded fs/125 singular-matrix rationale.
+recorded fs/125 singular-matrix rationale. cmos5l_klt takes only `fill_deck`:
+it has no seed rows, but its deck and request templates get the same
+unresolved-placeholder guard (issue #725).
 """
 from __future__ import annotations
 

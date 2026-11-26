@@ -29,9 +29,10 @@ modules. It owns four things, each of which the SG13G2 harness cannot lend:
    "relationship_to_ihp_sg13g2"), so those two columns are the SG13G2 ones;
    the first column is CMOS5L's own. The mapping is not trusted by assertion:
    :func:`check_legacy_mapping` re-derives the MOS/resistor columns from
-   `MOS_SECTION_OF`/`RES_SECTION_OF` in `sim/lib/pvt_preflight.sh`, and
-   :func:`check_pdk_sections` checks every section name exists in the
-   installed `*.lib` files. The PNP column's provenance is the legacy
+   `MOS_SECTION_OF`/`RES_SECTION_OF` in `sim/lib/pvt_preflight.sh` (read by
+   `klt_corner_bundle.sections_from_preflight`, the one parser of those
+   maps), and :func:`check_pdk_sections` checks every section name exists in
+   the installed `*.lib` files. The PNP column's provenance is the legacy
    `PNP_SECTION_OF` map in three of the four SG13CMOS5L `run_pvt_sweep.sh` scripts that
    produced every committed record; those scripts were removed in issue #443
    and are recoverable from git history (last commit containing them:
@@ -77,6 +78,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import enrich_pvt_report as epr  # noqa: E402
 import klt_corner_bundle as kcb  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
+from seed_deck import fill_deck  # noqa: E402
 
 SIM_DIR = Path(__file__).resolve().parents[1]
 
@@ -113,37 +115,19 @@ CORNER_SECTIONS: dict[str, tuple[str, str, str]] = {
     "fs": ("typ", "mos_fs", "res_typ"),
 }
 
-#: Section triple column -> the record-spec `extra_columns` name.
-EXTRA_COLUMN_NAMES = ("pnp_section", "mos_section", "res_section")
-
 
 # --------------------------------------------------------------------------
 # corner mapping: derivation checks
 # --------------------------------------------------------------------------
-
-_MAP_RE = re.compile(r"declare -A (\w+)=\((.*?)\)")
-
-
-def parse_shell_map(text: str, name: str) -> dict[str, str]:
-    """`declare -A NAME=( [k]=v ... )` -> dict (first definition wins)."""
-    for match in _MAP_RE.finditer(text):
-        if match.group(1) != name:
-            continue
-        out: dict[str, str] = {}
-        for token in match.group(2).split():
-            key, _, value = token.partition("]=")
-            out[key.lstrip("[")] = value
-        return out
-    return {}
 
 
 def check_legacy_mapping(sim_dir: Path = SIM_DIR) -> list[str]:
     """Problems (empty = consistent) between the MOS/resistor columns of
     :data:`CORNER_SECTIONS` and `sim/lib/pvt_preflight.sh`."""
     problems: list[str] = []
-    pre = (sim_dir / "lib" / "pvt_preflight.sh").read_text(encoding="utf-8")
-    mos = parse_shell_map(pre, "MOS_SECTION_OF")
-    res = parse_shell_map(pre, "RES_SECTION_OF")
+    preflight = sim_dir / "lib" / "pvt_preflight.sh"
+    pre = preflight.read_text(encoding="utf-8")
+    derived = kcb.sections_from_preflight(str(preflight))
     labels_line = re.search(r"^CORNER_LABELS=\((.*?)\)", pre, re.M)
     if not labels_line or tuple(labels_line.group(1).split()) != CORNER_LABELS:
         problems.append("CORNER_LABELS differ from pvt_preflight.sh")
@@ -151,10 +135,11 @@ def check_legacy_mapping(sim_dir: Path = SIM_DIR) -> list[str]:
     if not vdds_line or tuple(float(v) for v in vdds_line.group(1).split()) != SUPPLIES:
         problems.append("SUPPLIES differ from pvt_preflight.sh VDDS")
     for label, (_pnp, m, r) in CORNER_SECTIONS.items():
-        if mos.get(label) != m:
-            problems.append(f"{label}: MOS section {m!r} != pvt_preflight.sh {mos.get(label)!r}")
-        if res.get(label) != r:
-            problems.append(f"{label}: RES section {r!r} != pvt_preflight.sh {res.get(label)!r}")
+        _hbt, mos, res = derived.get(label) or ("", "", "")
+        if mos != m:
+            problems.append(f"{label}: MOS section {m!r} != pvt_preflight.sh {mos!r}")
+        if res != r:
+            problems.append(f"{label}: RES section {r!r} != pvt_preflight.sh {res!r}")
     return problems
 
 
@@ -224,16 +209,6 @@ def substitutions(kind: str, vdd: float, msense_w: str | None) -> dict[str, str]
     return sub
 
 
-def apply(text: str, mapping: dict[str, str]) -> str:
-    for key, value in mapping.items():
-        text = text.replace(key, value)
-    return text
-
-
-def leftover_placeholders(text: str, allowed: tuple[str, ...] = ()) -> list[str]:
-    return sorted({m for m in re.findall(r"@@[A-Z_]+@@", text) if m not in allowed})
-
-
 def shard_plan(kind: str) -> list[tuple[str, float | None]]:
     """(label, supply or None) per batch shard, in `CORNER_LABELS` order."""
     if kind not in KINDS:
@@ -249,12 +224,8 @@ def shard_id(label: str, vdd: float | None) -> str:
 
 def build_body(body_template: str, osdi_dir: str, kind: str, vdd: float,
                msense_w: str | None) -> str:
-    text = apply(body_template.replace("@@OSDI_DIR@@", osdi_dir),
-                 substitutions(kind, vdd, msense_w))
-    left = leftover_placeholders(text)
-    if left:
-        raise SystemExit(f"cmos5l_klt.py: body template placeholders left unresolved: {left}")
-    return text
+    return fill_deck(body_template.replace("@@OSDI_DIR@@", osdi_dir),
+                     substitutions(kind, vdd, msense_w), "body")
 
 
 def batch_family_cards(models_dir: str, families: str, label: str) -> tuple[str, str]:
@@ -282,18 +253,15 @@ def prepare_sanity(args: argparse.Namespace) -> None:
     body = build_body(Path(args.body_template).read_text(encoding="utf-8"), args.osdi_dir,
                       args.kind, vdd, args.msense_w)
     (work / "body.spice").write_text(body, encoding="utf-8")
-    req = json.loads(apply(json.dumps(template), {
+    req = json.loads(fill_deck(json.dumps(template), {
         **substitutions(args.kind, vdd, args.msense_w),
         "@@BODY@@": str(work / "body.spice"),
         "@@CORNER_BUNDLE@@": args.bundle,
-    }))
+    }, "request"))
     req["corners"]["process"] = ["typ"]
     req["corners"]["temperature_c"] = [27]
     if "supply_v" in req["corners"]:
         req["corners"]["supply_v"] = {"Vvdd": [vdd]}
-    left = leftover_placeholders(json.dumps(req))
-    if left:
-        raise SystemExit(f"cmos5l_klt.py: request placeholders left unresolved: {left}")
     (work / "request.json").write_text(json.dumps(req, indent=2) + "\n", encoding="utf-8")
 
 
@@ -324,20 +292,17 @@ def prepare_batch(args: argparse.Namespace) -> None:
         body_path.write_text(body, encoding="utf-8")
         fixed = body.replace(f'"{args.batch_pdk_root}/', f'"{args.local_pdk_root}/')
         (work / f"body-fixed-{sid}.spice").write_text(fixed, encoding="utf-8")
-        req = json.loads(apply(json.dumps(template), {
+        req = json.loads(fill_deck(json.dumps(template), {
             **substitutions(args.kind, use_vdd, args.msense_w),
             "@@BODY@@": str(body_path),
             "@@CORNER_BUNDLE@@": "UNUSED-BATCH",
-        }))
+        }, "request"))
         req["backend"] = "batch"
         req["models"] = {"pdk": args.pdk, "lib": lib_path}
         req["corners"]["process"] = [process_section]
         if vdd is not None and "supply_v" in req["corners"]:
             req["corners"]["supply_v"] = {"Vvdd": [vdd]}
         req["batch"] = {"provision_script_path": args.provision}
-        left = leftover_placeholders(json.dumps(req))
-        if left:
-            raise SystemExit(f"cmos5l_klt.py: request placeholders left unresolved: {left}")
         (work / f"request-{sid}.json").write_text(json.dumps(req, indent=2) + "\n", encoding="utf-8")
         rows.append("\t".join([
             sid, label, "-" if vdd is None else _fmt(vdd),
@@ -575,13 +540,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.cmd == "enrich":
         report = enrich(json.loads(Path(args.report).read_text(encoding="utf-8")), args.kind)
-        Path(args.output).write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-        for c in report["corners"]:
-            if c.get("status") != "pass":
-                diag = "; ".join(d.get("message", "") for d in c.get("diagnostics", []))
-                print(f"  {c.get('corner_id')}: {c['status']} {diag[:100]}")
-        print(f"enriched: {report['status']} passed={report['passed']} "
-              f"failed={report['failed']} errored={report['errored']}")
+        epr.write_enriched_report(report, args.output)
         return 0
     if args.cmd == "spec":
         spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
