@@ -183,14 +183,11 @@ else
   # just proved against pvt_preflight.sh.
   python3 - "${WORK}/request.json" "${WORK}/body.spice" "${BATCH_PDK_ROOT}" \
     "${BATCH_PROVISION_SCRIPT}" "${HARNESS_DIR}" <<'PY'
-import importlib.util, json, os, pathlib, sys
+import json, os, pathlib, sys
 
 request_path, body_path, pdk_root, provision_script, harness_dir = sys.argv[1:6]
-spec = importlib.util.spec_from_file_location(
-    "klt_corner_bundle", pathlib.Path(harness_dir) / "klt_corner_bundle.py"
-)
-bundle = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(bundle)
+sys.path.insert(0, harness_dir)
+import klt_corner_bundle as bundle  # noqa: E402
 hbt, mos, res = bundle.CORNER_SECTIONS["typ"]
 pdk = os.environ.get("PDK", "ihp-sg13g2")
 models_dir = f"{pdk_root}/{pdk}/libs.tech/ngspice/models"
@@ -243,29 +240,16 @@ for key in ("job_id", "ami_id", "instance_type", "state", "exit_code"):
 PY
 fi
 
-python3 - "${WORK}/report.json" "${ANCHOR_VREF_V}" "${ANCHOR_TOL_V}" \
-           "${ANCHOR_R1_OHM}" "${ANCHOR_TOL_OHM}" "${BATCH_MODE}" <<'PY'
+python3 "${HARNESS_DIR}/sanity_anchors.py" "${WORK}/report.json" \
+  --anchor "vref_v=${ANCHOR_VREF_V}:${ANCHOR_TOL_V}" \
+  --anchor "r1_ohm=${ANCHOR_R1_OHM}:${ANCHOR_TOL_OHM}" \
+  --hint "off the committed anchor -- the harness is moving a number it must not move"
+
+python3 - "${WORK}/report.json" "${BATCH_MODE}" <<'PY'
 import json, pathlib, sys
 report = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
-anchor_v, tol_v, anchor_r, tol_r = (float(a) for a in sys.argv[2:6])
-batch_mode = sys.argv[6] == "1"
-if report["status"] != "pass":
-    raise SystemExit(f"run_probe.sh: klt sim graded the run {report['status']!r}")
-(corner,) = report["corners"]
-got = {m["name"]: m.get("value") for m in corner["measurements"]}
-for name, anchor, tol in (("vref_v", anchor_v, tol_v), ("r1_ohm", anchor_r, tol_r)):
-    value = got.get(name)
-    if value is None:
-        raise SystemExit(f"run_probe.sh: measurement {name} did not come back")
-    delta = abs(value - anchor)
-    verdict = "ok" if delta <= tol else "FAIL"
-    print(f"  {name:9s} = {value!r} (anchor {anchor}, delta {delta:.3g}) {verdict}")
-    if delta > tol:
-        raise SystemExit(
-            f"run_probe.sh: {name} is {delta:.3g} off the committed anchor -- the "
-            "harness is moving a number it must not move"
-        )
-log = pathlib.Path(corner["artifacts"]["log"]).read_text(encoding="utf-8")
+batch_mode = sys.argv[2] == "1"
+log = pathlib.Path(report["corners"][0]["artifacts"]["log"]).read_text(encoding="utf-8")
 if "osdi" not in log.lower() and "Unable to find definition of model" in log:
     raise SystemExit("run_probe.sh: OSDI preload from the included .control block did not take")
 print("  OSDI preload via an included .control block: ok")
