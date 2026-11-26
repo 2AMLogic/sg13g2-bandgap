@@ -203,7 +203,8 @@ scope was exhausted — so neither is the live cause any more.
   `overlap_pairs_without_coefficient` are both now empty — the deck's own
   zero-RC warning is gone, and no *other* metal level newly reports zero
   RC. Every `R`/`C` card the re-extraction wrote is spliced into
-  `testbench/tb_core_open_loop_bias_pex.spice.tmpl` verbatim, wired through
+  `testbench/tb_core_open_loop_bias_pex.spice.tmpl` (removed in #727;
+  recoverable from git history) verbatim, wired through
   the same per-terminal hub node names (`vdd__t0`/`__t1`/`__t2`,
   `sns1__t0`/`sns2__t0`/`vref__t0`, `cb2__par`/`cb3__par`/`vss__par`) the
   extraction itself uses — this is genuinely simulated, not just committed
@@ -302,9 +303,9 @@ What changed about how this experiment's evidence is minted:
   netlists on every run (hub tags read off each device card, the merged
   tap net renamed to `tn0`, the 255 ladder units under their `XRU<n>`
   names for D2, this bench's per-leg ammeters are cut into each mirror leg's load-side terminal by the same generator, the only place a terminal can be cut correctly). The hand-transcribed
-  `testbench/*.spice.tmpl` files remain for history; the bench body
-  (`testbench/*.body.spice.tmpl`) now carries only fixtures and includes
-  the generated DUT.
+  `testbench/*.spice.tmpl` files were removed in #727 and remain in git
+  history only; the bench body (`testbench/*.body.spice.tmpl`) now carries
+  only fixtures and includes the generated DUT.
 - **The grid runs as per-process `klt sim --backend batch` requests**
   (one fleet job each), merged deterministically
   (`sim/harness/merge_batch_shards.py`) before the adapter mints one
@@ -359,12 +360,14 @@ nor the resistor-recognition marker layers PR #45 added the layout side of.
 If re-running with a `pip`-installed `klt`, confirm `pex_extract_report.json`'s
 `parasitics.r_count`/`c_count` are non-zero before trusting the result — a
 stale install will silently reproduce the old zero-RC behavior with
-`status: "extracted"` and no error. If the testbench template's hand-spliced
-`R`/`C` cards (see `testbench/tb_core_open_loop_bias_pex.spice.tmpl`'s "Wire
-parasitics" block) no longer match a freshly regenerated
-`bandgap_core.pex.spice`, update that block from the new file's own
-non-`M`-card lines — same manual-transcription convention the `w`/`l`/`as`/
-`ad`/`ps`/`pd` device geometry above it already uses.
+`status: "extracted"` and no error. A fresh extraction no longer has to be
+hand-reconciled with the testbench: the hand-spliced `R`/`C` block that
+step used to update was the "Wire parasitics" block of the legacy
+hand-transcribed `testbench/tb_core_open_loop_bias_pex.spice.tmpl` (removed
+in #727; recoverable from git history), while the live body's `R`/`C` cards
+are regenerated from the committed extraction on every run by
+`sim/tools/gen_pex_netlist_body.py`, so a fresh `bandgap_core.pex.spice`
+flows through with no template edit.
 
 Then:
 

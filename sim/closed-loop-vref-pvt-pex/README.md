@@ -130,7 +130,8 @@ simulation.
   `total_capacitance_ff: 261.13`) — the largest wire-parasitic set of any
   experiment in this tree, being the whole block rather than one leaf cell.
   Every card is spliced into
-  `testbench/tb_closed_loop_vref_pex.spice.tmpl` verbatim (after the
+  `testbench/tb_closed_loop_vref_pex.spice.tmpl` (removed in #727;
+  recoverable from git history) verbatim (after the
   merged-net-label rename below), wired through the same per-terminal hub
   node names the extraction itself uses.
 - **Merged-net labels, named explicitly.** `pex_extract_report.json` reports
@@ -188,9 +189,9 @@ What changed about how this experiment's evidence is minted:
   netlists on every run (hub tags read off each device card, the merged
   tap net renamed to `tn0`, the 255 ladder units under their `XRU<n>`
   names for D2, the three subckts are flattened through the design netlist's own instance lines, and the `FB|OUT`/`IN_N|SNS1`/`IN_P|SNS2` merged label nets are renamed to their schematic names `fb`/`sns1`/`sns2`). The hand-transcribed
-  `testbench/*.spice.tmpl` files remain for history; the bench body
-  (`testbench/*.body.spice.tmpl`) now carries only fixtures and includes
-  the generated DUT.
+  `testbench/*.spice.tmpl` files were removed in #727 and remain in git
+  history only; the bench body (`testbench/*.body.spice.tmpl`) now carries
+  only fixtures and includes the generated DUT.
 - **The grid runs as per-process x supply `klt sim --backend batch` requests**
   (one fleet job each), merged deterministically
   (`sim/harness/merge_batch_shards.py`) before the adapter mints one

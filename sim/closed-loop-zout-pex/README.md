@@ -166,9 +166,9 @@ What changed about how this experiment's evidence is minted:
   netlists on every run (hub tags read off each device card, the merged
   tap net renamed to `tn0`, the 255 ladder units under their `XRU<n>`
   names for D2, the three subckts are flattened and the merged label nets renamed as in the vref bench). The hand-transcribed
-  `testbench/*.spice.tmpl` files remain for history; the bench body
-  (`testbench/*.body.spice.tmpl`) now carries only fixtures and includes
-  the generated DUT.
+  `testbench/*.spice.tmpl` files were removed in #727 and remain in git
+  history only; the bench body (`testbench/*.body.spice.tmpl`) now carries
+  only fixtures and includes the generated DUT.
 - **The grid runs as per-process x supply `klt sim --backend batch` requests**
   (one fleet job each), merged deterministically
   (`sim/harness/merge_batch_shards.py`) before the adapter mints one
