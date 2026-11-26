@@ -41,6 +41,7 @@ set -euo pipefail
 EXP="core-open-loop-bias-pex"
 STEM="core_open_loop_bias_pex"
 source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_runner.sh"
+IDENT_ARGS+=(--extra "${HARNESS_DIR}/enrich_pvt_report.py")
 
 # #272's one-point probe on this same extraction: the sanity anchor.
 ANCHOR_VREF_V="1.052999"
