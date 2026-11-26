@@ -10,6 +10,11 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-26
+
+- **PR #648**: fix: skip the magnitude rewrite for limit-graded supply-bench measurements
+- **Issue #646** (closed): Item-5 iq citation pairs a signed limit with an enricher-magnitude value, so its bound is not re-derivable from the envelope
+
 ### 2026-11-25
 
 - **PR #715**: refactor: share LVS resistor formulas across IHP PDKs
@@ -484,9 +489,4 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 - **Issue #253** (closed): docs(layout): two stale "no underpass needed" claims for sg13cmos5l-bandgap_startup
 - **Issue #252** (closed): docs(layout): #174 LVS section quotes 22 findings; committed sg13cmos5l-bandgap_top report says 14
 - **Issue #250** (closed): docs: condense SG13CMOS5L half of layout/README.md — closed-issue narrative duplicated in generate.py docstrings, with stale LVS counts (follow-up to #189)
-
-### 2026-09-26
-
-- **PR #249**: Add pinned-comment convention for tracker issues at the addComment cap
-- **Issue #248** (closed): Issue #4 hit GitHub's 2500-comment hard cap: addComment now permanently disabled
 
