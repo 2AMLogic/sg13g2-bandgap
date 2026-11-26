@@ -39,7 +39,7 @@ Issues currently being built (`loom:building`).
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#648**: fix: skip the magnitude rewrite for limit-graded supply-bench measurements
 
 ## Approved (Awaiting Merge)
 
@@ -80,7 +80,7 @@ _None._
 | Important | 2 |
 | Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 0 |
+| PRs awaiting review | 1 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 11 |
 | Architect / Hermit proposals | 1 |
