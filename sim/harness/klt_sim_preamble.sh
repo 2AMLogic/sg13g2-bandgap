@@ -146,14 +146,17 @@ klt_sim_read_msense_width() {  # NETLIST
 # --- startup seed record --------------------------------------------------------
 # Sets SEED_CSV to sim/closed-loop-startup's newest committed record, where
 # the seeded benches' .nodeset values come from, and returns 3 -- this
-# preamble's return-not-exit contract -- when there is none. The *-tc.csv /
-# *-vs-schematic* companions a previous enrichment derives from a record are
-# skipped and the sort is the C locale's: the same lookup seed_deck.py's
-# newest_seed_csv (#486/#707) and pex_ac_runner.sh make. Record ids lead with
-# a UTC timestamp, so the last remaining filename in byte order is the
-# newest seed. Under en_US.UTF-8 a companion can sort after its seed,
-# so an unfiltered `sort | tail -1` can select the companion (#739).
-# The identity coverage probe runs these shell runners with a stubbed python3.
+# preamble's return-not-exit contract -- when there is none. Newest is by
+# filename, never mtime: record ids lead with a UTC timestamp, so in byte
+# order the lexicographic tail IS the newest record, whereas a fresh
+# checkout stamps every record at once and leaves the choice to checkout
+# order (pex_ac_runner.sh's own mtime-ordered pick, issue #740). The
+# *-tc.csv / *-vs-schematic* companions a previous enrichment derives from
+# a record are skipped and the sort is the C locale's -- the same lookup as
+# seed_deck.py's newest_seed_csv (#486/#707). Under en_US.UTF-8 a companion
+# can sort after its seed, so an unfiltered `sort | tail -1` can select the
+# companion (#739). Pure shell on purpose: the identity coverage probe runs
+# these runners with a stubbed python3.
 klt_sim_newest_seed_csv() {
   local cand
   local cands=()
