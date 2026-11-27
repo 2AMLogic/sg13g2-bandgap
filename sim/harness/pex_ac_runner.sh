@@ -19,14 +19,43 @@
 IDENT_ARGS+=(--extra "${HARNESS_DIR}/enrich_pvt_report.py")
 
 # --- node seeds: sim/closed-loop-startup's newest committed record ----------
-SEED_CSV="$(ls -t "${SIM_DIR}"/closed-loop-startup/records/*.csv \
-  | grep -v -e '-tc.csv' -e '-vs-schematic' | head -1)"
-if [[ -z "${SEED_CSV}" ]]; then
-  echo "run_klt_sim.sh: no seed record in ${SIM_DIR}/closed-loop-startup/records/" >&2
-  exit 3
-fi
-SEEDS_OF() {  # $1 corner label, $2 vdd -> prints fb sns1 sns2 vref seeds (27C row)
-  awk -F, -v c="$1" -v v="$2" '$1==c && $6==v && $5=="27" && $8=="PASS" {print $11, $12, $13, $14; exit}' "${SEED_CSV}"
+klt_sim_newest_seed_csv || exit $?
+# SEEDS_OF CORNER VDD -> prints fb sns1 sns2 vref seeds (27C row), each read
+# from the PASS row by its header name, as sim/lib/nodeset_seed.sh's
+# lookup_seed does: the startup record's schema evolves (73c420a2 dropped
+# msense_w, which a positional read of the row never found again, issue
+# #740). Prints nothing and returns 3 -- naming the cause on stderr -- when a
+# column, the row, or one of the four values is missing.
+SEEDS_OF() {
+  awk -F, -v c="$1" -v v="$2" '
+    function refuse(why) {
+      printf "run_klt_sim.sh: %s\n", why > "/dev/stderr"
+      verdict = 1
+      exit 3
+    }
+    BEGIN {
+      record = ARGV[1]
+      nk = split("corner_label temp_c vdd_v status", key, " ")
+      ns = split("fb_final_v sns1_final_v sns2_final_v vref_final_v", seed, " ")
+    }
+    NR == 1 {
+      for (i = 1; i <= NF; i++) col[$i] = i
+      for (i = 1; i <= nk; i++) if (!(key[i] in col)) refuse("no " key[i] " column in " record)
+      for (i = 1; i <= ns; i++) if (!(seed[i] in col)) refuse("no " seed[i] " column in " record)
+      next
+    }
+    $(col[key[1]]) == c && $(col[key[2]]) == "27" && $(col[key[3]]) == v && $(col[key[4]]) == "PASS" {
+      for (i = 1; i <= ns; i++)
+        if ($(col[seed[i]]) == "")
+          refuse(c "/27C/" v " PASS row in " record " has an empty " seed[i])
+      out = $(col[seed[1]])
+      for (i = 2; i <= ns; i++) out = out " " $(col[seed[i]])
+      print out
+      verdict = 1
+      exit 0
+    }
+    END { if (!verdict) refuse("no " c "/27C/" v " seed row in " record) }
+  ' "${SEED_CSV}"
 }
 
 check_anchors() {  # $1 = enriched report json
@@ -62,12 +91,9 @@ _ac_main() {
   shift 2
   case "${MODE}" in
   --sanity)
-    local FB S1 S2 VR
-    read -r FB S1 S2 VR <<< "$(SEEDS_OF typ 3.30)"
-    if [[ -z "${FB:-}" ]]; then
-      echo "run_klt_sim.sh: no typ/27C/3.30 seed row in ${SEED_CSV}" >&2
-      exit 3
-    fi
+    local FB S1 S2 VR seeds
+    seeds="$(SEEDS_OF typ 3.30)" || exit $?
+    read -r FB S1 S2 VR <<< "${seeds}"
     pex_instantiate_body "${OSDI_DIR}" "${body_ref}" VDD=3.30 \
       FB_SEED="${FB}" SNS1_SEED="${S1}" SNS2_SEED="${S2}" VREF_SEED="${VR}" \
       "$@" > "${WORK}/body.spice"
