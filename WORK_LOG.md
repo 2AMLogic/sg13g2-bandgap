@@ -12,6 +12,9 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-27
 
+- **Issue #739** (closed): Retire remaining enrich_supply_bench_report, sim/lib/, and shell seed-CSV stragglers across sim/
+- **PR #741**: refactor(sim): retire the enricher tail, bench shell blocks and seed-CSV lookup onto shared helpers
+- **PR #734**: sim(closed-loop-iq): record the grid with the signed graded average and re-cite item 5
 - **PR #743**: fix(sim): select the AC benches' startup seed record by name and read it by header
 - **Issue #740** (closed): pex_ac_runner.sh SEEDS_OF reads the startup seed record positionally; 73c420a2's msense_w-column drop strands closed-loop-psrr/-psrr-pex/-zout-pex
 - **PR #737**: fix(sim): make pre_osdi paths under the PDK root portable in snapshots
