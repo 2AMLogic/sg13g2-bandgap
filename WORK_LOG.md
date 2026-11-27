@@ -12,6 +12,12 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-27
 
+- **Issue #745** (closed): Simplify the LVS resistor self-test with unittest subtests
+- **PR #749**: refactor: express the LVS resistor self-test as unittest subtests
+- **Issue #746** (closed): Test both TC companion CLIs directly and remove the duplicated exit checks
+- **PR #750**: test(sim): assert TC companion exit codes at the script entry point
+- **Issue #733** (closed): sim/harness: a merged batch report keeps one shard's diagnostic_counts and metrics
+- **PR #747**: fix(sim): rebuild batch diagnostic and metric counts from every corner
 - **Issue #739** (closed): Retire remaining enrich_supply_bench_report, sim/lib/, and shell seed-CSV stragglers across sim/
 - **PR #741**: refactor(sim): retire the enricher tail, bench shell blocks and seed-CSV lookup onto shared helpers
 - **PR #734**: sim(closed-loop-iq): record the grid with the signed graded average and re-cite item 5

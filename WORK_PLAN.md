@@ -7,7 +7,7 @@ Current repository work state, generated from GitHub labels by the Guide role.
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-_None._
+- **#752**: test(sim): move the TC companion tests into their own module
 
 ## Very Important
 
@@ -28,15 +28,13 @@ _None._
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
-- **#733**: sim/harness: a merged batch report keeps one shard's diagnostic_counts and metrics
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
-- **#653**: Re-run closed-loop-iq for a re-derivable item-5 citation and update the record spec's magnitude Claim (post-#648)
-- **#739**: Retire remaining enrich_supply_bench_report, sim/lib/, and shell seed-CSV stragglers across sim/
+- **#751**: Move the temperature-coefficient companion tests out of the harness transformer suite
 
 ## PRs Awaiting Review
 
@@ -48,7 +46,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#734**: sim(closed-loop-iq): record the grid with the signed graded average and re-cite item 5
+- **#752**: test(sim): move the TC companion tests into their own module
 
 ## Proposed
 
@@ -65,7 +63,6 @@ Issues carrying `loom:curated`.
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)*
 - **#653**: Re-run closed-loop-iq for a re-derivable item-5 citation and update the record spec's magnitude Claim (post-#648) *(curated)*
 - **#698**: Re-run sim/sg13cmos5l-closed-loop-startup-pex against the parasitic-bearing sg13cmos5l-bandgap_top.pex.spice (post-#480) *(curated)*
-- **#733**: sim/harness: a merged batch report keeps one shard's diagnostic_counts and metrics *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -81,14 +78,14 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 0 |
+| Operator merge-risk holds | 1 |
 | Very important | 1 |
 | Important | 3 |
-| Ready (`loom:issue`) | 2 |
-| In Progress (`loom:building`) | 3 |
+| Ready (`loom:issue`) | 1 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 12 |
+| Curated | 11 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
