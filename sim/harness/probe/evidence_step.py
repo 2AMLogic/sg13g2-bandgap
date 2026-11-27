@@ -45,7 +45,7 @@ import merge_batch_shards as mbs  # noqa: E402
 PROBE = "run_probe.sh"
 CHECKER = Path(".github") / "scripts" / "check_evidence_formats.py"
 DUT_NETLIST = Path("design") / "netlist" / "bandgap_core.spice"
-PRODUCER = {"tool": PROBE, "version": None, "loom.repo": None, "commit": None}
+PRODUCER = {"tool": PROBE, "version": "0", "loom.repo": "scratch", "commit": None}
 
 
 class ProbeStore(es.Store):
@@ -58,7 +58,10 @@ class ProbeStore(es.Store):
     `klt` and opens no connection. As in :func:`evidence_store.put_files`, a
     zero-byte file is listed rather than stored. An entry says what it is: the
     probe as producer, a `probe/` key namespace -- nothing was put by `klt`,
-    and nothing is in the fleet store.
+    and nothing is in the fleet store. Every entry still satisfies the
+    committed-manifest schema of `.github/scripts/check_artifact_manifests.py`
+    (`producer.version` and `producer.loom.repo` are non-empty strings), so the
+    scratch manifest is the stored-record shape and not a lookalike.
     """
 
     def __init__(self) -> None:

@@ -339,7 +339,8 @@ class ProbeEvidenceStepTests(TempDirCase):
     The step is the probe's assertion 5: `kse.emit` through a probe-local store
     into a scratch repository under the probe's work directory, then the
     production `check_record()` and the DUT comparison over the snapshot the
-    manifest names. Everything but the run is the probe's own committed fixture
+    manifest names; the manifest itself is held to the production manifest
+    schema. Everything but the run is the probe's own committed fixture
     -- its record spec, its request's measurement list, its netlist body and
     the trim subcircuit `run_probe.sh` splices out of the design netlist --
     and the checker and the reference DUT are read from the real checkout.
@@ -359,6 +360,14 @@ class ProbeEvidenceStepTests(TempDirCase):
             "evidence_step", cls.PROBE_DIR / "evidence_step.py")
         cls.step = importlib.util.module_from_spec(loader)
         loader.loader.exec_module(cls.step)
+        scripts = cls.CHECKOUT / ".github" / "scripts"
+        if str(scripts) not in sys.path:
+            sys.path.insert(0, str(scripts))
+        loader = importlib.util.spec_from_file_location(
+            "check_artifact_manifests", scripts / "check_artifact_manifests.py")
+        schema = importlib.util.module_from_spec(loader)
+        loader.loader.exec_module(schema)
+        cls.manifest_problems = staticmethod(schema.manifest_problems)
 
     def setUp(self) -> None:
         super().setUp()
@@ -480,6 +489,8 @@ class ProbeEvidenceStepTests(TempDirCase):
         stored = [f"sim/scratch-experiment/corners/{self.RID}/{self.CORNER}.log",
                   f"sim/scratch-experiment/netlist-snapshots/{self.RID}/{self.CORNER}.spice"]
         self.assertEqual([e["name"] for e in manifest["entries"]], stored)
+        self.assertEqual(self.manifest_problems(manifest, "scratch-experiment", self.RID), [],
+                         "the probe's manifest must be the stored-record shape")
         self.assertFalse((self.experiment / "corners").exists())
         self.assertFalse((self.experiment / "netlist-snapshots").exists())
         self.assertEqual(sorted(store.objects), stored)
@@ -496,7 +507,7 @@ class ProbeEvidenceStepTests(TempDirCase):
             self.replay(drop="XQ1")
         self.assertIn("check_record() on the adapter's output: ok", out.getvalue())
         self.assertIn("does not inline the DUT's own devices", str(ctx.exception))
-        self.assertIn("XQ1", str(ctx.exception))
+        self.assertIn("first missing: ['XQ1']", str(ctx.exception))
 
     def test_snapshot_without_a_pdk_root_model_path_fails(self) -> None:
         out = io.StringIO()
@@ -551,6 +562,11 @@ class ProbeEvidenceStepTests(TempDirCase):
                 for leftover in ("corners", "netlist-snapshots"):
                     self.assertFalse((work / experiment / leftover).exists())
                 self.assertFalse((work / "scratch-repo" / es.SCRATCH_DIR).exists())
+                manifest = json.loads((work / "scratch-repo/manifests/artifacts"
+                                       / f"scratch-experiment-{self.RID}.manifest.json")
+                                      .read_text(encoding="utf-8"))
+                self.assertEqual(self.manifest_problems(manifest, "scratch-experiment", self.RID),
+                                 [])
 
                 with (work / experiment / "records" / f"{self.RID}.csv").open(
                         encoding="utf-8") as fh:
