@@ -64,6 +64,10 @@ sky130-comparator#332.
   legacy verdict formulas (failed/missing measurements, partial corner
   failure), and the runners' refusal to dispatch without the provisioning
   acknowledgement. No ngspice, PDK or network.
+- **`sim/harness/test_harness_runners.py`** exercises the shell runners
+  with fixture reports and a mock `klt`. It checks submission identity on
+  resume, batch-set dispatch, PEX shard merging, schematic DUT selection,
+  runner dependencies and AC startup seed selection.
 - **`sim/harness/test_harness_transformers.py`** — self-test of the
   `klt sim` harness transforms (#297) on tiny temp-dir fixtures (including the #309 extraction-source binding capture/drift/publish checks): shard
   order/relabelling and recomputed counts (`merge_batch_shards.py`),
@@ -172,6 +176,7 @@ ngspice, no PDK), runnable locally the same way CI runs them:
 python3 .github/scripts/test_check_evidence_formats.py
 python3 sim/tools/test_gen_pex_netlist_body.py
 python3 sim/loop-gain-phase-margin/tools/test_solve_quality.py
+python3 sim/harness/test_harness_runners.py
 python3 sim/harness/test_harness_transformers.py
 python3 sim/harness/test_cmos5l_harness.py
 python3 .github/scripts/check_evidence_formats.py

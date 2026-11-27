@@ -470,8 +470,8 @@ PDK name, batch PDK root).
 host at submission. It cannot attest to unrecorded remote changes: the runner
 image, a klt build with an unchanged version string, or the PDK files behind
 `/opt/pdk`. Only what the caller declares is covered; to invalidate across such
-a change, use a new work dir. Tests (`test_harness_transformers.py`,
-`ResumeIdentityTests`) use a mock `klt` and run no simulator.
+a change, use a new work dir. `ResumeIdentityTests` exercises this boundary
+with a mock `klt` in [`test_harness_runners.py`](test_harness_runners.py).
 
 ## The `--sanity` anchor gate, once (issue #458)
 
