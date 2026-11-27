@@ -13,7 +13,6 @@ nothing under sim/ is written.
 from __future__ import annotations
 
 import ast
-import contextlib
 import csv
 import io
 import json
@@ -4176,6 +4175,11 @@ class EndpointTcSeamTests(TempDirCase):
 # a drifted key used to mint a header-only CSV and exit 0 -- empty evidence
 # published as if it were derived. main() must refuse instead: non-zero
 # exit, stderr naming the keys the record actually carried.
+#
+# Each companion is run the way the shell hooks run it -- `sys.executable
+# <script>` -- because the exit status is the contract: the script hands
+# main()'s return value to sys.exit, and an in-process call to main() never
+# sees it (issue #746: a `return 7` passed every test).
 # --------------------------------------------------------------------------
 
 
@@ -4186,61 +4190,83 @@ def write_record(path: Path, fieldnames: list[str], rows: list[dict]) -> None:
         w.writerows(rows)
 
 
-def run_main(main_fn, argv: list[str]) -> tuple[object, str]:
-    """Run a companion `main()`; `None` means it returned (exit 0).
-
-    The modules fail the repo's way (`sanity_anchors.py`): `SystemExit`
-    carrying the diagnostic as its `code` -- at top level the interpreter
-    prints it to stderr and exits 1, so the returned string is the message
-    a run log would carry.
-    """
-    err = io.StringIO()
-    with contextlib.redirect_stderr(err):
-        try:
-            main_fn(argv)
-        except SystemExit as exc:
-            return exc, str(exc.code)
-    return None, err.getvalue()
-
-
 RECORD_FIELDS = ["corner_label", "vdd_v", "temp_c", "vref_3ms_v", "status"]
 
+#: The endpoint grid, as a healthy record writes it.
+ENDPOINT_POINTS = [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]
 
-class EndpointTcLoudEmptyTests(TempDirCase):
-    """tc_companion.main() refuses an empty derivation (#510)."""
+#: Each companion command by method: the script, the companion it writes,
+#: the header that companion must carry, a record that derives, a record
+#: whose every group misses the grid, and the keys the refusal must name.
+TC_COMMANDS = {
+    "endpoint": {
+        "script": "tc_companion.py",
+        "companion": "record-tc.csv",
+        "header": tcc.HEADER,
+        "deriving": endpoint_rows(ENDPOINT_POINTS),
+        "key_miss": endpoint_rows([(float(t), v) for t, v in ENDPOINT_POINTS]),
+        "missed_keys": ("typ/3.30/-40.0", "typ/3.30/27.0", "typ/3.30/125.0"),
+    },
+    "box": {
+        "script": "boxtc_companion.py",
+        "companion": "record-boxtc.csv",
+        "header": bxc.HEADER,
+        "deriving": boxtc_rows(INTERIOR_EXTREMA),
+        "key_miss": boxtc_rows(INTERIOR_EXTREMA, vdd="3.31"),
+        "missed_keys": ("typ/3.31",),
+    },
+}
+
+
+def run_cli(script: str, argv: list[str]) -> subprocess.CompletedProcess:
+    """Run a companion script the way the shell hooks do; the result carries the exit status."""
+    return subprocess.run(
+        [sys.executable, str(HARNESS / script), *argv],
+        capture_output=True, text=True)
+
+
+class TcCompanionCliTests(TempDirCase):
+    """Both companion commands refuse an empty derivation (#510)."""
+
+    def record_and_companion(self, method: str) -> tuple[Path, Path]:
+        """A `record.csv` and companion path that only this method's runs touch."""
+        work = self.tmp / method
+        work.mkdir()
+        return work / "record.csv", work / TC_COMMANDS[method]["companion"]
 
     def test_key_miss_exits_nonzero_naming_the_record_keys(self) -> None:
         # The issue's own example: `temperature_c` arrives as a string, so
-        # temp_c renders "-40.0" and matches none of TEMPS -- every group
-        # is omitted. The refusal must say what the record carried.
-        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
-        write_record(src, RECORD_FIELDS, [
-            {"corner_label": "typ", "vdd_v": "3.30", "temp_c": f"{t}.0",
-             "vref_3ms_v": repr(1.047), "status": "PASS"}
-            for t in (-40, 27, 125)
-        ])
-        exc, err = run_main(tcc.main, [str(src), str(dst)])
-        self.assertIsNotNone(exc, "key-miss record still exited 0")
-        self.assertNotEqual(exc.code, 0)
-        self.assertIn("header-only", err)
-        for key in ("typ/3.30/-40.0", "typ/3.30/27.0", "typ/3.30/125.0"):
-            self.assertIn(key, err)
-        # And the refusal leaves no header-only artifact on disk (#536):
-        # records/ is append-only evidence, and a companion whose body is
-        # empty is one `git add -A` away from being committed as derived.
-        self.assertFalse(dst.exists(), "refused run left the companion on disk")
+        # temp_c renders "-40.0" and matches none of TEMPS. The box module
+        # keys groups by (corner, vdd) and matches temperature numerically,
+        # so there a drifted vdd is what empties every group. Either way the
+        # refusal must say what the record carried.
+        for method, spec in TC_COMMANDS.items():
+            with self.subTest(method=method):
+                src, dst = self.record_and_companion(method)
+                write_record(src, RECORD_FIELDS, spec["key_miss"])
+                r = run_cli(spec["script"], [str(src), str(dst)])
+                self.assertNotEqual(r.returncode, 0, "key-miss record still exited 0")
+                self.assertIn("header-only", r.stderr)
+                for key in spec["missed_keys"]:
+                    self.assertIn(key, r.stderr)
+                # And the refusal leaves no header-only artifact on disk
+                # (#536): records/ is append-only evidence, and a companion
+                # whose body is empty is one `git add -A` away from being
+                # committed as derived.
+                self.assertFalse(dst.exists(), "refused run left the companion on disk")
 
     def test_empty_record_is_a_distinct_refusal(self) -> None:
         # A record with a header and no rows read: also no evidence, but a
         # different defect than a key miss, and the message says which.
-        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
-        write_record(src, RECORD_FIELDS, [])
-        exc, err = run_main(tcc.main, [str(src), str(dst)])
-        self.assertIsNotNone(exc, "empty record still exited 0")
-        self.assertNotEqual(exc.code, 0)
-        self.assertIn("no rows", err)
-        self.assertNotIn("keys the record carried", err)
-        self.assertFalse(dst.exists(), "refused run left the companion on disk")
+        for method, spec in TC_COMMANDS.items():
+            with self.subTest(method=method):
+                src, dst = self.record_and_companion(method)
+                write_record(src, RECORD_FIELDS, [])
+                r = run_cli(spec["script"], [str(src), str(dst)])
+                self.assertNotEqual(r.returncode, 0, "empty record still exited 0")
+                self.assertIn("no rows", r.stderr)
+                self.assertNotIn("keys the record carried", r.stderr)
+                self.assertFalse(dst.exists(), "refused run left the companion on disk")
 
     def test_a_refusal_preserves_a_preexisting_companion_intact(self) -> None:
         # Edge #536 leaves to the Builder: the companion path already holds
@@ -4248,80 +4274,28 @@ class EndpointTcLoudEmptyTests(TempDirCase):
         # before the destination is ever opened, so the prior companion is
         # never touched: a refused run leaves the path exactly as it found
         # it -- no header-only shell, no destroyed prior evidence.
-        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
-        write_record(src, RECORD_FIELDS, endpoint_rows(
-            [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]))
-        exc, err = run_main(tcc.main, [str(src), str(dst)])
-        self.assertIsNone(exc, err)
-        prior = dst.read_bytes()
-        write_record(src, RECORD_FIELDS, [])
-        exc, err = run_main(tcc.main, [str(src), str(dst)])
-        self.assertIsNotNone(exc, "empty record still exited 0")
-        self.assertNotEqual(exc.code, 0)
-        self.assertEqual(dst.read_bytes(), prior)
+        for method, spec in TC_COMMANDS.items():
+            with self.subTest(method=method):
+                src, dst = self.record_and_companion(method)
+                write_record(src, RECORD_FIELDS, spec["deriving"])
+                first = run_cli(spec["script"], [str(src), str(dst)])
+                self.assertEqual(first.returncode, 0, first.stderr)
+                prior = dst.read_bytes()
+                write_record(src, RECORD_FIELDS, [])
+                r = run_cli(spec["script"], [str(src), str(dst)])
+                self.assertNotEqual(r.returncode, 0, "empty record still exited 0")
+                self.assertEqual(dst.read_bytes(), prior)
 
     def test_a_deriving_record_still_exits_zero(self) -> None:
         # The check must not turn a healthy derivation into a failure.
-        src, dst = self.tmp / "record.csv", self.tmp / "record-tc.csv"
-        write_record(src, RECORD_FIELDS, endpoint_rows(
-            [(-40, 1.04695), (27, 1.04705), (125, 1.04201)]))
-        exc, err = run_main(tcc.main, [str(src), str(dst)])
-        self.assertIsNone(exc, err)
-        self.assertEqual(dst.read_text().splitlines()[0], ",".join(tcc.HEADER))
-
-
-class BoxTcLoudEmptyTests(TempDirCase):
-    """boxtc_companion.main() refuses an empty derivation (#510)."""
-
-    def test_key_miss_exits_nonzero_naming_the_record_keys(self) -> None:
-        # The box module keys groups by (corner, vdd) and matches
-        # temperature numerically, so a drifted vdd empties every group.
-        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
-        write_record(src, RECORD_FIELDS,
-                     boxtc_rows(INTERIOR_EXTREMA, vdd="3.31"))
-        exc, err = run_main(bxc.main, [str(src), str(dst)])
-        self.assertIsNotNone(exc, "key-miss record still exited 0")
-        self.assertNotEqual(exc.code, 0)
-        self.assertIn("header-only", err)
-        self.assertIn("typ/3.31", err)
-        # And the refusal leaves no header-only artifact on disk (#536):
-        # records/ is append-only evidence, and a companion whose body is
-        # empty is one `git add -A` away from being committed as derived.
-        self.assertFalse(dst.exists(), "refused run left the companion on disk")
-
-    def test_empty_record_is_a_distinct_refusal(self) -> None:
-        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
-        write_record(src, RECORD_FIELDS, [])
-        exc, err = run_main(bxc.main, [str(src), str(dst)])
-        self.assertIsNotNone(exc, "empty record still exited 0")
-        self.assertNotEqual(exc.code, 0)
-        self.assertIn("no rows", err)
-        self.assertNotIn("keys the record carried", err)
-        self.assertFalse(dst.exists(), "refused run left the companion on disk")
-
-    def test_a_refusal_preserves_a_preexisting_companion_intact(self) -> None:
-        # Edge #536 leaves to the Builder: the companion path already holds
-        # an earlier good derivation when a rerun refuses. main() refuses
-        # before the destination is ever opened, so the prior companion is
-        # never touched: a refused run leaves the path exactly as it found
-        # it -- no header-only shell, no destroyed prior evidence.
-        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
-        write_record(src, RECORD_FIELDS, boxtc_rows(INTERIOR_EXTREMA))
-        exc, err = run_main(bxc.main, [str(src), str(dst)])
-        self.assertIsNone(exc, err)
-        prior = dst.read_bytes()
-        write_record(src, RECORD_FIELDS, [])
-        exc, err = run_main(bxc.main, [str(src), str(dst)])
-        self.assertIsNotNone(exc, "empty record still exited 0")
-        self.assertNotEqual(exc.code, 0)
-        self.assertEqual(dst.read_bytes(), prior)
-
-    def test_a_deriving_record_still_exits_zero(self) -> None:
-        src, dst = self.tmp / "record.csv", self.tmp / "record-boxtc.csv"
-        write_record(src, RECORD_FIELDS, boxtc_rows(INTERIOR_EXTREMA))
-        exc, err = run_main(bxc.main, [str(src), str(dst)])
-        self.assertIsNone(exc, err)
-        self.assertEqual(dst.read_text().splitlines()[0], ",".join(bxc.HEADER))
+        for method, spec in TC_COMMANDS.items():
+            with self.subTest(method=method):
+                src, dst = self.record_and_companion(method)
+                write_record(src, RECORD_FIELDS, spec["deriving"])
+                r = run_cli(spec["script"], [str(src), str(dst)])
+                self.assertEqual(r.returncode, 0, r.stderr)
+                self.assertEqual(
+                    dst.read_text().splitlines()[0], ",".join(spec["header"]))
 
 
 if __name__ == "__main__":
