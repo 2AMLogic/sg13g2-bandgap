@@ -3384,11 +3384,10 @@ case "${ACTION}" in
   sanity)
     MODE=--sanity; WORK="$4"; OSDI_DIR=/models; KIND=psrr
     pex_instantiate_body() { printf 'DECK %s\\n' "$*"; }
-    pex_sanity_local() { cat "${WORK}/body.spice"; }
+    pex_sanity_local() { echo "SIMULATED"; cat "${WORK}/body.spice"; }
     python3() { :; }
     check_anchors() { :; }
-    _ac_main body.inc pex_record_mint
-    echo "SIMULATED" ;;
+    _ac_main body.inc pex_record_mint ;;
 esac
 """
 
@@ -3512,36 +3511,39 @@ class AcBenchSeedTests(TempDirCase):
                     f"run_klt_sim.sh: {cause}\n".format(
                         record=records_dir / self.RECORD))
 
-    def test_an_unusable_seed_row_never_reaches_the_deck(self) -> None:
-        """Issue #740: through the real _ac_main --sanity, a complete row
-        hands the deck its four voltages and goes on to simulate; a row with
-        an empty seed exits 3 before the deck is written, and nothing
-        simulates. The older msense_w schema is the one a positional read
-        still finds, which is where a half-seeded deck used to come from."""
+    def test_sanity_passes_the_four_voltage_tokens_to_the_deck(self) -> None:
         rows = seed_rows("1")
-        cases = {"complete": rows,
-                 "incomplete": [{**rows[0], "vref_final_v": ""}, *rows[1:]]}
-        fb, sns1, sns2, vref = seed_values("1")
-        for case, case_rows in cases.items():
-            with self.subTest(row=case):
+        rows[0].update(fb_final_v="0", sns1_final_v="-.25", sns2_final_v="+2.",
+                       vref_final_v=" 1.23456789E-01 ")
+        run, records_dir = self._run_ac_bench(
+            "sanity", {self.RECORD: seed_csv(SEED_HEADER_WITH_MSENSE, rows)})
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertEqual(run.stderr, "")
+        self.assertEqual(run.stdout, (
+            f"SEED_CSV={records_dir / self.RECORD}\nSIMULATED\n"
+            "DECK /models body.inc VDD=3.30 FB_SEED=0 SNS1_SEED=-.25"
+            " SNS2_SEED=+2. VREF_SEED=1.23456789E-01\n"))
+
+    def test_an_unusable_seed_row_never_reaches_the_deck(self) -> None:
+        cases = (("vref_final_v", "", "empty"),
+                 ("sns1_final_v", " ", "empty"),
+                 ("sns2_final_v", "nan", "invalid"),
+                 ("fb_final_v", "1e999", "invalid"),
+                 ("vref_final_v", "0.7 0.8", "invalid"))
+        for index, (column, value, cause) in enumerate(cases):
+            with self.subTest(column=column, value=value):
+                rows = seed_rows("1")
+                rows[0][column] = value
+                root = self.tmp / str(index)
                 run, records_dir = self._run_ac_bench(
-                    "sanity", {self.RECORD: seed_csv(SEED_HEADER_WITH_MSENSE, case_rows)},
-                    root=self.tmp / case)
-                picked = f"SEED_CSV={records_dir / self.RECORD}\n"
-                if case == "complete":
-                    self.assertEqual(run.returncode, 0, run.stderr)
-                    self.assertEqual(run.stderr, "")
-                    self.assertEqual(run.stdout, picked + (
-                        "DECK /models body.inc VDD=3.30"
-                        f" FB_SEED={fb} SNS1_SEED={sns1} SNS2_SEED={sns2}"
-                        f" VREF_SEED={vref}\nSIMULATED\n"))
-                else:
-                    self.assertEqual(run.returncode, 3, run.stderr)
-                    self.assertEqual(run.stdout, picked)
-                    self.assertEqual(
-                        run.stderr,
-                        "run_klt_sim.sh: typ/27C/3.30 PASS row in"
-                        f" {records_dir / self.RECORD} has an empty vref_final_v\n")
+                    "sanity", {self.RECORD: seed_csv(SEED_HEADER_SANS_MSENSE, rows)},
+                    root=root)
+                self.assertEqual(run.returncode, 3, run.stderr)
+                self.assertFalse((root / "work" / "body.spice").exists())
+                self.assertEqual(run.stdout, f"SEED_CSV={records_dir / self.RECORD}\n")
+                self.assertEqual(run.stderr, (
+                    "run_klt_sim.sh: typ/27C/3.30 PASS row in"
+                    f" {records_dir / self.RECORD} has an {cause} {column}\n"))
 
     def test_the_record_is_the_newest_by_name_whatever_the_mtimes(self) -> None:
         """Issue #740: `ls -t | head -1` made the choice a tie-break artefact

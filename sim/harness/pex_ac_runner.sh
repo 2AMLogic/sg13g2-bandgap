@@ -25,9 +25,9 @@ klt_sim_newest_seed_csv || exit $?
 # lookup_seed does: the startup record's schema evolves (73c420a2 dropped
 # msense_w, which a positional read of the row never found again, issue
 # #740). Prints nothing and returns 3 -- naming the cause on stderr -- when a
-# column, the row, or one of the four values is missing.
+# column or the row is missing, or a seed is not a finite decimal voltage.
 SEEDS_OF() {
-  awk -F, -v c="$1" -v v="$2" '
+  LC_ALL=C awk -F, -v c="$1" -v v="$2" '
     function refuse(why) {
       printf "run_klt_sim.sh: %s\n", why > "/dev/stderr"
       verdict = 1
@@ -45,12 +45,17 @@ SEEDS_OF() {
       next
     }
     $(col[key[1]]) == c && $(col[key[2]]) == "27" && $(col[key[3]]) == v && $(col[key[4]]) == "PASS" {
-      for (i = 1; i <= ns; i++)
-        if ($(col[seed[i]]) == "")
-          refuse(c "/27C/" v " PASS row in " record " has an empty " seed[i])
-      out = $(col[seed[1]])
-      for (i = 2; i <= ns; i++) out = out " " $(col[seed[i]])
-      print out
+      row = c "/27C/" v " PASS row in " record
+      for (i = 1; i <= ns; i++) {
+        value = $(col[seed[i]])
+        gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
+        if (value == "") refuse(row " has an empty " seed[i])
+        if (value !~ /^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?$/ ||
+            tolower(sprintf("%g", value + 0)) ~ /inf/)
+          refuse(row " has an invalid " seed[i])
+        voltage[i] = value
+      }
+      print voltage[1], voltage[2], voltage[3], voltage[4]
       verdict = 1
       exit 0
     }
