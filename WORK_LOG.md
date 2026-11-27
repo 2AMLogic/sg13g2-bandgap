@@ -12,6 +12,9 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-27
 
+- **Issue #759** (closed): Read the representative trim Monte Carlo log from its producing stage
+- **PR #760**: fix: index fit-stage results for failed draw-0 trim MC logs
+- **PR #756**: fix(guide): persist the WORK_PLAN receipt across docs PR steps
 - **Issue #745** (closed): Simplify the LVS resistor self-test with unittest subtests
 - **PR #749**: refactor: express the LVS resistor self-test as unittest subtests
 - **Issue #746** (closed): Test both TC companion CLIs directly and remove the duplicated exit checks
