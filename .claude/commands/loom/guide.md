@@ -1108,6 +1108,10 @@ in — and write there:
 # and BEFORE any of Steps 2-5. Idempotent: one stable slot, reused every tick.
 DOCS_WT="$(./.loom/scripts/docs-worktree.sh | tail -1)"
 echo "$DOCS_WT"   # e.g. <repo>/.loom/worktrees/docs-guide
+# Start a new receipt even if this tick skips Step 3 entirely.
+WORK_PLAN_RECEIPT="NOT RUN"
+WORK_PLAN_RENDER_HASH=""
+"$DOCS_WT/.loom/scripts/guide-work-plan.sh" reset || { ./.loom/scripts/docs-guide-lock.sh release; return 1 2>/dev/null || exit 1; }
 ```
 
 `docs-worktree.sh` creates (or resets) `<worktree-root>/docs-guide` on a fresh
@@ -2134,7 +2138,59 @@ render_plan_body() {
     "| Active epics | $(count "$epics") |")"
 }
 
+plan_stamp_line() {
+  printf '_Generated: %s (snapshot; compare against live labels)_' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+
+strip_plan_stamp() {
+  sed -e '1{/^_Generated: .* (snapshot; compare against live labels)_$/d;}'
+}
+
+# Step 3 owns the receipt. Persist it before publishing the in-shell result.
+record_work_plan_receipt() {
+  "$DOCS_WT/.loom/scripts/guide-work-plan.sh" record "$1" "$WORK_PLAN_RENDER_HASH" || return 1
+  WORK_PLAN_RECEIPT="$1"
+}
+
+verify_plan_provenance() {
+  local body="$1" line num rest got tag ok bad=0
+  while IFS= read -r line; do
+    num="${line#- **#}"; num="${num%%\**}"
+    rest="${line#*\*\*: }"
+    got="$("$GH_READ" api "repos/$GUIDE_REPO/issues/$num" --jq '.title' 2>/dev/null)" || got=""
+    if [ -z "$got" ]; then
+      echo "provenance: cannot fetch title of #$num from $GUIDE_REPO" >&2; bad=1
+      continue
+    fi
+    # Plain string equality only: a `${var% \*(x)\*}` strip is a no-op under
+    # zsh (the shell an interactive Guide may run this in), so never strip.
+    ok=0
+    for tag in '' ' *(curated)*' ' *(architect)*' ' *(hermit)*'; do
+      if [ "$rest" = "$got$tag" ] || [ "$rest" = "$got$tag *(held)*" ]; then ok=1; fi
+    done
+    if [ "$ok" -ne 1 ]; then
+      echo "provenance: #$num title mismatch in $GUIDE_REPO (rendered '$rest', forge '$got')" >&2; bad=1
+    fi
+  done < <(printf '%s\n' "$body" | grep -E '^- \*\*#[0-9]+\*\*: ')
+  return "$bad"
+}
+
 update_work_plan() {
+  WORK_PLAN_RECEIPT="NOT RUN"
+  WORK_PLAN_RENDER_HASH=""
+  "$DOCS_WT/.loom/scripts/guide-work-plan.sh" reset || return 1
+  if jq -e '(.guide.docsMaintenance.skipDocs // []) | arrays | index("WORK_PLAN.md") != null' \
+      "$DOCS_WT/.loom/config.json" >/dev/null; then
+    return 1
+  fi
+
+  # Pin the render and provenance lookups to this docs worktree's origin.
+  local GUIDE_REPO GH_REPO GH_CACHE_REPO_ID
+  GUIDE_REPO="$(git -C "$DOCS_WT" remote get-url origin 2>/dev/null \
+    | sed -E 's#^git@[^:]+:##; s#^https?://[^/]+/##; s#\.git/?$##')"
+  [ -n "$GUIDE_REPO" ] || return 1
+  export GH_REPO="$GUIDE_REPO" GH_CACHE_REPO_ID="$GUIDE_REPO"
+
   # Change detection: compare the freshly-rendered body against the body already
   # committed between the markers. No gitignored side-car (which resets to "" on
   # every fresh checkout) — the committed file IS the state.
@@ -2147,13 +2203,27 @@ update_work_plan() {
   # branch was dead code, and every tick unconditionally rewrote the file.
   # Comparing the SAME rendered text on both sides is what makes the skip real;
   # a hash buys nothing here, so compare the strings directly.
-  local new_body old_body
-  new_body="$(render_plan_body)"
-  # `sed '1d;$d'` drops the two marker lines, leaving only the generated region.
+  local new_body old_body stamp
+  new_body="$(render_plan_body)" || return 1
+  # #14204 RECEIPT: fingerprint the rendered body once, up front, so EVERY
+  # outcome below carries the same content hash into Step 5's `WORK_PLAN
+  # check:` PR-body line — including the ones that refuse to write. Same
+  # portability fallback the park-record hash uses (sha256sum on Linux,
+  # shasum on macOS). Deliberately NOT local: it must survive into Step 5.
+  WORK_PLAN_RENDER_HASH="$(printf '%s\n' "$new_body" | { sha256sum 2>/dev/null || shasum -a 256; } 2>/dev/null | cut -c1-12)"
+  [[ "$WORK_PLAN_RENDER_HASH" =~ ^[0-9a-f]{12}$ ]] || { echo "Cannot hash the rendered plan." >&2; return 1; }
+  # `sed '1d;$d'` drops the two marker lines, leaving only the generated region;
+  # `strip_plan_stamp` (#13909) then drops the region's generated-at stamp line
+  # so the comparison below sees ONLY label-derived content on both sides.
+  # new_body needs no such filter — render_plan_body() never emits a stamp, and
+  # if it ever did, the equality test below would go permanently false and
+  # every tick would rewrite the file (the #5413 dead-skip bug, replayed as one
+  # stamp-only docs PR per debounce window).
   old_body="$(sed -n '/<!-- guide:plan-body:start -->/,/<!-- guide:plan-body:end -->/p' \
-    "$DOCS_WT/WORK_PLAN.md" 2>/dev/null | sed '1d;$d')"
+    "$DOCS_WT/WORK_PLAN.md" 2>/dev/null | sed '1d;$d' | strip_plan_stamp)"
 
   if [ "$new_body" = "$old_body" ]; then
+    record_work_plan_receipt "current"
     echo "WORK_PLAN.md is current (no label changes detected)."
     return 1
   fi
@@ -2183,16 +2253,31 @@ update_work_plan() {
   elapsed=$(( now_epoch - last_merged_epoch ))
 
   if [ "$last_merged_epoch" -gt 0 ] && [ "$elapsed" -lt "$debounce_secs" ]; then
+    record_work_plan_receipt "debounced (elapsed ${elapsed}s < window ${debounce_secs}s)"
     echo "WORK_PLAN.md differs, but only ${elapsed}s since WORK_PLAN.md was last written by a merged docs-maintenance PR (< ${debounce_secs}s debounce) — suppressing this tick's rewrite."
     return 1
   fi
 
-  # Replace ONLY the text between the markers in "$DOCS_WT/WORK_PLAN.md" with
-  # $new_body (keep both marker lines, and everything outside them, untouched).
-  # Both sides above are `$(...)`-captured, so trailing newlines are stripped on
-  # both — only the internal structure has to match.
+  # #13923 PROVENANCE GATE, DO NOT REMOVE: the header claims this file is
+  # "generated from the repository's current GitHub label state"; discharge it.
+  # Refuse (non-zero, NO file change) unless every rendered `#N` carries the
+  # title the pinned repo gives it. Checks the OUTPUT, so it bites whatever the
+  # cause (guard denial, wrong cwd, stale scratch, unfaithful execution).
+  if ! verify_plan_provenance "$new_body"; then
+    record_work_plan_receipt "provenance-refused"
+    echo "WORK_PLAN.md NOT written: provenance check failed (fail closed)." >&2
+    return 1
+  fi
 
-  return 0
+  # Stamp only after the comparison and provenance checks. The helper
+  # replaces the marked region atomically inside the managed docs worktree.
+  stamp="$(plan_stamp_line)"
+  if ! printf '%s\n%s\n' "$stamp" "$new_body" | "$DOCS_WT/.loom/scripts/guide-work-plan.sh" splice; then
+    record_work_plan_receipt "write-failed"
+    return 1
+  fi
+
+  record_work_plan_receipt "written"
 }
 ```
 
@@ -2201,6 +2286,10 @@ The section set rendered above must stay in lockstep with the committed
 that section is silently deleted on the next tick (and vice versa, the
 comparison mismatches until the file catches up). Adding a section means editing
 `render_plan_body` **and** the committed file in the same change.
+
+Step 3 records the outcome and the first 12 hex digits of the rendered body's
+SHA-256 in the docs worktree. The hash covers the label-derived text with a
+single trailing newline. The generation stamp stays outside the comparison.
 
 ### Step 4: Check README.md Staleness
 
@@ -2373,6 +2462,11 @@ main checkout: that mutates the shared primary clone that concurrent sweeps,
 branch.
 
 ```bash
+read_work_plan_receipt_field() {
+  [ -f "$DOCS_WT/.loom-work-plan-receipt" ] || return 0
+  sed -n "s/^$1=//p" "$DOCS_WT/.loom-work-plan-receipt" 2>/dev/null | head -n1
+}
+
 create_docs_pr() {
   local branch
   branch="$(git -C "$DOCS_WT" branch --show-current)"
@@ -2385,9 +2479,11 @@ create_docs_pr() {
   # `git add -A` or the `work_log/` directory, so an unrelated file placed there
   # is not swept into the docs PR.
   local archive_file
+  local -a staged_docs=(WORK_LOG.md WORK_PLAN.md README.md)
   for archive_file in "$DOCS_WT"/$WORK_LOG_ARCHIVE_GLOB; do
     [ -f "$archive_file" ] || continue
     git -C "$DOCS_WT" add -- "work_log/${archive_file##*/}"
+    staged_docs+=("work_log/${archive_file##*/}")
   done
 
   # Snapshot which of the three files actually changed, for the telemetry
@@ -2416,7 +2512,7 @@ create_docs_pr() {
     # Writes"), so nothing here needs to survive; Steps 2-4 simply recompute
     # the same delta (plus anything new) against the still-unwritten
     # committed WORK_LOG.md/WORK_PLAN.md then.
-    git -C "$DOCS_WT" reset --hard HEAD
+    git -C "$DOCS_WT" restore --source=HEAD --staged --worktree -- "${staged_docs[@]}"
     ./.loom/scripts/docs-guide-lock.sh release
     return
   fi
@@ -2470,10 +2566,7 @@ Automated document maintenance by Guide triage agent."
   # (the PR URL, `gh pr create`'s normal success output) so the doc-
   # maintenance telemetry record below (issue #6136) can be tagged with the
   # PR number instead of just "a docs PR happened".
-  DOCS_PR_URL=$(cd "$DOCS_WT" && gh pr create \
-    --title "docs: Guide document maintenance update" \
-    --label "loom:review-requested" \
-    --body "$(cat <<'PRBODY'
+  DOCS_PR_BODY="$(cat <<'PRBODY'
 <!-- loom:docs-only-fast-path -->
 ## Summary
 
@@ -2481,25 +2574,38 @@ Automated document maintenance by the Guide triage agent.
 
 ### Changes
 - **WORK_LOG.md**: Appended entries for recently merged PRs and closed issues
-- **WORK_PLAN.md**: Regenerated roadmap from current GitHub label state
+@@WORK_PLAN_RECEIPT_LINE@@
 - **README.md**: Updated if architectural changes were detected
 
 ### Context
 This PR is generated automatically by the Guide role as part of its triage cycle.
 See rjwalters/loom#1784 for the feature specification (this template ships to every Loom-managed repo, so the reference must be fully qualified).
 
-This PR only ever stages `WORK_LOG.md`/`WORK_PLAN.md`/`README.md` (see
-`create_docs_pr()`'s `git add` above), so it always qualifies for the
-docs-only fast path (rjwalters/loom#6134) Judge and Champion apply to any PR
-whose changed-file list matches that exact set. The `<!-- loom:docs-only-fast-path -->`
-marker above is informational only — Judge and Champion never trust it (or
-this section's prose) and always re-derive the changed-file list themselves
-from the paginated files API before taking the fast path.
+The Judge and Champion check docs-only fast-path eligibility independently.
+A changed plan region requires a written receipt matching the head. The
+`<!-- loom:docs-only-fast-path -->` marker is informational.
 
 ---
 *Automated by Guide role - document maintenance phase*
 PRBODY
-)")
+)"
+  # Recover Step 3's receipt when Step 5 runs in a fresh shell.
+  local wp_receipt="${WORK_PLAN_RECEIPT:-}" wp_hash="${WORK_PLAN_RENDER_HASH:-}" wp_file_val
+  if [ -z "$wp_receipt" ] || [ "$wp_receipt" = "NOT RUN" ]; then
+    wp_hash=""
+    wp_file_val="$(read_work_plan_receipt_field receipt)"
+    if [ -n "$wp_file_val" ]; then
+      wp_receipt="$wp_file_val"
+      wp_hash="$(read_work_plan_receipt_field render_hash)"
+    fi
+  fi
+  WORK_PLAN_CHECK_LINE="- **WORK_PLAN check**: ${wp_receipt:-NOT RUN} (render-hash ${wp_hash:-none}, $(date -u '+%Y-%m-%dT%H:%M:%SZ'))"
+  DOCS_PR_BODY="${DOCS_PR_BODY/"@@WORK_PLAN_RECEIPT_LINE@@"/$WORK_PLAN_CHECK_LINE}"
+
+  DOCS_PR_URL=$(cd "$DOCS_WT" && gh pr create \
+    --title "docs: Guide document maintenance update" \
+    --label "loom:review-requested" \
+    --body "$DOCS_PR_BODY")
   echo "$DOCS_PR_URL"
   DOCS_PR_NUMBER="${DOCS_PR_URL##*/}"
 
@@ -2534,6 +2640,10 @@ PRBODY
   # and the docs worktree is a persistent slot that the next tick resets.
 }
 ```
+
+The `WORK_PLAN check:` line is the PR body's only plan-status claim. A fresh
+Step 5 shell loads the reader above and uses the same docs worktree as Step 3.
+A tick with no recorded check emits `NOT RUN` with hash `none`.
 
 ### Document Maintenance Summary
 
@@ -2630,6 +2740,8 @@ Document Maintenance Phase
   `docs: Guide document maintenance update` title. Without that exclusion the
   phase is self-perpetuating: its own merged PR is "new content" for the next
   tick, so merging PR N always justifies PR N+1 and the loop never terminates
+- A docs PR states WORK_PLAN's status only through the receipt. Never
+  free-text a claim like "WORK_PLAN.md is current" in the PR body.
 - WORK_PLAN is only regenerated when label state actually changes — which
   requires `render_plan_body`'s output and the committed marker region to be
   comparable byte-for-byte (see the #5413 bug note in Step 3)
