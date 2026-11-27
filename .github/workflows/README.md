@@ -71,6 +71,15 @@ sky130-comparator#332.
   derived columns and closed-loop verdict boundaries
   (`enrich_pvt_report.py`), and corner-id formatting, 6-s.f. CSV cells,
   include inlining and `${PDK_ROOT}` redaction (`klt_sim_evidence.py`).
+- **`sim/harness/test_tc_companions.py`** — self-test of the two
+  temperature-coefficient companions: `boxtc_companion.py` (box method, #465)
+  and `tc_companion.py` (endpoint method, #496). Each committed companion
+  regenerates byte-for-byte from its module, the parts of each formula a
+  correction would land on, the shared `pex_vref_runner.sh` seam (no bench
+  re-types the formula; the two derivations stay separate), and the CLI's
+  non-zero exit when a derivation omits every group (#510) — run as a real
+  subprocess because the exit status is the contract (#746). No ngspice, PDK
+  or network.
 - **`.github/scripts/check_evidence_formats.py`** — the evidence-format and
   freshness gate. Five things, all headless and PDK-free:
   1. **`sim/` record format** — every `sim/<slug>/records/<record-id>.md`
@@ -173,6 +182,7 @@ python3 .github/scripts/test_check_evidence_formats.py
 python3 sim/tools/test_gen_pex_netlist_body.py
 python3 sim/loop-gain-phase-margin/tools/test_solve_quality.py
 python3 sim/harness/test_harness_transformers.py
+python3 sim/harness/test_tc_companions.py
 python3 sim/harness/test_cmos5l_harness.py
 python3 .github/scripts/check_evidence_formats.py
 python3 .github/scripts/test_check_report_dependencies.py

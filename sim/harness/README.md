@@ -560,10 +560,10 @@ left the other bench reporting the old derivation. **No value, span, filter
 or rounding was touched** by the consolidation: both committed companions
 regenerate byte-identically from the module, which is the acceptance test and
 is kept as a golden test. Tests: `BoxTcGoldenTests`, `BoxTcFormulaTests` and
-`BoxTcSeamTests` in
-[`test_harness_transformers.py`](test_harness_transformers.py), the last of
-which also asserts that neither bench re-implements the formula and that the
-two TC companions stay separate derivations.
+`BoxTcSeamTests` in [`test_tc_companions.py`](test_tc_companions.py)
+(`python3 sim/harness/test_tc_companions.py`), the last of which also asserts
+that neither bench re-implements the formula and that the two TC companions
+stay separate derivations.
 
 ## The endpoint-method TC companion, once (issue #496)
 
@@ -605,9 +605,9 @@ through unchanged. **No committed evidence changed**: all six companions
 regenerate byte-identically from the module, which is the acceptance test and
 is kept as a golden test. Tests: `EndpointTcGoldenTests`,
 `EndpointTcFormulaTests` and `EndpointTcSeamTests` in
-[`test_harness_transformers.py`](test_harness_transformers.py), the last of
-which also asserts that both endpoint benches delegate and that the two TC
-companions stay separate derivations.
+[`test_tc_companions.py`](test_tc_companions.py), the last of which also
+asserts that both endpoint benches delegate and that the two TC companions
+stay separate derivations.
 
 ## SG13CMOS5L experiments on the harness (issue #337, Part of #322)
 
