@@ -169,7 +169,20 @@ searches, dominant-error-regime writeups) — see the repo README for scope.
   limit-graded corner grids, including the 59.685 dB PSRR miss. The
   23 November report supersedes it.
 
-- The **23 November characterization report** combines those four grids
-  with #635's N=1,200 untrimmed mismatch measurements. All five points
-  clear the 3σ gate. The trimmed row remains a declared gap for item 6.
-  [Current report](2026-11-23-characterization-report/README.md)
+- `2026-11-23-characterization-report/` combined those four grids with
+  #635's N=1,200 untrimmed mismatch measurements. All five points clear
+  the 3σ gate. The trimmed row remains a declared gap for item 6. The
+  27 November report supersedes it (kept untouched as history).
+
+- The **27 November characterization report** (#653) rotates because the
+  Iq grid was re-minted with the signed average the run graded
+  (`sim/closed-loop-iq/records/20261127-000000-b092b294`), which made it
+  that experiment's newest record. Stamped at audited commit `a1a3a3ef`.
+  **No verdict and no magnitude move**: the re-minted grid is identical to
+  the 22 November one in every cell except the sign of `iq_avg_a`, so the
+  Iq envelope's cited value changes from +41.7771 µA to −41.7771 µA and
+  now reproduces its stored margin. The spot-check gains one line that
+  re-derives the signed grade at all 45 corners; its `item-5 envelope iq`
+  line changes sign. All five untrimmed points still clear the 3σ gate,
+  and the trimmed row remains a declared gap for item 6.
+  [Current report](2026-11-27-characterization-report/README.md)

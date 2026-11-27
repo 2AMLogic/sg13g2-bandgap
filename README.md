@@ -146,7 +146,7 @@ so the honest per-row status is:
   operating points. At `bcs`, 125 °C and 3.63 V, the limit-graded November 22 sweep
   measured **59.685 dB**. The October 4 post-layout sweep measured
   **60.0013 dB** at the same corner and predates the current extraction.
-  [Characterization report](measurements/2026-11-23-characterization-report/README.md#psrr--dc)
+  [Characterization report](measurements/2026-11-27-characterization-report/README.md#psrr--dc)
   · [Design issue #631](https://github.com/2AMLogic/sg13g2-bandgap/issues/631).
 - **Output reference — re-cast by decision record
   [`0011`](spec/decision-records/0011-output-reference-row-disposition.md)

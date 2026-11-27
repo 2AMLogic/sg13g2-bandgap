@@ -29,7 +29,7 @@
         ]
       },
       {
-        "file": "sim/closed-loop-iq/records/20261122-181711-c5b84561-report.json",
+        "file": "sim/closed-loop-iq/records/20261127-000000-b092b294-report.json",
         "rows": [
           "iq"
         ]
@@ -50,8 +50,8 @@
       }
     ],
     "8": {
-      "file": "measurements/2026-11-23-characterization-report/envelope.json",
-      "content_hash": "sha256:97b12171802d13f97f529647f42643ce28e332e635792a216660579b222352fe"
+      "file": "measurements/2026-11-27-characterization-report/envelope.json",
+      "content_hash": "sha256:671aca8d0adc3e95072a5e8d2a23c9cfe7d3a1e8b24d60437afb3c74d644afb9"
     },
     "10": {
       "file": "manifests/evidence/hygiene.json",
