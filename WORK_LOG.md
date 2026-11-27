@@ -10,8 +10,19 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-27
+
+- **PR #737**: fix(sim): make pre_osdi paths under the PDK root portable in snapshots
+- **Issue #735** (closed): klt_sim_evidence.py: netlist snapshots still carry absolute pre_osdi paths under the PDK root
+- **PR #736**: fix(sim): keep the klt-sim probe's evidence step off the fleet store
+- **Issue #728** (closed): sim/harness: run_probe.sh fails its assertion 5 on main and stores scratch objects in the fleet evidence store
+- **PR #732**: fix(sim): hash seeded deck generation in PEX shard identities
+- **Issue #729** (closed): sim/harness: the shard identity does not hash seed_deck.py, which renders the seeded runners' decks (#661's class)
+
 ### 2026-11-26
 
+- **PR #730**: refactor(sim): share the anchor gate, deck fill and enricher tail
+- **Issue #725** (closed): Remove leftover inline anchor gate and duplicate preflight, placeholder, and enricher-output helpers in sim/harness/
 - **PR #726**: refactor(sim): reuse the shared corner tally in batch shard reports
 - **Issue #722** (closed): Reuse the shared corner tally when merging batch shards
 - **PR #724**: fix(sim): derive Iq settle delta before the magnitude rewrite
@@ -483,15 +494,4 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 - **PR #259**: chore: resync installed Loom surfaces (--force past obsolete local edits)
 - **PR #261**: Remove duplicated Report/sha256_file scaffolding across .github/scripts CI checkers
 - **Issue #260** (closed): Remove duplicated Report/sha256_file scaffolding across .github/scripts CI checkers
-
-### 2026-09-27
-
-- **PR #251**: docs(layout): condense SG13CMOS5L resolved-issue narrative in README to pointers
-- **PR #254**: docs(layout): re-derive the #174 LVS section from the current 14-finding report
-- **PR #256**: docs: fix false "no underpass needed" claim for bandgap_startup
-- **PR #257**: docs(layout): re-derive SG13CMOS5L cause-4 pfet/well half and net_count from committed evidence
-- **Issue #255** (closed): docs(layout): SG13CMOS5L cause-4 item still says PMOS bodies are unbiased; committed reports say vdd (plus stale net_count)
-- **Issue #253** (closed): docs(layout): two stale "no underpass needed" claims for sg13cmos5l-bandgap_startup
-- **Issue #252** (closed): docs(layout): #174 LVS section quotes 22 findings; committed sg13cmos5l-bandgap_top report says 14
-- **Issue #250** (closed): docs: condense SG13CMOS5L half of layout/README.md — closed-issue narrative duplicated in generate.py docstrings, with stale LVS counts (follow-up to #189)
 
