@@ -41,7 +41,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import klt_corner_bundle as bundle  # noqa: E402
 import merge_batch_shards as mbs  # noqa: E402
-from enrich_pvt_report import _meas_map, closed_loop_verdict_failures, recount_report  # noqa: E402
+from enrich_pvt_report import (  # noqa: E402
+    _meas_map,
+    closed_loop_verdict_failures,
+    recount_report,
+    write_enriched_report,
+)
 from seed_deck import SEED_FIELDS, fill_deck, load_seeds, seed_row  # noqa: E402
 
 CODES = (0, 1, 2, 4, 8, 16, 32, 64, 128, 129, 255)
@@ -193,9 +198,7 @@ def enrich(a: argparse.Namespace) -> None:
             corner["status"] = "fail"
             corner["diagnostics"] = [{"code": "closed_loop_verdict", "message": "; ".join(failed)}]
     recount_report(report)
-    Path(a.output).write_text(json.dumps(report, indent=2) + "\n")
-    print(f"enriched: {report['status']} passed={report['passed']} failed={report['failed']} "
-          f"errored={report['errored']}")
+    write_enriched_report(report, a.output)
 
 
 def spec(a: argparse.Namespace) -> None:

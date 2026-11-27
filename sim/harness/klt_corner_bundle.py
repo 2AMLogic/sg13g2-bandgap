@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 
 #: This repo's corner label -> (cornerHBT section, cornerMOShv section,
@@ -86,16 +87,17 @@ def sections_from_preflight(preflight_path: str) -> dict[str, tuple[str, str, st
     found: dict[str, dict[str, str]] = {name: {} for name in _PREFLIGHT_MAPS}
     with open(preflight_path, encoding="utf-8") as handle:
         for raw in handle:
-            line = raw.strip()
-            if not line.startswith("declare -A "):
+            # Preflight declares each map on one line. Anything after the
+            # closing parenthesis (including old entries in a comment) is outside it.
+            match = re.match(r"declare -A\s+(\w+)=\(([^)]*)\)", raw.lstrip())
+            if not match:
                 continue
-            body = line[len("declare -A ") :]
-            name, _, rest = body.partition("=")
-            name = name.strip()
+            name, entries = match.groups()
             if name not in _PREFLIGHT_MAPS:
                 continue
-            rest = rest.strip().lstrip("(").rstrip(")").strip()
-            for token in rest.split():
+            # Bash's compound assignment replaces the whole associative array.
+            found[name].clear()
+            for token in entries.split():
                 key, _, value = token.partition("]=")
                 found[name][key.lstrip("[")] = value
     labels = sorted(found["MOS_SECTION_OF"])

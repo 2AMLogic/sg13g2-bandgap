@@ -147,7 +147,8 @@ cmos5l_batch() {
     --extra "${BATCH_PROVISION_SCRIPT}"
     --extra "${CMOS5L_PY}"
     --extra "${HARNESS_DIR}/klt_corner_bundle.py"
-    --extra "${HARNESS_DIR}/enrich_pvt_report.py")
+    --extra "${HARNESS_DIR}/enrich_pvt_report.py"
+    --extra "${HARNESS_DIR}/seed_deck.py")
 
   python3 "${CMOS5L_PY}" prepare --mode batch --kind "${KIND}" --families "${FAMILIES}" \
     --request-template "${TB}/${STEM}.request.json.tmpl" \

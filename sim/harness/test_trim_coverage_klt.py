@@ -4,7 +4,9 @@ simulator, no PDK -- tiny temp-dir fixtures and in-memory reports."""
 
 from __future__ import annotations
 
+import contextlib
 import csv
+import io
 import json
 import sys
 import tempfile
@@ -105,6 +107,21 @@ class EnrichTests(unittest.TestCase):
             rep = self.run_enrich([c])
         self.assertEqual(rep["status"], "fail")
         self.assertIn("startup_not_released", rep["corners"][0]["diagnostics"][0]["message"])
+
+    def test_non_pass_corners_are_named_on_stdout(self):
+        """Issue #725: the report tail is enrich_pvt_report's, which names
+        every non-pass corner -- this module's own copy had dropped that."""
+        good = corner("typ_code0", 0, 3.30)
+        good["supply_v"] = {"Vvdd": 3.30}
+        bad = corner("typ_code128", 128, 3.30, fb_v=3.29)
+        bad["supply_v"] = {"Vvdd": 3.30}
+        printed = io.StringIO()
+        with contextlib.redirect_stdout(printed):
+            self.run_enrich([good, bad])
+        self.assertEqual(printed.getvalue().splitlines(), [
+            f"  {bad['corner_id']}: fail fb_railed",
+            "enriched: fail passed=1 failed=1 errored=0",
+        ])
 
 
 class AnalysisTests(unittest.TestCase):
@@ -233,6 +250,12 @@ class SharedSeamTests(unittest.TestCase):
         """Issue #707: enrich_ac_report's private seed-CSV reader (which
         skipped the PASS filter) is retired onto seed_deck.load_seeds."""
         self.assertIs(acr.load_seeds, seed_deck.load_seeds)
+
+    def test_enrichers_share_the_report_writer(self):
+        """Issue #725: the JSON write, the non-pass corner lines and the
+        `enriched:` summary are enrich_pvt_report.write_enriched_report."""
+        self.assertIs(acr.write_enriched_report, epr.write_enriched_report)
+        self.assertIs(tc.write_enriched_report, epr.write_enriched_report)
 
     def test_enrich_ac_report_never_uses_fail_seed_rows_as_reference(self):
         with tempfile.TemporaryDirectory() as d:

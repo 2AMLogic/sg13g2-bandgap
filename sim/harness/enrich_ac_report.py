@@ -47,6 +47,7 @@ from enrich_pvt_report import (
     _corner_vdd,
     closed_loop_verdict_failures,
     recount_report,
+    write_enriched_report,
 )
 from seed_deck import load_seeds  # noqa: F401  (the seam test asserts this binding)
 
@@ -308,15 +309,7 @@ def main(argv: list[str]) -> int:
     args = ap.parse_args(argv)
     seed_rows = load_seeds(str(args.seed_csv)) if args.seed_csv else None
     report = enrich(json.loads(args.report.read_text(encoding="utf-8")), args.kind, seed_rows)
-    args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    for c in report["corners"]:
-        if c.get("status") != "pass":
-            diag = "; ".join(d.get("message", "") for d in c.get("diagnostics", []))
-            print(f"  {c.get('corner_id')}: {c['status']} {diag[:100]}")
-    print(
-        f"enriched: {report['status']} passed={report['passed']} "
-        f"failed={report['failed']} errored={report['errored']}"
-    )
+    write_enriched_report(report, args.output)
     return 0
 
 
