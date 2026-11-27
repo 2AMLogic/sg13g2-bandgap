@@ -85,6 +85,9 @@ jobs:
         # Replays committed responses read-only; temp dirs for anything else.
         run: python3 sim/loop-gain-phase-margin/tools/test_solve_quality.py
 
+      - name: klt-sim shell runner and submission identity self-test
+        run: python3 sim/harness/test_harness_runners.py
+
       - name: klt-sim harness transformer self-test
         # Issue #297: shard merge, batch-report deck fixup, PVT derived
         # columns + closed-loop verdict, and the evidence adapter's record
