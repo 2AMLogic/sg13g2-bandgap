@@ -43,10 +43,9 @@ Three things the translation is not allowed to fudge, because
    every local `.include`/`.lib` into the snapshot, recursively, so the
    committed artifact is the full deck that ran.
 
-3. **No absolute host paths in committed evidence.** The same
-   `inline_deck` rewrites any surviving path under `$PDK_ROOT` to a
-   `${PDK_ROOT}`-relative form, the convention `sim/env.sh` already
-   establishes, so a record does not pin one machine's directory layout.
+3. **PDK references in snapshots are portable.** The same
+   `inline_deck` rewrites PDK model paths on `.include`, `.lib` and
+   `pre_osdi` cards to the `${PDK_ROOT}`-relative form used by `sim/env.sh`.
    (`klt sim`'s own report does this for its `environment.models_lib` field
    too -- klayout-tools #1261/#1274, the same concern.)
 
@@ -82,6 +81,10 @@ PDK_ROOT_PLACEHOLDER = "${PDK_ROOT}"
 
 _INCLUDE_RE = re.compile(r'^\s*\.include\s+"?([^"\s]+)"?\s*$', re.IGNORECASE)
 _LIB_RE = re.compile(r'^\s*\.lib\s+"?([^"\s]+)"?(?:\s+(\S+))?\s*$', re.IGNORECASE)
+_PRE_OSDI_RE = re.compile(
+    r"""^\s*pre_osdi\s+(?:"([^"]+)"|'([^']+)'|([^\s"']+))(?=\s|$)""", re.IGNORECASE
+)
+_PDK_PLACEHOLDER_RE = re.compile(r"^\$(\{PDK_ROOT\}|PDK_ROOT)(/|$)")
 _SECTION_RE = r'^\s*\.lib\s+{section}\s*$'
 _ENDL_RE = r'^\s*\.endl(\s+{section})?\s*$'
 
@@ -130,7 +133,7 @@ def _is_pdk_ref(raw_path: str, target: Path | None, pdk_root: str | None) -> boo
     * a path that resolves under the configured `pdk_root` (the form `klt`
       and `fixup_batch_report.py` emit after repointing `/opt/pdk`).
     """
-    if re.match(r"^\$(\{PDK_ROOT\}|PDK_ROOT)(/|$)", raw_path):
+    if _PDK_PLACEHOLDER_RE.match(raw_path):
         return True
     return bool(
         pdk_root and target and str(target).startswith(os.path.abspath(pdk_root) + os.sep)
@@ -175,6 +178,9 @@ def inline_deck(
     that is missing, unreadable or part of an include cycle raises
     `SystemExit` naming the deck/include chain (issue #333): a snapshot with
     an unresolved local dependency would silently weaken the D2 freshness check.
+
+    A `pre_osdi` card loads a binary model. Its path is made PDK-relative
+    when it resolves under `pdk_root`. External overrides pass through verbatim.
     """
     if not _seen:
         _seen = (deck_path.resolve(),)
@@ -196,6 +202,20 @@ def _process_lines(
         )
     out: list[str] = []
     for raw in lines:
+        osdi = _PRE_OSDI_RE.match(raw)
+        if osdi:
+            # Each alternative captures just the path, leaving the surrounding card intact.
+            start, end = osdi.span(osdi.lastindex)
+            path = raw[start:end]
+            if pdk_root and not _PDK_PLACEHOLDER_RE.match(path):
+                root = Path(pdk_root).resolve()
+                target = (base / path).resolve()
+                if target.is_relative_to(root):
+                    relative = target.relative_to(root)
+                    raw = f"{raw[:start]}{PDK_ROOT_PLACEHOLDER}/{relative}{raw[end:]}"
+            out.append(raw)
+            continue
+
         inc = _INCLUDE_RE.match(raw)
         lib = None if inc else _LIB_RE.match(raw)
         target: Path | None = None
