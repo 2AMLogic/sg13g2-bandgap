@@ -143,6 +143,35 @@ klt_sim_read_msense_width() {  # NETLIST
   fi
 }
 
+# --- startup seed record --------------------------------------------------------
+# Sets SEED_CSV to sim/closed-loop-startup's newest committed record, where
+# the seeded benches' .nodeset values come from, and returns 3 -- this
+# preamble's return-not-exit contract -- when there is none. Newest is by
+# filename, never mtime: record ids lead with a UTC timestamp, so in byte
+# order the lexicographic tail IS the newest record, whereas a fresh
+# checkout stamps every record at once and leaves the choice to checkout
+# order (pex_ac_runner.sh's own mtime-ordered pick, issue #740). The sort is
+# the C locale's because a linguistic UTF-8 collation ignores '-' and '.' on
+# its first pass and ranks a record after its own companions; the *-tc.csv /
+# *-vs-schematic* companions a previous enrichment derives from a record are
+# skipped -- the same lookup as seed_deck.py's newest_seed_csv (#486/#707).
+# Pure shell on purpose: the identity coverage probe runs these runners with
+# a stubbed python3.
+klt_sim_newest_seed_csv() {
+  local cand
+  local cands=()
+  for cand in "${SIM_DIR}/closed-loop-startup/records/"*.csv; do
+    [[ -f "${cand}" ]] || continue
+    case "${cand##*/}" in *-tc.csv|*-vs-schematic*) continue ;; esac
+    cands+=("${cand}")
+  done
+  if [[ ${#cands[@]} -eq 0 ]]; then
+    echo "run_klt_sim.sh: no seed record in ${SIM_DIR}/closed-loop-startup/records/" >&2
+    return 3
+  fi
+  SEED_CSV="$(printf '%s\n' "${cands[@]}" | LC_ALL=C sort | tail -1)"
+}
+
 # --- resume safety (#332) ------------------------------------------------------
 # A saved report is reused only when its committed submission identity matches
 # the inputs about to be submitted (sim/harness/submission_identity.py).

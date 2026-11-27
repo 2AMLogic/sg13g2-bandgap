@@ -3343,6 +3343,268 @@ python3() {
 
 
 # --------------------------------------------------------------------------
+# AC-bench node seeds (issue #740). pex_ac_runner.sh picked the startup seed
+# record by mtime and read it by column position. 73c420a2's record dropped
+# the msense_w column the four records before it carried, every positional
+# field after it moved by one, and `SEEDS_OF typ 3.30` -- the lookup all three
+# AC benches make before their --sanity point -- came back empty. Which record
+# a checkout picked was a tie-break artefact of its mtimes, so the failure was
+# environment-dependent. The record is now picked by name through the shared
+# klt_sim_newest_seed_csv and read by header, like every other seed consumer.
+# --------------------------------------------------------------------------
+
+#: The two committed startup-record headers: the four records before
+#: 73c420a2, then 73c420a2's own, which has no msense_w.
+SEED_HEADER_WITH_MSENSE = (
+    "corner_label,hbt_section,mos_section,res_section,temp_c,vdd_v,msense_w,status,"
+    "det_early_v,fb_early_v,fb_final_v,sns1_final_v,sns2_final_v,vref_final_v,"
+    "det_final_v,i_mkfb_final_a,dvsns_final_v")
+SEED_HEADER_SANS_MSENSE = SEED_HEADER_WITH_MSENSE.replace(",msense_w", "")
+
+#: Stand-in for an AC bench's run_klt_sim.sh, with a fixture tree standing in
+#: for sim/: the same two sources, in the order the bench takes them
+#: (pex_runner.sh sources the preamble at its own source time, then the bench
+#: sources pex_ac_runner.sh, which selects the record as it is sourced). It
+#: names the record selected, then does one of
+#:   lookup   the --sanity gate's own SEEDS_OF call;
+#:   sanity   the real _ac_main --sanity, with the deck write replaced by an
+#:            echo into the deck file, the simulator by a read of the deck it
+#:            was handed, and the enricher and the anchor gate by no-ops -- so
+#:            what would reach the deck is the test's evidence, and nothing
+#:            simulates.
+AC_BENCH_STANDIN = """\
+set -euo pipefail
+SIM_DIR="$1"; HARNESS_DIR="$2"; ACTION="$3"
+IDENT_ARGS=()
+source "${HARNESS_DIR}/klt_sim_preamble.sh"
+source "${HARNESS_DIR}/pex_ac_runner.sh"
+printf 'SEED_CSV=%s\\n' "${SEED_CSV}"
+case "${ACTION}" in
+  lookup) SEEDS_OF typ 3.30 ;;
+  sanity)
+    MODE=--sanity; WORK="$4"; OSDI_DIR=/models; KIND=psrr
+    pex_instantiate_body() { printf 'DECK %s\\n' "$*"; }
+    pex_sanity_local() { echo "SIMULATED"; cat "${WORK}/body.spice"; }
+    python3() { :; }
+    check_anchors() { :; }
+    _ac_main body.inc pex_record_mint ;;
+esac
+"""
+
+
+def seed_values(tag: str) -> tuple[str, str, str, str]:
+    """FB, SNS1, SNS2 and VREF for one row, in the records' own `%.6e`
+    rendering, with TAG (one digit) in every value: each row's four voltages
+    are its own, so a lookup that matched a decoy, or read a neighbouring
+    column, cannot return the string the test expects."""
+    return (f"{tag}.111110e+00", f"0.{tag}111100e+00",
+            f"0.{tag}111200e+00", f"1.{tag}111300e+00")
+
+
+def seed_rows(tag: str) -> list[dict]:
+    """A startup record's rows: one typ/27C/3.30V PASS row carrying the seeds
+    TAG marks, then four decoys that each differ from it in exactly one key --
+    status, temperature, supply, corner -- while carrying their own."""
+    def row(corner: str, temp: int, vdd: str, status: str, tag_: str) -> dict:
+        fb, sns1, sns2, vref = seed_values(tag_)
+        return {"corner_label": corner, "hbt_section": "hbt_typ",
+                "mos_section": "mos_tt", "res_section": "res_typ",
+                "temp_c": temp, "vdd_v": vdd, "msense_w": "10u", "status": status,
+                "det_early_v": "0.1", "fb_early_v": "0.2", "fb_final_v": fb,
+                "sns1_final_v": sns1, "sns2_final_v": sns2, "vref_final_v": vref,
+                "det_final_v": "0.01", "i_mkfb_final_a": "1e-14",
+                "dvsns_final_v": "0.0004"}
+
+    return [row("typ", 27, "3.30", "PASS", tag),
+            row("typ", 27, "3.30", "FAIL", "9"),
+            row("typ", 125, "3.30", "PASS", "8"),
+            row("typ", 27, "2.97", "PASS", "7"),
+            row("bcs", 27, "3.30", "PASS", "6")]
+
+
+def seed_csv(header: str, rows: list[dict]) -> str:
+    """ROWS as a startup record under HEADER (one comma-joined line), in its
+    column order; a column a row carries that HEADER lacks is dropped."""
+    out = io.StringIO()
+    writer = csv.DictWriter(out, fieldnames=header.split(","), lineterminator="\n",
+                            extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(rows)
+    return out.getvalue()
+
+
+class AcBenchSeedTests(TempDirCase):
+    """The three AC benches' node seeds: which record, and how it is read."""
+
+    #: the benches that take their --sanity | --batch | --record flow from
+    #: pex_ac_runner.sh
+    BENCHES = ("closed-loop-psrr", "closed-loop-psrr-pex", "closed-loop-zout-pex")
+
+    #: the record a lookup test is pointed at, alone in its directory
+    RECORD = "20261118-082945-3e600d97.csv"
+
+    def _run_ac_bench(self, action: str, records: dict[str, str] | None = None,
+                      mtimes: dict[str, int] | None = None,
+                      root: Path | None = None) -> tuple[subprocess.CompletedProcess, Path]:
+        """AC_BENCH_STANDIN doing ACTION against a sim/ tree under ROOT whose
+        closed-loop-startup/records/ holds RECORDS ({name: text}); MTIMES
+        ({name: seconds}) is stamped on after the writes."""
+        root = root or self.tmp
+        records_dir = root / "sim" / "closed-loop-startup" / "records"
+        records_dir.mkdir(parents=True)
+        for name, text in (records or {}).items():
+            (records_dir / name).write_text(text, encoding="utf-8")
+        for name, mtime in (mtimes or {}).items():
+            os.utime(records_dir / name, (mtime, mtime))
+        (root / "work").mkdir()
+        standin = self.write("ac-bench.sh", AC_BENCH_STANDIN)
+        run = subprocess.run(
+            ["bash", str(standin), str(root / "sim"), str(HARNESS), action,
+             str(root / "work")],
+            capture_output=True, text=True,
+        )
+        return run, records_dir
+
+    def test_the_sanity_seeds_are_read_by_column_name(self) -> None:
+        """Issue #740: the four voltages come back exact, FB SNS1 SNS2 VREF,
+        from the PASS row at typ/27C/3.30V -- not from the decoys beside it --
+        under both committed headers and under a shuffled one."""
+        shuffled = ",".join(reversed(SEED_HEADER_SANS_MSENSE.split(",")))
+        headers = {"with-msense-w": (SEED_HEADER_WITH_MSENSE, "1"),
+                   "without-msense-w": (SEED_HEADER_SANS_MSENSE, "2"),
+                   "shuffled": (shuffled, "3")}
+        for case, (header, tag) in headers.items():
+            with self.subTest(header=case):
+                run, records_dir = self._run_ac_bench(
+                    "lookup", {self.RECORD: seed_csv(header, seed_rows(tag))},
+                    root=self.tmp / case)
+                self.assertEqual(run.returncode, 0, run.stderr)
+                self.assertEqual(run.stderr, "")
+                self.assertEqual(
+                    run.stdout,
+                    f"SEED_CSV={records_dir / self.RECORD}\n"
+                    f"{' '.join(seed_values(tag))}\n")
+
+    def test_a_record_without_a_usable_pass_row_is_refused(self) -> None:
+        """Issue #740: no PASS row at the point, a seed column the header
+        lacks, or an empty seed value -- each prints nothing (so nothing can
+        seed a deck), exits 3, and names its one cause on stderr."""
+        rows = seed_rows("1")
+        cases = {
+            "no-pass-row": (SEED_HEADER_SANS_MSENSE, rows[1:],
+                            "no typ/27C/3.30 seed row in {record}"),
+            "column-missing": (SEED_HEADER_SANS_MSENSE.replace(",vref_final_v", ""),
+                               rows, "no vref_final_v column in {record}"),
+            "value-empty": (SEED_HEADER_SANS_MSENSE,
+                            [{**rows[0], "vref_final_v": ""}, *rows[1:]],
+                            "typ/27C/3.30 PASS row in {record} has an empty vref_final_v"),
+        }
+        for case, (header, case_rows, cause) in cases.items():
+            with self.subTest(case=case):
+                run, records_dir = self._run_ac_bench(
+                    "lookup", {self.RECORD: seed_csv(header, case_rows)},
+                    root=self.tmp / case)
+                self.assertEqual(run.returncode, 3, run.stderr)
+                self.assertEqual(run.stdout, f"SEED_CSV={records_dir / self.RECORD}\n")
+                self.assertEqual(
+                    run.stderr,
+                    f"run_klt_sim.sh: {cause}\n".format(
+                        record=records_dir / self.RECORD))
+
+    def test_sanity_passes_the_four_voltage_tokens_to_the_deck(self) -> None:
+        rows = seed_rows("1")
+        rows[0].update(fb_final_v="0", sns1_final_v="-.25", sns2_final_v="+2.",
+                       vref_final_v=" 1.23456789E-01 ")
+        run, records_dir = self._run_ac_bench(
+            "sanity", {self.RECORD: seed_csv(SEED_HEADER_WITH_MSENSE, rows)})
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertEqual(run.stderr, "")
+        self.assertEqual(run.stdout, (
+            f"SEED_CSV={records_dir / self.RECORD}\nSIMULATED\n"
+            "DECK /models body.inc VDD=3.30 FB_SEED=0 SNS1_SEED=-.25"
+            " SNS2_SEED=+2. VREF_SEED=1.23456789E-01\n"))
+
+    def test_an_unusable_seed_row_never_reaches_the_deck(self) -> None:
+        cases = (("vref_final_v", "", "empty"),
+                 ("sns1_final_v", " ", "empty"),
+                 ("sns2_final_v", "nan", "invalid"),
+                 ("fb_final_v", "1e999", "invalid"),
+                 ("vref_final_v", "0.7 0.8", "invalid"))
+        for index, (column, value, cause) in enumerate(cases):
+            with self.subTest(column=column, value=value):
+                rows = seed_rows("1")
+                rows[0][column] = value
+                root = self.tmp / str(index)
+                run, records_dir = self._run_ac_bench(
+                    "sanity", {self.RECORD: seed_csv(SEED_HEADER_SANS_MSENSE, rows)},
+                    root=root)
+                self.assertEqual(run.returncode, 3, run.stderr)
+                self.assertFalse((root / "work" / "body.spice").exists())
+                self.assertEqual(run.stdout, f"SEED_CSV={records_dir / self.RECORD}\n")
+                self.assertEqual(run.stderr, (
+                    "run_klt_sim.sh: typ/27C/3.30 PASS row in"
+                    f" {records_dir / self.RECORD} has an {cause} {column}\n"))
+
+    def test_the_record_is_the_newest_by_name_whatever_the_mtimes(self) -> None:
+        """Issue #740: `ls -t | head -1` made the choice a tie-break artefact
+        of a fresh checkout's mtimes. The greatest timestamped primary wins
+        by filename, whether the older record is newer by mtime or both share
+        one, and the *-tc.csv / *-vs-schematic* companions -- newer-named
+        than their own record, one newer-named than every record -- never
+        win."""
+        older, newer = "20261001-083332-e5507b2.csv", self.RECORD
+        records = {older: seed_csv(SEED_HEADER_WITH_MSENSE, seed_rows("1")),
+                   newer: seed_csv(SEED_HEADER_SANS_MSENSE, seed_rows("2")),
+                   newer[:-4] + "-tc.csv": seed_csv(SEED_HEADER_SANS_MSENSE, seed_rows("5")),
+                   newer[:-4] + "-vs-schematic.csv":
+                       seed_csv(SEED_HEADER_SANS_MSENSE, seed_rows("5")),
+                   "20261231-235959-fffffff-tc.csv":
+                       seed_csv(SEED_HEADER_SANS_MSENSE, seed_rows("5")),
+                   newer[:-4] + ".md": "the record's narrative"}
+        t0 = 1_700_000_000
+        scenarios = {"older-record-newest-by-mtime": {older: t0 + 3600, newer: t0},
+                     "equal-mtimes": {older: t0, newer: t0}}
+        for case, mtimes in scenarios.items():
+            with self.subTest(mtimes=case):
+                run, records_dir = self._run_ac_bench(
+                    "lookup", records, mtimes, root=self.tmp / case)
+                self.assertEqual(run.returncode, 0, run.stderr)
+                self.assertEqual(run.stderr, "")
+                self.assertEqual(
+                    run.stdout,
+                    f"SEED_CSV={records_dir / newer}\n{' '.join(seed_values('2'))}\n")
+
+    def test_companions_alone_are_no_seed_record(self) -> None:
+        """Issue #740: a records directory holding only companions, or
+        nothing, is named on stderr and exits 3 before any lookup."""
+        records = {self.RECORD[:-4] + "-tc.csv": "a companion",
+                   self.RECORD[:-4] + "-vs-schematic.csv": "a companion"}
+        for case, files in {"companions-only": records, "empty": {}}.items():
+            with self.subTest(records=case):
+                run, records_dir = self._run_ac_bench("lookup", files, root=self.tmp / case)
+                self.assertEqual(run.returncode, 3)
+                self.assertEqual(run.stdout, "")
+                self.assertEqual(
+                    run.stderr, f"run_klt_sim.sh: no seed record in {records_dir}/\n")
+
+    def test_the_three_ac_benches_select_the_record_through_the_shared_helper(self) -> None:
+        """Issue #740: pex_ac_runner.sh -- the one flow all three AC benches
+        source -- takes its record from klt_sim_newest_seed_csv, with no
+        private glob left beside it, and each bench stays in the identity
+        probe's discovery set: that probe is what runs all three entry points
+        through --batch and its nested --sanity to the lookup."""
+        runner = (HARNESS / "pex_ac_runner.sh").read_text()
+        self.assertIn("klt_sim_newest_seed_csv || exit $?", runner)
+        for retired in ("*.csv", '$8=="PASS"', "$11, $12, $13, $14"):
+            self.assertNotIn(retired, runner)
+        for bench in self.BENCHES:
+            with self.subTest(bench=bench):
+                script = (SIM_DIR / bench / "run_klt_sim.sh").read_text()
+                self.assertIn('source "${HARNESS_DIR}/pex_ac_runner.sh"', script)
+                self.assertTrue(IDENTITY_ENTRY.search(script))
+
+
+# --------------------------------------------------------------------------
 # boxtc_companion: the box-method TC derivation (issue #465). It used to be
 # typed twice, inline, in the two benches that share it -- and
 # spec/decision-records/0010-box-method-tc-evidence.md ratifies its output as
