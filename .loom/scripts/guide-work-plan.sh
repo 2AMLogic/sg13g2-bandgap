@@ -17,7 +17,12 @@ case "${1:-}" in
         exit
         ;;
     record)
-        [[ $# == 3 && $3 =~ ^[0-9a-f]{12}$ ]] || exit 1
+        [[ $# == 3 ]] || exit 1
+        if [[ $2 == render-failed ]]; then
+            [[ $3 == none ]] || exit 1
+        else
+            [[ $3 =~ ^[0-9a-f]{12}$ ]] || exit 1
+        fi
         ;;
     splice)
         [[ -f WORK_PLAN.md && ! -L WORK_PLAN.md ]] || exit 1

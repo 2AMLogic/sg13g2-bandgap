@@ -1492,7 +1492,7 @@ _work_log_search_total_count() {
   local predicate="${2:-is:issue is:closed}"
   local repo_nwo
   repo_nwo=$(git remote get-url origin 2>/dev/null \
-    | sed -E 's#^git@[^:]+:##; s#^https?://[^/]+/##; s#\.git/?$##')
+    | sed -nE 's#/$##; s#\.git$##; s#^((https?|ssh)://[^/]+/|git@[^:]+:)([[:alnum:]_.-]+/[[:alnum:]_.-]+)$#\3#p')
   if [ -z "$repo_nwo" ]; then
     echo "-1"
     return
@@ -2001,18 +2001,20 @@ again on some later tick and no PR is ever produced for it.
 ```bash
 # Epoch seconds of the most recently MERGED docs-maintenance PR whose changed
 # files actually included WORK_PLAN.md, or 0 if none has ever merged (empty
-# history / query failure). Reuses GUIDE_DOCS_PR_EXCLUDE (Step 2) as the "is
-# this a docs-maintenance PR" predicate instead of redefining it, so the two
-# checks can never drift apart. #5929: a docs-maintenance PR that only
-# touched WORK_LOG.md (or README.md) must NOT anchor this clock — see the
+# history). An unreadable history returns nonzero. Reuses the Step 2
+# GUIDE_DOCS_PR_EXCLUDE predicate so the checks cannot drift apart.
+# #5929: a docs-maintenance PR that only touched WORK_LOG.md (or README.md) must NOT anchor this clock — see the
 # #5929 note above — hence the extra `.files[].path` filter beyond
 # GUIDE_DOCS_PR_EXCLUDE alone.
 last_work_plan_write_epoch() {
   local ts
-  ts=$("$GH_READ" pr list --state merged --limit 30 --json number,title,mergedAt,headRefName,files \
+  if ! ts=$("$GH_READ" pr list --state merged --limit 30 --json number,title,mergedAt,headRefName,files \
     --jq "[.[] | select($GUIDE_DOCS_PR_EXCLUDE) | select([(.files // [])[].path] | index(\"WORK_PLAN.md\") != null)] | sort_by(.mergedAt) | reverse | .[0].mergedAt // empty")
+  then
+    return 1
+  fi
   [ -z "$ts" ] && { echo 0; return; }
-  date -u -d "$ts" +%s 2>/dev/null || date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$ts" +%s 2>/dev/null || echo 0
+  date -u -d "$ts" +%s 2>/dev/null || date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$ts" +%s 2>/dev/null
 }
 ```
 
@@ -2028,7 +2030,13 @@ render_plan_body() {
     printf '\n%s\n' "${3:-_None._}"
   }
   # Bullet count of a section body ("" -> 0), for the Backlog Balance table.
-  count() { [ -z "$1" ] && printf '0' || printf '%s\n' "$1" | grep -c '^- '; }
+  count() {
+    local line total=0
+    while IFS= read -r line; do
+      if [[ $line == '- '* ]]; then total=$((total + 1)); fi
+    done <<< "$1"
+    printf '%s' "$total"
+  }
 
   # #6993, DO NOT DROP THE `sort_by(.number)`: every list below is piped
   # through an explicit `sort_by(.number)` before bullets are formatted.
@@ -2045,11 +2053,13 @@ render_plan_body() {
   # the nondeterminism at the source. It changes only the ORDER within a
   # section, never which items appear in it.
   local held vimp imp ready building review approved curated proposals epics
+  # Stop at the first failed listing or JSON transform. A successful later
+  # section cannot distinguish missing data from an empty issue queue.
   # #11103: the two priority levels, one section each.
   vimp=$("$GH_READ" issue list --label "loom:very-important" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"') || return 1
   imp=$("$GH_READ" issue list --label "loom:important" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"') || return 1
   # #7008/#7071: `ready` excludes every hold (registry sets, retired names
   # included until `labels migrate`, #11795) and loom:building, the same way
   # "Finding Work" does; `building` excludes the operator holds.
@@ -2064,11 +2074,11 @@ render_plan_body() {
   hold_q=$(loom-daemon labels list --property hold --with-retired 2>/dev/null || printf 'loom:blocked\nloom:operator\nloom:frozen')
   op_q=$(loom-daemon labels list --property operator_gate --with-retired 2>/dev/null || echo loom:operator)
   ready_json=$("$GH_READ" issue list --label "loom:issue" --search "-label:loom:building $(sed 's/^/-label:/' <<<"$hold_q" | tr '\n' ' ')" --state open --limit 200 --json number,title \
-    --jq 'sort_by(.number)')
+    --jq 'sort_by(.number)') || return 1
   building=$("$GH_READ" issue list --label "loom:building" --search "$(sed 's/^/-label:/' <<<"$op_q" | tr '\n' ' ') -label:loom:frozen" --state open --limit 200 --json number,title \
-    --jq 'sort_by(.number) | .[] | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | .[] | "- **#\(.number)**: \(.title)"') || return 1
   review=$("$GH_READ" pr list --label "loom:review-requested" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"') || return 1
   # #5930/#6457: PRs carrying `loom:operator` are Judge-approved work stuck on
   # a human merge-risk-hold decision — folded into the generated region (see
   # the "#5930, DO NOT put a hand-written narrative section outside the
@@ -2088,9 +2098,10 @@ render_plan_body() {
   # reintroducing a second query, which #6457 removed on purpose).
   local approved_json
   approved_json=$("$GH_READ" pr list --label "loom:pr" --state open --limit 200 --json number,title,labels,closingIssuesReferences \
-    --jq 'sort_by(.number) | [.[] | select(any(.labels[]?.name; . == "loom:frozen") | not)]')
-  approved=$(printf '%s' "$approved_json" | jq -r '.[] | "- **#\(.number)**: \(.title)"')
-  held=$(printf '%s' "$approved_json" | jq -r '.[] | select([(.labels // [])[].name] | index("loom:operator") or index("loom:blocked")) | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | [.[] | select(any(.labels[]?.name; . == "loom:frozen") | not)]') || return 1
+  [[ -n "$approved_json" && -n "$ready_json" ]] || return 1
+  approved=$(printf '%s' "$approved_json" | jq -r '.[] | "- **#\(.number)**: \(.title)"') || return 1
+  held=$(printf '%s' "$approved_json" | jq -r '.[] | select([(.labels // [])[].name] | index("loom:operator") or index("loom:blocked")) | "- **#\(.number)**: \(.title)"') || return 1
   # #7083: derive the set of issue numbers already closed by an open
   # `loom:pr`-labeled PR from `approved_json`'s own `closingIssuesReferences`
   # (each PR's closes-graph) — the same "reuse the already-fetched PR list,
@@ -2100,19 +2111,19 @@ render_plan_body() {
   # (it belongs in "Approved (Awaiting Merge)" instead).
   local pr_linked_issues
   pr_linked_issues=$(printf '%s' "$approved_json" | \
-    jq -c '[.[] | (.closingIssuesReferences // [])[].number] | unique')
+    jq -c '[.[] | (.closingIssuesReferences // [])[].number] | unique') || return 1
   ready=$(printf '%s' "$ready_json" | jq -r --argjson excl "$pr_linked_issues" \
-    '.[] | select((.number as $n | $excl | index($n)) | not) | "- **#\(.number)**: \(.title)"')
+    '.[] | select((.number as $n | $excl | index($n)) | not) | "- **#\(.number)**: \(.title)"') || return 1
   curated=$("$GH_READ" issue list --label "loom:curated" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(curated)*"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(curated)*"') || return 1
   local architect hermit
   architect=$("$GH_READ" issue list --label "loom:architect" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(architect)*"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(architect)*"') || return 1
   hermit=$("$GH_READ" issue list --label "loom:hermit" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(hermit)*"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(hermit)*"') || return 1
   proposals="${architect}${architect:+${hermit:+$'\n'}}${hermit}"
   epics=$("$GH_READ" issue list --label "loom:epic" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"') || return 1
 
   section "Operator Attention: Merge-Risk-Hold Pileup" \
     "Judge-approved PRs under a hold (\`loom:blocked\` or \`loom:operator\`) — only a human merge decision is missing." \
@@ -2163,7 +2174,7 @@ strip_plan_stamp() {
 
 # Step 3 owns the receipt. Persist it before publishing the in-shell result.
 record_work_plan_receipt() {
-  "$DOCS_WT/.loom/scripts/guide-work-plan.sh" record "$1" "$WORK_PLAN_RENDER_HASH" || return 1
+  "$DOCS_WT/.loom/scripts/guide-work-plan.sh" record "$1" "${WORK_PLAN_RENDER_HASH:-none}" || return 1
   WORK_PLAN_RECEIPT="$1"
 }
 
@@ -2202,8 +2213,12 @@ update_work_plan() {
   # Pin the render and provenance lookups to this docs worktree's origin.
   local GUIDE_REPO GH_REPO GH_CACHE_REPO_ID
   GUIDE_REPO="$(git -C "$DOCS_WT" remote get-url origin 2>/dev/null \
-    | sed -E 's#^git@[^:]+:##; s#^https?://[^/]+/##; s#\.git/?$##')"
-  [ -n "$GUIDE_REPO" ] || return 1
+    | sed -nE 's#/$##; s#\.git$##; s#^((https?|ssh)://[^/]+/|git@[^:]+:)([[:alnum:]_.-]+/[[:alnum:]_.-]+)$#\3#p')" || GUIDE_REPO=""
+  if [ -z "$GUIDE_REPO" ]; then
+    record_work_plan_receipt "render-failed"
+    echo "Cannot resolve the docs worktree's origin to owner/repo." >&2
+    return 1
+  fi
   export GH_REPO="$GUIDE_REPO" GH_CACHE_REPO_ID="$GUIDE_REPO"
 
   # Change detection: compare the freshly-rendered body against the body already
@@ -2219,14 +2234,23 @@ update_work_plan() {
   # Comparing the SAME rendered text on both sides is what makes the skip real;
   # a hash buys nothing here, so compare the strings directly.
   local new_body old_body stamp
-  new_body="$(render_plan_body)" || return 1
+  if ! new_body="$(render_plan_body)"; then
+    record_work_plan_receipt "render-failed"
+    echo "Cannot render WORK_PLAN.md from the current listings." >&2
+    return 1
+  fi
   # #14204 RECEIPT: fingerprint the rendered body once, up front, so EVERY
   # outcome below carries the same content hash into Step 5's `WORK_PLAN
   # check:` PR-body line — including the ones that refuse to write. Same
   # portability fallback the park-record hash uses (sha256sum on Linux,
   # shasum on macOS). Deliberately NOT local: it must survive into Step 5.
-  WORK_PLAN_RENDER_HASH="$(printf '%s\n' "$new_body" | { sha256sum 2>/dev/null || shasum -a 256; } 2>/dev/null | cut -c1-12)"
-  [[ "$WORK_PLAN_RENDER_HASH" =~ ^[0-9a-f]{12}$ ]] || { echo "Cannot hash the rendered plan." >&2; return 1; }
+  WORK_PLAN_RENDER_HASH="$(printf '%s\n' "$new_body" | { sha256sum 2>/dev/null || shasum -a 256; } 2>/dev/null | cut -c1-12)" || WORK_PLAN_RENDER_HASH=""
+  if ! [[ "$WORK_PLAN_RENDER_HASH" =~ ^[0-9a-f]{12}$ ]]; then
+    WORK_PLAN_RENDER_HASH=""
+    record_work_plan_receipt "render-failed"
+    echo "Cannot hash the rendered plan." >&2
+    return 1
+  fi
   # `sed '1d;$d'` drops the two marker lines, leaving only the generated region;
   # `strip_plan_stamp` (#13909) then drops the region's generated-at stamp line
   # so the comparison below sees ONLY label-derived content on both sides.
@@ -2263,7 +2287,10 @@ update_work_plan() {
   local debounce_secs last_merged_epoch now_epoch elapsed
   debounce_secs="${LOOM_WORK_PLAN_DEBOUNCE_SECS:-$(jq -r '.guide.docsMaintenance.workPlanDebounceSecs // 3600' .loom/config.json 2>/dev/null)}"
   [ -n "$debounce_secs" ] || debounce_secs=3600
-  last_merged_epoch="$(last_work_plan_write_epoch)"
+  if ! last_merged_epoch="$(last_work_plan_write_epoch)"; then
+    record_work_plan_receipt "debounce-check-failed"
+    return 1
+  fi
   now_epoch="${LOOM_WORK_PLAN_DEBOUNCE_NOW:-$(date -u +%s)}"
   elapsed=$(( now_epoch - last_merged_epoch ))
 
@@ -2304,7 +2331,10 @@ comparison mismatches until the file catches up). Adding a section means editing
 
 Step 3 records the outcome and the first 12 hex digits of the rendered body's
 SHA-256 in the docs worktree. The hash covers the label-derived text with a
-single trailing newline. The generation stamp stays outside the comparison.
+single trailing newline. An incomplete render records `render-failed` with
+hash `none`. A failed debounce lookup records `debounce-check-failed` with the
+completed render's hash. Both preserve the previous plan. The generation stamp
+stays outside the comparison.
 
 ### Step 4: Check README.md Staleness
 

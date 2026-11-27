@@ -9,9 +9,11 @@ scripts/tests/test-tracker-state-comment.sh
 
 # #754: the Guide receipt backport runs with the installed v0.19.1313 daemon.
 # Retire these pins and the compatibility helper when resyncing both the
-# daemon and the Guide to a version containing rjwalters/loom#15222.
+# daemon and Guide include rjwalters/loom#15222 and the Guide passes the
+# failed-listing and SSH-origin receipt cases from this backport.
 roles/guide.md
 commands/loom/guide.md
 agents-skills/loom-guide/SKILL.md
 scripts/guide-work-plan.sh
 scripts/tests/test-guide-work-plan-receipt.sh
+scripts/tests/test-guide-operator-attention-fold.sh

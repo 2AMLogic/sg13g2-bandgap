@@ -15,7 +15,8 @@
 #   - update_work_plan() classifies each of its return points into the global
 #     WORK_PLAN_RECEIPT (`written` / `current` /
 #     `debounced (elapsed <X>s < window <Y>s)` / `provenance-refused` /
-#     `write-failed`), and fingerprints the rendered body into
+#     `write-failed` / `debounce-check-failed` / `render-failed`), and
+#     fingerprints a complete rendered body into
 #     WORK_PLAN_RENDER_HASH (first 12 hex of its sha256).
 #   - The tick initializes WORK_PLAN_RECEIPT="NOT RUN" before calling, so a
 #     tick that never reached the function is visible rather than silent.
@@ -491,6 +492,75 @@ git -C "$DOCS_WT" diff --exit-code -- WORK_PLAN.md || exit 1
 printf '%s\n' 'missing markers' > "$DOCS_WT/WORK_PLAN.md"
 expect_outcome write-failed
 assert_eq "$(cat "$DOCS_WT/WORK_PLAN.md")" 'missing markers' "failed splice preserves the file"
+
+# Drive the installed renderer with a forge stub. Only the Ready query has a row.
+# Require the pinned repository on listings, cache reads and the title endpoint.
+cat > "$FIXTURE/gh-read" <<'GH_READ_STUB'
+#!/usr/bin/env bash
+[[ $GH_REPO == example/fixture && $GH_CACHE_REPO_ID == example/fixture ]] || exit 1
+ready_fixture='[{"number":42,"title":"Keep this issue"}]'
+case "$1 $2" in
+    'api repos/example/fixture/issues/42') echo 'Keep this issue' ;;
+    'issue list'|'pr list')
+        if [[ $3 == --state && $4 == merged ]]; then
+            [[ ${FAIL_LIST:-} != merged ]] || exit 1
+            exit 0
+        fi
+        [[ $3 == --label && $4 != "${FAIL_LIST:-}" ]] || exit 1
+        case "$4" in
+            loom:issue) echo "${READY_JSON:-$ready_fixture}" ;;
+            loom:pr) echo '[]' ;;
+        esac
+        ;;
+    *) exit 1 ;;
+esac
+GH_READ_STUB
+chmod +x "$FIXTURE/gh-read"
+run_renderer() {
+    env GH_READ="$FIXTURE/gh-read" GUIDE_DOCS_PR_EXCLUDE=true "$@" \
+        bash -c 'source "$1" && update_work_plan' _ "$FIXTURE/step3"
+}
+for origin in ssh://git@github.com/example/fixture.git git@github.com:example/fixture.git \
+    https://github.com/example/fixture.git; do
+    git -C "$DOCS_WT" remote set-url origin "$origin" || exit 1
+    git -C "$DOCS_WT" restore -- WORK_PLAN.md || exit 1
+    if run_renderer && grep -Fxq -- '- **#42**: Keep this issue' "$DOCS_WT/WORK_PLAN.md" &&
+        grep -Fxq receipt=written "$DOCS_WT/.loom-work-plan-receipt"; then
+        pass "verified and wrote the Ready row for $origin"
+    else
+        fail "could not verify and write the Ready row for $origin"
+    fi
+done
+
+# Establish a complete plan, then fail one listing or its JSON transformation.
+run_create || exit 1
+failures=(READY_JSON=malformed)
+for label in very-important important issue building review-requested pr curated architect hermit epic; do
+    failures+=("FAIL_LIST=loom:$label")
+done
+for failure in "${failures[@]}"; do
+    if ! run_renderer "$failure" && git -C "$DOCS_WT" diff --quiet HEAD -- WORK_PLAN.md &&
+        grep -Fxq receipt=render-failed "$DOCS_WT/.loom-work-plan-receipt" &&
+        grep -Fxq render_hash=none "$DOCS_WT/.loom-work-plan-receipt"; then
+        pass "preserved the complete plan and recorded the failure for $failure"
+    else
+        fail "plan or failure receipt was wrong for $failure"
+    fi
+done
+echo log >> "$DOCS_WT/WORK_LOG.md"
+run_create || exit 1
+assert_grep '^- \*\*WORK_PLAN check\*\*: render-failed \(render-hash none,' "$CAPTURE" \
+    "fresh Step 5 shell reports the failed render without a hash"
+
+# The debounce listing runs after a complete render, so its failure keeps the hash.
+if ! run_renderer FAIL_LIST=merged 'READY_JSON=[]' &&
+    git -C "$DOCS_WT" diff --quiet HEAD -- WORK_PLAN.md &&
+    grep -Fxq receipt=debounce-check-failed "$DOCS_WT/.loom-work-plan-receipt" &&
+    grep -Eq '^render_hash=[0-9a-f]{12}$' "$DOCS_WT/.loom-work-plan-receipt"; then
+    pass "failed history lookup preserves the plan and the complete render's hash"
+else
+    fail "failed history lookup did not preserve the plan and record its outcome"
+fi
 
 # ---------------------------------------------------------------------------
 echo ""
