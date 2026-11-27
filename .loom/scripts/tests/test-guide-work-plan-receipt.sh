@@ -632,6 +632,102 @@ else
     fail "failed history lookup did not preserve the plan and record its outcome"
 fi
 
+# Same-tick A -> B -> A retry: restoring the committed body must splice the
+# exact base region (including its original stamp) back between the markers,
+# preserve edits outside the markers, record 'current' with A's render hash,
+# and let Step 5 publish an independent WORK_LOG change without deferring.
+baseline_stamp='_Generated: 2026-01-02T03:04:05Z (snapshot; compare against live labels)_'
+printf '%s\n' 'preamble' '<!-- guide:plan-body:start -->' "$baseline_stamp" 'plan-a' \
+    '<!-- guide:plan-body:end -->' 'tail' > "$DOCS_WT/WORK_PLAN.md"
+git -C "$DOCS_WT" add WORK_PLAN.md
+git -C "$DOCS_WT" commit -qm 'stamped A baseline' || exit 1
+git -C "$DOCS_WT" push -q origin HEAD || exit 1
+git -C "$DOCS_WT" update-ref refs/remotes/origin/fixture-base HEAD || exit 1
+"$helper" reset || exit 1
+plan_a_blob=$(git -C "$DOCS_WT" hash-object WORK_PLAN.md)
+plan_a_hash=$(printf '%s\n' plan-a | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-12)
+plan_b_hash=$(printf '%s\n' plan-b | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-12)
+
+echo 'retry-work-log-entry' >> "$DOCS_WT/WORK_LOG.md"
+RENDER=plan-b bash -e "$FIXTURE/update.sh" || exit 1
+assert_eq "$(cat "$DOCS_WT/.loom-work-plan-receipt")" $'receipt=written\nrender_hash='"$plan_b_hash" \
+    "first Step 3 writes plan B and records its written receipt"
+expect_outcome current RENDER=plan-a
+assert_eq "$(cat "$DOCS_WT/.loom-work-plan-receipt")" $'receipt=current\nrender_hash='"$plan_a_hash" \
+    "A -> B -> A retry records current receipt with A's render hash"
+assert_eq "$(git -C "$DOCS_WT" hash-object WORK_PLAN.md)" "$plan_a_blob" \
+    "A -> B -> A retry restores the exact base WORK_PLAN.md bytes including original stamp"
+rm -f "$CAPTURE"
+if run_create; then
+    pass "fresh Step 5 publishes independent WORK_LOG change after A -> B -> A retry"
+else
+    fail "fresh Step 5 deferred independent WORK_LOG change after A -> B -> A retry"
+fi
+remote_head=$(git --git-dir="$FIXTURE/remote.git" rev-parse refs/heads/docs/guide-update-test)
+assert_eq "$(git -C "$DOCS_WT" rev-parse HEAD)" "$remote_head" \
+    "Step 5 pushed the WORK_LOG commit to the local remote"
+assert_eq "$(git --git-dir="$FIXTURE/remote.git" diff-tree --no-commit-id --name-only -r "$remote_head")" \
+    WORK_LOG.md "local remote commit contains only WORK_LOG.md (no generated-region diff)"
+assert_eq "$(git --git-dir="$FIXTURE/remote.git" show "$remote_head:WORK_PLAN.md")" \
+    "$(printf '%s\n' 'preamble' '<!-- guide:plan-body:start -->' "$baseline_stamp" 'plan-a' '<!-- guide:plan-body:end -->' 'tail')" \
+    "committed WORK_PLAN.md on remote retains exact base region and original stamp"
+if [[ -f $CAPTURE ]]; then
+    assert_grep "^- \\*\\*WORK_PLAN check\\*\\*: current \\(render-hash $plan_a_hash, [0-9TZ:-]+\\)\$" \
+        "$CAPTURE" "captured PR body reports current with A's render hash"
+    assert_eq "$(grep -c '^- \*\*WORK_PLAN check\*\*:' "$CAPTURE")" 1 \
+        "captured PR body contains exactly one WORK_PLAN check receipt"
+else
+    fail "captured PR body missing after A -> B -> A Step 5"
+fi
+
+# Exercise an edit outside the markers during the A -> B -> A retry and verify it survives.
+git -C "$DOCS_WT" update-ref refs/remotes/origin/fixture-base HEAD || exit 1
+git -C "$DOCS_WT" restore --source=HEAD --staged --worktree -- WORK_PLAN.md WORK_LOG.md || exit 1
+"$helper" reset || exit 1
+RENDER=plan-b bash -e "$FIXTURE/update.sh" || exit 1
+sed '1s/^preamble$/preamble-edited/' "$DOCS_WT/WORK_PLAN.md" > "$FIXTURE/outside-edit"
+mv "$FIXTURE/outside-edit" "$DOCS_WT/WORK_PLAN.md"
+echo 'outside-note' >> "$DOCS_WT/WORK_PLAN.md"
+echo 'second-retry-log' >> "$DOCS_WT/WORK_LOG.md"
+expect_outcome current RENDER=plan-a
+expected_outside_plan=$(printf '%s\n' 'preamble-edited' '<!-- guide:plan-body:start -->' "$baseline_stamp" 'plan-a' \
+    '<!-- guide:plan-body:end -->' 'tail' 'outside-note')
+assert_eq "$(cat "$DOCS_WT/WORK_PLAN.md")" "$expected_outside_plan" \
+    "edit outside the markers survives A -> B -> A base-region restoration with original stamp"
+assert_eq "$(cat "$DOCS_WT/.loom-work-plan-receipt")" $'receipt=current\nrender_hash='"$plan_a_hash" \
+    "durable receipt reports current with A's render hash when outside edit is present"
+rm -f "$CAPTURE"
+if run_create; then
+    pass "Step 5 publishes outside-marker edit and WORK_LOG after A -> B -> A retry"
+else
+    fail "Step 5 deferred outside-marker edit and WORK_LOG after A -> B -> A retry"
+fi
+remote_head=$(git --git-dir="$FIXTURE/remote.git" rev-parse refs/heads/docs/guide-update-test)
+assert_eq "$(git --git-dir="$FIXTURE/remote.git" show "$remote_head:WORK_PLAN.md")" "$expected_outside_plan" \
+    "remote commit keeps outside-marker edit and exact original stamped region"
+if [[ -f $CAPTURE ]]; then
+    assert_grep "^- \\*\\*WORK_PLAN check\\*\\*: current \\(render-hash $plan_a_hash, [0-9TZ:-]+\\)\$" \
+        "$CAPTURE" "PR body carries matching current receipt when outside-marker edit ships"
+    assert_eq "$(grep -c '^- \*\*WORK_PLAN check\*\*:' "$CAPTURE")" 1 \
+        "PR body carries one receipt when outside-marker edit ships"
+else
+    fail "captured PR body missing when outside-marker edit ships"
+fi
+
+# Standalone stamp change on A is still refused by both Step 3 and Step 5.
+git -C "$DOCS_WT" update-ref refs/remotes/origin/fixture-base HEAD || exit 1
+git -C "$DOCS_WT" restore --source=HEAD --staged --worktree -- WORK_PLAN.md WORK_LOG.md || exit 1
+sed 's/^_Generated: .* (snapshot/_Generated: 2000-01-01T00:00:00Z (snapshot/' \
+    "$DOCS_WT/WORK_PLAN.md" > "$FIXTURE/stamp-only-a"
+cp "$FIXTURE/stamp-only-a" "$DOCS_WT/WORK_PLAN.md"
+"$helper" record written "$plan_a_hash" || exit 1
+expect_outcome write-failed RENDER=plan-a
+"$helper" record written "$plan_a_hash" || exit 1
+expect_refusal "Step 5 still refuses a standalone stamp change with matching written hash" run_create
+"$helper" record current "$plan_a_hash" || exit 1
+expect_refusal "Step 5 still refuses a standalone stamp change with matching current hash" run_create
+git -C "$DOCS_WT" restore --source=HEAD --staged --worktree -- WORK_PLAN.md || exit 1
+
 # ---------------------------------------------------------------------------
 echo ""
 echo "================================"

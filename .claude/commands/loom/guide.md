@@ -2264,6 +2264,17 @@ update_work_plan() {
       record_work_plan_receipt "write-failed"
       return 1
     fi
+  else
+    # A same-tick retry can return to the committed base snapshot after a
+    # verified pending write. Restore the exact base region and stamp.
+    if printf '%s\n' "$new_body" | "$DOCS_WT/.loom/scripts/guide-work-plan.sh" restore-base; then
+      record_work_plan_receipt "current" || return 1
+      echo "WORK_PLAN.md is current (no label changes detected)."
+      return 1
+    elif [ "$?" -ne 3 ]; then
+      record_work_plan_receipt "write-failed"
+      return 1
+    fi
   fi
 
   # #5890 HYSTERESIS, DO NOT REMOVE: a rendered diff alone used to be
@@ -2333,7 +2344,9 @@ SHA-256 in the docs worktree. The hash covers the label-derived text with a
 single trailing newline. An incomplete render records `render-failed` with
 hash `none`. A failed debounce lookup records `debounce-check-failed` with the
 completed render's hash. Both preserve the previous plan. The generation stamp
-stays outside the comparison.
+stays outside the comparison. If a same-tick retry after a verified pending
+write renders the merge-base body again, Step 3 restores the exact base region
+(including its stamp) and records `current`.
 
 ### Step 4: Check README.md Staleness
 
