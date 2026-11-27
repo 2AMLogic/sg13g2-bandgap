@@ -3,7 +3,7 @@
 Current repository work state, generated from GitHub labels by the Guide role.
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-27T12:32:32Z (snapshot; compare against live labels)_
+_Generated: 2026-11-27T14:17:39Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -67,7 +67,6 @@ Issues carrying `loom:curated`.
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)*
 - **#653**: Re-run closed-loop-iq for a re-derivable item-5 citation and update the record spec's magnitude Claim (post-#648) *(curated)*
 - **#698**: Re-run sim/sg13cmos5l-closed-loop-startup-pex against the parasitic-bearing sg13cmos5l-bandgap_top.pex.spice (post-#480) *(curated)*
-- **#754**: Update the installed Guide to emit a verifiable WORK_PLAN receipt on docs PRs *(curated)*
 - **#755**: Refresh the dispatch checkout’s Loom resolver so large defaults no longer break issue filing *(curated)*
 
 ## Proposed (Architect / Hermit)
@@ -91,7 +90,7 @@ _None._
 | In Progress (`loom:building`) | 3 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 2 |
-| Curated | 13 |
+| Curated | 12 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

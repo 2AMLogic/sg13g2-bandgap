@@ -12,6 +12,9 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-27
 
+- **Issue #758** (closed): Guide defers a WORK_LOG update when a plan retry returns to the committed snapshot
+- **PR #762**: fix(guide): restore base WORK_PLAN region on same-tick retry
+- **Issue #754** (closed): Update the installed Guide to emit a verifiable WORK_PLAN receipt on docs PRs
 - **Issue #759** (closed): Read the representative trim Monte Carlo log from its producing stage
 - **PR #760**: fix: index fit-stage results for failed draw-0 trim MC logs
 - **PR #756**: fix(guide): persist the WORK_PLAN receipt across docs PR steps
