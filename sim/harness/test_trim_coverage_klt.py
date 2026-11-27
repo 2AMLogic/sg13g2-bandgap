@@ -8,6 +8,8 @@ import contextlib
 import csv
 import io
 import json
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -17,9 +19,53 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import enrich_ac_report as acr  # noqa: E402
 import enrich_pvt_report as epr  # noqa: E402
+import enrich_supply_bench_report as esbr  # noqa: E402
 import seed_deck  # noqa: E402
 import trim_coverage_klt as tc  # noqa: E402
 import trim_mc_klt as tm  # noqa: E402
+
+HARNESS_DIR = Path(__file__).resolve().parent
+
+#: Fixture for the shell startup-seed lookups (issue #739): an older record,
+#: then the newest one with both companion kinds an enrichment derives from
+#: it. Under a linguistic UTF-8 collation bare `sort | tail -1` ignores the
+#: `-`/`.` on its first pass, so the unfiltered glob ranks a companion of the
+#: newest record after the record itself and hands back the companion.
+SEED_FIXTURE = ("20260101-000000-a.csv", "20260101-000002-c.csv",
+                "20260101-000002-c-tc.csv", "20260101-000002-c-vs-schematic.csv")
+NEWEST_SEED = "20260101-000002-c.csv"
+
+#: Each shell lookup and a stand-in for the script that sources it (both take
+#: the sim dir as $1 and source the lookup as $2). nodeset_seed.sh needs
+#: SIM_DIR/REPO_ROOT and dut_git_sha() from its caller's
+#: sim/lib/pvt_preflight.sh, which cannot be sourced without a PDK: the stub
+#: stands in for that function and records that the provenance lookup went
+#: through its name.
+PREAMBLE_CALLER = """\
+set -euo pipefail
+SIM_DIR="$1"
+source "$2"
+klt_sim_newest_seed_csv || exit $?
+printf 'SEED_CSV=%s\\n' "${SEED_CSV}"
+"""
+NODESET_CALLER = """\
+set -euo pipefail
+SIM_DIR="$1"
+REPO_ROOT="${SIM_DIR}/.."
+dut_git_sha() { printf 'sha-of:%s' "${1##*/}"; }
+source "$2"
+printf 'SEED_CSV=%s\\nSEED_GIT_SHA=%s\\n' "${SEED_CSV}" "${SEED_GIT_SHA}"
+"""
+SHELL_SEED_LOOKUPS = {
+    "klt_sim_preamble.sh": (HARNESS_DIR / "klt_sim_preamble.sh", PREAMBLE_CALLER),
+    "nodeset_seed.sh": (HARNESS_DIR.parent / "lib" / "nodeset_seed.sh", NODESET_CALLER),
+}
+
+
+def seed_vars(stdout: str) -> dict[str, str]:
+    """The `SEED_<NAME>=<value>` lines a caller stand-in prints."""
+    return dict(line.split("=", 1) for line in stdout.splitlines()
+                if line.startswith("SEED_"))
 
 
 def corner(label, code, vdd, temp=27, status="pass", **meas):
@@ -253,9 +299,100 @@ class SharedSeamTests(unittest.TestCase):
 
     def test_enrichers_share_the_report_writer(self):
         """Issue #725: the JSON write, the non-pass corner lines and the
-        `enriched:` summary are enrich_pvt_report.write_enriched_report."""
+        `enriched:` summary are enrich_pvt_report.write_enriched_report.
+        Issue #739: the fifth enricher, enrich_supply_bench_report, joins
+        them."""
         self.assertIs(acr.write_enriched_report, epr.write_enriched_report)
         self.assertIs(tc.write_enriched_report, epr.write_enriched_report)
+        self.assertIs(esbr.write_enriched_report, epr.write_enriched_report)
+
+    def test_supply_bench_enricher_main_ends_with_the_shared_writer(self):
+        """Issue #739: enrich_supply_bench_report.main() hands its enriched
+        report to the shared writer; its own inline JSON write, non-pass
+        corner loop and `enriched:` tally are gone."""
+        with tempfile.TemporaryDirectory() as d:
+            report = Path(d) / "report-merged.json"
+            report.write_text(json.dumps({"corners": []}), encoding="utf-8")
+            out = Path(d) / "report-enriched.json"
+            for bench in sorted(esbr.BENCHES) + [esbr.LADDER_BENCH]:
+                with self.subTest(bench=bench), \
+                        mock.patch.object(esbr, "write_enriched_report") as write:
+                    rc = esbr.main(["--bench", bench, str(report), "-o", str(out)])
+                    self.assertEqual(rc, 0)
+                    write.assert_called_once_with(mock.ANY, out)
+                    self.assertEqual(write.call_args.args[0]["status"], "pass")
+
+    def test_shell_seed_lookups_skip_companion_csvs(self):
+        """Issue #739: klt_sim_newest_seed_csv (sim/harness/klt_sim_preamble.sh)
+        and sim/lib/nodeset_seed.sh skip the *-tc.csv / *-vs-schematic*
+        companions and sort in the C locale -- the shell twin of
+        seed_deck.newest_seed_csv (issue #707). The bare `ls | sort | tail -1`
+        they retired is the positive control: under a UTF-8 collation it
+        picks a companion of the newest record, so when the control already
+        picks the seed the host lacks that collation and the leg is not
+        exercisable here."""
+        for locale in ("C", "en_US.UTF-8"):
+            with self.subTest(locale=locale), tempfile.TemporaryDirectory() as d:
+                root = Path(d)
+                records = self._write_seed_fixture(root)
+                env = {**os.environ, "LC_ALL": locale}
+                bare = subprocess.run(
+                    ["bash", "-c", 'ls -1 "$1"/*.csv | sort | tail -1', "ctl", str(records)],
+                    env=env, capture_output=True, text=True, check=True,
+                ).stdout.strip()
+                if locale == "C":
+                    # Why LC_ALL=C is half the fix: byte order ranks '-'
+                    # before '.', so the record sorts after its companions.
+                    self.assertEqual(Path(bare).name, NEWEST_SEED, bare)
+                elif Path(bare).name == NEWEST_SEED:
+                    self.skipTest(f"{locale}: bare sort already picks the seed; "
+                                  "no punctuation-ignoring collation here")
+                else:
+                    self.assertNotEqual(Path(bare).name, NEWEST_SEED, bare)
+                for key, (sourced, caller) in SHELL_SEED_LOOKUPS.items():
+                    with self.subTest(lookup=key):
+                        run = self._run_seed_lookup(root, key, sourced, caller, env)
+                        self.assertEqual(run.returncode, 0, run.stderr)
+                        picked = seed_vars(run.stdout)
+                        self.assertEqual(Path(picked["SEED_CSV"]).name, NEWEST_SEED)
+                        if key == "nodeset_seed.sh":
+                            # SEED_GIT_SHA is dut_git_sha SEED_CSV, not a
+                            # re-typed `git log` (the stub names its argument).
+                            self.assertEqual(picked["SEED_GIT_SHA"], f"sha-of:{NEWEST_SEED}")
+
+    def test_shell_seed_lookups_refuse_an_empty_records_dir(self):
+        """Issue #739: closed-loop-vref-mc and trim-coverage had no missing-seed
+        check (a bare `ls` failing inside the assignment). Both lookups name
+        the empty directory: the preamble helper RETURNS 3 -- its
+        return-not-exit contract, so the caller's `|| exit $?` decides -- and
+        nodeset_seed.sh itself EXITS 3."""
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            records = root / "sim" / "closed-loop-startup" / "records"
+            records.mkdir(parents=True)
+            for key, (sourced, caller) in SHELL_SEED_LOOKUPS.items():
+                with self.subTest(lookup=key):
+                    run = self._run_seed_lookup(root, key, sourced, caller, dict(os.environ))
+                    self.assertEqual(run.returncode, 3, run.stderr)
+                    self.assertIn("closed-loop-startup/records", run.stderr)
+
+    @staticmethod
+    def _write_seed_fixture(root: Path) -> Path:
+        records = root / "sim" / "closed-loop-startup" / "records"
+        records.mkdir(parents=True)
+        for name in SEED_FIXTURE:
+            (records / name).write_text("", encoding="utf-8")
+        return records
+
+    @staticmethod
+    def _run_seed_lookup(root: Path, key: str, sourced: Path, caller: str,
+                         env: dict) -> subprocess.CompletedProcess:
+        # The stand-in goes in a file: nodeset_seed.sh labels its diagnostics
+        # with basename "${BASH_SOURCE[1]}", its sourcing script's own path.
+        script = root / f"caller-{key}"
+        script.write_text(caller, encoding="utf-8")
+        return subprocess.run(["bash", str(script), str(root / "sim"), str(sourced)],
+                              capture_output=True, text=True, env=env)
 
     def test_enrich_ac_report_never_uses_fail_seed_rows_as_reference(self):
         with tempfile.TemporaryDirectory() as d:

@@ -69,6 +69,7 @@ from enrich_pvt_report import (
     closed_loop_verdict_failures,
     inject_baked_supply,
     recount_report,
+    write_enriched_report,
 )
 
 IQ_SETTLE_TOL_A = 1e-7
@@ -284,13 +285,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("-o", "--output", type=Path, required=True)
     args = ap.parse_args(argv)
     report = enrich(json.loads(args.report.read_text(encoding="utf-8")), args.bench)
-    args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
-    for c in report["corners"]:
-        if c.get("status") != "pass":
-            diag = "; ".join(d.get("message", "") for d in c.get("diagnostics", []))
-            print(f"  {c.get('corner_id')}: {c['status']} {diag[:100]}")
-    print(f"enriched: {report['status']} passed={report['passed']} "
-          f"failed={report['failed']} errored={report['errored']}")
+    write_enriched_report(report, args.output)
     return 0
 
 

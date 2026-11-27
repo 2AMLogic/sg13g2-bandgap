@@ -43,7 +43,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../harness/pex_runner.sh"
 
 TC_PY="${HARNESS_DIR}/trim_coverage_klt.py"
 BATCH_OSDI_ROOT="${KLT_SIM_BATCH_OSDI_ROOT:-/opt/pdk}"
-SEED_CSV="$(ls -1 "${SIM_DIR}/closed-loop-startup/records/"*.csv | sort | tail -1)"
+klt_sim_newest_seed_csv || exit $?
 ANCHOR_VREF_V="1.047278"   # records/20260930-195507-9530863.csv typ_code128 27C 3.30V
 ANCHOR_TOL_V="0.0005"
 

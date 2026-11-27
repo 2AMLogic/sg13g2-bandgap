@@ -143,6 +143,44 @@ klt_sim_read_msense_width() {  # NETLIST
   fi
 }
 
+# --- startup seed record --------------------------------------------------------
+# Sets SEED_CSV to sim/closed-loop-startup's newest committed record, where
+# the seeded benches' .nodeset values come from, and returns 3 -- this
+# preamble's return-not-exit contract -- when there is none. The *-tc.csv /
+# *-vs-schematic* companions a previous enrichment derives from a record are
+# skipped and the sort is the C locale's: the same lookup seed_deck.py's
+# newest_seed_csv (#486/#707) and pex_ac_runner.sh make. Record ids lead with
+# a UTC timestamp, so in byte order the lexicographic tail IS the newest
+# record, whereas a linguistic UTF-8 collation ignores '-' and '.' on its
+# first pass and ranks a record after its own companions (issue #739: the
+# bare `ls | sort | tail -1` closed-loop-vref-mc and trim-coverage each
+# re-typed picked that companion). Pure shell on purpose: the identity
+# coverage probe runs these runners with a stubbed python3.
+klt_sim_newest_seed_csv() {
+  local cand
+  local cands=()
+  for cand in "${SIM_DIR}/closed-loop-startup/records/"*.csv; do
+    [[ -f "${cand}" ]] || continue
+    case "${cand##*/}" in *-tc.csv|*-vs-schematic*) continue ;; esac
+    cands+=("${cand}")
+  done
+  if [[ ${#cands[@]} -eq 0 ]]; then
+    echo "run_klt_sim.sh: no seed record in ${SIM_DIR}/closed-loop-startup/records/" >&2
+    return 3
+  fi
+  SEED_CSV="$(printf '%s\n' "${cands[@]}" | LC_ALL=C sort | tail -1)"
+}
+
+# PATH's most recent commit's short SHA (PATH a repo-relative git pathspec,
+# resolved against REPO_ROOT), or "unknown": the same lookup
+# sim/lib/pvt_preflight.sh's dut_git_sha() makes for the run_pvt_sweep.sh
+# benches (#103), which the `klt sim` runners cannot source -- that file
+# preflights a PVT sweep at source time. closed-loop-vref-mc re-typed it
+# inline until #739.
+dut_git_sha() {  # PATH
+  git -C "${REPO_ROOT}" log -1 --format=%h -- "$1" 2>/dev/null || echo unknown
+}
+
 # --- resume safety (#332) ------------------------------------------------------
 # A saved report is reused only when its committed submission identity matches
 # the inputs about to be submitted (sim/harness/submission_identity.py).
