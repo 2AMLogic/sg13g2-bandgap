@@ -1647,6 +1647,44 @@ class InlineDeckTests(TempDirCase):
             ],
         )
 
+    def test_pre_osdi_pdk_paths_in_deck_include_and_lib(self) -> None:
+        self.write(
+            "work/sub/body.spice",
+            f'.control\n\tPRE_OSDI  "{self.pdk}/osdi/my model.osdi"\n.endc\n',
+        )
+        self.write(
+            "work/sub/bundle.lib",
+            ".lib typ\npre_osdi '../../pdk/osdi/relative.osdi'\n.endl typ\n",
+        )
+        deck = self.write(
+            "work/corner.cir",
+            f"pre_osdi {self.pdk}/osdi/top.osdi\n.include sub/body.spice\n.lib sub/bundle.lib typ\n",
+        )
+        out = kse.inline_deck(deck, str(self.pdk))
+        self.assertIn("pre_osdi ${PDK_ROOT}/osdi/top.osdi", out)
+        self.assertIn('\tPRE_OSDI  "${PDK_ROOT}/osdi/my model.osdi"', out)
+        self.assertIn("pre_osdi '${PDK_ROOT}/osdi/relative.osdi'", out)
+        self.assertNotIn(str(self.pdk), "\n".join(out))
+
+    def test_pre_osdi_placeholders_pass_through(self) -> None:
+        cards = ['  pre_osdi "${PDK_ROOT}/a.osdi"', "pre_osdi $PDK_ROOT/b.osdi"]
+        deck = self.write("pdk/test.cir", "\n".join(cards))
+        for root in (None, str(self.pdk)):
+            with self.subTest(root=root):
+                self.assertEqual(kse.inline_deck(deck, root), cards)
+
+    def test_pre_osdi_external_paths_pass_through(self) -> None:
+        override = self.tmp / "pdkx" / "override.osdi"
+        override.parent.mkdir()
+        override.write_bytes(b"\xff\x00")
+        cards = [f'\tpre_osdi "{override}"  ', "pre_osdi /opt/pdk/osdi/runner.osdi"]
+        deck = self.write("work/corner.cir", "\n".join(cards))
+        self.assertEqual(kse.inline_deck(deck, str(self.pdk)), cards)
+
+        card = f"pre_osdi {self.pdk}/osdi/top.osdi"
+        deck = self.write("work/corner.cir", card)
+        self.assertEqual(kse.inline_deck(deck, None), [card])
+
     def test_missing_local_include_fails_with_chain(self) -> None:
         self.write("work/body.spice", '.include "missing-dut.spice"\n')
         deck = self.write("work/corner.cir", ".include body.spice\n")

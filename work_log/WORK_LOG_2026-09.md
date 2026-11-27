@@ -2,6 +2,17 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-27
+
+- **PR #251**: docs(layout): condense SG13CMOS5L resolved-issue narrative in README to pointers
+- **PR #254**: docs(layout): re-derive the #174 LVS section from the current 14-finding report
+- **PR #256**: docs: fix false "no underpass needed" claim for bandgap_startup
+- **PR #257**: docs(layout): re-derive SG13CMOS5L cause-4 pfet/well half and net_count from committed evidence
+- **Issue #255** (closed): docs(layout): SG13CMOS5L cause-4 item still says PMOS bodies are unbiased; committed reports say vdd (plus stale net_count)
+- **Issue #253** (closed): docs(layout): two stale "no underpass needed" claims for sg13cmos5l-bandgap_startup
+- **Issue #252** (closed): docs(layout): #174 LVS section quotes 22 findings; committed sg13cmos5l-bandgap_top report says 14
+- **Issue #250** (closed): docs: condense SG13CMOS5L half of layout/README.md — closed-issue narrative duplicated in generate.py docstrings, with stale LVS counts (follow-up to #189)
+
 ### 2026-09-26
 
 - **PR #249**: Add pinned-comment convention for tracker issues at the addComment cap
