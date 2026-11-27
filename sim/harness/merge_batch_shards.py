@@ -51,6 +51,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -359,8 +360,39 @@ def rebuild_measurements_rollup(merged: dict, declared: list[dict]) -> None:
     }
 
 
+def rebuild_corner_summaries(report: dict) -> None:
+    """Rebuild the klt diagnostic and corner metric counts over the whole grid."""
+    corners = report.get("corners") or []
+    statuses: Counter[str] = Counter()
+    by_code: Counter[str] = Counter()
+    by_severity: Counter[str] = Counter()
+    corners_with_diagnostics = 0
+    for corner in corners:
+        statuses[corner.get("status")] += 1
+        diagnostics = corner.get("diagnostics")
+        if not diagnostics:
+            continue
+        corners_with_diagnostics += 1
+        for diagnostic in diagnostics:
+            by_code[diagnostic.get("code") or "unknown"] += 1
+            # Bench-generated verdict diagnostics can omit the severity.
+            by_severity[diagnostic.get("severity") or "unknown"] += 1
+    report["diagnostic_counts"] = {
+        "by_code": dict(by_code),
+        "by_severity": dict(by_severity),
+        "corners_with_diagnostics": corners_with_diagnostics,
+    }
+    report["metrics"] = {
+        "sim__corner__count": len(corners),
+        "sim__corner__passed_count": statuses["pass"],
+        "sim__corner__failed_count": statuses["fail"],
+        "sim__corner__errored_count": statuses["error"],
+        "sim__corner__inconclusive_count": statuses["inconclusive"],
+    }
+
+
 def refresh_rollup(report: dict) -> None:
-    """Re-aggregate an already-merged report's rollup from its corners.
+    """Refresh grid summaries and the declared measurement rollup after enrichment.
 
     The merge builds the rollup before the bench enrichers run, and they
     legitimately mutate corners afterwards: they rewrite ``/novdd/`` corner
@@ -370,6 +402,8 @@ def refresh_rollup(report: dict) -> None:
     it from the declared metadata the merge already left in
     ``report["measurements"]`` -- same rule, same fields, no new inputs.
     """
+    if "grid" in report:  # merge() adds this even without declared measurements.
+        rebuild_corner_summaries(report)
     declared = report.get("measurements")
     if not isinstance(declared, list) or not declared:
         return
@@ -432,6 +466,7 @@ def merge(
     if dup_problems or (grid_problems and not allow_incomplete):
         raise ShardError(grid_problems)
     recount_report(merged, corners)
+    rebuild_corner_summaries(merged)
     complete = not (missing or unexpected)
     if not complete:
         merged["status"] = "incomplete"
