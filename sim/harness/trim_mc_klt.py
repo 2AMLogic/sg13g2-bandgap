@@ -421,6 +421,9 @@ def assemble(a: argparse.Namespace) -> None:
     manifest = json.loads((work / "manifest-verify.json").read_text())
     res = Results(Path(a.artifacts), manifest)
     res.require_complete("verify stage")
+    fit_manifest = json.loads((work / "manifest-fit.json").read_text())
+    fit_res = Results(Path(a.fit_artifacts), fit_manifest)
+    fit_res.require_complete("fit stage")
     rows = [draw_row(a, p, d, fits[f"{p}|{d}"], res) for p in POINTS for d in range(a.n)]
 
     # Negative control (hard gate): trimmed negctrl vref identical at every draw and temperature.
@@ -449,10 +452,12 @@ def assemble(a: argparse.Namespace) -> None:
         cid = f"{label}_{TEMP_TRIM_C}c_{VDD}v"
         code0 = fits[f"{point}|0"]["code_star"]
         if code0 != -1:
-            src, (temp, code, stage) = verify_id(point, 0, TEMP_TRIM_C, code0), (TEMP_TRIM_C, code0, "verify")
+            src_res, src = res, verify_id(point, 0, TEMP_TRIM_C, code0)
+            temp, code, stage = TEMP_TRIM_C, code0, "verify"
         else:
-            src, (temp, code, stage) = fit_id(point, 0, 0), (TEMP_TRIM_C, 0, "fit")
-        log = res.unit(src)[0] or ""
+            src_res, src = fit_res, fit_id(point, 0, 0)
+            temp, code, stage = TEMP_TRIM_C, 0, "fit"
+        log = src_res.unit(src)[0] or ""
         (rep / f"{cid}.log").write_text(log)
         # The representative deck, re-rendered with host-resolvable PDK/OSDI paths
         # (the fleet ran the identical deck against the image's baked root).

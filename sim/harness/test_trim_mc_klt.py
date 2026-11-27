@@ -219,6 +219,44 @@ class AssembleTests(unittest.TestCase):
         nominal = next(c for c in report["corners"] if c["process"] == "typ_mismatch")
         self.assertEqual(nominal["status"], "fail")  # n_pass 1 != n_draws 2
 
+    def test_failed_draw_zero_fit_reads_representative_fit_log(self):
+        with tempfile.TemporaryDirectory() as d:
+            work = Path(d)
+            fx = CampaignFixture(work, n=2)
+            old_code = json.loads((work / "codes.json").read_text())["nominal|0"]["code_star"]
+            (fx.fit_art / "request-fit-nominal-00" / tm.fit_id("nominal", 0, 0) /
+             "stdout.bin").write_text("Simulation interrupted\n")
+            tm.codes(argparse.Namespace(work=str(work), artifacts=str(fx.fit_art), n=fx.n))
+            drop = {tm.verify_id("nominal", 0, t, old_code) for t in tm.VERIFY_TEMPS}
+            for entry in fx.ver_manifest:
+                if entry["point"] == "nominal":
+                    entry["ids"] = [uid for uid in entry["ids"] if uid not in drop]
+            (work / "manifest-verify.json").write_text(json.dumps(fx.ver_manifest))
+            a = fx.args()
+            tm.assemble(a)
+
+            with Path(a.draws_out).open(newline="") as fh:
+                rows = list(csv.DictReader(fh))
+            r0 = next(r for r in rows if r["point"] == "nominal" and r["draw_index"] == "0")
+            self.assertEqual(r0["verify_status"], "FAIL")
+            self.assertEqual(r0["code_star"], "-1")
+            self.assertEqual(r0["fit0_vref_v"], "NA")
+
+            report = json.loads(Path(a.report_out).read_text())
+            by_proc = {c["process"]: c for c in report["corners"]}
+            nominal = by_proc["typ_mismatch"]
+            self.assertEqual(nominal["status"], "fail")
+            nom_meas = {m["name"]: m["value"] for m in nominal["measurements"]}
+            self.assertEqual((nom_meas["n_draws"], nom_meas["n_pass"]), (2.0, 1.0))
+            self.assertIn("Simulation interrupted", Path(nominal["artifacts"]["log"]).read_text())
+            self.assertIn("stage=fit corner=typ temp=27 draw=0 rndseed=100 code=0",
+                          Path(nominal["artifacts"]["deck"]).read_text())
+
+            negctrl = by_proc["typ_negctrl"]
+            self.assertEqual(negctrl["status"], "pass")
+            self.assertIn("v(vref) =", Path(negctrl["artifacts"]["log"]).read_text())
+            self.assertIn("stage=verify", Path(negctrl["artifacts"]["deck"]).read_text())
+
     def test_timed_out_unit_is_a_fail_row(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
