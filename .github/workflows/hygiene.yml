@@ -91,6 +91,15 @@ jobs:
         # shaping -- the transforms whose output becomes append-only evidence.
         run: python3 sim/harness/test_harness_transformers.py
 
+      - name: TC companion self-test
+        # Issues #465 / #496 / #510: the box-method and endpoint-method TC
+        # companions (boxtc_companion.py, tc_companion.py) -- committed
+        # companions regenerate byte-for-byte, the formula's parts, the
+        # shared shell seam, and a non-zero exit when a derivation omits
+        # every group (checked through a real subprocess, #746). No
+        # simulation, no PDK.
+        run: python3 sim/harness/test_tc_companions.py
+
       - name: SG13CMOS5L klt-sim conversion self-test
         # Issue #337: corner mapping vs the legacy scripts, generated request
         # shapes for the full grid, record columns/provenance, legacy verdicts
