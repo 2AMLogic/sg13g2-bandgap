@@ -2518,13 +2518,13 @@ the exact routing and the floorplan shift it forced (`X_M3` 150 -> 180) are
 in `generate.py`'s own module docstring; the full account is issue
 [#73](https://github.com/2AMLogic/sg13g2-bandgap/issues/73) (closed).
 
-**Single-metal, planar by necessity.** The curated `sg13cmos5l` deck's
-extraction stack is `metals=((8, 0),)` with `vias=()` — one routing metal, no
-via — where the `sg13g2` deck declares seven metals and six vias. A `Metal2`
-jumper would be invisible to `klt extract` and would split the net it
-carries, so this cell is routed entirely on `Metal1` plus a `GatPoly` bar for
-the gate-to-gate `fb` net, with a floorplan arranged so no two nets ever need
-to cross (see `generate.py`'s own floorplan table).
+**Single-metal routing.** The curated `sg13cmos5l` extraction deck models one
+routing metal (`metals=((8, 0),)`) and no vias (`vias=()`). The `sg13g2` deck
+declares seven metals and six vias. A `Metal2` jumper would leave a gap in
+the extracted net. This core routes on `Metal1` and uses `GatPoly` for the
+shared `fb` gate bar and for the `sns2` underpass beneath the `vref` `Metal1`
+trunk. The generator describes the escape routes in
+[“Boundary ports for `bandgap_top` assembly”](sg13cmos5l-bandgap_core/generate.py).
 
 **HV flavour: drawn, and now modelled for extraction.** The schematic's
 transistors are the thick-gate-oxide `sg13_hv_pmos`, so `draw_hv_pmos` draws
