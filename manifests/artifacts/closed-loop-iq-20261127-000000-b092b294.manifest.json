@@ -1,0 +1,1175 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "sha256": "69ea8974dcbf79ce04640b75d3a96f977edfbece95391f5c7c31f8a70a2c7e94",
+      "size": 26030,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/69/69ea8974dcbf79ce04640b75d3a96f977edfbece95391f5c7c31f8a70a2c7e94",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/bcs_-40c_2.97v.log"
+    },
+    {
+      "sha256": "e888cc21d0dc38373bf33b65fefc1f5c162ea56ef226238496e46052987ec1a5",
+      "size": 26030,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/e8/e888cc21d0dc38373bf33b65fefc1f5c162ea56ef226238496e46052987ec1a5",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/bcs_-40c_3.30v.log"
+    },
+    {
+      "sha256": "c9e7fd5944736141ad2c2a049b44741252685375055bedbefc8331b8dd62fa71",
+      "size": 26030,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/c9/c9e7fd5944736141ad2c2a049b44741252685375055bedbefc8331b8dd62fa71",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/bcs_-40c_3.63v.log"
+    },
+    {
+      "sha256": "a666ebabfc2956941a956db560a6be9cbe05d27991e7f7c0d28c7503f965528c",
+      "size": 26201,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/a6/a666ebabfc2956941a956db560a6be9cbe05d27991e7f7c0d28c7503f965528c",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/bcs_125c_2.97v.log"
+    },
+    {
+      "sha256": "b0f3d199763da0964442cbb5c0172802a1130daf8c745968b2604de7b53c6d06",
+      "size": 26201,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/b0/b0f3d199763da0964442cbb5c0172802a1130daf8c745968b2604de7b53c6d06",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/bcs_125c_3.30v.log"
+    },
+    {
+      "sha256": "1ad6700d757644326d5794792dd9f12f4c4e59dd372365bb6de593678f8b3149",
+      "size": 26201,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/1a/1ad6700d757644326d5794792dd9f12f4c4e59dd372365bb6de593678f8b3149",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/bcs_125c_3.63v.log"
+    },
+    {
+      "sha256": "9606bd25e9c901145fd7c5813223c0480977287da7b057b664d98dc1d779cc21",
+      "size": 73200,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/96/9606bd25e9c901145fd7c5813223c0480977287da7b057b664d98dc1d779cc21",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/bcs_27c_2.97v.log"
+    },
+    {
+      "sha256": "7b114d22ab4301b01676150af0cb78822e67b52d491f39696030330ddc618db4",
+      "size": 73200,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/7b/7b114d22ab4301b01676150af0cb78822e67b52d491f39696030330ddc618db4",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/bcs_27c_3.30v.log"
+    },
+    {
+      "sha256": "132ef5d05b017ac4c39887cd8a0554207b4fd37c46f58ce5caa778d9a1cb729e",
+      "size": 73200,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/13/132ef5d05b017ac4c39887cd8a0554207b4fd37c46f58ce5caa778d9a1cb729e",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/bcs_27c_3.63v.log"
+    },
+    {
+      "sha256": "a52c66760536c8df6c47c2851c74d2e83204b67a79fc270f3ea9a3c9e7122a2f",
+      "size": 26030,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/a5/a52c66760536c8df6c47c2851c74d2e83204b67a79fc270f3ea9a3c9e7122a2f",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/fs_-40c_2.97v.log"
+    },
+    {
+      "sha256": "d9580e69ecaaf19b53d1b268a47c701250f69794cba3ee3c7bbb49fdc37e19cd",
+      "size": 26030,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/d9/d9580e69ecaaf19b53d1b268a47c701250f69794cba3ee3c7bbb49fdc37e19cd",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/fs_-40c_3.30v.log"
+    },
+    {
+      "sha256": "481265c9a67bcee4e79d6585e9fefd416c69cf64b1a8251fbb61faa6e7ff0b4c",
+      "size": 26030,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/48/481265c9a67bcee4e79d6585e9fefd416c69cf64b1a8251fbb61faa6e7ff0b4c",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/fs_-40c_3.63v.log"
+    },
+    {
+      "sha256": "63cd3ab00e30be220c896de1d8ec0ba79556f6fc01682b3c56a4b1d25833d0a1",
+      "size": 26217,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/63/63cd3ab00e30be220c896de1d8ec0ba79556f6fc01682b3c56a4b1d25833d0a1",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/fs_125c_2.97v.log"
+    },
+    {
+      "sha256": "75889c646868d9e5696f37323749eca22fca3ceec49159af4a11a257874720f0",
+      "size": 26217,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/75/75889c646868d9e5696f37323749eca22fca3ceec49159af4a11a257874720f0",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/fs_125c_3.30v.log"
+    },
+    {
+      "sha256": "7b8ebad93393362c6a298b0729924750bdab16d9948d460b39ea71bd4d8205c7",
+      "size": 26217,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/7b/7b8ebad93393362c6a298b0729924750bdab16d9948d460b39ea71bd4d8205c7",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/fs_125c_3.63v.log"
+    },
+    {
+      "sha256": "ad9273eff6683efdc35af54558981f8022a15c927b08269609994a509550cc62",
+      "size": 26155,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/ad/ad9273eff6683efdc35af54558981f8022a15c927b08269609994a509550cc62",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/fs_27c_2.97v.log"
+    },
+    {
+      "sha256": "76e2b574b59de3775159b9247e3be7e6f3032f27a0442fc0b744b191d139e5d6",
+      "size": 26155,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/76/76e2b574b59de3775159b9247e3be7e6f3032f27a0442fc0b744b191d139e5d6",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/fs_27c_3.30v.log"
+    },
+    {
+      "sha256": "aa11cdc76479a3ca369e8fe9afaf98316b4f3e6a7ad914a3474ad285eed5efe9",
+      "size": 26155,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/aa/aa11cdc76479a3ca369e8fe9afaf98316b4f3e6a7ad914a3474ad285eed5efe9",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/fs_27c_3.63v.log"
+    },
+    {
+      "sha256": "85ee6ea81d563e1953d73e496294c141931d60e390f9802dc293c3fc18919ec9",
+      "size": 73033,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/85/85ee6ea81d563e1953d73e496294c141931d60e390f9802dc293c3fc18919ec9",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/sf_-40c_2.97v.log"
+    },
+    {
+      "sha256": "457a037d8284428dcb53adaaf4895ac9dd22d70120fc96e822ba3389d4ef0ec7",
+      "size": 73033,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/45/457a037d8284428dcb53adaaf4895ac9dd22d70120fc96e822ba3389d4ef0ec7",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/sf_-40c_3.30v.log"
+    },
+    {
+      "sha256": "199fa98e2d9f99981cbfdde17ddca470e18ab0b92b25a9e6d1df231bdb633277",
+      "size": 73033,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/19/199fa98e2d9f99981cbfdde17ddca470e18ab0b92b25a9e6d1df231bdb633277",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/sf_-40c_3.63v.log"
+    },
+    {
+      "sha256": "b902ffaa9336f9082ff129b95a7ea47193d620b0425cedd71b9534b171b81b64",
+      "size": 26217,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/b9/b902ffaa9336f9082ff129b95a7ea47193d620b0425cedd71b9534b171b81b64",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/sf_125c_2.97v.log"
+    },
+    {
+      "sha256": "6707ff72f69edfb8e61de953b97525a612ed9cad9aaa8062c5d79eff4adc284c",
+      "size": 26217,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/67/6707ff72f69edfb8e61de953b97525a612ed9cad9aaa8062c5d79eff4adc284c",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/sf_125c_3.30v.log"
+    },
+    {
+      "sha256": "127f324749bff5e913eba89bbc8b4458cc5abf166a7291189bd5451570820eff",
+      "size": 26217,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/12/127f324749bff5e913eba89bbc8b4458cc5abf166a7291189bd5451570820eff",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/sf_125c_3.63v.log"
+    },
+    {
+      "sha256": "6d5512b453ed4710bc48e44958e734b829bd1fd3d84708a664a4f0c9de726666",
+      "size": 73196,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/6d/6d5512b453ed4710bc48e44958e734b829bd1fd3d84708a664a4f0c9de726666",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/sf_27c_2.97v.log"
+    },
+    {
+      "sha256": "776bc75336a62302bca585db2e54870c5de145176b9bf7d8eec1c63d5ed6f06a",
+      "size": 73196,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/77/776bc75336a62302bca585db2e54870c5de145176b9bf7d8eec1c63d5ed6f06a",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/sf_27c_3.30v.log"
+    },
+    {
+      "sha256": "b073d9f930e5d44a7b4352ba90deda637df2044e8b4ea058bbfd68b8b0c39942",
+      "size": 73196,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/b0/b073d9f930e5d44a7b4352ba90deda637df2044e8b4ea058bbfd68b8b0c39942",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/sf_27c_3.63v.log"
+    },
+    {
+      "sha256": "7faa988eead6e00bff6d2f5bec4da91c827444cabeb9e629677cd145f3a3412b",
+      "size": 73033,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/7f/7faa988eead6e00bff6d2f5bec4da91c827444cabeb9e629677cd145f3a3412b",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/typ_-40c_2.97v.log"
+    },
+    {
+      "sha256": "df782f51d852abae4a6c6776ec9494b90405b4517f0b0b6cdc6acd29cb3156af",
+      "size": 73033,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/df/df782f51d852abae4a6c6776ec9494b90405b4517f0b0b6cdc6acd29cb3156af",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/typ_-40c_3.30v.log"
+    },
+    {
+      "sha256": "15d2be3f1be9f096199eaf033b9746fcd785a502780288790da83bdc8eed4d83",
+      "size": 73033,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/15/15d2be3f1be9f096199eaf033b9746fcd785a502780288790da83bdc8eed4d83",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/typ_-40c_3.63v.log"
+    },
+    {
+      "sha256": "2380226776dd371c160da7d5e1d5640fc5e052d0c7835042eaa0e2dcd86b8fd3",
+      "size": 26317,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/23/2380226776dd371c160da7d5e1d5640fc5e052d0c7835042eaa0e2dcd86b8fd3",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/typ_125c_2.97v.log"
+    },
+    {
+      "sha256": "b0bd3369e9b4801998108dbcac345033805c7d9814e523c137d8d27e3af7c1aa",
+      "size": 26317,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/b0/b0bd3369e9b4801998108dbcac345033805c7d9814e523c137d8d27e3af7c1aa",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/typ_125c_3.30v.log"
+    },
+    {
+      "sha256": "b32cc380db6384537eb7335e064e7c985a5c3d1cddf5af20d9a008a31fb9a76b",
+      "size": 26317,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/b3/b32cc380db6384537eb7335e064e7c985a5c3d1cddf5af20d9a008a31fb9a76b",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/typ_125c_3.63v.log"
+    },
+    {
+      "sha256": "93fb7594fb74c1b1055482943b27f3f714bac46dd2ce46539b99de4b38e7ea52",
+      "size": 26155,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/93/93fb7594fb74c1b1055482943b27f3f714bac46dd2ce46539b99de4b38e7ea52",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/typ_27c_2.97v.log"
+    },
+    {
+      "sha256": "d4be7b61f395d361df0c3d4c3b871329b65c5fadc1c982e979114c1749326803",
+      "size": 26155,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/d4/d4be7b61f395d361df0c3d4c3b871329b65c5fadc1c982e979114c1749326803",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/typ_27c_3.30v.log"
+    },
+    {
+      "sha256": "5def38092c94104e16810a2cf4fd90e6974f4c6bda0950ce7945b152390b992a",
+      "size": 26155,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/5d/5def38092c94104e16810a2cf4fd90e6974f4c6bda0950ce7945b152390b992a",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/typ_27c_3.63v.log"
+    },
+    {
+      "sha256": "bcf4df648cdcbdf1f9df14dd3a787661907646d230ebe00e8fe776f08d25da1e",
+      "size": 73033,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/bc/bcf4df648cdcbdf1f9df14dd3a787661907646d230ebe00e8fe776f08d25da1e",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/wcs_-40c_2.97v.log"
+    },
+    {
+      "sha256": "28c7fec355656d11228ceb4188dcef7370ca3dfb396b56406ba5a4efc542e6ec",
+      "size": 73033,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/28/28c7fec355656d11228ceb4188dcef7370ca3dfb396b56406ba5a4efc542e6ec",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/wcs_-40c_3.30v.log"
+    },
+    {
+      "sha256": "41ab96779a1f7da5b72dcaa7dc2b3581badb0e32a219d886780ca59d58cb17a3",
+      "size": 73033,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/41/41ab96779a1f7da5b72dcaa7dc2b3581badb0e32a219d886780ca59d58cb17a3",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/wcs_-40c_3.63v.log"
+    },
+    {
+      "sha256": "f2015db46023a4d633428f7beda449d61346f0281190ce20eff5c17c0449b205",
+      "size": 26227,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/f2/f2015db46023a4d633428f7beda449d61346f0281190ce20eff5c17c0449b205",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/wcs_125c_2.97v.log"
+    },
+    {
+      "sha256": "d90f684aaf4bed9b539d3d3b18cc4025441c24d908fe73d9d611a12f7fde9772",
+      "size": 26227,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/d9/d90f684aaf4bed9b539d3d3b18cc4025441c24d908fe73d9d611a12f7fde9772",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/wcs_125c_3.30v.log"
+    },
+    {
+      "sha256": "df03ce9eac06a4a7c425fd99f6b05f576244e7b293573e7b6bf78da435dd6a68",
+      "size": 26227,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/df/df03ce9eac06a4a7c425fd99f6b05f576244e7b293573e7b6bf78da435dd6a68",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/wcs_125c_3.63v.log"
+    },
+    {
+      "sha256": "7e9e7371a79429a8de6b5dce31eeaf7685beea9deeb5c68ad125e85eae4e28db",
+      "size": 73199,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/7e/7e9e7371a79429a8de6b5dce31eeaf7685beea9deeb5c68ad125e85eae4e28db",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/wcs_27c_2.97v.log"
+    },
+    {
+      "sha256": "7bb91a668b21c80e7122ece3d88bc518f49cafdab1d13ce18a092a1d3af3db26",
+      "size": 73199,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/7b/7bb91a668b21c80e7122ece3d88bc518f49cafdab1d13ce18a092a1d3af3db26",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/wcs_27c_3.30v.log"
+    },
+    {
+      "sha256": "ab33625900a0b53e9fc7bfc349a89254c64d04699243205be17105e39d86bb19",
+      "size": 73199,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/ab/ab33625900a0b53e9fc7bfc349a89254c64d04699243205be17105e39d86bb19",
+      "name": "sim/closed-loop-iq/corners/20261127-000000-b092b294/wcs_27c_3.63v.log"
+    },
+    {
+      "sha256": "3163bfe9ccd7368f68aa1ea5dbae404571919dd13bc0779aaa543e7866a39713",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/31/3163bfe9ccd7368f68aa1ea5dbae404571919dd13bc0779aaa543e7866a39713",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/bcs_-40c_2.97v.spice"
+    },
+    {
+      "sha256": "31da190b02fccafb1a6bf4056a53afca242735b7eefa66253b467a6cdb192232",
+      "size": 20163,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/31/31da190b02fccafb1a6bf4056a53afca242735b7eefa66253b467a6cdb192232",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/bcs_-40c_3.30v.spice"
+    },
+    {
+      "sha256": "bf243965f3436a90606f531538bbe73098d1d2cb1b4fb52c22bfb60ce47ec475",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/bf/bf243965f3436a90606f531538bbe73098d1d2cb1b4fb52c22bfb60ce47ec475",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/bcs_-40c_3.63v.spice"
+    },
+    {
+      "sha256": "3301398d88ea64a8717a485f3c23368e39a251af5a88a4f149325377d2f64e60",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/33/3301398d88ea64a8717a485f3c23368e39a251af5a88a4f149325377d2f64e60",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/bcs_125c_2.97v.spice"
+    },
+    {
+      "sha256": "df8ab55cc2c746d768ffe35b6e59347ad2e2660cbe9385e4511e06b92e538cb4",
+      "size": 20163,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/df/df8ab55cc2c746d768ffe35b6e59347ad2e2660cbe9385e4511e06b92e538cb4",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/bcs_125c_3.30v.spice"
+    },
+    {
+      "sha256": "4665554a2a981d19630540b3a8bece30b046a02d6fd5390ce00ed1f2e0191e6c",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/46/4665554a2a981d19630540b3a8bece30b046a02d6fd5390ce00ed1f2e0191e6c",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/bcs_125c_3.63v.spice"
+    },
+    {
+      "sha256": "f4f2ca4c8b7f3a963dbcdc63d8a5f8aac7fb1a551545d4dedd5bca9884a242a8",
+      "size": 20166,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/f4/f4f2ca4c8b7f3a963dbcdc63d8a5f8aac7fb1a551545d4dedd5bca9884a242a8",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/bcs_27c_2.97v.spice"
+    },
+    {
+      "sha256": "7df536e0132eef598b33299f8a25ef8329a5c48eb61f87b4ebd8e1f2e53ac28b",
+      "size": 20162,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/7d/7df536e0132eef598b33299f8a25ef8329a5c48eb61f87b4ebd8e1f2e53ac28b",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/bcs_27c_3.30v.spice"
+    },
+    {
+      "sha256": "241bad8f7cceb4bc4628186d0286127f8decb5fad47f3c802b53d7db8fa5134f",
+      "size": 20166,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/24/241bad8f7cceb4bc4628186d0286127f8decb5fad47f3c802b53d7db8fa5134f",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/bcs_27c_3.63v.spice"
+    },
+    {
+      "sha256": "a0859d9de0951b6ac7e43a6d731112869f44dfa6ad47f1e846f19c7ac84a1966",
+      "size": 20164,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/a0/a0859d9de0951b6ac7e43a6d731112869f44dfa6ad47f1e846f19c7ac84a1966",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/fs_-40c_2.97v.spice"
+    },
+    {
+      "sha256": "06eccb66d38263337a852b70f47174cf0c3856b0e432a89e92ca90c656ce28d7",
+      "size": 20160,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/06/06eccb66d38263337a852b70f47174cf0c3856b0e432a89e92ca90c656ce28d7",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/fs_-40c_3.30v.spice"
+    },
+    {
+      "sha256": "23ece6f2bf91a12027df7c28ddf418953ce723942bf4a2a5fce95ce42833ec5e",
+      "size": 20164,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/23/23ece6f2bf91a12027df7c28ddf418953ce723942bf4a2a5fce95ce42833ec5e",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/fs_-40c_3.63v.spice"
+    },
+    {
+      "sha256": "2fc4769b4adede823ab2c10e7f4a4c6776a29de8d02e39ea78b6bf7e810bb93f",
+      "size": 20164,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/2f/2fc4769b4adede823ab2c10e7f4a4c6776a29de8d02e39ea78b6bf7e810bb93f",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/fs_125c_2.97v.spice"
+    },
+    {
+      "sha256": "bcfa52396d141d9f83c0eda6f9c3c2ae8cb69617a1a8146be8c669fde2fb5e7d",
+      "size": 20160,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/bc/bcfa52396d141d9f83c0eda6f9c3c2ae8cb69617a1a8146be8c669fde2fb5e7d",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/fs_125c_3.30v.spice"
+    },
+    {
+      "sha256": "0381d73f763f43c887909b12cf1a843dfd92a4ea6f15e6c424a5a06a872edaf4",
+      "size": 20164,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/03/0381d73f763f43c887909b12cf1a843dfd92a4ea6f15e6c424a5a06a872edaf4",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/fs_125c_3.63v.spice"
+    },
+    {
+      "sha256": "0f89f312e06672464f8a8780476d34e26d36e359a1cd1f5ffe2ab2e4fbbd202d",
+      "size": 20163,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/0f/0f89f312e06672464f8a8780476d34e26d36e359a1cd1f5ffe2ab2e4fbbd202d",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/fs_27c_2.97v.spice"
+    },
+    {
+      "sha256": "adb6ba1fee6645d00a3b9b33c55d65340e569d00b5b3df088ea149aac27e9653",
+      "size": 20159,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/ad/adb6ba1fee6645d00a3b9b33c55d65340e569d00b5b3df088ea149aac27e9653",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/fs_27c_3.30v.spice"
+    },
+    {
+      "sha256": "e79c943d1ad2643d3571f1d26deb877ba1b079455673d06d705d099b80871564",
+      "size": 20163,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/e7/e79c943d1ad2643d3571f1d26deb877ba1b079455673d06d705d099b80871564",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/fs_27c_3.63v.spice"
+    },
+    {
+      "sha256": "5a5a0ba7cd2d99581d1959ed25ddf7f8542003c4a6f43c5af18075a0f981704c",
+      "size": 20164,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/5a/5a5a0ba7cd2d99581d1959ed25ddf7f8542003c4a6f43c5af18075a0f981704c",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/sf_-40c_2.97v.spice"
+    },
+    {
+      "sha256": "1d3d16a4eeab36baece79f86c75fe1be9fd0f40daa2618fcb18b79b35a715890",
+      "size": 20160,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/1d/1d3d16a4eeab36baece79f86c75fe1be9fd0f40daa2618fcb18b79b35a715890",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/sf_-40c_3.30v.spice"
+    },
+    {
+      "sha256": "8204fdad113e890b56f241526e3db7fbbac088a6d9b53176f183c065e0f41580",
+      "size": 20164,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/82/8204fdad113e890b56f241526e3db7fbbac088a6d9b53176f183c065e0f41580",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/sf_-40c_3.63v.spice"
+    },
+    {
+      "sha256": "ffe675031702288e870aca43ba4719faa98eefd23b5bf18d6aed63a7b152a15e",
+      "size": 20164,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/ff/ffe675031702288e870aca43ba4719faa98eefd23b5bf18d6aed63a7b152a15e",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/sf_125c_2.97v.spice"
+    },
+    {
+      "sha256": "d559a085e513806facc9091ac42013f027e3d7230e4f634a1ab5eb63dc573810",
+      "size": 20160,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/d5/d559a085e513806facc9091ac42013f027e3d7230e4f634a1ab5eb63dc573810",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/sf_125c_3.30v.spice"
+    },
+    {
+      "sha256": "5a13c9c5a3f8590e0ca38d70dea7c659ac9296698d9c31625eb4250b9fd6baa3",
+      "size": 20164,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/5a/5a13c9c5a3f8590e0ca38d70dea7c659ac9296698d9c31625eb4250b9fd6baa3",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/sf_125c_3.63v.spice"
+    },
+    {
+      "sha256": "536a7e024779e68d749175e926ef481318bae981dbdad1529b16703d028b0aa5",
+      "size": 20163,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/53/536a7e024779e68d749175e926ef481318bae981dbdad1529b16703d028b0aa5",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/sf_27c_2.97v.spice"
+    },
+    {
+      "sha256": "d92e36dc0114beb1dc5691ef205e0b5e738bc9a10e7932ed48c5f673ebdabb78",
+      "size": 20159,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/d9/d92e36dc0114beb1dc5691ef205e0b5e738bc9a10e7932ed48c5f673ebdabb78",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/sf_27c_3.30v.spice"
+    },
+    {
+      "sha256": "f8297b201a3147f22d9fd7669180575be6244c6c6a964a0a1cb398e5054c9f0d",
+      "size": 20163,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/f8/f8297b201a3147f22d9fd7669180575be6244c6c6a964a0a1cb398e5054c9f0d",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/sf_27c_3.63v.spice"
+    },
+    {
+      "sha256": "a2419cc1821dac20d68469efa2d8cb0afde35365e511e233025bcab2e6700550",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/a2/a2419cc1821dac20d68469efa2d8cb0afde35365e511e233025bcab2e6700550",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/typ_-40c_2.97v.spice"
+    },
+    {
+      "sha256": "dd092a393285b09bdb05d697a5451fb1fc46793958066fb94cb46c26d6d4eed4",
+      "size": 20163,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/dd/dd092a393285b09bdb05d697a5451fb1fc46793958066fb94cb46c26d6d4eed4",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/typ_-40c_3.30v.spice"
+    },
+    {
+      "sha256": "b81540bbe272fa46ec72db4061a86af1b940172995ce5e9ba5873e37be94c89b",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/b8/b81540bbe272fa46ec72db4061a86af1b940172995ce5e9ba5873e37be94c89b",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/typ_-40c_3.63v.spice"
+    },
+    {
+      "sha256": "47b18dbbffa33b73beacca33a603ce20e3f3a228ab7f0ef317b69d7692dcadba",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/47/47b18dbbffa33b73beacca33a603ce20e3f3a228ab7f0ef317b69d7692dcadba",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/typ_125c_2.97v.spice"
+    },
+    {
+      "sha256": "d4ea06768db6e65afb34f5e9542e3e665c51f6abefc43543af00c91841b1a0eb",
+      "size": 20163,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/d4/d4ea06768db6e65afb34f5e9542e3e665c51f6abefc43543af00c91841b1a0eb",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/typ_125c_3.30v.spice"
+    },
+    {
+      "sha256": "2cef48671ab80cd78953ab8e682fb4fa2f72a7cb848f06ba91dc0be3bc6cf770",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/2c/2cef48671ab80cd78953ab8e682fb4fa2f72a7cb848f06ba91dc0be3bc6cf770",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/typ_125c_3.63v.spice"
+    },
+    {
+      "sha256": "973b0fcc1991a3be2130d5021ca78509651db80d72b0e198253f12e6b6981c01",
+      "size": 20166,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/97/973b0fcc1991a3be2130d5021ca78509651db80d72b0e198253f12e6b6981c01",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/typ_27c_2.97v.spice"
+    },
+    {
+      "sha256": "91b6ee89f13e8ad82fe59b8172f447486331c5f1c235be7057e038133308fa2b",
+      "size": 20162,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/91/91b6ee89f13e8ad82fe59b8172f447486331c5f1c235be7057e038133308fa2b",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/typ_27c_3.30v.spice"
+    },
+    {
+      "sha256": "4f2e953dffea6794533408006e8f46a4ee4546b42673f42ea62b26dd704aab83",
+      "size": 20166,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/4f/4f2e953dffea6794533408006e8f46a4ee4546b42673f42ea62b26dd704aab83",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/typ_27c_3.63v.spice"
+    },
+    {
+      "sha256": "fb9f54cf485e2dbe57766914f3794c06487060c2c9c3d9d49fc979693481ddfc",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/fb/fb9f54cf485e2dbe57766914f3794c06487060c2c9c3d9d49fc979693481ddfc",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/wcs_-40c_2.97v.spice"
+    },
+    {
+      "sha256": "9cd841eb6d5dd43edc0da81c11014b922096cd29dcd8d0c697240da3fe9dfb97",
+      "size": 20163,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/9c/9cd841eb6d5dd43edc0da81c11014b922096cd29dcd8d0c697240da3fe9dfb97",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/wcs_-40c_3.30v.spice"
+    },
+    {
+      "sha256": "1845fd341d0044a5dfaff347c5a5f4c1d05e136df4ea7f94cbd4bf8c03a0ec97",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/18/1845fd341d0044a5dfaff347c5a5f4c1d05e136df4ea7f94cbd4bf8c03a0ec97",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/wcs_-40c_3.63v.spice"
+    },
+    {
+      "sha256": "7c52d27ca205414aec2c4b8294c274314cffb998d763a2e6eec2d15226e64b19",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/7c/7c52d27ca205414aec2c4b8294c274314cffb998d763a2e6eec2d15226e64b19",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/wcs_125c_2.97v.spice"
+    },
+    {
+      "sha256": "c589d5c69ef688f2c4a66a56b0b44f8d969b43b541b09dad247e1487f82356bb",
+      "size": 20163,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/c5/c589d5c69ef688f2c4a66a56b0b44f8d969b43b541b09dad247e1487f82356bb",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/wcs_125c_3.30v.spice"
+    },
+    {
+      "sha256": "e8ffcc68b3581630d9a1e023e263a6a6f978a58e9cdd54a0a5f74aea8e91eeba",
+      "size": 20167,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/e8/e8ffcc68b3581630d9a1e023e263a6a6f978a58e9cdd54a0a5f74aea8e91eeba",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/wcs_125c_3.63v.spice"
+    },
+    {
+      "sha256": "d5818ffa7e88c21462e89eac33d007637452ad9b67f0fec2e4a99e333748a1e9",
+      "size": 20166,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/d5/d5818ffa7e88c21462e89eac33d007637452ad9b67f0fec2e4a99e333748a1e9",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/wcs_27c_2.97v.spice"
+    },
+    {
+      "sha256": "07c9127fb8ede3109b44140017d0274c63904f7abc82338e312fc1cc84f69338",
+      "size": 20162,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/07/07c9127fb8ede3109b44140017d0274c63904f7abc82338e312fc1cc84f69338",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/wcs_27c_3.30v.spice"
+    },
+    {
+      "sha256": "5a0a2fe83c067e7051db6e5a02879ca8f55c854ad152041f1223a60e09a78685",
+      "size": 20166,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.9.3.dev5722+gf678a56776b1",
+        "loom.repo": "2AMLogic/sg13g2-bandgap",
+        "commit": "b092b29447891842556e13ba61c41bac4603fa36"
+      },
+      "uri": "artifact:evidence/2AMLogic__sg13g2-bandgap/5a/5a0a2fe83c067e7051db6e5a02879ca8f55c854ad152041f1223a60e09a78685",
+      "name": "sim/closed-loop-iq/netlist-snapshots/20261127-000000-b092b294/wcs_27c_3.63v.spice"
+    }
+  ]
+}

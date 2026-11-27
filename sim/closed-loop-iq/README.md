@@ -107,12 +107,15 @@ reads a current without adding a new device to the circuit under test.
 
 **Since issue #629 it does claim conformance — graded by the run itself.**
 The spec table is ratified (`spec/decision-records/0007`; the `< 50 µA` Iq
-row included), and the request template now carries that bound as a limit
-on `iq_avg_a` (`min` −5e-5 A, `spec_row iq`), so the run's own report
-grades the row and the committed `records/<record-id>-report.json` is the
-citable T1 item-5 envelope. The current envelope passes 45/45 (worst
-41.78 µA at bcs/125 °C/3.63 V, margin 16.4 % to 50 µA; see
-`records/<record-id>.csv` for the full per-point table).
+row included), and the request template carries that bound as a limit on
+`iq_avg_a` (`min` −5e-5 A, `spec_row iq`), so the run's own report grades
+the row and the committed `records/<record-id>-report.json` is the citable
+T1 item-5 envelope. The current envelope,
+`records/20261127-000000-b092b294-report.json`, passes 45/45. Its rollup
+names bcs/125 °C/3.63 V as the binding corner, with the signed average
+−41.7771 µA and a margin of 8.2229 µA — the binding average minus the
+lower limit, 16.4 % of 50 µA. See `records/<record-id>.csv` for the full
+per-point table.
 
 It also does not claim anything about loop stability/phase margin (see
 [`../loop-gain-phase-margin/`](../loop-gain-phase-margin/README.md)),
@@ -205,6 +208,50 @@ every corner in this run — the `vdd` ramp is fully held flat from `200us` to
 above, this range happens to sit below `spec/porting-plan.md` §6's draft
 `< 50 µA` target at every point in this run — offered as context, not as a
 pass/fail claim (see "What this testbench claims" above).
+
+## Results (record `20261127-000000-b092b294`)
+
+The first record minted with the #648 generator. Until #646 the enrichment
+pass rewrote `iq_avg_a` to a magnitude after `klt sim` had graded the limit
+on the signed value, so the committed envelope paired `limits.min = -5e-5 A`
+with `worst_case.value = +4.17771e-05 A` and a stored margin of 8.2229e-06 A
+that those two do not re-derive (4.17771e-05 minus −5e-5 is 9.17771e-05).
+This record ships the grade exactly as `klt sim` computed it.
+
+45/45 points PASS over the same 45 (process, supply, temperature) triples
+as every earlier record. Recomputed from the two CSVs, the grid is identical
+to `20261122-181711-c5b84561` in every cell except the sign of `iq_avg_a`
+(45 rows x 17 columns; the sign flips in all 45 rows and nothing else moves,
+`i_mkfb_a` included). `|iq_avg_a|` still ranges 19.577-41.777 µA, with
+2/45 points under the 20 µA stretch (wcs/-40 °C at 2.97 V and 3.30 V), and
+`iq_settle_delta_a` reads 0 at all 45 points.
+
+The signed grade, read from the committed report at all 45 corners:
+
+- `iq_avg_a` is negative at every corner — ngspice's own sign for
+  `i(Vvdd)`, visible in the stored logs' `.meas` lines — and `iq_2ms_a` /
+  `iq_3ms_a` are nonnegative, each equal to `|iq_avg_a|` at six significant
+  figures.
+- The rollup carries `limits.min = -5e-5 A`. At every corner
+  `iq_avg_a - limits.min` equals the stored margin; every margin is positive
+  and every recorded status is `pass`.
+- The binding corner is bcs/3.63 V/125 °C: signed value −4.17771e-05 A
+  against the −5e-5 A lower limit, margin 8.2229e-06 A, status `pass`. It
+  holds the grid's smallest margin and is the corner the rollup's
+  `worst_case` names.
+
+The run was one `klt sim --batch-set` of the 15 requests with 2 in flight
+(`PEX_BATCH_MAX_IN_FLIGHT=2`, the November 22 record's dispatch): 45 fleet
+jobs on spot instances, ngspice 47, 77-131 s elapsed per job, submitted
+2026-11-26T23:36:42Z and complete by 23:57:49Z. 72 of the 90 stored objects
+are byte-identical to the November 22 run's; the other 18 are ngspice logs
+whose early-ramp `OSDI(debug)` warnings interleave in a different order.
+The 39 recovered `singular_matrix` warnings fall on the same corners and
+nodes as on November 22. `klt sim` warned that the request's conservative
+serial job bound (`timeout_s` 1800 s x 3 units) exceeds the fleet's 3600 s
+job ceiling; no job ran longer than 131 s. The current characterization
+report's `spotcheck.py` re-derives the signed grade from the committed
+report on every CI run.
 
 ## Running
 
