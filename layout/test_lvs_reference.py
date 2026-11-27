@@ -43,16 +43,16 @@ class ResistorGuardTest(unittest.TestCase):
             for model, template in LINES.items():
                 for setting, bm in invalid.items():
                     with self.subTest(pdk=pdk, model=model, setting=setting):
-                        self.assert_rejects(
-                            template.format(bm=bm), pdk, f"{model} {setting}", "on line:"
-                        )
+                        expected = f"{model} {setting}", "on line:"
+                        self.assert_rejects(template.format(bm=bm), pdk, *expected)
 
     def test_non_numeric_b_m_fail_loudly(self):
         for pdk in PDKS:
             for param in ("b", "m"):
                 with self.subTest(pdk=pdk, param=param):
                     line = RHIGH_LINE.format(bm=f"{param}={{unresolved}}")
-                    self.assert_rejects(line, pdk, f"rhigh {param}=", line, "non-numeric")
+                    expected = f"rhigh {param}=", line, "non-numeric"
+                    self.assert_rejects(line, pdk, *expected)
 
     def test_accepts_explicit_b0_m1(self):
         line = RHIGH_LINE.format(bm="m=1 b=0")
@@ -65,7 +65,12 @@ class ResistorGuardTest(unittest.TestCase):
 
     def test_accepts_absent_b_m(self):
         # Absent b/m default to the allowed values (the symbols' own defaults).
-        for pdk, model in (("sg13cmos5l", "rppd"), ("sg13cmos5l", "rhigh"), ("sg13g2", "rhigh")):
+        accepted = (
+            ("sg13cmos5l", "rppd"),
+            ("sg13cmos5l", "rhigh"),
+            ("sg13g2", "rhigh"),
+        )
+        for pdk, model in accepted:
             with self.subTest(pdk=pdk, model=model):
                 _convert(LINES[model].format(bm=""), pdk)
 
@@ -90,11 +95,13 @@ class ResistorGuardTest(unittest.TestCase):
 class ResistorFormulaTest(unittest.TestCase):
     def test_pin_rppd(self):
         self.assertEqual(round(lvr._rppd_ohms(1.0, 10.0), 6), 2654.493042)
-        self.assertEqual(round(lvr._rppd_ohms(2.0, 37.2), 6), 4856.535394)  # bandgap_core R1
+        # bandgap_core R1
+        self.assertEqual(round(lvr._rppd_ohms(2.0, 37.2), 6), 4856.535394)
 
     def test_pin_rhigh(self):
         self.assertEqual(round(lvr._rhigh_ohms(1.0, 10.0), 6), 14326.666667)
-        self.assertEqual(round(lvr._rhigh_ohms(1.0, 1411.3), 6), 1999501.666667)  # RPU
+        # bandgap_top RPU
+        self.assertEqual(round(lvr._rhigh_ohms(1.0, 1411.3), 6), 1999501.666667)
 
 
 if __name__ == "__main__":
