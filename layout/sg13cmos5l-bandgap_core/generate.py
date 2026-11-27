@@ -71,40 +71,13 @@ single-wide-device constructions are the same circuit to the compact
 model) -- a pure floorplan consequence of the PCell not supporting an
 internal array.
 
-Single-metal, strictly planar floorplan
----------------------------------------
+Single-metal routing
+--------------------
 
-The curated ``sg13cmos5l`` deck's extraction stack is ``metals=((8, 0),)``
-with ``vias=()`` -- **one** routing metal, no via. (SG13G2's deck declares
-Metal1/Metal2/.../TopMetal2 plus Via1..TopVia2, which is why
-``layout/bandgap_core/generate.py`` can hop onto Metal2 to cross its own
-power rails.) A Metal2 jumper here would be invisible to ``klt extract``:
-the net would come back split, and the resulting `mismatch` would be an
-artifact of the layout rather than of the deck. So every net below is
-routed on ``Metal1`` (plus ``GatPoly`` for the gate-to-gate ``fb`` bar), and
-the floorplan is arranged so that **no two nets ever need to cross**:
-
-    y=60   MOS row          M1 (x=0)      M2 (x=45)     M3 (x=180)
-    y=45   R2 row                         R2 [45 .. 130.1]
-    y=34   Q2 e2 trunk                                  Q2[0..7] emitter bus
-    y=30   Q1/Q2 row        Q1 (x=0)                    Q2[0..7] (x=123.75,
-                                                          129.75, ..., 165.75)
-    y=15   R1 row                                       R1 [180 .. 827]
-    y=0    Q3 row                                       Q3 (x=827.25)
-
-Each branch is a left-to-right, top-to-bottom chain (mirror leg -> series
-resistor -> PNP), and each resistor *starts* at its own mirror leg's column
-so the drain-to-resistor drop is a straight vertical that clears every other
-row's horizontal extent. The two long ``rppd`` bars (85.1 um and 647.0 um,
-drawn straight -- see ``draw_rppd``) are what forces the columns this far
-apart.
-
-``vss`` is the one net that does span rows: the PNPs' base/collector rings
-sit on two different rows with ``R1``'s 647 um bar between them. It reaches
-``Q3``'s row down a dedicated vertical aisle at ``x=87``, which crosses
-``R1``'s row well left of that bar's left head (x=179.5) and lands, at the
-top, on the ``Q1``-to-``Q2[0]`` strap (which spans x=2.7..121.0). No other
-net has a shape anywhere in that corridor.
+The curated ``sg13cmos5l`` deck models one routing metal (``Metal1``) and no vias.
+The core routes on ``Metal1``, with ``GatPoly`` for the shared mirror gates
+and the ``sns2`` underpass. Folded resistors ``R1`` and ``R2`` sit below
+their respective mirror legs.
 
 What this layout does **not** try to do is force an LVS `match`. The
 curated ``sg13cmos5l`` deck recognises MOS devices only -- no bipolar
@@ -121,48 +94,21 @@ right and DRC clean, which it is.
 Boundary ports for ``bandgap_top`` assembly (issue #76)
 ---------------------------------------------------------
 
-``fb`` (a labelled tap left of ``M1``) and ``vdd`` (the merged source rail
-along the top) already sit flush against the cell's own bounding box, so a
-parent assembly can reach them without crossing anything -- but ``sns1``,
-``sns2`` and ``vref`` did not: each is a plain interior column (``sns1`` at
-``x=0`` from ``Q1``'s emitter up to ``M1``'s drain; ``sns2`` at ``x=45``
-from ``R2``'s own pad up to ``M2``'s drain; ``vref`` at ``x=180`` from
-``R1``'s own pad up to ``M3``'s drain), unreachable from outside the cell's
-own footprint without threading a corridor the cell never reserved --
-exactly the "plausible but not correct" failure issue #76 warns against
-(``Q1``'s own base/collector rings close on three of their four sides, so a
-straight drop through the ring from outside would short ``sns1`` to ``vss``
-rather than connect to it).
+Three interior drain trunks branch out to :func:`boundary_port` pads for
+the parent assembly. The ``X_*_PORT`` and ``Y_*_PORT`` constants below
+locate each pad.
 
-Each of the three now gets a dedicated :func:`boundary_port` pad, reached by
-extending its own existing trunk sideways (never through another net's
-rings or rails) to a cell edge that is otherwise clear at that height:
+* ``sns1`` runs left on ``Metal1`` between the top of Q1's grounded rings
+  and M1's drain pad.
+* ``sns2`` runs right on ``Metal1``. Above folded R1, :func:`poly_underpass`
+  carries it beneath the ``vref`` trunk on ``GatPoly``. See ``Y_SNS2_PORT``
+  and ``X_SNS2_UNDERPASS`` for the crossing height and span.
+* ``vref`` runs right on ``Metal1`` above the Q2 emitter bus and the
+  ``vss`` aisle, below the ``sns2`` crossing.
 
-* ``sns1`` -- branches left off its own vertical trunk at ``y=50`` (clear of
-  ``Q1``'s ring, whose top is at ``y=33.01``, and clear of ``M1``'s drain
-  pad, whose bottom is at ``y=59.1``), straight out to the left edge.
-* ``sns2`` -- branches right off its own vertical trunk at ``y=50``,
-  straight across to the right edge -- **except** ``vref``'s own trunk
-  occupies the entire column ``x=179.75`` from ``y=16.1`` to ``y=59.1``
-  (the whole height between its own two pads), so any rightward path at any
-  height in that band crosses it. Resolved with one :func:`poly_underpass`
-  at ``x=176..184.5`` -- the same single-metal crossing technique
-  ``bandgap_amp`` already uses for its own ``out`` net, not a new one.
-* ``vref`` -- branches right off its own vertical trunk at ``y=40`` (a
-  different height from ``sns2``'s crossing, so the two new stubs never
-  share a row), straight to the right edge -- clear because neither the
-  ``vss`` aisle (``x=87``, which only exists for ``y`` in ``[0, 30]``) nor
-  the Q2 emitter bus (``y=34``, which spans ``x=58..165.75`` since issue
-  #243 extended it west to reach R2's own drop) reaches ``y=40``.
-
-``build()`` now returns ``(Builder, ports)`` where ``ports`` is a
-``{net: (x0, y0, x1, y1)}`` map covering all six of this cell's schematic
-ports -- the three new pads plus ``vdd``/``vss``/``fb``'s own
-already-boundary-flush geometry (the full merged rail for ``vdd``, ``M1``'s
-own tap pad for ``fb``, and ``Q3``'s own collector ring -- the shape whose
-own right wall already touches the cell's right edge -- for ``vss``), so a
-future top-level assembly reads one uniform map regardless of which nets
-needed a new pad and which already had reachable geometry.
+``build()`` returns the builder and a map of all six port boxes. Alongside
+these three pads, it returns the source rail for ``vdd``, M1's gate tap
+for ``fb`` and Q3's collector ring for ``vss``.
 """
 
 from __future__ import annotations
@@ -202,15 +148,9 @@ OUTPUT = os.path.join(
 #: with ~2x margin, and every clearance below is checked against 0.18 um.
 TRUNK_W = 0.30
 
-# Row centres (see the floorplan table in this module's docstring).
-# Issue #173: Y_R1/Y_R2 are now the *bottom edge* of each folded resistor
-# block's marked core (draw_rppd's (x0, y0) is its lower-left corner
-# post-fold), not a straight bar's centreline. Both were lowered so each
-# block's top clears the mirror row's own NWell/ThickGateOx bottom edge
-# (y=58.48, from draw_hv_pmos's NW_c1 enclosure at Y_MOS=60): a resistor
-# body drawn inside the mirror's n-well would be physically wrong and would
-# add a fresh `voltage_domain_warnings` entry to this cell's own
-# extract_report.json.
+# MOS and PNP rows are centred at the given heights. Y_R1 and Y_R2 set
+# the bottom edges of the folded resistor cores so their tops clear the
+# mirror row's NWell and ThickGateOx.
 Y_MOS = 60.0
 Y_R2 = 44.0
 Y_Q12 = 30.0
@@ -269,33 +209,19 @@ Q2_X0 = 123.75
 #: trunk never touches a ring's Metal1.
 Q2_BUS_Y = 34.0
 
-#: The ``vss`` aisle: a clear vertical corridor from the Q1/Q2 row down to
-#: the Q3 row. Two constraints, both with tens of microns to spare at 87:
-#: it must cross ``R1``'s row left of that bar's left head (x=179.5), and it
-#: must land on the ``Q1``-to-``Q2[0]`` strap, i.e. inside x=2.7..121.0
-#: (right of ``Q1``'s outer ring edge, left of the first Q2 unit's).
+#: The vss aisle taps the strap between Q1 and the first Q2 unit and
+#: descends to Q3's row to the left of folded R1.
 X_VSS_AISLE = 87.0
 
-# -- boundary ports for bandgap_top assembly (issue #76) -- see this
-# module's own docstring "Boundary ports for bandgap_top assembly" for why
-# each of these heights/edges was chosen.
+# Port positions for the escape routes in "Boundary ports for bandgap_top assembly".
 Y_SNS1_PORT = 50.0
 X_SNS1_PORT = -10.0
-#: Issue #173: raised from 50.0 to clear `R1`'s **folded** body. Pre-fold,
-#: R1 was a 2 um-tall bar on the y=15 row and the whole y=16..58 band at
-#: x=176..184.5 was empty field, so sns2's poly underpass could cross vref's
-#: trunk anywhere up there. Folded, R1's body occupies x=179.8..218.3 for
-#: the entire y=15..55.06 band -- a GatPoly underpass at y=50 would merge
-#: straight into R1's own conductor and short `sns2` to `vref`. 57.0 clears
-#: R1's top (55.055) by ~1.6 um once poly_tab's own 0.7 um-tall landing pad
-#: is accounted for, and still sits 1.1 um below the mirror row's own
-#: NWell/ThickGateOx bottom (58.48).
+#: Keep the GatPoly underpass and its landing pads in the field between
+#: folded R1 and the mirror row's NWell/ThickGateOx. Overlapping R1's
+#: GatPoly here would short sns2 to the resistor.
 Y_SNS2_PORT = 57.0
 X_SNS2_PORT = 220.0
-#: sns2's crossing of vref's own trunk (x=181.0, spanning y=15..59.36) --
-#: centred on that trunk with 4 um clearance either side of its own 0.3 um
-#: width, at a field-only location (above every device row and above R1's
-#: own folded block -- see Y_SNS2_PORT).
+#: The two poly contacts straddle the vref Metal1 trunk.
 X_SNS2_UNDERPASS = (176.75, 185.25)
 Y_VREF_PORT = 40.0
 X_VREF_PORT = 220.0
@@ -382,11 +308,6 @@ def _route(
     docstring, "Boundary ports for bandgap_top assembly"."""
 
     # -- vdd: M1/M2/M3 source pads, merged by one horizontal Metal1 bar.
-    # The pads already carry their own "vdd" Metal1.pin labels (draw_hv_pmos);
-    # this bar only makes the three one physically-connected shape. Already
-    # flush with the cell's own top edge (issue #76's boundary-port survey),
-    # so this rail doubles as vdd's own boundary pad -- no new geometry
-    # needed for it to be a parent assembly's landing target.
     src = m1["source_pad"]
     vdd_pad = (m1["source_pad"][0], src[1], m3["source_pad"][2], src[3])
     b.box(L_METAL1, *vdd_pad)
@@ -399,59 +320,28 @@ def _route(
     # -- fb: M1/M2/M3 gates, one continuous GatPoly bar. Poly-to-poly routing
     # between recognised gates is ordinary connectivity for `klt extract`
     # (deck: `connect(pfet_gate, poly)`), so no contacts are needed between
-    # the gates themselves. The tap pad is already flush with the cell's own
-    # left edge, so it doubles as fb's own boundary pad (issue #76).
+    # the gates themselves.
     fb_y = (m1["gate_y_lo"] + m1["gate_y_hi"]) / 2
     route_h(b, L_GATPOLY, fb_y, m1["gate_box"][0] - 3.0, m3["gate_box"][2], width=TRUNK_W)
     fb_pad = _fb_tap(b, m1["gate_box"][0] - 3.0, fb_y)
 
-    # -- sns1: M1.drain -> Q1.emitter, straight down column x=0. Enters Q1
-    # through the deliberate gap in its base/collector Metal1 rings' top
-    # walls (Builder.ring(open_top=True)).
+    # -- sns1: M1.drain -> Q1.emitter through the opening in Q1's rings.
     route_v(b, L_METAL1, X_M1, q1["emitter_pad"][3], m1["drain_pad"][3], width=TRUNK_W)
-    # Boundary port (issue #76): branch left off this same trunk at y=50 --
-    # clear of Q1's ring (top at y=33.01) and M1's drain pad (bottom at
-    # y=59.1) -- straight out to the cell's left edge. See this module's own
-    # docstring for why a straight drop through Q1's ring instead would have
-    # shorted sns1 to vss.
     sns1_pad = boundary_port(b, "sns1", "left", X_SNS1_PORT, Y_SNS1_PORT)
     route_h(b, L_METAL1, Y_SNS1_PORT, sns1_pad[2], X_M1, width=TRUNK_W)
 
-    # -- sns2: M2.drain -> R2.end_a, straight down column x=45. Centred on
-    # R2's end pad (not on the column origin): a vertical that overhangs the
-    # pad's edge turns the join into a step rather than a T, and `klt drc`
-    # flags the resulting notch as `metal1.width.1` (found on this cell's
-    # first DRC run). A 0.30 um stem landing wholly inside a 0.50 um pad
-    # measures 0.30*cos(45) = 0.212 um across the T's own diagonal, clear of
-    # the 0.16 um floor.
+    # -- sns2: M2.drain -> R2.end_a. Centring the drop on the resistor
+    # pad keeps the T-junction clear of the metal1.width.1 notch rule.
     x_sns2 = pad_center_x(r2["end_a_pad"])
     route_v(b, L_METAL1, x_sns2, r2["end_a_pad"][3],
             m2["drain_pad"][3], width=TRUNK_W)
-    # Boundary port (issue #76): branch right off this trunk at y=50, out to
-    # the cell's right edge -- crossing vref's own trunk at x=179.75 (which
-    # spans the entire y=16.1..59.1 band) on a poly_underpass, the same
-    # single-metal crossing technique bandgap_amp already uses for `out`.
     sns2_pad = boundary_port(b, "sns2", "right", X_SNS2_PORT, Y_SNS2_PORT)
     route_h(b, L_METAL1, Y_SNS2_PORT, x_sns2, X_SNS2_UNDERPASS[0], width=TRUNK_W)
     poly_underpass(b, Y_SNS2_PORT, X_SNS2_UNDERPASS[0], X_SNS2_UNDERPASS[1], width=TRUNK_W)
     route_h(b, L_METAL1, Y_SNS2_PORT, X_SNS2_UNDERPASS[1], sns2_pad[0], width=TRUNK_W)
 
-    # -- e2: R2.end_b -> Q2's 8-unit array (issue #73/DR-0005). Each unit's
-    # emitter escapes straight up through its own ring's open-top gap onto
-    # the shared Q2_BUS_Y trunk (see this module's own docstring for why
-    # that height clears every ring's Metal1). R2's own end_b pad is at
-    # x=58.0 (R2's leg-5 head, `X_M2=45.0` plus 5 legs at a 2.4 um pitch),
-    # west of the Q2 unit row's own span (x=123.75..165.75) -- so, unlike
-    # every other trunk this cell drops a resistor pad straight onto, R2's
-    # drop does not land inside the unit row's own x-range by construction
-    # (issue #243: it used to be routed as an isolated stub at x=58, landing
-    # in free field and splitting `e2` into two disjoint islands). Fixed by
-    # extending the bus itself west to R2's drop x rather than moving the
-    # drop -- the bus is already one continuous Metal1 shape spanning every
-    # unit's landing x, so widening its own `route_h` span costs nothing
-    # else in the floorplan (x=58..123.75 at y=34 is clear field: R2's own
-    # body sits above, y=44..57.85, and the vss aisle at x=87 only exists
-    # for y in [0, 30] -- see this module's own docstring).
+    # -- e2: R2.end_b -> Q2 emitters. R2's drop lies west of the first
+    # emitter, so the shared bus must extend to the drop to connect it.
     for q in q2_units:
         route_v(b, L_METAL1, pad_center_x(q["emitter_pad"]), Q2_BUS_Y,
                 q["emitter_pad"][3], width=TRUNK_W)
@@ -461,26 +351,14 @@ def _route(
     route_h(b, L_METAL1, Q2_BUS_Y, x_bus_lo, x_bus_hi, width=TRUNK_W)
     route_v(b, L_METAL1, x_e2, Q2_BUS_Y, r2["end_b_pad"][1], width=TRUNK_W)
 
-    # -- vref: M3.drain -> R1.end_a, straight down column x=180 (same
-    # pad-centred landing as sns2 above). Clears the Q2 row's right edge
-    # (165.75+2.75=168.5) by ~11.5 um.
+    # -- vref: M3.drain -> R1.end_a, centred on the resistor pad.
     x_vref = pad_center_x(r1["end_a_pad"])
     route_v(b, L_METAL1, x_vref, r1["end_a_pad"][3],
             m3["drain_pad"][3], width=TRUNK_W)
-    # Boundary port (issue #76): branch right off this trunk at y=40 --
-    # a different height from sns2's own crossing above, so the two new
-    # stubs never share a row -- straight to the cell's right edge. Clear of
-    # the vss aisle (x=87, only present for y in [0, 30]) and the Q2 emitter
-    # bus (y=34, spans x=58..165.75 since issue #243); neither reaches y=40.
     vref_pad = boundary_port(b, "vref", "right", X_VREF_PORT, Y_VREF_PORT)
     route_h(b, L_METAL1, Y_VREF_PORT, x_vref, vref_pad[0], width=TRUNK_W)
 
-    # -- e3: R1.end_b -> Q3.emitter, same construction as e2 -- but, unlike
-    # e2, safe from the disjoint-drop class of defect issue #243 fixed above
-    # by construction rather than by extending anything: Q3's own x0 (below)
-    # is *read back from* r1["end_b_pad"], the same pad this drop uses, so
-    # the drop and Q3's emitter can never disagree on x -- there is only one
-    # Q3 unit, not a multi-unit row with its own independently-chosen span.
+    # -- e3: Q3 is centred on R1.end_b so the drop lands on its emitter.
     x_e3 = pad_center_x(r1["end_b_pad"])
     route_v(b, L_METAL1, x_e3, q3["emitter_pad"][3], r1["end_b_pad"][1], width=TRUNK_W)
 
@@ -489,9 +367,7 @@ def _route(
     for q in q2_units:
         _tie_rings(b, q, Y_Q12)
     _tie_rings(b, q3, Y_Q3)
-    # Q1 <-> Q2[0] <-> Q2[1] <-> ... <-> Q2[7] along their shared row (the
-    # aisle taps the first link, Q1<->Q2[0], exactly as it tapped the former
-    # Q1<->Q2 single-device link), then down the aisle to Q3's row.
+    # The aisle to Q3 taps the first link in the chain of collector rings.
     chain = [q1, *q2_units]
     for left, right in zip(chain, chain[1:]):
         route_h(b, L_METAL1, Y_Q12, left["collector_ring_m1"][2], right["collector_ring_m1"][0],
@@ -499,10 +375,6 @@ def _route(
     route_v(b, L_METAL1, X_VSS_AISLE, Y_Q3, Y_Q12, width=TRUNK_W)
     route_h(b, L_METAL1, Y_Q3, X_VSS_AISLE, q3["collector_ring_m1"][0], width=TRUNK_W)
 
-    # vss's own boundary pad (issue #76): Q3's collector ring already sits
-    # flush against the cell's right edge (the same edge sns2/vref's new
-    # pads use, at a lower y clear of both), so it doubles as vss's own
-    # boundary pad -- no new geometry needed.
     vss_pad = q3["collector_ring_m1"]
 
     return {
