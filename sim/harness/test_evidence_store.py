@@ -8,17 +8,29 @@ prove the contract the artifact-store adoption rests on -- each of the three
 preflight failures (no broker, no `klt artifact put`, unreachable broker) and a
 put that fails part-way leave nothing under `sim/` or `manifests/`, and the
 writer has no way to commit the bytes instead.
+
+`ProbeEvidenceStepTests` replays the harness self-test's evidence step
+(issue #728) over a synthetic one-corner run: it must reach a manifest-backed
+scratch record that the production `check_record()` accepts, without reaching
+the production store whatever `KLT_ARTIFACT_BROKER` is set to.
 """
 
 from __future__ import annotations
 
+import contextlib
+import csv
 import hashlib
+import importlib.util
+import io
 import json
+import os
+import re
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import evidence_store as es  # noqa: E402
@@ -319,6 +331,251 @@ class WriterFailClosedTests(TempDirCase):
             self.emit(FakeStore())
         self.assertEqual(m.read_bytes(), b"precious")
         self.assertFalse((self.exp / "records" / "rid1.csv").exists())
+
+
+class ProbeEvidenceStepTests(TempDirCase):
+    """`run_probe.sh`'s evidence step (issue #728), replayed without a simulator.
+
+    The step is the probe's assertion 5: `kse.emit` through a probe-local store
+    into a scratch repository under the probe's work directory, then the
+    production `check_record()` and the DUT comparison over the snapshot the
+    manifest names; the manifest itself is held to the production manifest
+    schema. Everything but the run is the probe's own committed fixture
+    -- its record spec, its request's measurement list, its netlist body and
+    the trim subcircuit `run_probe.sh` splices out of the design netlist --
+    and the checker and the reference DUT are read from the real checkout.
+    Only the report and the deck `klt sim` would have written are synthetic.
+    """
+
+    RID = "20260101-000000-0000000"
+    CORNER = "typ_27c_3.30v"
+    CHECKOUT = Path(__file__).resolve().parents[2]
+    PROBE_DIR = Path(__file__).resolve().parent / "probe"
+    DEAD_BROKER = "http://127.0.0.1:9"
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        loader = importlib.util.spec_from_file_location(
+            "evidence_step", cls.PROBE_DIR / "evidence_step.py")
+        cls.step = importlib.util.module_from_spec(loader)
+        loader.loader.exec_module(cls.step)
+        scripts = cls.CHECKOUT / ".github" / "scripts"
+        if str(scripts) not in sys.path:
+            sys.path.insert(0, str(scripts))
+        loader = importlib.util.spec_from_file_location(
+            "check_artifact_manifests", scripts / "check_artifact_manifests.py")
+        schema = importlib.util.module_from_spec(loader)
+        loader.loader.exec_module(schema)
+        cls.manifest_problems = staticmethod(schema.manifest_problems)
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.work = self.tmp / "work"
+        self.pdk = self.tmp / "pdk"
+        self.experiment = self.work / "scratch-repo" / "sim" / "scratch-experiment"
+        (self.experiment / "testbench").mkdir(parents=True)
+        self.report_path = self.work / "report.json"
+        spec = json.loads((self.PROBE_DIR / "record-spec.json").read_text(encoding="utf-8"))
+        spec["pdk_root"] = str(self.pdk)
+        self.spec_path = self.write("work/record-spec.json", json.dumps(spec))
+
+    def write_run(self, *, work: Path | None = None, batch: bool = False, drop: str = "",
+                  model_lib: bool = True, missing: str = "") -> None:
+        """The probe's body, and the one-corner deck, log and report around it.
+
+        `batch` writes the shapes the batch backend hands back: the corner
+        labelled with its HBT section, and a deck whose `.include` names the
+        runner instance's job directory.
+        """
+        work = work or self.work
+        work.mkdir(parents=True, exist_ok=True)
+        label = "hbt_typ" if batch else "typ"
+        corner = f"{label}_27c_3.30v"
+        design = (self.CHECKOUT / "design/netlist/bandgap_core.spice").read_text(encoding="utf-8")
+        trim = re.search(r"^\.subckt bandgap_trim\b.*?^\.ends\s*$", design,
+                        re.MULTILINE | re.DOTALL)
+        self.assertIsNotNone(trim, "the design netlist lost its `.subckt bandgap_trim` block")
+        (work / "bandgap_trim.inc").write_text(trim.group(0) + "\n", encoding="utf-8")
+        osdi = self.pdk / "ihp-sg13g2/libs.tech/ngspice/osdi"
+        osdi.mkdir(parents=True, exist_ok=True)
+        ladder = "bandgap_trim.inc" if batch else str(work / "bandgap_trim.inc")
+        body = (self.PROBE_DIR / "core_open_loop_bias.body.spice").read_text(encoding="utf-8")
+        body = body.replace("@@OSDI_DIR@@", str(osdi)).replace("@@TRIM_SUBCKT@@", ladder)
+        lines = body.splitlines(keepends=True)
+        if drop:
+            lines = [line for line in lines if line.split()[:1] != [drop]]
+        (work / "body.spice").write_text("".join(lines), encoding="utf-8")
+        deck = ["* the corner deck `klt sim` generates around the body (synthetic)"]
+        if model_lib:
+            models = self.pdk / "ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib"
+            deck.append(f'.lib "{models}" {label}')
+        if batch:
+            deck.append(".include /instance/job/inputs/netlist.cir")
+            (work / "request.json").write_text(
+                json.dumps({"corners": {"process": [label]}}), encoding="utf-8")
+        else:
+            deck.append(f'.include "{work}/body.spice"')
+        (work / f"{corner}.cir").write_text("\n".join(deck) + "\n", encoding="utf-8")
+        (work / f"{corner}.log").write_text("ngspice log\n", encoding="utf-8")
+        request = json.loads((self.PROBE_DIR / "request.json.tmpl").read_text(encoding="utf-8"))
+        anchored = {"vref_v": 1.052707, "r1_ohm": 66057.04}
+        measurements = [{"name": m["name"], "value": anchored.get(m["name"], 1.0)}
+                        for m in request["measurements"] if m["name"] != missing]
+        report = {"status": "pass", "corners": [{
+            "corner_id": f"{label}/3.30V/27C", "process": label, "supply_v": {"Vvdd": 3.30},
+            "temperature_c": 27, "status": "pass", "measurements": measurements,
+            "artifacts": {"log": str(work / f"{corner}.log"), "deck": str(work / f"{corner}.cir")},
+        }]}
+        (work / "report.json").write_text(json.dumps(report), encoding="utf-8")
+        self.report_path = work / "report.json"
+
+    def run_step(self, broker: str | None):
+        """Run the step with `KLT_ARTIFACT_BROKER` set to `broker`, or unset."""
+        with mock.patch.dict(os.environ):
+            os.environ.pop(es.ENV_BROKER, None)
+            if broker is not None:
+                os.environ[es.ENV_BROKER] = broker
+            return self.step.run(self.report_path, self.spec_path, self.experiment,
+                                  self.CHECKOUT, self.RID)
+
+    def replay(self, broker: str | None = None, **run_options) -> None:
+        self.write_run(**run_options)
+        self.run_step(broker)
+
+    @staticmethod
+    def files_under(root: Path) -> set[str]:
+        return {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()}
+
+    @contextlib.contextmanager
+    def production_store_guarded(self):
+        """Both entry points of the real store, replaced by a failing sentinel."""
+        sentinel = {"side_effect": es.StoreError("sentinel: the production store was reached")}
+        with mock.patch.object(es, "preflight", **sentinel) as preflight, \
+                mock.patch.object(es, "put_files", **sentinel) as put:
+            yield preflight, put
+
+    def test_stays_local_with_the_broker_unset(self) -> None:
+        self.assert_stays_local(broker=None)
+
+    def test_stays_local_with_a_failing_broker(self) -> None:
+        """A configured broker is never consulted, so an unroutable one cannot bite."""
+        self.assert_stays_local(broker=self.DEAD_BROKER)
+
+    def assert_stays_local(self, broker: str | None) -> None:
+        self.write_run()
+        before = self.files_under(self.tmp)
+        checkout_manifests = tree(self.CHECKOUT, "manifests", "artifacts")
+        with self.production_store_guarded() as (preflight, put), \
+                contextlib.redirect_stdout(io.StringIO()):
+            store = self.run_step(broker)
+        preflight.assert_not_called()
+        put.assert_not_called()
+
+        prefix = "work/scratch-repo/"
+        self.assertEqual(self.files_under(self.tmp) - before, {
+            f"{prefix}manifests/artifacts/scratch-experiment-{self.RID}.manifest.json",
+            f"{prefix}sim/scratch-experiment/records/{self.RID}.csv",
+            f"{prefix}sim/scratch-experiment/records/{self.RID}.md",
+            f"{prefix}sim/scratch-experiment/records/{self.RID}-report.json",
+        })
+        self.assertEqual(tree(self.CHECKOUT, "manifests", "artifacts"), checkout_manifests)
+        self.assertFalse((self.work / "scratch-repo" / es.SCRATCH_DIR).exists(),
+                         "the staging tree must not outlive the put")
+
+        manifest_path = (self.work / "scratch-repo/manifests/artifacts"
+                         / f"scratch-experiment-{self.RID}.manifest.json")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        stored = [f"sim/scratch-experiment/corners/{self.RID}/{self.CORNER}.log",
+                  f"sim/scratch-experiment/netlist-snapshots/{self.RID}/{self.CORNER}.spice"]
+        self.assertEqual([e["name"] for e in manifest["entries"]], stored)
+        self.assertEqual(self.manifest_problems(manifest, "scratch-experiment", self.RID), [],
+                         "the probe's manifest must be the stored-record shape")
+        self.assertFalse((self.experiment / "corners").exists())
+        self.assertFalse((self.experiment / "netlist-snapshots").exists())
+        self.assertEqual(sorted(store.objects), stored)
+        for entry in manifest["entries"]:
+            data = store.objects[entry["name"]]
+            self.assertEqual((hashlib.sha256(data).hexdigest(), len(data)),
+                             (entry["sha256"], entry["size"]))
+
+    def test_missing_dut_instance_fails_naming_it(self) -> None:
+        """A valid record is not a complete snapshot: the DUT comparison must fire."""
+        out = io.StringIO()
+        with self.production_store_guarded(), contextlib.redirect_stdout(out), \
+                self.assertRaises(SystemExit) as ctx:
+            self.replay(drop="XQ1")
+        self.assertIn("check_record() on the adapter's output: ok", out.getvalue())
+        self.assertIn("does not inline the DUT's own devices", str(ctx.exception))
+        self.assertIn("first missing: ['XQ1']", str(ctx.exception))
+
+    def test_snapshot_without_a_pdk_root_model_path_fails(self) -> None:
+        self.write_run(model_lib=False)
+        with (self.work / "body.spice").open("a", encoding="utf-8") as body:
+            body.write('* .lib "${PDK_ROOT}/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ\n')
+        out = io.StringIO()
+        with self.production_store_guarded(), contextlib.redirect_stdout(out), \
+                self.assertRaises(SystemExit) as ctx:
+            self.run_step(None)
+        self.assertIn("check_record() on the adapter's output: ok", out.getvalue())
+        self.assertIn("${PDK_ROOT}", str(ctx.exception))
+
+    def test_failed_point_fails_before_the_record_checks(self) -> None:
+        """The adapter's verdict is kept: a FAIL point does not PASS the probe."""
+        out = io.StringIO()
+        with self.production_store_guarded(), contextlib.redirect_stdout(out), \
+                self.assertRaises(SystemExit) as ctx:
+            self.replay(missing="i_leg2_a")
+        self.assertIn("0/1 PASS", str(ctx.exception))
+        self.assertNotIn("check_record()", out.getvalue())
+
+    def test_probe_scripts_step_five_as_written_in_both_modes(self) -> None:
+        """`run_probe.sh`'s step 5, executed as written over the synthetic run."""
+        script = (self.PROBE_DIR / "run_probe.sh").read_text(encoding="utf-8")
+        step = script[script.index("# --- 5. "):]
+        experiment = "scratch-repo/sim/scratch-experiment"
+        inlined = r"^  snapshot inlines \d+ instances; 0 of the DUT's are absent$"
+        for batch in (False, True):
+            with self.subTest(mode="batch" if batch else "local"):
+                work = self.tmp / ("batch" if batch else "local")
+                self.write_run(work=work, batch=batch)
+                before = self.files_under(work)
+                env = {k: v for k, v in os.environ.items() if k != es.ENV_BROKER}
+                env.update(WORK=str(work), SCRIPT_DIR=str(self.PROBE_DIR),
+                           REPO_ROOT=str(self.CHECKOUT), BATCH_MODE=str(int(batch)),
+                           PDK_ROOT=str(self.pdk), BATCH_PDK_ROOT=str(self.pdk))
+                completed = subprocess.run(["bash", "-euo", "pipefail", "-c", step], env=env,
+                                           capture_output=True, text=True, check=False)
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                lines = completed.stdout.splitlines()
+                self.assertEqual(lines[-1], f"run_probe.sh: PASS (work dir kept at {work})")
+                self.assertEqual(lines[-4], "  check_record() on the adapter's output: ok")
+                self.assertRegex(lines[-3], inlined)
+
+                self.assertEqual(self.files_under(work) - before, {
+                    "record-spec.json",
+                    f"scratch-repo/manifests/artifacts/scratch-experiment-{self.RID}.manifest.json",
+                    f"{experiment}/records/{self.RID}.csv",
+                    f"{experiment}/records/{self.RID}.md",
+                    f"{experiment}/records/{self.RID}-report.json",
+                    f"{experiment}/run_probe_placeholder.sh",
+                    f"{experiment}/testbench/core_open_loop_bias.body.spice",
+                    f"{experiment}/testbench/request.json.tmpl",
+                })
+                for leftover in ("corners", "netlist-snapshots"):
+                    self.assertFalse((work / experiment / leftover).exists())
+                self.assertFalse((work / "scratch-repo" / es.SCRATCH_DIR).exists())
+                manifest = json.loads((work / "scratch-repo/manifests/artifacts"
+                                       / f"scratch-experiment-{self.RID}.manifest.json")
+                                      .read_text(encoding="utf-8"))
+                self.assertEqual(self.manifest_problems(manifest, "scratch-experiment", self.RID),
+                                 [])
+
+                with (work / experiment / "records" / f"{self.RID}.csv").open(
+                        encoding="utf-8") as fh:
+                    rows = list(csv.DictReader(fh))
+                self.assertEqual([(r["status"], r["hbt_section"], r["corner_label"]) for r in rows],
+                                 [("PASS", "hbt_typ", "hbt_typ" if batch else "typ")])
 
 
 if __name__ == "__main__":

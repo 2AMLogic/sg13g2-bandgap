@@ -5,9 +5,12 @@
 #
 # Runs ONE corner (typ / 27 C / 3.30 V) of sim/core-open-loop-bias's own
 # committed claim through `klt sim` instead of through that experiment's
-# `run_pvt_sweep.sh` shell loop, then runs `sim/harness/klt_sim_evidence.py`
-# over the resulting report into a scratch directory. Nothing it writes is
-# committed: this is the standing proof that the harness works, not evidence.
+# `run_pvt_sweep.sh` shell loop, then runs the evidence step
+# (`evidence_step.py`, driving `sim/harness/klt_sim_evidence.py`) over the
+# resulting report, into a scratch repository under the probe's work directory
+# and through a probe-local store. Nothing it writes is committed or sent to
+# the fleet artifact store: this is the standing proof that the harness works,
+# not evidence (issue #728).
 #
 # WHY A SINGLE CORNER, AND WHY LOCAL BY DEFAULT. The dispatch hosts this
 # repo's agents run on forbid hand-looping `ngspice -b` over a corner grid
@@ -62,10 +65,12 @@
 #   4. `klt sim` reproduces sim/core-open-loop-bias's committed
 #      typ/27C/3.30V point to within ANCHOR_TOL_V -- i.e. the harness change
 #      moves no number.
-#   5. klt_sim_evidence.py emits a record/CSV/log/snapshot quadruple that
-#      .github/scripts/check_evidence_formats.py's own record checks accept,
-#      and whose snapshot inlines the DUT's devices (the D2 rule needs them
-#      present, not behind an `.include`).
+#   5. klt_sim_evidence.py emits a manifest-backed record -- a record and CSV
+#      whose manifest names the point's log and netlist snapshot -- that
+#      .github/scripts/check_evidence_formats.py's own record checks accept
+#      unmodified, and the stored snapshot the manifest names inlines the
+#      DUT's devices (the D2 rule needs them present, not behind an
+#      `.include`).
 set -euo pipefail
 
 BATCH_MODE=0
@@ -254,8 +259,8 @@ else:
     print("  nested corner-bundle .lib resolution: ok")
 PY
 
-# --- 5. the evidence adapter, into a scratch experiment tree -----------------
-SCRATCH_EXP="${WORK}/scratch-experiment"
+# --- 5. the evidence adapter, into a scratch repository tree -----------------
+SCRATCH_EXP="${WORK}/scratch-repo/sim/scratch-experiment"
 mkdir -p "${SCRATCH_EXP}/testbench"
 cp "${SCRIPT_DIR}/core_open_loop_bias.body.spice" "${SCRATCH_EXP}/testbench/"
 cp "${SCRIPT_DIR}/request.json.tmpl" "${SCRATCH_EXP}/testbench/"
@@ -301,52 +306,11 @@ pathlib.Path(spec_path).write_text(json.dumps(spec, indent=2) + "\n", encoding="
 PY
 fi
 
-python3 "${HARNESS_DIR}/klt_sim_evidence.py" \
+python3 "${SCRIPT_DIR}/evidence_step.py" \
   --report "${WORK}/report.json" \
   --spec "${WORK}/record-spec.json" \
   --experiment "${SCRATCH_EXP}" \
+  --checkout "${REPO_ROOT}" \
   --record-id "20260101-000000-0000000"
-
-python3 - "${SCRATCH_EXP}" "${REPO_ROOT}" <<'PY'
-import pathlib, sys
-exp = pathlib.Path(sys.argv[1])
-rid = "20260101-000000-0000000"
-sys.path.insert(0, str(pathlib.Path(sys.argv[2]) / ".github" / "scripts"))
-from _ci_common import Report  # noqa: E402
-import importlib.util  # noqa: E402
-
-spec = importlib.util.spec_from_file_location(
-    "cef", pathlib.Path(sys.argv[2]) / ".github" / "scripts" / "check_evidence_formats.py"
-)
-cef = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(cef)
-
-report = Report()
-cef.check_record(exp / "records" / f"{rid}.md", exp, report)
-if report.problems:
-    for problem in report.problems:
-        print("  record-format FAIL:", problem)
-    raise SystemExit("run_probe.sh: the adapter's record does not satisfy check_record()")
-print("  check_record() on the adapter's output: ok")
-
-snapshot = (exp / "netlist-snapshots" / rid).glob("*.spice")
-snapshot = next(iter(sorted(snapshot)))
-devices = cef.spice_instances(snapshot.read_text(encoding="utf-8"))
-dut = cef.spice_instances(
-    (pathlib.Path(sys.argv[2]) / "design" / "netlist" / "bandgap_core.spice").read_text(
-        encoding="utf-8"
-    )
-)
-absent = [name for name in dut if name not in devices]
-print(f"  snapshot inlines {len(devices)} instances; {len(absent)} of the DUT's are absent")
-if absent:
-    raise SystemExit(
-        "run_probe.sh: the snapshot does not inline the DUT's own devices, so the D2 "
-        f"freshness rule cannot see them (first missing: {absent[:5]})"
-    )
-if "${PDK_ROOT}" not in snapshot.read_text(encoding="utf-8"):
-    raise SystemExit("run_probe.sh: snapshot carries no ${PDK_ROOT}-relative model-library card")
-print("  snapshot is self-contained and host-path-free: ok")
-PY
 
 echo "run_probe.sh: PASS (work dir kept at ${WORK})"
