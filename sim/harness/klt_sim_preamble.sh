@@ -150,12 +150,10 @@ klt_sim_read_msense_width() {  # NETLIST
 # *-vs-schematic* companions a previous enrichment derives from a record are
 # skipped and the sort is the C locale's: the same lookup seed_deck.py's
 # newest_seed_csv (#486/#707) and pex_ac_runner.sh make. Record ids lead with
-# a UTC timestamp, so in byte order the lexicographic tail IS the newest
-# record, whereas a linguistic UTF-8 collation ignores '-' and '.' on its
-# first pass and ranks a record after its own companions (issue #739: the
-# bare `ls | sort | tail -1` closed-loop-vref-mc and trim-coverage each
-# re-typed picked that companion). Pure shell on purpose: the identity
-# coverage probe runs these runners with a stubbed python3.
+# a UTC timestamp, so the last remaining filename in byte order is the
+# newest seed. Under en_US.UTF-8 a companion can sort after its seed,
+# so an unfiltered `sort | tail -1` can select the companion (#739).
+# The identity coverage probe runs these shell runners with a stubbed python3.
 klt_sim_newest_seed_csv() {
   local cand
   local cands=()

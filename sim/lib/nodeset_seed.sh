@@ -43,9 +43,9 @@ caller_name="$(basename "${BASH_SOURCE[1]}")"
 # from a record are skipped, and the sort is the C locale's -- the same
 # lookup sim/harness/seed_deck.py's newest_seed_csv (#486/#707) and
 # sim/harness/pex_ac_runner.sh make. Record ids lead with a UTC timestamp,
-# so in byte order the lexicographic tail IS the newest record; a linguistic
-# UTF-8 collation ignores '-' and '.' on its first pass and ranks a record
-# after its own companions (issue #739).
+# so the last remaining filename in byte order is the newest seed. Under
+# en_US.UTF-8 a companion can sort after its seed, so an unfiltered
+# `sort | tail -1` can select the companion (#739).
 SEED_CSV="$(
   cands=()
   for cand in "${SIM_DIR}/closed-loop-startup/records/"*.csv; do
