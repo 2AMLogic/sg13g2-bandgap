@@ -150,13 +150,13 @@ klt_sim_read_msense_width() {  # NETLIST
 # filename, never mtime: record ids lead with a UTC timestamp, so in byte
 # order the lexicographic tail IS the newest record, whereas a fresh
 # checkout stamps every record at once and leaves the choice to checkout
-# order (pex_ac_runner.sh's own mtime-ordered pick, issue #740). The sort is
-# the C locale's because a linguistic UTF-8 collation ignores '-' and '.' on
-# its first pass and ranks a record after its own companions; the *-tc.csv /
-# *-vs-schematic* companions a previous enrichment derives from a record are
-# skipped -- the same lookup as seed_deck.py's newest_seed_csv (#486/#707).
-# Pure shell on purpose: the identity coverage probe runs these runners with
-# a stubbed python3.
+# order (pex_ac_runner.sh's own mtime-ordered pick, issue #740). The
+# *-tc.csv / *-vs-schematic* companions a previous enrichment derives from
+# a record are skipped and the sort is the C locale's -- the same lookup as
+# seed_deck.py's newest_seed_csv (#486/#707). Under en_US.UTF-8 a companion
+# can sort after its seed, so an unfiltered `sort | tail -1` can select the
+# companion (#739). Pure shell on purpose: the identity coverage probe runs
+# these runners with a stubbed python3.
 klt_sim_newest_seed_csv() {
   local cand
   local cands=()
@@ -170,6 +170,16 @@ klt_sim_newest_seed_csv() {
     return 3
   fi
   SEED_CSV="$(printf '%s\n' "${cands[@]}" | LC_ALL=C sort | tail -1)"
+}
+
+# PATH's most recent commit's short SHA (PATH a repo-relative git pathspec,
+# resolved against REPO_ROOT), or "unknown": the same lookup
+# sim/lib/pvt_preflight.sh's dut_git_sha() makes for the run_pvt_sweep.sh
+# benches (#103), which the `klt sim` runners cannot source -- that file
+# preflights a PVT sweep at source time. closed-loop-vref-mc re-typed it
+# inline until #739.
+dut_git_sha() {  # PATH
+  git -C "${REPO_ROOT}" log -1 --format=%h -- "$1" 2>/dev/null || echo unknown
 }
 
 # --- resume safety (#332) ------------------------------------------------------
