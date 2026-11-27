@@ -76,6 +76,7 @@ IDENT_ARGS+=(
   --extra "${BODY_TEMPLATE}"
   --extra "${BATCH_PROVISION_SCRIPT}"
   --extra "${HARNESS_DIR}/klt_corner_bundle.py"
+  --extra "${HARNESS_DIR}/seed_deck.py"
   --extra "${SIM_DIR}/tools/gen_pex_netlist_body.py")
 
 klt_sim_work_dir "${MODE}" || exit $?
@@ -126,7 +127,9 @@ pex_batch_dispatch() {
   echo "run_klt_sim.sh: sanity gate before dispatch"
   "${SCRIPT_DIR}/run_klt_sim.sh" --sanity
 
-  local gen=(python3 "${HARNESS_DIR}/gen_pex_batch_requests.py"
+  local generator="${HARNESS_DIR}/gen_pex_batch_requests.py"
+  local -a IDENT_ARGS=("${IDENT_ARGS[@]}" --extra "${generator}")
+  local gen=(python3 "${generator}"
     --request-template "${EXP_DIR}/testbench/${STEM}.request.json.tmpl"
     --body-template "${BODY_TEMPLATE}"
     --lib-root "${BATCH_LIB_ROOT}" --provision-script "${BATCH_PROVISION_SCRIPT}"
