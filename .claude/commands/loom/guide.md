@@ -1108,6 +1108,10 @@ in — and write there:
 # and BEFORE any of Steps 2-5. Idempotent: one stable slot, reused every tick.
 DOCS_WT="$(./.loom/scripts/docs-worktree.sh | tail -1)"
 echo "$DOCS_WT"   # e.g. <repo>/.loom/worktrees/docs-guide
+# Start a new receipt even if this tick skips Step 3 entirely.
+WORK_PLAN_RECEIPT="NOT RUN"
+WORK_PLAN_RENDER_HASH=""
+"$DOCS_WT/.loom/scripts/guide-work-plan.sh" reset || { ./.loom/scripts/docs-guide-lock.sh release; return 1 2>/dev/null || exit 1; }
 ```
 
 `docs-worktree.sh` creates (or resets) `<worktree-root>/docs-guide` on a fresh
@@ -1473,7 +1477,7 @@ _work_log_search_total_count() {
   local predicate="${2:-is:issue is:closed}"
   local repo_nwo
   repo_nwo=$(git remote get-url origin 2>/dev/null \
-    | sed -E 's#^git@[^:]+:##; s#^https?://[^/]+/##; s#\.git/?$##')
+    | sed -nE 's#/$##; s#\.git$##; s#^((https?|ssh)://[^/]+/|git@[^:]+:)([[:alnum:]_.-]+/[[:alnum:]_.-]+)$#\3#p')
   if [ -z "$repo_nwo" ]; then
     echo "-1"
     return
@@ -1982,18 +1986,20 @@ again on some later tick and no PR is ever produced for it.
 ```bash
 # Epoch seconds of the most recently MERGED docs-maintenance PR whose changed
 # files actually included WORK_PLAN.md, or 0 if none has ever merged (empty
-# history / query failure). Reuses GUIDE_DOCS_PR_EXCLUDE (Step 2) as the "is
-# this a docs-maintenance PR" predicate instead of redefining it, so the two
-# checks can never drift apart. #5929: a docs-maintenance PR that only
-# touched WORK_LOG.md (or README.md) must NOT anchor this clock — see the
+# history). An unreadable history returns nonzero. Reuses the Step 2
+# GUIDE_DOCS_PR_EXCLUDE predicate so the checks cannot drift apart.
+# #5929: a docs-maintenance PR that only touched WORK_LOG.md (or README.md) must NOT anchor this clock — see the
 # #5929 note above — hence the extra `.files[].path` filter beyond
 # GUIDE_DOCS_PR_EXCLUDE alone.
 last_work_plan_write_epoch() {
   local ts
-  ts=$("$GH_READ" pr list --state merged --limit 30 --json number,title,mergedAt,headRefName,files \
+  if ! ts=$("$GH_READ" pr list --state merged --limit 30 --json number,title,mergedAt,headRefName,files \
     --jq "[.[] | select($GUIDE_DOCS_PR_EXCLUDE) | select([(.files // [])[].path] | index(\"WORK_PLAN.md\") != null)] | sort_by(.mergedAt) | reverse | .[0].mergedAt // empty")
+  then
+    return 1
+  fi
   [ -z "$ts" ] && { echo 0; return; }
-  date -u -d "$ts" +%s 2>/dev/null || date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$ts" +%s 2>/dev/null || echo 0
+  date -u -d "$ts" +%s 2>/dev/null || date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$ts" +%s 2>/dev/null
 }
 ```
 
@@ -2009,7 +2015,13 @@ render_plan_body() {
     printf '\n%s\n' "${3:-_None._}"
   }
   # Bullet count of a section body ("" -> 0), for the Backlog Balance table.
-  count() { [ -z "$1" ] && printf '0' || printf '%s\n' "$1" | grep -c '^- '; }
+  count() {
+    local line total=0
+    while IFS= read -r line; do
+      if [[ $line == '- '* ]]; then total=$((total + 1)); fi
+    done <<< "$1"
+    printf '%s' "$total"
+  }
 
   # #6993, DO NOT DROP THE `sort_by(.number)`: every list below is piped
   # through an explicit `sort_by(.number)` before bullets are formatted.
@@ -2026,11 +2038,13 @@ render_plan_body() {
   # the nondeterminism at the source. It changes only the ORDER within a
   # section, never which items appear in it.
   local held vimp imp ready building review approved curated proposals epics
+  # Stop at the first failed listing or JSON transform. A successful later
+  # section cannot distinguish missing data from an empty issue queue.
   # #11103: the two priority levels, one section each.
   vimp=$("$GH_READ" issue list --label "loom:very-important" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"') || return 1
   imp=$("$GH_READ" issue list --label "loom:important" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"') || return 1
   # #7008/#7071: `ready` excludes every hold (registry sets, retired names
   # included until `labels migrate`, #11795) and loom:building, the same way
   # "Finding Work" does; `building` excludes the operator holds.
@@ -2045,11 +2059,11 @@ render_plan_body() {
   hold_q=$(loom-daemon labels list --property hold --with-retired 2>/dev/null || printf 'loom:blocked\nloom:operator\nloom:frozen')
   op_q=$(loom-daemon labels list --property operator_gate --with-retired 2>/dev/null || echo loom:operator)
   ready_json=$("$GH_READ" issue list --label "loom:issue" --search "-label:loom:building $(sed 's/^/-label:/' <<<"$hold_q" | tr '\n' ' ')" --state open --limit 200 --json number,title \
-    --jq 'sort_by(.number)')
+    --jq 'sort_by(.number)') || return 1
   building=$("$GH_READ" issue list --label "loom:building" --search "$(sed 's/^/-label:/' <<<"$op_q" | tr '\n' ' ') -label:loom:frozen" --state open --limit 200 --json number,title \
-    --jq 'sort_by(.number) | .[] | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | .[] | "- **#\(.number)**: \(.title)"') || return 1
   review=$("$GH_READ" pr list --label "loom:review-requested" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"') || return 1
   # #5930/#6457: PRs carrying `loom:operator` are Judge-approved work stuck on
   # a human merge-risk-hold decision — folded into the generated region (see
   # the "#5930, DO NOT put a hand-written narrative section outside the
@@ -2069,9 +2083,10 @@ render_plan_body() {
   # reintroducing a second query, which #6457 removed on purpose).
   local approved_json
   approved_json=$("$GH_READ" pr list --label "loom:pr" --state open --limit 200 --json number,title,labels,closingIssuesReferences \
-    --jq 'sort_by(.number) | [.[] | select(any(.labels[]?.name; . == "loom:frozen") | not)]')
-  approved=$(printf '%s' "$approved_json" | jq -r '.[] | "- **#\(.number)**: \(.title)"')
-  held=$(printf '%s' "$approved_json" | jq -r '.[] | select([(.labels // [])[].name] | index("loom:operator") or index("loom:blocked")) | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | [.[] | select(any(.labels[]?.name; . == "loom:frozen") | not)]') || return 1
+  [[ -n "$approved_json" && -n "$ready_json" ]] || return 1
+  approved=$(printf '%s' "$approved_json" | jq -r '.[] | "- **#\(.number)**: \(.title)"') || return 1
+  held=$(printf '%s' "$approved_json" | jq -r '.[] | select([(.labels // [])[].name] | index("loom:operator") or index("loom:blocked")) | "- **#\(.number)**: \(.title)"') || return 1
   # #7083: derive the set of issue numbers already closed by an open
   # `loom:pr`-labeled PR from `approved_json`'s own `closingIssuesReferences`
   # (each PR's closes-graph) — the same "reuse the already-fetched PR list,
@@ -2081,19 +2096,19 @@ render_plan_body() {
   # (it belongs in "Approved (Awaiting Merge)" instead).
   local pr_linked_issues
   pr_linked_issues=$(printf '%s' "$approved_json" | \
-    jq -c '[.[] | (.closingIssuesReferences // [])[].number] | unique')
+    jq -c '[.[] | (.closingIssuesReferences // [])[].number] | unique') || return 1
   ready=$(printf '%s' "$ready_json" | jq -r --argjson excl "$pr_linked_issues" \
-    '.[] | select((.number as $n | $excl | index($n)) | not) | "- **#\(.number)**: \(.title)"')
+    '.[] | select((.number as $n | $excl | index($n)) | not) | "- **#\(.number)**: \(.title)"') || return 1
   curated=$("$GH_READ" issue list --label "loom:curated" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(curated)*"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(curated)*"') || return 1
   local architect hermit
   architect=$("$GH_READ" issue list --label "loom:architect" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(architect)*"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(architect)*"') || return 1
   hermit=$("$GH_READ" issue list --label "loom:hermit" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(hermit)*"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title) *(hermit)*"') || return 1
   proposals="${architect}${architect:+${hermit:+$'\n'}}${hermit}"
   epics=$("$GH_READ" issue list --label "loom:epic" --state open --limit 200 --json number,title,labels \
-    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"')
+    --jq 'sort_by(.number) | .[] | select(any(.labels[]?.name; . == "loom:frozen") | not) | "- **#\(.number)**: \(.title)"') || return 1
 
   section "Operator Attention: Merge-Risk-Hold Pileup" \
     "Judge-approved PRs under a hold (\`loom:blocked\` or \`loom:operator\`) — only a human merge decision is missing." \
@@ -2134,7 +2149,63 @@ render_plan_body() {
     "| Active epics | $(count "$epics") |")"
 }
 
+plan_stamp_line() {
+  printf '_Generated: %s (snapshot; compare against live labels)_' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+
+strip_plan_stamp() {
+  sed -e '1{/^_Generated: .* (snapshot; compare against live labels)_$/d;}'
+}
+
+# Step 3 owns the receipt. Persist it before publishing the in-shell result.
+record_work_plan_receipt() {
+  "$DOCS_WT/.loom/scripts/guide-work-plan.sh" record "$1" "${WORK_PLAN_RENDER_HASH:-none}" || return 1
+  WORK_PLAN_RECEIPT="$1"
+}
+
+verify_plan_provenance() {
+  local body="$1" line num rest got tag ok bad=0
+  while IFS= read -r line; do
+    num="${line#- **#}"; num="${num%%\**}"
+    rest="${line#*\*\*: }"
+    got="$("$GH_READ" api "repos/$GUIDE_REPO/issues/$num" --jq '.title' 2>/dev/null)" || got=""
+    if [ -z "$got" ]; then
+      echo "provenance: cannot fetch title of #$num from $GUIDE_REPO" >&2; bad=1
+      continue
+    fi
+    # Plain string equality only: a `${var% \*(x)\*}` strip is a no-op under
+    # zsh (the shell an interactive Guide may run this in), so never strip.
+    ok=0
+    for tag in '' ' *(curated)*' ' *(architect)*' ' *(hermit)*'; do
+      if [ "$rest" = "$got$tag" ] || [ "$rest" = "$got$tag *(held)*" ]; then ok=1; fi
+    done
+    if [ "$ok" -ne 1 ]; then
+      echo "provenance: #$num title mismatch in $GUIDE_REPO (rendered '$rest', forge '$got')" >&2; bad=1
+    fi
+  done < <(printf '%s\n' "$body" | grep -E '^- \*\*#[0-9]+\*\*: ')
+  return "$bad"
+}
+
 update_work_plan() {
+  WORK_PLAN_RECEIPT="NOT RUN"
+  WORK_PLAN_RENDER_HASH=""
+  if jq -e '(.guide.docsMaintenance.skipDocs // []) | arrays | index("WORK_PLAN.md") != null' \
+      "$DOCS_WT/.loom/config.json" >/dev/null; then
+    "$DOCS_WT/.loom/scripts/guide-work-plan.sh" reset || return 1
+    return 1
+  fi
+
+  # Pin the render and provenance lookups to this docs worktree's origin.
+  local GUIDE_REPO GH_REPO GH_CACHE_REPO_ID
+  GUIDE_REPO="$(git -C "$DOCS_WT" remote get-url origin 2>/dev/null \
+    | sed -nE 's#/$##; s#\.git$##; s#^((https?|ssh)://[^/]+/|git@[^:]+:)([[:alnum:]_.-]+/[[:alnum:]_.-]+)$#\3#p')" || GUIDE_REPO=""
+  if [ -z "$GUIDE_REPO" ]; then
+    record_work_plan_receipt "render-failed"
+    echo "Cannot resolve the docs worktree's origin to owner/repo." >&2
+    return 1
+  fi
+  export GH_REPO="$GUIDE_REPO" GH_CACHE_REPO_ID="$GUIDE_REPO"
+
   # Change detection: compare the freshly-rendered body against the body already
   # committed between the markers. No gitignored side-car (which resets to "" on
   # every fresh checkout) — the committed file IS the state.
@@ -2147,15 +2218,52 @@ update_work_plan() {
   # branch was dead code, and every tick unconditionally rewrote the file.
   # Comparing the SAME rendered text on both sides is what makes the skip real;
   # a hash buys nothing here, so compare the strings directly.
-  local new_body old_body
-  new_body="$(render_plan_body)"
-  # `sed '1d;$d'` drops the two marker lines, leaving only the generated region.
+  local new_body old_body stamp
+  if ! new_body="$(render_plan_body)"; then
+    record_work_plan_receipt "render-failed"
+    echo "Cannot render WORK_PLAN.md from the current listings." >&2
+    return 1
+  fi
+  # #14204 RECEIPT: fingerprint the rendered body once, up front, so EVERY
+  # outcome below carries the same content hash into Step 5's `WORK_PLAN
+  # check:` PR-body line — including the ones that refuse to write. Same
+  # portability fallback the park-record hash uses (sha256sum on Linux,
+  # shasum on macOS). Deliberately NOT local: it must survive into Step 5.
+  WORK_PLAN_RENDER_HASH="$(printf '%s\n' "$new_body" | { sha256sum 2>/dev/null || shasum -a 256; } 2>/dev/null | cut -c1-12)" || WORK_PLAN_RENDER_HASH=""
+  if ! [[ "$WORK_PLAN_RENDER_HASH" =~ ^[0-9a-f]{12}$ ]]; then
+    WORK_PLAN_RENDER_HASH=""
+    record_work_plan_receipt "render-failed"
+    echo "Cannot hash the rendered plan." >&2
+    return 1
+  fi
+  # `sed '1d;$d'` drops the two marker lines, leaving only the generated region;
+  # `strip_plan_stamp` (#13909) then drops the region's generated-at stamp line
+  # so the comparison below sees ONLY label-derived content on both sides.
+  # new_body needs no such filter — render_plan_body() never emits a stamp, and
+  # if it ever did, the equality test below would go permanently false and
+  # every tick would rewrite the file (the #5413 dead-skip bug, replayed as one
+  # stamp-only docs PR per debounce window).
   old_body="$(sed -n '/<!-- guide:plan-body:start -->/,/<!-- guide:plan-body:end -->/p' \
-    "$DOCS_WT/WORK_PLAN.md" 2>/dev/null | sed '1d;$d')"
+    "$DOCS_WT/WORK_PLAN.md" 2>/dev/null | sed '1d;$d' | strip_plan_stamp)"
 
   if [ "$new_body" = "$old_body" ]; then
-    echo "WORK_PLAN.md is current (no label changes detected)."
-    return 1
+    # A retry can see Step 3's own pending write in the worktree. Keep
+    # its durable receipt. If persistence failed, retry the gated write.
+    local pending_hash
+    if pending_hash="$("$DOCS_WT/.loom/scripts/guide-work-plan.sh" check-written worktree)"; then
+      if [ -z "$pending_hash" ]; then
+        record_work_plan_receipt "current"
+        echo "WORK_PLAN.md is current (no label changes detected)."
+        return 1
+      fi
+      if [ "$pending_hash" = "$WORK_PLAN_RENDER_HASH" ]; then
+        WORK_PLAN_RECEIPT="written"
+        return 0
+      fi
+    elif [ "$?" -ne 3 ]; then
+      record_work_plan_receipt "write-failed"
+      return 1
+    fi
   fi
 
   # #5890 HYSTERESIS, DO NOT REMOVE: a rendered diff alone used to be
@@ -2178,21 +2286,39 @@ update_work_plan() {
   local debounce_secs last_merged_epoch now_epoch elapsed
   debounce_secs="${LOOM_WORK_PLAN_DEBOUNCE_SECS:-$(jq -r '.guide.docsMaintenance.workPlanDebounceSecs // 3600' .loom/config.json 2>/dev/null)}"
   [ -n "$debounce_secs" ] || debounce_secs=3600
-  last_merged_epoch="$(last_work_plan_write_epoch)"
+  if ! last_merged_epoch="$(last_work_plan_write_epoch)"; then
+    record_work_plan_receipt "debounce-check-failed"
+    return 1
+  fi
   now_epoch="${LOOM_WORK_PLAN_DEBOUNCE_NOW:-$(date -u +%s)}"
   elapsed=$(( now_epoch - last_merged_epoch ))
 
   if [ "$last_merged_epoch" -gt 0 ] && [ "$elapsed" -lt "$debounce_secs" ]; then
+    record_work_plan_receipt "debounced (elapsed ${elapsed}s < window ${debounce_secs}s)"
     echo "WORK_PLAN.md differs, but only ${elapsed}s since WORK_PLAN.md was last written by a merged docs-maintenance PR (< ${debounce_secs}s debounce) — suppressing this tick's rewrite."
     return 1
   fi
 
-  # Replace ONLY the text between the markers in "$DOCS_WT/WORK_PLAN.md" with
-  # $new_body (keep both marker lines, and everything outside them, untouched).
-  # Both sides above are `$(...)`-captured, so trailing newlines are stripped on
-  # both — only the internal structure has to match.
+  # #13923 PROVENANCE GATE, DO NOT REMOVE: the header claims this file is
+  # "generated from the repository's current GitHub label state"; discharge it.
+  # Refuse (non-zero, NO file change) unless every rendered `#N` carries the
+  # title the pinned repo gives it. Checks the OUTPUT, so it bites whatever the
+  # cause (guard denial, wrong cwd, stale scratch, unfaithful execution).
+  if ! verify_plan_provenance "$new_body"; then
+    record_work_plan_receipt "provenance-refused"
+    echo "WORK_PLAN.md NOT written: provenance check failed (fail closed)." >&2
+    return 1
+  fi
 
-  return 0
+  # Stamp only after the comparison and provenance checks. The helper
+  # replaces the marked region atomically inside the managed docs worktree.
+  stamp="$(plan_stamp_line)"
+  if ! printf '%s\n%s\n' "$stamp" "$new_body" | "$DOCS_WT/.loom/scripts/guide-work-plan.sh" splice; then
+    record_work_plan_receipt "write-failed"
+    return 1
+  fi
+
+  record_work_plan_receipt "written"
 }
 ```
 
@@ -2201,6 +2327,13 @@ The section set rendered above must stay in lockstep with the committed
 that section is silently deleted on the next tick (and vice versa, the
 comparison mismatches until the file catches up). Adding a section means editing
 `render_plan_body` **and** the committed file in the same change.
+
+Step 3 records the outcome and the first 12 hex digits of the rendered body's
+SHA-256 in the docs worktree. The hash covers the label-derived text with a
+single trailing newline. An incomplete render records `render-failed` with
+hash `none`. A failed debounce lookup records `debounce-check-failed` with the
+completed render's hash. Both preserve the previous plan. The generation stamp
+stays outside the comparison.
 
 ### Step 4: Check README.md Staleness
 
@@ -2373,6 +2506,11 @@ main checkout: that mutates the shared primary clone that concurrent sweeps,
 branch.
 
 ```bash
+read_work_plan_receipt_field() {
+  [ -f "$DOCS_WT/.loom-work-plan-receipt" ] || return 0
+  sed -n "s/^$1=//p" "$DOCS_WT/.loom-work-plan-receipt" 2>/dev/null | head -n1
+}
+
 create_docs_pr() {
   local branch
   branch="$(git -C "$DOCS_WT" branch --show-current)"
@@ -2385,9 +2523,11 @@ create_docs_pr() {
   # `git add -A` or the `work_log/` directory, so an unrelated file placed there
   # is not swept into the docs PR.
   local archive_file
+  local -a staged_docs=(WORK_LOG.md WORK_PLAN.md README.md)
   for archive_file in "$DOCS_WT"/$WORK_LOG_ARCHIVE_GLOB; do
     [ -f "$archive_file" ] || continue
     git -C "$DOCS_WT" add -- "work_log/${archive_file##*/}"
+    staged_docs+=("work_log/${archive_file##*/}")
   done
 
   # Snapshot which of the three files actually changed, for the telemetry
@@ -2416,9 +2556,18 @@ create_docs_pr() {
     # Writes"), so nothing here needs to survive; Steps 2-4 simply recompute
     # the same delta (plus anything new) against the still-unwritten
     # committed WORK_LOG.md/WORK_PLAN.md then.
-    git -C "$DOCS_WT" reset --hard HEAD
+    git -C "$DOCS_WT" restore --source=HEAD --staged --worktree -- "${staged_docs[@]}"
     ./.loom/scripts/docs-guide-lock.sh release
     return
+  fi
+
+  # Snapshot the receipt for the staged region before committing. The
+  # validator reads the index and the durable Step 3 receipt together.
+  local staged_plan_hash
+  if ! staged_plan_hash="$("$DOCS_WT/.loom/scripts/guide-work-plan.sh" check-written staged)"; then
+    echo "Cannot verify the staged WORK_PLAN.md region. Docs PR deferred." >&2
+    ./.loom/scripts/docs-guide-lock.sh release
+    return 1
   fi
 
   # Commit locally first — deliberately BEFORE pushing, so the cross-host
@@ -2470,10 +2619,7 @@ Automated document maintenance by Guide triage agent."
   # (the PR URL, `gh pr create`'s normal success output) so the doc-
   # maintenance telemetry record below (issue #6136) can be tagged with the
   # PR number instead of just "a docs PR happened".
-  DOCS_PR_URL=$(cd "$DOCS_WT" && gh pr create \
-    --title "docs: Guide document maintenance update" \
-    --label "loom:review-requested" \
-    --body "$(cat <<'PRBODY'
+  DOCS_PR_BODY="$(cat <<'PRBODY'
 <!-- loom:docs-only-fast-path -->
 ## Summary
 
@@ -2481,25 +2627,41 @@ Automated document maintenance by the Guide triage agent.
 
 ### Changes
 - **WORK_LOG.md**: Appended entries for recently merged PRs and closed issues
-- **WORK_PLAN.md**: Regenerated roadmap from current GitHub label state
+@@WORK_PLAN_RECEIPT_LINE@@
 - **README.md**: Updated if architectural changes were detected
 
 ### Context
 This PR is generated automatically by the Guide role as part of its triage cycle.
 See rjwalters/loom#1784 for the feature specification (this template ships to every Loom-managed repo, so the reference must be fully qualified).
 
-This PR only ever stages `WORK_LOG.md`/`WORK_PLAN.md`/`README.md` (see
-`create_docs_pr()`'s `git add` above), so it always qualifies for the
-docs-only fast path (rjwalters/loom#6134) Judge and Champion apply to any PR
-whose changed-file list matches that exact set. The `<!-- loom:docs-only-fast-path -->`
-marker above is informational only — Judge and Champion never trust it (or
-this section's prose) and always re-derive the changed-file list themselves
-from the paginated files API before taking the fast path.
+The Judge and Champion check docs-only fast-path eligibility independently.
+A changed plan region requires a written receipt matching the head. The
+`<!-- loom:docs-only-fast-path -->` marker is informational.
 
 ---
 *Automated by Guide role - document maintenance phase*
 PRBODY
-)")
+)"
+  # Recover Step 3's receipt when Step 5 runs in a fresh shell.
+  local wp_receipt="${WORK_PLAN_RECEIPT:-}" wp_hash="${WORK_PLAN_RENDER_HASH:-}" wp_file_val
+  if [ -n "${staged_plan_hash:-}" ]; then
+    wp_receipt=written
+    wp_hash="$staged_plan_hash"
+  elif [ -z "$wp_receipt" ] || [ "$wp_receipt" = "NOT RUN" ]; then
+    wp_hash=""
+    wp_file_val="$(read_work_plan_receipt_field receipt)"
+    if [ -n "$wp_file_val" ]; then
+      wp_receipt="$wp_file_val"
+      wp_hash="$(read_work_plan_receipt_field render_hash)"
+    fi
+  fi
+  WORK_PLAN_CHECK_LINE="- **WORK_PLAN check**: ${wp_receipt:-NOT RUN} (render-hash ${wp_hash:-none}, $(date -u '+%Y-%m-%dT%H:%M:%SZ'))"
+  DOCS_PR_BODY="${DOCS_PR_BODY/"@@WORK_PLAN_RECEIPT_LINE@@"/$WORK_PLAN_CHECK_LINE}"
+
+  DOCS_PR_URL=$(cd "$DOCS_WT" && gh pr create \
+    --title "docs: Guide document maintenance update" \
+    --label "loom:review-requested" \
+    --body "$DOCS_PR_BODY")
   echo "$DOCS_PR_URL"
   DOCS_PR_NUMBER="${DOCS_PR_URL##*/}"
 
@@ -2534,6 +2696,12 @@ PRBODY
   # and the docs worktree is a persistent slot that the next tick resets.
 }
 ```
+
+The `WORK_PLAN check:` line is the PR body's only plan-status claim. A fresh
+Step 5 shell loads the reader above and uses the same docs worktree as Step 3.
+Before committing a changed region, Step 5 verifies the durable `written`
+receipt against the staged content and uses that verified hash in the PR body.
+A tick with no recorded check emits `NOT RUN` with hash `none` when the region is unchanged.
 
 ### Document Maintenance Summary
 
@@ -2630,6 +2798,8 @@ Document Maintenance Phase
   `docs: Guide document maintenance update` title. Without that exclusion the
   phase is self-perpetuating: its own merged PR is "new content" for the next
   tick, so merging PR N always justifies PR N+1 and the loop never terminates
+- A docs PR states WORK_PLAN's status only through the receipt. Never
+  free-text a claim like "WORK_PLAN.md is current" in the PR body.
 - WORK_PLAN is only regenerated when label state actually changes — which
   requires `render_plan_body`'s output and the committed marker region to be
   comparable byte-for-byte (see the #5413 bug note in Step 3)

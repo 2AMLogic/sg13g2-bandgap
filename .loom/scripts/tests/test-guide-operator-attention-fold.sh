@@ -168,7 +168,7 @@ echo "Test 4: guide.md's real \$held filter derives held PRs from \$approved's l
 if command -v jq >/dev/null 2>&1; then
     HELD_LINE="$(grep -E '^[[:space:]]*held=\$\(printf .%s. "\$approved_json" \| jq -r ' <<<"$RPB_BODY" | head -1)"
     HELD_JQ=""
-    if [[ "$HELD_LINE" =~ jq\ -r\ \'(.*)\'\)[[:space:]]*$ ]]; then
+    if [[ "$HELD_LINE" =~ jq\ -r\ \'([^\']*)\'\) ]]; then
         HELD_JQ="${BASH_REMATCH[1]}"
     fi
 

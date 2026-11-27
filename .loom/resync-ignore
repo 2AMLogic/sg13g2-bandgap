@@ -6,3 +6,14 @@
 # Pinned rather than upstreamed. scripts/lib/forge-helpers.sh stays managed.
 scripts/tracker-state-comment.sh
 scripts/tests/test-tracker-state-comment.sh
+
+# #754: the Guide receipt backport runs with the installed v0.19.1313 daemon.
+# Retire these pins and the helper once the daemon and Guide include
+# rjwalters/loom#15222 and pass this backport's receipt suite, including
+# listing failures, SSH origins, same-tick retries and receipt-write failures.
+roles/guide.md
+commands/loom/guide.md
+agents-skills/loom-guide/SKILL.md
+scripts/guide-work-plan.sh
+scripts/tests/test-guide-work-plan-receipt.sh
+scripts/tests/test-guide-operator-attention-fold.sh
