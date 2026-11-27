@@ -834,21 +834,13 @@ def flatten(top_path: str, pdk: str = "sg13cmos5l") -> list[str]:
     return out
 
 
-def _write(reference_path: str, output_path: str, pdk: str = "sg13g2") -> None:
-    lines = convert(reference_path, pdk=pdk)
+def _write(output_path: str, lines: list[str]) -> None:
     with open(output_path, "w") as f:
         f.write("\n".join(lines) + "\n")
     print(f"wrote {output_path}")
 
 
-def _write_flattened(top_path: str, output_path: str, pdk: str = "sg13cmos5l") -> None:
-    lines = flatten(top_path, pdk=pdk)
-    with open(output_path, "w") as f:
-        f.write("\n".join(lines) + "\n")
-    print(f"wrote {output_path}")
-
-
-def _write_runset_flattened(top_path: str, output_path: str, ports: list[str]) -> None:
+def _flatten_runset(top_path: str, ports: list[str]) -> list[str]:
     """:func:`flatten` in the runset dialect, wrapped in a ``.subckt`` named
     for the top cell: the runset's ``align`` pairs the layout's top cell with
     a schematic *circuit* of the same name, which a bare device list lacks."""
@@ -856,101 +848,35 @@ def _write_runset_flattened(top_path: str, output_path: str, ports: list[str]) -
     body = flatten(top_path, pdk="sg13g2-runset")
     assert body[-1] == ".end"
     first_device = next(i for i, ln in enumerate(body) if not ln.startswith("*"))
-    lines = (
+    return (
         body[:first_device]
         + [f".subckt {top} {' '.join(ports)}"]
         + body[first_device:-1]
         + [".ends", ".end"]
     )
-    with open(output_path, "w") as f:
-        f.write("\n".join(lines) + "\n")
-    print(f"wrote {output_path}")
-
-
-def _write_with_metal_options(
-    reference_path: str, output_path: str, pdk: str = "sg13g2"
-) -> None:
-    lines = convert_with_metal_options(reference_path, pdk=pdk)
-    with open(output_path, "w") as f:
-        f.write("\n".join(lines) + "\n")
-    print(f"wrote {output_path}")
 
 
 if __name__ == "__main__":
-    # bandgap_core carries the metal-option trim ladder as of issue #229
-    # (XXTRIM -> .subckt bandgap_trim), so it needs the per-code resolution
-    # convert_with_metal_options() applies rather than convert()'s flat
-    # every-X-line-is-a-device grammar -- see issue #272.
-    _write_with_metal_options(
-        os.path.join(REPO_ROOT, "design/netlist/bandgap_core.spice"),
-        os.path.join(REPO_ROOT, "layout/bandgap_core/bandgap_core.lvs_reference.spice"),
-    )
-    _write(
-        os.path.join(REPO_ROOT, "design/netlist/bandgap_startup.spice"),
-        os.path.join(
-            REPO_ROOT, "layout/bandgap_startup/bandgap_startup.lvs_reference.spice"
-        ),
-    )
-    # bandgap_amp (issue #169) -- a pure-CMOS netlist (no bipolar/resistor
-    # devices at all), so convert()'s existing _MOS_CLASS dispatch is
-    # already everything this file needs.
-    _write(
-        os.path.join(REPO_ROOT, "design/netlist/bandgap_amp.spice"),
-        os.path.join(REPO_ROOT, "layout/bandgap_amp/bandgap_amp.lvs_reference.spice"),
-    )
-    # bandgap_top (issue #169) -- the SG13G2 hierarchical assembly netlist,
-    # whose own X-calls are subckt instantiations rather than devices (see
-    # flatten()'s own docstring), same shape as SG13CMOS5L's own
-    # bandgap_top.spice below -- just this PDK's device vocabulary
-    # (pdk="sg13g2", the default).
-    _write_flattened(
-        os.path.join(REPO_ROOT, "design/netlist/bandgap_top.spice"),
-        os.path.join(REPO_ROOT, "layout/bandgap_top/bandgap_top.lvs_reference.spice"),
-        pdk="sg13g2",
-    )
-    # bandgap_top in the PDK LVS runset's own dialect (issue #352) -- the
-    # curated-deck reference above stays as is.
-    _write_runset_flattened(
-        os.path.join(REPO_ROOT, "design/netlist/bandgap_top.spice"),
-        os.path.join(REPO_ROOT, "layout/bandgap_top/bandgap_top.lvs_reference.runset.spice"),
-        ports=["vdd", "vss", "vref"],
-    )
-    # SG13CMOS5L port (issue #66) -- same conversion, that PDK's own device
-    # vocabulary. Directory name mirrors sim/'s own `sg13cmos5l-<slug>`
-    # per-PDK prefix convention (see layout/README.md "SG13CMOS5L port").
-    _write(
-        os.path.join(REPO_ROOT, "design/sg13cmos5l/netlist/bandgap_core.spice"),
-        os.path.join(
-            REPO_ROOT,
-            "layout/sg13cmos5l-bandgap_core/sg13cmos5l-bandgap_core.lvs_reference.spice",
-        ),
-        pdk="sg13cmos5l",
-    )
-    # The other two CMOS5L leaf cells (issue #74).
-    _write(
-        os.path.join(REPO_ROOT, "design/sg13cmos5l/netlist/bandgap_startup.spice"),
-        os.path.join(
-            REPO_ROOT,
-            "layout/sg13cmos5l-bandgap_startup/sg13cmos5l-bandgap_startup.lvs_reference.spice",
-        ),
-        pdk="sg13cmos5l",
-    )
-    _write(
-        os.path.join(REPO_ROOT, "design/sg13cmos5l/netlist/bandgap_amp.spice"),
-        os.path.join(
-            REPO_ROOT,
-            "layout/sg13cmos5l-bandgap_amp/sg13cmos5l-bandgap_amp.lvs_reference.spice",
-        ),
-        pdk="sg13cmos5l",
-    )
-    # bandgap_top (issue #81) -- the hierarchical assembly netlist, whose own
-    # X-calls are subckt instantiations rather than devices (see flatten()'s
-    # own docstring for why convert() cannot express this file directly).
-    _write_flattened(
-        os.path.join(REPO_ROOT, "design/sg13cmos5l/netlist/bandgap_top.spice"),
-        os.path.join(
-            REPO_ROOT,
-            "layout/sg13cmos5l-bandgap_top/sg13cmos5l-bandgap_top.lvs_reference.spice",
-        ),
-        pdk="sg13cmos5l",
-    )
+    # Only the SG13G2 core contains the metal-option trim ladder (#272).
+    for pdk, convert_core in (
+        ("sg13g2", convert_with_metal_options),
+        ("sg13cmos5l", convert),
+    ):
+        design_dir = os.path.join(REPO_ROOT, "design")
+        if pdk != "sg13g2":
+            design_dir = os.path.join(design_dir, pdk)
+        for cell, render in (
+            ("bandgap_core", convert_core),
+            ("bandgap_startup", convert),
+            ("bandgap_amp", convert),
+            ("bandgap_top", flatten),
+        ):
+            source = os.path.join(design_dir, "netlist", f"{cell}.spice")
+            name = cell if pdk == "sg13g2" else f"{pdk}-{cell}"
+            dest = os.path.join(REPO_ROOT, "layout", name, f"{name}.lvs_reference")
+            _write(f"{dest}.spice", render(source, pdk=pdk))
+            if pdk == "sg13g2" and cell == "bandgap_top":
+                _write(
+                    f"{dest}.runset.spice",
+                    _flatten_runset(source, ports=["vdd", "vss", "vref"]),
+                )
