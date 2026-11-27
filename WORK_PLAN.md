@@ -28,7 +28,7 @@ _None._
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#303**: design: resize the core against mismatch and re-aim the trim; ±4.5 % is declined (operator ruling 2026-10-08, T1 items 5 and 6)
-- **#727**: Remove the five retired hand-transcribed legacy PEX templates (1,427 LOC)
+- **#733**: sim/harness: a merged batch report keeps one shard's diagnostic_counts and metrics
 
 ## In Progress
 
@@ -36,9 +36,7 @@ Issues currently being built (`loom:building`).
 
 - **#380**: layout: make draw_hv_mos / draw_npn13g2 recognizable by the IHP PDK LVS runset (single-device runset-LVS fixtures)
 - **#653**: Re-run closed-loop-iq for a re-derivable item-5 citation and update the record spec's magnitude Claim (post-#648)
-- **#725**: Remove leftover inline anchor gate and duplicate preflight, placeholder, and enricher-output helpers in sim/harness/
-- **#728**: sim/harness: run_probe.sh fails its assertion 5 on main and stores scratch objects in the fleet evidence store
-- **#729**: sim/harness: the shard identity does not hash seed_deck.py, which renders the seeded runners' decks (#661's class)
+- **#739**: Retire remaining enrich_supply_bench_report, sim/lib/, and shell seed-CSV stragglers across sim/
 
 ## PRs Awaiting Review
 
@@ -50,7 +48,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#734**: sim(closed-loop-iq): record the grid with the signed graded average and re-cite item 5
 
 ## Proposed
 
@@ -67,13 +65,13 @@ Issues carrying `loom:curated`.
 - **#440**: Confirm seed-parity of closed-loop-vref-mc fleet draws against a local ngspice run *(curated)*
 - **#653**: Re-run closed-loop-iq for a re-derivable item-5 citation and update the record spec's magnitude Claim (post-#648) *(curated)*
 - **#698**: Re-run sim/sg13cmos5l-closed-loop-startup-pex against the parasitic-bearing sg13cmos5l-bandgap_top.pex.spice (post-#480) *(curated)*
-- **#728**: sim/harness: run_probe.sh fails its assertion 5 on main and stores scratch objects in the fleet evidence store *(curated)*
-- **#729**: sim/harness: the shard identity does not hash seed_deck.py, which renders the seeded runners' decks (#661's class) *(curated)*
+- **#733**: sim/harness: a merged batch report keeps one shard's diagnostic_counts and metrics *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#708**: Remove the unusable dpkg-deb recovery recipe from the Linux OSDI bootstrap *(hermit)*
 - **#718**: Simplify the Python verdict-constant guard with ast.Store *(hermit)*
+- **#738**: Retire scheduled sticky-label checks for closed tracker #4 *(hermit)*
 
 ## Epics
 
@@ -87,10 +85,10 @@ _None._
 | Very important | 1 |
 | Important | 3 |
 | Ready (`loom:issue`) | 2 |
-| In Progress (`loom:building`) | 5 |
+| In Progress (`loom:building`) | 3 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 13 |
-| Architect / Hermit proposals | 2 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 12 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

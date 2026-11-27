@@ -12,6 +12,8 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-27
 
+- **PR #743**: fix(sim): select the AC benches' startup seed record by name and read it by header
+- **Issue #740** (closed): pex_ac_runner.sh SEEDS_OF reads the startup seed record positionally; 73c420a2's msense_w-column drop strands closed-loop-psrr/-psrr-pex/-zout-pex
 - **PR #737**: fix(sim): make pre_osdi paths under the PDK root portable in snapshots
 - **Issue #735** (closed): klt_sim_evidence.py: netlist snapshots still carry absolute pre_osdi paths under the PDK root
 - **PR #736**: fix(sim): keep the klt-sim probe's evidence step off the fleet store
