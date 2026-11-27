@@ -160,6 +160,72 @@ class MergeTests(TempDirCase):
         all_local = mbs.merge([str(local)], want("typ", 1))
         self.assertNotIn("remote", all_local["environment"])
 
+    def test_diagnostics_and_metrics_cover_all_shards(self) -> None:
+        first = shard("typ", ["pass", "pass"])
+        warning = {"code": "singular_matrix", "severity": "warning"}
+        first["corners"][0]["diagnostics"] = [warning]
+        first["corners"][1]["diagnostics"] = []
+        first["diagnostic_counts"] = {
+            "by_code": {"singular_matrix": 1},
+            "by_severity": {"warning": 1},
+            "corners_with_diagnostics": 1,
+        }
+        first["metrics"] = {"sim__corner__count": 2, "shard_only": 12}
+        second = shard("wcs", ["fail", "error"])
+        second["corners"][1]["diagnostics"] = [
+            warning,
+            {"code": "simulation_failed", "severity": "error"},
+        ]
+        a = self.write_json("first.json", first)
+        b = self.write_json("second.json", second)
+        merged = mbs.merge([str(a), str(b)], want("typ", 2) + want("wcs", 2))
+        self.assertEqual(
+            merged["diagnostic_counts"],
+            {
+                "by_code": {"singular_matrix": 2, "simulation_failed": 1},
+                "by_severity": {"warning": 2, "error": 1},
+                "corners_with_diagnostics": 2,
+            },
+        )
+        self.assertEqual(
+            merged["metrics"],
+            {
+                "sim__corner__count": 4,
+                "sim__corner__passed_count": 2,
+                "sim__corner__failed_count": 1,
+                "sim__corner__errored_count": 1,
+                "sim__corner__inconclusive_count": 0,
+            },
+        )
+
+    def test_refresh_after_regrade_without_declared_measurements(self) -> None:
+        path = self.write_json("typ.json", shard("typ", ["pass"]))
+        merged = mbs.merge([str(path)], want("typ", 1))
+        self.assertEqual(
+            merged["diagnostic_counts"],
+            {"by_code": {}, "by_severity": {}, "corners_with_diagnostics": 0},
+        )
+        epr.enrich(merged)  # missing operands turn the pass into a fail
+        mbs.refresh_rollup(merged)
+        self.assertEqual(merged["metrics"]["sim__corner__passed_count"], 0)
+        self.assertEqual(merged["metrics"]["sim__corner__failed_count"], 1)
+        self.assertEqual(
+            merged["diagnostic_counts"],
+            {
+                "by_code": {"derived_columns_missing": 1},
+                "by_severity": {"unknown": 1},
+                "corners_with_diagnostics": 1,
+            },
+        )
+
+    def test_refresh_counts_inconclusive_from_corner_status(self) -> None:
+        path = self.write_json("typ.json", shard("typ", ["pass"]))
+        merged = mbs.merge([str(path)], want("typ", 1))
+        merged["corners"][0]["status"] = "inconclusive"
+        mbs.refresh_rollup(merged)
+        self.assertEqual(merged["metrics"]["sim__corner__passed_count"], 0)
+        self.assertEqual(merged["metrics"]["sim__corner__inconclusive_count"], 1)
+
     def test_provenance_note_counts_shards_and_keeps_existing_fields(self) -> None:
         paths = [str(self.write_json(f"{n}.json", shard(n, ["pass"]))) for n in ("a", "b", "c")]
         prov = mbs.merge(paths, want("a", 1) + want("b", 1) + want("c", 1))["provenance"]

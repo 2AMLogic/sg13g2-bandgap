@@ -14,7 +14,8 @@
 #     missing-seed check below `exit 3` directly rather than returning a
 #     status, matching the pre-extraction behavior of each script).
 #   - Source this AFTER sim/lib/pvt_preflight.sh -- it needs SIM_DIR and
-#     REPO_ROOT, which pvt_preflight.sh provides.
+#     REPO_ROOT, which pvt_preflight.sh provides, and its dut_git_sha()
+#     for the seed record's own provenance lookup.
 #   - Source this file directly from the experiment script's top level (not
 #     from inside a function) so `${BASH_SOURCE[1]}` below resolves to the
 #     calling script's own path, matching sim/lib/pvt_preflight.sh's own
@@ -38,7 +39,24 @@ caller_name="$(basename "${BASH_SOURCE[1]}")"
 # Nodeset provenance: the most recent committed sim/closed-loop-startup
 # record (see README.md "Nodeset provenance" for why this cross-experiment
 # read is necessary and how it is verified per-point, not just trusted).
-SEED_CSV="$(ls -1 "${SIM_DIR}/closed-loop-startup/records/"*.csv 2>/dev/null | sort | tail -1 || true)"
+# The *-tc.csv / *-vs-schematic* companions a previous enrichment derives
+# from a record are skipped, and the sort is the C locale's -- the same
+# lookup sim/harness/seed_deck.py's newest_seed_csv (#486/#707) and
+# sim/harness/pex_ac_runner.sh make. Record ids lead with a UTC timestamp,
+# so the last remaining filename in byte order is the newest seed. Under
+# en_US.UTF-8 a companion can sort after its seed, so an unfiltered
+# `sort | tail -1` can select the companion (#739).
+SEED_CSV="$(
+  cands=()
+  for cand in "${SIM_DIR}/closed-loop-startup/records/"*.csv; do
+    [[ -f "${cand}" ]] || continue
+    case "${cand##*/}" in *-tc.csv|*-vs-schematic*) continue ;; esac
+    cands+=("${cand}")
+  done
+  if [[ ${#cands[@]} -gt 0 ]]; then
+    printf '%s\n' "${cands[@]}" | LC_ALL=C sort | tail -1
+  fi
+)"
 if [[ -z "${SEED_CSV}" || ! -f "${SEED_CSV}" ]]; then
   echo "${caller_name}: no sim/closed-loop-startup/records/*.csv found -- this" >&2
   echo "${caller_name}: experiment needs that experiment's DC-bias seed values." >&2
@@ -46,7 +64,7 @@ if [[ -z "${SEED_CSV}" || ! -f "${SEED_CSV}" ]]; then
   exit 3
 fi
 echo "${caller_name}: nodeset seeds sourced from ${SEED_CSV}"
-SEED_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- "${SEED_CSV}" 2>/dev/null || echo unknown)"
+SEED_GIT_SHA="$(dut_git_sha "${SEED_CSV}")"
 
 # lookup_seed CORNER TEMP VDD FIELD
 #   Looks up FIELD (fb_final_v, sns1_final_v, sns2_final_v or vref_final_v)

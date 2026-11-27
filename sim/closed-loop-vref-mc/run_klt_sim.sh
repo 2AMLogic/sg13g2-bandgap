@@ -35,14 +35,13 @@ SEED="${KLT_SIM_SEED:-20260909}"
 PROBE="${KLT_SIM_PROBE:-3}"
 BATCH_OSDI_DIR="${BATCH_PDK_ROOT}/${PDK}/libs.tech/ngspice/osdi"
 CAPACITY_WAIT_S="${KLT_SIM_CAPACITY_WAIT_S:-1800}"
-SEED_CSV="$(ls -1 "${SIM_DIR}/closed-loop-startup/records/"*.csv | sort | tail -1)"
+klt_sim_newest_seed_csv || exit $?
 ANCHOR_CSV="$(ls -1 "${EXP_DIR}/records/"*-draws.csv | sort | head -1)"   # the committed pre-trim record
 
 # XMSENSE's width from the live startup netlist, cached in the work dir so
 # --record re-reads the value the --batch run dispatched with.
 klt_sim_read_msense_width "design/netlist/bandgap_startup.spice"
 
-dut_git_sha() { git -C "${REPO_ROOT}" log -1 --format=%h -- "$1" 2>/dev/null || echo unknown; }
 DUT_SHA="core=$(dut_git_sha design/netlist/bandgap_core.spice) amp=$(dut_git_sha design/netlist/bandgap_amp.spice) startup=$(dut_git_sha design/netlist/bandgap_startup.spice) seeds=${SEED_CSV##*/}@$(dut_git_sha "${SEED_CSV#"${REPO_ROOT}/"}")"
 SUBMIT_KLT="${KLT_SIM_SUBMIT_KLT:-${KLT_BIN}}"
 

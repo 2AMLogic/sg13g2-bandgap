@@ -29,6 +29,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib" && pwd)/pvt_preflight.sh"
 # shellcheck source=../lib/pvt_sed_common.sh
 source "${SIM_DIR}/lib/pvt_sed_common.sh"
 
+# shellcheck source=../lib/pvt_verdict_common.sh
+source "${SIM_DIR}/lib/pvt_verdict_common.sh"
+
 TEMPLATE="${EXPERIMENT_DIR}/testbench/tb_closed_loop_offset.spice.tmpl"
 
 # XMSENSE's W is read from the live design/netlist/bandgap_startup.spice,
@@ -43,18 +46,16 @@ read_msense_width "design/netlist/bandgap_startup.spice"
 # shellcheck source=../lib/nodeset_seed.sh
 source "${SIM_DIR}/lib/nodeset_seed.sh"
 
-DUT_CORE_GIT_SHA="${DUT_GIT_SHA}"
-DUT_AMP_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- design/netlist/bandgap_amp.spice 2>/dev/null || echo unknown)"
-DUT_STARTUP_GIT_SHA="$(git -C "${REPO_ROOT}" log -1 --format=%h -- design/netlist/bandgap_startup.spice 2>/dev/null || echo unknown)"
+alias_dut_git_shas AMP=design/netlist/bandgap_amp.spice STARTUP=design/netlist/bandgap_startup.spice
 
 # Three representative PVT points (NOT the full 45-point grid -- see
 # README "Scope: three points, not a PVT sweep"): nominal, and the two
 # temperature/supply extremes closed-loop-startup's own record already
 # names as its coldest/lowest-vdd and hottest/highest-vdd PASS points.
+# Each point's HBT/MOS/resistor sections are sim/lib/pvt_preflight.sh's
+# HBT_SECTION_OF/MOS_SECTION_OF/RES_SECTION_OF lookups for its corner, read
+# in the loop below (issue #739: they were a second, unguarded copy here).
 POINT_CORNERS=(typ wcs bcs)
-POINT_HBT=(hbt_typ hbt_wcs hbt_bcs)
-POINT_MOS=(mos_tt mos_ss mos_ff)
-POINT_RES=(res_typ res_wcs res_bcs)
 POINT_TEMPS=(27 -40 125)
 POINT_VDDS=(3.30 2.97 3.63)
 
@@ -85,9 +86,9 @@ VREF_MIN_V="0.3"
 
 for pi in "${!POINT_CORNERS[@]}"; do
   corner="${POINT_CORNERS[$pi]}"
-  hbt_section="${POINT_HBT[$pi]}"
-  mos_section="${POINT_MOS[$pi]}"
-  res_section="${POINT_RES[$pi]}"
+  hbt_section="${HBT_SECTION_OF[${corner}]}"
+  mos_section="${MOS_SECTION_OF[${corner}]}"
+  res_section="${RES_SECTION_OF[${corner}]}"
   temp="${POINT_TEMPS[$pi]}"
   vdd="${POINT_VDDS[$pi]}"
 
@@ -129,11 +130,11 @@ for pi in "${!POINT_CORNERS[@]}"; do
 
     run_pvt_point "${netlist}" "${log}"
 
-    fb_op=$(grep -E '^v\(fb\)' "${log}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
-    sns1_op=$(grep -E '^v\(sns1\)' "${log}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
-    sns1_amp_op=$(grep -E '^v\(sns1_amp\)' "${log}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
-    sns2_op=$(grep -E '^v\(sns2\)' "${log}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
-    vref_op=$(grep -E '^v\(vref\)' "${log}" | head -1 | awk -F'=' '{print $2}' | tr -d ' ' || true)
+    fb_op=$(extract_op_voltage fb "${log}")
+    sns1_op=$(extract_op_voltage sns1 "${log}")
+    sns1_amp_op=$(extract_op_voltage sns1_amp "${log}")
+    sns2_op=$(extract_op_voltage sns2 "${log}")
+    vref_op=$(extract_op_voltage vref "${log}")
 
     verdict=PASS
     loop_err=""
@@ -150,11 +151,7 @@ for pi in "${!POINT_CORNERS[@]}"; do
       fi
     fi
 
-    if [[ "${verdict}" == "PASS" ]]; then
-      passed=$((passed + 1))
-    else
-      failed_points+=("${corner_id}")
-    fi
+    tally_verdict "${verdict}" "${corner_id}"
     echo "${corner},${vos_tag},${corner_label},${hbt_section},${mos_section},${res_section},${temp},${vdd},${MSENSE_W},${vos},${verdict},${fb_seed},${fb_op},${sns1_op},${sns1_amp_op},${sns2_op},${vref_op},${loop_err}" >> "${CSV_OUT}"
   done
 done

@@ -93,6 +93,13 @@ DUT_GIT_SHA="d83f7c4"
 source "${SIM_DIR}/lib/msense_width.sh"
 read_msense_width "design/netlist/bandgap_startup.spice"
 
+# shellcheck source=../lib/pvt_sed_common.sh
+# pvt_sed_common.sh has no top-level side effects and only reads
+# PDK_ROOT/PDK/OSDI_DIR inside common_pvt_sed_args(), all three of which this
+# script resolved above (issue #739; pvt_preflight.sh stays unsourced -- see
+# the corner->section map's own comment).
+source "${SIM_DIR}/lib/pvt_sed_common.sh"
+
 # shellcheck source=../lib/pvt_verdict_common.sh
 source "${SIM_DIR}/lib/pvt_verdict_common.sh"
 
@@ -118,13 +125,9 @@ if [[ "${AIDS_LABEL}" == "aided" ]]; then
   AIDS_OPTIONS="rshunt=1e9 gmin=1e-9 "
 fi
 
+common_pvt_sed_args "${TEMP_C}" "${VDD}" "${CORNER}"
 sed \
-  -e "s|@@PDK_ROOT@@|${PDK_ROOT}|g" \
-  -e "s|@@PDK@@|${PDK}|g" \
-  -e "s|@@OSDI_DIR@@|${OSDI_DIR}|g" \
-  -e "s|@@TEMP_C@@|${TEMP_C}|g" \
-  -e "s|@@VDD@@|${VDD}|g" \
-  -e "s|@@CORNER_LABEL@@|${CORNER}|g" \
+  "${COMMON_SED_ARGS[@]}" \
   -e "s|@@HBT_SECTION@@|${HBT_SECTION_OF[${CORNER}]}|g" \
   -e "s|@@MOS_SECTION@@|${MOS_SECTION_OF[${CORNER}]}|g" \
   -e "s|@@RES_SECTION@@|${RES_SECTION_OF[${CORNER}]}|g" \
@@ -139,18 +142,15 @@ ngspice -b "${NETLIST}" > "${LOG}" 2>&1
 RC=$?
 set -e
 
-extract_measure() {
-  grep -E "^${1}" "${LOG}" | head -1 | awk '{print $3}' || true
-}
-v_fb_v=$(extract_measure '^v_fb_v')
-v_sns1_v=$(extract_measure '^v_sns1_v')
-v_sns2_v=$(extract_measure '^v_sns2_v')
-v_det_v=$(extract_measure '^v_det_v')
-i_mkfb_a=$(extract_measure '^i_mkfb_v')
-v_vref_2ms=$(extract_measure '^v_vref_2ms')
-v_vref_3ms=$(extract_measure '^v_vref_3ms')
-v_vbeq3_2ms=$(extract_measure '^v_vbeq3_2ms')
-v_vbeq3_3ms=$(extract_measure '^v_vbeq3_3ms')
+v_fb_v=$(extract_measure '^v_fb_v' "${LOG}")
+v_sns1_v=$(extract_measure '^v_sns1_v' "${LOG}")
+v_sns2_v=$(extract_measure '^v_sns2_v' "${LOG}")
+v_det_v=$(extract_measure '^v_det_v' "${LOG}")
+i_mkfb_a=$(extract_measure '^i_mkfb_v' "${LOG}")
+v_vref_2ms=$(extract_measure '^v_vref_2ms' "${LOG}")
+v_vref_3ms=$(extract_measure '^v_vref_3ms' "${LOG}")
+v_vbeq3_2ms=$(extract_measure '^v_vbeq3_2ms' "${LOG}")
+v_vbeq3_3ms=$(extract_measure '^v_vbeq3_3ms' "${LOG}")
 
 # Caller-local settledness bound (issue #660): the four shared closed-loop
 # verdict constants now come from sim/lib/pvt_verdict_common.sh; this one is
@@ -162,8 +162,8 @@ DVSNS_V=""
 SETTLE_DELTA=""
 if [[ ${RC} -eq 0 && -n "${v_det_v}" && -n "${i_mkfb_a}" && -n "${v_sns1_v}" \
       && -n "${v_sns2_v}" && -n "${v_fb_v}" && -n "${v_vref_2ms}" && -n "${v_vref_3ms}" ]]; then
-  DVSNS_V=$(awk -v a="${v_sns1_v}" -v b="${v_sns2_v}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
-  SETTLE_DELTA=$(awk -v a="${v_vref_2ms}" -v b="${v_vref_3ms}" 'BEGIN{d=a-b; print (d<0)?-d:d}')
+  DVSNS_V=$(abs_diff "${v_sns1_v}" "${v_sns2_v}")
+  SETTLE_DELTA=$(abs_diff "${v_vref_2ms}" "${v_vref_3ms}")
   VERDICT="$(pvt_closed_loop_verdict "${v_det_v}" "${i_mkfb_a}" "${v_fb_v}" "${DVSNS_V}" "${VDD}" "${SETTLE_DELTA}" "${SETTLE_TOL_V}")"
 fi
 
