@@ -56,6 +56,10 @@ splice_region() {
         !start || end { print }
         END { if (start != 1 || end != 1) exit 1 }
     ' WORK_PLAN.md > "$tmp" || return 1
+    # awk's print terminates the last line; keep an unterminated final line as-is.
+    if [[ -s WORK_PLAN.md && -n $(tail -c1 WORK_PLAN.md) ]]; then
+        truncate -s -1 "$tmp" || return 1
+    fi
     mv -f -- "$tmp" WORK_PLAN.md
 }
 

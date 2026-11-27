@@ -714,6 +714,31 @@ else
     fail "captured PR body missing when outside-marker edit ships"
 fi
 
+# An unterminated last line outside the markers must survive byte-for-byte (compared by blob id,
+# since command substitution would discard the trailing newline).
+git -C "$DOCS_WT" update-ref refs/remotes/origin/fixture-base HEAD || exit 1
+git -C "$DOCS_WT" restore --source=HEAD --staged --worktree -- WORK_PLAN.md WORK_LOG.md || exit 1
+"$helper" reset || exit 1
+RENDER=plan-b bash -e "$FIXTURE/update.sh" || exit 1
+truncate -s -1 "$DOCS_WT/WORK_PLAN.md" || exit 1
+echo 'unterminated-retry-log' >> "$DOCS_WT/WORK_LOG.md"
+expected_unterminated="$FIXTURE/expected-unterminated"
+git -C "$DOCS_WT" show HEAD:WORK_PLAN.md > "$expected_unterminated" || exit 1
+truncate -s -1 "$expected_unterminated" || exit 1
+expected_unterminated_blob=$(git hash-object "$expected_unterminated")
+expect_outcome current RENDER=plan-a
+assert_eq "$(git -C "$DOCS_WT" hash-object WORK_PLAN.md)" "$expected_unterminated_blob" \
+    "unterminated last line outside the markers keeps its exact bytes in the worktree"
+rm -f "$CAPTURE"
+if run_create; then
+    pass "Step 5 publishes WORK_LOG after A -> B -> A retry with an unterminated last line"
+else
+    fail "Step 5 deferred WORK_LOG after A -> B -> A retry with an unterminated last line"
+fi
+remote_head=$(git --git-dir="$FIXTURE/remote.git" rev-parse refs/heads/docs/guide-update-test)
+assert_eq "$(git --git-dir="$FIXTURE/remote.git" rev-parse "$remote_head:WORK_PLAN.md")" "$expected_unterminated_blob" \
+    "remote WORK_PLAN.md blob keeps the unterminated last line byte-for-byte"
+
 # Standalone stamp change on A is still refused by both Step 3 and Step 5.
 git -C "$DOCS_WT" update-ref refs/remotes/origin/fixture-base HEAD || exit 1
 git -C "$DOCS_WT" restore --source=HEAD --staged --worktree -- WORK_PLAN.md WORK_LOG.md || exit 1
