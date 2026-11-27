@@ -389,6 +389,10 @@ git -C "$DOCS_WT" commit -qm 'baseline docs' || exit 1
 git init -q --bare "$FIXTURE/remote.git" || exit 1
 git -C "$DOCS_WT" remote add origin https://github.com/example/fixture.git
 git -C "$DOCS_WT" remote set-url --push origin "$FIXTURE/remote.git"
+export LOOM_DEFAULT_BRANCH=fixture-base
+git -C "$DOCS_WT" update-ref refs/remotes/origin/fixture-base HEAD || exit 1
+mkdir -p "$DOCS_WT/.loom/scripts/lib"
+cp "$SCRIPT_DIR/../lib/default-branch.sh" "$DOCS_WT/.loom/scripts/lib/" || exit 1
 printf '#!/bin/sh\nexit 0\n' > "$DOCS_WT/.loom/scripts/docs-guide-lock.sh"
 chmod +x "$DOCS_WT/.loom/scripts/docs-guide-lock.sh"
 extract_step() {
@@ -448,19 +452,84 @@ run_create() {
     env -u WORK_PLAN_RECEIPT -u WORK_PLAN_RENDER_HASH bash -e -o pipefail "$FIXTURE/create.sh"
 }
 
-bash -e "$FIXTURE/update.sh" && run_create || exit 1
+# A retry in a fresh process must keep the first write's receipt and region.
+bash -e "$FIXTURE/update.sh" || exit 1
+first_plan=$(git -C "$DOCS_WT" hash-object WORK_PLAN.md)
+if ! LAST_WRITE=9700 bash "$FIXTURE/update.sh"; then fail "retry must recognize the pending write"; fi
+assert_eq "$(git -C "$DOCS_WT" hash-object WORK_PLAN.md)" "$first_plan" "retry preserves the pending rewrite byte for byte"
+assert_eq "$(cat "$DOCS_WT/.loom-work-plan-receipt")" $'receipt=written\nrender_hash=7aa7a5359173' \
+    "retry preserves the matching durable written receipt"
+run_create || exit 1
 assert_grep '^- \*\*WORK_PLAN check\*\*: written \(render-hash 7aa7a5359173, [0-9TZ:-]+\)$' \
     "$CAPTURE" "fresh Step 5 shell reports the rewritten region hash"
 assert_eq "$(grep -c '^- \*\*WORK_PLAN check\*\*:' "$CAPTURE")" 1 "exactly one receipt reaches the forge"
 assert_eq "$(sed -n '/^_Generated: /{n;p;}' "$DOCS_WT/WORK_PLAN.md")" new "the spliced region contains the rendered text"
 assert_eq "$(git -C "$DOCS_WT" diff-tree --no-commit-id --name-only -r HEAD)" WORK_PLAN.md "only the plan is committed"
 
-# A second tick omits Step 3 entirely. Run the role's tick-entry reset.
+# Simulate merge before the next tick, which omits Step 3 entirely.
+git -C "$DOCS_WT" update-ref refs/remotes/origin/fixture-base HEAD || exit 1
 TICK_RESET=$(grep -m1 '^"\$DOCS_WT/.loom/scripts/guide-work-plan.sh" reset' "$GUIDE_MD")
 [[ -n $TICK_RESET ]] && bash -ec "$TICK_RESET" || exit 1
 echo log >> "$DOCS_WT/WORK_LOG.md"
 run_create || exit 1
 assert_grep '^- \*\*WORK_PLAN check\*\*: NOT RUN \(render-hash none,' "$CAPTURE" "skipped tick cannot reuse the preceding written receipt"
+
+# Fail only the receipt write after a successful splice. Even a same-shell
+# 'written' global must not allow the staged region to escape without proof.
+helper="$DOCS_WT/.loom/scripts/guide-work-plan.sh"
+mv "$helper" "$helper.real"
+cat > "$helper" <<'FAIL_RECORD'
+#!/usr/bin/env bash
+if [[ $1 == record && $2 == written ]]; then exit 1; fi
+exec "$0.real" "$@"
+FAIL_RECORD
+chmod +x "$helper"
+if RENDER=unrecorded bash "$FIXTURE/update.sh" || git -C "$DOCS_WT" diff --quiet HEAD -- WORK_PLAN.md; then
+    fail "fixture must fail the final receipt write after changing the region"
+else
+    pass "injected failure after splice and before receipt persistence"
+fi
+mv "$helper.real" "$helper"
+unrecorded_hash=$(printf '%s\n' unrecorded | { sha256sum 2>/dev/null || shasum -a 256; } | cut -c1-12)
+expect_refusal() {
+    local message=$1 saved_head
+    shift
+    saved_head=$(git -C "$DOCS_WT" rev-parse HEAD)
+    rm -f "$CAPTURE"
+    if "$@" ||
+        [[ -e $CAPTURE || $(git -C "$DOCS_WT" rev-parse HEAD) != "$saved_head" ||
+           $(git --git-dir="$FIXTURE/remote.git" rev-parse refs/heads/docs/guide-update-test) != "$saved_head" ]]; then
+        fail "$message"
+    else
+        pass "$message"
+    fi
+}
+expect_refusal "fresh Step 5 refuses to commit, push or file the unreceipted splice" run_create
+WORK_PLAN_RECEIPT=written WORK_PLAN_RENDER_HASH="$unrecorded_hash" \
+    expect_refusal "a matching shell global cannot replace the missing receipt" bash "$FIXTURE/create.sh"
+"$helper" record current "$unrecorded_hash" || exit 1
+expect_refusal "a current receipt with the staged hash cannot authorize a changed region" run_create
+"$helper" record written 000000000000 || exit 1
+expect_refusal "a written receipt for another body cannot authorize a changed region" run_create
+# Recover by rerunning the real Step 3 and publish using its durable result.
+RENDER=unrecorded bash -e "$FIXTURE/update.sh" || exit 1
+WORK_PLAN_RECEIPT=current WORK_PLAN_RENDER_HASH=000000000000 bash -e "$FIXTURE/create.sh" || exit 1
+assert_contains "$(cat "$CAPTURE")" "written (render-hash $unrecorded_hash," "Step 5 publishes the verified staged hash despite stale globals"
+# A changed region already committed on this docs branch still needs proof.
+"$helper" reset || exit 1
+echo followup >> "$DOCS_WT/WORK_LOG.md"
+expect_refusal "Step 5 checks an earlier local plan commit against the branch base" run_create
+git -C "$DOCS_WT" update-ref refs/remotes/origin/fixture-base HEAD || exit 1
+# A change outside the markers can ship on a tick that skipped Step 3.
+echo footer >> "$DOCS_WT/WORK_PLAN.md"
+run_create || exit 1
+assert_contains "$(cat "$CAPTURE")" 'NOT RUN (render-hash none,' "outside-only plan edit can ship on a skipped tick"
+sed 's/^_Generated: .* (snapshot/_Generated: 2000-01-01T00:00:00Z (snapshot/' \
+    "$DOCS_WT/WORK_PLAN.md" > "$FIXTURE/stamp-only"
+cp "$FIXTURE/stamp-only" "$DOCS_WT/WORK_PLAN.md"
+"$helper" record written "$unrecorded_hash" || exit 1
+expect_refusal "a matching body hash cannot authorize a stamp-only edit" run_create
+git -C "$DOCS_WT" restore --source=HEAD --staged --worktree -- WORK_PLAN.md || exit 1
 
 # A deferred tick restores just the documents it staged, including a new archive.
 mkdir -p "$DOCS_WT/work_log"
@@ -485,7 +554,7 @@ expect_outcome() {
     fi
     assert_eq "$(sed -n 's/^receipt=//p' "$DOCS_WT/.loom-work-plan-receipt")" "$expected" "recorded $expected"
 }
-expect_outcome current
+expect_outcome current RENDER=unrecorded
 expect_outcome 'debounced (elapsed 300s < window 3600s)' RENDER=different LAST_WRITE=9700
 expect_outcome provenance-refused 'RENDER=- **#1**: unavailable'
 git -C "$DOCS_WT" diff --exit-code -- WORK_PLAN.md || exit 1
@@ -534,6 +603,7 @@ done
 
 # Establish a complete plan, then fail one listing or its JSON transformation.
 run_create || exit 1
+git -C "$DOCS_WT" update-ref refs/remotes/origin/fixture-base HEAD || exit 1
 failures=(READY_JSON=malformed)
 for label in very-important important issue building review-requested pr curated architect hermit epic; do
     failures+=("FAIL_LIST=loom:$label")

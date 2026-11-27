@@ -2189,9 +2189,9 @@ verify_plan_provenance() {
 update_work_plan() {
   WORK_PLAN_RECEIPT="NOT RUN"
   WORK_PLAN_RENDER_HASH=""
-  "$DOCS_WT/.loom/scripts/guide-work-plan.sh" reset || return 1
   if jq -e '(.guide.docsMaintenance.skipDocs // []) | arrays | index("WORK_PLAN.md") != null' \
       "$DOCS_WT/.loom/config.json" >/dev/null; then
+    "$DOCS_WT/.loom/scripts/guide-work-plan.sh" reset || return 1
     return 1
   fi
 
@@ -2247,9 +2247,23 @@ update_work_plan() {
     "$DOCS_WT/WORK_PLAN.md" 2>/dev/null | sed '1d;$d' | strip_plan_stamp)"
 
   if [ "$new_body" = "$old_body" ]; then
-    record_work_plan_receipt "current"
-    echo "WORK_PLAN.md is current (no label changes detected)."
-    return 1
+    # A retry can see Step 3's own pending write in the worktree. Keep
+    # its durable receipt. If persistence failed, retry the gated write.
+    local pending_hash
+    if pending_hash="$("$DOCS_WT/.loom/scripts/guide-work-plan.sh" check-written worktree)"; then
+      if [ -z "$pending_hash" ]; then
+        record_work_plan_receipt "current"
+        echo "WORK_PLAN.md is current (no label changes detected)."
+        return 1
+      fi
+      if [ "$pending_hash" = "$WORK_PLAN_RENDER_HASH" ]; then
+        WORK_PLAN_RECEIPT="written"
+        return 0
+      fi
+    elif [ "$?" -ne 3 ]; then
+      record_work_plan_receipt "write-failed"
+      return 1
+    fi
   fi
 
   # #5890 HYSTERESIS, DO NOT REMOVE: a rendered diff alone used to be
@@ -2547,6 +2561,15 @@ create_docs_pr() {
     return
   fi
 
+  # Snapshot the receipt for the staged region before committing. The
+  # validator reads the index and the durable Step 3 receipt together.
+  local staged_plan_hash
+  if ! staged_plan_hash="$("$DOCS_WT/.loom/scripts/guide-work-plan.sh" check-written staged)"; then
+    echo "Cannot verify the staged WORK_PLAN.md region. Docs PR deferred." >&2
+    ./.loom/scripts/docs-guide-lock.sh release
+    return 1
+  fi
+
   # Commit locally first — deliberately BEFORE pushing, so the cross-host
   # recheck below can bail out without ever pushing a branch or opening a PR
   # (nothing to clean up on the remote if it does; docs-worktree.sh resets
@@ -2621,7 +2644,10 @@ PRBODY
 )"
   # Recover Step 3's receipt when Step 5 runs in a fresh shell.
   local wp_receipt="${WORK_PLAN_RECEIPT:-}" wp_hash="${WORK_PLAN_RENDER_HASH:-}" wp_file_val
-  if [ -z "$wp_receipt" ] || [ "$wp_receipt" = "NOT RUN" ]; then
+  if [ -n "${staged_plan_hash:-}" ]; then
+    wp_receipt=written
+    wp_hash="$staged_plan_hash"
+  elif [ -z "$wp_receipt" ] || [ "$wp_receipt" = "NOT RUN" ]; then
     wp_hash=""
     wp_file_val="$(read_work_plan_receipt_field receipt)"
     if [ -n "$wp_file_val" ]; then
@@ -2673,7 +2699,9 @@ PRBODY
 
 The `WORK_PLAN check:` line is the PR body's only plan-status claim. A fresh
 Step 5 shell loads the reader above and uses the same docs worktree as Step 3.
-A tick with no recorded check emits `NOT RUN` with hash `none`.
+Before committing a changed region, Step 5 verifies the durable `written`
+receipt against the staged content and uses that verified hash in the PR body.
+A tick with no recorded check emits `NOT RUN` with hash `none` when the region is unchanged.
 
 ### Document Maintenance Summary
 
