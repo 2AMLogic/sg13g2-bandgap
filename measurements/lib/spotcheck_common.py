@@ -108,7 +108,8 @@ def iq_signed_grade(rec):
     (negative while the supply delivers current), `iq_2ms_a` and `iq_3ms_a`
     are magnitudes, and `value - limits.min` reproduces the stored margin,
     whose sign agrees with the recorded grade. The rollup must carry the
-    ratified lower limit and name a corner with the grid's smallest margin.
+    ratified lower limit, reproduce the signed value and derived margin at
+    a smallest-margin corner, and pass exactly when every corner passes.
     Raises ValueError naming the corners whose grade does not re-derive, so
     an envelope whose average was rewritten to a magnitude (the shape before
     #648) cannot be quoted as passing.
@@ -119,7 +120,6 @@ def iq_signed_grade(rec):
     if limits_min != IQ_LIMITS_MIN:
         raise ValueError(f"limits.min {limits_min:.6g}, not -5e-05")
     problems = []
-    margins = {}
     grades = {}
     for corner in report["corners"]:
         cid = corner["corner_id"]
@@ -132,24 +132,37 @@ def iq_signed_grade(rec):
             if not got[name]["value"] >= 0:
                 problems.append(f"{cid}: {name} {got[name]['value']:.6g} is not a magnitude")
         derived = value - limits_min
-        if not math.isclose(derived, margin, rel_tol=1e-9, abs_tol=1e-18):
+        if (derived >= 0) != (margin >= 0) or not math.isclose(derived, margin, rel_tol=1e-9, abs_tol=1e-18):
             problems.append(f"{cid}: margin {margin:.6g} differs from avg - limits.min {derived:.6g}")
-        if (margin >= 0) != (status == "pass"):
-            problems.append(f"{cid}: margin {margin:.6g} but status {status}")
-        margins[cid] = margin
-        grades[cid] = status
-    smallest = min(margins.values())
+        expected_status = "pass" if derived >= 0 else "fail"
+        if status != expected_status:
+            problems.append(f"{cid}: derived margin {derived:.6g} but status {status}")
+        grades[cid] = (value, derived)
+    smallest = min(margin for _, margin in grades.values())
+    grid_status = "pass" if smallest >= 0 else "fail"
+    if rollup["status"] != grid_status:
+        problems.append(f"rollup status {rollup['status']}, expected {grid_status}")
     worst = rollup["worst_case"]
-    if worst["corner_id"] not in {cid for cid, m in margins.items() if m == smallest}:
-        problems.append(f"rollup worst case names {worst['corner_id']}, whose margin "
-                        f"{margins.get(worst['corner_id'], float('nan')):.6g} is not the smallest {smallest:.6g}")
+    binding = worst["corner_id"]
+    if binding not in grades:
+        problems.append(f"rollup worst case names unknown corner {binding}")
+    else:
+        binding_value, binding_margin = grades[binding]
+        if binding_margin != smallest:
+            problems.append(f"rollup worst case names {binding}, whose margin "
+                            f"{binding_margin:.6g} is not the smallest {smallest:.6g}")
+        if worst["value"] != binding_value:
+            problems.append(f"rollup worst_case.value {worst['value']} differs from "
+                            f"{binding} avg {binding_value:.6g}")
+        if not math.isclose(worst["margin"], binding_margin, rel_tol=1e-9):
+            problems.append(f"rollup worst_case.margin {worst['margin']} differs from "
+                            f"{binding} derived margin {binding_margin:.6g}")
     if problems:
         raise ValueError("Iq grade does not re-derive: " + "; ".join(problems[:5]))
-    binding = worst["corner_id"]
     say("Iq signed grade",
-        f"{len(margins)}/{len(margins)} corners re-derived (avg < 0, samples >= 0, margin = avg - limits.min); "
-        f"limits.min {limits_min:.6g} A; binding {binding}: avg {worst['value']:.6g} A, "
-        f"margin {worst['margin']:.6g} A, {grades[binding]}; rollup names a smallest-margin corner")
+        f"{len(grades)}/{len(grades)} corners re-derived (avg < 0, samples >= 0, margin = avg - limits.min); "
+        f"limits.min {limits_min:.6g} A; binding {binding}: avg {binding_value:.6g} A, "
+        f"margin {binding_margin:.6g} A, {grid_status}; rollup names a smallest-margin corner")
 
 
 def startup(rec, ttr_rec, trip_pex_rec):

@@ -78,54 +78,83 @@ class IqSpotcheckTests(unittest.TestCase):
 
 
 class IqSignedGradeTests(unittest.TestCase):
-    def check(self, corners, **kwargs):
+    def check(self, envelope):
         with tempfile.TemporaryDirectory() as tmp:
             record = Path(tmp) / "iq"
             record.with_name("iq-report.json").write_text(
-                json.dumps(iq_envelope(corners, **kwargs)), encoding="utf-8")
+                json.dumps(envelope), encoding="utf-8")
             with contextlib.redirect_stdout(io.StringIO()) as output:
                 iq_signed_grade(str(record))
             return output.getvalue().strip()
 
     def test_rederives_every_corner_and_the_binding_corner(self):
-        self.assertEqual(self.check(SIGNED), LINE)
+        self.assertEqual(self.check(iq_envelope(SIGNED)), LINE)
 
     def test_rollup_may_name_either_of_two_equally_binding_corners(self):
         tied = SIGNED + [("typ/125C/3.63V", -4.17771e-05, 4.17771e-05, 8.2229e-06, "pass")]
-        self.assertIn("rollup names a smallest-margin corner", self.check(tied))
+        envelope = iq_envelope(tied)
+        for corner_id in (SIGNED[1][0], tied[-1][0]):
+            with self.subTest(corner_id=corner_id):
+                envelope["measurements"][-1]["worst_case"]["corner_id"] = corner_id
+                self.assertIn(f"binding {corner_id}: avg -4.17771e-05 A", self.check(envelope))
+
+    def test_refuses_a_rollup_with_the_wrong_binding_value_or_margin(self):
+        for field in ("value", "margin"):
+            with self.subTest(field=field):
+                envelope = iq_envelope(SIGNED)
+                worst = envelope["measurements"][-1]["worst_case"]
+                worst[field] = -worst[field]
+                with self.assertRaisesRegex(ValueError, rf"rollup worst_case\.{field}"):
+                    self.check(envelope)
+
+    def test_rollup_status_must_match_the_grade_across_corners(self):
+        envelope = iq_envelope(SIGNED)
+        envelope["measurements"][-1]["status"] = "fail"
+        with self.assertRaisesRegex(ValueError, "rollup status fail.*expected pass"):
+            self.check(envelope)
+
+        envelope = iq_envelope(SIGNED + [("sf/27C/3.30V", -6e-05, 6e-05, -1e-05, "fail")])
+        envelope["measurements"][-1]["status"] = "fail"
+        self.assertIn("margin -1e-05 A, fail", self.check(envelope))
+        envelope["measurements"][-1]["status"] = "pass"
+        with self.assertRaisesRegex(ValueError, "rollup status pass.*expected fail"):
+            self.check(envelope)
 
     def test_refuses_the_pre_648_magnitude_rewritten_envelope(self):
         # The November 22 shape: the average was rewritten to a magnitude
         # while the margin stayed the one graded from the signed value.
         rewritten = [("bcs/125C/3.63V", 4.17771e-05, 4.17771e-05, 8.2229e-06, "pass")]
         with self.assertRaisesRegex(ValueError, "bcs/125C/3.63V: iq_avg_a 4.17771e-05"):
-            self.check(rewritten)
+            self.check(iq_envelope(rewritten))
 
     def test_refuses_a_negative_time_sample(self):
         with self.assertRaisesRegex(ValueError, "sf/27C/3.30V: iq_2ms_a -2.76224e-05 is not a magnitude"):
-            self.check(SIGNED + [("sf/27C/3.30V", -2.76224e-05, -2.76224e-05, 2.23776e-05, "pass")])
+            self.check(iq_envelope(SIGNED + [("sf/27C/3.30V", -2.76224e-05, -2.76224e-05, 2.23776e-05, "pass")]))
 
     def test_refuses_a_margin_that_does_not_rederive(self):
         with self.assertRaisesRegex(ValueError, "margin 1e-05 differs from avg - limits.min"):
-            self.check(SIGNED + [("sf/27C/3.30V", -2.76224e-05, 2.76224e-05, 1e-05, "pass")])
+            self.check(iq_envelope(SIGNED + [("sf/27C/3.30V", -2.76224e-05, 2.76224e-05, 1e-05, "pass")]))
 
     def test_refuses_a_margin_whose_sign_disagrees_with_the_grade(self):
         with self.assertRaisesRegex(ValueError, "margin -1e-05 but status pass"):
-            self.check(SIGNED + [("sf/27C/3.30V", -6e-05, 6e-05, -1e-05, "pass")])
+            self.check(iq_envelope(SIGNED + [("sf/27C/3.30V", -6e-05, 6e-05, -1e-05, "pass")]))
+
+    def test_rounded_corner_margin_cannot_cross_the_pass_threshold(self):
+        envelope = iq_envelope([("typ/27C/3.30V", -5e-05, 5e-05, 0.0, "pass")])
+        self.assertIn("margin 0 A, pass", self.check(envelope))
+        envelope["corners"][0]["measurements"][-1]["margin"] = -1e-19
+        with self.assertRaisesRegex(ValueError, "margin -1e-19 differs"):
+            self.check(envelope)
 
     def test_refuses_a_rollup_that_names_a_corner_that_is_not_binding(self):
         envelope = iq_envelope(SIGNED)
-        envelope["measurements"][-1]["worst_case"] = dict(envelope["measurements"][-1]["worst_case"],
-                                                          corner_id="wcs/-40C/2.97V")
-        with tempfile.TemporaryDirectory() as tmp:
-            record = Path(tmp) / "iq"
-            record.with_name("iq-report.json").write_text(json.dumps(envelope), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "rollup worst case names wcs/-40C/2.97V"):
-                iq_signed_grade(str(record))
+        envelope["measurements"][-1]["worst_case"]["corner_id"] = "wcs/-40C/2.97V"
+        with self.assertRaisesRegex(ValueError, "rollup worst case names wcs/-40C/2.97V"):
+            self.check(envelope)
 
     def test_refuses_any_other_lower_limit(self):
         with self.assertRaisesRegex(ValueError, "limits.min -4e-05, not -5e-05"):
-            self.check(SIGNED, limits_min=-4e-05)
+            self.check(iq_envelope(SIGNED, limits_min=-4e-05))
 
 
 if __name__ == "__main__":
