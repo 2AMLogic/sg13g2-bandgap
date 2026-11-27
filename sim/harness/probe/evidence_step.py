@@ -34,6 +34,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -46,6 +47,12 @@ PROBE = "run_probe.sh"
 CHECKER = Path(".github") / "scripts" / "check_evidence_formats.py"
 DUT_NETLIST = Path("design") / "netlist" / "bandgap_core.spice"
 PRODUCER = {"tool": PROBE, "version": "0", "loom.repo": "scratch", "commit": None}
+# A .lib selection has a file operand followed by a section on the same line.
+# Only the directive is case-insensitive. The placeholder is literal.
+PDK_MODEL_CARD = re.compile(
+    r"""^[ \t]*(?i:\.lib)[ \t]+(["']?)\$\{PDK_ROOT\}/[^\s"']+\1[ \t]+[\w.-]+""",
+    re.MULTILINE,
+)
 
 
 class ProbeStore(es.Store):
@@ -139,7 +146,7 @@ def verify_snapshots(checker, checkout: Path, experiment: Path, rid: str,
                 f"{PROBE}: the snapshot does not inline the DUT's own devices, so the D2 "
                 f"freshness rule cannot see them (first missing: {absent[:5]})"
             )
-        if kse.PDK_ROOT_PLACEHOLDER not in snapshot:
+        if not PDK_MODEL_CARD.search(snapshot):
             raise SystemExit(
                 f"{PROBE}: snapshot carries no ${{PDK_ROOT}}-relative model-library card"
             )

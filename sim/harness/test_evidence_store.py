@@ -510,10 +510,13 @@ class ProbeEvidenceStepTests(TempDirCase):
         self.assertIn("first missing: ['XQ1']", str(ctx.exception))
 
     def test_snapshot_without_a_pdk_root_model_path_fails(self) -> None:
+        self.write_run(model_lib=False)
+        with (self.work / "body.spice").open("a", encoding="utf-8") as body:
+            body.write('* .lib "${PDK_ROOT}/ihp-sg13g2/libs.tech/ngspice/models/cornerHBT.lib" hbt_typ\n')
         out = io.StringIO()
         with self.production_store_guarded(), contextlib.redirect_stdout(out), \
                 self.assertRaises(SystemExit) as ctx:
-            self.replay(model_lib=False)
+            self.run_step(None)
         self.assertIn("check_record() on the adapter's output: ok", out.getvalue())
         self.assertIn("${PDK_ROOT}", str(ctx.exception))
 
