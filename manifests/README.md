@@ -137,7 +137,7 @@ The binding used here:
   `records/<id>-report.json` of `sim/closed-loop-vref-pvt`
   (`20261122-181757-c5b84561`), `sim/closed-loop-psrr`
   (`20261122-182058-1d0308ad`), `sim/closed-loop-iq`
-  (`20261122-181711-c5b84561`) and `sim/startup-time-to-release`
+  (`20261127-000000-b092b294`) and `sim/startup-time-to-release`
   (`20261122-183926-90e8e4dd`), each carrying its row's ratified bound as a
   request-level `limits` on the measurement that measures it (with a
   `spec_row` tag), so the run's own report grades the row — the envelope's
@@ -151,7 +151,12 @@ The binding used here:
   `output-reference-nominal` (settled `vref_3ms_v` ∈ [0.882, 1.218] V at
   every corner — the ±16 % window of the 1.050 V nominal, DR-0011's
   *deterministic PVT-extent half*; the 3σ mismatch half is item 6's), `iq`
-  (`iq_avg_a ≥ −50 µA`, worst 41.78 µA at bcs/125 °C/3.63 V) and `startup`
+  (`iq_avg_a ≥ −50 µA` on the signed average: the binding value is
+  −41.7771 µA at bcs/125 °C/3.63 V and its margin 8.2229 µA is that value
+  minus `limits.min`, so the envelope's value, limit and margin re-derive
+  each other — the 27 November re-run on the #648 generator, #653; the
+  superseded `20261122-181711-c5b84561` envelope paired the same margin with
+  a +41.7771 µA magnitude) and `startup`
   (`i_mkfb_1000u_a` within ±50 nA at the spec's own 1 ms checkpoint, worst
   0.183 nA; the ladder bench — not `closed-loop-startup` — is the Startup
   citation precisely because its request can carry the 1 ms bound, and its
@@ -269,11 +274,11 @@ The binding used here:
   `vss` (needs klayout-tools#2354). That residue is *not* resolved by #240's
   closure; either reopen that work or fix it when the port is next touched.
 
-- **Item 8 (Characterization report) — cited: `measurements/2026-11-23-characterization-report/envelope.json`**
+- **Item 8 (Characterization report) — cited: `measurements/2026-11-27-characterization-report/envelope.json`**
   (#300; `generic` envelope, `t1_item: 8`, `provenance.input.path` =
   `README.md` beside it, pinned to that report's sha256). The report is
-  [`measurements/2026-11-23-characterization-report/README.md`](../measurements/2026-11-23-characterization-report/README.md),
-  stamped at audited commit `275bdc18`. It uses the N=1,200 untrimmed
+  [`measurements/2026-11-27-characterization-report/README.md`](../measurements/2026-11-27-characterization-report/README.md),
+  stamped at audited commit `a1a3a3ef`. It uses the N=1,200 untrimmed
   campaign (#635) and the four limit-graded corner grids (#629), with
   one entry per row of
   the `README.md` target-spec table (the Output-reference row as its
@@ -302,7 +307,7 @@ The binding used here:
   freshness is tested, not assumed). The pin alone would not notice the
   report's *dependencies* moving while its bytes stay put, so since #315 the
   report also carries a machine-readable dependency inventory,
-  [`dependencies.json`](../measurements/2026-11-23-characterization-report/dependencies.json),
+  [`dependencies.json`](../measurements/2026-11-27-characterization-report/dependencies.json),
   checked by `.github/scripts/check_report_dependencies.py` (see "Item-8
   dependency drift" below): a change to an audited DUT netlist, a spec-table
   bound, a quoted decision-record status, or a newer record in a summarized
@@ -314,7 +319,8 @@ The binding used here:
   `2026-11-16-characterization-report/`,
   `2026-11-18-characterization-report/`,
   `2026-11-18-klu-retime-characterization-report/`,
-  `2026-11-22-item5-limits-characterization-report/`)
+  `2026-11-22-item5-limits-characterization-report/`,
+  `2026-11-23-characterization-report/`)
   are superseded and kept as history; none is required to track newer
   inputs. The list is self-maintaining by rule — every
   `measurements/*characterization-report/` directory except the one

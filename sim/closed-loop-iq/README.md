@@ -78,10 +78,9 @@ aids were adding — i.e. the trim ladder does not add quiescent current
 (its 255 series segments carry the same single output-branch current the
 monolithic `XR1` carried, and its strap devices are 1 mΩ/1 TΩ series
 elements, not current paths). Every point stays below
-`spec/porting-plan.md` §6's still-unratified `< 50 µA` draft target, which
-this bench reports as context rather than as a pass/fail claim (see §"What
-this testbench claims" above). The band quoted in §"Results summary" below
-is an earlier record's.
+`spec/porting-plan.md` §6's `< 50 µA` target, which this historical record
+reports as context. The 19.98–42.37 µA band quoted in §"Historical results"
+below comes from the first, pre-trim record.
 
 ## What this testbench claims, and what it does not
 
@@ -94,10 +93,11 @@ real, steady total current from `vdd`: confirmed by measuring `i(Vvdd)` at
 two separated time points (`t=2ms` and `t=3ms`) and requiring
 `|i(Vvdd)(3ms)-i(Vvdd)(2ms)| <= 100 nA` before trusting the reading — a
 genuine settled quiescent current, not a still-slewing transient snapshot.
-It also reports the average of `i(Vvdd)` over the same `[2ms, 3ms]` window
-(`iq_avg_a` in the CSV) as this experiment's headline number, which for a
-point that has already settled exactly (as every point in this run's own
-committed record does) equals the two endpoint readings.
+The headline measurement, `iq_avg_a`, is the signed average of `i(Vvdd)`
+over the same `[2ms, 3ms]` window. It is negative while the supply delivers
+current and ships with the sign `klt sim` graded it with. The two samples,
+`iq_2ms_a` and `iq_3ms_a`, are reported as magnitudes; for a constant
+current each equals the absolute value of the average.
 
 `Vvdd` is not an added fixture — it is the same transient supply-ramp source
 `../closed-loop-startup/` and `../closed-loop-vref-pvt/` already drive the
@@ -107,12 +107,15 @@ reads a current without adding a new device to the circuit under test.
 
 **Since issue #629 it does claim conformance — graded by the run itself.**
 The spec table is ratified (`spec/decision-records/0007`; the `< 50 µA` Iq
-row included), and the request template now carries that bound as a limit
-on `iq_avg_a` (`min` −5e-5 A, `spec_row iq`), so the run's own report
-grades the row and the committed `records/<record-id>-report.json` is the
-citable T1 item-5 envelope. The current envelope passes 45/45 (worst
-41.78 µA at bcs/125 °C/3.63 V, margin 16.4 % to 50 µA; see
-`records/<record-id>.csv` for the full per-point table).
+row included), and the request template carries that bound as a limit on
+`iq_avg_a` (`min` −5e-5 A, `spec_row iq`), so the run's own report grades
+the row and the committed `records/<record-id>-report.json` is the citable
+T1 item-5 envelope. The current envelope,
+`records/20261127-000000-b092b294-report.json`, passes 45/45. Its rollup
+names bcs/125 °C/3.63 V as the binding corner, with the signed average
+−41.7771 µA and a margin of 8.2229 µA — the binding average minus the
+lower limit, 16.4 % of 50 µA. See `records/<record-id>.csv` for the full
+per-point table.
 
 It also does not claim anything about loop stability/phase margin (see
 [`../loop-gain-phase-margin/`](../loop-gain-phase-margin/README.md)),
@@ -140,12 +143,13 @@ differences from `../closed-loop-vref-pvt/`'s own template:
    `SETTLE_TOL_V = 1 mV`) — same discipline, different unit, chosen relative
    to this design's own measured Iq scale (tens of µA — 100 nA is well under
    1% of the smallest measured point).
-3. **Iq is reported as a magnitude.** `Vvdd` is an independent voltage
-   source, so ngspice's passive sign convention reports `i(Vvdd)` negative
-   while it delivers (rather than absorbs) current to the circuit —
-   `run_pvt_sweep.sh` (removed in #438) takes the absolute value before writing the CSV, the
-   same sign-handling convention this template's own `i(Vmkfb)` measurement
-   already needs.
+3. **Iq sign convention.** `Vvdd` is an independent voltage source, so
+   ngspice's passive sign convention reports `i(Vvdd)` negative while it
+   delivers (rather than absorbs) current to the circuit. Records through
+   `20261122-181711-c5b84561` report all three currents as magnitudes.
+   Since #648 the report keeps `iq_avg_a` signed, as `klt sim` graded it
+   against its limit, so its margin is `iq_avg_a - limits.min`; `iq_2ms_a`
+   and `iq_3ms_a` carry no limit and are still reported as magnitudes.
 
 Every other convention (device-for-device netlist copy, corner-label
 vocabulary, `rshunt`/`gmin` convergence aids, `vdd` ramp shape, evidence-
@@ -189,7 +193,7 @@ Same corner-label vocabulary and section pairing as
 x temperature `{-40, 27, 125} °C` x supply `{2.97, 3.30, 3.63} V` = 45
 points.
 
-## Results summary (this repo's own committed record)
+## Historical results (record `20260826-152134-9b7a6de`)
 
 45/45 points PASS. Across all 45 points, the settled quiescent Iq
 (`iq_avg_a`) ranges **19.98-42.37 µA**, rising with temperature (as expected
@@ -205,6 +209,50 @@ above, this range happens to sit below `spec/porting-plan.md` §6's draft
 `< 50 µA` target at every point in this run — offered as context, not as a
 pass/fail claim (see "What this testbench claims" above).
 
+## Results (record `20261127-000000-b092b294`)
+
+The first record minted with the #648 generator. Until #646 the enrichment
+pass rewrote `iq_avg_a` to a magnitude after `klt sim` had graded the limit
+on the signed value, so the committed envelope paired `limits.min = -5e-5 A`
+with `worst_case.value = +4.17771e-05 A` and a stored margin of 8.2229e-06 A
+that those two do not re-derive (4.17771e-05 minus −5e-5 is 9.17771e-05).
+This record ships the grade exactly as `klt sim` computed it.
+
+45/45 points PASS over the same 45 (process, supply, temperature) triples
+as every earlier record. Recomputed from the two CSVs, the grid is identical
+to `20261122-181711-c5b84561` in every cell except the sign of `iq_avg_a`
+(45 rows x 17 columns; the sign flips in all 45 rows and nothing else moves,
+`i_mkfb_a` included). `|iq_avg_a|` still ranges 19.577-41.777 µA, with
+2/45 points under the 20 µA stretch (wcs/-40 °C at 2.97 V and 3.30 V), and
+`iq_settle_delta_a` reads 0 at all 45 points.
+
+The signed grade, read from the committed report at all 45 corners:
+
+- `iq_avg_a` is negative at every corner — ngspice's own sign for
+  `i(Vvdd)`, visible in the stored logs' `.meas` lines — and `iq_2ms_a` /
+  `iq_3ms_a` are nonnegative, each equal to `|iq_avg_a|` at six significant
+  figures.
+- The rollup carries `limits.min = -5e-5 A`. At every corner
+  `iq_avg_a - limits.min` equals the stored margin; every margin is positive
+  and every recorded status is `pass`.
+- The binding corner is bcs/3.63 V/125 °C: signed value −4.17771e-05 A
+  against the −5e-5 A lower limit, margin 8.2229e-06 A, status `pass`. It
+  holds the grid's smallest margin and is the corner the rollup's
+  `worst_case` names.
+
+The run was one `klt sim --batch-set` of the 15 requests with 2 in flight
+(`PEX_BATCH_MAX_IN_FLIGHT=2`, the November 22 record's dispatch): 45 fleet
+jobs on spot instances, ngspice 47, 77-131 s elapsed per job, submitted
+2026-11-26T23:36:42Z and complete by 23:57:49Z. 72 of the 90 stored objects
+are byte-identical to the November 22 run's; the other 18 are ngspice logs
+whose early-ramp `OSDI(debug)` warnings interleave in a different order.
+The 39 recovered `singular_matrix` warnings fall on the same corners and
+nodes as on November 22. `klt sim` warned that the request's conservative
+serial job bound (`timeout_s` 1800 s x 3 units) exceeds the fleet's 3600 s
+job ceiling; no job ran longer than 131 s. The current characterization
+report's `spotcheck.py` re-derives the signed grade from the committed
+report on every CI run.
+
 ## Running
 
 ```bash
@@ -219,7 +267,7 @@ sim/closed-loop-iq/run_klt_sim.sh --record    # mint records/ from the enriched 
 `run_klt_sim.sh` is the cold-start path (issue #414, on the harness described in
 `sim/harness/README.md`; it follows `../closed-loop-vref-pvt-boxtc/run_klt_sim.sh`).
 `--sanity` is a single local corner and must land on the newest committed
-record's `iq_avg_a` 2.80682e-05 A and `fb_v` 2.49682 V; `--batch` runs that gate first, then submits the grid as 15
+record's `|iq_avg_a|` 2.80682e-05 A and `fb_v` 2.49682 V; `--batch` runs that gate first, then submits the grid as 15
 requests (5 processes x 3 supplies, 3 temperatures each) and records the batch
 job ids in the report's `environment.remote`; a partial grid is refused by the
 shard merger and cannot be recorded. The DUT is the schematic, carried in

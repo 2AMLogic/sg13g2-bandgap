@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "kind": "generic",
+  "status": "pass",
+  "t1_item": 8,
+  "summary": "Characterization of all seven specification rows at audited commit a1a3a3ef. The N=1200 untrimmed campaign gives a worst-case 3-sigma total of 14.95% at bcs/125 C. All five yield lower bounds exceed 3. Item 6 is unmet with partial coverage because the trimmed row remains a gap (#303). The four item-5 corner envelopes include a measured PSRR failure at 59.685 dB against >60 dB. The Iq envelope's grade re-derives from its signed average at all 45 corners. Three post-layout benches predate the current extraction. Item 8 passes for coverage of the specification and traceability to the cited records.",
+  "source": "README.md",
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": null,
+    "pdk": null,
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:671aca8d0adc3e95072a5e8d2a23c9cfe7d3a1e8b24d60437afb3c74d644afb9",
+      "path": "README.md"
+    }
+  }
+}

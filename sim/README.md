@@ -720,10 +720,11 @@ whichever of those trackers owns them.
   topology `closed-loop-vref-pvt` uses, but measuring total `vdd` current
   (`i(Vvdd)`, held and re-checked at both `t=2ms` and `t=3ms` to confirm it
   has genuinely stopped moving) instead of `vref`'s DC value. 45/45 PVT
-  points PASS; settled Iq ranges 19.98-42.37 µA, rising with temperature and
-  supply as expected for a `VBE`-referenced bias network — not a claim
-  against `spec/porting-plan.md` §6's still-unratified `Iq < 50 µA` draft
-  target (#125); see that experiment's README for the full disclaimer.
+  points PASS on the newest record; since #629 the run grades the ratified
+  `Iq < 50 µA` row itself, and that record (`20261127-000000-b092b294`)
+  ships the graded `iq_avg_a` signed, so the envelope's value, limit and
+  margin re-derive each other — see that experiment's README for the
+  measured band and the sign convention.
 - **[`startup-time-to-release/`](startup-time-to-release/README.md)** — a
   direct follow-up to `closed-loop-startup` (epic #4's T1 checklist item 5):
   PR #128's EE-key review found no committed testbench reports an explicit
