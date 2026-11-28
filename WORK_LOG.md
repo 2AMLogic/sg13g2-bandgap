@@ -12,6 +12,10 @@ Entries are grouped by date, newest first. Each entry references a merged PR or 
 
 ### 2026-11-27
 
+- **Issue #767** (closed): Remove stale pre-fold floorplan notes from the SG13CMOS5L core generator
+- **PR #769**: docs(layout): describe the folded CMOS5L core routing
+- **Issue #764** (closed): Consolidate the nine LVS reference output calls
+- **PR #765**: refactor: share the LVS writer and derive paths from cell names
 - **Issue #758** (closed): Guide defers a WORK_LOG update when a plan retry returns to the committed snapshot
 - **PR #762**: fix(guide): restore base WORK_PLAN region on same-tick retry
 - **Issue #754** (closed): Update the installed Guide to emit a verifiable WORK_PLAN receipt on docs PRs
