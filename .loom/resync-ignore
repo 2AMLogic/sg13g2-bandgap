@@ -15,10 +15,8 @@ scripts/tests/test-tracker-state-comment.sh
 #   MET on the tested worker only, the daemon half: the loom-daemon 0.20.37
 #     checked by the Builder ships the verbs upstream's Guide calls since
 #     2AMLogic/loom#15222 (merged 2026-11-24): `guide work-plan-receipt
-#     {record,reset,read}` and `guide work-plan-splice`. Not every worker has
-#     it: the review worker's `loom-daemon --version` was 0.19.1313 and
-#     `loom-daemon guide --help` failed with "unrecognized subcommand
-#     'guide'". Treat the daemon prerequisite as unmet until verified per host.
+#     {record,reset,read}` and `guide work-plan-splice`. Treat the daemon
+#     prerequisite as unmet until verified per host.
 #   NOT MET, the Guide half: upstream's Guide fails the pinned receipt suite.
 #     Run in a scratch tree against 2AMLogic/loom f0c91dfac (v0.20.50),
 #     test-guide-work-plan-receipt.sh exits 1 and the attention-fold suite
