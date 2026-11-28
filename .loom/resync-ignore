@@ -7,10 +7,39 @@
 scripts/tracker-state-comment.sh
 scripts/tests/test-tracker-state-comment.sh
 
-# #754: the Guide receipt backport runs with the installed v0.19.1313 daemon.
-# Retire these pins and the helper once the daemon and Guide include
-# rjwalters/loom#15222 and pass this backport's receipt suite, including
-# listing failures, SSH origins, same-tick retries and receipt-write failures.
+# #754 (closed 2026-11-27): these six Guide surfaces carry this repo's
+# WORK_PLAN receipt backport (250d1413, 80bbfbb6, 6cc8be40, f25a4968,
+# 76e7e260), so a resync must leave them alone.
+#
+# Retirement condition, re-verified 2026-11-28:
+#   MET, the daemon half: the installed loom-daemon (0.20.37 when checked)
+#     ships the verbs upstream's Guide calls since 2AMLogic/loom#15222
+#     (merged 2026-11-24): `guide work-plan-receipt {record,reset,read}` and
+#     `guide work-plan-splice`.
+#   NOT MET, the Guide half: upstream's Guide fails the pinned receipt suite.
+#     Run in a scratch tree against 2AMLogic/loom f0c91dfac (v0.20.50),
+#     test-guide-work-plan-receipt.sh exits 1 and the attention-fold suite
+#     passes. Upstream still lacks:
+#       * ssh:// origin resolution and the render-failed /
+#         debounce-check-failed guards that keep the last good plan when a
+#         listing or the debounce history lookup fails (80bbfbb6);
+#       * same-tick A -> B -> A retry restoration of the exact base region
+#         and its written receipt (f25a4968, 76e7e260);
+#       * the Step 5 `check-written` gate against a splice whose receipt
+#         never persisted (6cc8be40). Upstream Step 5 also calls
+#         read_work_plan_receipt_field, defined only in its Step 3 block, so
+#         a fresh Step 5 shell stops with "command not found" after
+#         committing and pushing.
+#     Upstream's receipt suite ends at Test 7 and it ships no
+#     scripts/guide-work-plan.sh.
+#   Known drift while pinned: upstream's parse_dependencies() reads the park
+#     record through `loom-daemon park-record parse` (#13895) and masks
+#     `Part of [Epic] #N` parent references (#14732/#14750, the rule
+#     champion-common.md's extract_blocker_refs applies); the installed copy
+#     has neither.
+# Retire these pins and the helper only once a resync target's own Guide
+# passes the pinned receipt suite in full, Test 8 included. Check in a
+# scratch tree first: once unpinned, the same resync replaces the suite.
 roles/guide.md
 commands/loom/guide.md
 agents-skills/loom-guide/SKILL.md
