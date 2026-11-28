@@ -12,10 +12,13 @@ scripts/tests/test-tracker-state-comment.sh
 # 76e7e260), so a resync must leave them alone.
 #
 # Retirement condition, re-verified 2026-11-28:
-#   MET, the daemon half: the installed loom-daemon (0.20.37 when checked)
-#     ships the verbs upstream's Guide calls since 2AMLogic/loom#15222
-#     (merged 2026-11-24): `guide work-plan-receipt {record,reset,read}` and
-#     `guide work-plan-splice`.
+#   MET on the tested worker only, the daemon half: the loom-daemon 0.20.37
+#     checked by the Builder ships the verbs upstream's Guide calls since
+#     2AMLogic/loom#15222 (merged 2026-11-24): `guide work-plan-receipt
+#     {record,reset,read}` and `guide work-plan-splice`. Not every worker has
+#     it: the review worker's `loom-daemon --version` was 0.19.1313 and
+#     `loom-daemon guide --help` failed with "unrecognized subcommand
+#     'guide'". Treat the daemon prerequisite as unmet until verified per host.
 #   NOT MET, the Guide half: upstream's Guide fails the pinned receipt suite.
 #     Run in a scratch tree against 2AMLogic/loom f0c91dfac (v0.20.50),
 #     test-guide-work-plan-receipt.sh exits 1 and the attention-fold suite
@@ -23,8 +26,12 @@ scripts/tests/test-tracker-state-comment.sh
 #       * ssh:// origin resolution and the render-failed /
 #         debounce-check-failed guards that keep the last good plan when a
 #         listing or the debounce history lookup fails (80bbfbb6);
-#       * same-tick A -> B -> A retry restoration of the exact base region
-#         and its written receipt (f25a4968, 76e7e260);
+#       * same-tick A -> B -> A restoration (f25a4968, 76e7e260). Two cases:
+#         when the render returns from B to the committed A, restore A's exact
+#         bytes and stamp and record `receipt=current` with A's hash (not
+#         `written`); when the still-pending B write is retried, preserve
+#         `receipt=written`. The pinned suite asserts both (lines 461 and
+#         657-659);
 #       * the Step 5 `check-written` gate against a splice whose receipt
 #         never persisted (6cc8be40). Upstream Step 5 also calls
 #         read_work_plan_receipt_field, defined only in its Step 3 block, so
@@ -37,9 +44,12 @@ scripts/tests/test-tracker-state-comment.sh
 #     `Part of [Epic] #N` parent references (#14732/#14750, the rule
 #     champion-common.md's extract_blocker_refs applies); the installed copy
 #     has neither.
-# Retire these pins and the helper only once a resync target's own Guide
-# passes the pinned receipt suite in full, Test 8 included. Check in a
-# scratch tree first: once unpinned, the same resync replaces the suite.
+# Retire these pins and the helper only once (1) the daemon and Guide include
+# rjwalters/loom#15222, with `loom-daemon guide --help` listing the commands
+# above verified on every worker that runs this repository's Guide, and
+# (2) a resync target's own Guide passes the pinned receipt suite in full,
+# Test 8 included. Check in a scratch tree first: once unpinned, the same
+# resync replaces the suite.
 roles/guide.md
 commands/loom/guide.md
 agents-skills/loom-guide/SKILL.md
